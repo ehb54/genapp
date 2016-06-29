@@ -28,6 +28,7 @@ function get_results___moduleid__( id, last_timeout, getlastmsg, getinput )
 __~debug:job{    console.log( "get results 1 id " + id );}
 //             url:"ajax/get_results.php?_window=" +  window.name + "&_logon=" +$( "#_state" ).data( "_logon" ) + '&_uuid=' + id,
     var job_status = "";
+    __~debug:getinput{console.log( "get_results___moduleid__( " + id + " , " + last_timeout + " , " + getlastmsg + " , " + getinput + " )" );}
     $.getJSON( 
              "ajax/get_results.php",
              {

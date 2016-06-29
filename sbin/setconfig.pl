@@ -355,6 +355,7 @@ if ( $$json{ "https" } ) {
 
 if ( !$webroot ) {
     $webroot = "/var/www/html" if $os =~ /^(ubuntu|centos|redhat)$/;
+    $webroot = "/var/www/htdocs" if $os =~ /^slackware$/;
 }
 
 if ( $$json{ "webroot" } ) {

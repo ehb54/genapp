@@ -677,7 +677,19 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
     foreach ( $keys as $k => $v )
     {
         $a = preg_split( "/-/", $v );
-        $_REQUEST[ $a[ 0 ] ][ $a[ 1 ] - 1 ] = $_REQUEST[ $v ];
+        __~debug:basemylog{error_log( "preg_split of $v:\n" . json_encode( $a, JSON_PRETTY_PRINT ), 3, "/tmp/mylog" );}
+        if ( !isset( $_REQUEST[ $a[ 0 ] ] ) || !is_array( $_REQUEST[ $a[ 0 ] ] ) ) {
+            $_REQUEST[ $a[ 0 ] ] = [];
+        }
+        $obj = &$_REQUEST[ $a[ 0 ] ];
+        for ( $i = 1; $i < count( $a ) - 1; ++$i ) {
+            if ( !isset( $obj[ $a[ $i ] ] ) || !is_array( $obj[ $a[ $i ] ] ) ) {
+                $obj[ $a[ $i ] ] = [];
+            }
+            $obj = &$obj[ $a[ $i ] ];
+        }
+        $obj[ $a[ count( $a ) - 1 ] ] = $_REQUEST[ $v ];
+        // $_REQUEST[ $a[ 0 ] ][ $a[ 1 ] - 1 ] = $_REQUEST[ $v ];
         unset( $_REQUEST[ $v ] );
     }
 

@@ -4,6 +4,43 @@
 ga.repeat               = {};
 ga.repeat.data          = {};
 
+// ----------------------------------------------------------------------------------------------------------
+// background
+// ----------------------------------------------------------------------------------------------------------
+// repeat and repeaters are identified by DOM id's of the element
+// a repeat is an element that is dependent on a repeater
+// a repeater is an element that has dependent repeats
+// an element can be both a repeat (dependent on an element) and a repeater (has dependent repeats)
+// ----------------------------------------------------------------------------------------------------------
+// summary of data structures
+// ----------------------------------------------------------------------------------------------------------
+// ga.repeat.data[ mod ]                          : the module specific data object 
+//
+// ga.repeat.data[ mod ].repeat                   : repeat data object 
+// ga.repeat.data[ mod ].repeat[ id ]             : repeat data object for repeat id 
+// ga.repeat.data[ mod ].repeat[ id ].html        : repeat id's html
+// ga.repeat.data[ mod ].repeat[ id ].htmlr       : repeat id's html modified to ease replacement
+// ga.repeat.data[ mod ].repeat[ id ].eval        : repeat id's eval
+// ga.repeat.data[ mod ].repeat[ id ].evalr       : repeat id's eval modified to ease replacement
+// ga.repeat.data[ mod ].repeat[ id ].refid       : repeat's repeater (as registered in repeatOn)
+//
+// ga.repeat.data[ mod ].repeater                 : repeater data object
+// ga.repeat.data[ mod ].repeater[ id ]           : repeater data object for repeater id
+// ga.repeat.data[ mod ].repeater[ id ].type      : repeater type (currently, checkbox, listbox or integer)
+// ga.repeat.data[ mod ].repeater[ id ].child     : repeater's children (as registered in repeatOn)
+// ga.repeat.data[ mod ].repeater[ id ].choice    : repeater's listbox choice
+// ga.repeat.data[ mod ].repeater[ id ].value     : repeater's last value
+// ----------------------------------------------------------------------------------------------------------
+// summary of operations
+// ----------------------------------------------------------------------------------------------------------
+// ga.repeat.repeat   : register a repeat
+// ga.repeat.repeater : register a repeater
+// ga.repeat.repeatOn : register a repeat repeater reference
+// ga.repeat.children : return all "children" ( repeats on the repeater)
+// ga.repeat.change   : change value of a repeater
+// ----------------------------------------------------------------------------------------------------------
+
+
 // register a repeat
 // equivalent of ga.repeats.registerRepeat
 // initializes the repeat structure & stores the html and eval for a field and returns a placeholder
@@ -26,9 +63,11 @@ ga.repeat.repeat = function( mod, id, html, this_eval  ) {
         .replace( RegExp( 'name="' + id ), 'name="%%id%%' )
         .replace( RegExp( 'for="' + id + '"' ), 'for="%%id%%"' )
         .replace( RegExp( 'id="' + id + '_msg"' ), 'id="%%id%%_msg"' )
+        .replace( RegExp( 'id="' + id + '_tr"' ), 'id="%%id%%_tr"' )
         .replace( RegExp( 'id="' + id + '_button"' ), 'id="%%id%%_button"' )
         .replace( RegExp( '="' + id + '_altval"', 'g' ), '="%%id%%_altval"' )
         .replace( RegExp( 'name="_selaltval_' + id + '"' ), 'name="_selaltval_%%id%%"' )
+        .replace( RegExp( 'id="' + id + '-repeater"' ), 'id="%%id%%-repeater"' )
     ;    
 
     ga.repeat.data[ mod ].repeat[ id ].evalr = 
@@ -50,13 +89,15 @@ ga.repeat.repeat = function( mod, id, html, this_eval  ) {
 // equivalent of ga.repeats.addRepeat 
 // the repeat should already exist
 
-ga.repeat.repeatOn = function( mod, id, refid  ) {
+ga.repeat.repeatOn = function( mod, id, refid ) {
     __~debug:repeat{console.log( "ga.repeat.repeatOn( " + mod + " , " + id + " , " + refid + " )" );}
     var rxcolon = /^(.*):(.*)$/,
         rxcolonval = rxcolon.exec( refid ),
         refbase,
         refchoice
     ;
+
+    refid = refid.replace( ':', '-' );
 
     ga.repeat.data[ mod ].repeater = ga.repeat.data[ mod ].repeater || {};
     ga.repeat.data[ mod ].repeater[ refid ] = ga.repeat.data[ mod ].repeater[ refid ] || {};
@@ -133,7 +174,8 @@ ga.repeat.change = function( mod, id, init ) {
     add_html = "",
     add_eval = "",
     i,
-    j;
+    j,
+    k;
 
     __~debug:repeat{console.log( "ga.repeat.change( " + mod + " , " + id + " )" );}
     if ( !ga.repeat.data[ mod ] || 
@@ -185,13 +227,19 @@ ga.repeat.change = function( mod, id, init ) {
     case "checkbox" : 
         if ( val ) {
             for ( i in children ) {
-                add_html += ga.repeat.data[ mod ].repeat[ i ].html;
-                add_eval += ga.repeat.data[ mod ].repeat[ i ].eval;
+                k = id + "-" + i;
+                __~debug:repeat{console.log( " i " + i + " htmlr " + ga.repeat.data[ mod ].repeat[ i ].htmlr );}
+                __~debug:repeat{console.log( " i " + i + " evalr " + ga.repeat.data[ mod ].repeat[ i ].evalr );}
+                add_html += ga.repeat.data[ mod ].repeat[ i ].htmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "" );
+                add_eval += ga.repeat.data[ mod ].repeat[ i ].evalr.replace( /%%id%%/g, k );
                 if ( ga.repeat.data[ mod ].repeater[ i ] ) {
-                    __~debug:repeat{console.log( "child repeater " + i );}
-                    child_repeaters.push( i );
-                    if ( ga.repeat.data[ mod ].repeater[ i ].value ) {
-                        delete ga.repeat.data[ mod ].repeater[ i ].value;
+                    __~debug:repeat{console.log( "child repeater " + k );}
+                    if ( !ga.repeat.data[ mod ].repeater[ k ] ) {
+                        ga.repeat.data[ mod ].repeater[ k ] = jQuery.extend( {}, ga.repeat.data[ mod ].repeater[ i ] );
+                    }
+                    child_repeaters.push( k );
+                    if ( ga.repeat.data[ mod ].repeater[ k ].value ) {
+                        delete ga.repeat.data[ mod ].repeater[ k ].value;
                     }
                 }
             }
@@ -202,15 +250,19 @@ ga.repeat.change = function( mod, id, init ) {
 
         for ( j = 1; j <= val; ++j ) {
             for ( i in children ) {
-                __~debug:repeat{console.log( " j " + j + " i " + i + " html " + ga.repeat.data[ mod ].repeat[ i ].htmlr );}
-                __~debug:repeat{console.log( " j " + j + " i " + i + " eval " + ga.repeat.data[ mod ].repeat[ i ].evalr );}
-                add_html += ga.repeat.data[ mod ].repeat[ i ].htmlr.replace( /%%id%%/g, i + "-" + j ).replace( "%%label%%", "[" + j + "]" );
-                add_eval += ga.repeat.data[ mod ].repeat[ i ].evalr.replace( /%%id%%/g, i + "-" + j );
+                k = id + "-" + i + "-" + ( j - 1 );
+                __~debug:repeat{console.log( " j " + j + " i " + i + " htmlr " + ga.repeat.data[ mod ].repeat[ i ].htmlr );}
+                __~debug:repeat{console.log( " j " + j + " i " + i + " evalr " + ga.repeat.data[ mod ].repeat[ i ].evalr );}
+                add_html += ga.repeat.data[ mod ].repeat[ i ].htmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "[" + j + "]" );
+                add_eval += ga.repeat.data[ mod ].repeat[ i ].evalr.replace( /%%id%%/g, k );
                 if ( ga.repeat.data[ mod ].repeater[ i ] ) {
-                    __~debug:repeat{console.log( "child repeater " + i );}
-                    child_repeaters.push( i );
-                    if ( ga.repeat.data[ mod ].repeater[ i ].value ) {
-                        delete ga.repeat.data[ mod ].repeater[ i ].value;
+                    __~debug:repeat{console.log( "child repeater " + k );}
+                    if ( !ga.repeat.data[ mod ].repeater[ k ] ) {
+                        ga.repeat.data[ mod ].repeater[ k ] = jQuery.extend( {}, ga.repeat.data[ mod ].repeater[ i ] );
+                    }
+                    child_repeaters.push( k );
+                    if ( ga.repeat.data[ mod ].repeater[ k ].value ) {
+                        delete ga.repeat.data[ mod ].repeater[ k ].value;
                     }
                 }
             }
@@ -219,19 +271,25 @@ ga.repeat.change = function( mod, id, init ) {
 
     case "listbox" :
         
-        j = id + ":" + val;
+        j = id + "-" + val;
 
         children = ga.repeat.children( mod, j );
         __~debug:repeat{ for ( i in children ) { console.log( "ga.repeat.change( " + mod + " , " + id + " ) select child " + i );} }
 
         for ( i in children ) {
-            add_html += ga.repeat.data[ mod ].repeat[ i ].html;
-            add_eval += ga.repeat.data[ mod ].repeat[ i ].eval;
+            k = j + "-" + i;
+            __~debug:repeat{console.log( " i " + i + " htmlr " + ga.repeat.data[ mod ].repeat[ i ].htmlr );}
+            __~debug:repeat{console.log( " i " + i + " evalr " + ga.repeat.data[ mod ].repeat[ i ].evalr );}
+            add_html += ga.repeat.data[ mod ].repeat[ i ].htmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "" );
+            add_eval += ga.repeat.data[ mod ].repeat[ i ].evalr.replace( /%%id%%/g, k );
             if ( ga.repeat.data[ mod ].repeater[ i ] ) {
-                __~debug:repeat{console.log( "child repeater " + i );}
-                child_repeaters.push( i );
-                if ( ga.repeat.data[ mod ].repeater[ i ].value ) {
-                    delete ga.repeat.data[ mod ].repeater[ i ].value;
+                __~debug:repeat{console.log( "child repeater " + k );}
+                if ( !ga.repeat.data[ mod ].repeater[ k ] ) {
+                    ga.repeat.data[ mod ].repeater[ k ] = jQuery.extend( {}, ga.repeat.data[ mod ].repeater[ i ] );
+                }
+                child_repeaters.push( k );
+                if ( ga.repeat.data[ mod ].repeater[ k ].value ) {
+                    delete ga.repeat.data[ mod ].repeater[ k ].value;
                 }
             }
         }
