@@ -1,0 +1,24 @@
+   {
+      QLabel * lbl = new QLabel( "__fields:label__  ", this );
+      // lbl->setMaximumHeight( 22 );
+      lbl->show();
+      gl->addWidget( lbl, ppos, 0 );
+      panel1_sub_widgets.push_back( lbl );
+
+      QTextEdit * te = new QTextEdit( this );
+      //  lb->setMaximumHeight( 22 );
+      te->setPalette( *palette_le );
+     __~fields:default{ te->setText( "__fields:default__" ); }
+      te->show();
+      gl->addWidget( te, ppos, 1 );
+      panel1_sub_widgets.push_back( te );
+
+      QString id = "__moduleid__:__fields:id__";
+      global_data_types[ id ] = "te";
+      panel1_widget_map[ id ] = te;
+      panel1_inputs.push_back( id );
+      save_default_value( id );
+      // panel1_map_input[ id ] = "__moduleid__:__fields:name__";
+
+      ppos++;
+   }

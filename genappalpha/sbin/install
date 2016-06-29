@@ -1,0 +1,41 @@
+#!/bin/bash
+
+export GENAPP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+echo genapp base directory is $GENAPP
+
+# is perl installed
+
+PERL=`which perl`
+if [ -z $PERL ]; then 
+  printf "you must install perl\nfor RedHat/Centos: sudo yum -y install perl\nor for Ubuntu: sudo apt-get -y install perl\n"
+  exit
+fi
+
+PV=`$PERL -e 'print $];'`
+if (( $(echo "$PV < 5.018" | bc -l) )); then
+  if [ -x $GENAPP/perl/bin/perl ]; then
+     PERL=$GENAPP/perl/bin/perl
+     NOSUDO=1
+     echo nosudo set to 1
+  fi
+fi
+
+PV=`$PERL -e 'print $];'`
+if (( $(echo "$PV < 5.018" | bc -l) )); then
+  printf "you need at least perl version 5.18 to continue\nyou can try the script:\n$GENAPP/sbin/install-perl-stable\nand then retry:
+$GENAPP/sbin/install\n";
+  exit;
+fi
+
+echo perl version is $PV
+
+echo '*** installing required perl modules ***'
+
+export PERL_MM_USE_DEFAULT=1
+
+if [ -z "$NOSUDO" ]; then
+    sudo -E bash -c "$PERL -MCPAN -e 'install \"JSON\";install \"Hash::Merge\";install \"Data::Dumper\";'"
+else
+    $PERL -MCPAN -e "install \"JSON\";install \"Hash::Merge\";install \"Data::Dumper\";"
+fi 
+exec $PERL $GENAPP/sbin/install.pl

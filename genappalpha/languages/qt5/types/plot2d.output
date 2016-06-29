@@ -1,0 +1,29 @@
+   {
+      QLabel * lbl = new QLabel( "__fields:label__  ", this );
+      lbl->setMaximumHeight( 22 );
+      lbl->show();
+      gl->addWidget( lbl, ppos, 0 );
+      panel1_sub_widgets.push_back( lbl );
+
+      ppos++;
+      QwtPlot     * plt      = new QwtPlot( this );
+//      plt->setPalette( *palette_plot );
+
+      QwtPlotGrid * plt_grid = new QwtPlotGrid;
+// tofix      plt_grid->setMajPen( QPen( Qt::lightGray, 1, Qt::DotLine ) ); 
+// tofix      plt_grid->setMinPen( QPen( Qt::gray, 1, Qt::DotLine ) );
+      plt_grid->attach( plt );
+
+      plt->show();
+      gl->addWidget( plt, ppos, 0, 1, 3 );
+      panel1_sub_widgets.push_back( plt );
+
+      QString id = "__moduleid__:__fields:id__";
+      global_data_types[ id ] = "plt";
+      panel1_widget_map[ id ] = plt;
+      panel1_outputs.push_back( id );
+      //      save_default_value( id );
+      global_data[ id + ":default_value" ] = QVariant( "[[]]" );
+
+      ppos++;
+   }

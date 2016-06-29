@@ -1,0 +1,31 @@
+--------------------------------------------------------------------------------
+test2.json:
+--------------------------------------------------------------------------------
+----------------------------------------
+ pos is 0 mpos is 0
+----------------------------------------
+application sassie
+languages html5
+title SASSIE
+version 2.0
+----------------------------------------
+rewind, search for changes in 'menu:id'
+----------------------------------------
+application sassie
+languages html5
+title SASSIE
+version 2.0
+----------------------------------------
+rewind, search for changes in 'menu:modules:id'
+----------------------------------------
+application sassie
+languages html5
+title SASSIE
+version 2.0
+----------------------------------------
+rewind, search for changes in 'menu:modules:id|menu:id'
+----------------------------------------
+application sassie
+languages html5
+title SASSIE
+version 2.0

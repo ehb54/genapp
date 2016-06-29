@@ -1,0 +1,20 @@
+# this is a module file, any module specific info belongs here
+{
+    "moduleid" : "cachedresults"
+    ,"submitpolicy" : "all"
+    ,"label"    : "Cached Results"
+    ,"resource" : "local"
+    ,"noreset"  : "true"
+    ,"executable"   : "cached_results"
+    ,"docrootexecutable"  : "ajax/sys_config/cached_results.php"
+    ,"uniquedir" : "on"
+    ,"nojobcontrol" : "on"
+    ,"fields"   : [
+        {
+            "role"     : "input"
+            ,"id"       : "label1"
+            ,"label"    : "Cached results"
+            ,"type"     : "label"
+        }
+    ]
+}

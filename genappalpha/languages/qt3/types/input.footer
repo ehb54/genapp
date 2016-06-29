@@ -1,0 +1,124 @@
+
+   reset_last_values();
+
+   gl->setColStretch( 0, 0 );
+   gl->setColStretch( 1, 0 );
+   gl->setColStretch( 2, 1 );
+   gl_panel1->addMultiCellLayout( gl, 2, 2, 0, 2 );
+   panel1_sub_layouts.push_back( gl );
+   for ( int i = 0; i < (int) panel1_inputs.size(); ++i )
+   {
+      panel1_is_input[ panel1_inputs[ i ] ] = true;
+   }
+}
+
+void __application__::module_reset___menu:id_____menu:modules:id__()
+{
+   reset_default_values();
+}
+
+void __application__::module_submit___menu:id_____menu:modules:id__()
+{
+   save_last_values();
+   reset_output_values( "default_value" );
+   // qDebug( input_to_json( "__menu:modules:id__" ) );
+   // we should check if process already running
+
+   QString program = "__executable_path:qt3__/__executable__";
+
+   QFileInfo qfi( program );
+   if ( !qfi.exists() || !qfi.isExecutable() || qfi.isDir() )
+   {
+      QString id = "__menu:modules:id__";
+      QString key = id + ":_errorMessages";    
+      global_data[ key + ":last_value" ] = QVariant( "Unexpected results:\n   error => command not found or not executable" );
+      if ( current_module_id == id &&
+           global_data_types.count( key ) )
+      {
+         reset_value( key, "last_value" );
+      }
+      return;
+   }
+   //   qDebug( "process exists and isExecutable" );
+   
+   // make a temporary directory:
+
+   QString dir = UTILITY::unique_directory( "__docroot:qt3__/__application__" );
+   if ( dir.isEmpty() )
+   {  
+      QString id = "__menu:modules:id__";
+      QString key = id + ":_errorMessages";    
+      global_data[ key + ":last_value" ] = QVariant( "Unexpected results:\n   error => could not create temporary directory for submission" );
+      if ( current_module_id == id &&
+           global_data_types.count( key ) )
+      {
+         reset_value( key, "last_value" );
+      }
+   }        
+
+   process___menu:id_____menu:modules:id__ = new QProcess( this );
+   process___menu:id_____menu:modules:id__->setWorkingDirectory( dir );
+   process___menu:id_____menu:modules:id__->addArgument( program );
+
+   process___menu:id_____menu:modules:id__->addArgument( input_to_json( "__menu:modules:id__", dir ) );
+   connect( process___menu:id_____menu:modules:id__, 
+            SIGNAL( readyReadStdout() ), 
+            this, 
+            SLOT( readyReadStdout___menu:id_____menu:modules:id__() ) );
+   connect( process___menu:id_____menu:modules:id__, 
+            SIGNAL( readyReadStderr() ), 
+            this, 
+            SLOT( readyReadStderr___menu:id_____menu:modules:id__() ) );
+   connect( process___menu:id_____menu:modules:id__, 
+            SIGNAL( launchFinished() ), 
+            this, 
+            SLOT( launchFinished___menu:id_____menu:modules:id__() ) );
+   connect( process___menu:id_____menu:modules:id__, 
+            SIGNAL( processExited() ), 
+            this, 
+            SLOT( processExited___menu:id_____menu:modules:id__() ) );
+   if ( !process___menu:id_____menu:modules:id__->start() )
+   { 
+      qDebug( "error starting process" );
+      return;
+   }
+   process_json[ "__menu:modules:id__" ] = "";
+   qDebug( "process started" );
+}
+
+void __application__::readyReadStdout___menu:id_____menu:modules:id__()
+{
+   while ( process___menu:id_____menu:modules:id__->canReadLineStdout() )
+   {
+      process_json[ "__menu:modules:id__" ] += process___menu:id_____menu:modules:id__->readLineStdout();
+   }
+}
+
+void __application__::readyReadStderr___menu:id_____menu:modules:id__()
+{
+   while ( process___menu:id_____menu:modules:id__->canReadLineStderr() )
+   {
+      qDebug( process___menu:id_____menu:modules:id__->readLineStderr() );
+   }
+}
+
+void __application__::launchFinished___menu:id_____menu:modules:id__()
+{
+   // qDebug( "process___menu:id_____menu:modules:id__->launchFinished()" );
+   disconnect( process___menu:id_____menu:modules:id__,
+               SIGNAL( launchFinished___menu:id_____menu:modules:id__() ),
+               0, 0 );
+}
+
+void __application__::processExited___menu:id_____menu:modules:id__()
+{
+   qDebug( "process___menu:id_____menu:modules:id__->processExited()" );
+   readyReadStdout___menu:id_____menu:modules:id__();
+   readyReadStderr___menu:id_____menu:modules:id__();
+
+   disconnect( process___menu:id_____menu:modules:id__, 0, 0, 0 );
+   // post process data into output fields, add unexpected data etc
+   // delete process___menu:id_____menu:modules:id__;
+   // process___menu:id_____menu:modules:id__ = (QProcess *) 0;
+   process_results( "__menu:modules:id__" );
+}

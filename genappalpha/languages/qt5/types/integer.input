@@ -1,0 +1,26 @@
+   {
+      QLabel * lbl = new QLabel( "__fields:label__  ", this );
+      lbl->setMaximumHeight( 22 );
+      lbl->show();
+      gl->addWidget( lbl, ppos, 0 );
+      panel1_sub_widgets.push_back( lbl );
+
+      QLineEdit * le = new QLineEdit( this );
+      le->setMaximumHeight( 22 );
+//      le->setPalette( *palette_le );
+      le->setValidator( new QIntValidator( le ) );
+     __~fields:default{ le->setText( QString( "%1" ).arg( __fields:default__ ) ); }
+     __~fields:min{ ((QIntValidator*)le->validator())->setBottom( __fields:min__ ); }
+     __~fields:max{ ((QIntValidator*)le->validator())->setTop( __fields:max__ ); }
+      le->show();
+      gl->addWidget( le, ppos, 1 );
+      panel1_sub_widgets.push_back( le );
+
+      QString id = "__moduleid__:__fields:id__";
+      global_data_types[ id ] = "le";
+      panel1_widget_map[ id ] = le;
+      panel1_inputs.push_back( id );
+      save_default_value( id );
+
+      ppos++;
+   }

@@ -1,0 +1,133 @@
+# this is a language file, any language specific data should go here
+{
+  "id"          : "java",
+  "description" : "Java GenApp",
+  "version"     : 1,
+  "assembly"    : [
+                   {
+                    "frequency"  : "once",
+                    "output"     : "css/main.css",
+                    "inputs"     : [ 
+                                     { "css/main.css" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "run___application__",
+                    "setexecutable" : "true",
+                    "inputs"     : [ 
+                                     { "run.sh" : "once" }
+                                   ]
+                   }    
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "register",
+                    "setexecutable" : "true",
+                    "inputs"     : [ 
+                                     { "register.sh" : "once" }
+                                   ]
+                   }                    
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "__application__.java",
+                    "inputs"     : [ 
+                                     { "main/imports.java" : "menu:modules:id" }
+                                     ,{ "main/header1.java" : "once" }
+                                     ,{ "main/header2.java" : "menu:id" }
+                                     ,{ "main/header3.java" : "once" }
+                                     ,{ "main/header4.java" : "menu:id" }
+                                     ,{ "main/header5.java" : "once" }
+                                     ,{ "main/AddCaseModules.java" : "menu:modules:id" }
+                                     ,{ "main/Footer.java" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "items/MenuItemIcon.java",
+                    "inputs"     : [ 
+                                     { "items/MenuItemIcon.java" : "once" }
+                                   ]
+                   }
+                  ,{
+                    "frequency"  : "menu:modules:id",
+                    "output"     : "modules/__menu:modules:id__.java",
+                    "inputs"     : [ 
+                                     { "modules/module.java" : "once" }
+                                   ]
+                   }
+                   
+
+                                      ,{
+                    "frequency"  : "once",
+                    "output"     : "data/ModulesData.java",
+                    "inputs"     : [ 
+                                     { "data/header.java" : "once" }
+                                     ,{"data/putMenuIds.java": "menu:id"}
+                                     ,{"data/putMenuIdModules.java": "menu:modules:id"}
+                                     ,{"data/footer.java": "once"}
+                                   ]
+                   }
+                 ,{
+                    "frequency"  : "once",
+                    "output"     : "data/Repeater.java",
+                    "inputs"     : [ 
+                                     { "data/repeater_header.java" : "once" }
+                                     ,{"data/repeater.java": "menu:modules:id"}
+                                     ,{"data/repeater_footer.java": "once"}
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "menu:modules:id",
+                    "output"     : "data/__menu:modules:id___data.java",
+                    "inputs"     : [ 
+                                     { "data/module_header.java" : "once" }
+                                     ,{"types/__fields:type__.input"  : "fields:id"}
+                                     ,{"types/__fields:type__.output"  : "fields:id"}
+                                     ,{"data/footer.java": "once"}
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "util/Help.java",
+                    "inputs"     : [ 
+                                     { "help/Help.java" : "once" }
+                                     ,{"help/menuHelp.java"  : "menu:id"}
+                                     ,{"help/modulesHelp.java"  : "fields:id"}
+                                     ,{"help/helpFooter.java": "once"}
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "util/HandleResult.java",
+                    "inputs"     : [ 
+                                     {"HandleResult.java": "once"}
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "util/AppConfig.java",
+                    "inputs"     : [ 
+                                     {"AppConfig.java": "once"}
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "airavata/ModulesUtils.java",
+                    "inputs"     : [ 
+                                     { "airavata/header.java" : "once" }
+                                     ,{"airavata/ModulesUtils.java"  : "menu:modules:id"}
+                                     ,{"airavata/footer.java"  : "once"}
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "compile___application__",
+                    "setexecutable" :"true",
+                    "execute"    : "atend",
+                    "inputs"     : [ 
+                                     { "compile.sh" : "once" }
+                                   ]
+                   }    
+       ]
+}
+

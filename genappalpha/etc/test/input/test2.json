@@ -1,0 +1,8 @@
+# this is a project directives file
+{
+  "title"         : "SASSIE",
+  "application"   : "sassie",
+  "version"       : "2.0",
+  "languages"     : [ "html5" ]
+}
+

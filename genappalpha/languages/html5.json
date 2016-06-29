@@ -1,0 +1,383 @@
+# this is a language file, any language specific data should go here
+{
+  "id"          : "html5",
+  "description" : "This is our first try at an html5 based genapp module",
+  "version"     : 1,
+# options are for directives in the inputs (one source base can create tweaked versions)
+  "options"     : {
+                    "imagesinline" : "true"
+                  },
+  "assembly_directives" :
+                  {
+                     "replacementif" : { 
+                                         "required" : "true", 
+                                         "checked"  : "true"
+                                       }
+                  },
+  "assembly"    : [
+                   {
+                    "frequency"  : "once",
+                    "output"     : "ajax/sys_uid.php",
+                    "inputs"     : [ 
+                                    { "sys/sys_uid.php" : "once"        }
+                                   ]
+                    },
+                   {
+                    "frequency"  : "once",
+                    "output"     : "index.html",
+                    "inputs"     : [ 
+                                    { "base_header.html"  : "once"        },
+                                    { "base_items.html"   : "menu:id"     },
+                                    { "base_modules.html" : "menu:modules:id"  },
+                                    { "base_footer.html"  : "once"        }
+                                  ]
+                   },
+                   {
+                    "frequency"  : "menu:id",
+                    "output"     : "ajax/__menu:id__.html",
+                    "inputs"     : [ 
+                                    { "menuelement_header.html" : "once"            },
+                                    { "menuelement_items.html"  : "menu:modules:id" },
+                                    { "menuelement_footer.html" : "once"            }
+                                  ]
+                   }
+                  ,{
+                    "frequency"  : "menu:modules:id",
+                    "output"     : "ajax/__menu:id__/__menu:modules:id__.html",
+                    "inputs"     : [ 
+                                    { "types/input.header"           : "once"     },
+                                    { "types/__fields:type__.input"  : "fields:id" },
+                                    { "types/input.footer"           : "once"     },
+                                    { "types/output.header"          : "once"     },
+                                    { "types/__fields:type__.output" : "fields:id" },
+                                    { "types/output.footer"          : "once"     }
+                                   ]
+                   }
+                  ,{
+                    "frequency"  : "menu:modules:id",
+                    "output"     : "etc/module___menu:modules:id__.php",
+                    "inputs"     : [ 
+                                    { "sys/module_info.php"          : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "menu:modules:id",
+                    "output"     : "ajax/__menu:id__/__menu:modules:id__.php",
+                    "prefix"     : "enable",
+                    "inputs"     : [ 
+                                    { "base.php" : "once" }
+                                   ]
+                   }
+# special configuration modules from config.json
+                  ,{
+                    "frequency"  : "config:modules:id",
+                    "output"     : "etc/__menu:modules:id__.html",
+                    "inputs"     : [ 
+                                    { "types/input.header"           : "once"     },
+                                    { "types/__fields:type__.input"  : "fields:id" },
+                                    { "types/input.footer"           : "once"     },
+                                    { "types/output.header"          : "once"     },
+                                    { "types/__fields:type__.output" : "fields:id" },
+                                    { "types/output.footer"          : "once"     }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "config:modules:id",
+                    "output"     : "ajax/__menu:id__/__menu:modules:id__.php",
+                    "inputs"     : [ 
+                                    { "sys/__moduleid__.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "configbase:modules:id",
+                    "clobber"    : "true",
+                    "prefix"     : "enable",
+                    "output"     : "ajax/__menu:id__/__menu:modules:id__.php",
+                    "inputs"     : [ 
+                                    { "base.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "ajax/mail.php",
+                    "inputs"     : [ 
+                                    { "sys/mail.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "ajax/joblog.php",
+                    "inputs"     : [ 
+                                    { "sys/joblog.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "ajax/sys_config/sys_jobs.php",
+                    "inputs"     : [ 
+                                    { "sys/sys_jobs.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "ajax/sys_config/sys_license.php",
+                    "inputs"     : [ 
+                                    { "sys/sys_license.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "setexecutable" : "true",
+                    "output"     : "ajax/sys_config/sys_file_manager_run.php",
+                    "inputs"     : [ 
+                                    { "sys/sys_file_manager_run.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "ajax/sys_config/sys_joblocked.php",
+                    "inputs"     : [ 
+                                    { "sys/sys_joblocked.php" : "once"        }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "ajax/get_results.php",
+                    "inputs"     : [ 
+                                    { "results.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+		    "setexecutable" : "true", 
+                    "output"     : "util/jobs_history.php",
+                    "inputs"     : [ 
+                                    { "util/jobs_history.php" : "once" }
+                                   ]
+                   }
+      
+                  ,{
+                    "frequency"  : "once",
+		    "setexecutable" : "true", 
+                    "output"     : "util/jobs_history_web.php",
+                    "inputs"     : [ 
+                                    { "util/jobs_history_web.php" : "once" }
+                                   ]
+                   }             ,{
+                    "frequency"  : "once",
+                    "output"     : "util/msg-udpserver.php",
+                    "inputs"     : [ 
+                                    { "util/msg-udpserver.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "util/jobrun.php",
+                    "inputs"     : [ 
+                                    { "util/jobrun.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "util/msg-wsserver.php",
+                    "inputs"     : [ 
+                                    { "util/msg-wsserver.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "util/services.php",
+                    "setexecutable" : "true",
+                    "inputs"     : [ 
+                                    { "util/services.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "util/rc.genapp",
+                    "setexecutable" : "true",
+                    "inputs"     : [ 
+                                    { "util/rc.genapp" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once"
+                    ,"output"     : "airavata/modulesUtils.php"
+                    ,"inputs"     : [
+                                     { "airavata/registry/register_header.php" : "once" }
+                                     ,{ "airavata/registry/eachmodule.php" : "menu:modules:id" }
+                                     ,{ "airavata/registry/register_footer.php" : "once" }
+                                    ]
+                   }
+                   ,{
+                    "frequency"  : "once"
+                    ,"output"     : "airavatarun"
+                    ,"setexecutable" : "true"
+                    ,"inputs"     : [
+                                     { "airavata/airavatarun" : "once" }
+                                    ]
+                   }
+                   ,{
+                    "frequency"  : "once"
+                    ,"output"     : "airavata/clientProperties.php"
+                    ,"inputs"     : [
+                                     { "airavata/clientProperties.php" : "once" }
+                                    ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "setexecutable" : "true",
+                    "output"     : "ajax/sys_config/sys_jobmonitor.php",
+                    "inputs"     : [ 
+                                    { "sys/sys_jobmonitor.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "setexecutable" : "true",
+                    "output"     : "ajax/sys_config/sys_jobintegritycheck.php",
+                    "inputs"     : [ 
+                                    { "sys/sys_jobintegritycheck.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "setexecutable" : "true",
+                    "output"     : "ajax/sys_config/sys_userslist.php",
+                    "inputs"     : [ 
+                                    { "sys/sys_userslist.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "setexecutable" : "true",
+                    "output"     : "ajax/sys_config/cached_results.php",
+                    "inputs"     : [ 
+                                    { "sys/cached_results.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "setexecutable" : "true",
+                    "output"     : "ajax/sys_config/cache_remove_one.php",
+                    "inputs"     : [ 
+                                    { "sys/cache_remove_one.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "ajax/sys_config/sys_captcha.php",
+                    "inputs"     : [ 
+                                    { "sys/sys_captcha.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "ajax/sys_config/sys_captcha_verify.php",
+                    "inputs"     : [ 
+                                    { "sys/sys_captcha_verify.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "util/test_mail.php",
+                    "setexecutable" : "true",
+                    "inputs"     : [ 
+                                    { "util/test_mail.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "util/ws_start.sh",
+                    "setexecutable" : "true",
+                    "inputs"     : [ 
+                                    { "util/ws_start.sh" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "util/ga_regpid_udp.pl",
+                    "setexecutable" : "true",
+                    "inputs"     : [ 
+                                    { "util/ga_regpid_udp.pl" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "util/ga_killprocs.pl",
+                    "setexecutable" : "true",
+                    "inputs"     : [ 
+                                    { "util/ga_killprocs.pl" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "util/running.php",
+                    "setexecutable" : "true",
+                    "inputs"     : [ 
+                                    { "util/running.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "js/ga.js",
+#                    "minify"     : "copy",
+#                    "minify"     : "minify",
+#                    "minify"     : "closure",
+                    "inputs"     : [ 
+                                    {  "js/ga_global.js"        : "once" }
+                                    ,{ "js/color.js"            : "once" }
+                                    ,{ "js/event.js"            : "once" }
+                                    ,{ "js/fc.js"               : "once" }
+                                    ,{ "js/jc.js"               : "once" }
+                                    ,{ "js/altfile.js"          : "once" }
+                                    ,{ "js/valid.js"            : "once" }
+                                    ,{ "js/value.js"            : "once" }
+                                    ,{ "js/pull.js"             : "once" }
+                                    ,{ "js/repeats.js"          : "once" }
+                                    ,{ "js/repeat.js"           : "once" }
+                                    ,{ "js/hide.js"             : "once" }
+                                    ,{ "js/data.js"             : "once" }
+                                    ,{ "js/sync.js"             : "once" }
+                                    ,{ "js/valuen.js"           : "once" }
+                                    ,{ "js/license.js"          : "once" }
+                                    ,{ "js/captcha.js"          : "once" }
+                                    ,{ "js/register.js"         : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "js/jsmol.js",
+#                    "minify"     : "copy",
+#                    "minify"     : "minify",
+#                    "minify"     : "closure",
+                    "inputs"     : [ 
+                                    {  "jsmol/JSmoljQueryExt.js" : "once" }
+                                    ,{ "jsmol/JSmolCore.js"      : "once" }
+                                    ,{ "jsmol/JSmol.js"          : "once" }
+                                    ,{ "jsmol/JSmolApplet.js"    : "once" }
+                                    ,{ "jsmol/JSmolControls.js"  : "once" }
+                                    ,{ "jsmol/JSmolApi.js"       : "once" }
+                                    ,{ "jsmol/j2sjmol.js"        : "once" }
+                                    ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "js/genapp.js",
+                    "inputs"     : [ 
+                        {  "add/js/jquery-1.11.0.min.js"        : "once" }
+                        ,{ "add/js/spectrum.min.js"             : "once" }
+                        ,{ "add/js/jq.flot-0.8.3+nav.min.js"    : "once" }
+                        ,{ "add/js/uuid.min.js"                 : "once" }
+                        ,{ "add/js/autobahn.min.js"             : "once" }
+                        ,{ "add/js/jsmol.min.js"                : "once" }
+                        ,{ "add/js/jstree.min.js"               : "once" }
+                        ,{ "add/js/jqGrid-4.6.0.min.js"         : "once" }
+                        ,{ "add/js/grid.locale-en.js"           : "once" }
+                        ,{ "add/js/jquery.base64.min.js"        : "once" }
+                        ,{ "add/js/ga.min.js"                   : "once" }
+                    ]
+                   }
+                  ]
+}
+

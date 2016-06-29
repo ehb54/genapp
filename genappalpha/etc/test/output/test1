@@ -1,0 +1,843 @@
+--------------------------------------------------------------------------------
+test1.json:
+--------------------------------------------------------------------------------
+----------------------------------------
+ pos is 0 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/tools.png
+menu:id tools
+menu:label Tools
+menu:modules:id center
+menu:modules:label Center
+menu:modules:views Input
+----------------------------------------
+ pos is 1 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/tools.png
+menu:id tools
+menu:label Tools
+menu:modules:id center
+menu:modules:label Center
+menu:modules:views Output
+----------------------------------------
+ pos is 2 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/tools.png
+menu:id tools
+menu:label Tools
+menu:modules:id center
+menu:modules:label Center
+menu:modules:views Plots
+----------------------------------------
+ pos is 3 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/tools.png
+menu:id tools
+menu:label Tools
+menu:modules:id center
+menu:modules:label Center
+menu:modules:views OpenGL
+----------------------------------------
+ pos is 4 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/tools.png
+menu:id tools
+menu:label Tools
+menu:modules:id align
+menu:modules:label Align
+menu:modules:views Input
+----------------------------------------
+ pos is 5 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/tools.png
+menu:id tools
+menu:label Tools
+menu:modules:id align
+menu:modules:label Align
+menu:modules:views Output
+----------------------------------------
+ pos is 6 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/tools.png
+menu:id tools
+menu:label Tools
+menu:modules:id align
+menu:modules:label Align
+menu:modules:views Plots
+----------------------------------------
+ pos is 7 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/tools.png
+menu:id tools
+menu:label Tools
+menu:modules:id align
+menu:modules:label Align
+menu:modules:views OpenGL
+----------------------------------------
+ pos is 8 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/tools.png
+menu:id tools
+menu:label Tools
+menu:modules:id data_interpolation
+menu:modules:label Data Interpolation
+menu:modules:views Input
+----------------------------------------
+ pos is 9 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/tools.png
+menu:id tools
+menu:label Tools
+menu:modules:id data_interpolation
+menu:modules:label Data Interpolation
+menu:modules:views Output
+----------------------------------------
+ pos is 10 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/tools.png
+menu:id tools
+menu:label Tools
+menu:modules:id data_interpolation
+menu:modules:label Data Interpolation
+menu:modules:views Plots
+----------------------------------------
+ pos is 11 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/tools.png
+menu:id tools
+menu:label Tools
+menu:modules:id data_interpolation
+menu:modules:label Data Interpolation
+menu:modules:views OpenGL
+----------------------------------------
+ pos is 12 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/build.png
+menu:id build
+menu:label Build
+menu:modules:id build_1
+menu:modules:label Build 1
+menu:modules:views Input
+----------------------------------------
+ pos is 13 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/build.png
+menu:id build
+menu:label Build
+menu:modules:id build_1
+menu:modules:label Build 1
+menu:modules:views Output
+----------------------------------------
+ pos is 14 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/build.png
+menu:id build
+menu:label Build
+menu:modules:id build_1
+menu:modules:label Build 1
+menu:modules:views Plots
+----------------------------------------
+ pos is 15 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/build.png
+menu:id build
+menu:label Build
+menu:modules:id build_1
+menu:modules:label Build 1
+menu:modules:views OpenGL
+----------------------------------------
+ pos is 16 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/build.png
+menu:id build
+menu:label Build
+menu:modules:id build_2
+menu:modules:label Build 2
+menu:modules:views Input
+----------------------------------------
+ pos is 17 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/build.png
+menu:id build
+menu:label Build
+menu:modules:id build_2
+menu:modules:label Build 2
+menu:modules:views Output
+----------------------------------------
+ pos is 18 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/build.png
+menu:id build
+menu:label Build
+menu:modules:id build_2
+menu:modules:label Build 2
+menu:modules:views Plots
+----------------------------------------
+ pos is 19 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/build.png
+menu:id build
+menu:label Build
+menu:modules:id build_2
+menu:modules:label Build 2
+menu:modules:views OpenGL
+----------------------------------------
+ pos is 20 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/interact.png
+menu:id interact
+menu:label Interact
+menu:modules:id interact_1
+menu:modules:label Interact 1
+menu:modules:views Input
+----------------------------------------
+ pos is 21 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/interact.png
+menu:id interact
+menu:label Interact
+menu:modules:id interact_1
+menu:modules:label Interact 1
+menu:modules:views Output
+----------------------------------------
+ pos is 22 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/interact.png
+menu:id interact
+menu:label Interact
+menu:modules:id interact_1
+menu:modules:label Interact 1
+menu:modules:views Plots
+----------------------------------------
+ pos is 23 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/interact.png
+menu:id interact
+menu:label Interact
+menu:modules:id interact_1
+menu:modules:label Interact 1
+menu:modules:views OpenGL
+----------------------------------------
+ pos is 24 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/interact.png
+menu:id interact
+menu:label Interact
+menu:modules:id interact_2
+menu:modules:label Interact 2
+menu:modules:views Input
+----------------------------------------
+ pos is 25 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/interact.png
+menu:id interact
+menu:label Interact
+menu:modules:id interact_2
+menu:modules:label Interact 2
+menu:modules:views Output
+----------------------------------------
+ pos is 26 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/interact.png
+menu:id interact
+menu:label Interact
+menu:modules:id interact_2
+menu:modules:label Interact 2
+menu:modules:views Plots
+----------------------------------------
+ pos is 27 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/interact.png
+menu:id interact
+menu:label Interact
+menu:modules:id interact_2
+menu:modules:label Interact 2
+menu:modules:views OpenGL
+----------------------------------------
+ pos is 28 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/simulate.png
+menu:id simulate
+menu:label Simulate
+menu:modules:id simulate_1
+menu:modules:label Simulate 1
+menu:modules:views Input
+----------------------------------------
+ pos is 29 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/simulate.png
+menu:id simulate
+menu:label Simulate
+menu:modules:id simulate_1
+menu:modules:label Simulate 1
+menu:modules:views Output
+----------------------------------------
+ pos is 30 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/simulate.png
+menu:id simulate
+menu:label Simulate
+menu:modules:id simulate_1
+menu:modules:label Simulate 1
+menu:modules:views Plots
+----------------------------------------
+ pos is 31 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/simulate.png
+menu:id simulate
+menu:label Simulate
+menu:modules:id simulate_1
+menu:modules:label Simulate 1
+menu:modules:views OpenGL
+----------------------------------------
+ pos is 32 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/simulate.png
+menu:id simulate
+menu:label Simulate
+menu:modules:id simulate_2
+menu:modules:label Simulate 2
+menu:modules:views Input
+----------------------------------------
+ pos is 33 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/simulate.png
+menu:id simulate
+menu:label Simulate
+menu:modules:id simulate_2
+menu:modules:label Simulate 2
+menu:modules:views Output
+----------------------------------------
+ pos is 34 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/simulate.png
+menu:id simulate
+menu:label Simulate
+menu:modules:id simulate_2
+menu:modules:label Simulate 2
+menu:modules:views Plots
+----------------------------------------
+ pos is 35 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/simulate.png
+menu:id simulate
+menu:label Simulate
+menu:modules:id simulate_2
+menu:modules:label Simulate 2
+menu:modules:views OpenGL
+----------------------------------------
+ pos is 36 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/calculate.png
+menu:id calculate
+menu:label Calculate
+menu:modules:id calculate_1
+menu:modules:label Calculate 1
+menu:modules:views Input
+----------------------------------------
+ pos is 37 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/calculate.png
+menu:id calculate
+menu:label Calculate
+menu:modules:id calculate_1
+menu:modules:label Calculate 1
+menu:modules:views Output
+----------------------------------------
+ pos is 38 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/calculate.png
+menu:id calculate
+menu:label Calculate
+menu:modules:id calculate_1
+menu:modules:label Calculate 1
+menu:modules:views Plots
+----------------------------------------
+ pos is 39 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/calculate.png
+menu:id calculate
+menu:label Calculate
+menu:modules:id calculate_1
+menu:modules:label Calculate 1
+menu:modules:views OpenGL
+----------------------------------------
+ pos is 40 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/calculate.png
+menu:id calculate
+menu:label Calculate
+menu:modules:id calculate_2
+menu:modules:label Calculate 2
+menu:modules:views Input
+----------------------------------------
+ pos is 41 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/calculate.png
+menu:id calculate
+menu:label Calculate
+menu:modules:id calculate_2
+menu:modules:label Calculate 2
+menu:modules:views Output
+----------------------------------------
+ pos is 42 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/calculate.png
+menu:id calculate
+menu:label Calculate
+menu:modules:id calculate_2
+menu:modules:label Calculate 2
+menu:modules:views Plots
+----------------------------------------
+ pos is 43 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/calculate.png
+menu:id calculate
+menu:label Calculate
+menu:modules:id calculate_2
+menu:modules:label Calculate 2
+menu:modules:views OpenGL
+----------------------------------------
+ pos is 44 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/analyze.png
+menu:id analyze
+menu:label Analyze
+menu:modules:id analyze_1
+menu:modules:label Analyze 1
+menu:modules:views Input
+----------------------------------------
+ pos is 45 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/analyze.png
+menu:id analyze
+menu:label Analyze
+menu:modules:id analyze_1
+menu:modules:label Analyze 1
+menu:modules:views Output
+----------------------------------------
+ pos is 46 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/analyze.png
+menu:id analyze
+menu:label Analyze
+menu:modules:id analyze_1
+menu:modules:label Analyze 1
+menu:modules:views Plots
+----------------------------------------
+ pos is 47 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/analyze.png
+menu:id analyze
+menu:label Analyze
+menu:modules:id analyze_1
+menu:modules:label Analyze 1
+menu:modules:views OpenGL
+----------------------------------------
+ pos is 48 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/analyze.png
+menu:id analyze
+menu:label Analyze
+menu:modules:id analyze_2
+menu:modules:label Analyze 2
+menu:modules:views Input
+----------------------------------------
+ pos is 49 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/analyze.png
+menu:id analyze
+menu:label Analyze
+menu:modules:id analyze_2
+menu:modules:label Analyze 2
+menu:modules:views Output
+----------------------------------------
+ pos is 50 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/analyze.png
+menu:id analyze
+menu:label Analyze
+menu:modules:id analyze_2
+menu:modules:label Analyze 2
+menu:modules:views Plots
+----------------------------------------
+ pos is 51 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/analyze.png
+menu:id analyze
+menu:label Analyze
+menu:modules:id analyze_2
+menu:modules:label Analyze 2
+menu:modules:views OpenGL
+----------------------------------------
+rewind, search for changes in 'menu:id'
+----------------------------------------
+header Sassie 2
+menu:icon pngs/tools.png
+menu:id tools
+menu:label Tools
+menu:modules:id center
+menu:modules:label Center
+menu:modules:views Input
+----------------------------------------
+ pos is 12 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/build.png
+menu:id build
+menu:label Build
+menu:modules:id build_1
+menu:modules:label Build 1
+menu:modules:views Input
+----------------------------------------
+ pos is 20 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/interact.png
+menu:id interact
+menu:label Interact
+menu:modules:id interact_1
+menu:modules:label Interact 1
+menu:modules:views Input
+----------------------------------------
+ pos is 28 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/simulate.png
+menu:id simulate
+menu:label Simulate
+menu:modules:id simulate_1
+menu:modules:label Simulate 1
+menu:modules:views Input
+----------------------------------------
+ pos is 36 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/calculate.png
+menu:id calculate
+menu:label Calculate
+menu:modules:id calculate_1
+menu:modules:label Calculate 1
+menu:modules:views Input
+----------------------------------------
+ pos is 44 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/analyze.png
+menu:id analyze
+menu:label Analyze
+menu:modules:id analyze_1
+menu:modules:label Analyze 1
+menu:modules:views Input
+----------------------------------------
+rewind, search for changes in 'menu:modules:id'
+----------------------------------------
+header Sassie 2
+menu:icon pngs/tools.png
+menu:id tools
+menu:label Tools
+menu:modules:id center
+menu:modules:label Center
+menu:modules:views Input
+----------------------------------------
+ pos is 4 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/tools.png
+menu:id tools
+menu:label Tools
+menu:modules:id align
+menu:modules:label Align
+menu:modules:views Input
+----------------------------------------
+ pos is 8 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/tools.png
+menu:id tools
+menu:label Tools
+menu:modules:id data_interpolation
+menu:modules:label Data Interpolation
+menu:modules:views Input
+----------------------------------------
+ pos is 12 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/build.png
+menu:id build
+menu:label Build
+menu:modules:id build_1
+menu:modules:label Build 1
+menu:modules:views Input
+----------------------------------------
+ pos is 16 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/build.png
+menu:id build
+menu:label Build
+menu:modules:id build_2
+menu:modules:label Build 2
+menu:modules:views Input
+----------------------------------------
+ pos is 20 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/interact.png
+menu:id interact
+menu:label Interact
+menu:modules:id interact_1
+menu:modules:label Interact 1
+menu:modules:views Input
+----------------------------------------
+ pos is 24 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/interact.png
+menu:id interact
+menu:label Interact
+menu:modules:id interact_2
+menu:modules:label Interact 2
+menu:modules:views Input
+----------------------------------------
+ pos is 28 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/simulate.png
+menu:id simulate
+menu:label Simulate
+menu:modules:id simulate_1
+menu:modules:label Simulate 1
+menu:modules:views Input
+----------------------------------------
+ pos is 32 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/simulate.png
+menu:id simulate
+menu:label Simulate
+menu:modules:id simulate_2
+menu:modules:label Simulate 2
+menu:modules:views Input
+----------------------------------------
+ pos is 36 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/calculate.png
+menu:id calculate
+menu:label Calculate
+menu:modules:id calculate_1
+menu:modules:label Calculate 1
+menu:modules:views Input
+----------------------------------------
+ pos is 40 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/calculate.png
+menu:id calculate
+menu:label Calculate
+menu:modules:id calculate_2
+menu:modules:label Calculate 2
+menu:modules:views Input
+----------------------------------------
+ pos is 44 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/analyze.png
+menu:id analyze
+menu:label Analyze
+menu:modules:id analyze_1
+menu:modules:label Analyze 1
+menu:modules:views Input
+----------------------------------------
+ pos is 48 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/analyze.png
+menu:id analyze
+menu:label Analyze
+menu:modules:id analyze_2
+menu:modules:label Analyze 2
+menu:modules:views Input
+----------------------------------------
+rewind, search for changes in 'menu:modules:id|menu:id'
+----------------------------------------
+header Sassie 2
+menu:icon pngs/tools.png
+menu:id tools
+menu:label Tools
+menu:modules:id center
+menu:modules:label Center
+menu:modules:views Input
+----------------------------------------
+ pos is 4 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/tools.png
+menu:id tools
+menu:label Tools
+menu:modules:id align
+menu:modules:label Align
+menu:modules:views Input
+----------------------------------------
+ pos is 8 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/tools.png
+menu:id tools
+menu:label Tools
+menu:modules:id data_interpolation
+menu:modules:label Data Interpolation
+menu:modules:views Input
+----------------------------------------
+ pos is 12 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/build.png
+menu:id build
+menu:label Build
+menu:modules:id build_1
+menu:modules:label Build 1
+menu:modules:views Input
+----------------------------------------
+ pos is 16 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/build.png
+menu:id build
+menu:label Build
+menu:modules:id build_2
+menu:modules:label Build 2
+menu:modules:views Input
+----------------------------------------
+ pos is 20 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/interact.png
+menu:id interact
+menu:label Interact
+menu:modules:id interact_1
+menu:modules:label Interact 1
+menu:modules:views Input
+----------------------------------------
+ pos is 24 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/interact.png
+menu:id interact
+menu:label Interact
+menu:modules:id interact_2
+menu:modules:label Interact 2
+menu:modules:views Input
+----------------------------------------
+ pos is 28 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/simulate.png
+menu:id simulate
+menu:label Simulate
+menu:modules:id simulate_1
+menu:modules:label Simulate 1
+menu:modules:views Input
+----------------------------------------
+ pos is 32 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/simulate.png
+menu:id simulate
+menu:label Simulate
+menu:modules:id simulate_2
+menu:modules:label Simulate 2
+menu:modules:views Input
+----------------------------------------
+ pos is 36 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/calculate.png
+menu:id calculate
+menu:label Calculate
+menu:modules:id calculate_1
+menu:modules:label Calculate 1
+menu:modules:views Input
+----------------------------------------
+ pos is 40 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/calculate.png
+menu:id calculate
+menu:label Calculate
+menu:modules:id calculate_2
+menu:modules:label Calculate 2
+menu:modules:views Input
+----------------------------------------
+ pos is 44 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/analyze.png
+menu:id analyze
+menu:label Analyze
+menu:modules:id analyze_1
+menu:modules:label Analyze 1
+menu:modules:views Input
+----------------------------------------
+ pos is 48 mpos is 51
+----------------------------------------
+header Sassie 2
+menu:icon pngs/analyze.png
+menu:id analyze
+menu:label Analyze
+menu:modules:id analyze_2
+menu:modules:label Analyze 2
+menu:modules:views Input

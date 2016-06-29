@@ -1,0 +1,63 @@
+# this is a module file, any module specific info belongs here
+{
+    "moduleid" : "sys_login",
+    "label"    : "Login",
+    "submit_label" : "Login",
+    "noreset"  : "true",
+    "resetonload"  : "true",
+    "nojobcontrol"  : "true",
+    "resource"     : "local",
+    "modal"        : "true",
+    "fields"   : [
+                  {
+                   "role"     : "input",
+                   "id"       : "label1",
+                   "label"    : "Login",
+                   "type"     : "label",
+                   "default"  : "header3",
+                   "posthline"   : "true"
+                   },
+                  {
+                   "role"       : "input",
+                   "id"         : "userid",
+                   "label"      : "Enter user id",
+                   "type"       : "text",
+                   "placeholder" : "Enter a user id",
+                   "required"   : "true",
+                   "pattern"  : ".{3,}",
+                   "help"       : "Enter your user id.  If you do not have one, please register",
+                   "size"     : "30"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "password",
+                   "label"    : "Password",
+                   "type"     : "password",
+                   "placeholder" : "Enter your password",
+                   "pattern"  : ".{10,}",
+                   "required" : "true",
+                   "size"     : "30"
+                   ,"hide"    : "forgotpassword"
+                   ,"help"    : "Enter a password of at least 10 characters"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "forgotpassword",
+                   "label"    : "Forgot password",
+                   "type"     : "checkbox",
+                   "help"     : "Check this if you forgot your password",
+                   "hider"    : "true"
+                   },
+                  {
+                   "role"     : "output",
+                   "id"       : "status",
+                   "label"    : "Status",
+                   "type"     : "textarea",
+                   "rows"    : 4,
+                   "cols"    : 50
+                   }
+                  ],
+# the executable will take inputs in json and produce output in json
+    "executable" : "sys_login"
+    ,"submitpolicy" : "all"
+}
