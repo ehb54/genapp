@@ -1189,11 +1189,11 @@ __~debug:ws{          console.log( 'setMsging: connection established' );}
           ga.event( "global", "ws messaging", "connection established" );
           $( '#_state' ).data( "_wssession", conn );
 __~debug:ws{          console.log('websocket opened');}
-          setInterval(function() {
-__~debug:ws{            console.log( "ping/pong keepalive" );}
-            if (ws.bufferedAmount == 0) {
-              ws.send("Keep alive from client"  ); }
-            }, 30000 );
+//          setInterval(function() {
+//__~debug:ws{            console.log( "ping/pong keepalive" );}
+//            if (ws.bufferedAmount == 0) {
+//              ws.send("Keep alive from client"  ); }
+//            }, 30000 );
         }
       , function() {            // When the connection is closed
 __~debug:ws{            console.warn('setMsging connection closed');}
@@ -1206,7 +1206,9 @@ __~debug:ws{            console.warn('setMsging connection closed');}
             }
         }
       , {                       // Additional parameters, we're ignoring the WAMP sub-protocol for older browsers
-            'skipSubprotocolCheck': true
+            'skipSubprotocolCheck': true,
+            'maxRetries': 60,
+            'retryDelay': 2000
         }
     );
 
