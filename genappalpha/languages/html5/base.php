@@ -1,6 +1,7 @@
 <?php
 header('Content-type: application/json');
 # setup php session
+__~debug:basemylog{error_log( "startup __application__ __menu:id__ __menu:modules:id__\n", 3, "/tmp/mylog" );}
 session_start();
 if (!isset($_SESSION['count'])) {
   $_SESSION['count'] = 0;
@@ -677,7 +678,7 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
     foreach ( $keys as $k => $v )
     {
         $a = preg_split( "/-/", $v );
-        __~debug:basemylog{error_log( "preg_split of $v:\n" . json_encode( $a, JSON_PRETTY_PRINT ), 3, "/tmp/mylog" );}
+        __~debug:basemylog{error_log( "preg_split of $v:\n" . json_encode( $a, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/mylog" );}
         if ( !isset( $_REQUEST[ $a[ 0 ] ] ) || !is_array( $_REQUEST[ $a[ 0 ] ] ) ) {
             $_REQUEST[ $a[ 0 ] ] = [];
         }
@@ -693,7 +694,8 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
         unset( $_REQUEST[ $v ] );
     }
 
-__~debug:basemylog{    error_log( "request ready to jsonize\n" . print_r( $_REQUEST, true ) . "\n", 3, "/tmp/mylog" );}
+    __~debug:basemylog{error_log( "request ready to jsonize\n" . print_r( $_REQUEST, true ) . "\n", 3, "/tmp/mylog" );}
+    __~debug:basemylog{error_log( "request in json" . json_encode( $_REQUEST, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/mylog" );}
     $json = json_encode( $_REQUEST );
     $json = str_replace( "'", "_", $json );
     ob_start();
