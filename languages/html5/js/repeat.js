@@ -173,6 +173,7 @@ ga.repeat.change = function( mod, id, init ) {
     children,
     add_html = "",
     add_eval = "",
+    tid,
     i,
     j,
     k;
@@ -271,10 +272,13 @@ ga.repeat.change = function( mod, id, init ) {
 
     case "listbox" :
         
+        tid = id.replace( /-[0-9]+$/, "" ).replace( /^(.*)-([A-ZA-z0-9_]*)$/, "$2" ) + "-" + val;
+
         j = id + "-" + val;
 
-        children = ga.repeat.children( mod, j );
-        __~debug:repeat{ for ( i in children ) { console.log( "ga.repeat.change( " + mod + " , " + id + " ) select child " + i );} }
+        __~debug:repeat{console.log( "ga.repeat.change listbox, j is " + j + " val is " + val + " tid " + tid );}
+        children = ga.repeat.children( mod, tid );
+        __~debug:repeat{for ( i in children ) { console.log( "ga.repeat.change( " + mod + " , " + id + " ) select child " + i );} }
 
         for ( i in children ) {
             k = j + "-" + i;

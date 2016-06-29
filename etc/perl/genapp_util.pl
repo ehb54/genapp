@@ -1206,6 +1206,21 @@ sub check_files {
                 print "id:\n\t" . ( join "\n\t", keys %$x ) . "\n" if keys %$x && $debug;
                 $error .= valid_name( "$f \"id\"", $x );
             }
+            # check for duplicate id's
+            {
+                my $ref_mod = {};
+                my $mod_info = start_json( $json, $ref_mod );
+                
+                my %ids;
+
+                do {
+                    if ( !$$mod_info{ 'fields:id' } ) {
+                        $error .= "Module $f has field without field id defined\n" if $$mod_info{ 'fields:type' } ne "info";
+                    } else {
+                        $error .= "Module $f has fields with duplicate id \"" . $$mod_info{ 'fields:id' } . "\"\n" if $ids{ $$mod_info{ 'fields:id' } }++;
+                    }
+                } while( $mod_info = next_json( $ref_mod, 'fields:id' ) );
+            }
             # check repeaters & repeats
             {
                 my $ref_mod = {};
@@ -1263,10 +1278,6 @@ sub check_files {
                         {
                             $error .= "Module $f field '$k' repeat on '$repeat{ $k }' : missing repeater\n";
                         }
-#                        if ( $repeater{ $k } && $repeater{ $repeat{ $k } } =~ /(integer)/ )
-#                        {
-#                            $warn .= "Module $f field '$k' is a repeat on '$repeat{ $k }' which is a repeater of type '$repeater{ $repeat{ $k } }'. This structure is not currently supported for integer repeat types\n";
-#                        }
                         if ( $repeat{ $k } eq $k )
                         {
                             $error .= "Module $f field '$k' is a self referential repeater\n";
@@ -1277,7 +1288,7 @@ sub check_files {
                         {
                             if ( $depth && $me eq $k )
                             {
-                                $error .= "Module $f field '$k' has  parent repeater which references '$k' as a repeater creating an infinite recursive loop of repeaters\n";
+                                $error .= "Module $f field '$k' has parent repeater which references '$k' as a repeater creating an infinite recursive loop of repeaters\n";
                                 last;
                             }
 

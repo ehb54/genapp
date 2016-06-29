@@ -43,6 +43,7 @@ goto
 implements
 import
 int
+integer
 interface
 let
 long
