@@ -1,0 +1,25 @@
+   {
+      QLabel * lbl = new QLabel( "__fields:label__  ", this );
+      // lbl->setMaximumHeight( 22 );
+      lbl->show();
+      gl->addWidget( lbl, ppos, 0 );
+      panel1_sub_widgets.push_back( lbl );
+
+      QListWidget * lw = new QListWidget( this );
+      //  lb->setMaximumHeight( 22 );
+//      lw->setPalette( *palette_le );
+      lw->show();
+      gl->addWidget( lw, ppos, 1 );
+      panel1_sub_widgets.push_back( lw );
+
+      QString id = "__moduleid__:__fields:id__";
+      __~fields:values{{ QString qs = "~0"; lw->addItem( qs ); panel1_map_input[ QString( "lw:%1" ).arg( qs ) ] = "~1"; }}
+      lw->setCurrentRow( 0 );
+      global_data_types[ id ] = "lw";
+      panel1_widget_map[ id ] = lw;
+      panel1_inputs.push_back( id );
+      save_default_value( id );
+      panel1_map_input[ id ] = "__moduleid__:__fields:name__";
+
+      ppos++;
+   }

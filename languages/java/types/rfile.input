@@ -1,0 +1,10 @@
+__~fields:repeat{repeater_}__fields:role__.add(new HashMap<String, String>(){{
+            __~fields:role{put("role", "__fields:role__");}
+            __~fields:id{put("id", "__fields:id__");}
+            __~fields:label{put("label", "__fields:label__");}
+            __~fields:type{put("type", "__fields:type__");}
+            __~fields:help{put("help", "__fields:help__");}
+            __~fields:repeat{put("repeat", "__fields:repeat__");}
+            __~fields:repeater{put("repeater", "__fields:repeater__");}
+	   }
+});

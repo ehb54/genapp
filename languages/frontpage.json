@@ -1,0 +1,33 @@
+# this is a language file, any language specific data should go here
+{
+    "id"          : "frontpage",
+    "description" : "Frontpage generation",
+    "version"     : 1,
+    "assembly"    : [
+        {
+            "frequency"  : "once"
+            ,"output"     : "css/main.css"
+            ,"inputs"     : [ 
+                { "css/main.css" : "once" }
+            ]
+        }
+        ,{
+            "frequency"  : "once"
+            ,"output"     : "global_header.php"
+            ,"inputs"     : [ 
+                { "header_header.php" : "once"            }
+                ,{ "header_items.php"  : "menu:modules:id" }
+                ,{ "header_footer.php" : "once"            }
+            ]
+        }
+        ,{
+            "frequency"  : "menu:modules:id"
+            ,"output"     : "__menu:modules:id__.php"
+            ,"inputs"     : [ 
+                { "page_header.php"              : "once"            }
+                ,{ "types/__fields:type__.input"  : "fields:id" }
+                ,{ "page_footer.php"              : "once"            }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,20 @@
+# this is a module file, any module specific info belongs here
+{
+    "moduleid" : "sys_status",
+    "label"    : "Status",
+    "submit_label" : "Status",
+    "noreset"  : "true",
+    "resource"     : "local",
+    "fields"   : [
+                  {
+                   "role"     : "input",
+                   "id"       : "label1",
+                   "label"    : "Status",
+                   "type"     : "label",
+                   "default"  : "header3",
+                   "posthline"   : "true"
+                   }
+                  ],
+# the executable will take inputs in json and produce output in json
+    "executable" : "sys_status"
+}

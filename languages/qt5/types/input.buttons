@@ -1,0 +1,37 @@
+   QHBoxLayout * hbl = new QHBoxLayout( 0 );
+   {
+      mQPushButton * pb = new mQPushButton( this );
+      pb->setText( "Submit" );
+      pb->setMaximumHeight( 22 );
+      pb->show();
+      connect( pb, SIGNAL( clicked() ), SLOT( module_submit___menu:id_____menu:modules:id__() ) );
+      hbl->addWidget( pb );
+      hbl->addSpacing( 3 );
+      panel1_sub_widgets.push_back( pb );
+   }
+   {
+      mQPushButton * pb = new mQPushButton( this );
+      pb->setText( "Reset to default values" );
+      pb->setMaximumHeight( 22 );
+      pb->show();
+      connect( pb, SIGNAL( clicked() ), SLOT(module_reset___menu:id_____menu:modules:id__() ) );
+      hbl->addWidget( pb );
+      panel1_sub_widgets.push_back( pb );
+   }
+   gl->addLayout( hbl, ppos, 0, 1, 2 );
+   panel1_sub_layouts.push_back( hbl );
+   ppos++;
+   {
+      QLabel * lbl = new QLabel( "", this );
+//      lbl->setPalette( *palette_lbl_error );
+      lbl->show();
+      gl->addWidget( lbl, ppos, 0, 1, 2 );
+      panel1_sub_widgets.push_back( lbl );
+
+      QString id = "__moduleid__:_errorMessages";
+      global_data_types[ id ] = "lbl";
+      panel1_widget_map[ id ] = lbl;
+      panel1_inputs.push_back( id );
+      save_default_value( id );
+   }
+   ppos++;

@@ -1,0 +1,17 @@
+# this is a module file, any module specific info belongs here
+{
+    "moduleid" : "sys_files",
+    "label"    : "files",
+    "noreset"  : "true",
+    "resource"     : "local",
+    "fields"   : [
+                  {
+                   "role"     : "input",
+                   "id"       : "label1",
+                   "label"    : "Files",
+                   "type"     : "label"
+                  }
+                  ],
+# the executable will take inputs in json and produce output in json
+    "executable" : "sys_files"
+}

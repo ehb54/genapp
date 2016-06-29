@@ -1,0 +1,2 @@
+this_html = '<tr><td colspan=5>__~fields:value{__fields:value__}</td></tr>';
+input_html += this_html;

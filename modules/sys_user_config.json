@@ -1,0 +1,204 @@
+# this is a module file, any module specific info belongs here
+{
+    "moduleid" : "sys_user_config",
+    "label"    : "User configuration",
+    "noreset"  : "true",
+    "resetonload"  : "true",
+    "nojobcontrol" : "true",
+    "resource"     : "local",
+    "modal"        : "true",
+    "fields"   : [
+                  {
+                   "role"     : "input",
+                   "id"       : "label1",
+                   "label"    : "User configuration",
+                   "type"     : "label",
+                   "default"  : "header3",
+                   "posthline"   : "true"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "project",
+                   "label"    : "Select project",
+                   "type"     : "listbox",
+                   "required" : "false",
+                   "pull"     : "project"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "newproject",
+                   "label"    : "New project",
+                   "type"     : "checkbox",
+                   "required" : "false",
+                   "repeater" : "true"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "newprojectname",
+                   "label"    : "Project name",
+                   "type"     : "text",
+                   "pattern"  : "^[a-zA-Z0-9_]+$",
+                   "required" : "true",
+                   "repeat"   : "newproject",
+                   "size"     : "50",
+                   "help"     : "A project name must only contain alphanumeric or underscore characters"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "newprojectdesc",
+                   "label"    : "Description",
+                   "type"     : "textarea",
+                   "required" : "true",
+                   "repeat"   : "newproject",
+                   "rows"    : 4,
+                   "cols"    : 50
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "projectshare",
+                   "label"    : "Share project",
+                   "type"     : "checkbox",
+                   "required" : "false",
+                   "repeater" : "true"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "projectshareproject",
+                   "label"    : "Select project to share",
+                   "type"     : "listbox",
+                   "required" : "false",
+                   "pull"     : "project",
+                   "repeat"   : "projectshare"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "projectsharewith",
+                   "label"    : "Select user",
+                   "type"     : "listbox",
+                   "required" : "false",
+                   "pull"     : "_users",
+                   "repeat"   : "projectshare"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "changepassword",
+                   "label"    : "Change password",
+                   "type"     : "checkbox",
+                   "required" : "false",
+                   "repeater" : "true"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "password",
+                   "label"    : "Current password",
+                   "type"     : "password",
+                   "placeholder" : "Enter your password",
+                   "pattern"  : ".{10,}",
+                   "required" : "true",
+                   "repeat"   : "changepassword",
+                   "size"     : "30"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "password1",
+                   "label"    : "New password",
+                   "type"     : "password",
+                   "required" : "true",
+                   "pattern"  : ".{10,}",
+                   "help"     : "Enter a password of minimum 10 characters length",
+                   "repeat"   : "changepassword",
+                   "size"     : "30"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "password2",
+                   "label"    : "Repeat new password",
+                   "type"     : "password",
+                   "required" : "true",
+                   "pattern"  : ".{10,}",
+                   "match"    : "password1",
+                   "help"     : "Repeat the password of minimum 10 characters length",
+                   "repeat"   : "changepassword",
+                   "size"     : "30"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "changeemail",
+                   "label"    : "Change email address",
+                   "type"     : "checkbox",
+                   "required" : "false",
+                   "repeater" : "true"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "email1",
+                   "label"    : "Email address",
+                   "type"     : "email",
+                   "required" : "true",
+                   "help"     : "Enter a valid email address",
+                   "pull"     : "email",
+                   "repeat"   : "changeemail",
+                   "size"     : "50"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "email2",
+                   "label"    : "Repeat email address",
+                   "type"     : "email",
+                   "required" : "true",
+                   "help"     : "Repeat the valid email address",
+                   "pull"     : "email",
+                   "repeat"   : "changeemail",
+                   "size"     : "50"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "visible",
+                   "label"    : "Allow other users to see your User id",
+                   "type"     : "checkbox",
+                   "help"     : "Setting this flag allows other users to share their projects with you",
+                   "pull"     : "visible"
+                   }
+                  ,{
+                   "role"     : "input",
+                   "id"       : "groups",
+                   "type"     : "group"
+                  }
+                  ,{
+                   "role"     : "input",
+                   "id"       : "updatecolors",
+                   "label"    : "Update colors",
+                   "type"     : "checkbox",
+                   "required" : "false",
+                   "repeater" : "true",
+                   "hideifnot" : "usercolors"
+                   }
+                  ,{
+                   "role"     : "input",
+                   "id"       : "colorbg",
+                   "type"     : "color",
+                   "label"    : "Select a background color",
+                   "repeat"   : "updatecolors",
+                   "pull"     : "color:body:background"
+                  }
+                  ,{
+                   "role"     : "input",
+                   "id"       : "colortext",
+                   "type"     : "color",
+                   "label"    : "Select a text color",
+                   "repeat"   : "updatecolors",
+                   "pull"     : "color:body:color"
+                  }
+                  ,{
+                   "role"     : "output",
+                   "id"       : "status",
+                   "label"    : "Status",
+                   "type"     : "textarea",
+                   "rows"    : 4,
+                   "cols"    : 50
+                   }
+
+                  ],
+# the executable will take inputs in json and produce output in json
+    "executable" : "sys_user_config"
+}

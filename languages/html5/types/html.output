@@ -1,0 +1,5 @@
+<tr><td><label for="__fields:id__">__fields:label__ </label></td><td><div name="__fields:id__" id="__fields:id__"></div></td></tr>
+<script>
+$( "#__fields:id__" ).attr( "type", "div" );
+ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );
+</script>

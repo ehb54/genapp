@@ -1,0 +1,9 @@
+__fields:role__.add(new HashMap<String, String>(){{
+            __~fields:role{put("role", "__fields:role__");}
+            __~fields:id{put("id", "__fields:id__");}
+            __~fields:label{put("label", "__fields:label__");}
+            __~fields:type{put("type", "__fields:type__");}
+            __~fields:height{put("height", "__fields:height__");}
+            __~fields:width{put("width", "__fields:width__");}
+            }
+});

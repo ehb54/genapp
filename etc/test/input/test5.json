@@ -1,0 +1,45 @@
+# this is a language file, any language specific data should go here
+{
+  "id"          : "html5",
+  "description" : "This is our first try at an html5 based genapp module",
+  "version"     : 1,
+# options are for directives in the inputs (one source base can create tweaked versions)
+  "options"     : { "option1" : "true", 
+                    "option2" : "true"
+                  },
+  "assembly_directives" :
+                  {
+                     "replacementif" : { 
+                                         "required" : "true", 
+                                         "checked"  : "true"
+                                       }
+                  },
+  "assembly"    : [
+                   {
+                    "frequency"  : "once",
+                    "output"     : "index.html",
+                    "inputs"     : [ 
+                                    { "base_header.html" : "once"        },
+                                    { "base_items.html"  : "menu:id"     },
+                                    { "base_footer.html" : "once"        }
+                                  ]
+                   }
+                  ,{
+                    "frequency"  : "module",
+                    "output"     : "ajax/__moduleid__.html",
+                    "inputs"     : [ 
+                                    { "types/input.header"   : "once"     },
+                                    { "types/__type__.input" : "modules:input:id" },
+                                    { "types/input.footer"   : "once"     }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "module",
+                    "output"     : "ajax/__moduleid__.php",
+                    "inputs"     : [ 
+                                    { "base.php" : "once" }
+                                   ]
+                   }
+                  ]
+}
+

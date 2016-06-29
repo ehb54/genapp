@@ -1,0 +1,49 @@
+#!/bin/bash
+
+export GENAPP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
+echo genapp base directory is $GENAPP
+
+CPUS=`grep processor /proc/cpuinfo | wc -l`
+CPUS2=$(($CPUS * 2))
+
+printf '%80s\n' | tr ' ' -
+echo "Note: you can provide a -j argument to this command if you want to parallel compile perl."
+echo "      e.g. -j4 for 4 simultaneous processes working on the compilation"
+echo "      Just press control-c and restart if you wish to do this."
+printf '%80s\n' | tr ' ' -
+echo "Your system appears to have $CPUS processors, so you could probably do a -j$CPUS or even a -j$CPUS2 compile.";
+printf '%80s\n' | tr ' ' -
+sleep 2
+
+# is perl installed
+
+PERL=`which perl`
+if [ "$PERL" ]; then 
+    PV=`perl -e 'print $];'`
+    if (( $(echo "$PV >= 5.018" | bc -l) )); then
+      printf "you already have a perl version > 5.18 installed\n";
+      exit;
+    fi
+fi
+
+CC=`which cc 2> /dev/null`;
+if [ -z "$CC" ]; then 
+   echo 
+   echo "You need to have development tools such as a C compilier installed"
+   echo "  For RedHat/Centos: \$ sudo yum -y groupinstall 'Development tools'"
+   echo "  For Ubuntu       : \$ sudo apt-get -y install build-essential"
+   exit
+fi
+
+PERL_GET="http://www.cpan.org/src/perl-5.18.4.tar.bz2"
+
+cd $GENAPP && mkdir tmp perl 2> /dev/null 
+sudo chmod a+rwx tmp && \
+cd tmp && \
+ rm -fr perl* && \
+curl -o perl.tar.bz2 $PERL_GET && \
+tar jxf perl.tar.bz2 && cd perl-5*/ && \
+./Configure -Dprefix=$GENAPP/perl -des && \
+make $*  && \
+make $* test && \
+make install

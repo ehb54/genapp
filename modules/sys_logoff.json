@@ -1,0 +1,22 @@
+# this is a module file, any module specific info belongs here
+{
+    "moduleid" : "sys_logoff",
+    "label"    : "Logoff",
+    "submit_label" : "Logoff",
+    "noreset"  : "true",
+    "nojobcontrol" : "true",
+    "resource"     : "local",
+    "modal"        : "true",
+   "fields"   : [
+                  {
+                   "role"     : "input",
+                   "id"       : "label1",
+                   "label"    : "Logoff",
+                   "type"     : "label",
+                   "default"  : "header3",
+                   "posthline"   : "true"
+                   }
+                  ],
+# the executable will take inputs in json and produce output in json
+    "executable" : "sys_logoff"
+}

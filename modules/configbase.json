@@ -1,0 +1,48 @@
+# this the configuration file which includes any special modules based upon base.php
+{
+    "header" : "system_configuration",
+    "menu" : [
+        { 
+            "id"      : "sys_config",
+            "label"   : "system configuration modules",
+            "modules" : [ 
+                { 
+                    "id"    : "sys_file_manager",
+                    "label" : "File manager"
+                }
+                ,{ 
+                    "id"    : "sys_register_backend",
+                    "label" : "Register"
+                }
+            ]
+        }
+        ,{ 
+            "id"      : "util",
+            "label"   : "utility modules",
+            "modules" : [ 
+                { 
+                    "id"     : "cachedresults"
+                    ,"label" : "Cached results"
+                }
+            ]
+        }
+        ,{ 
+            "id"      : "admin",
+            "label"   : "Admin",
+            "modules" : [ 
+                { 
+                    "id"     : "jobmonitor"
+                    ,"label" : "Job monitor"
+                }
+                ,{ 
+                    "id"     : "jobintegritycheck"
+                    ,"label" : "Integrity check"
+                }
+                ,{ 
+                    "id"     : "sysuserslist"
+                    ,"label" : "User list"
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,74 @@
+#!/usr/bin/env php
+<?php
+include("airavata.php");
+
+# $debug = true;
+
+if ($argc == 3) {
+    $appId = $argv[1];
+
+    # check for defined resource
+
+    $json_decoded = json_decode( $argv[2] );
+    if ( $json_decoded == null ) {
+        echo "{'error':'airavatarun received malformed JSON input.'}";
+        exit;
+    }
+
+    jsondump( '$json_decoded', $json_decoded );
+    if ( !isset( $json_decoded->_airavataresource ) && !empty( $json_decoded->_airavataresource ) ) {
+        echo "{'error':'No Airavata resource defined.'}";
+        exit;
+    }
+
+    $GLOBALS['SPECIFIED_RESOURCE'] = getSpecifiedResource( $json_decoded->_airavataresource );
+
+    # setup up udp messaging if available
+
+    if ( isset( $GLOBALS['udp'] ) ) {
+        if ( isset( $json_decoded->_uuid ) ) {
+            $GLOBALS['udp']->socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+            $GLOBALS['udp']->msg    = Array( "_uuid"    => $json_decoded->_uuid );
+        } else {
+            unset( $GLOBALS['udp'] );
+        }
+    }
+
+    sendudpmsg( "startup" );
+
+    $json = "'$argv[2]'";
+    jsondump( 'json', $json );
+    $projId = createProject("test");
+    $projId = json_decode($projId);
+    sendudpmsg( "project created" );
+    if(isset($projId->ProjectId)){
+        $expId=createExperiment("exp5", $projId->ProjectId, $appId, $json);
+        sendudpmsg( "experiment created" );
+        $expId = json_decode($expId);
+        if(isset($expId->ExperimentId)){
+            $launch = launchExperiment($expId->ExperimentId);
+            $launch = json_decode($launch);
+            sendudpmsg( "experiment launched" );
+            if(isset($launch->isExperimentLaunched)){
+                $results = getOutput($expId->ExperimentId);
+                $results_json = json_decode($results);    
+                jsondump( "results_json", $results_json );
+                if(isset($results_json->output)){
+                    sendudpmsg( "" );
+                    echo $results_json->output;
+                }else{
+                    echo $results;
+                }
+            }else{
+                echo  "{\"error\":\"".$launch->error."\"}";
+            }
+        }else{
+            echo  "{\"error\":\"".$expId->error."\"}";
+        }
+    }else{
+        echo  "{\"error\":\"".$projId->error."\"}";
+    }
+} else {
+    echo  "{\"error\":\"insufficient arguments\"}";
+}
+?>

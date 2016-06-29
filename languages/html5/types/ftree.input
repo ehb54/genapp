@@ -1,0 +1,12 @@
+this_html = '<tr><td><label for="__fields:id__" >__fields:label__ </label></td><td><div name="__fields:id__" id="__fields:id__"></div></td></tr>';
+this_eval = '$("#__fields:id__")' + 
+__~fields:single{'.on("ready.jstree open_node.jstree",function(e){$("#__fields:id__ .jstree-checkbox").css("display","none");$("#__fields:id__ .jstree-leaf > a").children(".jstree-checkbox").css("display","inline-block");})' +}
+__~fields:singlepath{'.on("ready.jstree open_node.jstree",function(e){$("#__fields:id__ .jstree-leaf > a").children(".jstree-checkbox").css("display","none");})' + }
+__~fields:report{'.on("changed.jstree",function(e,d){var i=0,j=d.selected.length,r=[],t;for(;i<j;i++){t=d.instance.get_node(d.selected[i]);if(!t.children.length){r.push($.base64.decode(t.id).substr(2));}}$("#__fields:report__").html( j? "<i>Server</i>: " + r : " " );})' +}
+__~fields:reportpath{'.on("changed.jstree",function(){var s=$(this).jstree(true),i=0,t=s.get_top_checked(true),j=t.length,r=[];for(;i<j;i++){if(!s.is_leaf(t[i])){r.push($.base64.decode(t[i].id).substr(2));break;}};$("#__fields:reportpath__").html( j? "<i>Server</i>: " + r : " " );})' + }
+__~fields:clearval{'.on("changed.jstree",function(e,d){if(d.selected.length){$("#__fields:clearval__").val("");}})' + }
+'.jstree({plugins:[__~fields:single{"singleselect",}__~fields:singlepath{"singleselectpath",}"checkbox","contextmenu"],' +
+'core:{__~fields:single{"multiple":false,}__~fields:singlepath{"multiple":false,}data:function(e,c){ga.fc(e.id,c)},check_callback:function(){return 0;}},contextmenu:{items:function(e){return{Refresh:{label:"Refresh",separator_after:!0,action:function(){ga.fc.clear(e.parent)}},Remove:{label:"Remove",action:function(e){var c=$.jstree.reference(e.reference),t=c.get_node(e.reference);console.log("remove");ga.fc.delete_warn_delete(c.is_selected(t)?c.get_selected():[t.id])}}}}}}),$("#__fields:id__").attr("type","div"),ga.fc.trees["#__fields:id__"]="file";';
+input_trees.push( "__fields:id__" );
+input_html += this_html;
+input_eval += this_eval;

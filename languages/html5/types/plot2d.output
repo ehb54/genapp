@@ -1,0 +1,35 @@
+</table>
+<p>
+
+<label for="__fields:id__">__fields:label__</label></tr><tr>
+<table class="help_link">
+<tr>
+   <td></td>
+   <td id="__fields:id___title" style="text-align:center"__~fields:titlefontclass{ class="__fields:titlefontclass__"}></td>
+   <td id="__fields:id___xy" class="coord"></td>
+</tr>
+<tr>
+   <td id="__fields:id___ylabel" style="text-align:center"></td>
+   <td id="__fields:id__" type="plot2d" class="plot2ddef" style="__~fields:width{width:__fields:width__;}__~fields:height{height:__fields:height__}"></td>
+   <td id="__fields:id___legend"></td>
+</tr>
+<tr>
+   <td></td>
+   <td id="__fields:id___xlabel" style="text-align:center"></td>
+   <td></td>
+</tr>
+</table>
+__~fields:help{<span class="help">__fields:help__</span>}
+</p>
+
+<script>
+var tmp = $.plot( $( "#__fields:id__" ), [[]], gd.data( "_plot_options" ) );
+ga.value.set.plot2d.pan( "#__fields:id__", __~fields:pan{1}0 );
+ga.value.set.plot2d.zoom( "#__fields:id__", __~fields:zoom{1}0 );
+ga.value.set.plot2d.hover( "#__fields:id__", __~fields:hover{1}0 );
+ga.value.set.plot2d.pkg( "__moduleid___output", "#__fields:id__" );
+__~fields:hover{$("#__fields:id__").bind("plothover",function(e,p,i){var r=ga.set("plot2d:precision");$("#__fields:id___xy").addClass("coordvisible").text("( "+p.x.toPrecision(r)+" , "+p.y.toPrecision(r)+" )");}).on("mouseout", function(){setTimeout(function(){$("#__fields:id___xy").removeClass( "coordvisible" );}, 1500 )});}
+ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );
+ga.value.extra_resets( "__fields:id__" );
+</script>
+<table>

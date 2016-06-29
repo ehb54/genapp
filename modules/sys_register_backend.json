@@ -1,0 +1,15 @@
+# this is a module file, any module specific info belongs here
+{
+    "moduleid" : "sys_register_backend",
+    "label"    : "Verify email",
+    "prefix"   : "register",
+    "resource"     : "local",
+    "fields"   : [
+        {
+            "role"     : "input",
+            "id"       : "label1",
+            "label"    : "Register backend",
+            "type"     : "label"
+        }
+    ]
+}

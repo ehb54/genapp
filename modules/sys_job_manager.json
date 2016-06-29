@@ -1,0 +1,98 @@
+{
+    "moduleid" : "sys_job_manager",
+    "executable" : "sys_job_manager",
+    "label"    : "Submitted Jobs",
+    "submit_label" : "Submit",
+    "resetonload"  : "true",
+    "noreset"  : "true",
+    "height"      : "65vh",
+    "nojobcontrol"  : "true",
+    "resource"     : "local",
+    "modal"        : "true",
+    "fields"   : [
+                  {
+                   "role"     : "input",
+                   "id"       : "label1",
+                   "label"    : "Jobs",
+                   "type"     : "label",
+                   "default"  : "header3"
+                  },
+                  {
+                   "role"     : "input",
+                   "id"       : "serverdate",
+                   "label"    : "Server date",
+                   "type"     : "label",
+                   "pull"     : "datetime",
+                   "help"     : "This is the date and time from the server at the time you opened this window"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "jobgrid",
+                   "type"     : "grid",
+                   "url"      : "ajax/sys_config/sys_jobs.php",
+                   "help"     : "right click on a column header to sort"
+                  },
+#                  {
+#                   "role"    : "input",
+#                   "id"      : "action",
+#                   "name"    : "action",
+#                   "label"   : "Action",
+#                   "type"    : "listbox",
+#                   "values"  : "Refresh~refresh~Cancel~cancel~Clear lock~clearlock~Remove job~removejob~Reattach~reattach",
+#                   "default" : "refresh"
+#                   },
+                  {
+                   "role"    : "input",
+                   "id"      : "refresh",
+                   "name"    : "action",
+                   "label"   : "Refresh",
+                   "type"    : "radio",
+                   "checked" : "true",
+                   "norow"   : "on"
+                   ,"help"    : "Selecting this will refresh the job state table above."
+                   },
+                  {
+                   "role"    : "input",
+                   "id"      : "cancel",
+                   "name"    : "action",
+                   "label"   : "Cancel",
+                   "type"    : "radio",
+                   "norow"   : "on"
+                   ,"help"    : "Selecting this will cancel a running job or jobs selected above. Not yet functional."
+                   },
+                  {
+                   "role"    : "input",
+                   "id"      : "clearlock",
+                   "name"    : "action",
+                   "label"   : "Clear Lock",
+                   "type"    : "radio",
+                   "norow"   : "on"
+                   ,"help"    : "Selecting this will clear the lock on a running job or jobs selected above. Use with caution, as if the job is really still running you could clobber the results by running another job in that directory."
+                   },
+                  {
+                   "role"    : "input",
+                   "id"      : "removejob",
+                   "name"    : "action",
+                   "label"   : "Remove Job",
+                   "type"    : "radio",
+                   "norow"   : "on"
+#                   ,"help"    : "Selecting this will remove the job or jobs selected from this list. This will not remove the disk files or remove the directory."
+                   },
+                  {
+                   "role"    : "input",
+                   "id"      : "reattach",
+                   "name"    : "action",
+                   "label"   : "Reattach",
+                   "type"    : "radio"
+#                   ,"help"    : "Selecting this will reattach to a running job selected above or display results from a previously running job."
+                   },
+                  {
+                   "role"    : "output",
+                   "id"      : "messages",
+                   "label"   : "Messages",
+                   "type"    : "textarea",
+                   "rows"    : 8,
+                   "cols"    : 60
+                  }
+                  ]
+}

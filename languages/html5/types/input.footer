@@ -1,0 +1,392 @@
+if( skipped_row == 1 ){ input_html += "</tr>"; }
+input_html += '</table>';
+$( '#__moduleid___input_area' ).html( input_html );
+eval( input_eval );
+</script>
+<p><button id="__moduleid___submit" class="help_link"><span class="buttontext">Submit</span></button>
+__~help:submit{<span class="help">__help:submit__</span>}
+<button id="__moduleid___reset" class="help_link"><span class="buttontext">Reset to default values</span></button>
+__~help:reset{<span class="help">__help:reset__</span>}
+__~newsession{<button id="__moduleid___newsession"><span class="buttontext">Start new session</span></button>}
+</p>
+<span id="__moduleid___progress"></span>
+<script>
+__~noreset{$( "#__moduleid___reset" ).remove();}
+__~submit_label{$( "#__moduleid___submit .buttontext" ).html( "__submit_label__" );}
+__~nosubmit{$( "#__moduleid___submit" ).remove();}
+__~hideifnotlogon{if(!$( "#_state" ).data( "_logon" ).length){$( "#__moduleid___submit" ).hide();$( "#__moduleid___reset" ).hide();}}
+__~newsession{$( "#__moduleid___newsession" ).click( function() { getSid(); return false; });}
+
+var __moduleid___output_msgs = $("#__moduleid___output_msgs");
+__moduleid___output_msgs.text( "" );
+
+var __moduleid___timeout_handler = "unset";
+var __moduleid___timeout_handler_uuid;
+
+function get_results___moduleid__( id, last_timeout, getlastmsg, getinput )
+{
+__~debug:job{    console.log( "get results 1 id " + id );}
+//             url:"ajax/get_results.php?_window=" +  window.name + "&_logon=" +$( "#_state" ).data( "_logon" ) + '&_uuid=' + id,
+    var job_status = "";
+    $.getJSON( 
+             "ajax/get_results.php",
+             {
+                tagmode: "any",
+                format: "json",
+                _window : window.name,
+                _logon : $( "#_state" ).data( "_logon" ),
+                _uuid : id,
+                _getlastmsg : getlastmsg,
+                _getinput : getinput ? true : false
+             } )
+    .done( function( data, status, xhr ) {
+__~debug:job{        console.log( "get results 2" );}
+           var do_refresh = 1;
+__~nojobcontrol{           do_refresh = 0;}
+           if ( do_refresh ) {
+              ga.fc.clear( $.base64.encode( "./" + $( "#_state" ).data( "_project" ) ) );
+              ga.jc.clear_leaf( id );
+           }
+
+           job_status = ga.data.update( "__moduleid__", data ).job_status;
+           if ( job_status == "complete" ||
+                job_status == "cancelled" ||
+                job_status == "failed" )
+           {
+              if ( __moduleid___timeout_handler != "unset" )
+              {
+                  clearTimeout( __moduleid___timeout_handler );
+                  __moduleid___timeout_handler = "unset";
+              }
+              unsubMsging( id, "__moduleid__" );
+              eval( __moduleid___done_eval );
+           } else {
+               if ( !last_timeout || last_timeout < 2000 )
+               { 
+                  last_timeout = 2000;
+               } else {
+                  if ( last_timeout < 16000 )
+                  {
+                      last_timeout *= 2;
+                  } else {
+                      last_timeout = 16000;
+                  }
+               }
+__~debug:job{               console.log( "another set timeout " + last_timeout );}
+               __moduleid___timeout_handler =  setTimeout( get_results___moduleid__, last_timeout, id, last_timeout, 0 );
+               __moduleid___timeout_handler_uuid = id;
+           }
+          } )
+    .fail( function( xhr, status, errorThrown ) {
+__~debug:job{        console.log( "get results fail" );}
+           $( "#__moduleid___results" ).html( "<span class=\"warning\"> Failed: " + status + " : '" + xhr.status + ":" + errorThrown + "' on URL ajax/tools/center.php </span>" );
+           $('#__moduleid___progress').html( "" );
+           if ( __moduleid___timeout_handler != "unset" )
+           {
+               clearTimeout( __moduleid___timeout_handler );
+               __moduleid___timeout_handler = "unset";
+           }
+           unsubMsging( id, "__moduleid__" );
+           eval( __moduleid___done_eval );
+          } );
+    return false;
+};
+
+function msg___moduleid__ ( id, data )
+{
+   ga.data.update( "__moduleid__", data, get_results___moduleid__, id );
+};
+
+$( "#__moduleid___submit" ).click( function( e ) {
+   e.preventDefault();
+   e.returnValue = false;
+   if ( __moduleid___timeout_handler != "unset" ) {
+       __~debug:jobtimeout{console.log( "Unsetting previous handler uuid " + __moduleid___timeout_handler_uuid );}
+       clearTimeout( __moduleid___timeout_handler );
+       if ( __moduleid___timeout_handler_uuid ) {
+           unsubMsging( __moduleid___timeout_handler_uuid, "__moduleid__" );
+       }
+       __moduleid___timeout_handler = "unset";
+   }
+   ga.value.resetDefaultValues( "__moduleid___output", true );
+
+   __~captcha{ga.captcha( do___moduleid___submit, $(this) ); return false;}
+   return do___moduleid___submit( $(this) );
+});
+
+function do___moduleid___submit( $form, airavataresource, skipcached ) {
+
+   var $ok = 0;
+   __~nojobcontrol{   $ok = 1;}
+   __~debug:valuenx{ga.valuen.save( "__moduleid__" ); if (!$ok) {return false;};}
+
+   ga.event( "", "__moduleid__", "submit clicked" );
+
+   __~license{if(!ga.license("__license__")){return false;}}
+
+__~submit_cb{   ga.altfile.bdata[ "__moduleid__" ].cb("#__submit_cb__"); ga.altfile.button.cb(); return false;}
+
+__~debug:job{   console.log( "you clicked" );}
+
+   if ( !ga.valid.checksubmit( "__moduleid__" ) ) {
+       ga.valid.showerrormessage();
+       return false;
+   }
+
+   if ( ga.specproj.data.length ) {
+      if ( $( "#_state" ).data( '_logon' ) &&
+           $( "#_state" ).data( '_logon' ).length ) {
+          $( "#sel_project" ).html( ga.specproj.gname() );
+          $( "#_state" ).data( '_project', ga.specproj.gname() );
+          __~debug:specproj{console.log( "setting specproject" );}
+      }
+   }  
+
+   if ( !airavataresource ) {
+      __~debug:airavata{console.log( "airavataresource not defined" );}
+      switch( airavataresource = ga.airavata.select( "__resource__", "__airavataselect__", do___moduleid___submit, $form ) ) {
+      case "deferred" : __~debug:airavata{console.log( "airavata submit deffered" ); }return false; break;
+      case "abort"    : __~debug:airavata{console.log( "airavata submit aborted" ); }return false; break;
+      case "notused"  : __~debug:airavata{console.log( "not airavata" ); }break;
+      }
+      __~debug:airavata{console.log( "airavata resource is " + airavataresource );}
+   }
+   __~debug:airavata{console.log( "airavata resource is " + airavataresource );}
+
+   $.ajax({
+       type: 'get'
+       ,url: "ajax/sys_config/sys_joblocked.php?_window=" +  window.name + "&_logon=" + $( "#_state" ).data( "_logon" )
+__~submitpolicy{ + "&_submitpolicy=__submitpolicy__"}
+__~cache{ + "&_cache_module=" + encodeURIComponent( "__moduleid__/" + $( "#_state" ).data( "_project" ) ) }
+__~jobweight{ + "&_jobweight=" + "__jobweight__"}
+       ,context: $form
+       ,success: function( data ) { // your success handler
+__~debug:job{                 console.log( "joblocked returned:" + data );}
+          if ( !$ok )
+          {
+          switch ( data )
+          {
+             case "1" :
+             {
+                 messagebox( { icon:"warning.png", text:"This project directory is currently locked by another project.\nYou can wait until it completes, change the project in user configuration or clear the lock in the job manager." } );
+                 return;
+             } break;
+             case "2" :
+             {
+                 messagebox( { icon:"warning.png", text:"You must be logged in to submit this module." } );
+                 return;
+             } break;
+             case "0" :
+             {
+__~debug:job{                 console.log( "ok, but we are not submitting yet" );}
+                 $ok = 1;
+             } break;
+             default : 
+             {
+                if ( /^Your job/.test( data ) ) {
+                   messagebox( { icon : "warning.png",
+                                 text : data } );
+                   return;
+                }
+                __~debug:cache{console.log( "cache check found uuid " + data );}
+                if ( skipcached ) {
+                    $ok = 1;
+                } else {
+                    return ga.cache.msg( "__~cachefound{__cachefound__}", "__~cachedelete{__cachedelete__}", get_results___moduleid__, do___moduleid___submit, data, $form, airavataresource );
+                }
+             } break;
+          }
+          }
+       }
+       ,error: function() { // your error handler
+          messagebox( { icon:"toast.png", text:"Checking the project lock failed. This is possibly a server or network issue" } );
+       }
+       ,complete: function() { 
+          this.off('submit');
+          if ( $ok )
+          {
+__~debug:job{              console.log( "complete, we could submit here" );}
+
+              $( "#__moduleid___results" ).text( "" );
+__~debug:ajax{    console.log( $( "#__moduleid__" ).serializeArray() );}
+              ga.value.saveLastValues( "__moduleid__" );
+              ga.value.resetDefaultValues( "__moduleid___output", true );
+
+              var found_errors = 0;
+              $("#__moduleid__").find("input").each(function(i){
+                 if ( $(this).attr( 'required' ) && $(this).val().length == 0 )
+                 {
+                    var tag =  "#__moduleid__ " + "#" + $(this).attr('id') + "_msg";
+__~debug:ajax{          console.log( "missing: " + tag );}
+                    $( tag ).html( "missing required field" );
+                    found_errors = 1;
+                 }
+              });
+              if ( found_errors ) {
+                  return;
+              }
+
+    var tree_html = "";
+    $( "._hidden_tree_selects" ).remove( );
+    $.each( input_trees, function( k, v ){
+__~debug:_tree{        console.log( "input_trees k " + k + " v " + v );}
+        $( 'input[type=hidden][name="' + v + '[]"]' ).remove();
+        var selectedElms = $('#' + v).jstree("get_selected", true);
+        var i = 0;
+        $.each(selectedElms, function() {
+           tree_html += '<input type="hidden" name="' + v + '[]" value="' + this.id + '" class="_hidden_tree_selects"/>';
+__~debug:_tree{           console.log( "this.id:" + this.id );}
+        });
+    });
+__~debug:_tree{    console.log( tree_html );}
+    $( this ).append( tree_html );
+
+__~session{   var input = $("<input>").attr("type", "hidden").attr("name", "_sid").val( $( "#global_data" ).data( "sid" ) );$( this ).append($(input)); }
+    var logonadd = $("<input>").attr("type", "hidden").attr("name", "_logon").val( $( "#_state" ).data( "_logon" ) );$( this ).append($(logonadd));
+    var projectadd = $("<input>").attr("type", "hidden").attr("name", "_project").val( $( "#_state" ).data( "_project" ) );$( this ).append($(projectadd));
+    var windowadd = $("<input>").attr("type", "hidden").attr("name", "_window").val( window.name );$( this ).append($(windowadd));
+    var vuuid = uuid.v1();
+__~debug:job{    console.log( "uuid:" + vuuid );}
+__~debug:jc{    console.log( "uuid: " + vuuid );}
+
+__~navigator{       $( this ).append( $("<input>").attr("type", "hidden").attr("name", "_navigator").val( navigator.userAgent ) );}
+__~eventlog{        $( this ).append( $("<input>").attr("type", "hidden").attr("name", "_eventlog").val( ga.event.list() ) );}
+__~docrootexecutable{$( this ).append( $("<input>").attr("type", "hidden").attr("name", "_docrootexecutable").val( "__docrootexecutable__" ) );}
+
+    if ( airavataresource != "notused" ) {
+        $( this ).append( $("<input>").attr("type", "hidden").attr("name", "_airavataresource").val( airavataresource ) );
+    }
+
+    var uuidadd = $("<input>").attr("type", "hidden").attr("name", "_uuid").val( vuuid );$( this ).append($(uuidadd));
+//    ga.altfile.add( "__moduleid__" );
+    ga.valuen.addhtml( "__moduleid__" );
+
+    subMsging( vuuid, msg___moduleid__, "__moduleid__" );
+
+    var formData = new FormData($('form')[0]);
+__~debug:ajax{    console.log( "calling ajax" );}
+
+    $('#__moduleid___progress').html( "Uploading:<progress></progress>" );
+
+    var job_status = "";
+
+    ga.event( "", "__moduleid__", "submit: passed submit checks, submitting" );
+
+    $.ajax( {
+             dataType: "json",
+             cache:false,
+//             timeout:3000,  // for testing
+             type:"POST",
+             url:"ajax/__menu:id__/__moduleid__.php",
+             data: formData,
+             xhr: function() {  // Custom XMLHttpRequest
+                 var myXhr = $.ajaxSettings.xhr();
+                 if(myXhr.upload){ // Check if upload property exists
+                     myXhr.upload.addEventListener('progress',
+                         function(e) {
+                         if(e.lengthComputable){
+                           $('#__moduleid___progress progress').attr({value:e.loaded,max:e.total});
+                         } }
+//                     progressHandlingFunction
+                    , false);
+                 }
+                 return myXhr;
+             },
+             contentType: false,
+             processData: false
+            } )
+    .done( function( data, status, xhr ) {
+__~debug:ajax{           console.log( "data, status, xhr" );}
+__~debug:ajax{           console.log( data );}
+__~debug:ajax{           console.log( status );}
+__~debug:ajax{           console.log( xhr );}
+// refresh cache for this project
+           $('#__moduleid___progress').html( "" );
+   
+           var do_refresh = 1;
+__~nojobcontrol{           do_refresh = 0;}
+           if ( do_refresh ) {
+              ga.fc.clear( $.base64.encode( "./" + $( "#_state" ).data( "_project" ) ) );
+              ga.jc.clear_leaf( vuuid );
+           }
+           
+// loop through data pairs
+           __moduleid___output_msgs.text( "" );
+           job_status = ga.data.update( "__moduleid__", data ).job_status;
+
+           if ( job_status == "complete" ||
+                job_status == "cancelled" ||
+                job_status == "failed" )
+           {
+               if ( __moduleid___timeout_handler != "unset" )
+               {
+                   clearTimeout( __moduleid___timeout_handler );
+                   __moduleid___timeout_handler = "unset";
+               }
+               unsubMsging( vuuid, "__moduleid__" );
+               eval( __moduleid___done_eval );
+           } else {
+               __moduleid___timeout_handler = setTimeout( get_results___moduleid__, 2000, vuuid, 2000, 0 );
+               __moduleid___timeout_handler_uuid = vuuid;
+__~debug:job{               console.log( "set timeout 2000" );}
+           }
+          } )
+    .fail( function( xhr, status, errorThrown ) {
+__~debug:ajax{           console.log( "xhr, status, errorThrown" );}
+__~debug:ajax{           console.log( xhr );}
+__~debug:ajax{           console.log( status );}
+__~debug:ajax{           console.log( errorThrown );}
+           $( "#__moduleid___results" ).html( "<span class=\"warning\"> Failed: " + status + " : '" + xhr.status + ":" + errorThrown + "' on URL ajax/__menu:id__/__moduleid__.php </span>" );
+           $('#__moduleid___progress').html( "" );
+           if ( __moduleid___timeout_handler != "unset" )
+           {
+               clearTimeout( __moduleid___timeout_handler );
+               __moduleid___timeout_handler = "unset";
+           }
+           unsubMsging( vuuid, "__moduleid__" );
+           eval( __moduleid___done_eval );
+          } );
+          } else {
+__~debug:job{              console.log( "complete but locked" );}
+          }
+       }
+   });
+} 
+
+__moduleid___reset = function() {
+    __~debug:valuenx{ga.valuen.restore( "__moduleid__" ); return false;}
+    if ( !__~textarea:rows{1}0 ) {
+        // required to reset scrollheight ... 
+        document.getElementById( "__moduleid___output_textarea" ).style.height = 0;
+    }
+
+    if ( __moduleid___timeout_handler != "unset" ) {
+       __~debug:jobtimeout{console.log( "Unsetting previous handler uuid " + __moduleid___timeout_handler_uuid );}
+       clearTimeout( __moduleid___timeout_handler );
+       if ( __moduleid___timeout_handler_uuid ) {
+           unsubMsging( __moduleid___timeout_handler_uuid, "__moduleid__" );
+       }
+       __moduleid___timeout_handler = "unset";
+    }
+    ga.event( "", "__moduleid__", "reset clicked" );
+    ga.valid.clearerrorcounter();
+    //    ga.value.resetDefaultValues( "__moduleid__" );
+    ga.valuen.restore.dflt(  "__moduleid__" );
+    ga.value.resetDefaultValues( "__moduleid___output", true );
+    __~debug:repeat{console.log( "input_repeats:" + input_repeats );}
+    eval( input_repeats );
+    return false;
+}
+
+$( "#__moduleid___reset" ).click( function() {
+   return __moduleid___reset();
+});
+
+setHoverHelp();
+__~resetonload{ga.value.resetDefaultValues( "__moduleid__" );ga.value.resetDefaultValues( "__moduleid___output" ); ga.value.resetDefaultValue( "__moduleid___output", "__moduleid___output_msgs" );}
+__~resetoutonload{ga.value.resetDefaultValues( "__moduleid___output" ); ga.value.resetDefaultValue( "__moduleid___output", "#__moduleid___output_msgs" );}
+eval( input_repeats );
+ga.pull.doPull();
+</script>
+</form>
+<div id="__moduleid___results"></div>

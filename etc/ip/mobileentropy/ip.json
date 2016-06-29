@@ -1,0 +1,24 @@
+{
+    "vm" : {
+        "name"       : "sassie-webmobile"
+        ,"ip"        : "10.0.1.50"
+        ,"broadcast" : "10.0.1.255"
+        ,"netmask"   : "255.255.255.0"
+        ,"gateway"   : "10.0.1.1"
+    }
+
+    ,"host" : {
+        "name"     : "mobileentropy"
+        ,"ip"       : "10.0.1.27"
+    }
+
+    ,"dns"     : [
+# a.resolvers.level3.net
+        "4.2.2.1"
+# resolver{1,2,3,4}.opendns.com
+        ,"208.67.222.222"
+        ,"208.67.220.220"
+        ,"208.67.220.222"
+        ,"208.67.222.220"
+    ]
+}

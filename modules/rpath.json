@@ -1,0 +1,47 @@
+# this is a module file, any module specific info belongs here
+{
+    "moduleid"     : "rpath",
+    "label"        : "Rpath",
+    "executable"   : "rpath",
+    "noreset"      : "true",
+    "submit_label" : "OK",
+    "height"       : "65vh",
+    "nojobcontrol" : "true",
+    "nooutputhr"   : "true",
+    "submit_cb"    : "selpaths",
+    "resource"     : "local",
+    "modal"        : "true",
+    "fields"   : [
+                  {
+                   "role"     : "input",
+                   "id"       : "rpathtext",
+                   "label"    : "Choose a path",
+                   "type"     : "label",
+                   "default"  : "header3",
+                   "posthline": "true",
+                   "colspan"  : 4
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "serverdate",
+                   "label"    : "Server date",
+                   "type"     : "label",
+                   "pull"     : "datetime",
+                   "help"     : "This is the date and time from the file system on the server at the time you opened this window"
+                   },
+                  {
+                   "role"       : "input",
+                   "id"         : "selpaths",
+                   "label"      : "Server paths",
+                   "type"       : "ftree",
+                   "singlepath" : "true",
+                   "reportpath" : "selpath"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "selpath",
+                   "label"    : "Selected path",
+                   "type"     : "label"
+                   }
+                  ]
+}

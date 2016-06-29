@@ -1,0 +1,43 @@
+# this is a project menu file
+{
+ "header" : "Sassie 2",
+ "menu" : [
+           { 
+            "id"      : "Build",
+            "icon"    : "pngs/sassie_build.png",
+            "modules" : [ 
+                         { 
+                          "id"    : "sassie_build_1",
+                          "label" : "Build 1",
+                          "views" : [ "Input", "Output", "Plots", "OpenGL" ]
+                         },
+                         { 
+                          "id"    : "sassie_build_2",
+                          "label" : "Build 2",
+                          "views" : [ "Input", "Output", "Plots", "OpenGL" ]
+                         }
+                        ]
+            },
+           { 
+            "id"      : "Tools",
+            "icon"    : "pngs/sassie_tools.png",
+            "modules" : [ 
+                         { 
+                          "id"    : "sassie_center",
+                          "label" : "Center",
+                          "views" : [ "Input", "Output", "Plots", "OpenGL" ]
+                         },
+                         { 
+                          "id"    : "sassie_align",
+                          "label" : "Align",
+                          "views" : [ "Input", "Output", "Plots", "OpenGL" ]
+                         },
+                         { 
+                          "id"    : "sassie_data_interpolation",
+                          "label" : "Data Interpolation",
+                          "views" : [ "Input", "Output", "Plots", "OpenGL" ]
+                         }
+                        ]
+            }
+          ]
+}

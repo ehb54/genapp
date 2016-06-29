@@ -1,0 +1,133 @@
+--------------------------------------------------------------------------------
+test5.json:
+--------------------------------------------------------------------------------
+----------------------------------------
+ pos is 0 mpos is 6
+----------------------------------------
+assembly:frequency once
+assembly:inputs:base_header.html once
+assembly:output index.html
+assembly_directives:replacementif:checked true
+assembly_directives:replacementif:required true
+description This is our first try at an html5 based genapp module
+id html5
+options:option1 true
+options:option2 true
+version 1
+----------------------------------------
+ pos is 1 mpos is 6
+----------------------------------------
+assembly:frequency once
+assembly:inputs:base_items.html menu:id
+assembly:output index.html
+assembly_directives:replacementif:checked true
+assembly_directives:replacementif:required true
+description This is our first try at an html5 based genapp module
+id html5
+options:option1 true
+options:option2 true
+version 1
+----------------------------------------
+ pos is 2 mpos is 6
+----------------------------------------
+assembly:frequency once
+assembly:inputs:base_footer.html once
+assembly:output index.html
+assembly_directives:replacementif:checked true
+assembly_directives:replacementif:required true
+description This is our first try at an html5 based genapp module
+id html5
+options:option1 true
+options:option2 true
+version 1
+----------------------------------------
+ pos is 3 mpos is 6
+----------------------------------------
+assembly:frequency module
+assembly:inputs:types/input.header once
+assembly:output ajax/__moduleid__.html
+assembly_directives:replacementif:checked true
+assembly_directives:replacementif:required true
+description This is our first try at an html5 based genapp module
+id html5
+options:option1 true
+options:option2 true
+version 1
+----------------------------------------
+ pos is 4 mpos is 6
+----------------------------------------
+assembly:frequency module
+assembly:inputs:types/__type__.input modules:input:id
+assembly:output ajax/__moduleid__.html
+assembly_directives:replacementif:checked true
+assembly_directives:replacementif:required true
+description This is our first try at an html5 based genapp module
+id html5
+options:option1 true
+options:option2 true
+version 1
+----------------------------------------
+ pos is 5 mpos is 6
+----------------------------------------
+assembly:frequency module
+assembly:inputs:types/input.footer once
+assembly:output ajax/__moduleid__.html
+assembly_directives:replacementif:checked true
+assembly_directives:replacementif:required true
+description This is our first try at an html5 based genapp module
+id html5
+options:option1 true
+options:option2 true
+version 1
+----------------------------------------
+ pos is 6 mpos is 6
+----------------------------------------
+assembly:frequency module
+assembly:inputs:base.php once
+assembly:output ajax/__moduleid__.php
+assembly_directives:replacementif:checked true
+assembly_directives:replacementif:required true
+description This is our first try at an html5 based genapp module
+id html5
+options:option1 true
+options:option2 true
+version 1
+----------------------------------------
+rewind, search for changes in 'menu:id'
+----------------------------------------
+assembly:frequency once
+assembly:inputs:base_header.html once
+assembly:output index.html
+assembly_directives:replacementif:checked true
+assembly_directives:replacementif:required true
+description This is our first try at an html5 based genapp module
+id html5
+options:option1 true
+options:option2 true
+version 1
+----------------------------------------
+rewind, search for changes in 'menu:modules:id'
+----------------------------------------
+assembly:frequency once
+assembly:inputs:base_header.html once
+assembly:output index.html
+assembly_directives:replacementif:checked true
+assembly_directives:replacementif:required true
+description This is our first try at an html5 based genapp module
+id html5
+options:option1 true
+options:option2 true
+version 1
+----------------------------------------
+rewind, search for changes in 'menu:modules:id|menu:id'
+----------------------------------------
+assembly:frequency once
+assembly:inputs:base_header.html once
+assembly:output index.html
+assembly_directives:replacementif:checked true
+assembly_directives:replacementif:required true
+description This is our first try at an html5 based genapp module
+id html5
+options:option1 true
+options:option2 true
+version 1

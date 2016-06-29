@@ -1,0 +1,17 @@
+    <button id="__menu:id_____menu:modules:id__" class="help_link">__menu:modules:label__</button>__~module:help{<span class="help">__module:help__</span>}
+<script>
+    $( "#__menu:id_____menu:modules:id__" ).click(function() {
+        var d=$( "#tab_docs > a" );
+        if ( d.length ) { d.attr( "href", "__docsbaseurl__/__menu:id__/__menu:modules:id__/__menu:modules:id__.html" ); };
+    
+        if ( ga.valuen.lastload && $( "#" + ga.valuen.lastload ).is( ":visible" ) ) { ga.valuen.save( ga.valuen.lastload ); }
+
+        if ( ga.valuen.lastload != "__menu:modules:id__" || !$( "#" + ga.valuen.lastload ).is( ":visible" ) ) {
+            ga.loader.show();
+            $( "#panel___menu:id__" ).load( "ajax/__menu:id__/__menu:modules:id__.html", function() { ga.valuen.save( "__menu:modules:id__", true ); ga.valuen.restore( "__menu:modules:id__" ); ga.valuen.lastload = "__menu:modules:id__"; ga.loader.hide(); });
+        }
+    });
+__~menu:autorun{$( "#__menu:id_____menu:autorun__" ).trigger( "click" );}
+__~menu:modules:nobutton{$( "#__menu:id_____menu:modules:id__" ).hide();}
+
+</script>

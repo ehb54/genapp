@@ -1,0 +1,84 @@
+# this is a module file, any module specific info belongs here
+{
+    "moduleid" : "sys_register",
+    "label"    : "Register",
+    "submit_label" : "Register",
+    "noreset"  : "true",
+    "resetoutonload"  : "true",
+    "nojobcontrol"  : "true",
+    "submitpolicy" : "all",
+    "captcha" : "true",
+    "resource"     : "local",
+    "modal"        : "true",
+    "fields"   : [
+                  {
+                   "role"     : "input",
+                   "id"       : "label1",
+                   "label"    : "Register",
+                   "type"     : "label",
+                   "default"  : "header3",
+                   "posthline"   : "true"
+                   },
+                  {
+                   "role"       : "input",
+                   "id"         : "userid",
+                   "label"      : "Enter user id",
+                   "type"       : "text",
+                   "required"   : "true",
+                   "pattern"    : ".{3,}",
+                   "help"       : "Enter a user id of 3 to 30 characters length, starting with an alpha character and only containing alphanumerics",
+                   "size"     : "30"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "password1",
+                   "label"    : "Password",
+                   "type"     : "password",
+                   "required" : "true",
+                   "pattern"  : ".{10,}",
+                   "help"     : "Enter a password of minimum 10 characters length",
+                   "size"     : "30"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "password2",
+                   "label"    : "Repeat password",
+                   "type"     : "password",
+                   "required" : "true",
+                   "pattern"  : ".{10,}",
+                   "match"    : "password1",
+                   "help"     : "Enter a password of minimum 10 characters length",
+                   "size"     : "30"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "email",
+                   "label"    : "Email address",
+                   "type"     : "email",
+                   "required" : "true",
+                   "help"     : "Enter a valid email address.  This will be required if you forget your password.  Otherwise, you will have to create a new account lose access to your projects",
+                   "size"     : "50"
+                  },
+                  {
+                   "role"     : "input",
+                   "id"       : "email2",
+                   "label"    : "Repeat email address",
+                   "type"     : "email",
+                   "required" : "true",
+                   "help"     : "Enter a valid email address.  This will be required if you forget your password.  Otherwise, you will have to create a new account lose access to your projects",
+                   "match"    : "email",
+                   "size"     : "50"
+                  },
+                  {
+                   "role"     : "output",
+                   "id"       : "status",
+                   "label"    : "Status",
+                   "type"     : "textarea",
+                   "rows"    : 4,
+                   "cols"    : 50
+                   }
+        
+                  ],
+# the executable will take inputs in json and produce output in json
+    "executable" : "sys_register"
+}

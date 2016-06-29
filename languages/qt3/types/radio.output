@@ -1,0 +1,32 @@
+   {
+      QLabel * lbl = new QLabel( "__fields:label__  ", this );
+      lbl->setMaximumHeight( 22 );
+      lbl->show();
+      gl->addWidget( lbl, ppos, 0 );
+      panel1_sub_widgets.push_back( lbl );
+
+      mQRadioButton * rb = new mQRadioButton( this );
+      rb->setMaximumHeight( 22 );
+      rb->setPalette( *palette_cb );
+      rb->setEnabled( false );
+      rb->show();
+      gl->addWidget( rb, ppos, 1 );
+      rb->data = QVariant( "__fields:id__" );
+      panel1_sub_widgets.push_back( rb );
+
+      if ( !panel1_widget_map.count( "bg:__fields:name__" ) )
+      {
+         panel1_widget_map[ "bg:__fields:name__" ] = new QButtonGroup( 0 );
+      }
+      
+      ((QButtonGroup *)panel1_widget_map[ "bg:__fields:name__" ])->insert( rb );
+
+      QString id = "__moduleid__:__fields:id__";
+      global_data_types[ id ] = "rb";
+      panel1_widget_map[ id ] = rb;
+      panel1_outputs.push_back( id );
+      save_default_value( id );
+      //      panel1_map_input[ id ] = "__moduleid__:__fields:name__";
+
+      ppos++;
+   }

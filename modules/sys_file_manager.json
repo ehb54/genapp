@@ -1,0 +1,65 @@
+{
+    "moduleid"       : "sys_file_manager",
+    "executable"     : "sys_file_manager",
+    "label"          : "Files Manager",
+    "submit_label"   : "Files",
+    "resetonload"    : "true",
+    "noreset"        : "true",
+    "submit_label"   : "Download",
+    "height"         : "65vh",
+    "uniquedir"      : "true",
+    "nojobcontrol"   : "true",
+    "nofcrefresh"    : "true",
+    "docrootexecutable"  : "ajax/sys_config/sys_file_manager_run.php",
+    "resource"       : "local",
+    "modal"          : "true",
+    "fields"   : [
+                  {
+                   "role"     : "input",
+                   "id"       : "label1",
+                   "label"    : "Files",
+                   "type"     : "label",
+                   "default"  : "header3",
+                   "posthline"   : "true"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "serverdate",
+                   "label"    : "Server date",
+                   "type"     : "label",
+                   "pull"     : "datetime",
+                   "help"     : "This is the date and time from the file system on the server at the time you opened this window"
+                   },
+
+                  {
+                   "role"     : "input",
+                   "id"       : "selectedfiles",
+                   "label"    : "User file tree",
+                   "type"     : "ftree"
+                   },
+                  {
+                   "role"    : "input",
+                   "id"      : "compression",
+                   "name"    : "compression",
+                   "label"   : "Compression type",
+                   "type"    : "listbox",
+                   "values"  : "none~no~uncompressed tarball~tar~gzip tarball~gz~bzip2 tarball~bz2~xz tarball~xz~zipped~zip",
+                   "default" : "tar",
+                   "help"    : "You can select the compression type here.  Select <b>none</b> for a list of individual file links"
+                   },
+                  {
+                   "role"    : "output",
+                   "id"      : "status",
+                   "type"    : "html",
+                   "label"   : "",
+                   "multiple" : "true"
+                  }
+                  ,{
+                   "role"    : "output",
+                   "id"      : "outfiles",
+                   "type"    : "file",
+                   "label"   : "",
+                   "multiple" : "true"
+                  }
+                  ]
+}

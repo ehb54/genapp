@@ -1,0 +1,42 @@
+# this is a module file, any module specific info belongs here
+{
+    "moduleid" : "calculate_1",
+    "label"    : "Calculate_1",
+    "fields"   : [
+                  {
+                   "role"     : "input",
+                   "id"       : "input1",
+                   "label"    : "Input value 1",
+                   "type"     : "float",
+                   "default"  : 0.0,
+                   "min"      : 0.0,
+                   "max"      : 1e50,
+                   "required" : "true"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "input2",
+                   "label"    : "Input value 2",
+                   "type"     : "integer",
+                   "default"  : 1,
+                   "min"      : -10,
+                   "max"      : 10,
+                   "required" : "false"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "input3",
+                   "label"    : "Input value 3",
+                   "type"     : "checkbox",
+                   "checked"  : "true"
+                   },
+                  {
+                   "role"  : "output",
+                   "id"    : "output1",
+                   "label" : "Output value 1",
+                   "type"  : "float"
+                   }
+                  ],
+# the executable will take inputs in order and produce output
+    "exectuable" : "calculate_1"
+}
