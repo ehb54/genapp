@@ -1,0 +1,47 @@
+# this is a module file, any module specific info belongs here
+{
+    "moduleid"     : "job",
+    "label"        : "Job",
+    "executable"   : "job",
+    "noreset"      : "true",
+    "submit_label" : "OK",
+    "height"       : "65vh",
+    "nojobcontrol" : "true",
+    "nooutputhr"   : "true",
+    "submit_cb"    : "seljobs",
+    "resource"     : "local",
+    "modal"        : "true",
+    "fields"   : [
+                  {
+                   "role"     : "input",
+                   "id"       : "jobtext",
+                   "label"    : "Choose a job",
+                   "type"     : "label",
+                   "default"  : "header3",
+                   "posthline": "true",
+                   "colspan"  : 4
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "serverdate",
+                   "label"    : "Server date",
+                   "type"     : "label",
+                   "pull"     : "datetime",
+                   "help"     : "This is the date and time from the server at the time you opened this window"
+                   },
+                  {
+                   "role"       : "input",
+                   "id"         : "seljobs",
+                   "label"      : "Jobs",
+                   "type"       : "jtree",
+                   "onlyleaf"   : "true",
+                   "report"     : "seljob"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "seljob",
+                   "label"    : "Selected jobs",
+                   "type"     : "label"
+                   }
+                  ]
+}

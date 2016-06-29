@@ -1,0 +1,6 @@
+# this is the global registry
+# all data types must be validated here
+
+string
+double
+int

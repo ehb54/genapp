@@ -1,0 +1,78 @@
+# this is a language file, any language specific data should go here
+{
+    "id"          : "qt4",
+    "description" : "qt4 with direct calls",
+    "version"     : 1,
+    "assembly"    : [
+        {
+            "frequency"  : "once",
+            "output"     : "__application__/style.qss",
+            "inputs"     : [ 
+                { "style.qss" : "once"        }
+            ]
+        },
+        {
+            "frequency"  : "once",
+            "output"     : "__application__/__application__.cpp",
+            "inputs"     : [ 
+                { "base_header.cpp"                  : "once"            },
+                { "base_items.cpp"                   : "menu:id"         },
+                { "base_footer.cpp"                  : "once"            },
+                { "types/__fields:type__.extra.cpp"  : "fields:id"       },
+                { "base_additional.cpp"              : "menu:id"         },
+                { "base_additional2.cpp"             : "menu:modules:id" }
+            ]
+        },
+        {
+            "frequency"  : "once",
+            "output"     : "__application__/__application__.h",
+            "inputs"     : [ 
+                { "base_header.h"                  : "once"            },
+                { "base_items.h"                   : "menu:id"         },
+                { "base_modules.h"                 : "menu:modules:id" },
+                { "types/__fields:type__.extra.h"  : "fields:id"       },
+                { "base_footer.h"                  : "once"            }
+            ]
+        },
+        {
+            "frequency"  : "menu:id",
+            "output"     : "__application__/__menu:id__.h",
+            "inputs"     : [ 
+                { "menuelement_header.h" : "once"            },
+                { "menuelement_items.h"  : "menu:modules:id" },
+                { "menuelement_footer.h" : "once"            }
+            ]
+        },
+        {
+            "frequency"  : "menu:modules:id",
+            "output"     : "__application__/__menu:id_____menu:modules:id__.h",
+            "inputs"     : [ 
+                { "types/input.header"           : "once"       },
+                { "types/__fields:type__.input"  : "fields:id"  },
+                { "types/input.buttons"          : "once"       },
+                { "types/__fields:type__.output" : "fields:id"  },
+                { "types/input.footer"           : "once"       }
+            ]
+        },
+        {
+            "frequency"  : "once",
+            "output"     : "__application__/utility_routines.cpp",
+            "inputs"     : [ { "utility_routines.cpp" : "once" } ]
+        },
+        {
+            "frequency"  : "once",
+            "output"     : "__application__/utility_routines.h",
+            "inputs"     : [ { "utility_routines.h" : "once" } ]
+        },
+        {
+            "frequency"  : "once"
+            ,"execute"    : "atend"
+            ,"output"     : "make.sh"
+            ,"inputs"     : [
+                {  "make.sh"        : "once" }
+            ]
+        }
+
+    ]
+}
+

@@ -1,0 +1,76 @@
+# this the configuration file which includes any special modules not using base.php
+{
+ "header" : "system_configuration",
+ "menu" : [
+           { 
+            "id"      : "sys_config",
+            "label"   : "system configuration modules",
+            "modules" : [ 
+                         { 
+                          "id"    : "sys_user_config",
+                          "label" : "Configuration"
+                         }
+                         ,{ 
+                          "id"    : "sys_login",
+                          "label" : "Login"
+                         }
+                         ,{ 
+                          "id"    : "sys_logoff",
+                          "label" : "Logoff"
+                         }
+                         ,{ 
+                          "id"    : "sys_register",
+                          "label" : "Register"
+                         }
+                         ,{ 
+                          "id"    : "sys_status",
+                          "label" : "status"
+                         }
+                        ,{ 
+                          "id"    : "sys_pull",
+                          "label" : "pull"
+                         }
+                        ,{ 
+                          "id"    : "sys_files",
+                          "label" : "files"
+                         }
+#                        ,{ 
+#                          "id"    : "sys_file_manager",
+#                          "label" : "File manager"
+#                         }
+                        ,{ 
+                          "id"    : "sys_job_manager",
+                          "label" : "Submitted jobs"
+                         }
+                        ,{ 
+                          "id"    : "sys_feedback",
+                          "label" : "User feedback"
+                         }
+                        ,{ 
+                          "id"    : "sys_feedback2",
+                          "label" : "User feedback"
+                         }
+#                        ,{ 
+#                          "id"    : "lrfile",
+#                          "label" : "Choose a file"
+#                         }
+                        ,{ 
+                          "id"    : "rfile",
+                          "label" : "Choose a file"
+                         }
+                        ,{ 
+                          "id"    : "rpath",
+                          "label" : "Choose a path"
+                         }
+                        ,{ 
+                          "id"    : "job",
+                          "label" : "Select a job or jobs"
+                         }
+#                        ,{ 
+#                          "id"    : "sys_jobstatus",
+#                          "label" : "Job status"
+#                          }
+                        ]
+            }
+          ]
+}

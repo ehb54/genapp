@@ -1,0 +1,94 @@
+--------------------------------------------------------------------------------
+test4.json:
+--------------------------------------------------------------------------------
+----------------------------------------
+ pos is 0 mpos is 3
+----------------------------------------
+exectuable calculate_1
+fields:default 0
+fields:id input1
+fields:label Input value 1
+fields:max 1e+50
+fields:min 0
+fields:required true
+fields:role input
+fields:type float
+label Calculate_1
+moduleid calculate_1
+----------------------------------------
+ pos is 1 mpos is 3
+----------------------------------------
+exectuable calculate_1
+fields:default 1
+fields:id input2
+fields:label Input value 2
+fields:max 10
+fields:min -10
+fields:required false
+fields:role input
+fields:type integer
+label Calculate_1
+moduleid calculate_1
+----------------------------------------
+ pos is 2 mpos is 3
+----------------------------------------
+exectuable calculate_1
+fields:checked true
+fields:id input3
+fields:label Input value 3
+fields:role input
+fields:type checkbox
+label Calculate_1
+moduleid calculate_1
+----------------------------------------
+ pos is 3 mpos is 3
+----------------------------------------
+exectuable calculate_1
+fields:id output1
+fields:label Output value 1
+fields:role output
+fields:type float
+label Calculate_1
+moduleid calculate_1
+----------------------------------------
+rewind, search for changes in 'menu:id'
+----------------------------------------
+exectuable calculate_1
+fields:default 0
+fields:id input1
+fields:label Input value 1
+fields:max 1e+50
+fields:min 0
+fields:required true
+fields:role input
+fields:type float
+label Calculate_1
+moduleid calculate_1
+----------------------------------------
+rewind, search for changes in 'menu:modules:id'
+----------------------------------------
+exectuable calculate_1
+fields:default 0
+fields:id input1
+fields:label Input value 1
+fields:max 1e+50
+fields:min 0
+fields:required true
+fields:role input
+fields:type float
+label Calculate_1
+moduleid calculate_1
+----------------------------------------
+rewind, search for changes in 'menu:modules:id|menu:id'
+----------------------------------------
+exectuable calculate_1
+fields:default 0
+fields:id input1
+fields:label Input value 1
+fields:max 1e+50
+fields:min 0
+fields:required true
+fields:role input
+fields:type float
+label Calculate_1
+moduleid calculate_1

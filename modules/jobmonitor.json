@@ -1,0 +1,105 @@
+# this is a module file, any module specific info belongs here
+{
+    "moduleid"     : "jobmonitor"
+    ,"label"        : "Jobmonitor"
+    ,"executable"   : "jobmonitor"
+    ,"submitpolicy" : "all"
+# ? admin
+    ,"resource"     : "local"
+    ,"docrootexecutable"  : "ajax/sys_config/sys_jobmonitor.php"
+    ,"uniquedir" : "on"
+    ,"fields"   : [
+        {
+            "role"    : "input"
+            ,"id"      : "interval"
+            ,"label"   : "Update frequency in seconds"
+            ,"type"    : "integer"
+            ,"min"     : 5
+            ,"default" : 5
+        }
+        ,{
+            "role"           : "output"
+            ,"id"             : "jobhistory"
+            ,"label"          : "Active job count"
+            ,"type"           : "plot2d"
+#            ,"titlefontclass" : "header3"
+            ,"height"         : "150px"
+            ,"width"          : "600px"
+            ,"pan"            : "true"
+            ,"zoom"           : "true"
+            ,"hover"          : "true"
+            ,"help"           : "drag to pan, double click to zoom, to reset zoom and pan: click on live coordinates box"
+        }
+        ,{
+            "role"           : "output"
+            ,"id"             : "load"
+            ,"label"          : "Load %"
+            ,"type"           : "plot2d"
+#            ,"titlefontclass" : "header3"
+            ,"height"         : "150px"
+            ,"width"          : "600px"
+            ,"pan"            : "true"
+            ,"zoom"           : "true"
+            ,"hover"          : "true"
+            ,"help"           : "drag to pan, double click to zoom, to reset zoom and pan: click on live coordinates box"
+        }
+        ,{
+            "role"           : "output"
+            ,"id"             : "iowait"
+            ,"label"          : "IO wait %"
+            ,"type"           : "plot2d"
+#            ,"titlefontclass" : "header3"
+            ,"height"         : "150px"
+            ,"width"          : "600px"
+            ,"pan"            : "true"
+            ,"zoom"           : "true"
+            ,"hover"          : "true"
+            ,"help"           : "drag to pan, double click to zoom, to reset zoom and pan: click on live coordinates box"
+        }
+        ,{
+            "role"           : "output"
+            ,"id"             : "memused"
+            ,"label"          : "Memory used %"
+            ,"type"           : "plot2d"
+#            ,"titlefontclass" : "header3"
+            ,"height"         : "150px"
+            ,"width"          : "600px"
+            ,"pan"            : "true"
+            ,"zoom"           : "true"
+            ,"hover"          : "true"
+            ,"help"           : "drag to pan, double click to zoom, to reset zoom and pan: click on live coordinates box"
+        }
+        ,{
+            "role"           : "output"
+            ,"id"             : "swapused"
+            ,"label"          : "Swap used %"
+            ,"type"           : "plot2d"
+#            ,"titlefontclass" : "header3"
+            ,"height"         : "150px"
+            ,"width"          : "600px"
+            ,"pan"            : "true"
+            ,"zoom"           : "true"
+            ,"hover"          : "true"
+            ,"help"           : "drag to pan, double click to zoom, to reset zoom and pan: click on live coordinates box"
+        }
+        ,{
+            "role"           : "output"
+            ,"id"             : "net"
+            ,"label"          : "Network MB/s"
+            ,"type"           : "plot2d"
+#            ,"titlefontclass" : "header3"
+            ,"height"         : "150px"
+            ,"width"          : "600px"
+            ,"pan"            : "true"
+            ,"zoom"           : "true"
+            ,"hover"          : "true"
+            ,"help"           : "drag to pan, double click to zoom, to reset zoom and pan: click on live coordinates box"
+        }
+        ,{
+            "role"    : "output"
+            ,"id"     : "monitordata"
+            ,"label"  : ""
+            ,"type"   : "html"
+        }
+    ]
+}

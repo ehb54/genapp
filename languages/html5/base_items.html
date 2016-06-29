@@ -1,0 +1,7 @@
+ga.set( "icon:__menu:id__", "__menu:icon__" );
+if ( __~menu:label{1}0 ) { ga.tmp.menu += '<li id="__menu:id__" class="help_link">__menu:label__<img src="' + ga.set.data["icon:__menu:id__"] + '" width=40px></li>__~menu:help{<span class="help helpleft">__menu:help__</span>}';};
+__~menu:restricted{ga.restricted.add( "__menu:restricted__", "#__menu:id__" );}
+__~menu:group{ga.group.addmenu( "__menu:group__", "#__menu:id__" );}
+__~menu:startup{ga.startup = '$("#__menu:id__" ).trigger( "click" );'; ga.tmp.atend += 'if ( !ga.tmp.menuclicked ){' + ga.startup + '};';}
+__~menu:nohidemenu{ga.set("nohidemenu:__menu:id__",1);}
+

@@ -1,0 +1,37 @@
+# this is a module file, any module specific info belongs here
+{
+    "moduleid"     : "jobshistory_1"
+    ,"label"        : "JobsHistory_1"
+    ,"executable"   : "jobshistory_1"
+    ,"submitpolicy" : "all"
+# ? admin
+    ,"resource"     : "local"
+    ,"docrootexecutable"  : "util/jobs_history_web.php"
+    ,"uniquedir" : "on"
+    ,"fields"   : [
+                 {
+                   "role"     : "input",
+                   "id"       : "input1",
+                   "label"    : "Start Date",
+                   "type"     : "date",
+                   #"default"  : "0000-00-00",
+                   "required" : "true"
+                   #"help"     : "YYYY-MM-DD"
+                   },
+                  {
+                   "role"    : "input",
+                   "id"      : "input2",
+                   "label"   : "End Date",
+                   "type"    : "date",
+                   #"default" : "0000-00-00",
+                   "required" : "true"
+                   #"help"     : "YYYY-MM-DD"
+                   },
+                  {
+		   "role"    : "output"
+		    ,"id"     : "jobshisreport"
+		    ,"label"  : ""
+		    ,"type"   : "html"
+		  }
+    ]
+}

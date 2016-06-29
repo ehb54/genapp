@@ -1,0 +1,2 @@
+this_html = ga.group.inputhtml( "__fields:id__" );
+input_html += this_html;

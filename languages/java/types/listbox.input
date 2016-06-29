@@ -1,0 +1,12 @@
+__~fields:repeat{repeater_}__fields:role__.add(new HashMap<String, String>(){{
+            __~fields:role{put("role", "__fields:role__");}
+            __~fields:id{put("id", "__fields:id__");}
+            __~fields:label{put("label", "__fields:label__");}
+            __~fields:type{put("type", "__fields:type__");}
+            __~fields:default{put("default", "__fields:default__");}
+            __~fields:name{put("name", "__fields:name__");}
+            __~fields:values{put("value_~1", "~0");}
+            __~fields:repeat{put("repeat", "__fields:repeat__");}
+            __~fields:repeater{put("repeater", "__fields:repeater__");}
+																																																																																																																																																																																																																																									            }
+});

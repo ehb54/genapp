@@ -1,0 +1,102 @@
+# this is a module file, any module specific info belongs here
+{
+    "moduleid"    : "sys_feedback",
+    "label"       : "feedback",
+    "noreset"     : "true",
+    "resetonload" : "true",
+    "submitpolicy" : "all",
+    "nojobcontrol" : "true",
+    "navigator"    : "true",
+    "eventlog"     : "true",
+    "resource"     : "local",
+    "modal"        : "true",
+    "fields"   : [
+                  {
+                   "role"     : "input",
+                   "id"       : "label1",
+                   "label"    : "Please give your feedback",
+                   "type"     : "label",
+                   "default"  : "header3",
+                   "colspan"  : 4
+                  }
+                  ,{
+                   "role"     : "input",
+                   "id"       : "serverdate",
+                   "label"    : "Server date",
+                   "type"     : "label",
+                   "pull"     : "datetime"
+                   }
+                  ,{
+                   "role"     : "input",
+                   "id"       : "email",
+                   "label"    : "Email address",
+                   "type"     : "email",
+                   "pull"     : "email",
+                   "required" : "true",
+                   "help"     : "Please verify your email address",
+                   "size"     : "50"
+                  }
+                  ,{
+                   "role"     : "input",
+                   "id"       : "email2",
+                   "label"    : "Repeat email address",
+                   "type"     : "email",
+                   "pull"     : "email",
+                   "required" : "true",
+                   "help"     : "Please repeat your email address",
+                   "match"    : "email",
+                   "size"     : "50"
+                  }
+                  ,{
+                   "role"     : "input",
+                   "id"       : "subject",
+                   "label"    : "Subject",
+                   "type"     : "text",
+                   "required" : "true",
+                   "help"     : "Please enter a subject for this message.",
+                   "size"     : "50"
+                  }
+                  ,{
+                   "role"    : "input",
+                   "id"      : "suggestion",
+                   "name"    : "level",
+                   "label"   : "Suggestion",
+                   "type"    : "radio",
+                   "checked" : "true",
+                   "help"    : "Check this if your comment is a suggestion."
+                   }
+                  ,{
+                   "role"    : "input",
+                   "id"      : "important",
+                   "name"    : "level",
+                   "label"   : "Important",
+                   "type"    : "radio",
+                   "help"    : "Check this if your comment is important to aid your work."
+                   }
+                  ,{
+                   "role"    : "input",
+                   "id"      : "critical",
+                   "name"    : "level",
+                   "label"   : "Critical",
+                   "type"    : "radio",
+                   "help"    : "Check this if your comment is critical and you can not proceeed with your work."
+                   }
+                  ,{
+                   "role"     : "input",
+                   "id"       : "job1",
+                   "label"    : "Provide a reference job(s) if available",
+                   "type"     : "job",
+                   "help"     : "This will give us more detailed information to better assist you"
+                   }
+                  ,{
+                   "role"     : "input",
+                   "id"       : "text1",
+                   "label"    : "Your comments",
+                   "type"     : "textarea",
+                   "required" : "true",
+                   "rows"    : 10,
+                   "cols"    : 60,
+                   "help"     : "Please take as much space as needed.  You can expand the text area at the bottom right."
+                  }
+                  ]
+}

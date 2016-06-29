@@ -1,0 +1,3 @@
+this_html = '<input hidden="text" name="__fields:id__" id="__fields:id__"__~fields:default{ value="__fields:default__"}>';
+__~fields:specifiedproject{input_eval += 'ga.specproj( "__fields:specifiedproject__", "#__fields:id__" );';}
+input_html += this_html;

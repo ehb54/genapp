@@ -1,0 +1,113 @@
+# this is a project menu file
+{
+ "header" : "Sassie 2",
+ "menu" : [
+           { 
+            "id"      : "tools",
+            "label"   : "Tools",
+            "icon"    : "pngs/tools.png",
+            "modules" : [ 
+                         { 
+                          "id"    : "center",
+                          "label" : "Center",
+                          "views" : [ "Input", "Output", "Plots", "OpenGL" ]
+                         },
+                         { 
+                          "id"    : "align",
+                          "label" : "Align",
+                          "views" : [ "Input", [ "Output", "Plots", "OpenGL" ] ]
+                         },
+                         { 
+                          "id"    : "data_interpolation",
+                          "label" : "Data Interpolation",
+                          "views" : [ "Input", "Output", "Plots", "OpenGL" ]
+                         }
+                        ]
+            },
+           { 
+            "id"      : "build",
+            "label"   : "Build",
+            "icon"    : "pngs/build.png",
+            "modules" : [ 
+                         { 
+                          "id"    : "build_1",
+                          "label" : "Build 1",
+                          "views" : [ "Input", "Output", "Plots", "OpenGL" ]
+                         },
+                         { 
+                          "id"    : "build_2",
+                          "label" : "Build 2",
+                          "views" : [ "Input", "Output", [ "Plots", "OpenGL" ] ]
+                         }
+                        ]
+            },
+           { 
+            "id"      : "interact",
+            "label"   : "Interact",
+            "icon"    : "pngs/interact.png",
+            "modules" : [ 
+                         { 
+                          "id"    : "interact_1",
+                          "label" : "Interact 1",
+                          "views" : [ "Input", "Output", "Plots", "OpenGL" ]
+                         },
+                         { 
+                          "id"    : "interact_2",
+                          "label" : "Interact 2",
+                          "views" : [ "Input", "Output", "Plots", "OpenGL" ]
+                         }
+                        ]
+            },
+           { 
+            "id"      : "simulate",
+            "label"   : "Simulate",
+            "icon"    : "pngs/simulate.png",
+            "modules" : [ 
+                         { 
+                          "id"    : "simulate_1",
+                          "label" : "Simulate 1",
+                          "views" : [ "Input", "Output", "Plots", "OpenGL" ]
+                         },
+                         { 
+                          "id"    : "simulate_2",
+                          "label" : "Simulate 2",
+                          "views" : [ "Input", "Output", "Plots", "OpenGL" ]
+                         }
+                        ]
+            },
+           { 
+            "id"      : "calculate",
+            "label"   : "Calculate",
+            "icon"    : "pngs/calculate.png",
+            "modules" : [ 
+                         { 
+                          "id"    : "calculate_1",
+                          "label" : "Calculate 1",
+                          "views" : [ "Input", "Output", "Plots", "OpenGL" ]
+                         },
+                         { 
+                          "id"    : "calculate_2",
+                          "label" : "Calculate 2",
+                          "views" : [ "Input", "Output", "Plots", "OpenGL" ]
+                         }
+                        ]
+            },
+           { 
+            "id"      : "analyze",
+            "label"   : "Analyze",
+            "icon"    : "pngs/analyze.png",
+            "modules" : [ 
+                         { 
+                          "id"    : "analyze_1",
+                          "label" : "Analyze 1",
+                          "views" : [ "Input", "Output", "Plots", "OpenGL" ]
+                         },
+                         { 
+                          "id"    : "analyze_2",
+                          "label" : "Analyze 2",
+                          "views" : [ "Input", "Output", "Plots", "OpenGL" ]
+                         }
+                        ]
+            }
+          ]
+}
