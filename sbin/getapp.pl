@@ -45,6 +45,7 @@ When using usage[1]:
    -force              force checkout even if directory exists
    -gen                run genapp.pl after install
    -nolinks            do not setup html links
+   -dir directory      use specified directory instead of application name
 
 when using usage[2];
  this will list the available application names
@@ -55,12 +56,18 @@ my $admin;
 my $force;
 my $gen;
 my $nolinks;
+my $targetdir;
 
 while ( $ARGV[ 0 ] =~ /^-/ ) {
     my $option = shift @ARGV;
     if ( $option =~ /^-admin$/ ) {
         die "$0: option $option requries an argument\n" . $notes if !@ARGV;
         $admin = shift @ARGV;
+        next;
+    }
+    if ( $option =~ /^-dir$/ ) {
+        die "$0: option $option requries an argument\n" . $notes if !@ARGV;
+        $targetdir = shift @ARGV;
         next;
     }
     if ( $option =~ /^-force$/ ) {
@@ -166,11 +173,12 @@ if ( $svntype eq 'list' ) {
     exit;
 }
 
-$app     = shift || die $notes;
+$app       = shift || die $notes;
+$targetdir = $app if !$targetdir;
 
 die "$0: svn-type must be svn or svn+ssh and you specified '$svntype'\n" if $svntype !~ /^svn(\+ssh|)$/;
 
-die "$0: $app file already exists\n" if -e $app && !$force;
+die "$0: $targetdir directory already exists\n" if -e $targetdir && !$force;
 
 @l = listapps();
 foreach $i ( @l ) {
@@ -179,7 +187,7 @@ foreach $i ( @l ) {
 
 die "$0: Error: $app is not known as an application name\n" if !$vapp{ $app };
 
-$cmd = "svn $force co ${svntype}://$svnbase/$app $app";
+$cmd = "svn $force co ${svntype}://$svnbase/$app $targetdir";
 
 print "$cmd\n";
 
@@ -191,8 +199,9 @@ Other possibilities include a network issue, host issue, local diskspace or perm
 # sets up the app's appconfig.json:
 
 sub setappconfig {
-    my $app    = $_[0];
-    my $admin  = $_[1];
+    my $app        = $_[0];
+    my $targetdir  = $_[1];
+    my $admin      = $_[2];
 
     my $json = {};
     $$json{ "hostip"   } = $$cfgjson{ 'hostip' }   || die "$0 hostip not defined in $cfgjsonf. $cfgjsonnotes";
@@ -216,14 +225,14 @@ sub setappconfig {
 
     $$json{ "lockdir" } = "$gb/etc";
 
-    $f = "$app/appconfig.json";
+    $f = "$targetdir/appconfig.json";
     open  $fh, ">$f" || die "$0: could not open $f for writing\n";
     print $fh to_json( $json, { utf8 => 1, pretty => 1 } );
     close $fh;
     print "created $f\n";
 }
 
-setappconfig( $app, $admin );
+setappconfig( $app, $targetdir, $admin );
 
 # setup directives.json
 
@@ -231,43 +240,49 @@ my $devmsg = "You can subscribe to the mailing list http://biochem.uthscsa.edu/m
 and then send your questions to genapp-devel\@biochem.uthscsa.edu\n";
 
 sub setdirectives {
-    my $app     = $_[0];
-    my $webroot = $_[1];
+    my $app       = $_[0];
+    my $targetdir = $_[1];
+    my $webroot   = $_[2];
 
     my $f      = "directives.json.template";
     my $fo     = "directives.json";
     
-    die "$0: $app/$f does not exist for this application.  
-This is an error of the application developer and they should be informed.\n$devmsg" if !-e "$app/$f";
+    die "$0: $targetdir/$f does not exist for this application.  
+This is an error of the application developer and they should be informed.\n$devmsg" if !-e "$targetdir/$f";
 
-    die "$0: $app/$fo already exists for this application. 
+    die "$0: $targetdir/$fo already exists for this application. 
 This file must be manually removed before continuing.  
 If this error recurrs after removing,
-This is an error of the application developer and they should be informed.\n$devmsg" if -e "$app/$fo";
+This is an error of the application developer and they should be informed.\n$devmsg" if -e "$targetdir/$fo";
 
-    my $djson  = get_file_json( "$app/$f" );
+    my $djson  = get_file_json( "$targetdir/$f" );
 
-    open my $fh, "$app/$f" || die "$0: file open error on $app/$f\n";
+    open my $fh, "$targetdir/$f" || die "$0: file open error on $targetdir/$f\n";
     my @l = <$fh>;
     close $fh;
 
     my $dir = `pwd`;
     chomp $dir;
 
-    die "$0: $app/$f error, missing __app_parent_directory__ tags.
+    die "$0: $targetdir/$f error, missing __app_parent_directory__ tags.
 This is an error of the application developer and they should be informed.\n$devmsg" if !( grep /__app_parent_directory__/, @l );
 
-    die "$0: $app/$f error, missing __webroot__ tags.
+    die "$0: $targetdir/$f error, missing __webroot__ tags.
 This is an error of the application developer and they should be informed.\n$devmsg" if !( grep /__webroot__/, @l );
 
-#    die "$0: $app/$f error, missing __application__ tags.
+#    die "$0: $targetdir/$f error, missing __application__ tags.
 # This is an error of the application developer and they should be informed.\n$devmag" if !( grep /__application__/, @l );
 
     grep s/__app_parent_directory__/$dir/g, @l;
 
-    grep s/__webroot__/$dir/g, @l;
+    grep s/__webroot__/$webroot/g, @l;
 
 #    grep s/__application__/$app/g, @l;
+
+    if ( $app ne $targetdir ) {
+        grep s/"$app"/"$targetdir"/g, @l;
+        grep s/\/$app\//\/$targetdir\//g, @l;
+    }        
 
     if ( $$djson{ 'usewss' } && !$$cfgjson{ 'https' } ) {
         @l = grep !/"usewss"/, @l;
@@ -282,20 +297,20 @@ This is an error of the application developer and they should be informed.\n$dev
         pop @l;
     }
 
-    die "$0 : $app/$f error: can not locate json closure.
+    die "$0 : $targetdir/$f error: can not locate json closure.
 This is an error of the application developer and they should be informed.\n$devmsg" if $l[ -1 ] !~ /^\s*}\s*$/;
 
     pop @l;
     push @l, ( $$cfgjson{ 'https' } ? "   ,\"usewss\" : \"true\"\n" : "   ,\"usews\" : \"true\"\n" );
     push @l, "}\n";
 
-    open  $fh, ">$app/$fo" || die "$0: could not open $app/$fo for writing\n";
+    open  $fh, ">$targetdir/$fo" || die "$0: could not open $targetdir/$fo for writing\n";
     print $fh ( join '', @l );
     close $fh;
-    print "created $app/$fo\n";
+    print "created $targetdir/$fo\n";
 }
 
-setdirectives( $app, $$cfgjson{'webroot'} );
+setdirectives( $app, $targetdir, $$cfgjson{'webroot'} );
 
 sub runcmd {
     my $cmd = $_[0];
@@ -320,13 +335,13 @@ sub runcmdsb {
 }
 
 if ( $gen ) {
-    runcmd( "cd $app; env GENAPP=$gb \$GENAPP/bin/genapp.pl" );
+    runcmd( "cd $targetdir; env GENAPP=$gb \$GENAPP/bin/genapp.pl" );
     if ( !$nolinks ) {
         my $dir = `pwd`;
         chomp $dir;
         my $cmds = 
-"cd $app
-ln -sf $dir/$app/output/html5 $$cfgjson{'webroot'}/$app
+"cd $targetdir
+ln -sf $dir/$targetdir/output/html5 $$cfgjson{'webroot'}/$targetdir
 mkdir -p output/html5/results output/html5/deleted 2> /dev/null
 rm ajax results util 2> /dev/null
 ln -sf output/html5/ajax ajax && ln -sf output/html5/results results && ln -sf output/html5/util util

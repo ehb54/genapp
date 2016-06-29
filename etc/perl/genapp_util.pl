@@ -1263,10 +1263,10 @@ sub check_files {
                         {
                             $error .= "Module $f field '$k' repeat on '$repeat{ $k }' : missing repeater\n";
                         }
-                        if ( $repeater{ $k } && $repeater{ $repeat{ $k } } =~ /(integer)/ )
-                        {
-                            $error .= "Module $f field '$k' is a repeat on '$repeat{ $k }' which is a repeater of type '$repeater{ $repeat{ $k } }'. This structure is not currently supported for integer repeat types\n";
-                        }
+#                        if ( $repeater{ $k } && $repeater{ $repeat{ $k } } =~ /(integer)/ )
+#                        {
+#                            $warn .= "Module $f field '$k' is a repeat on '$repeat{ $k }' which is a repeater of type '$repeater{ $repeat{ $k } }'. This structure is not currently supported for integer repeat types\n";
+#                        }
                         if ( $repeat{ $k } eq $k )
                         {
                             $error .= "Module $f field '$k' is a self referential repeater\n";
@@ -1282,7 +1282,7 @@ sub check_files {
                             }
 
                             $depth++;
-                            if ( $depth > 4 )
+                            if ( $depth > 25 )
                             {
                                 $error .= "Module $f field '$k' exceeds maximum supported repeater depth\n";
                                 last;
