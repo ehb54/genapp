@@ -20,6 +20,9 @@ if ( !isset( $_REQUEST[ "_window" ] ) ) {
 }
 
 $font    = '__docroot:html5__/__application__/fonts/captcha.ttf';
+if ( !file_exists( $font ) ) {
+   $font    = '__docroot:html5__/__application__/output/html5/fonts/captcha.ttf';
+}
 
 $size      = 75;
 
