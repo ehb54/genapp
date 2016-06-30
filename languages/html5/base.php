@@ -679,7 +679,7 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
     foreach ( $keys as $k => $v ) {
         if ( !preg_match( "/^_/", $v ) ) {
             $a = preg_split( "/-/", $v );
-            if ( 1 ) {
+            if ( !__~extendedjsoninputtags{1}0 ) {
                 $i = count( $a ) - 1;
                 $isdigit = ctype_digit( $a[ $i ] );
                 __~debug:basemylog{error_log( "old repeaters style used isdigit=$isdigit i=$i key=" . $a[$i] . " value $v\n", 3, "/tmp/mylog" );}
