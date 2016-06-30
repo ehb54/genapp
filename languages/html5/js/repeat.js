@@ -3,6 +3,7 @@
 
 ga.repeat               = {};
 ga.repeat.data          = {};
+ga.repeat.map           = {};
 
 // ----------------------------------------------------------------------------------------------------------
 // background
@@ -30,6 +31,8 @@ ga.repeat.data          = {};
 // ga.repeat.data[ mod ].repeater[ id ].child     : repeater's children (as registered in repeatOn)
 // ga.repeat.data[ mod ].repeater[ id ].choice    : repeater's listbox choice
 // ga.repeat.data[ mod ].repeater[ id ].value     : repeater's last value
+//
+// ga.repeat.map                                  : map of original id's to DOM id's of repeats
 // ----------------------------------------------------------------------------------------------------------
 // summary of operations
 // ----------------------------------------------------------------------------------------------------------
@@ -45,14 +48,16 @@ ga.repeat.data          = {};
 // equivalent of ga.repeats.registerRepeat
 // initializes the repeat structure & stores the html and eval for a field and returns a placeholder
 
-ga.repeat.repeat = function( mod, id, html, this_eval  ) {
-    __~debug:repeat{console.log( "ga.repeat.repeat( " + mod + " , " + id + " , html , eval )" );}
+ga.repeat.repeat = function( mod, id, html, this_eval ) {
+    __~debug:repeat{console.log( "ga.repeat.repeat( " + mod + " , " + id + " , html , eval , " + orgid + " )" );}
 
     ga.repeat.data[ mod ] = ga.repeat.data[ mod ] || {};
     ga.repeat.data[ mod ].repeat = ga.repeat.data[ mod ].repeat || {};
     ga.repeat.data[ mod ].repeat[ id ] = {};
     ga.repeat.data[ mod ].repeat[ id ].html = html;
     ga.repeat.data[ mod ].repeat[ id ].eval = this_eval;
+
+    ga.repeat.map[ id ] = id;
 
     // fix up html & eval for easy unconfused replacement
 
@@ -229,6 +234,7 @@ ga.repeat.change = function( mod, id, init ) {
         if ( val ) {
             for ( i in children ) {
                 k = id + "-" + i;
+                ga.repeat.map[ i ] = k;
                 __~debug:repeat{console.log( " i " + i + " htmlr " + ga.repeat.data[ mod ].repeat[ i ].htmlr );}
                 __~debug:repeat{console.log( " i " + i + " evalr " + ga.repeat.data[ mod ].repeat[ i ].evalr );}
                 add_html += ga.repeat.data[ mod ].repeat[ i ].htmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "" );
@@ -252,6 +258,7 @@ ga.repeat.change = function( mod, id, init ) {
         for ( j = 1; j <= val; ++j ) {
             for ( i in children ) {
                 k = id + "-" + i + "-" + ( j - 1 );
+                ga.repeat.map[ i ] = k;
                 __~debug:repeat{console.log( " j " + j + " i " + i + " htmlr " + ga.repeat.data[ mod ].repeat[ i ].htmlr );}
                 __~debug:repeat{console.log( " j " + j + " i " + i + " evalr " + ga.repeat.data[ mod ].repeat[ i ].evalr );}
                 add_html += ga.repeat.data[ mod ].repeat[ i ].htmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "[" + j + "]" );
@@ -282,6 +289,7 @@ ga.repeat.change = function( mod, id, init ) {
 
         for ( i in children ) {
             k = j + "-" + i;
+            ga.repeat.map[ i ] = k;
             __~debug:repeat{console.log( " i " + i + " htmlr " + ga.repeat.data[ mod ].repeat[ i ].htmlr );}
             __~debug:repeat{console.log( " i " + i + " evalr " + ga.repeat.data[ mod ].repeat[ i ].evalr );}
             add_html += ga.repeat.data[ mod ].repeat[ i ].htmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "" );
@@ -331,4 +339,18 @@ ga.repeat.change = function( mod, id, init ) {
     __~debug:pull{else { console.log( "ga.repeat.change() did not find pull json for id " + id );} }
 
     resetHoverHelp();
+}
+
+ga.repeat.map.convert = function( ids_array ) {
+    var i,
+    result = [];
+
+    __~debug:repeatmap{console.log( "ga.repeat.map.convert from " + ids_array.join( "," ) );}
+
+    for ( i = 0; i < ids_array.length; ++i ) {
+        result[ i ] = ga.repeat.map[ ids_array[ i ] ] || ids_array[ i ];
+    }
+
+    __~debug:repeatmap{console.log( "ga.repeat.map.convert to   " + result.join( "," ) );}
+    return result;
 }

@@ -70,6 +70,9 @@ ga.value.processInputfromFiles = function (text, mode, ids_array){
     var lines = text.trim().split(/[\r\n]+/g);
     var linesContent = [];
     var cumulativeContent = 0;
+
+    ids_array = ga.repeat.map.convert( ids_array );
+
     for (var i=0; i<lines.length; i++)
     {
 	var line_separated = lines[i].trim().split(/\s+/);
