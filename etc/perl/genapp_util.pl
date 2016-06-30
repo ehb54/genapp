@@ -1206,7 +1206,7 @@ sub check_files {
                 print "id:\n\t" . ( join "\n\t", keys %$x ) . "\n" if keys %$x && $debug;
                 $error .= valid_name( "$f \"id\"", $x );
             }
-            # check for duplicate id's
+            # check for duplicate id's and listbox values
             {
                 my $ref_mod = {};
                 my $mod_info = start_json( $json, $ref_mod );
@@ -1219,6 +1219,7 @@ sub check_files {
                     } else {
                         $error .= "Module $f has fields with duplicate id \"" . $$mod_info{ 'fields:id' } . "\"\n" if $ids{ $$mod_info{ 'fields:id' } }++;
                     }
+                    $error .= "Module $f field " . $$mod_info{ 'fields:id' } . " is a listbox but is missing the required \"values\" tag\n" if $$mod_info{ 'fields:type' } eq 'listbox' && !$$mod_info{ 'fields:values' };
                 } while( $mod_info = next_json( $ref_mod, 'fields:id' ) );
             }
             # check repeaters & repeats
@@ -1226,6 +1227,7 @@ sub check_files {
                 my $ref_mod = {};
                 my $mod_info = start_json( $json, $ref_mod );
                 my %repeater;
+                my %repeaterlb;
                 my %repeat;
                 my %repeattype;
                 my $modname = $f;
@@ -1234,11 +1236,21 @@ sub check_files {
                          $$mod_info{ 'fields:reverserepeater' } )
                     {
                         $repeater{ $$mod_info{ 'fields:id' } } = $$mod_info{ 'fields:type' };
+                        if ( $$mod_info{ 'fields:type' } eq 'listbox' ) {
+                            my @lbvalues = split '~', $$mod_info{ 'fields:values' };
+                            $error .= "Module $f field " . $$mod_info{ 'fields:id' } . " is a listbox but the values are incorrect.  They must contain an even number of ~ separated words\n" if @lbvalues % 2;
+                            for ( my $i = 1; $i < @lbvalues; $i += 2 ) {
+                                my $k = $$mod_info{ 'fields:id' } . ":" . $lbvalues[ $i ];
+                                $repeater  { $k } = $$mod_info{ 'fields:type' } . " choice " . ( 1 + ( ( $i - 1 ) / 2 ) );
+                                $repeat    { $k } = $$mod_info{ 'fields:id' };
+                                $repeattype{ $k } = $$mod_info{ 'fields:type' } . " choice";
+                            }
+                        }
                     }
                     if ( $$mod_info{ 'fields:repeat' } )
                     {
                         $repeat{ $$mod_info{ 'fields:id' } } = $$mod_info{ 'fields:repeat' };
-                        $repeat{ $$mod_info{ 'fields:id' } } =~ s/:.*$//;
+#                        $repeat{ $$mod_info{ 'fields:id' } } =~ s/:.*$//;
                         $repeattype{ $$mod_info{ 'fields:id' } } = $$mod_info{ 'fields:type' };
                     }
                 } while( $mod_info = next_json( $ref_mod, 'fields:id' ) );
@@ -1339,7 +1351,7 @@ sub check_files {
                                     $graphviz_repeaters{$modname} .= "  $k2 \[label=\"$me\[" . $repeater{$me} . "\]\"\]\n";
                                     $graphviz_repeaters{$modname} .= "  $k1 -> $k2\n";
                                     $depth++;
-                                    if ( $depth > 4 )
+                                    if ( $depth > 25 )
                                     {
                                         $error .= "Module $f field '$k' exceeds maximum supported repeater depth\n";
                                         last;
