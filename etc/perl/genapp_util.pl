@@ -1227,7 +1227,6 @@ sub check_files {
                 my $ref_mod = {};
                 my $mod_info = start_json( $json, $ref_mod );
                 my %repeater;
-                my %repeaterlb;
                 my %repeat;
                 my %repeattype;
                 my $modname = $f;
@@ -1243,7 +1242,7 @@ sub check_files {
                                 my $k = $$mod_info{ 'fields:id' } . ":" . $lbvalues[ $i ];
                                 $repeater  { $k } = $$mod_info{ 'fields:type' } . " choice " . ( 1 + ( ( $i - 1 ) / 2 ) );
                                 $repeat    { $k } = $$mod_info{ 'fields:id' };
-                                $repeattype{ $k } = $$mod_info{ 'fields:type' } . " choice";
+                                $repeattype{ $k } = $$mod_info{ 'fields:type' } . " choice " . ( 1 + ( ( $i - 1 ) / 2 ) );
                             }
                         }
                     }
@@ -1342,13 +1341,17 @@ sub check_files {
                             my $depth = 0;
                             my $me    = $k;
                             my $k1    = "\"$me\"";
-                            $graphviz_repeaters{$modname} .= "  $k1 \[label=\"$me\[" . $repeattype{$me} . "\]\"\]\n";
+                            my $lbl = $me;
+                            $lbl =~ s/^.*://;
+                            $graphviz_repeaters{$modname} .= "  $k1 \[label=\"$lbl\[" . $repeattype{$me} . "\]\"\]\n";
                             while ( $me = $repeat{ $me } )
                             {
                                 my $k2  = "\"$me\"";
                                 if ( !$used_graph{ "$k1:$k2" }++ ) 
                                 {
-                                    $graphviz_repeaters{$modname} .= "  $k2 \[label=\"$me\[" . $repeater{$me} . "\]\"\]\n";
+                                    my $lbl = $me;
+                                    $lbl =~ s/^.*://;
+                                    $graphviz_repeaters{$modname} .= "  $k2 \[label=\"$lbl\[" . $repeater{$me} . "\]\"\]\n";
                                     $graphviz_repeaters{$modname} .= "  $k1 -> $k2\n";
                                     $depth++;
                                     if ( $depth > 25 )
