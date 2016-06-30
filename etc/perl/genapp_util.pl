@@ -3,6 +3,10 @@
 #    
 #*
 
+# user definition
+
+my $max_repeater_depth = 25;
+
 # subroutines for general usage
 
 use JSON;
@@ -1219,7 +1223,7 @@ sub check_files {
                     } else {
                         $error .= "Module $f has fields with duplicate id \"" . $$mod_info{ 'fields:id' } . "\"\n" if $ids{ $$mod_info{ 'fields:id' } }++;
                     }
-                    $error .= "Module $f field " . $$mod_info{ 'fields:id' } . " is a listbox but is missing the required \"values\" tag\n" if $$mod_info{ 'fields:type' } eq 'listbox' && !$$mod_info{ 'fields:values' };
+                    $error .= "Module $f field " . $$mod_info{ 'fields:id' } . " is a listbox but is missing the required \"values\" tag\n" if $$mod_info{ 'fields:type' } eq 'listbox' && !$$mod_info{ 'fields:values' } && !$$mod_info{ 'fields:pull' };
                 } while( $mod_info = next_json( $ref_mod, 'fields:id' ) );
             }
             # check repeaters & repeats
@@ -1304,7 +1308,7 @@ sub check_files {
                             }
 
                             $depth++;
-                            if ( $depth > 25 )
+                            if ( $depth > $max_repeater_depth )
                             {
                                 $error .= "Module $f field '$k' exceeds maximum supported repeater depth\n";
                                 last;
@@ -1324,7 +1328,7 @@ sub check_files {
                             {
                                 $line .= " => $me\[$repeater{$me}\]";
                                 $depth++;
-                                if ( $depth > 4 )
+                                if ( $depth > $max_repeater_depth )
                                 {
                                     $error .= "Module $f field '$k' exceeds maximum supported repeater depth\n";
                                     last;
@@ -1354,7 +1358,7 @@ sub check_files {
                                     $graphviz_repeaters{$modname} .= "  $k2 \[label=\"$lbl\[" . $repeater{$me} . "\]\"\]\n";
                                     $graphviz_repeaters{$modname} .= "  $k1 -> $k2\n";
                                     $depth++;
-                                    if ( $depth > 25 )
+                                    if ( $depth > $max_repeater_depth )
                                     {
                                         $error .= "Module $f field '$k' exceeds maximum supported repeater depth\n";
                                         last;
