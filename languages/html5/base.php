@@ -674,24 +674,48 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
         }
     }
 
+    __~debug:basemylog{error_log( "old repeaters __oldrepeaters__ newrepeaters __newrepeaters__\n", 3, "/tmp/mylog" );}
     $keys = preg_grep( "/-/", array_keys( $_REQUEST ) );
-    foreach ( $keys as $k => $v )
-    {
-        $a = preg_split( "/-/", $v );
-        __~debug:basemylog{error_log( "preg_split of $v:\n" . json_encode( $a, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/mylog" );}
-        if ( !isset( $_REQUEST[ $a[ 0 ] ] ) || !is_array( $_REQUEST[ $a[ 0 ] ] ) ) {
-            $_REQUEST[ $a[ 0 ] ] = [];
-        }
-        $obj = &$_REQUEST[ $a[ 0 ] ];
-        for ( $i = 1; $i < count( $a ) - 1; ++$i ) {
-            if ( !isset( $obj[ $a[ $i ] ] ) || !is_array( $obj[ $a[ $i ] ] ) ) {
-                $obj[ $a[ $i ] ] = [];
+    foreach ( $keys as $k => $v ) {
+        if ( !preg_match( "/^_/", $v ) ) {
+            $a = preg_split( "/-/", $v );
+            if ( 1 ) {
+                $i = count( $a ) - 1;
+                $isdigit = ctype_digit( $a[ $i ] );
+                __~debug:basemylog{error_log( "old repeaters style used isdigit=$isdigit i=$i key=" . $a[$i] . " value $v\n", 3, "/tmp/mylog" );}
+                if ( $isdigit && $i > 0 ) {
+                    __~debug:basemylog{error_log( "array add $v\n", 3, "/tmp/mylog" );}
+                    if ( !is_array( $_REQUEST[ $a[ $i - 1 ] ] ) ) {
+                        $_REQUEST[ $a[ $i - 1 ] ] = [];
+                    }
+                    $_REQUEST[ $a[ $i - 1 ] ][ $a[ $i ] ] = $_REQUEST[ $v ];
+                } else {
+                    if ( !$isdigit ) {
+                        __~debug:basemylog{error_log( "not array add $v\n", 3, "/tmp/mylog" );}
+                        $_REQUEST[ $a[ $i ] ] = $_REQUEST[ $v ];
+                    } else {
+                        __~debug:basemylog{error_log( "not array add $v and skipped\n", 3, "/tmp/mylog" )};
+                    }
+                }
+                unset( $_REQUEST[ $v ] );
+            } else { // old new way of long tags
+                __~debug:basemylog{error_log( "new repeaters style used\n", 3, "/tmp/mylog" );}
+                __~debug:basemylog{error_log( "preg_split of $v:\n" . json_encode( $a, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/mylog" );}
+                if ( !isset( $_REQUEST[ $a[ 0 ] ] ) || !is_array( $_REQUEST[ $a[ 0 ] ] ) ) {
+                    $_REQUEST[ $a[ 0 ] ] = [];
+                }
+                $obj = &$_REQUEST[ $a[ 0 ] ];
+                for ( $i = 1; $i < count( $a ) - 1; ++$i ) {
+                    if ( !isset( $obj[ $a[ $i ] ] ) || !is_array( $obj[ $a[ $i ] ] ) ) {
+                        $obj[ $a[ $i ] ] = [];
+                    }
+                    $obj = &$obj[ $a[ $i ] ];
+                }
+                $obj[ $a[ count( $a ) - 1 ] ] = $_REQUEST[ $v ];
+                // $_REQUEST[ $a[ 0 ] ][ $a[ 1 ] - 1 ] = $_REQUEST[ $v ];
+                unset( $_REQUEST[ $v ] );
             }
-            $obj = &$obj[ $a[ $i ] ];
         }
-        $obj[ $a[ count( $a ) - 1 ] ] = $_REQUEST[ $v ];
-        // $_REQUEST[ $a[ 0 ] ][ $a[ 1 ] - 1 ] = $_REQUEST[ $v ];
-        unset( $_REQUEST[ $v ] );
     }
 
     __~debug:basemylog{error_log( "request ready to jsonize\n" . print_r( $_REQUEST, true ) . "\n", 3, "/tmp/mylog" );}
