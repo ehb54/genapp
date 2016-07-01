@@ -49,7 +49,7 @@ ga.repeat.map           = {};
 // initializes the repeat structure & stores the html and eval for a field and returns a placeholder
 
 ga.repeat.repeat = function( mod, id, html, this_eval ) {
-    __~debug:repeat{console.log( "ga.repeat.repeat( " + mod + " , " + id + " , html , eval , " + orgid + " )" );}
+    __~debug:repeat{console.log( "ga.repeat.repeat( " + mod + " , " + id + " , html , eval )" );}
 
     ga.repeat.data[ mod ] = ga.repeat.data[ mod ] || {};
     ga.repeat.data[ mod ].repeat = ga.repeat.data[ mod ].repeat || {};
