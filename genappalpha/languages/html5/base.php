@@ -635,6 +635,31 @@ if ( sizeof( $_FILES ) ) {
    }
 }
 
+function only_numerics( $a ) {
+    $b = [];
+    foreach ( $a as $v ) {
+        if ( ctype_digit( $v ) ) {
+            $b[] = $v;
+        }
+    }
+    __~debug:basemylog{error_log( "only numerics from:\n" . json_encode( $a, JSON_PRETTY_PRINT ) . "\nto:\n" . json_encode( $b, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/mylog" );}
+    return $b;
+}
+
+function last_nonnumeric( $a ) {
+    $i = count( $a ) - 1;
+    while ( $i >= 0 && ctype_digit( $a[ $i ] ) ) {
+        --$i;
+    }
+    if ( $i < 0 ) {
+        error_log( "__application__ __menu:id__ __menu:modules:id__ last_nonnumeric could not find one\n" . json_encode( $a, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/php_errors" );
+        return $a[ 0 ];
+    }
+    __~debug:basemylog{error_log( "last non numeric from:\n" . json_encode( $a, JSON_PRETTY_PRINT ) . "\n is " . $a[$i] . "\n", 3, "/tmp/mylog" );}
+    return $a[ $i ];
+}    
+
+
 if ( sizeof( $_REQUEST ) )
 {
     ob_start();
@@ -680,21 +705,49 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
         if ( !preg_match( "/^_/", $v ) ) {
             $a = preg_split( "/-/", $v );
             if ( !__~extendedjsoninputtags{1}0 ) {
-                $i = count( $a ) - 1;
-                $isdigit = ctype_digit( $a[ $i ] );
-                __~debug:basemylog{error_log( "old repeaters style used isdigit=$isdigit i=$i key=" . $a[$i] . " value $v\n", 3, "/tmp/mylog" );}
-                if ( $isdigit && $i > 0 ) {
-                    __~debug:basemylog{error_log( "array add $v\n", 3, "/tmp/mylog" );}
-                    if ( !is_array( $_REQUEST[ $a[ $i - 1 ] ] ) ) {
-                        $_REQUEST[ $a[ $i - 1 ] ] = [];
-                    }
-                    $_REQUEST[ $a[ $i - 1 ] ][ $a[ $i ] ] = $_REQUEST[ $v ];
-                } else {
-                    if ( !$isdigit ) {
-                        __~debug:basemylog{error_log( "not array add $v\n", 3, "/tmp/mylog" );}
-                        $_REQUEST[ $a[ $i ] ] = $_REQUEST[ $v ];
+                if ( 1 ) {
+                    $b = only_numerics( $a );
+                    $tag = last_nonnumeric( $a );
+                    if ( count( $b ) ) {
+                        if ( !isset( $_REQUEST[ $tag ] ) || !is_array( $_REQUEST[ $tag ] ) ) {
+                            $_REQUEST[ $tag ] = [];
+                        }
+                        if ( !is_array( $_REQUEST[ $tag ] ) ) {
+                            error_log( "__application__ __menu:id__ __menu:modules:id__ target tag $tag in not an array in request v $v\n" . json_encode( $_REQUEST, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/php_errors" );
+                        } else {
+                            $obj = &$_REQUEST[ $tag ];
+                            foreach ( $b as $v2 ) {
+                                if ( !isset( $obj[ $v2 ] ) ) {
+                                    $obj[ $v2 ] = [];
+                                }
+                                if ( !is_array( $obj[ $v2 ] ) ) {
+                                    error_log( "__application__ __menu:id__ __menu:modules:id__ target tag $tag in not an array in request v $v object\n" . json_encode( $obj, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/php_errors" );
+                                    break;
+                                }
+                                $obj = &$obj[ $v2 ];
+                            }
+                            $obj = $_REQUEST[ $v ];
+                        }
                     } else {
-                        __~debug:basemylog{error_log( "not array add $v and skipped\n", 3, "/tmp/mylog" )};
+                        $_REQUEST[ $tag ] = $_REQUEST[ $v ];
+                    }
+                } else {
+                    $i = count( $a ) - 1;
+                    $isdigit = ctype_digit( $a[ $i ] );
+                    __~debug:basemylog{error_log( "old repeaters style used isdigit=$isdigit i=$i key=" . $a[$i] . " value $v\n", 3, "/tmp/mylog" );}
+                    if ( $isdigit && $i > 0 ) {
+                        __~debug:basemylog{error_log( "array add $v\n", 3, "/tmp/mylog" );}
+                        if ( !is_array( $_REQUEST[ $a[ $i - 1 ] ] ) ) {
+                            $_REQUEST[ $a[ $i - 1 ] ] = [];
+                        }
+                        $_REQUEST[ $a[ $i - 1 ] ][ $a[ $i ] ] = $_REQUEST[ $v ];
+                    } else {
+                        if ( !$isdigit ) {
+                            __~debug:basemylog{error_log( "not array add $v\n", 3, "/tmp/mylog" );}
+                            $_REQUEST[ $a[ $i ] ] = $_REQUEST[ $v ];
+                        } else {
+                            __~debug:basemylog{error_log( "not array add $v and skipped\n", 3, "/tmp/mylog" )};
+                        }
                     }
                 }
                 unset( $_REQUEST[ $v ] );
