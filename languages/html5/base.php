@@ -767,6 +767,11 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
                     if ( !isset( $obj[ $a[ $i ] ] ) || !is_array( $obj[ $a[ $i ] ] ) ) {
                         $obj[ $a[ $i ] ] = [];
                     }
+                    if ( ctype_digit( $a[ $i ] ) && count( $obj ) <= $a[ $i ] ) {
+                        __~debug:basemylog{error_log( "for $v ...\$a[\$i] is $a[$i] filling upto $a[$i]\n", 3, "/tmp/mylog" );}
+                        $obj += array_fill( 0, $a[ $i ] + 1, null );
+                        ksort( $obj );
+                    }
                     $obj = &$obj[ $a[ $i ] ];
                 }
                 $obj[ $a[ count( $a ) - 1 ] ] = $_REQUEST[ $v ];
