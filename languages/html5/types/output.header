@@ -3,6 +3,7 @@ ga.tmp.html = "<hr>";
 __~nooutputhr{ga.tmp.html = "";}
 $("#__moduleid__").append( ga.tmp.html );
 </script>
+__~centeroutput{<center>}
 <form id="__moduleid___output">
 <div id="__moduleid___output_msgs" class="warning" type="msgs"></div>
 <script>

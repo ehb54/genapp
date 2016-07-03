@@ -1,5 +1,6 @@
 </table>
 </form>
+__~centeroutput{</center>}
 __~center{</center>}
 __~height{</div>}
 __~autosubmit{<script>$( "#__moduleid___submit" ).trigger( "click" );</script>}

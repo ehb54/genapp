@@ -1,4 +1,4 @@
-<tr>__~fields:prehline{<td><hr></td></tr><tr>}<td><label__~fields:default{ class="__fields:default__"}>__fields:label__</label></td>__~fields:posthline{</tr><tr><td><hr></td>}</tr>
+<tr>__~fields:prehline{<td><hr></td></tr><tr>}<td__~fields:colspan{ colspan="__fields:colspan__"}><label__~fields:default{ class="__fields:default__"}>__fields:label__</label></td>__~fields:posthline{</tr><tr><td><hr></td>}</tr>
 
 
 
