@@ -1,0 +1,10 @@
+</table>
+<p><label for="__fields:id__">__fields:label__
+<div id="__fields:id__" type="image" __~fields:width{ data-width="__fields:width__"}__~fields:height{ data-height="__fields:height__"}>
+</div>
+</label></p>
+<script>
+ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );
+ga.value.extra_resets( "__fields:id__" );
+</script>
+<table>
