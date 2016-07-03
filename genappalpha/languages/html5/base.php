@@ -724,6 +724,11 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
                                     error_log( "__application__ __menu:id__ __menu:modules:id__ target tag $tag in not an array in request v $v object\n" . json_encode( $obj, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/php_errors" );
                                     break;
                                 }
+                                if ( count( $obj ) <= $v2 ) {
+                                    __~debug:basemylog{error_log( "for $v ... v2 is $v2 filling upto $v2\n", 3, "/tmp/mylog" );}
+                                    $obj += array_fill( 0, $v2 + 1, null );
+                                    ksort( $obj );
+                                }
                                 $obj = &$obj[ $v2 ];
                             }
                             $obj = $_REQUEST[ $v ];
