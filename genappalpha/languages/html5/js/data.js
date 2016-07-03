@@ -109,6 +109,20 @@ __~debug:values{        console.log( "ga.data.update() atomic structure jmol scr
                 thtml += '</video>';
                 __~debug:video{console.log( "video: thtml " + thtml );}
                 jqhtag.html( thtml );
+                break;
+            case "image" : 
+                jqhtag = $( "#" + k );
+                thtml = "<img ";
+                if ( jqhtag.attr( "data-width" ) ) {
+                    thtml += ' width="' +  jqhtag.attr( "data-width" ) + '"';
+                }
+                if ( jqhtag.attr( "data-height" ) ) {
+                    thtml += ' height="' +  jqhtag.attr( "data-height" ) + '"';
+                }
+                thtml += ' src="' + v + '">';
+                __~debug:image{console.log( "image: thtml " + thtml );}
+                jqhtag.html( thtml );
+                break;
             case "filelink" : 
                 tlink = "<a href=\"" + v + "\" target=\"_blank\">" + v.split( '/' ).pop() + "</a>";
                 savekey = mod_out + ":#" + k + ":last_value";
