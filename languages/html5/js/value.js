@@ -469,6 +469,10 @@ __~debug:plottwod{                     console.log( "ga.value.resetDefaultValue(
                         ga.value.clear.plot2d( tag );
                         t.plot( [[]], ga.value.get.plot2d.plot_options( tag ) ); break;
                         break;
+          case "image" : 
+          __~debug:image{console.log( "reset default value for image" );}
+          t.html("");
+          break;
           case "video" : 
           __~debug:video{console.log( "reset default value for video" );}
           t.html("");
