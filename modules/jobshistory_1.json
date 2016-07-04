@@ -15,8 +15,8 @@
                    "label"    : "Start Date",
                    "type"     : "date",
                    #"default"  : "0000-00-00",
-                   "required" : "true"
-                   #"help"     : "YYYY-MM-DD"
+                   "required" : "true",
+                   "help"     : "Note: the time for the start date is at 0h (12 am)"
                    },
                   {
                    "role"    : "input",
@@ -24,8 +24,9 @@
                    "label"   : "End Date",
                    "type"    : "date",
                    #"default" : "0000-00-00",
-                   "required" : "true"
+                   "required" : "true",
                    #"help"     : "YYYY-MM-DD"
+                   "help"     : "Note: the time for the end date is at 24h (midnight)"
                    },
                   {
 		   "role"    : "output"

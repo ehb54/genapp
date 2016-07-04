@@ -77,9 +77,10 @@ if ( !check_dates($arg1) || !check_dates($arg2) ) {
 
 $start_date = new DateTime($arg1);
 $end_date = new DateTime($arg2);
+$end_date->add(new DateInterval('P1D'));
 
 $date_1 = new MongoDate(strtotime($start_date->format("Y-m-d H:i:s")));
-$date_2 = new MongoDate(strtotime($end_date->format("Y-m-d H:i:s") ));
+$date_2 = new MongoDate(strtotime($end_date->format("Y-m-d H:i:s") . " +1 day"));
 
 //echo $arg1. $arg2 . "\n";
 
@@ -104,6 +105,9 @@ foreach ($cursor_users as $obj_users){
    $User_array[$obj_users['name']] = array();
 }
 
+$add_users = [];
+$totals    = [];
+
 foreach ($cursor_jobs as $obj_jobs) {
 
   $this_user = $obj_jobs['user'];   
@@ -114,73 +118,113 @@ foreach ($cursor_jobs as $obj_jobs) {
   $user_start = $this_when_start->sec + ($this_when_start->usec)*pow(10.0, -6.0 );
   $user_current = $this_when_current->sec + ($this_when_current->usec)*pow(10.0, -6.0 );	
 
-  if ( $db->users->find( array ( "user" => array( "name" => $this_user ) ) ) ){
-
-    if (date(DATE_ISO8601, $user_start) >= $start_date->format(DATE_ISO8601) && date(DATE_ISO8601, $user_current) <= $end_date->format(DATE_ISO8601)){
-  
-      // Status
-    
-       if ( array_key_exists( 'status', $obj_jobs ) ) {
-       	  $this_status = end( $obj_jobs[ 'status' ] );
-       } else {
-           $this_status = 'unknown';
-       }
-       
-       if ( ($this_status == 'started' || $this_status == 'running') && !$db->running->find(array("_id" => $obj_jobs['_id']))  ){
-           $this_status = 'failed';
-       }
-       
+  if (date(DATE_ISO8601, $user_start) >= $start_date->format(DATE_ISO8601) && date(DATE_ISO8601, $user_current) <= $end_date->format(DATE_ISO8601)){
         
-       if ( array_key_exists( $this_status, $User_array[ $this_user ]) )   {
+      // Status
+      
+      if ( array_key_exists( 'status', $obj_jobs ) ) {
+          $this_status = end( $obj_jobs[ 'status' ] );
+      } else {
+          $this_status = 'unknown';
+      }
+      
+      if ( ($this_status == 'started' || $this_status == 'running') && !$db->running->find(array("_id" => $obj_jobs['_id']))  ){
+          $this_status = 'failed';
+      }
+      
+      if ( $this_user == "not logged in" ) {
+          $this_user = isset( $obj_jobs[ 'remoteip' ] ) ? $obj_jobs[ 'remoteip' ] : "anonymous";
+      }
+      if ( !isset( $User_array[ $this_user ] ) ) {
+          $User_array[ $this_user ] = [];
+          $add_users[] = $this_user;
+      } 
+      
+      if ( array_key_exists( $this_status, $User_array[ $this_user ]) )   {
           $User_array[ $this_user ][ $this_status  ] ++;
-       } else {
+      } else {
           $User_array[ $this_user ][ $this_status  ] = 1;
-       }
-    
-       $possible_status[ $this_status ] = 1;     
-    
-       // Duration
-    
-       if (array_key_exists( 'duration', $User_array[ $this_user ])){ 
-            $User_array[ $this_user ][ 'duration' ] += ($user_current - $user_start);
-         } else {
-            $User_array[ $this_user ][ 'duration' ]  = ($user_current - $user_start);
-         }
-       }
-   }
-}
+      }
 
+      if ( array_key_exists( $this_status, $totals) )   {
+          $totals[ $this_status  ] ++;
+      } else {
+          $totals[ $this_status  ] = 1;
+      }
+      
+      $possible_status[ $this_status ] = 1;     
+      
+      // Duration
+      
+      if (array_key_exists( 'duration', $User_array[ $this_user ])){ 
+          $User_array[ $this_user ][ 'duration' ] += ($user_current - $user_start);
+      } else {
+          $User_array[ $this_user ][ 'duration' ]  = ($user_current - $user_start);
+      }
+      if (array_key_exists( 'duration', $totals ) ){ 
+          $totals[ 'duration' ] += ($user_current - $user_start);
+      } else {
+          $totals[ 'duration' ]  = ($user_current - $user_start);
+      }
+  }
+}
 
 $cursor_users1 = $collection_users->find();
 
-//$cursor_users->rewind();
-$cursor_users1->sort( array( "name" => 1 ) );
+$final_users = [];
+foreach ( $cursor_users1 as $v ) {
+   $final_users[ $v['name' ] ] = $v;
+}
+
+foreach ( $add_users as $v ) {
+   $final_users[ $v ] = [];
+   $final_users[ $v ][ 'name' ]  = $v;
+   $final_users[ $v ][ 'email' ] = "anonymous";
+}
+ksort( $final_users );
+
+$totals_info = 
+    array(
+    "name"             => "<strong>Totals</strong>"
+    ,"email"           => "<hr>"
+    ,"duration (h)"    => array_key_exists( 'duration', $totals ) ? round( $totals[ 'duration' ] /3600, 3) : 0
+    );
+
+foreach ( $possible_status as $status => $null) {
+    if ( array_key_exists( $status, $totals ) ) {
+        $totals_info[ $status ] = $totals[ $status ];
+    } else {
+        $totals_info[ $status ] = 0;
+    }
+}
 
 $i=0;
-foreach ( $cursor_users1 as $v ) {
+
+foreach ( $final_users as $v ) {
     $name = $v[ 'name' ];
     $userinfo[] =
         array(
             "name"             => $name
-            ,"email"           => "<a class='title' href='mailto:" . $v[ 'email' ] . "'>" . $v[ 'email' ] . "</a>"
+            ,"email"           => $v[ 'email' ] == "anonymous" ? "anonymous" : ( "<a class='title' href='mailto:" . $v[ 'email' ] . "'>" . $v[ 'email' ] . "</a>" )
 	    ,"duration (h)"    => array_key_exists( 'duration', $User_array[ $name ]) ? round($User_array[ $name ][ 'duration' ] /3600, 3) : 0
         );
-	foreach ( $possible_status as $status => $null) {
-	    if ( array_key_exists( $status, $User_array[ $name ] ) ) {
-	       $userinfo[$i][ $status ] = $User_array[ $name ][ $status ];
-	    } else {
-	       $userinfo[$i][ $status ] = 0;
-	      }
- 	}
-	++$i;
+    foreach ( $possible_status as $status => $null) {
+        if ( array_key_exists( $status, $User_array[ $name ] ) ) {
+            $userinfo[$i][ $status ] = $User_array[ $name ][ $status ];
+        } else {
+            $userinfo[$i][ $status ] = 0;
+        }
+    }
+    ++$i;
 }
 
 
 // HTML Table//////
 $html_userinfo = "<table class='padcell'><tr><th>" . implode( "</th><th>", array_keys( $userinfo[ 0 ] ) ) . "</th></tr>";
+$html_userinfo .= "<tr><td>" . implode( "</td><td> ",  $totals_info ) . "</td></tr>";
 
 foreach ( $userinfo as $k => $v ) {
-$html_userinfo .= "<tr><td>" . implode( "</td><td> ",  $v ) . "</td></tr>";
+    $html_userinfo .= "<tr><td>" . implode( "</td><td> ",  $v ) . "</td></tr>";
 }
 
 $html_userinfo .= "</table>";
