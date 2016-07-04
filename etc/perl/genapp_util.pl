@@ -1317,6 +1317,19 @@ sub check_files {
                     }
                     if ( $show_repeaters ) 
                     {
+                        my $modname = $f;
+                        $modname =~ s/\.json$//;
+                        $modname =~ s/^modules\///;
+
+                        my $fo =  "output/repeaters/${modname}_repeater.txt";
+                        mkdir_for_file( $fo );
+                        my $fh;
+                        if ( !open $fh, ">$fo" )
+                        {
+                            $error .= "show repeaters: error opening output file $fo\n";
+                            undef $fh;
+                        }
+
                         # build a nice tree for display
                         print "-"x30 . "\nfull dependency\n" . "-"x30 . "\n";
                         foreach my $k ( keys %repeat )
@@ -1335,7 +1348,10 @@ sub check_files {
                                 }
                             }
                             print "$line\n";
+                            print $fh "$line\n" if $fh;
                         }
+                        close $fh if $fh;
+                        print "created: $fo\n" if $fh;
                     }
                     if ( $graphviz ) 
                     {
@@ -1398,8 +1414,7 @@ sub check_files {
 
     if ( $graphviz ) 
     {
-        foreach my $k ( keys %graphviz_repeaters )
-        {
+        foreach my $k ( keys %graphviz_repeaters ) {
             next if $k =~ /\//;
             my $fo = "output/graphviz/${k}_repeater.dot";
             mkdir_for_file( $fo );
