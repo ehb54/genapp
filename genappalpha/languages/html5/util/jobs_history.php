@@ -32,13 +32,21 @@ $split1 = array();
 $split2 = array();
 
 // input dates
-fwrite(STDOUT, "Enter START Date (YYYY-MM-DD): ");
-$arg1 = trim(fgets(STDIN));
+if ( isset( $argv[ 1 ] ) ) {
+    $arg1 = $argv[ 1 ];
+} else {
+    fwrite(STDOUT, "Enter START Date (YYYY-MM-DD): ");
+    $arg1 = trim(fgets(STDIN));
+}
 
 check_input_dates($arg1, $split1, "START");
 
-fwrite(STDOUT, "Enter END Date (YYYY-MM-DD): ");
-$arg2 = trim(fgets(STDIN));
+if ( isset( $argv[ 2 ] ) ) {
+    $arg2 = $argv[ 2 ];
+} else {
+    fwrite(STDOUT, "Enter END Date (YYYY-MM-DD): ");
+    $arg2 = trim(fgets(STDIN));
+}
 
 check_input_dates($arg2, $split2, "END");
 
@@ -46,7 +54,7 @@ $start_date = new DateTime($arg1);
 $end_date = new DateTime($arg2);
 
 $date_1 = new MongoDate(strtotime($start_date->format("Y-m-d H:i:s")));
-$date_2 = new MongoDate(strtotime($end_date->format("Y-m-d H:i:s") ));
+$date_2 = new MongoDate(strtotime($end_date->format("Y-m-d H:i:s") . " +1 day"));
 
 //echo $arg1. $arg2 . "\n";
 
@@ -92,6 +100,12 @@ foreach ($cursor_jobs as $obj_jobs) {
        $this_status = 'failed';
    }
    
+   if ( $this_user == "not logged in" ) {
+      $this_user = isset( $obj_jobs[ 'remoteip' ] ) ? $obj_jobs[ 'remoteip' ] : "anonymous";
+   }
+   if ( !isset( $User_array[ $this_user ] ) ) {
+      $User_array[ $this_user ] = [];
+   } 
     
    if ( array_key_exists( $this_status, $User_array[ $this_user ]) )   {
       $User_array[ $this_user ][ $this_status  ] ++;
