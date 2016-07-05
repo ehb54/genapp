@@ -116,7 +116,7 @@
                    "type"     : "password",
                    "required" : "true",
                    "pattern"  : ".{10,}",
-                   "match"    : "password1",
+                   "match"    : "changepassword-password1",
                    "help"     : "Repeat the password of minimum 10 characters length",
                    "repeat"   : "changepassword",
                    "size"     : "30"
@@ -148,6 +148,7 @@
                    "required" : "true",
                    "help"     : "Repeat the valid email address",
                    "pull"     : "email",
+                   "match"    : "changeemail-email1",
                    "repeat"   : "changeemail",
                    "size"     : "50"
                    },

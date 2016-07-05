@@ -94,18 +94,18 @@ if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) )
    if ( isset( $_REQUEST[ 'newproject' ] ) &&
         $_REQUEST[ 'newproject' ] == "on" )
    {
-      if ( !preg_match( '/^[a-zA-Z0-9_]+$/', $_REQUEST[ 'newprojectname' ] ) )
+      if ( !preg_match( '/^[a-zA-Z0-9_]+$/', $_REQUEST[ 'newproject-newprojectname' ] ) )
       {
           $results[ "error" ] .= "Invalid new project name.  It must contain only letters, numbers and underscores";
       } else {
           $update[ '$push' ][ 'project' ] = array( 
-                                                 $_REQUEST[ 'newprojectname' ] => array( 
-                                                                                       'desc'    => $_REQUEST[ 'newprojectdesc' ], 
+                                                 $_REQUEST[ 'newproject-newprojectname' ] => array( 
+                                                                                       'desc'    => $_REQUEST[ 'newproject-newprojectdesc' ], 
                                                                                        'created' => $now 
                                                                                        ) 
                                                  );
-          $results[ 'status' ] .= "Adding project " . $_REQUEST[ 'newprojectname' ] . ". ";
-          $results[ '_project' ] = $_REQUEST[ 'newprojectname' ];
+          $results[ 'status' ] .= "Adding project " . $_REQUEST[ 'newproject-newprojectname' ] . ". ";
+          $results[ '_project' ] = $_REQUEST[ 'newproject-newprojectname' ];
           $results[ 'status' ] .= "Current project is now " . $results[ '_project' ] . ". ";
           $_SESSION[ $window ][ 'project' ] = $results[ '_project' ];
           $do_update = 1;
@@ -146,7 +146,7 @@ if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) )
         $_REQUEST[ 'changepassword' ] == "on" )
    {
       $ok_to_update = 0;
-      $pw = $_REQUEST[ 'password' ];
+      $pw = $_REQUEST[ 'changepassword-password' ];
 
       if ( PHP_VERSION_ID < 50500 )
       {
@@ -165,13 +165,13 @@ if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) )
          $results[ "error" ] .= "Current password incorrect. ";
       }
 
-      if ( !is_string( $_REQUEST[ 'password1' ] ) || strlen( $_REQUEST[ 'password1' ] ) < 10 || strlen( $_REQUEST[ 'password1' ] ) > 100 )
+      if ( !is_string( $_REQUEST[ 'changepassword-password1' ] ) || strlen( $_REQUEST[ 'changepassword-password1' ] ) < 10 || strlen( $_REQUEST[ 'changepassword-password1' ] ) > 100 )
       {
          $results[ "error" ] .= "Empty or invalid new password. ";
          $ok_to_update = 0;
       }
 
-      if( $_REQUEST[ 'password1' ] != $_REQUEST[ 'password2' ] )
+      if( $_REQUEST[ 'changepassword-password1' ] != $_REQUEST[ 'changepassword-password2' ] )
       {
          $results[ 'error' ] .= "Passwords do not match. ";
          $ok_to_update = 0;
@@ -181,9 +181,9 @@ if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) )
       {
          if ( PHP_VERSION_ID < 50500 )
          {
-            $pw = crypt( $_REQUEST[ 'password1' ] );
+            $pw = crypt( $_REQUEST[ 'changepassword-password1' ] );
          } else {
-            $pw = password_hash( $_REQUEST[ 'password1' ], PASSWORD_DEFAULT );
+            $pw = password_hash( $_REQUEST[ 'changepassword-password1' ], PASSWORD_DEFAULT );
          }
 
          $update[ '$set' ][ 'password' ]           = $pw;
@@ -214,8 +214,8 @@ if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) )
    {
       $ok_to_update = 0;
 
-      $email1 = filter_var( $_REQUEST[ 'email1' ], FILTER_SANITIZE_EMAIL );
-      $email2 = filter_var( $_REQUEST[ 'email2' ], FILTER_SANITIZE_EMAIL );
+      $email1 = filter_var( $_REQUEST[ 'changeemail-email1' ], FILTER_SANITIZE_EMAIL );
+      $email2 = filter_var( $_REQUEST[ 'changeemail-email2' ], FILTER_SANITIZE_EMAIL );
 
       if ( $email1 == $email2 )
       {
@@ -346,12 +346,12 @@ if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) )
 } 
 
 function cmp_colors() {
-    $txtr = "0x" . substr( $_REQUEST[ "colortext" ], 1, 2 );
-    $txtg = "0x" . substr( $_REQUEST[ "colortext" ], 3, 2 );
-    $txtb = "0x" . substr( $_REQUEST[ "colortext" ], 5, 2 );
-    $bdyr = "0x" . substr( $_REQUEST[ "colorbg" ], 1, 2 );
-    $bdyg = "0x" . substr( $_REQUEST[ "colorbg" ], 3, 2 );
-    $bdyb = "0x" . substr( $_REQUEST[ "colorbg" ], 5, 2 );
+    $txtr = "0x" . substr( $_REQUEST[ "updatecolors-colortext" ], 1, 2 );
+    $txtg = "0x" . substr( $_REQUEST[ "updatecolors-colortext" ], 3, 2 );
+    $txtb = "0x" . substr( $_REQUEST[ "updatecolors-colortext" ], 5, 2 );
+    $bdyr = "0x" . substr( $_REQUEST[ "updatecolors-colorbg" ], 1, 2 );
+    $bdyg = "0x" . substr( $_REQUEST[ "updatecolors-colorbg" ], 3, 2 );
+    $bdyb = "0x" . substr( $_REQUEST[ "updatecolors-colorbg" ], 5, 2 );
 
     return ( abs( $txtr - $bdyr ) + 
              abs( $txtg - $bdyg ) + 
@@ -362,11 +362,11 @@ function update_colors() {
     global $results;
     $results[ '_color' ] = [];
     $results[ '_color' ][ "body"   ] = [];
-    $results[ '_color' ][ "body"   ][ "background" ] = $_REQUEST[ "colorbg" ];
-    $results[ '_color' ][ "body"   ][ "color"      ] = $_REQUEST[ "colortext" ];
-    $results[ '_color' ][ "body"   ][ "text"       ] = $_REQUEST[ "colortext" ];
+    $results[ '_color' ][ "body"   ][ "background" ] = $_REQUEST[ "updatecolors-colorbg" ];
+    $results[ '_color' ][ "body"   ][ "color"      ] = $_REQUEST[ "updatecolors-colortext" ];
+    $results[ '_color' ][ "body"   ][ "text"       ] = $_REQUEST[ "updatecolors-colortext" ];
     $results[ '_color' ][ "footer" ] = [];
-    $results[ '_color' ][ "footer"   ][ "background" ] = $_REQUEST[ "colorbg" ];
+    $results[ '_color' ][ "footer"   ][ "background" ] = $_REQUEST[ "updatecolors-colorbg" ];
 }
 
 if ( strlen( trim( $results[ 'error' ] ) ) == 0 )
