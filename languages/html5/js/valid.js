@@ -37,7 +37,7 @@ ga.valid.checkText = function( tag ) {
     }	
     else {
 	//console.log("No pattern!");
-	if (!fieldValue) {
+	if (!fieldValue && t.prop( "required" ) ) {
 	    $( tag + "_msg" ).html(' missing required field');
 	}
 	else {
