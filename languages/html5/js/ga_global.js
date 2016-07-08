@@ -560,3 +560,67 @@ ga.trytilltrue = function( testeval, doeval, maxtries, timeout ) {
     }
     return setTimeout( ga.trytilltrue, timeout, testeval, doeval, maxtries, timeout );
 }
+
+ga.loginverify = function( data ) {
+    var msg = { text : data.text || "You must verify your email address." };
+
+    if ( data.useroptions ) {
+        if ( data.useroptions.resend ) {
+            msg.buttons = msg.buttons || [];
+            msg.buttons.push( { 
+                id : "resend"
+                ,label : "Resend the verification email"
+                ,cb : ga.loginverify.resend
+            } );
+        }
+        if ( data.useroptions.resend ) {
+            msg.buttons = msg.buttons || [];
+            msg.buttons.push( { 
+                id : "changeaddress"
+                ,label : "Change your email address and resend the verification" 
+                ,cb : ga.loginverify.change
+            } );
+        }
+        if ( data.useroptions.cancel ) {
+            msg.buttons = msg.buttons || [];
+            msg.buttons.push( {
+                id : "cancelregistration"
+                ,label : "Cancel your registration" 
+            } );
+        }
+    }                                
+
+    messagebox( msg );
+}
+
+ga.loginverify.resend = function () {
+    __~debug:loginverify{console.log( "ga.loginverify.resend()" );}
+    var form = $( "#sys_login" );
+    if ( !form ) {
+        return messagebox( { icon : "toast.png", text: "Internal error: form missing" } );
+    }
+    form.append( '<input type="hidden" name="_resendverify" class="toclear">' );
+    do_sys_login_submit( form );
+}
+
+ga.loginverify.change = function () {
+    __~debug:loginverify{console.log( "ga.loginverify.change()" );}
+    var form = $( "#sys_login" );
+    if ( !form ) {
+        return messagebox( { icon : "toast.png", text: "Internal error: form missing" } );
+    }
+// window to input email 2x to verify
+    form.append( '<input type="hidden" name="_resendverify" class="toclear">' );
+    do_sys_login_submit( form );
+}
+
+ga.loginverify.cancel = function () {
+    __~debug:loginverify{console.log( "ga.loginverify.cancel()" );}
+    var form = $( "#sys_login" );
+    if ( !form ) {
+        return messagebox( { icon : "toast.png", text: "Internal error: form missing" } );
+    }
+    form.append( '<input type="hidden" name="_cancel" class="toclear">' );
+    do_sys_login_submit( form );
+}
+
