@@ -101,6 +101,7 @@ function msg___moduleid__ ( id, data )
 $( "#__moduleid___submit" ).click( function( e ) {
    e.preventDefault();
    e.returnValue = false;
+   $( "#__moduleid__" ).find( ".toclear" ).remove();   
    if ( __moduleid___timeout_handler != "unset" ) {
        __~debug:jobtimeout{console.log( "Unsetting previous handler uuid " + __moduleid___timeout_handler_uuid );}
        clearTimeout( __moduleid___timeout_handler );
