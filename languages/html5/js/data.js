@@ -218,6 +218,11 @@ __~debug:values{        console.log( "ga.data.update() atomic structure jmol scr
                             __~debug:airavata{console.log( "ga.data.update() airavata msg in msging " + v );}
                             ga.data.airavata( hmod_out, v );
                         }
+                        if ( k == "_loginverify" )
+                        { 
+                            __~debug:loginverify{console.log( "ga.data.update() loginverify options found " + v );}
+                            ga.loginverify( v );
+                        }
                     }
                 } else {
                     if ( k == "-close" )

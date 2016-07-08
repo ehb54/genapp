@@ -78,6 +78,7 @@ ga.repeat.repeat = function( mod, id, html, this_eval ) {
     ga.repeat.data[ mod ].repeat[ id ].evalr = 
         this_eval 
         .replace( RegExp( '"#' + id + '"', "g" ), '"#%%id%%"' )
+        .replace( RegExp( '"#' + id + ' option', "g" ), '"#%%id%% option' )
         .replace( RegExp( ':' + id + ':', "g" ), ':%%id%%:' )
         .replace( RegExp( '"#' + id + '_msg"', "g" ), '"#%%id%%_msg"' )
         .replace( RegExp( '"' + id + '"', "g" ), '"%%id%%"' )

@@ -13,7 +13,6 @@ __~debug:check{   console.log( "checkMatch " + tag1 + " " + tag2 );}
    }
 }
     
-
 ga.valid.checkText = function( tag ) {
     var t = $( tag );
     var fieldValue=t.val();
@@ -28,7 +27,11 @@ ga.valid.checkText = function( tag ) {
 	if ( !reg.test(fieldValue) )
 	{
 	    //t.val( t.prop( "defaultValue" ) );
-	    $( tag + "_msg" ).html(' wrong format');
+            if ( fieldValue.length || t.prop( "required" ) ) {
+	        $( tag + "_msg" ).html( " wrong format" );
+            } else {
+                ok = 1;
+            }
 	}
 	else {
 	    ok = 1;
@@ -47,7 +50,6 @@ ga.valid.checkText = function( tag ) {
     return ok; 
 }
 
-
 ga.valid.checkFloat = function( tag ) {
     __~debug:check{   console.log( "checkfloat " + tag );}
     var t = $( tag );
@@ -59,7 +61,11 @@ ga.valid.checkFloat = function( tag ) {
     {
 	// t.val( t.prop( "defaultValue" ) );                                
 	//$( tag + "_msg" ).html( " not a valid floating point number, reset to default" );
-	$( tag + "_msg" ).html( " wrong format" );
+        if ( fieldValue.length || t.prop( "required" ) ) {
+	    $( tag + "_msg" ).html( " wrong format" );
+        } else {
+            ok = 1;
+        }
     } else {
 	ok = 1;
         if ( fieldValue < parseFloat ( t.attr( "min" ) ) )
@@ -91,7 +97,11 @@ ga.valid.checkInt = function( tag ) {
     {
 	//t.val( t.prop( "defaultValue" ) );
 	//$( tag + "_msg" ).html( " not a valid number, reset to default" );
-	$( tag + "_msg" ).html( " wrong format" );
+        if ( fieldValue.length || t.prop( "required" ) ) {
+	    $( tag + "_msg" ).html( " wrong format" );
+        } else {
+            ok = 1;
+        }
     } else {
 	ok = 1;
 	if ( fieldValue < parseInt ( t.attr( "min" ) ) )
