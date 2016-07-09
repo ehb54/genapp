@@ -55,9 +55,10 @@ ga.valid.checkFloat = function( tag ) {
     var t = $( tag );
     var fieldValue=t.val();
     var ok = 0;
-    //if ( isNaN( fieldValue ) )
+    //if ( isNaN( fieldValue ) ) 
     //if ( !fieldValue.match( /^[+-]?\d+(\.\d+)?$/ ) )
-    if ( !fieldValue.match( /^(([1-9][0-9]*)|(0))?([.][0-9]+)?([eE][-+]?[0-9]+)?$/ ) )
+    
+    if ( !fieldValue.match( /^-?(([1-9][0-9]*)|(0))?([.][0-9]+)?([eE][-+]?[0-9]+)?$/ ) )
     {
 	// t.val( t.prop( "defaultValue" ) );                                
 	//$( tag + "_msg" ).html( " not a valid floating point number, reset to default" );
@@ -92,8 +93,8 @@ ga.valid.checkInt = function( tag ) {
     var ok = 0;
 
     //if ( isNaN( fieldValue ) )
-   // if ( !fieldValue.match( /^[+-]?\d+$/ ) )    
-    if ( !fieldValue.match( /^((0)|([1-9][0-9]*))$/ ) )    
+    //if ( !fieldValue.match( /^[+-]?\d+$/ ) )    
+    if ( !fieldValue.match( /^-?((0)|([1-9][0-9]*))$/ ) )    
     {
 	//t.val( t.prop( "defaultValue" ) );
 	//$( tag + "_msg" ).html( " not a valid number, reset to default" );
