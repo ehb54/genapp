@@ -6,7 +6,7 @@
 $modjson = json_decode( '__modulejson__' );
 
 $do_verifyemail     = __~register:verifyemail{1}0;
-$do_requireapproval = __~register:requireapprovall{1}0;
+$do_requireapproval = __~register:requireapproval{1}0;
 
 $notfoundhtml = "<!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML 2.0//EN'>
 <html><head>
@@ -79,9 +79,21 @@ EOT;
             }
             $html .= "<p>Your email address has been successfully verified</p>";
             if ( $do_requireapproval ) {
+                $id  = $doc[ '_id' ];
+                $aid = $doc[ 'approvalid' ];
+                $did = $doc[ 'denyid' ];
                 $html .= "<p>You must now wait for the administrator to approve your registration request</p>";
+                $body = "New user requests approval
+                User     : " . $doc[ 'name' ] . "
+                Email    : " . $doc[ 'email' ] . "
+                Remote IP: " . $_SERVER['REMOTE_ADDR'] . "
+                Approve  : http://" . $app->hostname . "/__application__/ajax/sys_config/sys_approvedeny_backend.php?_a=$aid&_r=$id
+                Deny     : http://" . $app->hostname . "/__application__/ajax/sys_config/sys_approvedeny_backend.php?_d=$did&_r=$id
+                ";
+                admin_mail( "[__application__][new user approval request] " . $doc[ 'email' ], $body );
             } else {
                 $html .= "<p>You may now <a href='http://$app->hostname/__application__'>logon</a></p>";
+                admin_mail( "[__application__][new user verified] $email", "User: " . $doc[ 'name' ] . "\nEmail: " . $doc[ 'email' ] . "\n" );
             }
         }
     } else {

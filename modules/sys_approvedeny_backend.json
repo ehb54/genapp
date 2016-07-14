@@ -1,0 +1,15 @@
+# this is a module file, any module specific info belongs here
+{
+    "moduleid" : "sys_approvedeny_backend",
+    "label"    : "Approve or deny registration request",
+    "prefix"   : "approvedeny",
+    "resource" : "local",
+    "fields"   : [
+        {
+            "role"     : "input",
+            "id"       : "label1",
+            "label"    : "Approvedeny backend",
+            "type"     : "label"
+        }
+    ]
+}

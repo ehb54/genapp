@@ -561,7 +561,9 @@ ga.trytilltrue = function( testeval, doeval, maxtries, timeout ) {
     return setTimeout( ga.trytilltrue, timeout, testeval, doeval, maxtries, timeout );
 }
 
-ga.loginverify = function( data ) {
+ga.login = {};
+
+ga.login.verify = function( data ) {
     var msg = { text : data.text || "You must verify your email address." };
 
     if ( data.useroptions ) {
@@ -570,7 +572,7 @@ ga.loginverify = function( data ) {
             msg.buttons.push( { 
                 id : "resend"
                 ,label : "Resend the verification email"
-                ,cb : ga.loginverify.resend
+                ,cb : ga.login.verify.resend
             } );
         }
         if ( data.useroptions.resend ) {
@@ -578,7 +580,7 @@ ga.loginverify = function( data ) {
             msg.buttons.push( { 
                 id : "changeaddress"
                 ,label : "Change your email address and resend the verification" 
-                ,cb : ga.loginverify.change
+                ,cb : ga.login.verify.change
             } );
         }
         if ( data.useroptions.cancel ) {
@@ -586,6 +588,7 @@ ga.loginverify = function( data ) {
             msg.buttons.push( {
                 id : "cancelregistration"
                 ,label : "Cancel your registration" 
+                ,cb    : ga.login.verify.cancel
             } );
         }
     }                                
@@ -593,8 +596,8 @@ ga.loginverify = function( data ) {
     messagebox( msg );
 }
 
-ga.loginverify.resend = function () {
-    __~debug:loginverify{console.log( "ga.loginverify.resend()" );}
+ga.login.verify.resend = function () {
+    __~debug:loginverify{console.log( "ga.login.verify.resend()" );}
     var form = $( "#sys_login" );
     if ( !form ) {
         return messagebox( { icon : "toast.png", text: "Internal error: form missing" } );
@@ -603,19 +606,41 @@ ga.loginverify.resend = function () {
     do_sys_login_submit( form );
 }
 
-ga.loginverify.change = function () {
-    __~debug:loginverify{console.log( "ga.loginverify.change()" );}
+ga.login.verify.change = function () {
+    __~debug:loginverify{console.log( "ga.login.verify.change()" );}
+    return messagebox( {
+        icon : "question.png"
+        ,text : '<center><label  class="header3 ">Change email address</label></center><form id="_changeemail"><table><tr><td><label for="_changeemail1">Email address </label></td><td><input type="email" name="_changeemail1" id="_changeemail1" required size="50" class="help_link"><span class="help">Enter a valid email address.  This will be required if you forget your password.  Otherwise, you will have to create a new account lose access to your projects</span><span id="_changeemail1_msg" class="warning field_msg" > </span></td></tr><tr><td><label for="_changeemail2">Repeat email address </label></td><td><input type="email" name="_changeemail2" id="_changeemail2" required size="50" class="help_link"><span class="help">Enter a valid email address.  This will be required if you forget your password.  Otherwise, you will have to create a new account lose access to your projects</span><span id="_changeemail2_msg" class="warning field_msg" > </span></td></tr></table></form><script>$( "#_changeemail1" ).keypress( function() { $( "#_changeemail1_msg" ).html( "" );});$( "#_changeemail2" ).keypress( function() { $( "#_changeemail2_msg" ).html( "" );});$( "#_changeemail2" ).blur( function() { ga.valid.checkMatch( "#_changeemail2", "#_changeemail1" ); } );setHoverHelp();</script>'
+        ,buttons : [ 
+            { 
+                id     : "_changeemailbutton"
+                ,label : "Submit"
+                ,cb    : ga.login.verify.change.do
+            }
+            ,{
+                id     : "_changeemailcancel"
+                ,label : "Cancel"
+            }
+        ]
+    } );
+}
+
+ga.login.verify.change.do = function () {
+    __~debug:loginverify{console.log( "ga.login.verify.change.do()" );}
     var form = $( "#sys_login" );
     if ( !form ) {
         return messagebox( { icon : "toast.png", text: "Internal error: form missing" } );
     }
 // window to input email 2x to verify
     form.append( '<input type="hidden" name="_resendverify" class="toclear">' );
+    form.append( '<input type="hidden" name="_changeemail" class="toclear">' );
+    form.append( '<input type="hidden" name="_changeemail1" value="' + $( "#_changeemail1" ).val() + '" class="toclear">' );
+    form.append( '<input type="hidden" name="_changeemail2" value="' + $( "#_changeemail2" ).val() + '" class="toclear">' );
     do_sys_login_submit( form );
 }
 
-ga.loginverify.cancel = function () {
-    __~debug:loginverify{console.log( "ga.loginverify.cancel()" );}
+ga.login.verify.cancel = function () {
+    __~debug:loginverify{console.log( "ga.login.verify.cancel()" );}
     var form = $( "#sys_login" );
     if ( !form ) {
         return messagebox( { icon : "toast.png", text: "Internal error: form missing" } );
@@ -624,3 +649,52 @@ ga.loginverify.cancel = function () {
     do_sys_login_submit( form );
 }
 
+ga.login.approve = function( data ) {
+    var msg = { text : data.text || "Your registration is pending approval." };
+
+    if ( data.useroptions ) {
+        if ( data.useroptions.resend ) {
+            msg.buttons = msg.buttons || [];
+            msg.buttons.push( { 
+                id : "resend"
+                ,label : "Resend the approval request"
+                ,cb : ga.login.approve.resend
+            } );
+        }
+        if ( data.useroptions.cancel ) {
+            msg.buttons = msg.buttons || [];
+            msg.buttons.push( {
+                id : "cancelregistration"
+                ,label : "Cancel your registration request" 
+                ,cb    : ga.login.approve.cancel
+            } );
+        }
+    }                                
+
+    messagebox( msg );
+}
+
+ga.login.approve.resend = function () {
+    __~debug:loginapprove{console.log( "ga.login.approve.resend()" );}
+    var form = $( "#sys_login" );
+    if ( !form ) {
+        return messagebox( { icon : "toast.png", text: "Internal error: form missing" } );
+    }
+    form.append( '<input type="hidden" name="_resendapprove" class="toclear">' );
+    do_sys_login_submit( form );
+}
+
+ga.login.approve.cancel = function () {
+    __~debug:loginapprove{console.log( "ga.login.approve.cancel()" );}
+    var form = $( "#sys_login" );
+    if ( !form ) {
+        return messagebox( { icon : "toast.png", text: "Internal error: form missing" } );
+    }
+    form.append( '<input type="hidden" name="_cancel" class="toclear">' );
+    do_sys_login_submit( form );
+}
+
+ga.admin = {};
+ga.admin.ajax = function ( cmd, name, id, manageid ) {
+    __~debug:admin{console.log( "ga.admin.ajax( " + cmd + " , " + name + " , " + id + " , " + manageid + " )" );}
+}

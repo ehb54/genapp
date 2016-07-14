@@ -8,6 +8,7 @@
     ,"resource"     : "local"
     ,"docrootexecutable"  : "ajax/sys_config/sys_userslist.php"
     ,"uniquedir" : "on"
+    ,"autosubmit" : "true"
     ,"fields"   : [
         {
             "role"    : "output"

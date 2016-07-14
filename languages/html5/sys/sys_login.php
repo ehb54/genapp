@@ -1,6 +1,8 @@
 <?php
 header('Content-type: application/json');
 
+date_default_timezone_set("UTC");
+
 session_start(); 
 session_regenerate_id(true); 
 
@@ -135,31 +137,266 @@ if ( $did_lastfailedloginattempts )
     $loginok = 0;
 }
 
-if ( isset( $doc[ "needsemailverification" ] ) &&
-     $doc[ "needsemailverification" ] != "verified"
-    ) {
-    $results[ 'status' ] = "You must first verify your email address";
-    $results[ "_message" ] = 
-       array( 
-           "icon"  => "information.png"
-           ,"text" => $results[ 'status' ]
-       );
-   echo json_encode( $results );
-   exit();
-} else {
-    if ( isset( $doc[ "needsapproval" ] ) ) {
-        if ( $doc[ "needsapproval" ] == "denied" ) {
-            $results[ "status" ] = "Your account request has been denied";
-        } else {
-            $results[ "status" ] = "Your account request is pending approval";
+if ( $loginok ) {
+    if ( __~register:verifyemail{1}0 &&
+         isset( $doc[ "needsemailverification" ] ) &&
+         $doc[ "needsemailverification" ] != "verified"
+        ) {
+        if ( isset( $_REQUEST[ "_cancel" ] ) ) {
+            // rename user entry and add cancelled flag and scramble password
+                $id = '';
+            $email = '';
+            if ( $doc = $coll->findOne( array( "name" => $_REQUEST[ 'userid' ] ) ) ) {
+                if ( isset( $doc[ '_id' ] ) ) {
+                    $id = $doc[ '_id' ];
+                }
+                if ( isset( $doc[ 'email' ] ) ) {
+                    $email = $doc[ 'email' ];
+                }
+            }
+            if ( $id == '' ) {
+                $results[ 'status' ] = "Your user id seems to have been removed from the system. ";
+                $results[ '_message' ] = [
+                    "icon" => "toast.png",
+                    "text" => $results[ 'status' ]
+                    ];
+                echo json_encode( $results );
+                exit();
+            }
+            $orgid = $doc[ '_id' ];
+            unset( $doc[ '_id' ] );
+            unset( $doc[ 'needsemailverification' ] );
+            $doc[ 'password' ] = "xx__1234$2y$10$7vf3p/0VGuSnavu.B/riiuzK938yiN1TgFaX8/LFtlMYQmS0TYyy2";
+            $doc[ 'orgname' ] = $doc[ 'name' ];
+            $doc[ 'canceled' ] = new MongoDate();
+            $orgname = $doc[ 'name' ];
+
+            $ext = 0;
+            do {
+                $doc[ 'name' ] = "_canceled_" . ( $ext ? "${ext}_" : "" ) . $orgname;
+                $ext++;
+            } while ( $coll->findOne( array( "name" => $doc[ 'name' ] ) ) );
+
+            try {
+                $coll->insert( $doc__~mongojournal{, array("j" => true )});
+            } catch(MongoCursorException $e) {
+                $results[ 'status' ] = "Error canceling user id. " . $e->getMessage();
+                $results[ '_message' ] = [
+                    "icon" => "toast.png",
+                    "text" => $results[ 'status' ]
+                    ];
+                echo json_encode( $results );
+                exit();
+            }
+
+            try {
+                $coll->remove( [ "name" => $orgname ] );
+            } catch(MongoCursorException $e) {
+                $results[ 'status' ] = "Error canceling user id. " . $e->getMessage();
+                $results[ '_message' ] = [
+                    "icon" => "toast.png",
+                    "text" => $results[ 'status' ]
+                    ];
+                echo json_encode( $results );
+                exit();
+            }            
+            
+            $results[ 'status' ] = "User id canceled.  If you wish to reuse this id, please register again.";
+            $results[ '_message' ] = [
+                "icon" => "information.png",
+                "text" => $results[ 'status' ]
+                ];
+            echo json_encode( $results );
+            exit();
         }
-        $results[ "_message" ] = 
-            array( 
-                "icon"  => "information.png"
-                ,"text" => $results[ 'status' ]
-            );
+        if ( isset( $_REQUEST[ "_resendverify" ] ) ) {
+            $id = '';
+            $email = '';
+            if ( $doc = $coll->findOne( array( "name" => $_REQUEST[ 'userid' ] ) ) ) {
+                if ( isset( $doc[ '_id' ] ) ) {
+                    $id = $doc[ '_id' ];
+                }
+                if ( isset( $doc[ 'email' ] ) ) {
+                    $email = $doc[ 'email' ];
+                }
+            }
+            if ( $id == '' ) {
+                $results[ 'status' ] = "Your user id seems to have been removed from the system. ";
+                $results[ '_message' ] = [
+                    "icon" => "toast.png",
+                    "text" => $results[ 'status' ]
+                    ];
+                echo json_encode( $results );
+                exit();
+            }
+
+            if ( isset( $_REQUEST[ "_changeemail" ] ) ) {
+                if ( isset( $_REQUEST[ "_changeemail1" ] ) &&
+                     isset( $_REQUEST[ "_changeemail2" ] ) ) {
+                    $email1 = filter_var( $_REQUEST[ '_changeemail1' ], FILTER_SANITIZE_EMAIL );
+                    $email2 = filter_var( $_REQUEST[ '_changeemail1' ], FILTER_SANITIZE_EMAIL );
+                    if ( $email1 != $email2 ) {
+                        $results[ 'status' ] = "The emails provided do not match";
+                        $results[ '_message' ] = [
+                            "icon" => "toast.png",
+                            "text" => $results[ 'status' ]
+                            ];
+                        echo json_encode( $results );
+                        exit();
+                    }                    
+                    if ( !is_string( $email1 ) || 
+                         !strlen( $email1 ) ||
+                         !filter_var( $email1, FILTER_VALIDATE_EMAIL ) ) {
+                        $results[ "status" ] = "Invalid email address provided";
+                        $results[ '_message' ] = [
+                            "icon" => "toast.png",
+                            "text" => $results[ 'status' ]
+                            ];
+                        echo (json_encode($results));
+                        exit();
+                    }
+
+                    $update = [];
+                    $update[ '$set' ][ 'email' ] = $email1;
+                    $update[ '$set' ][ 'emailupdated' ] = new MongoDate();
+
+                    try {
+                        $coll->update( array( "name" => $_REQUEST[ 'userid' ] ),
+                                       $update__~mongojournal{, array("j" => true )} );
+                    } catch(MongoCursorException $e) {
+                        $db_errors = "Error updating the database(). " . $e->getMessage();
+                        $results[ 'status' ] = $db_errors;
+                        $results[ '_message' ] = [
+                            "icon" => "toast.png",
+                            "text" => $results[ 'status' ]
+                            ];
+                        echo (json_encode($results));
+                        exit();
+                    }
+                    $email = $email1;
+
+                } else {
+                    $results[ 'status' ] = "Internal error. (change email requested, but no new email address provided.)";
+                    $results[ '_message' ] = [
+                        "icon" => "toast.png",
+                        "text" => $results[ 'status' ]
+                        ];
+                    echo json_encode( $results );
+                    exit();
+                }
+            }
+
+            if ( $email == '' ) {
+                $results[ 'status' ] = "Could not find an email address associated with this user. ";
+                $results[ '_message' ] = [
+                    "icon" => "toast.png",
+                    "text" => $results[ 'status' ]
+                    ];
+                echo json_encode( $results );
+                exit();
+            }
+            
+            require_once "../mail.php";
+
+            $app = json_decode( file_get_contents( "__appconfig__" ) );
+            if ( __~register:requireapproval{1}0 ) {
+                $results[ 'status' ] = "An additional email has been sent to $email, please click the link in the email to verify and begin the approval process";
+            } else {
+                $results[ 'status' ] = "An additional email has been resent to $email, please click the link in the email to verify";
+            }        
+            $body = "Please verify your email address by visiting this link:\n http://" . $app->hostname . "/__application__/ajax/sys_config/sys_register_backend.php?_r=$id";
+            mymail( $email, "[__application__][email verify request]", $body );
+
+            $results[ '_message' ] = [
+                "icon" => "information.png",
+                "text" => $results[ 'status' ]
+                ];
+            echo json_encode( $results );
+            exit();
+        }
+
+        $results[ 'status' ] = "You must first verify your email address";
+        $results[ '_loginverify' ] = [ 
+            "useroptions" => [
+                "resend" => 1, 
+                "changeaddress" => 1,
+                "cancel" => 1 
+            ], 
+            "text" => "Your must verify your email address." 
+            ];
+        //    $results[ "_message" ] = 
+        //       array( 
+        //           "icon"  => "information.png"
+        //           ,"text" => $results[ 'status' ]
+        //       );
         echo json_encode( $results );
         exit();
+    } else {
+        if ( __~register:requireapproval{1}0 &&
+             isset( $doc[ "needsapproval" ] ) ) {
+            if ( $doc[ "needsapproval" ] == "denied" ) {
+                $results[ "status" ] = "Your account request has been denied";
+            } else {
+                if ( isset( $_REQUEST[ "_resendapprove" ] ) ) {
+                    $id = '';
+                    $email = '';
+                    if ( isset( $doc[ '_id' ] ) ) {
+                        $id = $doc[ '_id' ];
+                    }
+                    if ( isset( $doc[ 'email' ] ) ) {
+                        $email = $doc[ 'email' ];
+                    }
+                    if ( $id == '' ) {
+                        $results[ 'status' ] = "Your user id seems to have been removed from the system. ";
+                        $results[ '_message' ] = [
+                            "icon" => "toast.png",
+                            "text" => $results[ 'status' ]
+                            ];
+                        echo json_encode( $results );
+                        exit();
+                    }
+                    require_once "../mail.php";
+
+                    $app = json_decode( file_get_contents( "__appconfig__" ) );
+                    $aid = $doc[ 'approvalid' ];
+                    $did = $doc[ 'denyid' ];
+                $body = "New user requests approval again
+                User     : " . $doc[ 'name' ] . "
+                Email    : " . $doc[ 'email' ] . "
+                Remote IP: " . $_SERVER['REMOTE_ADDR'] . "
+                Approve  : http://" . $app->hostname . "/__application__/ajax/sys_config/sys_approvedeny_backend.php?_a=$aid&_r=$id
+                Deny     : http://" . $app->hostname . "/__application__/ajax/sys_config/sys_approvedeny_backend.php?_d=$did&_r=$id
+                ";
+                    admin_mail( "[__application__][new user repeated approval request] " . $doc[ 'email' ], $body );
+
+                    $results[ 'status' ] = "The approval request email has been resent. ";
+                    $results[ '_message' ] = [
+                        "icon" => "information.png",
+                        "text" => $results[ 'status' ]
+                        ];
+                    echo json_encode( $results );
+                    exit();
+                }
+
+                $results[ "status" ] = "Your account request is pending approval";
+                $results[ '_loginapprove' ] = [ 
+                    "useroptions" => [
+                        "resend" => 1, 
+                        "cancel" => 1 
+                    ], 
+                    "text" => $results[ "status" ]
+                    ];
+                echo json_encode( $results );
+                exit();
+            }
+            $results[ "_message" ] = 
+                array( 
+                    "icon"  => "information.png"
+                    ,"text" => $results[ 'status' ]
+                );
+            echo json_encode( $results );
+            exit();
+        }
     }
 }
 

@@ -251,6 +251,14 @@
                    ,{
                     "frequency"  : "once",
                     "setexecutable" : "true",
+                    "output"     : "ajax/sys_config/sys_manageusers.php",
+                    "inputs"     : [ 
+                                    { "sys/sys_manageusers.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "setexecutable" : "true",
                     "output"     : "ajax/sys_config/cached_results.php",
                     "inputs"     : [ 
                                     { "sys/cached_results.php" : "once" }

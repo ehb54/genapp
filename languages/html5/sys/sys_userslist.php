@@ -106,17 +106,19 @@ function get_userinfo( $error_json_exit = false ) {
 
    foreach ( $users as $v ) {
        $name = $v[ 'name' ];
-       $userinfo[] = 
-           array( 
-               "name"                => $name
-               ,"email"              => "<a class='title' href='mailto:" . $v[ 'email' ] . "'>" . $v[ 'email' ] . "</a>"
-               ,"projects"           => count( $v[ 'project' ] )
-               ,"last-login"         => isset( $v["lastlogin"] ) ? date( "Y M d H:i T",$v["lastlogin"]->sec ) : ""
-               ,"registered"         => isset( $v["registered"] ) ? date( "Y M d H:i T",$v["registered"]->sec ) : ""
-               ,"jobs-not-removed"   => $use_db->__application__->jobs->count( array( "user" => $name ) )
-               ,"running"            => isset( $runcount[ $name ] ) ? $runcount[ $name ] : 0
-               ,"admin"              => in_array( $v[ 'name' ], $appconfig->restricted->admin ) ? "yes" : ""
-           );
+       if ( substr( $name, 0, strlen( "_canceled" ) ) != "_canceled" ) {
+           $userinfo[] = 
+               array( 
+                   "name"                => $name
+                   ,"email"              => "<a class='title' href='mailto:" . $v[ 'email' ] . "'>" . $v[ 'email' ] . "</a>"
+                   ,"projects"           => count( $v[ 'project' ] )
+                   ,"last-login"         => isset( $v["lastlogin"] ) ? date( "Y M d H:i T",$v["lastlogin"]->sec ) : ""
+                   ,"registered"         => isset( $v["registered"] ) ? date( "Y M d H:i T",$v["registered"]->sec ) : ""
+                   ,"jobs-not-removed"   => $use_db->__application__->jobs->count( array( "user" => $name ) )
+                   ,"running"            => isset( $runcount[ $name ] ) ? $runcount[ $name ] : 0
+                   ,"admin"              => in_array( $v[ 'name' ], $appconfig->restricted->admin ) ? "yes" : ""
+               );
+       }
    }
    return true;
 }
