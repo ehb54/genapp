@@ -221,7 +221,12 @@ __~debug:values{        console.log( "ga.data.update() atomic structure jmol scr
                         if ( k == "_loginverify" )
                         { 
                             __~debug:loginverify{console.log( "ga.data.update() loginverify options found " + v );}
-                            ga.loginverify( v );
+                            ga.login.verify( v );
+                        }
+                        if ( k == "_loginapprove" )
+                        { 
+                            __~debug:loginapprove{console.log( "ga.data.update() approve options found " + v );}
+                            ga.login.approve( v );
                         }
                     }
                 } else {
@@ -268,6 +273,10 @@ __~debug:values{        console.log( "ga.data.update() atomic structure jmol scr
 ga.data.textarea = function( hmod_out, v ) {
     var hmod_out_textarea   = hmod_out + "_textarea",
         jqhmod_out_textarea = $( hmod_out_textarea );
+        isatend = ( jqhmod_out_textarea[0].scrollHeight - jqhmod_out_textarea[0].scrollTop === jqhmod_out_textarea[0].clientHeight );
+
+    __~debug:textareascroll{console.log( "current scrolltop " + jqhmod_out_textarea.scrollTop() + " scrollheight " + jqhmod_out_textarea[0].scrollHeight );}
+    __~debug:textareascroll{console.log( "isatend " + ( isatend ? "true" : "false" ) );}
 
 __~debug:textarea{    console.log( "ga.data.textarea( " + hmod_out + " , " + v + " )" );}
     if ( jqhmod_out_textarea.is( ":hidden" ) ) {
@@ -296,6 +305,10 @@ __~debug:textarea{    console.log( "ga.data.textarea( " + hmod_out + " , " + v +
             jqhmod_out_textarea.height( ga.data.textarea.h[ hmod_out ] );
             __~debug:textarea{console.log( "ga.data.textarea setting height to " + ga.data.textarea.h[ hmod_out ] );}
         }
+    }
+    __~debug:textareascroll{console.log( "after append scrolltop " + jqhmod_out_textarea.scrollTop() + " scrollheight " + jqhmod_out_textarea[0].scrollHeight );}
+    if ( isatend ) {
+        jqhmod_out_textarea.scrollTop( jqhmod_out_textarea[0].scrollHeight );
     }
 };
 
