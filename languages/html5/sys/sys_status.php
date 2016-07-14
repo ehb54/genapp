@@ -98,7 +98,7 @@ if ( isset( $_SESSION[ $window ][ 'logon' ] ) ) {
               $results[ "_usergroups" ] = [];
           }
           if ( __~usercolors{1}0 && $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ), array( "color" => 1 ) ) ) {
-              $results[ "_color" ] = $doc[ "color" ];
+              $results[ "_color" ] = isset( $doc[ "color" ] ) ? $doc[ "color" ] : "";
           }
       }
   }

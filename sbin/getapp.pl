@@ -163,7 +163,7 @@ sub listapps {
     my @l = `svn ls svn://$svnbase`;
     grep chomp, @l;
     grep s/\///, @l;
-    @l = grep !/^genapp$/, @l;
+    @l = grep !/^genapp(|alpha)$/, @l;
     return @l;
 }
 

@@ -14,6 +14,10 @@
                     "id"    : "sys_register_backend",
                     "label" : "Register"
                 }
+                ,{ 
+                    "id"    : "sys_approvedeny_backend",
+                    "label" : "Approve/Deny"
+                }
             ]
         }
         ,{ 
@@ -41,6 +45,10 @@
                 ,{ 
                     "id"     : "sysuserslist"
                     ,"label" : "User list"
+                }
+                ,{ 
+                    "id"     : "sys_manage_users"
+                    ,"label" : "User management"
                 }
             ]
         }

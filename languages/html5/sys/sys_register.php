@@ -103,14 +103,25 @@ if ( PHP_VERSION_ID < 50500 )
   $pw = password_hash( $_REQUEST[ 'password1' ], PASSWORD_DEFAULT );
 }
 
+$do_verifyemail     = __~register:verifyemail{1}0;
+$do_requireapproval = __~register:requireapproval{1}0;
+if ( $do_requireapproval ) {
+    $cstrong = true;
+    $aid = bin2hex( openssl_random_pseudo_bytes ( 20, $cstrong ) );
+    $did = bin2hex( openssl_random_pseudo_bytes ( 20, $cstrong ) );
+}
+
 try {
     $coll->insert( 
         array( 
             "name" => $_REQUEST[ 'userid' ]
             ,"password" => $pw, "email" => $email
             ,"registered" => new MongoDate() 
+            ,"registerip" => $_SERVER[ 'REMOTE_ADDR' ]
             __~register:verifyemail{,"needsemailverification" => "pending"}
             __~register:requireapproval{,"needsapproval" => "pending"}
+            __~register:requireapproval{,"approvalid" => $aid}
+            __~register:requireapproval{,"denyid" => $did}
         )
         __~mongojournal{, array("j" => true )}
         );
@@ -128,8 +139,6 @@ if ( $doc = $coll->findOne( array( "name" => $_REQUEST[ 'userid' ] ) ) ) {
 }
 require_once "../mail.php";
 
-$do_verifyemail     = __~register:verifyemail{1}0;
-$do_requireapproval = __~register:requireapprovall{1}0;
 
 $results[ 'status' ] = "User successfully added, you can now login";
 
@@ -144,7 +153,17 @@ if ( $do_verifyemail ) {
     mymail( $email, "[__application__][email verify request]", $body );
 } else {
     if ( $do_requireapproval ) {
+        $app = json_decode( file_get_contents( "__appconfig__" ) );
         $results[ 'status' ] = "User successfully added and awaiting approval";
+        $body = "New user requests approval
+User     : " . $_REQUEST['userid'] . "
+Email    : $email
+Remote IP: " . $_SERVER['REMOTE_ADDR'] . "
+Approve  : http://" . $app->hostname . "/__application__/ajax/sys_config/sys_approvedeny_backend.php?_a=$aid&_r=$id
+Deny     : http://" . $app->hostname . "/__application__/ajax/sys_config/sys_approvedeny_backend.php?_d=$did&_r=$id
+";
+        
+        admin_mail( "[__application__][new user approval request] $email", $body );
     }
 }
 admin_mail( "[__application__][new user" . ( $do_verifyemail ? " verification request" : "" ) . "] $email", "User: " . $_REQUEST[ 'userid' ] . "\nEmail: $email\n" );

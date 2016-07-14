@@ -1,12 +1,12 @@
 # this is a module file, any module specific info belongs here
 {
-    "moduleid"     : "sysuserslist"
-    ,"label"        : "Sysuserslist"
-    ,"executable"   : "sysuserslist"
+    "moduleid"     : "sys_manage_users"
+    ,"label"        : "Sys_Manage_Users"
+    ,"executable"   : "sys_manage_users"
     ,"submitpolicy" : "all"
 # ? admin
     ,"resource"     : "local"
-    ,"docrootexecutable"  : "ajax/sys_config/sys_userslist.php"
+    ,"docrootexecutable"  : "ajax/sys_config/sys_manageusers.php"
     ,"uniquedir" : "on"
     ,"autosubmit" : "true"
     ,"fields"   : [
