@@ -9,6 +9,8 @@
     ,"docrootexecutable"  : "ajax/sys_config/sys_manageusers.php"
     ,"uniquedir" : "on"
     ,"autosubmit" : "true"
+    ,"submit_label" : "Refresh"
+    ,"noreset" : "true"
     ,"fields"   : [
         {
             "role"    : "output"

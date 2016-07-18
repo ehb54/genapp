@@ -71,7 +71,7 @@ $GLOBALS[ 'REMOTE_ADDR' ] = isset( $_SERVER[ 'REMOTE_ADDR' ] ) ? $_SERVER[ 'REMO
 __~uniquedir{$uniquedir = "__uniquedir__";}
 
 __~nojobcontrol{$nojobcontrol = 1;$GLOBALS[ 'modal' ] = true;}
-
+__~notify{$GLOBALS[ 'notify' ] = "__notify__";}
 $bdir = "";
 
 $adir = "__docroot:html5__/__application__";

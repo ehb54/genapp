@@ -78,7 +78,8 @@ EOT;
                 exit();
             }
             $html .= "<p>Your email address has been successfully verified</p>";
-            if ( $do_requireapproval ) {
+            if ( $do_requireapproval &&
+                 isset( $doc[ 'needsapproval' ] ) ) {
                 $id  = $doc[ '_id' ];
                 $aid = $doc[ 'approvalid' ];
                 $did = $doc[ 'denyid' ];
