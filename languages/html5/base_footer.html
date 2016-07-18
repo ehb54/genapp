@@ -415,6 +415,16 @@ __~debug:fc{      console.log( "fs_refresh used " + fsr );}
 
    var swl = s.data( '_switch' );
    if ( swl && swl.length ) {
+      if ( s.data( '_reqlogin' ) ) {
+         s.removeData( '_reqlogin' );
+         if ( $( "#login" ).html() == "Login" ) {
+             __~debug:extrahidden{console.log( "switch for extra hidden + logon set" );}
+             ga.set( "extrahidden", { "sys_login" : { "_switch" : swl } } );
+             s.removeData( '_switch' );
+             $( "#login" ).trigger( "click" );
+             return;
+         }
+      }
       var sw = swl.split( "/" );
       if ( sw && sw.length == 4 ) {
          if ( !ga.menumodules[ sw[0] + "/" + sw[1] ] ||
@@ -453,6 +463,7 @@ __~debug:job{            console.log( "now to eval: subMsging( '" + sw[3] + "', 
          }
       }
       s.removeData( '_switch' );
+      s.removeData( '_reqlogin' );
    }
    var p = s.data( '_project' );
    var pl = s.data( '_project:last' );
@@ -505,6 +516,9 @@ if ( "_color" in data ) {
 __~debug:{console.log( "project from sysstatus:" + data[ "_project" ] );}
 if ( ga.urlparams( "_switch" ) ) {
    $( '#_state' ).data( "_switch",  decodeURIComponent( ga.urlparams( "_switch" ) ) );
+   if ( ga.urlparams( "_reqlogin" ) ) {
+       $( '#_state' ).data( "_reqlogin", 1 );
+   }
    ga.startup="";
 }
 if ( "_message" in data ) {

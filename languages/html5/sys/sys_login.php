@@ -137,6 +137,17 @@ if ( $did_lastfailedloginattempts )
     $loginok = 0;
 }
 
+if ( $loginok &&
+    isset( $doc[ 'suspended' ] ) ) {
+    $results[ 'status' ] = "Your account has been suspended by the administrators. ";
+    $results[ '_message' ] = [
+        "icon" => "information.png",
+        "text" => $results[ 'status' ]
+        ];
+    echo json_encode( $results );
+    exit();
+}
+
 if ( $loginok ) {
     if ( __~register:verifyemail{1}0 &&
          isset( $doc[ "needsemailverification" ] ) &&
@@ -446,7 +457,9 @@ if ( $loginok == 1 )
    if ( __~usercolors{1}0 && isset( $doc[ "color" ] ) ) {
        $results[ "_color" ] = $doc[ "color" ];
    }
-
+   if ( isset( $_REQUEST[ "_switch" ] ) ) {
+       $results[ "_switch" ] = $_REQUEST[ "_switch" ];
+   }
 } else {
    if ( isset( $_REQUEST[ 'forgotpassword' ] ) &&
         $_REQUEST[ 'forgotpassword' ] == "on" )

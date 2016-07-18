@@ -60,6 +60,9 @@ function logjobstart( $error_json_exit = false, $cache = "" )
    if ( isset( $GLOBALS[ 'modal' ] ) && $GLOBALS[ 'modal' ] ) {
        $insert[ 'modal' ] = true;
    }
+   if ( isset( $GLOBALS[ 'notify' ] ) && $GLOBALS[ 'notify' ] ) {
+       $insert[ 'notify' ] = $GLOBALS[ 'notify' ];
+   }
 
    try {
       $coll->insert( $insert__~mongojournal{, array("j" => true )} );
@@ -296,6 +299,10 @@ function getmenumodule( $jobid,  $error_json_exit = false )
          $GLOBALS[ "module"               ] = $doc[ 'module' ];
          $GLOBALS[ "menu"                 ] = $doc[ 'menu' ];
          $GLOBALS[ "jobweight"            ] = isset( $doc[ 'jobweight' ] ) ? $doc[ 'jobweight' ] : 0;
+         $GLOBALS[ "jobstart"             ] = $doc[ 'start' ];
+         if ( isset( $doc[ 'notify' ] ) ) {
+             $GLOBALS[ "notify"    ] = $doc[ 'notify' ];
+         }
          if ( ( isset( $doc[ 'user' ] ) && $doc[ 'user' ] == $GLOBALS[ 'logon' ] ) ||
               $GLOBALS[ "cache" ] == "public"  ) {
              return true;

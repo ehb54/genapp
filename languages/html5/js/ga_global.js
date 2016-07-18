@@ -697,4 +697,79 @@ ga.login.approve.cancel = function () {
 ga.admin = {};
 ga.admin.ajax = function ( cmd, name, id, manageid ) {
     __~debug:admin{console.log( "ga.admin.ajax( " + cmd + " , " + name + " , " + id + " , " + manageid + " )" );}
+    $.get( 
+        ga.admin.ajax.url
+        ,{
+            tagmode       : "any"
+            ,format       : "json"
+            ,_window      : window.name
+            ,_logon       : $( "#_state" ).data( "_logon" )
+            ,_cmd         : cmd
+            ,_name        : name
+            ,_id          : id
+            ,_manageid    : manageid
+        } )
+        .done( function( data, status, xhr ) {
+            __~debug:admin{console.log( "ga.admin.ajax() .getJSON done" )};
+            // required to remove the shebang (#!) 1st line of the script
+            data = JSON.parse( data.split( /\r?\n/)[1]);
+            if ( data[ 'success' ] == "true" ) {
+                // messagebox( { icon : "information.png",
+                // text : "system user management command returned success" } );
+            } else {
+                messagebox( { icon : "toast.png",
+                              text : data[ 'error' ] ? data[ 'error' ] : "unknown error"  } );
+            }
+            __~debug:admin{console.dir( data );}
+            if ( data[ '_submitid' ] ) {
+                $( "#" + data[ '_submitid' ] ).trigger( "click" );
+            }
+        })
+        .fail( function( xhr, status, errorThrown ) {
+            __~debug:admin{console.log( "ga.admin.ajax() .getJSON fail: " + errorThrown )};
+            messagebox( { icon : "toast.png",
+                          text : "Error: system user management backend command failed to run: " + errorThrown } );
+        });
+}
+
+ga.admin.ajax.remove = function ( cmd, name, id, manageid ) {
+    messagebox( {
+        icon  : "admin.png"
+        ,text  : "Are you sure you want to permanently remove this user, all of their job history and their stored data?"
+        ,buttons : [
+            { 
+                id    : "yes"
+                ,label : "Yes, remove this user"
+                ,cb    : ga.admin.ajax
+                ,adata  : [ cmd, name, id, manageid ]
+            }
+            ,{
+                id    : "cancel",
+                label : "Cancel"
+            }
+        ]
+    } );
+}
+
+ga.extrahidden = function( moduleid ) {
+    __~debug:extrahidden{console.log( "ga.extrahidden( " + moduleid + " )" );}
+    if ( !ga.set.data[ "extrahidden" ] ||
+         !ga.set.data[ "extrahidden" ][ moduleid ] ) {
+        __~debug:extrahidden{console.log( "ga.extrahidden( " + moduleid + " ) nothing extra" );}
+        return;
+    }
+
+    var jqmod = $( "#" + moduleid ),
+    i,
+    html = "";
+
+    for ( i in ga.set.data[ "extrahidden" ][ moduleid ] ) {
+        html +='<input type="hidden" name="' + i + '" value="' + ga.set.data[ "extrahidden" ][ moduleid ][ i ] + '">';
+    }
+
+    __~debug:extrahidden{console.log( "ga.extrahidden( " + moduleid + " ) appending:\n" + html );}
+
+    jqmod.append( html );
+    
+    delete ga.set.data[ "extrahidden" ][ moduleid ];
 }

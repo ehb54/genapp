@@ -263,6 +263,8 @@ __~docrootexecutable{$( this ).append( $("<input>").attr("type", "hidden").attr(
 //    ga.altfile.add( "__moduleid__" );
     ga.valuen.addhtml( "__moduleid__" );
 
+    ga.extrahidden( "__moduleid__" );
+
     subMsging( vuuid, msg___moduleid__, "__moduleid__" );
 
     var formData = new FormData($('form')[0]);
