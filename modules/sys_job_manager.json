@@ -58,7 +58,7 @@
                    "label"   : "Cancel",
                    "type"    : "radio",
                    "norow"   : "on"
-                   ,"help"    : "Selecting this will cancel a running job or jobs selected above. Not yet functional."
+                   ,"help"    : "Selecting this will cancel a running job or jobs selected above."
                    },
                   {
                    "role"    : "input",
