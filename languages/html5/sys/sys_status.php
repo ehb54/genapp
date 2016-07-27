@@ -61,6 +61,29 @@ if ( isset( $app_json->submitblock ) ) {
     __~debug:submitblock{error_log( "submitblock not found\n" . json_decode( $app_json, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/mylog" );}
 }
 
+if ( isset( $app_json->motd ) ) {
+    if ( isset( $app_json->motd ) &&
+         $app_json->motd->active == 1 ) {
+        $motdtext = "";
+        if ( isset( $app_json->motd->text ) ) {
+            $motdtext .= $app_json->motd->text;
+        }
+        if ( isset( $app_json->motd->file ) &&
+             is_readable( $app_json->motd->file ) ) {
+            $motdtext .= ( strlen( $motdtext ) ? "<p><hr></p>" : "" ) . file_get_contents( $app_json->motd->file );
+        }
+
+        if ( strlen( $motdtext ) ) {
+            if ( isset( $results[ "_message" ] ) ) {
+                $results[ "_message" ][ "text" ] .= "<p><hr></p>$motdtext";
+            } else {
+                $results[ "_message" ] = [ "icon" => "information.png",
+                                           "text" => $motdtext ];
+            }
+        }
+    }
+}
+
 if ( isset( $_SESSION[ $window ][ 'logon' ] ) ) {
    if ( !isset( $_SESSION[ $window ][ 'app' ] ) ||
         $_SESSION[ $window ][ 'app' ] != "__application__" ) {
