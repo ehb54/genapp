@@ -42,6 +42,7 @@ When using usage[1]:
 
  Options:
    -admin user         add user name to admin list for application
+   -svnuser user       user name for svn+ssh checkout (if different then current user)
    -force              force checkout even if directory exists
    -gen                run genapp.pl after install
    -nolinks            do not setup html links
@@ -57,12 +58,18 @@ my $force;
 my $gen;
 my $nolinks;
 my $targetdir;
+my $svnuser;
 
 while ( $ARGV[ 0 ] =~ /^-/ ) {
     my $option = shift @ARGV;
     if ( $option =~ /^-admin$/ ) {
         die "$0: option $option requries an argument\n" . $notes if !@ARGV;
         $admin = shift @ARGV;
+        next;
+    }
+    if ( $option =~ /^-svnuser$/ ) {
+        die "$0: option $option requries an argument\n" . $notes if !@ARGV;
+        $svnuser = shift @ARGV;
         next;
     }
     if ( $option =~ /^-dir$/ ) {
@@ -187,7 +194,14 @@ foreach $i ( @l ) {
 
 die "$0: Error: $app is not known as an application name\n" if !$vapp{ $app };
 
-$cmd = "svn $force co ${svntype}://$svnbase/$app $targetdir";
+if ( $svnuser &&
+     $svntype eq 'svn+ssh' ) {
+    $svnuser .= '@';
+} else {
+    $svnuser = '';
+}
+
+$cmd = "svn $force co ${svntype}://$svnuser$svnbase/$app $targetdir";
 
 print "$cmd\n";
 
