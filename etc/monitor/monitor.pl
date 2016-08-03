@@ -1,11 +1,13 @@
 #!/usr/bin/perl
 
+# to install required modules:
+# perl -MCPAN -e 'install \"JSON\";install \"Try::Tiny\";install \"LWP::UserAgent\";install \"MIME::Lite\";install \"MIME::Base64\";install \"LWP::Protocol::https\";
+
 use Try::Tiny;
 use File::Basename;
 use File::Spec;
 use JSON -support_by_pp;
 require MIME::Lite;
-use Data::Dumper;
 use MIME::Base64;
 use LWP::UserAgent;
 
@@ -146,6 +148,8 @@ sub read_params {
         $sendmail++;
     }
 
+    $ccall = $$json{ 'ccall' } ? $$json{ 'ccall' } : "";
+
     $subject_prefix = $$json{ 'subject' } ? "[" . $$json{ 'subject' } . "] " : '[WebMonitor] ';
 
     if ( $debug ) {
@@ -193,6 +197,7 @@ sub do_send {
         print "do_send nomail active:
 from   : $from
 to     : $to
+cc     : $ccall
 subject: $subject
 body:
 $body
@@ -204,6 +209,7 @@ $body
     my $msg = MIME::Lite->new(
         From    => $from,
         To      => $to,
+        Cc      => $ccall,
         Subject => $subject,
         Data    => $body
         );
