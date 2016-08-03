@@ -13,182 +13,173 @@ $mb = dirname( File::Spec->rel2abs( __FILE__ ) );
 
 print "export MONITORBASE=$mb\n";
 
-# --------------------- user config area ---------------------
-
 $cf = "$mb/config.json";
 
 die "$0: configuration file $cf does not exist\n" if !-e $cf;
 
-my $json = {};
-{
-    my $f = $cf;
-    open my $fh, $f || die "$0: can not open $f\n";
-    my @ol = <$fh>;
-    close $fh;
-    my @l = grep !/^\s*#/ , @ol;
-    my $l = join '', @l;
-    eval {
-        $json = decode_json( $l );
-        1;
-    } || do {
-        my $e = $@;
-        
-        # figure out line #
+$version = "Web monitor 0.6";
 
-        my ( $cp ) = $e =~ /at character offset (\d+) /;
-        my $i;
-        my $cpos = $cp;
-        for ( $i = 0; $i < @ol; ++$i ) {
-            next if $ol[ $i ] =~ /^\s*#/;
-            $cpos -= length( $ol[ $i ] );
-            last if $cpos < 0;
-        }
+sub read_params {
+    print "read_params\n";
+    my $json = {};
+    {
+        my $f = $cf;
+        open my $fh, $f || die "$0: can not open $f\n";
+        my @ol = <$fh>;
+        close $fh;
+        my @l = grep !/^\s*#/ , @ol;
+        my $l = join '', @l;
+        eval {
+            $json = decode_json( $l );
+            1;
+        } || do {
+            my $e = $@;
+            
+            # figure out line #
 
-        my $sline = $i - 2;
-        my $eline = $i + 2;
-        $sline = 0 if $sline < 0;
-        $eline = @ol - 1 if $eline >= @ol;
+            my ( $cp ) = $e =~ /at character offset (\d+) /;
+            my $i;
+            my $cpos = $cp;
+            for ( $i = 0; $i < @ol; ++$i ) {
+                next if $ol[ $i ] =~ /^\s*#/;
+                $cpos -= length( $ol[ $i ] );
+                last if $cpos < 0;
+            }
 
-        print "JSON Error in file $f near these lines:\n";
-        for ( my $j = $sline; $j <= $eline; ++$j ) {
-            my $uj = $j + 1;
-            print "$uj: $ol[$j]";
-            print "$uj: " .'^'x(length($ol[$j])) . "\n" if $j == $i;
-        }
-        die;
-    };
-}
+            my $sline = $i - 2;
+            my $eline = $i + 2;
+            $sline = 0 if $sline < 0;
+            $eline = @ol - 1 if $eline >= @ol;
+
+            print "JSON Error in file $f near these lines:\n";
+            for ( my $j = $sline; $j <= $eline; ++$j ) {
+                my $uj = $j + 1;
+                print "$uj: $ol[$j]";
+                print "$uj: " .'^'x(length($ol[$j])) . "\n" if $j == $i;
+            }
+            die if !$running;
+            warn "keeping old config\n";
+            return;
+        };
+    }
 
 # general debug
-if ( $$json{ 'debug' } ) {
-    $debug              = $$json{ 'debug' }{ 'main' }          if $$json{ 'debug' }{ 'main' };
+    if ( $$json{ 'debug' } ) {
+        $debug              = $$json{ 'debug' }{ 'main' }          if $$json{ 'debug' }{ 'main' };
 # simulate cycle of bad responses
-    $debug_testdown     = $$json{ 'debug' }{ 'testdown' }      if $$json{ 'debug' }{ 'testdown' };
+        $debug_testdown     = $$json{ 'debug' }{ 'testdown' }      if $$json{ 'debug' }{ 'testdown' };
 # simulate cycle of bad responses skip
-    $debug_testdownskip = $$json{ 'debug' }{ 'testdownskip' }  if $$json{ 'debug' }{ 'testdownskip' };
+        $debug_testdownskip = $$json{ 'debug' }{ 'testdownskip' }  if $$json{ 'debug' }{ 'testdownskip' };
 # debug some key detail
-    $debug_keys         = $$json{ 'debug' }{ 'keys' }          if $$json{ 'debug' }{ 'keys' };
+        $debug_keys         = $$json{ 'debug' }{ 'keys' }          if $$json{ 'debug' }{ 'keys' };
 # short timings for debugging
-    $do_short           = $$json{ 'debug' }{ 'shorttime' }     if $$json{ 'debug' }{ 'shorttime' };
+        $do_short           = $$json{ 'debug' }{ 'shorttime' }     if $$json{ 'debug' }{ 'shorttime' };
 # no actual mail for debugging
-    $nomail             = $$json{ 'debug' }{ 'nomail' }        if $$json{ 'debug' }{ 'nomail' };
-}
+        $nomail             = $$json{ 'debug' }{ 'nomail' }        if $$json{ 'debug' }{ 'nomail' };
+    }
 
-$fromemail = 'monitor@genapp.uthscsa.edu';
+    die "$0: no monitors defined if $cf\n" if !$$json{ 'monitors' };
 
-# these need to be merged
-#@toemails = (
-#    'emre@biochem.uthscsa.edu'
-#    ,'curtis.family@mac.com'
-#    );
+    {
+        my @req = ( 'check', 'to', 'from' );
 
-#@check = (
-#    'http://www.chem.utk.edu',
-#    'https://sassie-web.chem.utk.edu/genapptest',
-#    'https://somo.chem.utk.edu/genapptest',
-#    'https://sassie-web.chem.utk.edu/sassie2',
-#    'http://gw105.iu.xsede.org:8000/genapp'
-#    );
+        my $count;
+        my $pos = 0;
+        foreach my $i ( @{$$json{ 'monitors' }} ) {
+            $count++;
 
-die "$0: no monitors defined if $cf\n" if !$$json{ 'monitors' };
+            print "ref i is " . ref( $i ) . "\n";
+            print to_json( $i, { utf8 => 1, pretty => 1 } );
+            print "\n";
 
-{
-    my @req = ( 'check', 'to', 'from' );
+            foreach my $c ( @req ) {
+                die "$0: monitor entry #$count missing required tag '$c'\n" . to_json( $i, { utf8 => 1, pretty => 1 } ) . "\n" if !$$i{ $c };
+            }
 
-    my $count;
-    my $pos = 0;
-    foreach my $i ( @{$$json{ 'monitors' }} ) {
-        $count++;
+            # build up data structures for monitoring
+            $to[ $pos ] = join ',', @{$$i{ 'to' }};
+            $from[ $pos ] = $$i{ 'from' };
+            $this_check[ $pos ] = [];
 
-        print "ref i is " . ref( $i ) . "\n";
-        print to_json( $i, { utf8 => 1, pretty => 1 } );
+            foreach my $j ( @{$$i{ 'check' }} ) {
+                print "j is $j\n";
+                push @check, $j;
+                push $this_check[ $pos ], $j;
+            }
+            $pos++;
+        }
+    }
+
+    for ( my $i = 0; $i < @to; ++$i ) {
+        print "\$to[$i] = $to[$i]\n";
+        print "ref for \@\$this_check[ $i ] " . ref( @{$this_check[ $i ]} ) . "\n";
+        print "scalar for \@\$this_check[ $i ] " . scalar @{$this_check[ $i ]} . "\n";
+        for ( my $j = 0; $j < @{$this_check[ $i ]}; ++$j ) {
+            print " \t\$this_check[$i][$j] = $this_check[$i][$j]\n";
+        }
         print "\n";
-
-        foreach my $c ( @req ) {
-            die "$0: monitor entry #$count missing required tag '$c'\n" . to_json( $i, { utf8 => 1, pretty => 1 } ) . "\n" if !$$i{ $c };
-        }
-
-        # build up data structures for monitoring
-        $to[ $pos ] = join ',', @{$$i{ 'to' }};
-        $from[ $pos ] = $$i{ 'from' };
-        $this_check[ $pos ] = [];
-
-        foreach my $j ( @{$$i{ 'check' }} ) {
-            print "j is $j\n";
-            push @check, $j;
-            push $this_check[ $pos ], $j;
-        }
-        $pos++;
     }
-}
-
-for ( my $i = 0; $i < @to; ++$i ) {
-    print "\$to[$i] = $to[$i]\n";
-    print "ref for \@\$this_check[ $i ] " . ref( @{$this_check[ $i ]} ) . "\n";
-    print "scalar for \@\$this_check[ $i ] " . scalar @{$this_check[ $i ]} . "\n";
-    for ( my $j = 0; $j < @{$this_check[ $i ]}; ++$j ) {
-        print " \t\$this_check[$i][$j] = $this_check[$i][$j]\n";
+    foreach my $i ( @check ) {
+        print "checking $i\n";
     }
-    print "\n";
-}
-foreach my $i ( @check ) {
-    print "checking $i\n";
-}
 
-$$json{ 'timing' } = {}  if !$$json{ 'timing' };
+    $$json{ 'timing' } = {}  if !$$json{ 'timing' };
 
-$approx_every_minutes          = $$json{ 'timing' }{ 'loop_minutes' }           ? $$json{ 'timing' }{ 'loop_minutes' }           : 12.7;
-$sleep_before_rechecking_secs  = $$json{ 'timing' }{ 'before_rechecking_secs' } ? $$json{ 'timing' }{ 'before_rechecking_secs' } : 30;
-$sleep_between_gets_secs       = $$json{ 'timing' }{ 'between_gets_secs' }      ? $$json{ 'timing' }{ 'between_gets_secs' }      : 10;  
+    $approx_every_minutes          = $$json{ 'timing' }{ 'loop_minutes' }           ? $$json{ 'timing' }{ 'loop_minutes' }           : 12.7;
+    $sleep_before_rechecking_secs  = $$json{ 'timing' }{ 'before_rechecking_secs' } ? $$json{ 'timing' }{ 'before_rechecking_secs' } : 30;
+    $sleep_between_gets_secs       = $$json{ 'timing' }{ 'between_gets_secs' }      ? $$json{ 'timing' }{ 'between_gets_secs' }      : 10;  
 
-if ( $do_short )
-{
-    $approx_every_minutes          = .1;  
-    $sleep_before_rechecking_secs  = 2;
-    $sleep_between_gets_secs       = 1;  
-}
+    if ( $do_short ) {
 
-die "$0: $cf mail must be defined\n" if !$$json{ 'mail' };
+        $approx_every_minutes          = .1;  
+        $sleep_before_rechecking_secs  = 2;
+        $sleep_between_gets_secs       = 1;  
+    }
 
-if ( $$json{ 'mail' }{ 'smtp' } ) {
-    $email_smtp_host = $$json{ 'mail' }{ 'smtp' }{ 'host' } ? $$json{ 'mail' }{ 'smtp' }{ 'host' } : die "$0: $cf mail:smtp:host must be defined if mail:smtp is defined\n";
-    $email_smtp_user = $$json{ 'mail' }{ 'smtp' }{ 'user' } ? $$json{ 'mail' }{ 'smtp' }{ 'user' } : die "$0: $cf mail:smtp:user must be defined if mail:smtp is defined\n";
-    $email_auth_pass = $$json{ 'mail' }{ 'smtp' }{ 'password' } ? decode_base64( $$json{ 'mail' }{ 'smtp' }{ 'password' } ) : die "$0: $cf mail:smtp:password must be defined if mail:smtp is defined\n";
-} else {
-    $sendmail++;
-}
+    die "$0: $cf mail must be defined\n" if !$$json{ 'mail' };
 
-$subject_prefix = $$json{ 'subject' } ? "[" . $$json{ 'subject' } . "] " : '[WebMonitor] ';
-
-if ( $debug ) {
-    if ( $sendmail ) {
-        print "sendmail active\n";
+    if ( $$json{ 'mail' }{ 'smtp' } ) {
+        $email_smtp_host = $$json{ 'mail' }{ 'smtp' }{ 'host' } ? $$json{ 'mail' }{ 'smtp' }{ 'host' } : die "$0: $cf mail:smtp:host must be defined if mail:smtp is defined\n";
+        $email_stmp_user = $$json{ 'mail' }{ 'smtp' }{ 'user' } ? $$json{ 'mail' }{ 'smtp' }{ 'user' } : die "$0: $cf mail:smtp:user must be defined if mail:smtp is defined\n";
+        $email_stmp_pass = $$json{ 'mail' }{ 'smtp' }{ 'password' } ? decode_base64( $$json{ 'mail' }{ 'smtp' }{ 'password' } ) : die "$0: $cf mail:smtp:password must be defined if mail:smtp is defined\n";
     } else {
-        print "smtp active
-email_smtp_host: $email_smtp_host
-email_smtp_user: $email_smtp_user
-email_auth_pass: $email_auth_pass
-"   ;
+        $sendmail++;
     }
+
+    $subject_prefix = $$json{ 'subject' } ? "[" . $$json{ 'subject' } . "] " : '[WebMonitor] ';
+
+    if ( $debug ) {
+        if ( $sendmail ) {
+            print "sendmail active\n";
+        } else {
+            print "smtp active
+email_smtp_host: $email_smtp_host
+email_stmp_user: $email_stmp_user
+email_stmp_pass: $email_stmp_pass
+"   ;
+        }
+    }
+    foreach $k ( @check ) {
+        $maxurllen = length ( $k ) if $maxurllen < length( $k );
+    }
+    email_welcome();
 }
 
-# ------------------- end user config area -------------------
+read_params();
+$running++;
 
-$version = "Web monitor 0.6";
 
 $| = 1;
 
 $SIG{INT}  = \&signal_handler;
 $SIG{TERM} = \&signal_handler;
+$SIG{HUP}  = sub { print "signal $!\n"; &read_params; $hupcalled++; };
 
 sub signal_handler {
     print "signal $! caught, sending goodbye email\n";
     email_bye();
+    $byesent++;
     die "shutdown\n";
-}
-
-foreach $k ( @check ) {
-    $maxurllen = length ( $k ) if $maxurllen < length( $k );
 }
 
 sub do_send {
@@ -218,7 +209,7 @@ $body
         );
 
     try {
-        $sendmail ? $msg->send() : $msg->send( 'smtp', $email_smtp_host, AuthUser => $email_auth_user,  AuthPass => $email_auth_pass );
+        $sendmail ? $msg->send() : $msg->send( 'smtp', $email_smtp_host, AuthUser => $email_stmp_user,  AuthPass => $email_stmp_pass );
     } catch {
         print "message send error\n";
     }
@@ -235,12 +226,14 @@ sub do_email {
 
 sub email_welcome {
 # should be ok
+    my $msg = $running ? "restart" : "startup";
+
     for ( my $i = 0; $i < @to; ++$i ) {
         my $subject = $subject_prefix . "Welcome ";
         $subject .= " : $version";
-        $subject .= " : advisory startup summary";
+        $subject .= " : advisory $msg summary";
 
-        my $body = "$version advisory startup summary
+        my $body = "$version advisory $msg summary
 
 The following websites are being monitored:
 ";
@@ -285,8 +278,6 @@ This service is currently experimental.
         do_send( $from[ $i ], $to[ $i ], $subject, $body );
     }
 }
-
-email_welcome();
 
 $badleft = $debug_testdown     if $debug_testdown;
 $badskip = $debug_testdownskip if $debug_testdownskip;
@@ -346,10 +337,16 @@ undef %fails;
 $tc = 0;
 while ( 1 ) {
 
+    die if $byesent;
+
     print '='x60 . "\n";
 
     undef %sendmsg;
     undef %msgs;
+
+    if ( $hupcalled ) {
+        undef $hupcalled;
+    }
 
     out_keys( "start" ) if $debug_keys;
     
@@ -372,6 +369,13 @@ while ( 1 ) {
         }
         
         sleep $sleep_between_gets_secs;
+    }
+
+    die if $byesent;
+
+    if ( $hupcalled ) {
+        undef $hupcalled;
+        next;
     }
 
     # check fails one more time
@@ -402,6 +406,11 @@ while ( 1 ) {
     }
 
     out_keys( "end" ) if $debug_keys;
+    die if $byesent;
+    if ( $hupcalled ) {
+        undef $hupcalled;
+        next;
+    }
     print "final messages\n";
     
 # loop thru all and check if a url has sendmsg sent, if so, send that message
@@ -424,6 +433,11 @@ while ( 1 ) {
         }
     }
     
+    die if $byesent;
+    if ( $hupcalled ) {
+        undef $hupcalled;
+        next;
+    }
     print "sleeping $approx_every_minutes minutes\n" if $debug;
     sleep $approx_every_minutes * 60;
 }
