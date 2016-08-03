@@ -11,7 +11,7 @@ ccall if available will cc those users of all messages (if you want multiple add
 
 # Install
 
-perl -MCPAN -e 'install \"JSON\";install \"Try::Tiny\";install \"LWP::UserAgent\";install \"MIME::Lite\";install \"MIME::Base64\";install \"LWP::Protocol::https\";
+perl -MCPAN -e 'install "JSON";install "Try::Tiny";install "LWP::UserAgent";install "MIME::Lite";install "MIME::Base64";install "LWP::Protocol::https"';
 
 then setup a config.json file listing the required websites and users in the "monitors" object
 see config.json.sample for an example

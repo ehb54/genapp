@@ -1,0 +1,38 @@
+{
+    "timing" : {
+        "loop_minutes" : 12.7
+        ,"before_rechecking_secs" : 30
+        ,"between_gets_secs" : 10
+    }
+    ,"mail" : {}
+    ,"ccall" : "emre@biochem.uthscsa.edu,emre@flash.net"
+    ,"monitors" :
+    [
+        {
+            "from" : "monitor@genapp.rocks"
+            ,"to" : [ "curtis.family@mac.com" ]
+            ,"check" : [
+                "https://sassie-web.chem.utk.edu/sassie2"
+            ]
+        }
+        ,{
+            "from" : "monitor@genapp.rocks"
+            ,"to" : [
+                "j4sabuda@yahoo.com"
+            ]
+            ,"check" : [
+                "http://gw165.iu.xsede.org/vortexshedding"
+            ]
+        }
+        ,{
+            "from" : "monitor@genapp.rocks"
+            ,"to" : []
+            ,"check" : [
+                "http://somo.chem.utk.edu/somo"
+                ,"http://somo.chem.utk.edu/willitfit"
+                ,"http://somo.chem.utk.edu/quafit"
+                ,"http://somo.chem.utk.edu/denfert"
+            ]
+        }
+    ]
+}
