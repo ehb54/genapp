@@ -1,0 +1,42 @@
+{
+    "timing" : {
+        "loop_minutes" : 12.7
+        ,"before_rechecking_secs" : 30
+        ,"between_gets_secs" : 10
+    }
+    ,"mail" : {
+        "smtp" :
+        {
+            "host"     : "smtphost"
+            ,"user"     : "smtpuser"
+            ,"password" : "encodedsmtppassword"
+        }
+    }
+    ,"ccall" : "emre@biochem.uthscsa.edu"
+    ,"monitors" :
+    [
+        {
+            "from" : "monitor@genapp.uthscsa.edu"
+            ,"to" : [
+                "emre@flash.net"
+                ,"emre@biochem.uthscsa.edu"
+            ]
+            ,"check" : [
+                "https://sassie-web.chem.utk.edu/genapptest"
+                ,"https://somo.chem.utk.edu/genapptest"
+                ,"https://sassie-web.chem.utk.edu/sassie2"
+                ,"http://gw105.iu.xsede.org:8000/genapp"
+            ]
+        }
+        ,{
+            "from" : "monitor@genapp.uthscsa.edu"
+            ,"to" : [
+                "emre@flash.net"
+                ,"emre@biochem.uthscsa.edu"
+            ]
+            ,"check" : [
+                "http://genapp.rocks/vortexshedding"
+            ]
+        }
+    ]
+}

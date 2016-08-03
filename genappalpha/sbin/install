@@ -34,8 +34,8 @@ echo '*** installing required perl modules ***'
 export PERL_MM_USE_DEFAULT=1
 
 if [ -z "$NOSUDO" ]; then
-    sudo -E bash -c "$PERL -MCPAN -e 'install \"JSON\";install \"Hash::Merge\";install \"Data::Dumper\";'"
+    sudo -E bash -c "$PERL -MCPAN -e 'install \"JSON\";install \"Hash::Merge\";install \"Data::Dumper\";install \"Try::Tiny\";install \"LWP::UserAgent\";install \"MIME::Lite\";install \"MIME::Base64\";install \"LWP::Protocol::https\";'"
 else
-    $PERL -MCPAN -e "install \"JSON\";install \"Hash::Merge\";install \"Data::Dumper\";"
+    $PERL -MCPAN -e "install \"JSON\";install \"Hash::Merge\";install \"Data::Dumper\";install \"Try::Tiny\";install \"LWP::UserAgent\";install \"MIME::Lite\";install \"MIME::Base64\";install \"LWP::Protocol::https\";"
 fi 
 exec $PERL $GENAPP/sbin/install.pl
