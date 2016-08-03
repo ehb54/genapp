@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 # to install required modules:
-# perl -MCPAN -e 'install \"JSON\";install \"Try::Tiny\";install \"LWP::UserAgent\";install \"MIME::Lite\";install \"MIME::Base64\";install \"LWP::Protocol::https\";
+# perl -MCPAN -e 'install "JSON";install "Try::Tiny";install "LWP::UserAgent";install "MIME::Lite";install "MIME::Base64";install "LWP::Protocol::https"';
 
 use Try::Tiny;
 use File::Basename;
@@ -90,9 +90,9 @@ sub read_params {
         foreach my $i ( @{$$json{ 'monitors' }} ) {
             $count++;
 
-            print "ref i is " . ref( $i ) . "\n";
-            print to_json( $i, { utf8 => 1, pretty => 1 } );
-            print "\n";
+            print "ref i is " . ref( $i ) . "\n" if $debug;
+            print to_json( $i, { utf8 => 1, pretty => 1 } ) if $debug;
+            print "\n" if $debug;
 
             foreach my $c ( @req ) {
                 die "$0: monitor entry #$count missing required tag '$c'\n" . to_json( $i, { utf8 => 1, pretty => 1 } ) . "\n" if !$$i{ $c };
@@ -104,7 +104,7 @@ sub read_params {
             $this_check[ $pos ] = [];
 
             foreach my $j ( @{$$i{ 'check' }} ) {
-                print "j is $j\n";
+                print "j is $j\n" if $debug;
                 push @check, $j;
                 push $this_check[ $pos ], $j;
             }
@@ -113,13 +113,13 @@ sub read_params {
     }
 
     for ( my $i = 0; $i < @to; ++$i ) {
-        print "\$to[$i] = $to[$i]\n";
-        print "ref for \@\$this_check[ $i ] " . ref( @{$this_check[ $i ]} ) . "\n";
-        print "scalar for \@\$this_check[ $i ] " . scalar @{$this_check[ $i ]} . "\n";
+        print "\$to[$i] = $to[$i]\n" if $debug;
+        print "ref for \@\$this_check[ $i ] " . ref( @{$this_check[ $i ]} ) . "\n" if $debug;
+        print "scalar for \@\$this_check[ $i ] " . scalar @{$this_check[ $i ]} . "\n" if $debug;
         for ( my $j = 0; $j < @{$this_check[ $i ]}; ++$j ) {
-            print " \t\$this_check[$i][$j] = $this_check[$i][$j]\n";
+            print " \t\$this_check[$i][$j] = $this_check[$i][$j]\n" if $debug;
         }
-        print "\n";
+        print "\n" if $debug;
     }
     foreach my $i ( @check ) {
         print "checking $i\n";
@@ -159,7 +159,6 @@ sub read_params {
             print "smtp active
 email_smtp_host: $email_smtp_host
 email_stmp_user: $email_stmp_user
-email_stmp_pass: $email_stmp_pass
 "   ;
         }
     }
