@@ -66,7 +66,7 @@ ga.value.checkFloatIntOK = function( tag, value ) {
 }
 
 
-ga.value.processInputfromFiles = function (text, mode, ids_array){
+ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
     var lines = text.trim().split(/[\r\n]+/g);
     var linesContent = [];
     var cumulativeContent = 0;
@@ -80,18 +80,157 @@ ga.value.processInputfromFiles = function (text, mode, ids_array){
 	linesContent.push(cumulativeContent);
     }
     
-    var elements = text.trim().split(/\s+/);
-    
-    __~debug:values{ console.log("Lengths of params and ids: " + elements.length + " " + ids_array.length); }
-    __~debug:values{ console.log("Number of lines: " + lines.length + "  Last line: " + lines[lines.length-1]);}
-    
+    //var elements = text.trim().split(/\s+/);
+    var elements = [];
+    var contrastrepel = [];
+    var dissolrepel = [];
+    var unitrepel_1 = [];
+    var unitrepel_2 = [];
+    var repeat_hash = [];
     var lineNumberErr = 0;
     
     switch (mode)
     {
+    case "whitespace_formulchcontrast":
+	var lines_formulchcontrast  = [];
+	for (var i=0; i<lines.length; i++)
+	{
+	    var line_split = lines[i].split('#')[0];
+	    
+	    //line_split.trim();                            // simple trim does not work..
+	    line_split = line_split.replace(/\s{2,}/g, ' ');
+	    line_split = line_split.replace(/\t/g, ' ');
+	    line_split = line_split.toString().trim().replace(/(\r\n|\n|\r)/g,"");
+	    //console.log ("The line is: " + line_split);
+	
+	    lines_formulchcontrast.push(line_split);
+	}
+		
+	var repeater_start_1 = parseInt(lines_formulchcontrast[1]);
+	var repeater_start_2 = parseInt(lines_formulchcontrast[ 2 + repeater_start_1 ] );
+	var repeater_start_3 = parseInt(lines_formulchcontrast[ 5 + repeater_start_1 + repeater_start_2 ]);
+	var repeater_start_4 = parseInt(lines_formulchcontrast[ 9 + repeater_start_1 + repeater_start_2 + repeater_start_3]);
+
+	var item;
+	for (var i=0; i < lines_formulchcontrast.length; i++)
+	{
+	    if ( (i > 1) && (i < 2 + repeater_start_1) )
+	    {
+		item = lines_formulchcontrast[i].trim().split(/\s+/);
+		for (var k=0; k < item.length; k++)
+		{		    
+		    contrastrepel.push(item[k]);
+		}
+		continue;
+	    }
+	    if ( (i > 2 + repeater_start_1) && (i < 3 + repeater_start_1 + repeater_start_2) ) 
+	    {
+		item = lines_formulchcontrast[i].trim().split(/\s+/);
+		//for (var k=0; k < item.length; k++)
+		//{		    
+		//    dissolrepel.push(item[k]);
+		//}
+		dissolrepel.push(item[1]);
+		dissolrepel.push(item[2]);
+		dissolrepel.push(item[0]);
+		dissolrepel.push(item[3]);
+		continue;
+	    }
+	    if ( (i > 5 + repeater_start_1 + repeater_start_2) && (i < 6 + repeater_start_1 + repeater_start_2 + repeater_start_3) ) 
+	    {
+		item = lines_formulchcontrast[i].trim().split(/\s+/);
+		//for (var k=0; k < item.length; k++)
+		//{		    
+		//    unitrepel_1.push(item[k]);
+		//}
+		unitrepel_1.push(item[1]);
+		unitrepel_1.push(item[2]);
+		unitrepel_1.push(item[0]);
+		unitrepel_1.push(item[3]);
+		continue;
+	    }
+	    if ( (i > 8 + repeater_start_1 + repeater_start_2 + repeater_start_3) && (i < 9 + repeater_start_1 + repeater_start_2 + repeater_start_3 + repeater_start_4) ) 
+	    {
+		item = lines_formulchcontrast[i].trim().split(/\s+/);
+		//for (var k=0; k < item.length; k++)
+		//{		    
+		//    unitrepel_2.push(item[i]);
+		//}
+		unitrepel_2.push(item[1]);
+		unitrepel_2.push(item[2]);
+		unitrepel_2.push(item[0]);
+		unitrepel_2.push(item[3]);
+		continue;
+	    }	    
+	    //console.log ("Elements: " + lines_formulchcontrast[i]);
+	    elements.push(lines_formulchcontrast[i]);
+	}
+
+	//console.log("Size of Contrast: " + contrastrepel.length);
+	repeat_hash.push(contrastrepel);
+	repeat_hash.push(dissolrepel);
+	repeat_hash.push(unitrepel_1);
+	repeat_hash.push(unitrepel_2);
+
+	//for (var i=0; i < elements.length; i++) {
+	for (var i=0; i < ids_array.length; i++) {
+	    switch ( $("#" + ids_array[i]).attr("type") )
+	    {
+	    case "text":
+		var reg = new RegExp($("#" + ids_array[i]).attr("pattern"));
+		if ( !reg.test(elements[i]) )
+		{
+		    __~debug:values{ console.log( "Achtung!!! " +  elements[i]); }
+		    messagebox( {
+			icon : "warning.png",
+			text : "Wrong format of the input file! Input value on the line #" + lineNumberErr + " is not a valid number. Options are: [Integer | Float point number | Number with exponent]. Check your input file",
+			buttons : [
+			    { id    : "ok",
+			      label : "OK" } ]
+		    });
+		    return;
+		}
+		break;
+	    case "number":
+		var value = [elements[i]];
+		//console.log( "Number: " +  elements[i]);
+		if ( !( ga.value.checkFloatIntOK("#" + ids_array[i], value) ) )
+		{
+		    messagebox( {
+			icon : "warning.png",
+			text : "Wrong format of the input file! Input value on the line #" + lineNumberErr + " is not a valid number. Options are: [Integer | Float point number | Number with exponent]. Check your input file",
+			buttons : [
+			    { id    : "ok",
+			      label : "OK" } ]
+		    });
+		    return;	
+		}
+		else
+		{
+		    elements[i] = value[0];
+		    console.log( "Number is: " +  elements[i]);
+		}
+		break;	
+	    default:
+		messagebox( {
+		    icon : "warning.png",
+		    text : "Selected input type is currently not supported. Contact the developer",
+		    buttons : [
+			{ id    : "ok",
+			  label : "OK" } ]
+		});
+		return;
+		break;
+	    }
+	}
+	break;
     case "whitespaceseparated":
     case "whitespaceseparated_reverselogic":
-	
+
+	elements = text.trim().split(/\s+/);
+	__~debug:values{ console.log("Lengths of params and ids: " + elements.length + " " + ids_array.length); }
+	__~debug:values{ console.log("Number of lines: " + lines.length + "  Last line: " + lines[lines.length-1]);}
+
 	if (elements.length == ids_array.length)
 	{
 	    for (var i=0; i < elements.length; i++) {
@@ -195,6 +334,8 @@ ga.value.processInputfromFiles = function (text, mode, ids_array){
     
     /// Filling the values form file /////////////////////////////////////////
     
+    //console.log("NUMBER elements array: " + elements.length + "; #ids: " + ids_array.length);
+    var repeater_counter=0;
     for (var i=0; i < elements.length; i++) {
 	switch ( $("#" + ids_array[i]).attr("type") )
 	{
@@ -239,14 +380,41 @@ ga.value.processInputfromFiles = function (text, mode, ids_array){
 		    break;		
 		}
 	    }
+	    
 	default:
 	    //__~debug:values{ console.log(" pattern: " + $("#" + ids_array[i]).attr("pattern") ); }
 	    $("#" + ids_array[i]).val(elements[i]);
 	    $("#" + ids_array[i]).prop( "defaultValue", elements[i]);
 	    break;
 	}
+	if ( $("#" + ids_array[i]).data("repeater") )
+	{
+	    ga.repeat.change(mod,ids_array[i]);
+	    // get children
+	    children = ga.repeat.children( mod, ids_array[i] );
+	    var val = $("#" + ids_array[i]).val();
+	    
+	    var curr_repeat = 0;
+	    
+	    for ( j = 1; j <= val; ++j)
+	    {
+		for ( t in children ) 
+		{
+		    k = ids_array[i] + "-" + t + "-" + ( j - 1 );
+		    //console.log( "child's ids: " + k + "; Child's type: " +  $("#" + k).attr("type"));
+		    var repeat_value = repeat_hash[repeater_counter][curr_repeat];
+		    //$("#" + k).val("Test Value");
+		    $("#" + k).val(repeat_value);
+		    curr_repeat++;
+		}
+	    }
+	    ga.repeat.change(mod,ids_array[i]);
+	    repeater_counter++;
+	    //}
+	    // break;
+	}
     }
- }
+}
 
 
 ga.value.input = {}
@@ -272,7 +440,7 @@ ga.value.registerid = function(module, id, label, required) {
 }
 
 
-ga.value.setInputfromRFile = function(path, mode, ids){ 
+ga.value.setInputfromRFile = function(path, mode, ids, mod){ 
     var ids_array = ids.split(',');
     var username = $( '#_state' ).data('_logon');
     var actual_path = 'results/users/' + username + '/' + path;
@@ -281,26 +449,26 @@ ga.value.setInputfromRFile = function(path, mode, ids){
     __~debug:values{console.log ("List_ids: " + ids ); }
     $.get(actual_path, function(text){
 	
-	ga.value.processInputfromFiles(text, mode, ids_array);
+	ga.value.processInputfromFiles(text, mode, ids_array, mod);
 	
     }, "text");
 }
 
 
-ga.value.setInputfromFile = function( tag, mode, ids ) {
+ga.value.setInputfromFile = function( tag, mode, ids, mod ) {
     $(tag).hide();
        
     var ids_array = ids.split(',');
     $(tag).change( function(e) {
 	var file = $( tag )[0].files[0];
 	__~debug:values{ console.log("tag: " + tag + " mode: " + mode + " ids: " + ids_array[0] + " file: " + file); }
-	
+	//console.log ("Module from setformfile: " + mod);
 	var reader = new FileReader();
 	
 	reader.onload = function(evt) {
             var text = evt.target.result;
 	    
-	    ga.value.processInputfromFiles(text, mode, ids_array);
+	    ga.value.processInputfromFiles(text, mode, ids_array, mod);
 	    
 	}
 	reader.readAsText(file);
