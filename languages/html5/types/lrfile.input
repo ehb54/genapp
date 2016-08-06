@@ -11,7 +11,7 @@ __~fields:setinputfromfile{'ga.value.setInputForRFile("__moduleid__","#__fields:
 '$( "#__fields:id__" ).change( function(){$("#__fields:id___altval").html( "<i>Local</i>: " + $("#__fields:id__").val().replace(/^C:.fakepath./,""));$("#__fields:id___msg").html("");});' +
 'ga.altfile.button("__moduleid__","__fields:id__","__fields:label__","rfile",function(v){ga.altfile.button.lrfile(v,"__moduleid__","__fields:id__");}__~fields:required{,"lrfile"});' +
 '$("#__fields:id___button").on("click",function(){return ga.altfile.button.call("__moduleid__","__fields:id__");});' +
-__~fields:setinputfromfile{'ga.value.setInputfromFile("#__fields:id__", "__fields:setinputfromfile__", "__fields:setinputfromfileids__");' +}
+__~fields:setinputfromfile{'ga.value.setInputfromFile("#__fields:id__", "__fields:setinputfromfile__", "__fields:setinputfromfileids__", "__moduleid__");' +}
 '';
 
 // var s = $(v).jstree("get_selected", true),r="";$.each(s,function(){r=r+$.base64.decode(this.id).substr(2)+" "});$("#__fields:id___altval").html( r.length ? "<i>Server</i>: " + r : "");r.length?$("#__fields:id__").val(""):""});' +

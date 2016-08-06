@@ -194,6 +194,7 @@ ga.repeat.change = function( mod, id, init ) {
 
     if ( !jqhid.length ) {
         __~debug:repeat{console.log( "ga.repeat.change( " + mod + " , " + id + " ) id does not currently exist in DOM" );}
+	//console.log("ga.repeat.change( " + mod + " , " + id + " ) id does not currently exist in DOM" );
         return false;
     }
 
@@ -206,6 +207,7 @@ ga.repeat.change = function( mod, id, init ) {
     case "integer" :
     case "listbox" :
         val = jqhid.val();
+	console.log("Value:  " + val );
         break;
 
     default :
@@ -330,6 +332,7 @@ ga.repeat.change = function( mod, id, init ) {
 
     for ( i = 0 ; i < child_repeaters.length; ++i ) {
         __~debug:repeat{console.log( "ga.repeat.change( " + mod + " , " + id + " ) child_repeater " + child_repeaters[ i ] );}
+	//console.log( "ga.repeat.change( " + mod + " , " + id + " ) child_repeater " + child_repeaters[ i ] );
         ga.repeat.change( mod, child_repeaters[ i ], init );
     }
 
