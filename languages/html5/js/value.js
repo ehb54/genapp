@@ -91,6 +91,7 @@ ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
     
     switch (mode)
     {
+    case "whitespace_formulchrg":
     case "whitespace_formulchcontrast":
 	var lines_formulchcontrast  = [];
 	for (var i=0; i<lines.length; i++)
@@ -395,11 +396,15 @@ ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
 	    var val = $("#" + ids_array[i]).val();
 	    
 	    var curr_repeat = 0;
-	    
+	    var current_child_for_given_rep = 0;
 	    for ( j = 1; j <= val; ++j)
 	    {
+		current_child_for_given_rep = 0;
 		for ( t in children ) 
 		{
+		    ++current_child_for_given_rep;
+		    if (mode == "whitespace_formulchrg" && current_child_for_given_rep==1)
+			continue;
 		    k = ids_array[i] + "-" + t + "-" + ( j - 1 );
 		    //console.log( "child's ids: " + k + "; Child's type: " +  $("#" + k).attr("type"));
 		    var repeat_value = repeat_hash[repeater_counter][curr_repeat];
