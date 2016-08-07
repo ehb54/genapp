@@ -207,7 +207,7 @@ ga.repeat.change = function( mod, id, init ) {
     case "integer" :
     case "listbox" :
         val = jqhid.val();
-	console.log("Value:  " + val );
+	//console.log("Value:  " + val );
         break;
 
     default :
@@ -264,7 +264,7 @@ ga.repeat.change = function( mod, id, init ) {
                 ga.repeat.map[ i ] = k;
                 __~debug:repeat{console.log( " j " + j + " i " + i + " htmlr " + ga.repeat.data[ mod ].repeat[ i ].htmlr );}
                 __~debug:repeat{console.log( " j " + j + " i " + i + " evalr " + ga.repeat.data[ mod ].repeat[ i ].evalr );}
-                add_html += ga.repeat.data[ mod ].repeat[ i ].htmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "[" + j + "]" );
+	        add_html += ga.repeat.data[ mod ].repeat[ i ].htmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "[" + j + "]" );
                 add_eval += ga.repeat.data[ mod ].repeat[ i ].evalr.replace( /%%id%%/g, k );
                 if ( ga.repeat.data[ mod ].repeater[ i ] ) {
                     __~debug:repeat{console.log( "child repeater " + k );}
@@ -318,7 +318,7 @@ ga.repeat.change = function( mod, id, init ) {
 
     if ( !/^<tr>/.test( add_html ) &&
          /<\/tr>$/.test( add_html ) ) {
-        add_html = "<tr>" + add_html;
+	add_html = "<tr>" + add_html;
     }
 
     __~debug:repeat{console.log( "ga.repeat.change( " + mod + " , " + id + " ) add_html " + add_html );}
