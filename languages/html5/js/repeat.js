@@ -21,6 +21,7 @@ ga.repeat.map           = {};
 // ga.repeat.data[ mod ].repeat[ id ]             : repeat data object for repeat id 
 // ga.repeat.data[ mod ].repeat[ id ].html        : repeat id's html
 // ga.repeat.data[ mod ].repeat[ id ].htmlr       : repeat id's html modified to ease replacement
+// ga.repeat.data[ mod ].repeat[ id ].htmls       : repeat id's html structure and label only for table header
 // ga.repeat.data[ mod ].repeat[ id ].eval        : repeat id's eval
 // ga.repeat.data[ mod ].repeat[ id ].evalr       : repeat id's eval modified to ease replacement
 // ga.repeat.data[ mod ].repeat[ id ].refid       : repeat's repeater (as registered in repeatOn)
@@ -75,6 +76,25 @@ ga.repeat.repeat = function( mod, id, html, this_eval ) {
         .replace( RegExp( 'id="' + id + '-repeater"' ), 'id="%%id%%-repeater"' )
     ;    
 
+    ga.repeat.data[ mod ].repeat[ id ].htmls = // grab just relevant table structure and label text
+        html
+        .replace( /<td><label.*?>(.*?)<\/label>\s*<\/td>/, "%%td%%$1%%etd%%" )
+        .replace( /(<td[^>]*>).*?<\/td>/g, "$1</td>" )
+        .replace( /<input[^>]*>/g, "" )
+        .replace( /<span[^>]*>.*?<\/span>/g, "" )
+        .replace( /\s*id=".*?"\s*/g, "" )
+        .replace( "%%td%%", "<td>" )
+        .replace( "%%etd%%", "</td>" )
+        .replace( "<td></td>", "" )
+    ;
+            
+    __~debug:repeathtmls{console.log( "ga.repeat.repeat( " + mod + " , " + id + " , html , eval )" );}
+    __~debug:repeathtmls{console.log( "--------------------" );}
+    __~debug:repeathtmls{console.log( "ga.repeat.repeat() html=" + html );}
+    __~debug:repeathtmls{console.log( "--------------------" );}
+    __~debug:repeathtmls{console.log( "ga.repeat.repeat() htmls=" + ga.repeat.data[ mod ].repeat[ id ].htmls );}
+    __~debug:repeathtmls{console.log( "====================" );}
+
     ga.repeat.data[ mod ].repeat[ id ].evalr = 
         this_eval 
         .replace( RegExp( '"#' + id + '"', "g" ), '"#%%id%%"' )
@@ -128,12 +148,19 @@ ga.repeat.repeatOn = function( mod, id, refid ) {
 // add a repeater
 // no exact equivalent in ga.repeats, this was encapsulated in various updateRepeats
 
-ga.repeat.repeater = function( mod, id, type ) {
-    __~debug:repeat{console.log( "ga.repeat.repeater( " + mod + " , " + id + " , " + type + " )" );}
+ga.repeat.repeater = function( mod, id, type, tableize ) {
+    __~debug:repeat{console.log( "ga.repeat.repeater( " + mod + " , " + id + " , " + type + " , " + tableize + " )" );}
     ga.repeat.data[ mod ] = ga.repeat.data[ mod ] || {};
     ga.repeat.data[ mod ].repeater = ga.repeat.data[ mod ].repeater || {};
     ga.repeat.data[ mod ].repeater[ id ] = ga.repeat.data[ mod ].repeater[ id ] || {};
     ga.repeat.data[ mod ].repeater[ id ].type = type;
+    if ( tableize &&
+         tableize != "__fields:tableize__" &&
+         !/^(off|false)$/i.test( tableize ) ) {
+        ga.repeat.data[ mod ].repeater[ id ].tableize = 1;
+        __~debug:repeattableize{console.log( "ga.repeat.repeater( " + mod + " , " + id + " , " + type + " , " + tableize + " ) tabelize on" );}
+    }
+    __~debug:repeattableize{else {console.log( "ga.repeat.repeater( " + mod + " , " + id + " , " + type + " , " + tableize + " ) tabelize off" );}}
 }
 
 // return all children
@@ -258,13 +285,19 @@ ga.repeat.change = function( mod, id, init ) {
 
     case "integer" :
 
+        if ( ga.repeat.data[ mod ].repeater[ id ].tableize && val > 0 ) {
+            for ( i in children ) {
+                add_html += ga.repeat.data[ mod ].repeat[ i ].htmls;
+            }
+        }
+
         for ( j = 1; j <= val; ++j ) {
             for ( i in children ) {
                 k = id + "-" + i + "-" + ( j - 1 );
                 ga.repeat.map[ i ] = k;
                 __~debug:repeat{console.log( " j " + j + " i " + i + " htmlr " + ga.repeat.data[ mod ].repeat[ i ].htmlr );}
                 __~debug:repeat{console.log( " j " + j + " i " + i + " evalr " + ga.repeat.data[ mod ].repeat[ i ].evalr );}
-	        add_html += ga.repeat.data[ mod ].repeat[ i ].htmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "[" + j + "]" );
+                add_html += ga.repeat.data[ mod ].repeat[ i ].htmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "[" + j + "]" ).replace( ga.repeat.data[ mod ].repeater[ id ].tableize ? /<td.*?><label.*?>.*?<\/label><\/td>/ : "", "" );
                 add_eval += ga.repeat.data[ mod ].repeat[ i ].evalr.replace( /%%id%%/g, k );
                 if ( ga.repeat.data[ mod ].repeater[ i ] ) {
                     __~debug:repeat{console.log( "child repeater " + k );}
