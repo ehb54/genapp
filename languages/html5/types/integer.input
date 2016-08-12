@@ -10,7 +10,7 @@ __~fields:repeater{+ ga.tmp.html}
 
 this_eval = __~fields:pull{'ga.pull.toPull( "__moduleid__", "#__fields:id__", "integer", "__fields:pull__", "#__fields:repeat__" );' + }
 'ga.value.setLastValue( "__moduleid__", "#__fields:id__" );'
-__~fields:repeater{+ 'ga.repeat.repeater( "__moduleid__", "__fields:id__", "integer" );'}
+__~fields:repeater{+ 'ga.repeat.repeater( "__moduleid__", "__fields:id__", "integer", "__fields:tableize__" );'}
 __~fields:specifiedproject{ + 'ga.specproj( "__fields:specifiedproject__", "#__fields:id__" );'}
 + 'ga.value.registerid("__moduleid__","__fields:id__","__fields:label__"__~fields:required{,"integer"});'
 + '$( "#__fields:id__" ).on("change blur", function() { ga.valid.checkInt( "#__fields:id__" );'
