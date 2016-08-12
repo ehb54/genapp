@@ -615,7 +615,7 @@ ga.login.verify.change = function () {
             { 
                 id     : "_changeemailbutton"
                 ,label : "Submit"
-                ,cb    : ga.login.verify.change.do
+                ,cb    : ga.login.verify.change.doit
             }
             ,{
                 id     : "_changeemailcancel"
@@ -625,8 +625,8 @@ ga.login.verify.change = function () {
     } );
 }
 
-ga.login.verify.change.do = function () {
-    __~debug:loginverify{console.log( "ga.login.verify.change.do()" );}
+ga.login.verify.change.doit = function () {
+    __~debug:loginverify{console.log( "ga.login.verify.change.doit()" );}
     var form = $( "#sys_login" );
     if ( !form ) {
         return messagebox( { icon : "toast.png", text: "Internal error: form missing" } );
