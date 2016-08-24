@@ -16,7 +16,8 @@ ga.calc.data          = {};
 // ga.calc.data[ mod ].calc[ id ]               : calc data object for an id
 // ga.calc.data[ mod ].calc[ id ].calc          : calc data object's calc info
 // ga.calc.data[ mod ].calc[ id ].tokens        : calc data object's calc info as an array
-// ga.calc.data[ mod ].calc[ id ].dependents    : calc data object's calc info as an array
+// ga.calc.data[ mod ].calc[ id ].dependents    : calc data object's dependents (field ids) as an array
+// ga.calc.data[ mod ].calc[ id ].tree          : calc data object's tree structure
 // ----------------------------------------------------------------------------------------------------------
 // summary of operations
 // ----------------------------------------------------------------------------------------------------------
@@ -25,8 +26,11 @@ ga.calc.data          = {};
 // ga.calc.dependents : trim tokens array to dependent variables
 // ga.calc.install    : install change handlers
 // ga.calc.process    : update field
+// ga.calc.parensub   : utility routine used internally to extract a () section of the calc
+// ga.calc.mktree     : converts a calc array to a tree structure
+// ga.calc.arraytovals: utility routine used internally to convert strings to numeric values
+// ga.calc.evaltree   : evaluates a tree structure
 // ----------------------------------------------------------------------------------------------------------
-
 
 // regexp and general routines
 
@@ -854,26 +858,6 @@ ga.calc.evaltree = function( obj ) {
             result = [];
             for ( i = 0; i < obj.args[ 0 ].length; i += 2 ) {
                 result.push( Math.atan2( obj.args[ 0 ][ i ], obj.args[ 0 ][ i + 1 ] ) );
-            }
-        }
-        break;
-
-        case "atan2(" : {
-            if ( twoargs ) {
-                console.warn( "operator : " + obj.op + " has 2 arguments but only accepts one" );
-                break;
-            }
-
-            if ( !arg0array ) {
-                console.warn( "operator : " + obj.op + " needs the first argument to be an even sized array" );
-                break;
-            }
-            result = [];
-            for ( i = 0; i < obj.args[ 0 ].length; i += 2 ) {
-                result.push( Math.atan2( obj.args[ 0 ][ i ], obj.args[ 0 ][ i + 1 ] ) );
-            }
-            if ( result.length == 1 ) {
-                result = result[ 0 ];
             }
         }
         break;
