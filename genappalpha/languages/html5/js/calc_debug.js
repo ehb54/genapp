@@ -1,36 +1,10 @@
 /*jslint white: true, plusplus: true*/
-/* assumes: jquery > 1.11.0 */
 
-ga.calc               = {};
-ga.calc.data          = {};
+const util = require('util');
 
-// ----------------------------------------------------------------------------------------------------------
-// background
-// ----------------------------------------------------------------------------------------------------------
-// calc provides field calculation based upon other fields
-// ----------------------------------------------------------------------------------------------------------
-// summary of data structures
-// ----------------------------------------------------------------------------------------------------------
-// ga.calc.data[ mod ]                          : the module specific data object 
-// ga.calc.data[ mod ].calc                     : calc data object 
-// ga.calc.data[ mod ].calc[ id ]               : calc data object for an id
-// ga.calc.data[ mod ].calc[ id ].calc          : calc data object's calc info
-// ga.calc.data[ mod ].calc[ id ].tokens        : calc data object's calc info as an array
-// ga.calc.data[ mod ].calc[ id ].dependents    : calc data object's dependents (field ids) as an array
-// ga.calc.data[ mod ].calc[ id ].tree          : calc data object's tree structure
-// ----------------------------------------------------------------------------------------------------------
-// summary of operations
-// ----------------------------------------------------------------------------------------------------------
-// ga.calc.register   : register a calculated field
-// ga.calc.tokens     : convert calc string to tokens
-// ga.calc.dependents : trim tokens array to dependent variables
-// ga.calc.install    : install change handlers
-// ga.calc.process    : update field
-// ga.calc.parensub   : utility routine used internally to extract a () section of the calc
-// ga.calc.mktree     : converts a calc array to a tree structure
-// ga.calc.arraytovals: utility routine used internally to convert strings to numeric values
-// ga.calc.evaltree   : evaluates a tree structure
-// ----------------------------------------------------------------------------------------------------------
+ga           = {};
+ga.calc      = {};
+ga.calc.data = {};
 
 // regexp and general routines
 
@@ -68,144 +42,6 @@ ga.calc.precedence =
         "," : 8
     }
 ;
-
-// register a calculated field
-ga.calc.register = function( mod, id, calc ) {
-    __~debug:calc{console.log( "ga.calc.register( " + mod + " , " + id + " , " + calc + " )" );}
-
-    ga.calc.data[ mod ] = ga.calc.data[ mod ] || {};
-    ga.calc.data[ mod ].calc = ga.calc.data[ mod ].calc || {};
-    ga.calc.data[ mod ].calc[ id ] = {};
-    ga.calc.data[ mod ].calc[ id ].calc = calc;
-    ga.calc.data[ mod ].calc[ id ].tokens = ga.calc.tokens( calc );
-    ga.calc.data[ mod ].calc[ id ].dependents = ga.calc.dependents( mod, id );
-    ga.calc.data[ mod ].calc[ id ].tree = ga.calc.mktree( calc );
-    ga.calc.install( mod, id );
-}
-
-// get dependent variables
-ga.calc.dependents = function( mod, id ) {
-    __~debug:calc{console.log( "ga.calc.dependents( " + mod + " , " + id + " )" );}
-    var i,
-        dependents = []
-    ;
-
-    for ( i in ga.calc.data[ mod ].calc[ id ].tokens ) {
-        __~debug:calc{console.log( "ga.calc.dependents() i = " + i + " val " + ga.calc.data[ mod ].calc[ id ].tokens[ i ] );}
-        if ( ga.calc.is_atom_id.test( ga.calc.data[ mod ].calc[ id ].tokens[ i ] ) ) {
-            dependents.push( ga.calc.data[ mod ].calc[ id ].tokens[ i ] );
-        }
-    }
-    __~debug:calc{console.dir( dependents );}
-
-    return dependents;
-}
-
-// install change handlers
-ga.calc.install = function( mod, id ) {
-    __~debug:calc{console.log( "ga.calc.install( " + mod + " , " + id + " )" );}
-    var i;
-    for ( i in ga.calc.data[ mod ].calc[ id ].dependents ) {
-        $( "#" + ga.calc.data[ mod ].calc[ id ].dependents[ i ] ).on( "change", function() { ga.calc.process( mod, id ); } );
-    }
-}
-
-// update field
-ga.calc.process = function( mod, id ) {
-    __~debug:calc{console.log( "ga.calc.process( " + mod + " , " + id + " )" );}
-    var result = ga.calc.evaltree( jQuery.extend( true, {}, ga.calc.data[ mod ].calc[ id ].tree ) );
-
-    // tmp = Number( ga.calc.is_atom_id.test( token ) ? $( "#" + ga.calc.data[ mod ].calc[ id ].tokens[ i ] ).val() : token );
-
-    // convert to exponential format ?
-    // if ( result.constructor === Array ) {
-    // for ( var i = 0; i < result.length; ++i ) {
-    // result[ i ] = result[ i ].toExponential( 8 );
-    // } else {
-    // result = result.toExponential( 8 );
-    // }
-
-    $( "#" + id ).val( result );
-}
-
-// convert calc string into a token list
-ga.calc.tokens = function( calc ) {
-    __~debug:calc{console.log( "ga.calc.tokens( " + calc + " )" );}
-    var tokens = [],
-        new_tokens,
-        last_is_atom = [],
-
-        tokenize            = RegExp( "^(" + ga.calc.str_function_paren + "|" + ga.calc.str_atom_id + "|" + ga.calc.str_paren + "|" + ga.calc.str_atom_numeric + "|" + ga.calc.str_function_no_paren + ")" ),
-        tokenize_after_atom = RegExp( "^(" + ga.calc.str_binary + "|" + ga.calc.str_close_paren + ")" )
-
-    ;
-
-    calc = calc.replace( /\s+/g, "" );
-
-    var max=5;
-
-    last_is_atom.push( 0 );
-
-    do {
-        __~debug:calc{console.log( "last_is_atom length " + last_is_atom.length + " value " + last_is_atom[ last_is_atom.length - 1 ] );}
-
-        if ( last_is_atom.length > 0 && last_is_atom[ last_is_atom.length - 1 ] ) {
-            __~debug:calc{console.log( "tokenize after atom" );}
-            new_tokens = tokenize_after_atom.exec( calc );
-            if ( !new_tokens ) {
-                console.warn( "invalid token found " + calc );
-                break;
-            }
-            if ( ga.calc.is_close_paren.test( new_tokens[ 0 ] ) ) {
-                if ( !last_is_atom.length ) {
-                    console.warn( "invalid closing parenthesis " + calc );
-                    break;
-                }
-                last_is_atom.pop();
-            } else {
-                last_is_atom[ last_is_atom.length - 1 ] = 0;
-            }
-        } else {
-            __~debug:calc{console.log( "tokenize" );}
-            new_tokens = tokenize.exec( calc );
-            if ( !new_tokens ) {
-                console.warn( "invalid token found " + calc );
-                break;
-            }
-            if ( ga.calc.is_atom.test( new_tokens[ 0 ] ) ) {
-                last_is_atom[last_is_atom.length - 1 ] = 1;
-            } else { 
-                if ( ga.calc.is_open_paren.test( new_tokens[ 0 ] ) ) {
-                    last_is_atom.push( 0 );
-                } else {
-                    if ( ga.calc.is_close_paren.test( new_tokens[ 0 ] ) ) {
-                        if ( !last_is_atom.length ) {
-                            console.warn( "invalid closing parenthesis " + calc );
-                            break;
-                        }
-                        last_is_atom.pop();
-                    } else {
-                        if ( ga.calc.is_function_paren.test( new_tokens[ 0 ] ) ) {
-                            last_is_atom.push( 0 );
-                        }
-                    }
-                }
-            }
-        }
-
-        __~debug:calc{console.log( "ga.calc.tokens() new token: " + new_tokens[ 0 ] );}
-
-        calc = calc.substring( new_tokens[ 0 ].length );
-        tokens.push( new_tokens[ 0 ] );
-
-    } while ( new_tokens && new_tokens.length && calc.length && --max > 0 );
-            
-
-    __~debug:calc{console.log( "tokens follow" );}
-    __~debug:calc{console.dir( tokens );}
-
-    return tokens;
-}
 
 // --- parensub, return a subarray past the first paren and upto (not including ) the last matching paren ---
 ga.calc.parensub = function( a ) {
@@ -315,10 +151,10 @@ ga.calc.arraytovals = function ( a ) {
     var i;
     if ( a.constructor === Array ) {
         for ( i = 0; i < a.length; ++i ) {
-            a[ i ] = Number( ga.calc.is_atom_id.test( a[ i ] ) ? $( "#" + a[ i ] ).val() : a[ i ] );
+            a[ i ] = Number( ga.calc.is_atom_id.test( a[ i ] ) ? vars[ a[ i ] ] : a[ i ] );
         }
     } else {
-        a = Number( ga.calc.is_atom_id.test( a ) ? $( "#" + a ).val() : a );
+        a = Number( ga.calc.is_atom_id.test( a ) ? vars[ a ] : a );
     }
     return a;
 }
@@ -410,6 +246,7 @@ ga.calc.evaltree = function( obj ) {
     }
 
     // console.log( "arg0array " + arg0array + " arg1array " + arg1array );
+
 
     switch ( obj.op ) {
         case "," : {
@@ -888,4 +725,60 @@ ga.calc.evaltree = function( obj ) {
     }
     // console.log( "ga.calc.evaltree result: " + util.inspect( result, false, null ) );
     return result;
+}
+        
+// --- test area ----
+
+var calcs = [];
+
+var vars = {};
+vars[ "m" ] = 10;
+
+// calcs.push( [ 1 , "," , 1 ] );
+// calcs.push( [ 1 , "," , 1 , "," , 2 ] );
+// calcs.push( [ 3 , "+", 1 , "," , 1, , ",", 2 ] );
+// calcs.push( [ 3 , "+", 1 , "," , 1, , ",", 2 ] );
+//  calcs.push( [ "max(", 3 , "+", 1 , "," , 1, , ",", 2, "," , 3 , ")" ] );
+// calcs.push( [ "max(", "m" , ",", 1, ")" ] );
+// calcs.push( [ 1 ] );
+// calcs.push( [ "(" , 1, ")" ] );
+// calcs.push( [ "(" , "(",  1, ")" , ")" ] );
+// calcs.push( [ "(", 3.1415926 , ",", 1.57 , ",", 0 , ")" , "+" , 1 ] );
+//calcs.push( [ "sin(", 1.57 , ",", 3.14159 , ",", 0 , ")" , "+" , 1 ] );
+// calcs.push( [ "sin(", 5 , "*", "x" , ")" ] );
+// calcs.push( [ "sin(", 5 , "*", "x" , ")", "*", 5 ] );
+// calcs.push( [ "a", "+", "(", "b", "*" , "c", ")", "*", 6 ] );
+// calcs.push( [ 7, "*", 5, "^", 2 ] );
+//  calcs.push( [ "m", "*", "c", "^", "2", "+", 6, "*", 7] );
+// calcs.push( [ "m", "*", "(" , "c", "^", "2" , ")" ] );
+// calcs.push( [ "m", "*", "(" , "c", "^", "(" , "2" , ")", ")" ] );
+
+//  calcs.push( [ "(" , 1 , "," , 2 , ")",  "+" , "(" , 3 , "," , 4 , ")" ] );
+//  calcs.push( [ "(" , 1 , "," , 2 , ")",  "*" , "(" , 3 , "," , 4 , ")" ] );
+//  calcs.push( [ "(" , 1 , "," , 2 , ")",  "/" , "(" , 3 , "," , 4 , ")" ] );
+//  calcs.push( [ "(" , 1 , "," , 2 , ")",  "^" , "(" , 3 , "," , 4 , ")" ] );
+// calcs.push( [ 3, "-", "(" , 1 , "," , 2 , ")" ] );
+// calcs.push( [ 3, "-", "(" , 1 , "," , 2 , ")",  "-" ,  3 ] );
+//  calcs.push( [  "(" , 1 , "," , 2 , ")",  "-" ,  3 ] );
+//  calcs.push( [ "(" , 1 , "," , 2 , ")",  "-" , "(" , 3 , "," , 4 , ")" ] );
+// calcs.push( [ "(" , 1 , "," , 2 , ")",  "-" , "(" , 3 , "," , 4 , ",", 5, ")" ] );
+// calcs.push( [ "max(" , 1, ",", 2 , "," , 3, ")" ] );
+// calcs.push( [ "min(" , 1, ",", 2 , "," , 3, ")" ] );
+// calcs.push( [ "sqrt(", "pow(" , 2, ",", 4 , "," , 3, ",", 4, ")" , ")" ] );
+// calcs.push( [ "sqrt(", "sqrt(",  2, ",", 4 , "," , 3, ",", 4, ")" , ")" ] );
+// calcs.push( [ "sqrt(", "sqrt(",  2, ")" , ")" ] );
+calcs.push( [ "sqrt(", "sqrt(",  2, ",", 4 , "," , 3, ",", 4, ")" , ")" ] );
+
+// calcs.push( [ "2", "*", "m", "^", "2" ] );
+
+var ourtree;
+
+for ( var i = 0; i < calcs.length; ++i ) {
+    console.log( "------------------------------------------------------------" );
+    console.dir( calcs[ i ] );
+    console.log( "------------------------------------------------------------" );
+    ourtree = ga.calc.mktree( calcs[ i ] );
+    console.log( util.inspect( ourtree, false, null ) );
+    console.log( "============================================================" );
+    console.log( "eval our tree: " + util.inspect( ga.calc.evaltree( ourtree ), false, null ) );
 }
