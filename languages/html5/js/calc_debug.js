@@ -43,6 +43,86 @@ ga.calc.precedence =
     }
 ;
 
+// convert calc string into a token list
+ga.calc.tokens = function( calc ) {
+    console.log( "ga.calc.tokens( " + calc + " )" );
+    var tokens = [],
+        new_tokens,
+        last_is_atom = [],
+
+        tokenize            = RegExp( "^(" + ga.calc.str_function_paren + "|" + ga.calc.str_atom_id + "|" + ga.calc.str_paren + "|" + ga.calc.str_atom_numeric + "|" + ga.calc.str_function_no_paren + ")" ),
+        tokenize_after_atom = RegExp( "^(" + ga.calc.str_binary + "|" + ga.calc.str_close_paren + ")" )
+
+    ;
+
+    calc = calc.replace( /\s+/g, "" );
+
+    var max=5;
+
+    last_is_atom.push( 0 );
+
+    do {
+        console.log( "last_is_atom length " + last_is_atom.length + " value " + last_is_atom[ last_is_atom.length - 1 ] );
+
+        if ( last_is_atom.length > 0 && last_is_atom[ last_is_atom.length - 1 ] ) {
+            console.log( "tokenize after atom" );
+            new_tokens = tokenize_after_atom.exec( calc );
+            if ( !new_tokens ) {
+                console.warn( "invalid token found " + calc );
+                break;
+            }
+            if ( ga.calc.is_close_paren.test( new_tokens[ 0 ] ) ) {
+                if ( !last_is_atom.length ) {
+                    console.warn( "invalid closing parenthesis " + calc );
+                    break;
+                }
+                last_is_atom.pop();
+            } else {
+                last_is_atom[ last_is_atom.length - 1 ] = 0;
+            }
+        } else {
+            console.log( "tokenize" );
+            new_tokens = tokenize.exec( calc );
+            if ( !new_tokens ) {
+                console.warn( "invalid token found " + calc );
+                break;
+            }
+//            console.log( "new token " + new_tokens[ 0 ] );
+            if ( ga.calc.is_atom.test( new_tokens[ 0 ] ) ) {
+                last_is_atom[last_is_atom.length - 1 ] = 1;
+            } else { 
+                if ( ga.calc.is_open_paren.test( new_tokens[ 0 ] ) ) {
+                    last_is_atom.push( 0 );
+                } else {
+                    if ( ga.calc.is_close_paren.test( new_tokens[ 0 ] ) ) {
+                        if ( !last_is_atom.length ) {
+                            console.warn( "invalid closing parenthesis " + calc );
+                            break;
+                        }
+                        last_is_atom.pop();
+                    } else {
+                        if ( ga.calc.is_function_paren.test( new_tokens[ 0 ] ) ) {
+                            last_is_atom.push( 0 );
+                        }
+                    }
+                }
+            }
+        }
+
+        console.log( "ga.calc.tokens() new token: " + new_tokens[ 0 ] );
+
+        calc = calc.substring( new_tokens[ 0 ].length );
+        tokens.push( new_tokens[ 0 ] );
+
+    } while ( new_tokens && new_tokens.length && calc.length && --max > 0 );
+            
+
+    console.log( "tokens follow" );
+    console.dir( tokens );
+
+    return tokens;
+}
+
 // --- parensub, return a subarray past the first paren and upto (not including ) the last matching paren ---
 ga.calc.parensub = function( a ) {
     var parencount = 1,
@@ -733,6 +813,7 @@ var calcs = [];
 
 var vars = {};
 vars[ "m" ] = 10;
+vars[ "e" ] = 2;
 
 // calcs.push( [ 1 , "," , 1 ] );
 // calcs.push( [ 1 , "," , 1 , "," , 2 ] );
@@ -767,9 +848,12 @@ vars[ "m" ] = 10;
 // calcs.push( [ "sqrt(", "pow(" , 2, ",", 4 , "," , 3, ",", 4, ")" , ")" ] );
 // calcs.push( [ "sqrt(", "sqrt(",  2, ",", 4 , "," , 3, ",", 4, ")" , ")" ] );
 // calcs.push( [ "sqrt(", "sqrt(",  2, ")" , ")" ] );
-calcs.push( [ "sqrt(", "sqrt(",  2, ",", 4 , "," , 3, ",", 4, ")" , ")" ] );
+// calcs.push( [ "sqrt(", "sqrt(",  2, ",", 4 , "," , 3, ",", 4, ")" , ")" ] );
+// calcs.push( [ "sqrt(", "e", ")" ] );
 
 // calcs.push( [ "2", "*", "m", "^", "2" ] );
+// calcs.push( ga.calc.tokens( "2*m^2" ) );
+calcs.push( ga.calc.tokens( "sqrt(e)" ) );
 
 var ourtree;
 
