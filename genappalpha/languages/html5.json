@@ -351,6 +351,7 @@
                                     ,{ "js/license.js"          : "once" }
                                     ,{ "js/captcha.js"          : "once" }
                                     ,{ "js/register.js"         : "once" }
+                                    ,{ "js/calc.js"             : "once" }
                                    ]
                    }
                    ,{
