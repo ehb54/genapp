@@ -1,6 +1,7 @@
 this_html = '<tr><td><label for="__fields:id__">__fields:label__ </label></td><td><input type="text" name="__fields:id__" id="__fields:id__"__~fields:default{ value="__fields:default__"}__~fields:required{ required}__~fields:pattern{ pattern="__fields:pattern__" }__~fields:maxlength{ maxlength="__fields:maxlength__"}__~fields:size{ size="__fields:size__"}__~fields:readonly{ readonly}__~fields:help{ class="help_link"><span class="help">__fields:help__</span}><span id="__fields:id___msg" class="warning field_msg" > </span></td></tr>';
 this_eval = __~fields:pull{'ga.pull.toPull( "__moduleid__", "#__fields:id__", "text", "__fields:pull__", "#__fields:repeat__" );' + }
 __~fields:safefile{ '$( "#__fields:id__" ).blur( function() { ga.valid.safeFile( "#__fields:id__" ); } );' + }
+__~fields:calc{'ga.calc.register( "__moduleid__", "__fields:id__", "__fields:calc__" );' + }
 'ga.value.registerid("__moduleid__","__fields:id__","__fields:label__"__~fields:required{,"text"});'
 + '$( "#__fields:id__" ).blur( function() { ga.valid.checkText( "#__fields:id__" ); });'
 + __~fields:specifiedproject{'ga.specproj( "__fields:specifiedproject__", "#__fields:id__" );' +}

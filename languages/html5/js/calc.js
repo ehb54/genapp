@@ -21,15 +21,16 @@ ga.calc.data          = {};
 // ----------------------------------------------------------------------------------------------------------
 // summary of operations
 // ----------------------------------------------------------------------------------------------------------
-// ga.calc.register   : register a calculated field
-// ga.calc.tokens     : convert calc string to tokens
-// ga.calc.dependents : trim tokens array to dependent variables
-// ga.calc.install    : install change handlers
-// ga.calc.process    : update field
-// ga.calc.parensub   : utility routine used internally to extract a () section of the calc
-// ga.calc.mktree     : converts a calc array to a tree structure
-// ga.calc.arraytovals: utility routine used internally to convert strings to numeric values
-// ga.calc.evaltree   : evaluates a tree structure
+// ga.calc.register    : register a calculated field
+// ga.calc.tokens      : convert calc string to tokens
+// ga.calc.dependents  : trim tokens array to dependent variables
+// ga.calc.depthofdeps : computes depth of dependents to make sure there are no circular variable references
+// ga.calc.install     : install change handlers
+// ga.calc.process     : update field
+// ga.calc.parensub    : utility routine used internally to extract a () section of the calc
+// ga.calc.mktree      : converts a calc array to a tree structure
+// ga.calc.arraytovals : utility routine used internally to convert strings to numeric values
+// ga.calc.evaltree    : evaluates a tree structure
 // ----------------------------------------------------------------------------------------------------------
 
 // regexp and general routines
@@ -81,17 +82,24 @@ ga.calc.register = function( mod, id, calc ) {
     if ( ga.calc.data[ mod ].calc[ id ].tokens._error ) {
         messagebox( { 
             icon: "toast.png",
-            text: ga.calc.data[ mod ].calc[ id ].tokens._error + " in calc field id " + id
+            text: "Module field calc internal error: " + ga.calc.data[ mod ].calc[ id ].tokens._error + " in calc field id " + id
         } );
         return;
     }
     ga.calc.data[ mod ].calc[ id ].dependents = ga.calc.dependents( mod, id );
-    ga.calc.data[ mod ].calc[ id ].tree = ga.calc.mktree( ga.calc.data[ mod ].calc[ id ].tokens );
     __~debug:calcdeps{console.log( "ga.calc.register() dependent depth is " + ga.calc.depthofdeps( mod, id ) );}
     if ( ga.calc.depthofdeps( mod, id ) > 99 ) {
         messagebox( {
             icon: "toast.png",
             text: "Module field calc internal error: maximum recursion depth found in calc field id " + id
+        } );
+        return;
+    }
+    ga.calc.data[ mod ].calc[ id ].tree = ga.calc.mktree( ga.calc.data[ mod ].calc[ id ].tokens );
+    if ( ga.calc.data[ mod ].calc[ id ].tree._error ) {
+        messagebox( { 
+            icon: "toast.png",
+            text: "Module field calc internal error: " + ga.calc.data[ mod ].calc[ id ].tree._error + " in calc field id " + id
         } );
         return;
     }
@@ -164,6 +172,14 @@ ga.calc.process = function( mod, id ) {
     __~debug:calc{console.log( "ga.calc.process( " + mod + " , " + id + " )" );}
     var result = ga.calc.evaltree( jQuery.extend( true, {}, ga.calc.data[ mod ].calc[ id ].tree ) );
 
+    if ( result._error ) {
+        messagebox( { 
+            icon: "toast.png",
+            text: "Module field calc internal error: " + ga.calc.data[ mod ].calc[ id ].tokens._error + " in calc field id " + id
+        } );
+        return;
+    }
+
     // tmp = Number( ga.calc.is_atom_id.test( token ) ? $( "#" + ga.calc.data[ mod ].calc[ id ].tokens[ i ] ).val() : token );
 
     // convert to exponential format ?
@@ -194,7 +210,6 @@ ga.calc.tokens = function( calc ) {
 
     calc = calc.replace( /\s+/g, "" );
 
-
     last_is_atom.push( 0 );
 
     do {
@@ -204,12 +219,12 @@ ga.calc.tokens = function( calc ) {
             __~debug:calc{console.log( "tokenize after atom" );}
             new_tokens = tokenize_after_atom.exec( calc );
             if ( !new_tokens ) {
-                console.warn( "invalid token found " + calc );
+                return { _error : "Invalid token found " + calc };
                 break;
             }
             if ( ga.calc.is_close_paren.test( new_tokens[ 0 ] ) ) {
                 if ( !last_is_atom.length ) {
-                    console.warn( "invalid closing parenthesis " + calc );
+                    return { _error : "Invalid closing parenthesis " + calc };
                     break;
                 }
                 last_is_atom.pop();
@@ -220,7 +235,7 @@ ga.calc.tokens = function( calc ) {
             __~debug:calc{console.log( "tokenize" );}
             new_tokens = tokenize.exec( calc );
             if ( !new_tokens ) {
-                console.warn( "invalid token found " + calc );
+                return { _error : "Invalid token found " + calc };
                 break;
             }
             if ( ga.calc.is_atom.test( new_tokens[ 0 ] ) ) {
@@ -231,7 +246,7 @@ ga.calc.tokens = function( calc ) {
                 } else {
                     if ( ga.calc.is_close_paren.test( new_tokens[ 0 ] ) ) {
                         if ( !last_is_atom.length ) {
-                            console.warn( "invalid closing parenthesis " + calc );
+                            return { _error : "Invalid closing parenthesis " + calc };
                             break;
                         }
                         last_is_atom.pop();
@@ -256,7 +271,7 @@ ga.calc.tokens = function( calc ) {
     __~debug:calc{console.dir( tokens );}
 
     if ( tokensleft <= 0 ) {
-        return { "_error" : "Module field calc internal error: maximum token limit of " + maxtokens + " reached" };
+        return { _error : "maximum token limit of " + maxtokens + " reached" };
     }
 
     return tokens;
@@ -283,7 +298,7 @@ ga.calc.parensub = function( a ) {
         }
     }
 
-    console.warn( "closing paren error" );
+    return { _error : "Closing parenthesis error" };
 }
 
 // --- build tree ---
@@ -304,15 +319,27 @@ ga.calc.mktree = function( a, obj ) {
         if ( ga.calc.is_function_paren.test( token ) ) {
             // console.log( "function paren test" );
             tmp = ga.calc.parensub( a.slice( i ) );
+            if ( tmp._error ) {
+                return tmp;
+            }
             i += tmp.newofs;
-            token = { op : token, args : [ ga.calc.mktree( tmp.a ) ] };
+            token = { op : token, args : [ tmp = ga.calc.mktree( tmp.a ) ] };
             paren = 1;
+            if ( tmp._error ) {
+                return tmp;
+            }
         } else {
             if ( ga.calc.is_open_paren.test( token ) ) {
                 // console.log( "open paren test" );
                 tmp = ga.calc.parensub( a.slice( i ) );
+                if ( tmp._error ) {
+                    return tmp;
+                }
                 i += tmp.newofs;
                 token = ga.calc.mktree( tmp.a );
+                if ( token._error ) {
+                    return token;
+                }
                 paren = 1;
             } else {
                 // console.log( "no paren test" );
@@ -396,23 +423,23 @@ ga.calc.evaltree = function( obj ) {
     // console.log( "ga.calc.evaltree entry object: " + util.inspect( obj, false, null ) );
 
     if ( !obj ) {
-        console.warn( "no object in ga.calc.evaltree" );
-        return result;
+        return { _error : "no object in ga.calc.evaltree" };
+    }
+
+    if ( obj._error ) {
+        return obj;
     }
 
     if ( !obj.op ) {
-        console.warn( "no op in object in ga.calc.evaltree" );
-        return result;
+        return { _error : "no op in object in ga.calc.evaltree" };
     }
 
     if ( !obj.args ) {
-        console.warn( "no args in object in ga.calc.evaltree" );
-        return result;
+        return { _error : "no args in object in ga.calc.evaltree" };
     }
 
     if ( obj.args.length < 1 || obj.args.length > 2 ) {
-        console.warn( "args incorrect length in object in ga.calc.evaltree" );
-        return result;
+        return { _error : "args incorrect length in object in ga.calc.evaltree" };
     }
 
     twoargs = obj.args.length == 2;
@@ -489,8 +516,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "+" : {
             if ( !twoargs ) {
-                console.warn( "operator : " + obj.op + " is binary and only has one argument" );
-                result = obj.args[ 0 ];
+                return { _error : "operator : " + obj.op + " is binary and only has one argument" };
                 break;
             }
             if ( anyarray ) {
@@ -512,8 +538,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "*" : {
             if ( !twoargs ) {
-                console.warn( "operator : " + obj.op + " is binary and only has one argument" );
-                result = obj.args[ 0 ];
+                return { _error : "operator : " + obj.op + " is binary and only has one argument" };
                 break;
             }
             if ( anyarray ) {
@@ -537,8 +562,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "-" : {
             if ( !twoargs ) {
-                console.warn( "operator : " + obj.op + " is binary and only has one argument" );
-                result = obj.args[ 0 ];
+                return { _error : "operator : " + obj.op + " is binary and only has one argument" };
                 break;
             }
             if ( anyarray ) {
@@ -577,7 +601,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "/" : {
             if ( !twoargs ) {
-                console.warn( "operator : " + obj.op + " is binary and only has one argument" );
+                return { _error : "operator : " + obj.op + " is binary and only has one argument" };
                 break;
             }
             if ( anyarray ) {
@@ -616,7 +640,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "^" : {
             if ( !twoargs ) {
-                console.warn( "operator : " + obj.op + " is binary and only has one argument" );
+                return { _error : "operator : " + obj.op + " is binary and only has one argument" };
                 break;
             }
             if ( anyarray ) {
@@ -657,7 +681,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "abs(" : {
             if ( twoargs ) {
-                console.warn( "operator : " + obj.op + " has 2 arguments but only accepts one" );
+                return { _error : "operator : " + obj.op + " has 2 arguments but only accepts one" };
                 break;
             }
             result = obj.args[ 0 ];
@@ -673,7 +697,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "acos(" : {
             if ( twoargs ) {
-                console.warn( "operator : " + obj.op + " has 2 arguments but only accepts one" );
+                return { _error : "operator : " + obj.op + " has 2 arguments but only accepts one" };
                 break;
             }
             result = obj.args[ 0 ];
@@ -689,7 +713,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "asin(" : {
             if ( twoargs ) {
-                console.warn( "operator : " + obj.op + " has 2 arguments but only accepts one" );
+                return { _error : "operator : " + obj.op + " has 2 arguments but only accepts one" };
                 break;
             }
             result = obj.args[ 0 ];
@@ -705,7 +729,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "atan(" : {
             if ( twoargs ) {
-                console.warn( "operator : " + obj.op + " has 2 arguments but only accepts one" );
+                return { _error : "operator : " + obj.op + " has 2 arguments but only accepts one" };
                 break;
             }
             result = obj.args[ 0 ];
@@ -721,7 +745,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "ceil(" : {
             if ( twoargs ) {
-                console.warn( "operator : " + obj.op + " has 2 arguments but only accepts one" );
+                return { _error : "operator : " + obj.op + " has 2 arguments but only accepts one" };
                 break;
             }
             result = obj.args[ 0 ];
@@ -737,7 +761,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "cos(" : {
             if ( twoargs ) {
-                console.warn( "operator : " + obj.op + " has 2 arguments but only accepts one" );
+                return { _error : "operator : " + obj.op + " has 2 arguments but only accepts one" };
                 break;
             }
             result = obj.args[ 0 ];
@@ -753,7 +777,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "exp(" : {
             if ( twoargs ) {
-                console.warn( "operator : " + obj.op + " has 2 arguments but only accepts one" );
+                return { _error : "operator : " + obj.op + " has 2 arguments but only accepts one" };
                 break;
             }
             result = obj.args[ 0 ];
@@ -769,7 +793,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "floor(" : {
             if ( twoargs ) {
-                console.warn( "operator : " + obj.op + " has 2 arguments but only accepts one" );
+                return { _error : "operator : " + obj.op + " has 2 arguments but only accepts one" };
                 break;
             }
             result = obj.args[ 0 ];
@@ -785,7 +809,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "log(" : {
             if ( twoargs ) {
-                console.warn( "operator : " + obj.op + " has 2 arguments but only accepts one" );
+                return { _error : "operator : " + obj.op + " has 2 arguments but only accepts one" };
                 break;
             }
             result = obj.args[ 0 ];
@@ -801,7 +825,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "random(" : {
             if ( twoargs ) {
-                console.warn( "operator : " + obj.op + " has 2 arguments but only accepts one" );
+                return { _error : "operator : " + obj.op + " has 2 arguments but only accepts one" };
                 break;
             }
             result = obj.args[ 0 ];
@@ -817,7 +841,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "round(" : {
             if ( twoargs ) {
-                console.warn( "operator : " + obj.op + " has 2 arguments but only accepts one" );
+                return { _error : "operator : " + obj.op + " has 2 arguments but only accepts one" };
                 break;
             }
             result = obj.args[ 0 ];
@@ -833,7 +857,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "sin(" : {
             if ( twoargs ) {
-                console.warn( "operator : " + obj.op + " has 2 arguments but only accepts one" );
+                return { _error : "operator : " + obj.op + " has 2 arguments but only accepts one" };
                 break;
             }
             result = obj.args[ 0 ];
@@ -849,7 +873,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "sqrt(" : {
             if ( twoargs ) {
-                console.warn( "operator : " + obj.op + " has 2 arguments but only accepts one" );
+                return { _error : "operator : " + obj.op + " has 2 arguments but only accepts one" };
                 break;
             }
             result = obj.args[ 0 ];
@@ -865,7 +889,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "tan(" : {
             if ( twoargs ) {
-                console.warn( "operator : " + obj.op + " has 2 arguments but only accepts one" );
+                return { _error : "operator : " + obj.op + " has 2 arguments but only accepts one" };
                 break;
             }
             result = obj.args[ 0 ];
@@ -882,7 +906,7 @@ ga.calc.evaltree = function( obj ) {
         // multi arg ops
         case "max(" : {
             if ( twoargs ) {
-                console.warn( "operator : " + obj.op + " has 2 arguments but only accepts one" );
+                return { _error : "operator : " + obj.op + " has 2 arguments but only accepts one" };
                 break;
             }
             result = arg0array ? Math.max.apply( null, obj.args[ 0 ] ) : obj.args[ 0 ];
@@ -891,7 +915,7 @@ ga.calc.evaltree = function( obj ) {
 
         case "min(" : {
             if ( twoargs ) {
-                console.warn( "operator : " + obj.op + " has 2 arguments but only accepts one" );
+                return { _error : "operator : " + obj.op + " has 2 arguments but only accepts one" };
                 break;
             }
             result = arg0array ? Math.min.apply( null, obj.args[ 0 ] ) : obj.args[ 0 ];
@@ -902,12 +926,12 @@ ga.calc.evaltree = function( obj ) {
 
         case "atan2(" : {
             if ( twoargs ) {
-                console.warn( "operator : " + obj.op + " has 2 arguments but only accepts one" );
+                return { _error : "operator : " + obj.op + " has 2 arguments but only accepts one" };
                 break;
             }
 
             if ( !arg0array ) {
-                console.warn( "operator : " + obj.op + " needs the first argument to be an even sized array" );
+                return { _error : "operator : " + obj.op + "  needs the first argument to be an even sized array" };
                 break;
             }
             result = [];
@@ -919,12 +943,12 @@ ga.calc.evaltree = function( obj ) {
 
         case "pow(" : {
             if ( twoargs ) {
-                console.warn( "operator : " + obj.op + " has 2 arguments but only accepts one" );
+                return { _error : "operator : " + obj.op + " has 2 arguments but only accepts one" };
                 break;
             }
 
             if ( !arg0array ) {
-                console.warn( "operator : " + obj.op + " needs the first argument to be an even sized array" );
+                return { _error : "operator : " + obj.op + "  needs the first argument to be an even sized array" };
                 break;
             }
             result = [];
@@ -938,7 +962,7 @@ ga.calc.evaltree = function( obj ) {
         break;
         
         default : {
-            console.warn( "currently unsupported op " + obj.op );
+            return { _error : "operator : " + obj.op + " unknown or unsupported" };
         } break;
     }
     // console.log( "ga.calc.evaltree result: " + util.inspect( result, false, null ) );
