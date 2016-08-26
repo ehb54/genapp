@@ -53,11 +53,12 @@ ga.calc.tokens = function( calc ) {
         tokenize            = RegExp( "^(" + ga.calc.str_function_paren + "|" + ga.calc.str_atom_id + "|" + ga.calc.str_paren + "|" + ga.calc.str_atom_numeric + "|" + ga.calc.str_function_no_paren + ")" ),
         tokenize_after_atom = RegExp( "^(" + ga.calc.str_binary + "|" + ga.calc.str_close_paren + ")" )
 
+        maxtokens = 500,
+        tokensleft = maxtokens;
+
     ;
 
     calc = calc.replace( /\s+/g, "" );
-
-    var max=5;
 
     last_is_atom.push( 0 );
 
@@ -114,8 +115,11 @@ ga.calc.tokens = function( calc ) {
         calc = calc.substring( new_tokens[ 0 ].length );
         tokens.push( new_tokens[ 0 ] );
 
-    } while ( new_tokens && new_tokens.length && calc.length && --max > 0 );
-            
+    } while ( new_tokens && new_tokens.length && calc.length && --tokensleft > 0 );
+
+    if ( tokensleft <= 0 ) {
+        return { "_error" : "Module field calc internal error: maximum token limit of " + maxtokens + " reached" };
+    }
 
     console.log( "tokens follow" );
     console.dir( tokens );
@@ -814,6 +818,7 @@ var calcs = [];
 var vars = {};
 vars[ "m" ] = 10;
 vars[ "e" ] = 2;
+vars[ "c" ] = 1;
 
 // calcs.push( [ 1 , "," , 1 ] );
 // calcs.push( [ 1 , "," , 1 , "," , 2 ] );
@@ -853,7 +858,7 @@ vars[ "e" ] = 2;
 
 // calcs.push( [ "2", "*", "m", "^", "2" ] );
 // calcs.push( ga.calc.tokens( "2*m^2" ) );
-calcs.push( ga.calc.tokens( "sqrt(e)" ) );
+// calcs.push( ga.calc.tokens( "sqrt(e)" ) );
 
 var ourtree;
 

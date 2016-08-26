@@ -78,25 +78,74 @@ ga.calc.register = function( mod, id, calc ) {
     ga.calc.data[ mod ].calc[ id ] = {};
     ga.calc.data[ mod ].calc[ id ].calc = calc;
     ga.calc.data[ mod ].calc[ id ].tokens = ga.calc.tokens( calc );
+    if ( ga.calc.data[ mod ].calc[ id ].tokens._error ) {
+        messagebox( { 
+            icon: "toast.png",
+            text: ga.calc.data[ mod ].calc[ id ].tokens._error + " in calc field id " + id
+        } );
+        return;
+    }
     ga.calc.data[ mod ].calc[ id ].dependents = ga.calc.dependents( mod, id );
     ga.calc.data[ mod ].calc[ id ].tree = ga.calc.mktree( ga.calc.data[ mod ].calc[ id ].tokens );
+    __~debug:calcdeps{console.log( "ga.calc.register() dependent depth is " + ga.calc.depthofdeps( mod, id ) );}
+    if ( ga.calc.depthofdeps( mod, id ) > 99 ) {
+        messagebox( {
+            icon: "toast.png",
+            text: "Module field calc internal error: maximum recursion depth found in calc field id " + id
+        } );
+        return;
+    }
+
     ga.calc.install( mod, id );
+}
+
+// check calc depth of dependent variables
+ga.calc.depthofdeps = function( mod, id, depth ) {
+    __~debug:calcdeps{console.log( "ga.calc.depthofdeps( " + mod + " , " + id + " , " + depth + " )" );}
+    var i, 
+        childdepth,
+        maxchilddepth = 0;
+
+    depth = depth || 0;
+
+    if ( ga.calc.data[ mod ].calc[ id ].dependents ) {
+        depth++;
+    }
+
+    if ( depth > 99 ) {
+        return depth;
+    }
+
+    for ( i = 0; i < ga.calc.data[ mod ].calc[ id ].dependents.length; ++i ) {
+        __~debug:calcdeps{console.log( "ga.calc.depthofdeps() checking for dep " +  ga.calc.data[ mod ].calc[ id ].dependents[ i ] );}
+        if ( ga.calc.data[ mod ].calc[ ga.calc.data[ mod ].calc[ id ].dependents[ i ] ] ) {
+            
+            childdepth = ga.calc.depthofdeps( mod, ga.calc.data[ mod ].calc[ id ].dependents[ i ], depth );
+            if ( maxchilddepth < childdepth ) {
+                maxchilddepth = childdepth;
+            }
+        }
+    }
+
+    depth += maxchilddepth;
+
+    return depth;
 }
 
 // get dependent variables
 ga.calc.dependents = function( mod, id ) {
-    __~debug:calc{console.log( "ga.calc.dependents( " + mod + " , " + id + " )" );}
+    __~debug:calcdeps{console.log( "ga.calc.dependents( " + mod + " , " + id + " )" );}
     var i,
         dependents = []
     ;
 
     for ( i in ga.calc.data[ mod ].calc[ id ].tokens ) {
-        __~debug:calc{console.log( "ga.calc.dependents() i = " + i + " val " + ga.calc.data[ mod ].calc[ id ].tokens[ i ] );}
+        __~debug:calcdeps{console.log( "ga.calc.dependents() i = " + i + " val " + ga.calc.data[ mod ].calc[ id ].tokens[ i ] );}
         if ( ga.calc.is_atom_id.test( ga.calc.data[ mod ].calc[ id ].tokens[ i ] ) ) {
             dependents.push( ga.calc.data[ mod ].calc[ id ].tokens[ i ] );
         }
     }
-    __~debug:calc{console.dir( dependents );}
+    __~debug:calcdeps{console.log( "ga.calc.dependents() dependent vars are " );console.dir( dependents );}
 
     return dependents;
 }
@@ -136,13 +185,15 @@ ga.calc.tokens = function( calc ) {
         last_is_atom = [],
 
         tokenize            = RegExp( "^(" + ga.calc.str_function_paren + "|" + ga.calc.str_atom_id + "|" + ga.calc.str_paren + "|" + ga.calc.str_atom_numeric + "|" + ga.calc.str_function_no_paren + ")" ),
-        tokenize_after_atom = RegExp( "^(" + ga.calc.str_binary + "|" + ga.calc.str_close_paren + ")" )
+        tokenize_after_atom = RegExp( "^(" + ga.calc.str_binary + "|" + ga.calc.str_close_paren + ")" ),
+
+        maxtokens = 500,
+        tokensleft = maxtokens;
 
     ;
 
     calc = calc.replace( /\s+/g, "" );
 
-    var max=5;
 
     last_is_atom.push( 0 );
 
@@ -198,11 +249,15 @@ ga.calc.tokens = function( calc ) {
         calc = calc.substring( new_tokens[ 0 ].length );
         tokens.push( new_tokens[ 0 ] );
 
-    } while ( new_tokens && new_tokens.length && calc.length && --max > 0 );
+    } while ( new_tokens && new_tokens.length && calc.length && --tokensleft > 0 );
             
 
     __~debug:calc{console.log( "tokens follow" );}
     __~debug:calc{console.dir( tokens );}
+
+    if ( tokensleft <= 0 ) {
+        return { "_error" : "Module field calc internal error: maximum token limit of " + maxtokens + " reached" };
+    }
 
     return tokens;
 }
