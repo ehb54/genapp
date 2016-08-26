@@ -79,7 +79,7 @@ ga.calc.register = function( mod, id, calc ) {
     ga.calc.data[ mod ].calc[ id ].calc = calc;
     ga.calc.data[ mod ].calc[ id ].tokens = ga.calc.tokens( calc );
     ga.calc.data[ mod ].calc[ id ].dependents = ga.calc.dependents( mod, id );
-    ga.calc.data[ mod ].calc[ id ].tree = ga.calc.mktree( calc );
+    ga.calc.data[ mod ].calc[ id ].tree = ga.calc.mktree( ga.calc.data[ mod ].calc[ id ].tokens );
     ga.calc.install( mod, id );
 }
 
@@ -125,7 +125,7 @@ ga.calc.process = function( mod, id ) {
     // result = result.toExponential( 8 );
     // }
 
-    $( "#" + id ).val( result );
+    $( "#" + id ).val( result ).trigger( "change" );
 }
 
 // convert calc string into a token list
