@@ -163,7 +163,7 @@ ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
 		else
 		{
 		    elements[i] = value[0];
-		    console.log( "Number is: " +  elements[i]);
+		    //console.log( "Number is: " +  elements[i]);
 		}
 		break;	
 	    default:
@@ -191,7 +191,7 @@ ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
 	    line_split = line_split.replace(/\s{2,}/g, ' ');
 	    line_split = line_split.replace(/\t/g, ' ');
 	    line_split = line_split.toString().trim().replace(/(\r\n|\n|\r)/g,"");
-	    console.log ("The line is: " + line_split);
+	    //console.log ("The line is: " + line_split);
 	
 	    lines_formulchcontrast.push(line_split);
 	}
@@ -266,7 +266,7 @@ ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
 	var rep_counter_check = 0;
 	//for (var i=0; i < elements.length; i++) {
 
-	console.log("Ids_array: " + ids_array.length);
+	//console.log("Ids_array: " + ids_array.length);
 	for (var i=0; i < ids_array.length; i++) {
 	    if ( !$("#" + ids_array[i]).length )
 	    {
@@ -281,7 +281,7 @@ ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
 	    }
 	    
 
-	    console.log("ID: " + ids_array[i] + ";  Type: " + $("#" + ids_array[i]).attr("type") );
+	    //console.log("ID: " + ids_array[i] + ";  Type: " + $("#" + ids_array[i]).attr("type") );
 	    //console.log("ID: " + ids_array[i] + ";  Length: " + $("#" + ids_array[i]).length );
 	    
 	    switch ( $("#" + ids_array[i]).attr("type") )
@@ -318,7 +318,7 @@ ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
 		else
 		{
 		    elements[i] = value[0];
-		    console.log( "Number is: " +  elements[i]);
+		    //console.log( "Number is: " +  elements[i]);
 		}
 		break;	
 	    default:
