@@ -929,17 +929,37 @@ __~debug:plottwod{ console.log( "ga.value.set.plot2d.hover( " + tag + " , " + va
     ga.value.settings[ tag ].hover = value ? true : false;
 }
 
+ga.value.set.plot2d.selzoom = function( tag, value ) {
+__~debug:plottwod{ console.log( "ga.value.set.plot2d.selzoom( " + tag + " , " + value + " )" );}
+    ga.value.settings[ tag ] = ga.value.settings[ tag ] || {};
+    ga.value.settings[ tag ].selzoom = value ? true : false;
+}
+
+ga.value.set.plot2d.backgroundcolor = function( tag, value ) {
+__~debug:plottwod{ console.log( "ga.value.set.plot2d.backgroundcolor( " + tag + " , " + value + " )" );}
+    ga.value.settings[ tag ] = ga.value.settings[ tag ] || {};
+    ga.value.settings[ tag ].backgroundcolor = value;
+}
+
 ga.value.get.plot2d = {};
 ga.value.get.plot2d.plot_options = function( tag, options ) {
 __~debug:plottwod{ console.log( "ga.value.get.plot2d.plot_options( " + tag + " )" );}
 
     var plot_options = ga.plot_options();
+    if ( ga.value.settings[ tag ].backgroundcolor ) {
+        plot_options.grid = { backgroundColor : ga.value.settings[ tag ].backgroundcolor };
+    }
+        
+    if ( ga.value.settings[ tag ].selzoom ) {
+        plot_options.selection = { mode : "xy" };
+    }
+        
     if ( options ) {
         if ( options.grid ) {
-            plot_options.grid = options.grid;
+            plot_options.grid = $.extend( {}, plot_options.grid, options.grid );
         }
         if ( options.selection ) {
-            plot_options.selection = options.selection;
+            plot_options.selection = $.extend( {}, plot_options.selection, options.selection );
         }
     }
 
@@ -1005,6 +1025,40 @@ __~debug:plottwod{ console.log( "ga.value.get.plot2d.plot_options( " + tag + " )
 }
         
 ga.value.plot2d = {};
+ga.value.plot2d.zstack = {};
+
+ga.value.plot2d.zstack.reset = function( tag ) {
+    __~debug:zstack{console.log( "ga.value.plot2d.zstack.reset( " + tag + " )" );}
+    ga.value.plot2d.stack = ga.value.plot2d.stack || {};
+    ga.value.plot2d.stack[ tag ] = [];
+    ga.value.plot2d.waspush = ga.value.plot2d.waspush || {};
+    ga.value.plot2d.waspush[ tag ] = false;
+}
+
+ga.value.plot2d.zstack.dopop = function( tag ) {
+    __~debug:zstack{console.log( "ga.value.plot2d.zstack.pop( " + tag + " )" );}
+    ga.value.plot2d.waspush = ga.value.plot2d.waspush || {};
+    if ( ga.value.plot2d.stack[ tag ] && 
+         ga.value.plot2d.stack[ tag ].length ) {
+        if ( ga.value.plot2d.waspush[ tag ] ) {
+            ga.value.plot2d.stack[ tag ].pop();
+        }
+        ga.value.plot2d.waspush[ tag ] = false;
+        return ga.value.plot2d.stack[ tag ].pop();
+    }
+    return false;
+}
+
+ga.value.plot2d.zstack.dopush = function( tag, value ) {
+    __~debug:zstack{console.log( "ga.value.plot2d.zstack.push( " + tag + " , " + value + " )" );}
+    ga.value.plot2d.stack = ga.value.plot2d.stack || {};
+    ga.value.plot2d.stack[ tag ] = ga.value.plot2d.stack[ tag ] || [];
+    ga.value.plot2d.stack[ tag ].push( value );
+
+    ga.value.plot2d.waspush = ga.value.plot2d.waspush || {};
+    ga.value.plot2d.waspush[ tag ] = true;
+}
+
 ga.value.plot2d.toFP = function( val, dec ) {
     if ( dec > 0 ) {
 __~debug:fp{    console.log( "FP val " + val + " dec " + dec + " tofixed " + val.toFixed( dec ) );}

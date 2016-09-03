@@ -54,12 +54,70 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
             case "plot2d" : 
                 __~debug:plottwod{console.log( "ga.data.update v is " );console.dir( v );}
                 htag = "#" + k;
+
+                ga.value.plot2d.zstack.reset( htag );
+
                 if ( v.data ) {
                     ga.value.set.plot2d( htag, v.options );
                     __~debug:plottwod{console.log( "ga.data.update processed plot options is " );console.dir( ga.value.get.plot2d.plot_options( htag, v.options ) );}
-                    $.plot( match, v.data, ga.value.get.plot2d.plot_options( htag, v.options ) );
+                    $.plot( htag, v.data, ga.value.get.plot2d.plot_options( htag, v.options ) );
                 } else {
-                    $.plot( match, v,  ga.value.get.plot2d.plot_options( htag ) );
+                    $.plot( htag, v,  ga.value.get.plot2d.plot_options( htag ) );
+                }
+
+                if ( ga.value.settings[ htag ].selzoom || 
+                     ( v.options && v.options.selection && v.options.selection.mode && v.options.selection.mode == "xy" ) ) {
+		    $( htag )
+                        .on("plotselected", 
+                            {
+                                htag : htag
+                                ,data : v.data ? v.data : v
+                                ,options : v.data ? ga.value.get.plot2d.plot_options( htag, v.options ) : ga.value.get.plot2d.plot_options( htag )
+                            },
+                            function ( e, ranges ) {
+                                
+		                // clamp the zooming to prevent eternal zoom
+
+		                if (ranges.xaxis.to - ranges.xaxis.from < 0.00001) {
+			            ranges.xaxis.to = ranges.xaxis.from + 0.00001;
+		                }
+
+		                if (ranges.yaxis.to - ranges.yaxis.from < 0.00001) {
+			            ranges.yaxis.to = ranges.yaxis.from + 0.00001;
+		                }
+
+		                // do the zooming
+
+                                ga.value.plot2d.zstack.dopush( e.data.htag, ranges );
+
+		                $.plot( e.data.htag, e.data.data, 
+				        $.extend(true, {}, e.data.options, {
+				            xaxis: { min: ranges.xaxis.from, max: ranges.xaxis.to },
+				            yaxis: { min: ranges.yaxis.from, max: ranges.yaxis.to }
+				        })
+			              );
+		            })
+                        .on('contextmenu',
+                            {
+                                htag : htag
+                                ,data : v.data ? v.data : v
+                                ,options : v.data ? ga.value.get.plot2d.plot_options( htag, v.options ) : ga.value.get.plot2d.plot_options( htag )
+                            },
+                            function(e) {
+                                e.preventDefault();
+                                __~debug:zstack{console.log( "contextmenu called on " + e.data.htag );}
+                                var ranges = ga.value.plot2d.zstack.dopop( e.data.htag );
+                                if ( ranges ) {
+		                     $.plot( e.data.htag, e.data.data, 
+				             $.extend(true, {}, e.data.options, {
+				                 xaxis: { min: ranges.xaxis.from, max: ranges.xaxis.to },
+				                 yaxis: { min: ranges.yaxis.from, max: ranges.yaxis.to }
+				             })
+			                   );
+                                } else {
+		                    $.plot( e.data.htag, e.data.data, e.data.options );
+                                }
+                            });
                 }
 
                 savekey = mod_out + ":#" + k + ":last_value";
