@@ -330,7 +330,7 @@
                     "frequency"  : "once",
                     "output"     : "js/ga.js",
 #                    "minify"     : "copy",
-#                     "minify"     : "minify",
+#                    "minify"     : "minify",
 #                    "minify"     : "closure",
                     "inputs"     : [ 
                                     {  "js/ga_global.js"        : "once" }
@@ -374,17 +374,17 @@
                     "frequency"  : "once",
                     "output"     : "js/genapp.js",
                     "inputs"     : [ 
-                        {  "add/js/jquery-1.11.0.min.js"        : "once" }
-                        ,{ "add/js/spectrum.min.js"             : "once" }
-                        ,{ "add/js/jq.flot-0.8.3+eb+nav.min.js" : "once" }
-                        ,{ "add/js/uuid.min.js"                 : "once" }
-                        ,{ "add/js/autobahn.min.js"             : "once" }
-                        ,{ "add/js/jsmol.min.js"                : "once" }
-                        ,{ "add/js/jstree.min.js"               : "once" }
-                        ,{ "add/js/jqGrid-4.6.0.min.js"         : "once" }
-                        ,{ "add/js/grid.locale-en.js"           : "once" }
-                        ,{ "add/js/jquery.base64.min.js"        : "once" }
-                        ,{ "add/js/ga.min.js"                   : "once" }
+                        {  "add/js/jquery-1.11.0.min.js"            : "once" }
+                        ,{ "add/js/spectrum.min.js"                 : "once" }
+                        ,{ "add/js/jq.flot-0.8.3+eb+nav+sel.min.js" : "once" }
+                        ,{ "add/js/uuid.min.js"                     : "once" }
+                        ,{ "add/js/autobahn.min.js"                 : "once" }
+                        ,{ "add/js/jsmol.min.js"                    : "once" }
+                        ,{ "add/js/jstree.min.js"                   : "once" }
+                        ,{ "add/js/jqGrid-4.6.0.min.js"             : "once" }
+                        ,{ "add/js/grid.locale-en.js"               : "once" }
+                        ,{ "add/js/jquery.base64.min.js"            : "once" }
+                        ,{ "add/js/ga.min.js"                       : "once" }
                     ]
                    }
                   ]
