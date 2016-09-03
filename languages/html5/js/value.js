@@ -934,6 +934,14 @@ ga.value.get.plot2d.plot_options = function( tag, options ) {
 __~debug:plottwod{ console.log( "ga.value.get.plot2d.plot_options( " + tag + " )" );}
 
     var plot_options = ga.plot_options();
+    if ( options ) {
+        if ( options.grid ) {
+            plot_options.grid = options.grid;
+        }
+        if ( options.selection ) {
+            plot_options.selection = options.selection;
+        }
+    }
 
     plot_options.pan.interactive  = ga.value.settings[ tag ].pan   ? true : false;
     plot_options.zoom.interactive = ga.value.settings[ tag ].zoom  ? true : false;

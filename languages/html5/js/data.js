@@ -52,15 +52,16 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
             switch ( match.attr( "type" ) )
             {
             case "plot2d" : 
-__~debug:plottwod{                console.log( "ga.data.update v.data is " + v.data );}
+                __~debug:plottwod{console.log( "ga.data.update v is " );console.dir( v );}
                 htag = "#" + k;
                 if ( v.data ) {
                     ga.value.set.plot2d( htag, v.options );
+                    __~debug:plottwod{console.log( "ga.data.update processed plot options is " );console.dir( ga.value.get.plot2d.plot_options( htag, v.options ) );}
                     $.plot( match, v.data, ga.value.get.plot2d.plot_options( htag, v.options ) );
                 } else {
                     $.plot( match, v,  ga.value.get.plot2d.plot_options( htag ) );
                 }
-                    
+
                 savekey = mod_out + ":#" + k + ":last_value";
                 $( "#global_data" ).data( savekey , v ); 
                 break;
