@@ -27,6 +27,8 @@ var tmp = $.plot( $( "#__fields:id__" ), [[]], gd.data( "_plot_options" ) );
 ga.value.set.plot2d.pan( "#__fields:id__", __~fields:pan{1}0 );
 ga.value.set.plot2d.zoom( "#__fields:id__", __~fields:zoom{1}0 );
 ga.value.set.plot2d.hover( "#__fields:id__", __~fields:hover{1}0 );
+ga.value.set.plot2d.selzoom( "#__fields:id__", __~fields:selzoom{1}0 );
+__~fields:backgroundcolor{ga.value.set.plot2d.backgroundcolor( "#__fields:id__"," __fields:backgroundcolor__" );}
 ga.value.set.plot2d.pkg( "__moduleid___output", "#__fields:id__" );
 __~fields:hover{$("#__fields:id__").bind("plothover",function(e,p,i){var r=ga.set("plot2d:precision");$("#__fields:id___xy").addClass("coordvisible").text("( "+p.x.toPrecision(r)+" , "+p.y.toPrecision(r)+" )");}).on("mouseout", function(){setTimeout(function(){$("#__fields:id___xy").removeClass( "coordvisible" );}, 1500 )});}
 ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );
