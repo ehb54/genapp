@@ -384,7 +384,9 @@
                         ,{ "add/js/jqGrid-4.6.0.min.js"             : "once" }
                         ,{ "add/js/grid.locale-en.js"               : "once" }
                         ,{ "add/js/jquery.base64.min.js"            : "once" }
+			,{ "add/js/html2canvas.min.js"              : "once" }
                         ,{ "add/js/ga.min.js"                       : "once" }
+		
                     ]
                    }
                   ]

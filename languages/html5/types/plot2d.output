@@ -34,4 +34,7 @@ __~fields:hover{$("#__fields:id__").bind("plothover",function(e,p,i){var r=ga.se
 ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );
 ga.value.extra_resets( "__fields:id__" );
 </script>
+
+__~fields:savetofile{<a href="" id="__fields:id___savetofile" target="_blank" style="text-align:center" class="hidden">Download plot as .png file</a>}
+
 <table>

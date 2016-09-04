@@ -6,6 +6,16 @@ ga.data.nofcrefresh = {};
 
 // apply the data to the screen output, return an object with job_status
 
+
+function dataURLtoFile(dataurl, filename) {
+    var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+        bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+    while(n--){
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, {type:mime});
+}
+
 ga.data.update = function( mod, data, msging_f, msg_id ) {
     var output_msgs_cleared = 0,
         appended            = 0,
@@ -54,6 +64,8 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
             case "plot2d" : 
                 __~debug:plottwod{console.log( "ga.data.update v is " );console.dir( v );}
                 htag = "#" + k;
+		var image;
+		var file;
 
                 ga.value.plot2d.zstack.reset( htag );
 
@@ -64,6 +76,22 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
                 } else {
                     $.plot( htag, v,  ga.value.get.plot2d.plot_options( htag ) );
                 }
+
+		if ( $( htag  + "_savetofile" ).length )
+		{
+		    var a = document.getElementById(k + "_savetofile");
+		    html2canvas( match.get(0), {
+			background: "#ffffff",
+			onrendered: function (canvas) {
+			    image = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream"); 
+			    //console.log("tag: " + htag + "_savetofile" + "  Image: " + image);
+			    file = dataURLtoFile(image, 'plot.png');
+			    a.href = URL.createObjectURL(file);
+			    $(htag + "_savetofile").removeClass( "hidden" );
+			}
+		    });
+		}
+		
 
                 if ( ga.value.settings[ htag ].selzoom || 
                      ( v.options && v.options.selection && v.options.selection.mode && v.options.selection.mode == "xy" ) ) {
@@ -119,7 +147,11 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
                                 }
                             });
                 }
+		
+		
+		
 
+		
                 savekey = mod_out + ":#" + k + ":last_value";
                 $( "#global_data" ).data( savekey , v ); 
                 break;
