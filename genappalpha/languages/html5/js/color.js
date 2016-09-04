@@ -30,6 +30,7 @@ ga.plot_options = function () {
             },
             grid : {
                 hoverable: false
+		//, backgroundColor: "white"
             },
             xaxis : {
                 color : "gray",
