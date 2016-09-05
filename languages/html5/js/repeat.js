@@ -107,6 +107,10 @@ ga.repeat.repeat = function( mod, id, html, this_eval ) {
         .replace( RegExp( '"#' + id + '_altval"', "g" ), '"#%%id%%_altval"' )
     ;
 
+    __~debug:repeateval{console.log( "ga.repeat.repeat() eval=" + this_eval );}
+    __~debug:repeateval{console.log( "--------------------" );}
+    __~debug:repeateval{console.log( "ga.repeat.repeat() evalr=" + ga.repeat.data[ mod ].repeat[ id ].evalr );}
+    __~debug:repeateval{console.log( "====================" );}
     
     return '<tr><td></td><td><span id="' + id + '-span"></span></td></tr>';
 }
