@@ -36,7 +36,7 @@ ga.calc.data          = {};
 // regexp and general routines
 
 ga.calc.str_atom_numeric         = "(?:(?:-?[1-9][0-9]*)|(?:-?0))?(?:[.][0-9]+)?(?:[eE][-+]?[0-9]+)?";
-ga.calc.str_atom_id              = "[A-Za-z][A-Za-z0-9_]*";
+ga.calc.str_atom_id              = "[A-Za-z][A-Za-z0-9_:]*";
 ga.calc.str_function             = "(?:abs\\(|acos\\(|asin\\(|atan\\(|atan2\\(|ceil\\(|cos\\(|exp\\(|floor\\(|log\\(|max\\(|min\\(|pow\\(|random\\(|round\\(|sin\\(|sqrt\\(|tan\\(|-)";
 ga.calc.str_function_paren       = "(?:abs\\(|acos\\(|asin\\(|atan\\(|atan2\\(|ceil\\(|cos\\(|exp\\(|floor\\(|log\\(|max\\(|min\\(|pow\\(|random\\(|round\\(|sin\\(|sqrt\\(|tan\\()";
 ga.calc.str_function_no_paren    = "-";
@@ -86,6 +86,9 @@ ga.calc.register = function( mod, id, calc ) {
         } );
         return;
     }
+
+    ga.calc.repeatertokens( mod, id );
+
     ga.calc.data[ mod ].calc[ id ].dependents = ga.calc.dependents( mod, id );
     __~debug:calcdeps{console.log( "ga.calc.register() dependent depth is " + ga.calc.depthofdeps( mod, id ) );}
     if ( ga.calc.depthofdeps( mod, id ) > 99 ) {
@@ -107,6 +110,51 @@ ga.calc.register = function( mod, id, calc ) {
     ga.calc.install( mod, id );
 }
 
+// check if id is repeater and if so, replace tokens
+ga.calc.repeatertokens = function( mod, id ) {
+    __~debug:calcrepeat{console.log( "ga.calc.repeatertokens( " + mod + " , " + id + " )" );}
+    var a,
+        orgid,
+        prefix,
+        suffix;
+
+    if ( !/-/.test( id ) ) {
+        return;
+    }
+
+    __~debug:calcrepeat{console.log( "ga.calc.repeatertokens() found" );}
+
+    // find original id
+
+    a = id.split( "-" );
+
+    if ( /\d+/.test( a[ a.length - 1 ] ) ) {
+        prefix = a.slice( 0, a.length - 2 ).join( ":" ) + ":"
+        orgid  = a[ a.length - 2 ];
+        suffix = ":" + a[ a.length - 1 ];
+    } else {
+        prefix = a.slice( 0, a.length - 1 ).join( ":" ) + ":";
+        orgid  = a[ a.length - 1 ];
+        suffix = "";
+    }
+        
+    __~debug:calcrepeat{console.log( "ga.calc.repeatertokens() prefix = " + prefix );}
+    __~debug:calcrepeat{console.log( "ga.calc.repeatertokens() orgid  = " + orgid  );}
+    __~debug:calcrepeat{console.log( "ga.calc.repeatertokens() suffix = " + suffix );}
+    
+    for ( i in ga.calc.data[ mod ].calc[ id ].tokens ) {
+        // is an atom id and does it not already exist in the dom ?
+        if ( ga.calc.is_atom_id.test( ga.calc.data[ mod ].calc[ id ].tokens[ i ] ) &&
+             !$( "#" + ga.calc.data[ mod ].calc[ id ].tokens[ i ] ).length ) {
+            // then replace with repeater version
+
+            ga.calc.data[ mod ].calc[ id ].tokens[ i ] =
+                prefix + ga.calc.data[ mod ].calc[ id ].tokens[ i ] + suffix;
+            __~debug:calcrepeat{console.log( "ga.calc.repeatertokens() new token " +  ga.calc.data[ mod ].calc[ id ].tokens[ i ] );}
+        }
+    }
+}
+    
 // check calc depth of dependent variables
 ga.calc.depthofdeps = function( mod, id, depth ) {
     __~debug:calcdeps{console.log( "ga.calc.depthofdeps( " + mod + " , " + id + " , " + depth + " )" );}
@@ -163,7 +211,7 @@ ga.calc.install = function( mod, id ) {
     __~debug:calc{console.log( "ga.calc.install( " + mod + " , " + id + " )" );}
     var i;
     for ( i in ga.calc.data[ mod ].calc[ id ].dependents ) {
-        $( "#" + ga.calc.data[ mod ].calc[ id ].dependents[ i ] ).on( "change", function() { ga.calc.process( mod, id ); } );
+        $( "#" + ga.calc.data[ mod ].calc[ id ].dependents[ i ].replace( /:/g, "-" ) ).on( "change", function() { ga.calc.process( mod, id ); } );
     }
 }
 
@@ -179,8 +227,6 @@ ga.calc.process = function( mod, id ) {
         } );
         return;
     }
-
-    // tmp = Number( ga.calc.is_atom_id.test( token ) ? $( "#" + ga.calc.data[ mod ].calc[ id ].tokens[ i ] ).val() : token );
 
     // convert to exponential format ?
     // if ( result.constructor === Array ) {
@@ -397,10 +443,10 @@ ga.calc.arraytovals = function ( a ) {
     var i;
     if ( a.constructor === Array ) {
         for ( i = 0; i < a.length; ++i ) {
-            a[ i ] = Number( ga.calc.is_atom_id.test( a[ i ] ) ? $( "#" + a[ i ] ).val() : a[ i ] );
+            a[ i ] = Number( ga.calc.is_atom_id.test( a[ i ] ) ? $( "#" + a[ i ].replace( /:/g, "-" ) ).val() : a[ i ] );
         }
     } else {
-        a = Number( ga.calc.is_atom_id.test( a ) ? $( "#" + a ).val() : a );
+        a = Number( ga.calc.is_atom_id.test( a ) ? $( "#" + a.replace( /:/g, "-" ) ).val() : a );
     }
     return a;
 }
