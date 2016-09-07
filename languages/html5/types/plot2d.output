@@ -37,4 +37,7 @@ ga.value.extra_resets( "__fields:id__" );
 
 __~fields:savetofile{<a href="" id="__fields:id___savetofile" target="_blank" style="text-align:center" class="hidden">Download plot as .png file</a>}
 
+__~fields:changescale{ <button id="__fields:id___changescale" type="button" class="hidden">Change Y-axis Scale: Log/Lin</button><script>$( "#__fields:id___changescale" ).click( function() {	console.log("Inside Click: ");  if(ga.plotglobal.yscale=="log"){ga.plotglobal.yscale="";}else{ga.plotglobal.yscale="log";} console.dir(ga.plotglobal); $.plot( "#__fields:id__", ga.dataplotglobal, ga.value.get.plot2d.plot_options("#__fields:id__", ga.plotglobal ) );});</script>} 
+
+
 <table>
