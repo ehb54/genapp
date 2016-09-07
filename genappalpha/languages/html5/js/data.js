@@ -69,13 +69,26 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 
                 ga.value.plot2d.zstack.reset( htag );
 
+		
                 if ( v.data ) {
                     ga.value.set.plot2d( htag, v.options );
                     __~debug:plottwod{console.log( "ga.data.update processed plot options is " );console.dir( ga.value.get.plot2d.plot_options( htag, v.options ) );}
-                    $.plot( htag, v.data, ga.value.get.plot2d.plot_options( htag, v.options ) );
+
+		    //ga.pl = ga.value.get.plot2d.plot_options( htag, v.options );
+
+		    ga.plotglobal     = v.options;
+		    ga.dataplotglobal = v.data;
+		    //console.dir(ga.pl );
+		    
+		    $.plot( htag, v.data, ga.value.get.plot2d.plot_options( htag, v.options ) );
                 } else {
                     $.plot( htag, v,  ga.value.get.plot2d.plot_options( htag ) );
                 }
+
+		if ( $( htag  + "_changescale" ).length )
+		{
+		    $(htag + "_changescale").removeClass( "hidden" );
+		}
 
 		if ( $( htag  + "_savetofile" ).length )
 		{
@@ -91,8 +104,9 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 			}
 		    });
 		}
-		
 
+
+		
                 if ( ga.value.settings[ htag ].selzoom || 
                      ( v.options && v.options.selection && v.options.selection.mode && v.options.selection.mode == "xy" ) ) {
 		    $( htag )
