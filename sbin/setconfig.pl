@@ -156,9 +156,9 @@ if ( !$os && -e "/etc/redhat-release" ) {
 # check for centos/redhat
     my $check = `cat /etc/redhat-release`;
     chomp $check;
-    if ( $check =~ /^CentOS release/ ) {
+    if ( $check =~ /^CentOS .* release/ ) {
         $os = "centos";
-        ( $os_release ) = $check =~ /^CentOS release (\S+)/;
+        ( $os_release ) = $check =~ /^CentOS .* release (\S+)/;
         
     }
     if ( $check =~ /^Red Hat Enterprise Linux Server release/ ) {
