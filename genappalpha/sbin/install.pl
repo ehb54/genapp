@@ -5,6 +5,7 @@ my $gb   = $ENV{ "GENAPP" } || die "$0: environment variable GENAPP must be set\
 print "perl version is $]\n" if $debug;
 print "command is: $0 @ARGV\n" if $debug;
 
+
 if ( $] < 5.018 ) {
     if ( -e "$gb/perl/bin/perl" ) {
         $pv =`$gb/perl/bin/perl -e 'print \$];'`;
@@ -33,6 +34,14 @@ my $appbase = "/opt/genapp";
 use JSON -support_by_pp;
 
 my $home = $ENV{ "HOME" } || die "$0: environment variable HOME must be set\n";
+
+$sorry = "------------------------------------------------------------
+We are sorry that your operating system / release is not currently supported.
+Please let us know your requirements and we can likely provide an install script to work with your system.
+You can subscribe to the mailing list http://biochem.uthscsa.edu/mailman/listinfo/genapp-devel
+and then send your questions to genapp-devel\@biochem.uthscsa.edu
+------------------------------------------------------------
+";
 
 # utility subs
 
@@ -143,15 +152,15 @@ my $os = $$cfgjson{ 'os' } || die "$0: $cfgjsonf does not contain an 'os' tag. $
 my $os_release = $$cfgjson{ 'os_release' } || die "$0: $cfgjsonf does not contain an 'os_release' tag. $cfgjsonnotes";
 
 if ( $os eq 'ubuntu' ) {
-    die "only ubuntu 14.04 currently supported and this appears to be version $os_release\n" if $os_release != 14.04;
+    die "only ubuntu 14.04 currently supported and this appears to be version $os_release\n$sorry" if $os_release != 14.04;
 }
 
 if ( $os eq 'centos' ) {
-    die "only Centos 6.7 currently supported and this appears to be version $os_release\n" if $os_release != 6.7;
+    die "only Centos 6.7 and 7.2 currently supported and this appears to be version $os_release\n$sorry" if $os_release != 6.7 && $os_release !~ /^7\.2/;
 }
 
 if ( $os eq 'redhat' ) {
-    die "only Red Hat Enterprise Linux Server 6.7 and 6.8 are currently supported and this appears to be version $os_release\n" if $os_release !~ /^6\.(7|8)$/;
+    die "only Red Hat Enterprise Linux Server 6.7 and 6.8 are currently supported and this appears to be version $os_release\n$sorry" if $os_release !~ /^6\.(7|8)$/;
 }    
 
 if ( $os eq 'slackware' ) {
@@ -295,7 +304,8 @@ update-rc.d rc.genapp defaults" );
     exit();
 }
 
-if ( $os eq 'centos' ) {
+# ------ centos 6.7 -------
+if ( $os eq 'centos' && $os_version == 6.7 ) {
     # install required modules
 
 #    runcmdsb( "rpm -Uvh http://mirror.webtatic.com/yum/el6/latest.rpm" );
@@ -426,6 +436,140 @@ service iptables save" );
     exit();
 }
 
+# ------ centos 7.2 -------
+if ( $os eq 'centos' && $os_release =~ /^7\.2/ ) {
+
+    # install required modules
+
+#    runcmdsb( "rpm -Uvh http://mirror.webtatic.com/yum/el6/latest.rpm" );
+    runcmdsb( "yum -y groupinstall 'Development tools'" );
+    runcmdsb( "yum -y install centos-release-scl" );
+
+    runcmdsb( "yum -y install mlocate httpd24-httpd httpd24-httpd-devel rh-php56-php rh-php56-php-devel rh-php56-php-pear rh-php56-php-pecl-mongo mongodb mongodb-server wget libuuid-devel zeromq-devel openssl-devel ImageMagick ImageMagick-devel" );
+# old commands
+#    runcmdsb( "yum -y install mlocate httpd24-httpd httpd24-httpd-devel httpd24-php55 http24-php55w-devel httpd24--pecl-imagick mongodb mongodb-server pkg-config wget libuuid-devel zeromq-devel openssl-devel" );
+#    runcmdsb( "yum -y install mlocate httpd24-httpd httpd24-httpd-develhttpd24-php55 http24-php55w-devel httpd24--pecl-imagick mongodb mongodb-server pkg-config wget libuuid-devel zeromq-devel openssl-devel" );
+#-zmq php-pecl-http php-pear php-pecl-imagick php-mail php-mail-mime php-pecl-mongo php-devel mongodb mongodb-server pkg-config re2c php-pecl-uuid wget" );
+
+    my $rhsclphp    = "/opt/rh/rh-php56/root";
+    my $rhsclphpetc = "/etc/opt/rh/rh-php56/";
+    my $rhsclhttpd  = "/opt/rh/httpd24/root";
+
+    runcmdsb( "yes '' | $rhsclphp/usr/bin/pecl install uuid zmq-beta mongo imagick;
+cat <<_EOF > $rhsclphpetc/php.d/uuid.ini
+; Enable uuid extension module
+extension=uuid.so
+_EOF
+cat <<_EOF > $rhsclphpetc/php.d/zmq.ini
+; Enable uuid extension module
+extension=zmq.so
+_EOF
+cat <<_EOF > $rhsclphpetc/php.d/imagick.ini
+; Enable uuid extension module
+extension=imagick.so
+_EOF
+#cat <<_EOF > $rhsclphpetc/php.d/mongo.ini
+#; Enable uuid extension module
+#extension=mongo.so
+#_EOF
+" );
+
+    runcmdsb( "scl enable rh-php56 'pear install --alldeps Mail Mail_Mime Net_SMTP'" );
+
+    `sudo killall mongod 2> /dev/null`;
+    runcmdsb( "service mongod start" );
+
+    runcmdsb( "cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/wsproxy.conf
+# ws proxy pass
+# priority=20
+ProxyPass /ws2 ws://localhost:37777/
+ProxyPass /wss2 ws://localhost:37777/
+_EOF
+cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/genapp.conf
+SetEnv GENAPP $gb
+_EOF
+");
+
+    # scl puts php in $rhsclphp so link it
+
+    runcmdsb( "ln -sf $rhsclphp/usr/bin/php /usr/bin/php" );
+
+    # scl puts httpd root in $rhsclphp so link it
+
+    runcmdsb( "ln -sf $rhsclhttpd/var/www /var/www" );
+
+    # genapp html5 likes php at /usr/local/bin/php so make sure it exists
+
+    if ( -e "/usr/bin/php" && !-e "/usr/local/bin/php" ) {
+        runcmd( "sudo bash -c 'ln -s /usr/bin/php /usr/local/bin/php'" );
+    }
+
+    # make the base of the genapp instances directory, create group genapp, add user & apache to genapp group
+
+    runcmdsb( "mkdir -p $appbase
+groupadd genapp
+useradd genapp -r -s /usr/sbin/nologin -d $appbase -g genapp
+chmod g+rwx $appbase
+chown $whoami:genapp $appbase
+chmod g+s $appbase
+mkdir $$cfgjson{'lockdir'}
+chown genapp:genapp $$cfgjson{'lockdir'}
+chmod g+rwx $$cfgjson{'lockdir'}
+usermod -g users -G genapp $whoami
+usermod -G genapp \'apache\'" );
+
+    # setup local system definitions
+
+    runcmdsb( "cat <<_EOF > /etc/profile.d/genapp.sh
+export GENAPP=$gb
+export PATH=\\\\\\\$GENAPP/bin:\\\\\\\$PATH
+_EOF
+cat <<_EOF > /etc/profile.d/genapp.csh
+setenv GENAPP $gb
+setenv PATH=\\\\\\\$\{GENAPP\}/bin:\\\\\\\$\{PATH}
+_EOF
+
+" );
+
+    runcmdsb( "cat <<_EOF > $$cfgjson{'webroot'}/php_info.php
+<?php
+phpinfo();
+?>
+_EOF
+" );
+
+    # setup genapptest instance
+
+    runcmd( "cd $appbase && $gb/sbin/getapp.pl -force -gen -admin $whoami svn genapptest" );
+
+    # add ws servers to startup
+
+    runcmdsb( "cp $appbase/genapptest/output/html5/util/rc.genapp /etc/init.d" );
+    runcmd( "sg genapp -c '/etc/init.d/rc.genapp start'" );
+
+    # open ports
+    {
+        my $iptab = `service iptables status | grep ACCEPT | grep INPUT | grep dpt:80`;
+        chomp $iptab;
+        if ( $iptab !~ /tcp/ ) {
+            runcmdsb( "iptables -I INPUT 1 -m state --state NEW -m tcp -p tcp --dport 80 -j ACCEPT
+service iptables save" );
+        }
+    }
+    if ( $$cfgjson{ 'https' } ) {
+        my $iptab = `service iptables status | grep ACCEPT | grep INPUT | grep dpt:443`;
+        chomp $iptab;
+        if ( $iptab !~ /tcp/ ) {
+            runcmdsb( "iptables -I INPUT 1 -m state --state NEW -m tcp -p tcp --dport 443 -j ACCEPT
+service iptables save" );
+        }
+    }
+
+    runcmdsb( "semanage permissive -a httpd_t; service httpd24-httpd restart && chkconfig httpd24-httpd on" );
+    exit();
+}
+
+# ------ redhat -------
 if ( $os eq 'redhat' ) {
     # install required modules
 
@@ -609,10 +753,8 @@ service iptables save" );
     exit();
 }
 
-die "$0: We are sorry that your operating system / release is not currently supported.
-Please let us know your requirements and we can likely provide an install script to work with your system.
-You can subscribe to the mailing list http://biochem.uthscsa.edu/mailman/listinfo/genapp-devel
-and then send your questions to genapp-devel\@biochem.uthscsa.edu
-";
+die "------------------------------------------------------------
+Operating system identified as $os / release $os_release
+$sorry";
 
 
