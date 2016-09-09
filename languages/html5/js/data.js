@@ -93,8 +93,12 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 		if ( $( htag  + "_savetofile" ).length )
 		{
 		    var a = document.getElementById(k + "_savetofile");
-		    html2canvas( match.get(0), {
+	    
+		    var combined = $(htag + "_div");
+		    //html2canvas( match.get(0), {
+		    html2canvas( combined.get(0), {
 			background: "#ffffff",
+			//width     : 600,
 			onrendered: function (canvas) {
 			    image = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream"); 
 			    //console.log("tag: " + htag + "_savetofile" + "  Image: " + image);
