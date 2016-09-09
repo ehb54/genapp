@@ -329,7 +329,7 @@
                    ,{
                     "frequency"  : "once",
                     "output"     : "js/ga.js",
-#                    "minify"     : "copy",
+#                   "minify"     : "copy",
 #                    "minify"     : "minify",
 #                    "minify"     : "closure",
                     "inputs"     : [ 
