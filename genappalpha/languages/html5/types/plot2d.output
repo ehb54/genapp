@@ -1,7 +1,14 @@
 </table>
+
+
 <p>
 
 <label for="__fields:id__">__fields:label__</label></tr><tr>
+
+</p>
+
+<div id="__fields:id___div" style="__~fields:width{width:__fields:width__}">
+<p>
 <table class="help_link">
 <tr>
    <td></td>
@@ -21,6 +28,9 @@
 </table>
 __~fields:help{<span class="help">__fields:help__</span>}
 </p>
+
+
+</div>
 
 <script>
 var tmp = $.plot( $( "#__fields:id__" ), [[]], gd.data( "_plot_options" ) );
