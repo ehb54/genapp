@@ -16,6 +16,27 @@ function dataURLtoFile(dataurl, filename) {
     return new File([u8arr], filename, {type:mime});
 }
 
+function create_image(k) {
+    if ( $( "#" + k  + "_savetofile" ).length )
+    {
+	var a = document.getElementById(k + "_savetofile");
+	
+	var combined = $("#" + k + "_div");
+	//html2canvas( match.get(0), {
+	html2canvas( combined.get(0), {
+	    background: "#ffffff",
+	    //width     : 600,
+	    onrendered: function (canvas) {
+		image = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream"); 
+		//console.log("tag: " + htag + "_savetofile" + "  Image: " + image);
+		file = dataURLtoFile(image, 'plot.png');
+		a.href = URL.createObjectURL(file);
+		$("#" + k  + "_savetofile").removeClass( "hidden" );
+	    }
+	});
+    }
+}
+
 ga.data.update = function( mod, data, msging_f, msg_id ) {
     var output_msgs_cleared = 0,
         appended            = 0,
@@ -90,27 +111,8 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 		    $(htag + "_changescale").removeClass( "hidden" );
 		}
 
-		if ( $( htag  + "_savetofile" ).length )
-		{
-		    var a = document.getElementById(k + "_savetofile");
-	    
-		    var combined = $(htag + "_div");
-		    //html2canvas( match.get(0), {
-		    html2canvas( combined.get(0), {
-			background: "#ffffff",
-			//width     : 600,
-			onrendered: function (canvas) {
-			    image = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream"); 
-			    //console.log("tag: " + htag + "_savetofile" + "  Image: " + image);
-			    file = dataURLtoFile(image, 'plot.png');
-			    a.href = URL.createObjectURL(file);
-			    $(htag + "_savetofile").removeClass( "hidden" );
-			}
-		    });
-		}
+		create_image(k);
 
-
-		
                 if ( ga.value.settings[ htag ].selzoom || 
                      ( v.options && v.options.selection && v.options.selection.mode && v.options.selection.mode == "xy" ) ) {
 		    $( htag )
@@ -142,6 +144,7 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 				            yaxis: { min: ranges.yaxis.from, max: ranges.yaxis.to }
 				        })
 			              );
+				//create_image(k);
 		            })
                         .on('contextmenu',
                             {
@@ -163,6 +166,7 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
                                 } else {
 		                    $.plot( e.data.htag, e.data.data, e.data.options );
                                 }
+				//create_image(k);
                             });
                 }
 		

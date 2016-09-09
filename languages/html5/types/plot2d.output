@@ -7,7 +7,7 @@
 
 </p>
 
-<div id="__fields:id___div" style="__~fields:width{width:__fields:width__}">
+<div id="__fields:id___div" style="__~fields:width{width:__fields:width__;}">
 <p>
 <table class="help_link">
 <tr>
@@ -16,7 +16,7 @@
    <td id="__fields:id___xy" class="coord"></td>
 </tr>
 <tr>
-   <td id="__fields:id___ylabel" style="text-align:center"></td>
+   <td id="__fields:id___ylabel" style="text-align:center" __~fields:rotatedylabel{class="verticaltext"}></td>
    <td id="__fields:id__" type="plot2d" class="plot2ddef" style="__~fields:width{width:__fields:width__;}__~fields:height{height:__fields:height__}"></td>
    <td id="__fields:id___legend"></td>
 </tr>
@@ -45,9 +45,12 @@ ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );
 ga.value.extra_resets( "__fields:id__" );
 </script>
 
-__~fields:savetofile{<a href="" id="__fields:id___savetofile" target="_blank" style="text-align:center" class="hidden">Download plot as .png file</a>}
 
-__~fields:changescale{ <button id="__fields:id___changescale" type="button" class="hidden">Change Y-axis Scale: Log/Lin</button><script>$( "#__fields:id___changescale" ).click( function() {	console.log("Inside Click: ");  if(ga.plotglobal.yscale=="log"){ga.plotglobal.yscale="";}else{ga.plotglobal.yscale="log";} console.dir(ga.plotglobal); $.plot( "#__fields:id__", ga.dataplotglobal, ga.value.get.plot2d.plot_options("#__fields:id__", ga.plotglobal ) );});</script>} 
+__~fields:savetofile{<table><tr><a href="" id="__fields:id___savetofile" target="_blank" style="text-align:center" class="hidden">Download plot as .png file</a></tr><table>}
+
+
+__~fields:changescale{ <table><tr><button id="__fields:id___changescale" type="button" class="hidden">Change Y-axis Scale: Log/Lin</button><span id="__fields:id___changescale_message" style="color:red;"></span></tr> </table><script>$( "#__fields:id___changescale" ).click( function() {console.log("Inside Click: ");  if(ga.plotglobal.yscale=="log"){ga.plotglobal.yscale=""; $("#__fields:id___changescale_message").html("Y-Lin");}else{ga.plotglobal.yscale="log";$("#__fields:id___changescale_message").html("Y-Log");} console.dir(ga.plotglobal); $.plot( "#__fields:id__", ga.dataplotglobal, ga.value.get.plot2d.plot_options("#__fields:id__", ga.plotglobal ) ); create_image("__fields:id__"); });  </script>} 
+
 
 
 <table>
