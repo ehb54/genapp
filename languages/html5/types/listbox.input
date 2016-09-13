@@ -1,7 +1,7 @@
 this_html = '<tr><td><label for="__fields:id__">__fields:label__ </label></td><td><select id="__fields:id__" name="__fields:id__"__~fields:repeater{ data-repeater="listbox"}__~fields:help{ class="help_link"}>__~fields:values{<option value="~1">~0</option>}</select>'
 __~fields:help{+ '<span class="help">__fields:help__</span>'}
 + '</td></tr>'
-__~fields:repeater{+ '<tr><td></td><td colspan="4"><span id="__fields:id__-repeater"></span></td></tr>'}
+__~fields:repeater{+ '<tr><td></td><td colspan="4"><table id="__fields:id__-repeater"></table></td></tr>'}
 ;
 
 this_eval = __~fields:pull{'ga.pull.toPull( "__moduleid__", "#__fields:id__", "listbox", "__fields:pull__", "#__fields:repeat__" );' + }
