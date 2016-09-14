@@ -29,8 +29,9 @@ function create_image_htmltocanvas(k) {
 	    onrendered: function (canvas) {
 		image = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream"); 
 		//console.log("tag: " + htag + "_savetofile" + "  Image: " + image);
-		file = dataURLtoFile(image, 'plot.png');
-		a.href = URL.createObjectURL(file);
+		//file = dataURLtoFile(image, 'plot.png');
+		//a.href = URL.createObjectURL(file);
+		a.href = image;
 		$("#" + k  + "_savetofile").removeClass( "hidden" );
 	    }
 	});
@@ -125,8 +126,8 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 		    $(htag + "_changescale").removeClass( "hidden" );
 		}
 
-		//create_image_htmltocanvas(k);
-		create_image(k, plot);
+		create_image_htmltocanvas(k);
+		//create_image(k, plot);
 
                 if ( ga.value.settings[ htag ].selzoom || 
                      ( v.options && v.options.selection && v.options.selection.mode && v.options.selection.mode == "xy" ) ) {
