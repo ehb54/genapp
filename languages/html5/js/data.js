@@ -7,7 +7,7 @@ ga.data.nofcrefresh = {};
 // apply the data to the screen output, return an object with job_status
 
 
-function dataURLtoFile(dataurl, filename) {
+ga.data.dataURLtoFile = function(dataurl, filename) {
     var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
         bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
     while(n--){
@@ -16,7 +16,7 @@ function dataURLtoFile(dataurl, filename) {
     return new File([u8arr], filename, {type:mime});
 }
 
-function create_image_htmltocanvas(k) {
+ga.data.create_image_htmltocanvas = function(k) {
     if ( $( "#" + k  + "_savetofile" ).length )
     {
 	var a = document.getElementById(k + "_savetofile");
@@ -27,18 +27,19 @@ function create_image_htmltocanvas(k) {
 	    background: "#ffffff",
 	    //width     : 600,
 	    onrendered: function (canvas) {
-		image = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream"); 
+		var image = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream"); 
 		//console.log("tag: " + htag + "_savetofile" + "  Image: " + image);
 		//file = dataURLtoFile(image, 'plot.png');
 		//a.href = URL.createObjectURL(file);
 		a.href = image;
+		a.download = "plot.png";
 		$("#" + k  + "_savetofile").removeClass( "hidden" );
 	    }
 	});
     }
 }
 
-function create_image(k, plot) {
+ga.data.create_image = function(k, plot) {
     if ( $( "#" + k  + "_savetofile" ).length )
     {
 	var a = document.getElementById(k + "_savetofile");
@@ -46,7 +47,7 @@ function create_image(k, plot) {
 	var canvas = plot.getCanvas();
 	//canvas_merged = replotChartAsCanvas(match, v.data, ga.value.get.plot2d.plot_options( htag, v.options ));
 	var image = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream"); 
-	var file = dataURLtoFile(image, 'plot.png');
+	var file = ga.data.dataURLtoFile(image, 'plot.png');
 	a.href = URL.createObjectURL(file);
 	$("#" + k  + "_savetofile").removeClass( "hidden" );
     }
@@ -126,8 +127,8 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 		    $(htag + "_changescale").removeClass( "hidden" );
 		}
 
-		create_image_htmltocanvas(k);
-		//create_image(k, plot);
+		ga.data.create_image_htmltocanvas(k);
+		//ga.data.create_image(k, plot);
 
                 if ( ga.value.settings[ htag ].selzoom || 
                      ( v.options && v.options.selection && v.options.selection.mode && v.options.selection.mode == "xy" ) ) {
