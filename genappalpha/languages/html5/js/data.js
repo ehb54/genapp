@@ -16,7 +16,7 @@ function dataURLtoFile(dataurl, filename) {
     return new File([u8arr], filename, {type:mime});
 }
 
-function create_image(k) {
+function create_image_htmltocanvas(k) {
     if ( $( "#" + k  + "_savetofile" ).length )
     {
 	var a = document.getElementById(k + "_savetofile");
@@ -34,6 +34,20 @@ function create_image(k) {
 		$("#" + k  + "_savetofile").removeClass( "hidden" );
 	    }
 	});
+    }
+}
+
+function create_image(k, plot) {
+    if ( $( "#" + k  + "_savetofile" ).length )
+    {
+	var a = document.getElementById(k + "_savetofile");
+	
+	var canvas = plot.getCanvas();
+	//canvas_merged = replotChartAsCanvas(match, v.data, ga.value.get.plot2d.plot_options( htag, v.options ));
+	var image = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream"); 
+	var file = dataURLtoFile(image, 'plot.png');
+	a.href = URL.createObjectURL(file);
+	$("#" + k  + "_savetofile").removeClass( "hidden" );
     }
 }
 
@@ -87,9 +101,9 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
                 htag = "#" + k;
 		var image;
 		var file;
+		var plot;
 
                 ga.value.plot2d.zstack.reset( htag );
-
 		
                 if ( v.data ) {
                     ga.value.set.plot2d( htag, v.options );
@@ -101,9 +115,9 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 		    ga.dataplotglobal = v.data;
 		    //console.dir(ga.pl );
 		    
-		    $.plot( htag, v.data, ga.value.get.plot2d.plot_options( htag, v.options ) );
-                } else {
-                    $.plot( htag, v,  ga.value.get.plot2d.plot_options( htag ) );
+		    plot = $.plot( htag, v.data, ga.value.get.plot2d.plot_options( htag, v.options ) );
+		} else {
+                    plot = $.plot( htag, v,  ga.value.get.plot2d.plot_options( htag ) );
                 }
 
 		if ( $( htag  + "_changescale" ).length )
@@ -111,7 +125,8 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 		    $(htag + "_changescale").removeClass( "hidden" );
 		}
 
-		create_image(k);
+		//create_image_htmltocanvas(k);
+		create_image(k, plot);
 
                 if ( ga.value.settings[ htag ].selzoom || 
                      ( v.options && v.options.selection && v.options.selection.mode && v.options.selection.mode == "xy" ) ) {
