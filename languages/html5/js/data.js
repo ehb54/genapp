@@ -19,7 +19,7 @@ ga.data.dataURLtoFile = function(dataurl, filename) {
 ga.data.create_image_htmltocanvas = function(k) {
     if ( $( "#" + k  + "_savetofile" ).length )
     {
-	var a = document.getElementById(k + "_savetofile");
+	//var a = document.getElementById(k + "_savetofile");
 	
 	var combined = $("#" + k + "_div");
 	//html2canvas( match.get(0), {
@@ -28,12 +28,15 @@ ga.data.create_image_htmltocanvas = function(k) {
 	    //width     : 600,
 	    onrendered: function (canvas) {
 		var image = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream"); 
-		//console.log("tag: " + htag + "_savetofile" + "  Image: " + image);
-		//file = dataURLtoFile(image, 'plot.png');
-		//a.href = URL.createObjectURL(file);
-		a.href = image;
-		a.download = "plot.png";
-		$("#" + k  + "_savetofile").removeClass( "hidden" );
+		
+		//a.href = image;
+		//a.download = "plot.png";
+		//$("#" + k  + "_savetofile").removeClass( "hidden" );
+
+		//var link = "<a href=\"" + v + "\" target=\"_blank\">" + v.split( '/' ).pop() + "</a>";
+		var link = "<a href=\"" + image + "\" target=\"_blank\" download=\"plot.png\">" + "plot.png" + "</a>";
+		//console.log("link: " + link);
+		$("#" + k  + "_savetofile_link").html( link );
 	    }
 	});
     }
@@ -122,12 +125,25 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
                     plot = $.plot( htag, v,  ga.value.get.plot2d.plot_options( htag ) );
                 }
 
+		if ( $( htag  + "_savetofile" ).length )
+		{
+		    $(htag + "_savetofile").removeClass( "hidden" );
+		}
+		    
 		if ( $( htag  + "_changescale" ).length )
 		{
 		    $(htag + "_changescale").removeClass( "hidden" );
+		    if (v.options.yscale == "log")
+		    {
+			$(htag + "_changescale_message").html("Y-log");
+		    }
+		    else
+		    {
+			$(htag + "_changescale_message").html("Y-lin");
+		    }
 		}
 
-		ga.data.create_image_htmltocanvas(k);
+		//ga.data.create_image_htmltocanvas(k);
 		//ga.data.create_image(k, plot);
 
                 if ( ga.value.settings[ htag ].selzoom || 

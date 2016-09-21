@@ -46,10 +46,10 @@ ga.value.extra_resets( "__fields:id__" );
 </script>
 
 
-__~fields:savetofile{<table><tr><td><a href="" download="" id="__fields:id___savetofile" target="_blank" style="text-align:center" class="hidden">Download plot as .png file</a></td></tr><table>}
+__~fields:savetofile{ <table cellpadding="10" style="margin-bottom:5px"><tr><td><button id="__fields:id___savetofile" type="button" class="hidden">Download .png file:</button></td><td><span id="__fields:id___savetofile_link" style="color:black;"></span></td></tr></table> <script> $( "#__fields:id___savetofile" ).click( function() {ga.data.create_image_htmltocanvas("__fields:id__"); });</script>}
 
 
-__~fields:changescale{ <table><tr><td><button id="__fields:id___changescale" type="button" class="hidden">Change Y-axis Scale: Log/Lin</button><span id="__fields:id___changescale_message" style="color:red;"></span></td></tr> </table><script>$( "#__fields:id___changescale" ).click( function() {console.log("Inside Click: ");  if(ga.plotglobal.yscale=="log"){ga.plotglobal.yscale=""; $("#__fields:id___changescale_message").html("Y-Lin");}else{ga.plotglobal.yscale="log";$("#__fields:id___changescale_message").html("Y-Log");} console.dir(ga.plotglobal); var plot=$.plot( "#__fields:id__", ga.dataplotglobal, ga.value.get.plot2d.plot_options("#__fields:id__", ga.plotglobal ) ); ga.data.create_image_htmltocanvas("__fields:id__"); });  </script>} 
+__~fields:changescale{ <table cellpadding="10"><tr><td><button id="__fields:id___changescale" type="button" class="hidden">Change Y-axis Scale: Log/Lin</button></td><td><span id="__fields:id___changescale_message" style="color:green;"></span></td></tr> </table><script> $( "#__fields:id___changescale" ).click( function() {console.log("Inside Click: ");  if(ga.plotglobal.yscale=="log"){ga.plotglobal.yscale=""; $("#__fields:id___changescale_message").html("Y-Lin");}else{ga.plotglobal.yscale="log";$("#__fields:id___changescale_message").html("Y-Log");} console.dir(ga.plotglobal); var plot=$.plot( "#__fields:id__", ga.dataplotglobal, ga.value.get.plot2d.plot_options("#__fields:id__", ga.plotglobal ) ); });  </script>} 
 
 
 
