@@ -219,6 +219,37 @@
                    }
                    ,{
                     "frequency"  : "once"
+                    ,"output"     : "oscluster"
+                    ,"setexecutable" : "true"
+                    ,"inputs"     : [
+                                     { "openstack/oscluster" : "once" }
+                                    ]
+                   }
+                   ,{
+                    "frequency"  : "once"
+                    ,"output"     : "openstack/os_cluster.php"
+                    ,"setexecutable" : "true"
+                    ,"inputs"     : [
+                                     { "openstack/os_cluster.php" : "once" }
+                                    ]
+                   }
+                   ,{
+                    "frequency"  : "once"
+                    ,"output"     : "openstack/os_delete.php"
+                    ,"setexecutable" : "true"
+                    ,"inputs"     : [
+                                     { "openstack/os_delete.php" : "once" }
+                                    ]
+                   }
+                   ,{
+                    "frequency"  : "once"
+                    ,"output"     : "openstack/os_header.php"
+                    ,"inputs"     : [
+                                     { "openstack/os_header.php" : "once" }
+                                    ]
+                   }
+                   ,{
+                    "frequency"  : "once"
                     ,"output"     : "airavata/clientProperties.php"
                     ,"inputs"     : [
                                      { "airavata/clientProperties.php" : "once" }

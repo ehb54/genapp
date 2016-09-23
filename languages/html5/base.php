@@ -826,7 +826,8 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
       }
       ob_end_clean();
       // this is overriding too much, needs correction
-      if( $cmdprefix == "airavatarun" ) { 
+      if( $cmdprefix == "airavatarun" ||
+          $cmdprefix == "oscluster" ) { 
          $cmd = "$adir/$cmdprefix";
          $cmd .= " __menu:modules:id__";
          $cmd .= " '$json'"; 
