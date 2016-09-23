@@ -1,0 +1,108 @@
+#!/usr/bin/env php
+<?php
+
+# $debug = true;
+
+error_log( "argv:\n" . json_encode( $argv, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/oscluster.log" );
+
+include ( "openstack/os_header.php" );
+
+function dashline() {
+    echo str_repeat( "-", 80 ) . "\n";
+}
+
+function jsondump( $title, $obj ) {
+    global $debug;
+    if ( isset( $debug ) && $debug ) {
+        echo "$title:\n";
+        dashline();
+        echo json_encode( $obj, JSON_PRETTY_PRINT ) . "\n";
+        dashline();
+    }
+}
+
+function echo_if_debug( $str ) {
+    global $debug;
+    if ( isset( $debug ) && $debug ) {
+        echo $str;
+    }
+}
+
+function sendudpmsg( $status ) {
+    global $debug;
+    if ( $debug ) {
+        echo "sendudpmsg: $status\n";
+        return;
+    }
+
+    if ( !isset( $GLOBALS['udp'] ) ) {
+        return;
+    }
+
+    $GLOBALS['udp']->msg[ '_airavata' ] = empty( $status ) ? "" : "OpenStack: $status<hr>";
+
+    $json_msg = json_encode( $GLOBALS[ 'udp' ]->msg );
+
+    socket_sendto( $GLOBALS[ 'udp' ]->socket,
+                   $json_msg,
+                   strlen( $json_msg ),
+                   0,
+                   $GLOBALS[ 'udp' ]->hostip,
+                   $GLOBALS[ 'udp' ]->port );
+}    
+
+if ($argc == 3) {
+    $appId = $argv[1];
+
+    # check for defined resource
+
+    $json_decoded = json_decode( $argv[2] );
+    if ( $json_decoded == null ) {
+        echo '{"error":"oscluster received malformed JSON input."}';
+        exit;
+    }
+
+    jsondump( '$json_decoded', $json_decoded );
+    if ( !isset( $json_decoded->numproc ) || empty( $json_decoded->numproc ) ) {
+        echo '{"error":"Number of processors not defined."}';
+        exit;
+    }
+
+    $GLOBALS['NP'] = $json_decoded->numproc;
+
+    if ( !isset( $json->resources->oscluster->properties->ppn ) ) {
+        echo '{"error":"PPNs not defined in appconfig for this flavor."}';
+        exit;
+    }
+    
+    $GLOBALS['NC'] = ceil( $json_decoded->numproc / $json->resources->oscluster->properties->ppn );
+
+    # setup up udp messaging if available
+
+    if ( isset( $GLOBALS['udp'] ) ) {
+        if ( isset( $json_decoded->_uuid ) ) {
+            $GLOBALS['udp']->socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+            $GLOBALS['udp']->msg    = Array( "_uuid"    => $json_decoded->_uuid );
+        } else {
+            unset( $GLOBALS['udp'] );
+        }
+    }
+
+    // startup cluster, run job, shutdown cluster
+    error_log( "globals:\n" . json_encode( $GLOBALS, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/oscluster.log" );
+
+    sendudpmsg( "create cluster" );
+    sleep(1);
+
+    sendudpmsg( "run job" );
+    sleep(2);
+
+    sendudpmsg( "return results" );
+    sleep(3);
+
+    echo  "{\"error\":\"os run not working yet\"}";
+} else {
+    echo  "{\"error\":\"insufficient arguments\"}";
+}
+    
+?>
