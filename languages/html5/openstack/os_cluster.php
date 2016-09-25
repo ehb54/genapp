@@ -19,39 +19,39 @@ require "os_header.php";
  
 // -------------------- set up OS image info --------------------
 
-if ( !isset( $json->resources->oscluster->properties->flavor ) ) {
-    echo "error: resources:oscluster:properties:flavor not defined in appconfig\n";
+if ( !isset( $appjson->resources->oscluster->properties->flavor ) ) {
+    echo '{"error":"resources:oscluster:properties:flavor not defined in appconfig"}';
     exit;
 }
 
-$flavor = $json->resources->oscluster->properties->flavor;
+$flavor = $appjson->resources->oscluster->properties->flavor;
 
-if ( !isset( $json->resources->oscluster->properties->baseimage ) ) {
-    echo "error: resources:oscluster:properties:baseimage not defined in appconfig\n";
+if ( !isset( $appjson->resources->oscluster->properties->baseimage ) ) {
+    echo '{"error":"resources:oscluster:properties:baseimage not defined in appconfig"}';
     exit;
 }
 
-$baseimage = $json->resources->oscluster->properties->baseimage;
+$baseimage = $appjson->resources->oscluster->properties->baseimage;
 
-if ( !isset( $json->resources->oscluster->properties->key ) ) {
-    echo "error: resources:oscluster:properties:key not defined in appconfig\n";
+if ( !isset( $appjson->resources->oscluster->properties->key ) ) {
+    echo '{"error":"resources:oscluster:properties:key not defined in appconfig"}';
     exit;
 }
 
-$key = $json->resources->oscluster->properties->key;
+$key = $appjson->resources->oscluster->properties->key;
 
-if ( !isset( $json->resources->oscluster->properties->secgroup ) ) {
-    echo "error: resources:oscluster:properties:secgroup not defined in appconfig\n";
+if ( !isset( $appjson->resources->oscluster->properties->secgroup ) ) {
+    echo '"error":"resources:oscluster:properties:secgroup not defined in appconfig"}';
     exit;
 }
 
-$secgroup = $json->resources->oscluster->properties->secgroup;
+$secgroup = $appjson->resources->oscluster->properties->secgroup;
 
 $userdata = "";
-if ( isset( $json->resources->oscluster->properties->user_data ) ) {
+if ( isset( $appjson->resources->oscluster->properties->user_data ) ) {
     echo "userdata is set\n";
     $tempfile = tempnam(sys_get_temp_dir(), "gat" );
-    file_put_contents( $tempfile, '#!/bin/bash' . "\n" . $json->resources->oscluster->properties->user_data . "\n" );
+    file_put_contents( $tempfile, '#!/bin/bash' . "\n" . $appjson->resources->oscluster->properties->user_data . "\n" );
     $userdata = "--user-data $tempfile";
     echo "userdata $userdata\n";
 }
@@ -67,7 +67,7 @@ $images = [];
 for ( $i = 0; $i < $argv[ 1 ]; ++$i ) {
     
     $name =  
-        $json->resources->oscluster->properties->project . "-run-" . $argv[ 2 ] . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
+        $appjson->resources->oscluster->properties->project . "-run-" . $argv[ 2 ] . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
 //        "-run-" . bin2hex( openssl_random_pseudo_bytes ( 16, $cstrong ) );
 
     $image[] = $name;
