@@ -387,7 +387,7 @@ if ( isset( $app_json->submitblock ) ) {
         $results[ "_message" ] = $blocked_msg;
     }        
 } else {
-    __~debug:submitblock{error_log( "submitblock not found\n" . json_decode( $app_json, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/mylog" );}
+    __~debug:submitblock{error_log( "submitblock not found\n" . json_encode( $app_json, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/mylog" );}
 }
              
 

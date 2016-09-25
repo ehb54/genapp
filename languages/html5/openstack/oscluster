@@ -3,7 +3,7 @@
 
 # $debug = true;
 
-error_log( "argv:\n" . json_encode( $argv, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/oscluster.log" );
+error_log( "argv:\n" . json_encode( $argv, JSON_PRETTY_PRINT ) . "\n", 3, "oscluster.log" );
 
 include ( "openstack/os_header.php" );
 
@@ -39,7 +39,32 @@ function sendudpmsg( $status ) {
         return;
     }
 
+    unset( $GLOBALS['udp']->msg[ '_textarea' ] );
     $GLOBALS['udp']->msg[ '_airavata' ] = empty( $status ) ? "" : "OpenStack: $status<hr>";
+
+    $json_msg = json_encode( $GLOBALS[ 'udp' ]->msg );
+
+    socket_sendto( $GLOBALS[ 'udp' ]->socket,
+                   $json_msg,
+                   strlen( $json_msg ),
+                   0,
+                   $GLOBALS[ 'udp' ]->hostip,
+                   $GLOBALS[ 'udp' ]->port );
+}    
+
+function sendudptext( $text ) {
+    global $debug;
+    if ( $debug ) {
+        echo "sendudp: $text\n";
+        return;
+    }
+
+    if ( !isset( $GLOBALS['udp'] ) ) {
+        return;
+    }
+
+    unset( $GLOBALS['udp']->msg[ '_airavata' ] );
+    $GLOBALS['udp']->msg[ '_textarea' ] = $text;
 
     $json_msg = json_encode( $GLOBALS[ 'udp' ]->msg );
 
@@ -70,12 +95,20 @@ if ($argc == 3) {
 
     $GLOBALS['NP'] = $json_decoded->numproc;
 
-    if ( !isset( $json->resources->oscluster->properties->ppn ) ) {
+    if ( !isset( $appjson->resources->oscluster->properties->ppn ) ) {
         echo '{"error":"PPNs not defined in appconfig for this flavor."}';
         exit;
     }
     
-    $GLOBALS['NC'] = ceil( $json_decoded->numproc / $json->resources->oscluster->properties->ppn );
+    if ( isset( $appjson->messaging ) &&
+         isset( $appjson->messaging->udphostip ) &&
+         isset( $appjson->messaging->udpport ) ) {
+        $GLOBALS['udp'] = new stdClass();
+        $GLOBALS['udp']->hostip = $appjson->messaging->udphostip;
+        $GLOBALS['udp']->port   = $appjson->messaging->udpport;
+    }
+
+    $GLOBALS['NC'] = ceil( $json_decoded->numproc / $appjson->resources->oscluster->properties->ppn );
 
     # setup up udp messaging if available
 
@@ -89,7 +122,12 @@ if ($argc == 3) {
     }
 
     // startup cluster, run job, shutdown cluster
-    error_log( "globals:\n" . json_encode( $GLOBALS, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/oscluster.log" );
+    // error_log( "globals:\n" . print_r( $GLOBALS, true ) . "\n", 3, "oscluster.log" );
+    // sendudptext( "globals:\n" . print_r( $GLOBALS, true ) . "\n" );
+
+    $json_decoded->_clusternodecount = $GLOBALS[ "NC" ];
+
+    sendudptext( "json:\n" . json_encode( $json_decoded, JSON_PRETTY_PRINT ) . "\n" );
 
     sendudpmsg( "create cluster" );
     sleep(1);

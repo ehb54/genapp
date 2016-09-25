@@ -17,7 +17,7 @@ require "os_header.php";
 
 // should also get ip's and issue syncs umount /opt before shutdown (?)
 
-$cmd = "nova list | grep ' " .  $json->resources->oscluster->properties->project . "-run-" . $argv[ 1 ] . "-... ' | awk '{ print $2 }'";
+$cmd = "nova list | grep ' " .  $appjson->resources->oscluster->properties->project . "-run-" . $argv[ 1 ] . "-... ' | awk '{ print $2 }'";
 
 echo $cmd . "\n";
 $results = `$cmd`;
