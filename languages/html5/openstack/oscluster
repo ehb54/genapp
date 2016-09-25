@@ -142,7 +142,9 @@ if ($argc == 3) {
 
     sendudptext( "json:\n" . json_encode( $json_decoded, JSON_PRETTY_PRINT ) . "\n" );
 
-    sendudpmsg( "create cluster" );
+# -------------------- create virtual cluster, get ip's --------------------
+
+    sendudpmsg( "Creating virtual cluster" );
 
     $result = os_cluster_start( $GLOBALS[ "NC" ], $uuid );
     $result_json = json_decode( $result );
@@ -160,15 +162,37 @@ if ($argc == 3) {
 
     sendudptext( "json with clusters:\n" . json_encode( $json_decoded, JSON_PRETTY_PRINT ) . "\n" );
 
-    sendudpmsg( "run job" );
-    sleep( 3 );
+# -------------------- run job on 1st node of virtual cluster --------------------
+    sendudpmsg( "Running job" );
 
-    sendudpmsg( "remove nodes" );
+    $json_decoded->_base_directory = str_replace( "__docroot:html5__/__application__", "__docrootactual:html5__", $json_decoded->_base_directory );
+    $json_decoded->_log_directory  = str_replace( "__docroot:html5__/__application__", "__docrootactual:html5__", $json_decoded->_log_directory );
+
+    $cmd = 
+        "ssh " 
+        . $result_json->clusterips[0] 
+        . " \"cd " 
+        . $json_decoded->_base_directory
+        . "; __executable_path:html5__/$appId '" 
+        . str_replace( '"', '\"', json_encode( $json_decoded ) ) 
+        . "'\""
+#        . ' 2> '
+#        . $json_decoded->_log_directory
+#        . "/_os_stderr_$uuid"
+        ;
+    
+    sendudptext( "$cmd\n" );
+
+    $results = `$cmd`;
+    
+    sendudptext( $results );
+
+# -------------------- remove virtual cluster --------------------
+    sendudpmsg( "Remove virtual cluster" );
 
     os_delete( $GLOBALS[ "NC" ], $uuid );
-    sleep(3);
 
-    echo  "{\"error\":\"os run not working yet\"}";
+    echo $results;
 } else {
     echo  "{\"error\":\"insufficient arguments\"}";
 }

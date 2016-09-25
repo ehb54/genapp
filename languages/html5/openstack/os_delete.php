@@ -15,7 +15,7 @@ require_once "os_header.php";
 function os_delete( $nodes, $uuid ) {
     global $appjson;
 
-    sendudpmsg( "Deleting nodes" );
+    sendudpmsg( "Deleting virtual cluster nodes" );
 
     if ( isset( $use_nova_to_get_ids ) ) {
         $cmd = "nova list | grep ' " .  $appjson->resources->oscluster->properties->project . "-run-" . $uuid . "-... ' | awk '{ print $2 }'";
@@ -43,7 +43,7 @@ function os_delete( $nodes, $uuid ) {
     sendudptext( $docmd );
 
     sendudptext( `$docmd` );
-    sendudpmsg( "Nodes deleted" );
+    sendudpmsg( "Virtual cluster nodes deleted" );
 }
     
 ?>
