@@ -2,10 +2,21 @@
 <?php
 
 # $debug = true;
+global $appjson;
 
-error_log( "argv:\n" . json_encode( $argv, JSON_PRETTY_PRINT ) . "\n", 3, "oscluster.log" );
+$appconfig = "__appconfig__";
+if ( NULL == ( $appjson = json_decode( file_get_contents( $appconfig ) ) ) ) {
+    echo '{"error":"appconfig could not be decoded"}';
+    exit;
+}
 
-include ( "openstack/os_header.php" );
+if ( isset( $appjson->messaging ) &&
+     isset( $appjson->messaging->udphostip ) &&
+     isset( $appjson->messaging->udpport ) ) {
+    $GLOBALS['udp'] = new stdClass();
+    $GLOBALS['udp']->hostip = $appjson->messaging->udphostip;
+    $GLOBALS['udp']->port   = $appjson->messaging->udpport;
+}
 
 function dashline() {
     echo str_repeat( "-", 80 ) . "\n";
@@ -76,6 +87,8 @@ function sendudptext( $text ) {
                    $GLOBALS[ 'udp' ]->port );
 }    
 
+require "openstack/os_cluster.php";
+
 if ($argc == 3) {
     $appId = $argv[1];
 
@@ -100,13 +113,12 @@ if ($argc == 3) {
         exit;
     }
     
-    if ( isset( $appjson->messaging ) &&
-         isset( $appjson->messaging->udphostip ) &&
-         isset( $appjson->messaging->udpport ) ) {
-        $GLOBALS['udp'] = new stdClass();
-        $GLOBALS['udp']->hostip = $appjson->messaging->udphostip;
-        $GLOBALS['udp']->port   = $appjson->messaging->udpport;
+    if ( !isset( $json_decoded->_uuid ) ) {
+        echo '{"error":"no _uuid defined in json input."}';
+        exit;
     }
+        
+    $uuid = $json_decoded->_uuid;
 
     $GLOBALS['NC'] = ceil( $json_decoded->numproc / $appjson->resources->oscluster->properties->ppn );
 
@@ -121,6 +133,7 @@ if ($argc == 3) {
         }
     }
 
+
     // startup cluster, run job, shutdown cluster
     // error_log( "globals:\n" . print_r( $GLOBALS, true ) . "\n", 3, "oscluster.log" );
     // sendudptext( "globals:\n" . print_r( $GLOBALS, true ) . "\n" );
@@ -130,12 +143,29 @@ if ($argc == 3) {
     sendudptext( "json:\n" . json_encode( $json_decoded, JSON_PRETTY_PRINT ) . "\n" );
 
     sendudpmsg( "create cluster" );
-    sleep(1);
+
+    $result = os_cluster_start( $GLOBALS[ "NC" ], $uuid );
+    $result_json = json_decode( $result );
+
+    sendudptext( $result );
+
+    if ( isset( $result_json->error ) ) {
+        echo $result;
+        exit;
+    }
+    sendudptext( json_encode( $result_json, JSON_PRETTY_PRINT ) );
+
+    $json_decoded->_clusterips = $result_json->clusterips;
+    $json_decoded->_clusteripsjoined = implode( ",", $result_json->clusterips );
+
+    sendudptext( "json with clusters:\n" . json_encode( $json_decoded, JSON_PRETTY_PRINT ) . "\n" );
 
     sendudpmsg( "run job" );
-    sleep(2);
+    sleep( 3 );
 
-    sendudpmsg( "return results" );
+    sendudpmsg( "remove nodes" );
+
+    os_delete( $GLOBALS[ "NC" ], $uuid );
     sleep(3);
 
     echo  "{\"error\":\"os run not working yet\"}";
