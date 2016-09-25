@@ -89,7 +89,7 @@ function os_cluster_start( $nodes, $uuid ) {
     $isactive = [];
     $ip = [];
 
-    sendudpmsg( "Booting $nodes nodes" );
+    sendudpmsg( "Booting $nodes virtual cluster node" . ( $nodes > 1 ? "s" : "" ) );
 
     do {
         $any_booting = false;
@@ -104,15 +104,15 @@ function os_cluster_start( $nodes, $uuid ) {
             $resultsarray = explode( "\n", $results );
             $status = array_values( preg_grep( "/ status  /", $resultsarray ) );
 
-            sendudptext( "status: " . json_encode( $status, JSON_PRETTY_PRINT ) . "\n" );
+            # sendudptext( "status: " . json_encode( $status, JSON_PRETTY_PRINT ) . "\n" );
             $network = array_values( preg_grep( "/ network  /", $resultsarray ) );
-            sendudptext( "network: " . json_encode( $network, JSON_PRETTY_PRINT ) . "\n" );
+            # sendudptext( "network: " . json_encode( $network, JSON_PRETTY_PRINT ) . "\n" );
 
             if ( $network ) {
                 $nets = preg_split( '/\s+/', $network[ 0 ] );
-                foreach ( $nets as $k2 => $v2 ) {
-                    sendudptext( "nets[$k2]=$v2\n" );
-                }
+                #foreach ( $nets as $k2 => $v2 ) {
+                #    sendudptext( "nets[$k2]=$v2\n" );
+                #}
                 $ip[ $v ] = $nets[ 4 ];
             }
 
@@ -157,13 +157,17 @@ function os_cluster_start( $nodes, $uuid ) {
             } else {
                 ob_end_clean();
                 $any_notopen = true;
-                sendudptext( "$v still booting\n" );
+                sendudptext( "$ip[$v] ssh not open\n" );
             }
         }
         sleep( 5 );
     } while( $any_notopen );
     
     sendudpmsg( "Nodes all active, all ssh open" );
+
+    # maybe test for nfs mount?
+
+    sleep( 60 );
 
     sendudptext( "all ssh active\n" );
     foreach ( $image as $v ) {
