@@ -59,6 +59,10 @@ if ( !is_executable( $cmd ) )
 
 require_once "../joblog.php";
 
+if ( isset( $_REQUEST[ "numproc" ] ) ) {
+   $GLOBALS[ 'numproc' ] = $_REQUEST[ "numproc" ];
+}
+
 $GLOBALS[ 'module'    ] = "__menu:modules:id__";
 $GLOBALS[ 'jobweight' ] = floatval( "__jobweight__" );
 $GLOBALS[ 'menu'      ] = "__menu:id__";
