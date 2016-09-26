@@ -185,7 +185,20 @@ if ($argc == 3) {
 
     $results = `$cmd`;
     
-    sendudptext( $results );
+#    sendudptext( "results - pre replace:\n" . $results );
+
+    if ( empty( $results ) &&
+         file_exists( $json_decoded->_log_directory . "/_os_stderr_$uuid" ) &&
+         filesize( $json_decoded->_log_directory . "/_os_stderr_$uuid" ) != 0 
+        ) {
+        $tmp_results = [];
+        $tmp_results[ "error" ] = file_get_contents( $json_decoded->_log_directory . "/_os_stderr_$uuid" );
+        $results = json_encode( $tmp_results );
+    }
+
+    $results = str_replace( "__docrootactual:html5__", "__docroot:html5__/__application__", $results );
+
+    sendudptext( "results - post replace:\n" . $results );
 
     $cmd = "";
     foreach ( $result_json->clusterips as $ip ) {
