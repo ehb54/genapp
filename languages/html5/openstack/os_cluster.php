@@ -150,10 +150,11 @@ function os_cluster_start( $nodes, $uuid ) {
 
 
             ob_start();
-            if ( fsockopen( $ip[$v], 22, $errno, $errstr, .5 ) ) {
+            if ( $fp = fsockopen( $ip[$v], 22, $errno, $errstr, .5 ) ) {
                 ob_end_clean();
                 $issshopen[ $v ] = 1;
                 sendudptext( "$ip[$v] is open\n" );
+                fclose( $fp );                
             } else {
                 ob_end_clean();
                 $any_notopen = true;
