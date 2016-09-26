@@ -163,13 +163,43 @@ function os_cluster_start( $nodes, $uuid ) {
         sleep( 5 );
     } while( $any_notopen );
     
-    sendudpmsg( "Nodes all active, all ssh open" );
+    sendudpmsg( "Nodes all active and ssh open, waiting to go ready" );
 
-    # maybe test for nfs mount?
+    # -------------------- check for /tmp/ready --------------------
 
-    sleep( 60 );
+    $ready = [];
 
-    sendudptext( "all ssh active\n" );
+    do {
+        $any_notready = false;
+        foreach ( $image as $v ) {
+            if ( array_key_exists( $v, $ready ) ) {
+                continue;
+            }
+            if ( !isset( $ip[$v] ) ) {
+                sendudptext( "error: $v has no ip address defined\n" );
+                exit(-1);
+            }
+            sendudptext("checking for ready $v $ip[$v]\n" );
+
+            ob_start();
+
+            $cmd = "ssh $ip[$v] 'ls /tmp/ready'";
+
+            $res = `$cmd 2>&1`;
+
+            if ( preg_match( '/^\/tmp\/ready$/m', $res ) ) {
+                $ready[ $v ] = 1;
+                sendudptext( "$ip[$v] is ready\n" );
+            } else {
+                $any_notready = true;
+                sendudptext( "$ip[$v] is not ready\n" );
+            }
+        }
+        sleep( 5 );
+    } while( $any_notready );
+    
+    sendudpmsg( "Nodes all active and ready" );
+
     foreach ( $image as $v ) {
         sendudptext( "$v $ip[$v]\n" );
     }

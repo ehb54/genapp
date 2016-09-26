@@ -176,9 +176,9 @@ if ($argc == 3) {
         . "; __executable_path:html5__/$appId '" 
         . str_replace( '"', '\"', json_encode( $json_decoded ) ) 
         . "'\""
-#        . ' 2> '
-#        . $json_decoded->_log_directory
-#        . "/_os_stderr_$uuid"
+        . ' 2> '
+        . $json_decoded->_log_directory
+        . "/_os_stderr_$uuid"
         ;
     
     sendudptext( "$cmd\n" );
@@ -187,10 +187,21 @@ if ($argc == 3) {
     
     sendudptext( $results );
 
+    $cmd = "";
+    foreach ( $result_json->clusterips as $ip ) {
+        $cmd .= "ssh root@$ip 'sync; sudo umount /opt' &\n";
+    }
+    $cmd .= "wait\n";
+    sendudptext( $cmd );
+    $syncres = `$cmd 2>&1`;
+    sendudptext( $syncres );
+
 # -------------------- remove virtual cluster --------------------
     sendudpmsg( "Remove virtual cluster" );
 
     os_delete( $GLOBALS[ "NC" ], $uuid );
+
+    sendudpmsg( "" );
 
     echo $results;
 } else {
