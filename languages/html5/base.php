@@ -829,7 +829,7 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
       if( $cmdprefix == "airavatarun" ||
           $cmdprefix == "oscluster" ) { 
          $cmd = "$adir/$cmdprefix";
-         $cmd .= " __menu:modules:id__";
+         $cmd .= $cmdprefix == "oscluster" ? " __executable__" : " __menu:modules:id__";
          $cmd .= " '$json'"; 
       } else {
           $register = "perl $adir/util/ga_regpid_udp.pl __application__ " . 
