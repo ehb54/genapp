@@ -50,6 +50,9 @@ function logjobstart( $error_json_exit = false, $cache = "" )
    $insert[ 'command'      ] = $GLOBALS[ 'command'   ];
    $insert[ 'resource'     ] = $GLOBALS[ 'resource'  ];
    $insert[ 'jobweight'    ] = $GLOBALS[ 'jobweight' ];
+   if ( isset( $GLOBALS[ "numproc" ] ) ) {
+       $insert[ 'numprocs'    ] = $GLOBALS[ 'numproc' ];
+   }
    $insert[ 'when'         ] = Array( $now );
    $insert[ 'start'        ] = $now;
    $insert[ 'status'       ] = Array( "started" );

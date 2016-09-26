@@ -60,7 +60,7 @@ echo `nova list`;
 
 $cstrong = true;
 
-$images = [];
+$image = [];
 
 // -------------------- boot instances --------------------
 
@@ -70,10 +70,29 @@ for ( $i = 0; $i < $argv[ 1 ]; ++$i ) {
         $json->resources->oscluster->properties->project . "-run-" . $argv[ 2 ] . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
 //        "-run-" . bin2hex( openssl_random_pseudo_bytes ( 16, $cstrong ) );
 
-    $image[] = $name;
     $cmd = "nova boot $name --flavor $flavor --image $baseimage --key-name $key --security-groups $secgroup --nic net-name=${project}-api $userdata";
     print "$cmd\n";
-    print `$cmd`;
+    $results = `$cmd 2>&1`;
+    print $results;
+    $results_array = preg_split( '/\n/m', $results );
+    echo "results_array:\n" . print_r( $results_array, true ) . "\n";
+    $results_error = preg_grep( '/ERROR/', $results_array );
+    echo "results_error:\n" . print_r( $results_error, true ) . "\n";
+    if ( count( $results_error ) ) {
+        $cmd = "";
+        if ( count( $image ) ) {
+            foreach ( $image as $v ) {
+                $cmd .= "nova delete $v &\n";
+            }
+            $cmd .= "wait\n";
+
+            echo $cmd;
+            echo `$cmd`;
+        }
+        echo '{"error":"OpenStack:' . implode( "<p>OpenStack:", $results_error ) . '"}';
+        exit;
+    }        
+    $image[] = $name;
 }
 
 if ( isset( $tempfile ) ) {

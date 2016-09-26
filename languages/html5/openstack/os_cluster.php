@@ -64,9 +64,11 @@ function os_cluster_start( $nodes, $uuid ) {
 
     $cstrong = true;
 
-    $images = [];
+    $image = [];
 
     # -------------------- boot instances --------------------
+
+    sendudpmsg( "Booting $nodes virtual cluster node" . ( $nodes > 1 ? "s" : "" ) );
 
     for ( $i = 0; $i < $nodes; ++$i ) {
             
@@ -74,10 +76,32 @@ function os_cluster_start( $nodes, $uuid ) {
             $appjson->resources->oscluster->properties->project . "-run-" . $uuid . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
         //        "-run-" . bin2hex( openssl_random_pseudo_bytes ( 16, $cstrong ) );
 
-        $image[] = $name;
         $cmd = "nova boot $name --flavor $flavor --image $baseimage --key-name $key --security-groups $secgroup --nic net-name=${project}-api $userdata";
         sendudptext( "$cmd\n" );
-        sendudptext( `$cmd` );
+        $results = `$cmd 2>&1`;
+        sendudptext( $results . "\n" );
+        $results_array = preg_split( '/\n/m', $results );
+        $results_error = preg_grep( '/ERROR/', $results_array );
+
+        if ( count( $results_error ) ) {
+            sendudpmsg( "Errors found when trying to boot a virtual cluster node" );
+            $cmd = "";
+            if ( count( $image ) ) {
+                foreach ( $image as $v ) {
+                    $cmd .= "nova delete $v &\n";
+                }
+                $cmd .= "wait\n";
+
+                sendudptext( $cmd );
+                sendudpmsg( "Removing successfully booted virtual cluster nodes" );
+                sendudptext( `$cmd 2>&1` );
+            }
+            sendudpmsg( "Errors found when trying to boot a virtual cluster node" );
+            echo '{"error":"OpenStack:' . implode( "<p>OpenStack:", $results_error ) . '"}';
+            exit;
+        }        
+
+        $image[] = $name;
     }
 
     if ( isset( $tempfile ) ) {
@@ -89,7 +113,7 @@ function os_cluster_start( $nodes, $uuid ) {
     $isactive = [];
     $ip = [];
 
-    sendudpmsg( "Booting $nodes virtual cluster node" . ( $nodes > 1 ? "s" : "" ) );
+    sendudpmsg( "Checking $nodes virtual cluster node" . ( $nodes > 1 ? "s" : "" ) );
 
     do {
         $any_booting = false;
@@ -148,9 +172,8 @@ function os_cluster_start( $nodes, $uuid ) {
             }
             sendudptext("checking for ssh $v $ip[$v]\n" );
 
-
             ob_start();
-            if ( $fp = fsockopen( $ip[$v], 22, $errno, $errstr, .5 ) ) {
+            if ( $fp = fsockopen( $ip[$v], 22, $errno, $errstr, 10 ) ) {
                 ob_end_clean();
                 $issshopen[ $v ] = 1;
                 sendudptext( "$ip[$v] is open\n" );
