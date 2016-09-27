@@ -130,16 +130,29 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 		    $(htag + "_savetofile").removeClass( "hidden" );
 		}
 		    
-		if ( $( htag  + "_changescale" ).length )
+		if ( $( htag  + "_changescalex" ).length )
 		{
-		    $(htag + "_changescale").removeClass( "hidden" );
-		    if (v.options.yscale == "log")
+		    $(htag + "_changescalex").removeClass( "hidden" );
+		    if (v.options.xscale == "log")
 		    {
-			$(htag + "_changescale_message").html("Y-log");
+			$(htag + "_changescalex_message").html("X-log");
 		    }
 		    else
 		    {
-			$(htag + "_changescale_message").html("Y-lin");
+			$(htag + "_changescalex_message").html("X-lin");
+		    }
+		}
+
+		if ( $( htag  + "_changescaley" ).length )
+		{
+		    $(htag + "_changescaley").removeClass( "hidden" );
+		    if (v.options.yscale == "log")
+		    {
+			$(htag + "_changescaley_message").html("Y-log");
+		    }
+		    else
+		    {
+			$(htag + "_changescaley_message").html("Y-lin");
 		    }
 		}
 
