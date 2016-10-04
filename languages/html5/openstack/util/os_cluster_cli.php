@@ -119,15 +119,56 @@ do {
         $status = array_values( preg_grep( "/ status  /", $resultsarray ) );
 
         echo "status: " . json_encode( $status, JSON_PRETTY_PRINT ) . "\n";
+        if ( count( $status ) != 1 ) {
+            $cmd = "";
+            if ( count( $image ) ) {
+                foreach ( $image as $v2 ) {
+                    $cmd .= "nova delete $v2 &\n";
+                }
+                $cmd .= "wait\n";
+
+                echo $cmd;
+                echo `$cmd`;
+            }
+            echo '{"error":"OpenStack: exactly one status not returned for image ' . $v . '"}';
+            exit;
+        }
+        $this_status_array = preg_split( '/\s+/', $status[ 0 ] );
+        foreach ( $this_status_array as $k2 => $v2 ) {
+            print "this_status_array[$k2]=$v2\n";
+            $this_status = $this_status_array[ 3 ];
+            $status_ok = 0;
+            switch( $this_status ) {
+                case "ACTIVE" : $status_ok = 1; break;
+                case "BUILD" : $status_ok = 1; break;
+                default : break;
+            }
+            if ( !$status_ok ) {
+                $cmd = "";
+                if ( count( $image ) ) {
+                    foreach ( $image as $v2 ) {
+                        $cmd .= "nova delete $v2 &\n";
+                    }
+                    $cmd .= "wait\n";
+
+                    echo $cmd;
+                    echo `$cmd`;
+                }
+                echo '{"error":"OpenStack: unknown status ' . $this_status . ' received for image ' . $v . '"}';
+                exit;
+            }
+        }
+
         $network = array_values( preg_grep( "/ network  /", $resultsarray ) );
         echo "network: " . json_encode( $network, JSON_PRETTY_PRINT ) . "\n";
 
         if ( $network ) {
             $nets = preg_split( '/\s+/', $network[ 0 ] );
+            array_pop( $nets );
             foreach ( $nets as $k2 => $v2 ) {
                 print "nets[$k2]=$v2\n";
             }
-            $ip[ $v ] = $nets[ 4 ];
+            $ip[ $v ] = array_pop( $nets );
         }
 
         if ( $status &&
