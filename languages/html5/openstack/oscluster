@@ -170,7 +170,15 @@ if ($argc == 3) {
     $json_decoded->_clusterips = $result_json->clusterips;
     $json_decoded->_clusteripsjoined = implode( ",", $result_json->clusterips );
 
+    $json_decoded->_clusterhostfile = "hostfile-$uuid.txt";
+    $tmp_slots = " slots=" . $appjson->resources->oscluster->properties->ppn;
+    $hostfiletext = implode( "$tmp_slots\n", $result_json->clusterips ) . "$tmp_slots\n";
+    ob_start();
+    file_put_contents( $json_decoded->_clusterhostfile, $hostfiletext );
+    ob_end_clean();
+
     sendudptext( "json with clusters:\n" . json_encode( $json_decoded, JSON_PRETTY_PRINT ) . "\n" );
+    sendudptext( "hostfiletext:\n$hostfiletext\n" );
 
 # -------------------- run job on 1st node of virtual cluster --------------------
     sendudpmsg( "Running job" );
