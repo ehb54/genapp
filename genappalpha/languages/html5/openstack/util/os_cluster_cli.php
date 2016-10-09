@@ -219,6 +219,18 @@ do {
 } while( $any_notopen );
             
 echo "all ssh active\n";
+
+# -------------------- run postssh if present --------------------
+
+if ( isset( $json->resources->oscluster->properties->postssh ) ) {
+    foreach ( $image as $v ) {
+        $cmd = "ssh root@$ip[$v] -C '" . $json->resources->oscluster->properties->postssh . "'";
+        echo "running: $cmd\n";
+        echo `$cmd`;
+    }
+}
+
+
 foreach ( $image as $v ) {
     echo "$v $ip[$v]\n";
 }
