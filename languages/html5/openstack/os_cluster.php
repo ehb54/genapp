@@ -235,6 +235,16 @@ function os_cluster_start( $nodes, $uuid ) {
     
     sendudpmsg( "Nodes all active and ssh open, waiting to go ready" );
 
+    # -------------------- run postssh if present --------------------
+
+    if ( isset( $appjson->resources->oscluster->properties->postssh ) ) {
+        foreach ( $image as $v ) {
+            $cmd = "ssh root@$ip[$v] -C '" . $appjson->resources->oscluster->properties->postssh . "'";
+            `$cmd 2>&1 > /dev/null`;
+        }
+    }
+
+
     # -------------------- check for /tmp/ready --------------------
 
     $ready = [];
