@@ -151,7 +151,7 @@ function notify( $type ) {
                         if ( $type == "finished" ) {
                             $body .= 
                                 "Access your results:\n"
-                                . "http://" . $app->hostname . "/demo/?_reqlogin=1&_switch=" . $GLOBALS[ 'getmenumodule' ] . "/" . $GLOBALS[ 'getmenumoduleproject' ] . "/" . $_REQUEST[ '_uuid' ]
+                                . "http://" . $app->hostname . "/__application__/?_reqlogin=1&_switch=" . $GLOBALS[ 'getmenumodule' ] . "/" . $GLOBALS[ 'getmenumoduleproject' ] . "/" . $_REQUEST[ '_uuid' ]
                                 ;
                         }
                         mymail( $doc[ 'email' ], "[__application__][" . $GLOBALS[ 'menu' ] . ":" . $GLOBALS[ 'module' ] . "][$type]", $body );
