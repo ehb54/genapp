@@ -1,7 +1,11 @@
 #!/usr/local/bin/php
 <?php
 
-$_REQUEST = json_decode( $argv[ 1 ], true );
+if ( $argv[ 1 ][ 0 ] == '@' ) {
+    $_REQUEST = json_decode( file_get_contents( substr( $argv[ 1 ], 1 ) ), true );
+} else {
+    $_REQUEST = json_decode( $argv[ 1 ], true );
+}
 
 __~debug:filemanager{error_log( print_r( $_REQUEST, true ) , 3, "/tmp/mylog" );}
 
