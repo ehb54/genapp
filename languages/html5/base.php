@@ -323,8 +323,7 @@ if ( !isset( $_SESSION[ $window ][ 'resources' ]->$_SESSION[ $window ][ 'resourc
    if(isset($cmdprefix->run)){
       $cmdprefix = $cmdprefix->run;
    }
-   if ( strlen( $cmdprefix ) > 1 )
-   {  
+   if ( strlen( $cmdprefix ) > 1 ) {
       $fileargs = 1;
    }
 }
@@ -808,6 +807,10 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
       exit();
     }
     ob_end_clean();
+    if ( strlen( $json ) > 129000 ) {
+        $fileargs = 1;
+        $bigargs = 1;
+    }
     if ( isset( $fileargs ) )
     {
       ob_start();
@@ -836,14 +839,26 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
          $cmd .= $cmdprefix == "oscluster" ? " __executable__" : " __menu:modules:id__";
          $cmd .= " '$json'"; 
       } else {
-          $register = "perl $adir/util/ga_regpid_udp.pl __application__ " . 
-              $GLOBALS['resource'] . " " . 
-              $_REQUEST[ '_udphost' ] . " " .
-              $_REQUEST[ '_udpport' ] . " " .
-              $_REQUEST[ '_uuid' ] . " " .
-              '$$';
+          if ( strlen( $cmdprefix ) ) {
+              $register = "perl $adir/util/ga_regpid_udp.pl __application__ " . 
+                  $GLOBALS['resource'] . " " . 
+                  $_REQUEST[ '_udphost' ] . " " .
+                  $_REQUEST[ '_udpport' ] . " " .
+                  $_REQUEST[ '_uuid' ] . " " .
+                  '$$';
 
-          $cmd = "$cmdprefix '$register;cd $dir;$cmd \"\$(< $logdir/_args_" . $_REQUEST[ '_uuid' ] . ")\"'";
+              if ( isset( $bigargs ) ) {
+                  $cmd = "$cmdprefix '$register;cd $dir;$cmd @$logdir/_args_" . $_REQUEST[ '_uuid' ] . "'";
+              } else {
+                  $cmd = "$cmdprefix '$register;cd $dir;$cmd \"\$(< $logdir/_args_" . $_REQUEST[ '_uuid' ] . ")\"'";
+              }                  
+          } else {
+              if ( isset( $bigargs ) ) {
+                  $cmd = "$cmd @$logdir/_args_" . $_REQUEST[ '_uuid' ];
+              } else {
+                  $cmd = "$cmd \"\$(< $logdir/_args_" . $_REQUEST[ '_uuid' ] . ")\"";
+              }
+          }              
       }
     } else {
       $cmd .= " '$json'";
