@@ -5,7 +5,6 @@ my $gb   = $ENV{ "GENAPP" } || die "$0: environment variable GENAPP must be set\
 print "perl version is $]\n" if $debug;
 print "command is: $0 @ARGV\n" if $debug;
 
-
 if ( $] < 5.018 ) {
     if ( -e "$gb/perl/bin/perl" ) {
         $pv =`$gb/perl/bin/perl -e 'print \$];'`;
@@ -152,11 +151,11 @@ my $os = $$cfgjson{ 'os' } || die "$0: $cfgjsonf does not contain an 'os' tag. $
 my $os_release = $$cfgjson{ 'os_release' } || die "$0: $cfgjsonf does not contain an 'os_release' tag. $cfgjsonnotes";
 
 if ( $os eq 'ubuntu' ) {
-    die "only ubuntu 14.04 an 16.04 currently supported and this appears to be version $os_release\n" if $os_release != 14.04 && $os_release != 16.04;
+    die "only ubuntu 14.04 an 16.04 currently supported and this appears to be version $os_release\n$sorry" if $os_release != 14.04 && $os_release != 16.04;
 }
 
 if ( $os eq 'centos' ) {
-    die "only Centos 6.7 and 7.2 currently supported and this appears to be version $os_release\n$sorry" if $os_release != 6.7 && $os_release !~ /^7\.2/;
+    die "only Centos 6.7, 6.8 and 7.2 currently supported and this appears to be version $os_release\n$sorry" if $os_release !~ /^6\.(7|8)$/ && $os_release !~ /^7\.2/;
 }
 
 if ( $os eq 'redhat' ) {
@@ -174,6 +173,8 @@ my $CPUS=`grep processor /proc/cpuinfo | wc -l`;
 grep chomp $CPUS;
 $CPUS = 1 if !$CPUS;
 $CPUS *= 2;
+
+# ------ ubuntu 14.04 ------
 
 if ( $os eq 'ubuntu' && $os_release == 14.04 ) {
     # install required modules
@@ -304,8 +305,8 @@ update-rc.d rc.genapp defaults" );
     exit();
 }
 
-# ------ centos 6.7 -------
-if ( $os eq 'centos' && $os_version == 6.7 ) {
+# ------ centos 6.7 & 6.8 -------
+if ( $os eq 'centos' && ( $os_version == 6.7 || $os_version == 6.8 ) ) {
     # install required modules
 
 #    runcmdsb( "rpm -Uvh http://mirror.webtatic.com/yum/el6/latest.rpm" );
@@ -328,15 +329,15 @@ cat <<_EOF > $rhsclphpetc/php.d/uuid.ini
 extension=uuid.so
 _EOF
 cat <<_EOF > $rhsclphpetc/php.d/zmq.ini
-; Enable uuid extension module
+; Enable zmq extension module
 extension=zmq.so
 _EOF
 cat <<_EOF > $rhsclphpetc/php.d/imagick.ini
-; Enable uuid extension module
+; Enable imagick extension module
 extension=imagick.so
 _EOF
 #cat <<_EOF > $rhsclphpetc/php.d/mongo.ini
-#; Enable uuid extension module
+#; Enable mongo extension module
 #extension=mongo.so
 #_EOF
 " );
@@ -461,15 +462,15 @@ cat <<_EOF > $rhsclphpetc/php.d/uuid.ini
 extension=uuid.so
 _EOF
 cat <<_EOF > $rhsclphpetc/php.d/zmq.ini
-; Enable uuid extension module
+; Enable zmq extension module
 extension=zmq.so
 _EOF
 cat <<_EOF > $rhsclphpetc/php.d/imagick.ini
-; Enable uuid extension module
+; Enable imagick extension module
 extension=imagick.so
 _EOF
 #cat <<_EOF > $rhsclphpetc/php.d/mongo.ini
-#; Enable uuid extension module
+#; Enable mongo extension module
 #extension=mongo.so
 #_EOF
 " );
@@ -644,15 +645,15 @@ cat <<_EOF > $rhsclphpetc/php.d/uuid.ini
 extension=uuid.so
 _EOF
 cat <<_EOF > $rhsclphpetc/php.d/zmq.ini
-; Enable uuid extension module
+; Enable zmq extension module
 extension=zmq.so
 _EOF
 cat <<_EOF > $rhsclphpetc/php.d/imagick.ini
-; Enable uuid extension module
+; Enable imagick extension module
 extension=imagick.so
 _EOF
 #cat <<_EOF > $rhsclphpetc/php.d/mongo.ini
-#; Enable uuid extension module
+#; Enable mongo extension module
 #extension=mongo.so
 #_EOF
 " );
@@ -753,6 +754,7 @@ service iptables save" );
     exit();
 }
 
+# ------ ubuntu 16.04 ------
 if ( $os eq 'ubuntu' && $os_release == 16.04 ) {
     # install required modules
 
@@ -761,7 +763,7 @@ if ( $os eq 'ubuntu' && $os_release == 16.04 ) {
 
 # php-pear php-imagick php-mail php-mail-mime php-mongodb mongodb" );
 
-    runcmdsb( "pear install Mail Mail_Mime" );
+    runcmdsb( "pear install --alldeps Mail Mail_Mime Net_SMTP" );
     runcmdsb( "yes '' | pecl install uuid zmq-beta mongo imagick" );
 
     # zmq to php
@@ -875,5 +877,3 @@ update-rc.d rc.genapp defaults" );
 die "------------------------------------------------------------
 Operating system identified as $os / release $os_release
 $sorry";
-
-
