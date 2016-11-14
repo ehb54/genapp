@@ -152,7 +152,7 @@ my $os = $$cfgjson{ 'os' } || die "$0: $cfgjsonf does not contain an 'os' tag. $
 my $os_release = $$cfgjson{ 'os_release' } || die "$0: $cfgjsonf does not contain an 'os_release' tag. $cfgjsonnotes";
 
 if ( $os eq 'ubuntu' ) {
-    die "only ubuntu 14.04 currently supported and this appears to be version $os_release\n$sorry" if $os_release != 14.04;
+    die "only ubuntu 14.04 an 16.04 currently supported and this appears to be version $os_release\n" if $os_release != 14.04 && $os_release != 16.04;
 }
 
 if ( $os eq 'centos' ) {
@@ -175,7 +175,7 @@ grep chomp $CPUS;
 $CPUS = 1 if !$CPUS;
 $CPUS *= 2;
 
-if ( $os eq 'ubuntu' ) {
+if ( $os eq 'ubuntu' && $os_release == 14.04 ) {
     # install required modules
 
     runcmd( "sudo apt-get -y install mlocate build-essential apache2 libzmq-dev libapache2-mod-php5 php-pear php5-imagick php-mail php-mail-mime php5-mongo php5-dev mongodb pkg-config re2c uuid-dev abiword wget" );
@@ -750,6 +750,125 @@ service iptables save" );
     }
 
 #    runcmdsb( "service httpd restart && chkconfig httpd on" );
+    exit();
+}
+
+if ( $os eq 'ubuntu' && $os_release == 16.04 ) {
+    # install required modules
+
+    runcmd( "sudo add-apt-repository -y ppa:ondrej/php && sudo apt-get -y update" );
+    runcmd( "sudo apt-get -y install mlocate build-essential apache2 php5.6-dev libapache2-mod-php5.6 php5.6-xml pkg-config re2c libzmq-dev uuid-dev abiword wget mongodb libmagickwand-6.q16-dev" );
+
+# php-pear php-imagick php-mail php-mail-mime php-mongodb mongodb" );
+
+    runcmdsb( "pear install Mail Mail_Mime" );
+    runcmdsb( "yes '' | pecl install uuid zmq-beta mongo imagick" );
+
+    # zmq to php
+
+    runcmdsb( "cat <<_EOF > /etc/php/5.6/mods-available/zmq.ini
+; configuration for php zmq module
+; priority=20
+extension=zmq.so
+_EOF
+cat <<_EOF > /etc/php/5.6/mods-available/imagick.ini
+; Enable imagick extension module
+extension=imagick.so
+_EOF
+cat <<_EOF > /etc/php/5.6/mods-available/mongo.ini
+; Enable mongo extension module
+extension=mongo.so
+_EOF
+phpenmod zmq mongo imagick" );
+
+    runcmdsb( "sed \"s/^disable_functions = pcntl/\;disable_functions = pcntl/\" /etc/php/5.6/apache2/php.ini > /tmp/_php.ini
+cp /etc/php/5.6/apache2/php.ini{,.org}
+mv /tmp/_php.ini /etc/php/5.6/apache2/php.ini
+#phpenmod pcntl" );
+
+    # add proxy support for ws, wss
+    runcmdsb( "cat <<_EOF > /etc/apache2/mods-available/wsproxy.conf
+# ws proxy pass
+# priority=20
+ProxyPass /ws2 ws://localhost:37777/
+_EOF
+cat <<_EOF > /etc/apache2/mods-available/wsproxy.load
+_EOF
+cat <<_EOF > /etc/apache2/mods-available/wssproxy.conf
+# wss proxy pass
+# priority=20
+ProxyPass /wss2 ws://localhost:37777/
+_EOF
+cat <<_EOF > /etc/apache2/mods-available/wssproxy.load
+_EOF
+");
+    runcmd( "sudo a2enmod proxy proxy_wstunnel wsproxy" );
+
+    # genapp html5 likes php at /usr/local/bin/php so make sure it exists
+
+    if ( -e "/usr/bin/php" && !-e "/usr/local/bin/php" ) {
+        runcmd( "sudo bash -c 'ln -s /usr/bin/php /usr/local/bin/php'" );
+    }
+
+    # make the base of the genapp instances directory, create group genapp, add user & www-data to genapp group
+
+    runcmdsb( "mkdir -p $appbase
+groupadd genapp
+useradd genapp -r -s /usr/sbin/nologin -d $appbase -g genapp
+chmod g+rwx $appbase
+chown $whoami:genapp $appbase
+chmod g+s $appbase
+mkdir $$cfgjson{'lockdir'}
+chown genapp:genapp $$cfgjson{'lockdir'}
+chmod g+rwx $$cfgjson{'lockdir'}
+usermod -g users -G genapp $whoami
+usermod -G genapp \'www-data\'" );
+
+    # setup local system definitions
+
+    runcmdsb( "cat <<_EOF > /etc/profile.d/genapp.sh
+export GENAPP=$gb
+export PATH=\\\\\\\$GENAPP/bin:\\\\\\\$PATH
+_EOF
+" );
+
+    # php info for debugging
+    
+    runcmdsb( "cat <<_EOF > $$cfgjson{'webroot'}/php_info.php
+<?php
+phpinfo();
+?>
+_EOF
+" );
+
+    # setup genapptest instance
+
+    runcmd( "cd $appbase && $gb/sbin/getapp.pl -force -gen -admin $whoami svn genapptest" );
+
+    # apache2 security needed ?
+
+    runcmdsb( "cat <<_EOF >> /etc/apache2/conf-enabled/security.conf
+# add Alias /genapptest $$cfgjson{'webroot'}/genapptest
+<Directory $$cfgjson{'webroot'}/genapptest>
+ Options Indexes FollowSymLinks
+ AllowOverride None
+ Order Allow,Deny
+ Allow from all
+</Directory>
+_EOF
+" );
+
+    # add ws servers to startup
+
+    runcmdsb( "cp $appbase/genapptest/output/html5/util/rc.genapp /etc/init.d
+update-rc.d rc.genapp defaults" );
+
+    # start ws servers
+    runcmd( "sg genapp -c '/etc/init.d/rc.genapp start'" );
+
+# restart apache2
+
+    runcmd( "sudo service apache2 restart" );
     exit();
 }
 
