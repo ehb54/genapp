@@ -195,7 +195,11 @@ __~debug:ws{        echo "mongo save() $postmsg\n";}
                 }
             }
             $texttot = $textprepend . $textcurrent;
-            if ( strlen( $texttot ) ) {
+            $textlen = strlen( $texttot );
+            if ( $textlen ) {
+                if ( $textlen > 12000000 ) {
+                    $texttot = "The messages are truncated at the top due to large size\n" . substr( $texttot, -11999944 );
+                }
                 $toPostData = $postData;
                 $toPostData[ '_textarea' ] = $texttot;
                 $postmsg = json_encode( $toPostData );
