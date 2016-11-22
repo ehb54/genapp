@@ -2,6 +2,14 @@
 <?php
 
 // todo: monitor connections and on close, remove any associated topic keys
+$GLOBALS[ "MAXTEXTAREANOTICE" ] = "The messages are truncated at the top due to large size\n";
+$GLOBALS[ "MAXTEXTAREALEN" ] = 512000;
+$GLOBALS[ "MAXTEXTAREALEN" ] = __~textarea:maxlen{1}0 ? __textarea:maxlen__ : $GLOBALS[ "MAXTEXTAREALEN" ];
+if ( $GLOBALS[ "MAXTEXTAREALEN" ] > 10000000 ) {
+   $GLOBALS[ "MAXTEXTAREALEN" ] = 10000000;
+}
+$GLOBALS[ "MAXTEXTAREATRUNC" ] = -$GLOBALS[ "MAXTEXTAREALEN" ];
+$GLOBALS[ "MAXTEXTAREALEN" ] += strlen( $GLOBALS[ "MAXTEXTAREANOTICE" ] );
 
 $json = json_decode( file_get_contents( "__appconfig__" ) );
 
@@ -197,8 +205,8 @@ __~debug:ws{        echo "mongo save() $postmsg\n";}
             $texttot = $textprepend . $textcurrent;
             $textlen = strlen( $texttot );
             if ( $textlen ) {
-                if ( $textlen > 12000000 ) {
-                    $texttot = "The messages are truncated at the top due to large size\n" . substr( $texttot, -11999944 );
+                if ( $textlen > $GLOBALS[ "MAXTEXTAREALEN" ] ) {
+                    $texttot = $GLOBALS[ "MAXTEXTAREANOTICE" ] . substr( $texttot, $GLOBALS[ "MAXTEXTAREATRUNC" ] );
                 }
                 $toPostData = $postData;
                 $toPostData[ '_textarea' ] = $texttot;
