@@ -185,6 +185,7 @@ if ($argc == 3) {
 
     $json_decoded->_base_directory = str_replace( "__docroot:html5__/__application__", "__docrootactual:html5__", $json_decoded->_base_directory );
     $json_decoded->_log_directory  = str_replace( "__docroot:html5__/__application__", "__docrootactual:html5__", $json_decoded->_log_directory );
+    $json_decoded->_osroot         = "__docrootactual:html5__";
 
     $cmd = 
         "ssh " 
