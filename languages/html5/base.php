@@ -214,6 +214,7 @@ $_REQUEST[ '_udphost' ] =  $_SESSION[ $window ][ 'udphost' ];
 $_REQUEST[ '_udpport' ] =  $_SESSION[ $window ][ 'udpport' ];
 $_REQUEST[ 'resourcedefault' ] = $_SESSION[ $window ][ 'resourcedefault' ];
 $_REQUEST[ '_webroot' ] = "__docroot:html5__";
+$_REQUEST[ '_application' ] = "__application__";
 
 __~resource{$useresource = "__resource__";}
 __~submitpolicy{$submitpolicy = "__submitpolicy__";}
