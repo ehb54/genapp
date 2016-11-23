@@ -4,7 +4,7 @@
 // todo: monitor connections and on close, remove any associated topic keys
 $GLOBALS[ "MAXTEXTAREANOTICE" ] = "The messages are truncated at the top due to large size\n";
 $GLOBALS[ "MAXTEXTAREALEN" ] = 512000;
-$GLOBALS[ "MAXTEXTAREALEN" ] = __~textarea:maxlen{1}0 ? __textarea:maxlen__ : $GLOBALS[ "MAXTEXTAREALEN" ];
+$GLOBALS[ "MAXTEXTAREALEN" ] = __~textarea:maxlen{1}0 ? intval( "__textarea:maxlen__" ) : $GLOBALS[ "MAXTEXTAREALEN" ];
 if ( $GLOBALS[ "MAXTEXTAREALEN" ] > 10000000 ) {
    $GLOBALS[ "MAXTEXTAREALEN" ] = 10000000;
 }
