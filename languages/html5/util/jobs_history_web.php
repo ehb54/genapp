@@ -118,6 +118,12 @@ foreach ($cursor_jobs as $obj_jobs) {
   $user_start = $this_when_start->sec + ($this_when_start->usec)*pow(10.0, -6.0 );
   $user_current = $this_when_current->sec + ($this_when_current->usec)*pow(10.0, -6.0 );	
 
+  if ( array_key_exists( 'status', $obj_jobs ) ) {
+      $this_status = end( $obj_jobs[ 'status' ] );
+  } else {
+      $this_status = 'unknown';
+  }
+
   if ( $this_status == 'running' ) {
       $user_current = time();
   }
@@ -125,12 +131,6 @@ foreach ($cursor_jobs as $obj_jobs) {
   if (date(DATE_ISO8601, $user_start) >= $start_date->format(DATE_ISO8601) && date(DATE_ISO8601, $user_current) <= $end_date->format(DATE_ISO8601)){
         
       // Status
-      
-      if ( array_key_exists( 'status', $obj_jobs ) ) {
-          $this_status = end( $obj_jobs[ 'status' ] );
-      } else {
-          $this_status = 'unknown';
-      }
       
       if ( ($this_status == 'started' || $this_status == 'running') && !$db->running->find(array("_id" => $obj_jobs['_id']))  ){
           $this_status = 'failed';
