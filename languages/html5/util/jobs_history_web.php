@@ -166,6 +166,19 @@ foreach ($cursor_jobs as $obj_jobs) {
       } else {
           $totals[ 'duration' ]  = ($user_current - $user_start);
       }
+
+      // SUs
+      
+      if (array_key_exists( 'SUs', $User_array[ $this_user ])){ 
+          $User_array[ $this_user ][ 'SUs' ] += ($user_current - $user_start) * ( isset( $obj_jobs['numprocs'] ) ? $obj_jobs['numprocs'] : 1 );
+      } else {
+          $User_array[ $this_user ][ 'SUs' ]  = ($user_current - $user_start) * ( isset( $obj_jobs['numprocs'] ) ? $obj_jobs['numprocs'] : 1 );
+      }
+      if (array_key_exists( 'SUs', $totals ) ){ 
+          $totals[ 'SUs' ] += ($user_current - $user_start) * ( isset( $obj_jobs['numprocs'] ) ? $obj_jobs['numprocs'] : 1 );
+      } else {
+          $totals[ 'SUs' ]  = ($user_current - $user_start) * ( isset( $obj_jobs['numprocs'] ) ? $obj_jobs['numprocs'] : 1 );
+      }
   }
 }
 
@@ -188,6 +201,7 @@ $totals_info =
     "name"             => "<strong>Totals</strong>"
     ,"email"           => "<hr>"
     ,"duration (h)"    => array_key_exists( 'duration', $totals ) ? round( $totals[ 'duration' ] /3600, 3) : 0
+    ,"SUs"             => array_key_exists( 'SUs', $totals ) ? round( $totals[ 'SUs' ] /3600, 0) : 0
     );
 
 foreach ( $possible_status as $status => $null) {
@@ -207,6 +221,7 @@ foreach ( $final_users as $v ) {
             "name"             => $name
             ,"email"           => $v[ 'email' ] == "anonymous" ? "anonymous" : ( "<a class='title' href='mailto:" . $v[ 'email' ] . "'>" . $v[ 'email' ] . "</a>" )
 	    ,"duration (h)"    => array_key_exists( 'duration', $User_array[ $name ]) ? round($User_array[ $name ][ 'duration' ] /3600, 3) : 0
+	    ,"SUs"             => array_key_exists( 'SUs', $User_array[ $name ]) ? round($User_array[ $name ][ 'SUs' ] /3600, 0) : 0
         );
     foreach ( $possible_status as $status => $null) {
         if ( array_key_exists( $status, $User_array[ $name ] ) ) {
