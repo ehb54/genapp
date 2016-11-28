@@ -124,23 +124,37 @@ foreach ($cursor_jobs as $obj_jobs) {
      }
   }
  
+// SUs
+  if (array_key_exists( 'SUs', $User_array[ $this_user ])){ 
+     $User_array[ $this_user ][ 'SUs' ] += ($user_current - $user_start) * ( isset( $obj_jobs['numprocs'] ) ? $obj_jobs['numprocs'] : 1 );
+  } else {
+     $User_array[ $this_user ][ 'SUs' ]  = ($user_current - $user_start) * ( isset( $obj_jobs['numprocs'] ) ? $obj_jobs['numprocs'] : 1 );
+  }
+
 // Output 
 
 foreach ( $User_array as $user => $key ) {
     echo "$user \t";
-      foreach ( $possible_status as $status => $null) {
+    foreach ( $possible_status as $status => $null) {
         echo " $status " ;
         if ( array_key_exists( $status, $key ) ) {
-           echo $key[ $status ] . "\t";
+            echo $key[ $status ] . "\t";
         } else {
-           echo 0 . "\t" ;
+            echo 0 . "\t" ;
         }
-      }
-      if ( array_key_exists( 'duration', $key ) ){
+    }
+    if ( array_key_exists( 'duration', $key ) ){
         echo "total_duration: " . round($key['duration']/3600.0, 2) ;
-      } else {
-      	  echo 0 . "\t" ;
+    } else {
+        echo 0 . "\t" ;
     }	  	
+
+    if ( array_key_exists( 'SUs', $key ) ){
+        echo "\ttotal_SUs: " . round($key['SUs']/3600.0, 2) ;
+    } else {
+        echo 0 . "\t" ;
+    }	  	
+
     echo "\n"; 
 }
 
