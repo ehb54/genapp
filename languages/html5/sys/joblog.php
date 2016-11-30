@@ -575,6 +575,34 @@ function logrunning( $error_json_exit = false ) {
     return true;
 }
 
+function logrunningresource( $uuid, $resource, $nodes, $error_json_exit = false ) {
+    global $use_db;
+    global $db_errors;
+
+    $GLOBALS[ 'lasterror' ] = "";
+
+    if ( !db_connect( $error_json_exit ) ) {
+        $GLOBALS[ 'lasterror' ] = $db_errors;
+        return false;
+    }
+
+    try {
+        $use_db->__application__->running->update(
+            array( "_id" => $uuid ),
+            array( 
+                '$set' => array( "resource" => $resource
+                                 ,"nodes"   => $nodes )
+            ),
+            array( "upsert" => true__~mongojournal{, "j" => true} ) 
+            );
+    } catch( MongoCursorException $e ) {
+        $GLOBALS[ 'lasterror' ]  = "Error updating. " . $e->getMessage();
+        return false;
+    }
+
+    return true;
+}
+
 function logstoprunning( $error_json_exit = false ) {
     global $use_db;
     global $db_errors;
@@ -608,8 +636,9 @@ function jobcancel( $jobs,  $error_json_exit = false ) {
     global $use_db;
     global $db_errors;
 
-    $appconfig = json_decode( file_get_contents( "__appconfig__" ), true );
-    if ( !isset( $appconfig[ 'resources' ] ) ) {
+    $appconfig = "__appconfig__";
+    $appjsona = json_decode( file_get_contents( $appconfig ), true );
+    if ( !isset( $appjsona[ 'resources' ] ) ) {
         $GLOBALS[ 'lasterror' ] = "Internal error: could not find resource configuration information in appconfig.json";
         require_once "mail.php";
         error_mail( "[joblog.php jobcancel()] " . $GLOBALS[ 'lasterror' ] );
@@ -624,7 +653,7 @@ function jobcancel( $jobs,  $error_json_exit = false ) {
 
     $context = new ZMQContext();
     $zmq_socket = $context->getSocket(ZMQ::SOCKET_PUSH, '__application__ udp pusher');
-    $zmq_socket->connect("tcp://" . $appconfig['messaging']['zmqhostip'] . ":" . $appconfig['messaging']['zmqport'] );
+    $zmq_socket->connect("tcp://" . $appjsona['messaging']['zmqhostip'] . ":" . $appjsona['messaging']['zmqport'] );
 
     // $udp_socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
 
@@ -671,16 +700,37 @@ function jobcancel( $jobs,  $error_json_exit = false ) {
        }
        logstoprunning();
 
-       $zmq_socket->send( json_encode( array( "_uuid" => $uuid,
-                                      "Notice" => "This job has been cancelled by user request",
-                                      "_cancel" => "true",
-                                      "_status" => "cancelled" ) ) );
+       $specmsg = false;
+
+       if ( isset( $v[ 'resource' ] ) ) {
+           if ( $v[ 'resource' ] == "openstack" &&
+                isset( $v[ 'nodes' ] ) ) {
+               
+               require_once "__docroot:html5__/__application__/openstack/os_delete.php";
+               os_delete( $v[ 'nodes' ], $uuid, true );
+               $specmsg = true;
+               $zmq_socket->send( json_encode( array( "_uuid" => $uuid,
+                                                      "Notice" => "This job has been cancelled by user request",
+                                                      "_cancel" => "true",
+                                                      "_status" => "cancelled",
+                                                      "_airavata" => ""
+                                               ) ) );
+
+           }
+       }
+
+       if ( !$specmsg ) {
+           $zmq_socket->send( json_encode( array( "_uuid" => $uuid,
+                                                  "Notice" => "This job has been cancelled by user request",
+                                                  "_cancel" => "true",
+                                                  "_status" => "cancelled" ) ) );
+       }
 
        // $jsonmsg = json_encode( array( "_uuid" => $uuid,
        //                               "Notice" => "This job has been cancelled by user request",
        //                               "_status" => "cancelled" ) );
        
-       // socket_sendto( $udp_socket, $jsonmsg, strlen( $jsonmsg ), 0, $appconfig['messaging'][ 'udphostip' ], $appconfig['messaging']['udpport'] );
+       // socket_sendto( $udp_socket, $jsonmsg, strlen( $jsonmsg ), 0, $appjsona['messaging'][ 'udphostip' ], $appjsona['messaging']['udpport'] );
 
        if ( getprojectdir( $uuid ) ) {
            $projectdirs[ $GLOBALS[ 'getprojectdir' ] ] = true;
@@ -688,12 +738,12 @@ function jobcancel( $jobs,  $error_json_exit = false ) {
     }
 
     foreach ( $tokill as $k => $v ) {
-        if ( !isset( $appconfig[ 'resources' ][ $k ] ) ) {
+        if ( !isset( $appjsona[ 'resources' ][ $k ] ) ) {
             $GLOBALS[ 'lasterror' ] .= "Resource $k missing from resource configuration information in appconfig.json";
             require_once "mail.php";
             error_mail( "[joblog.php jobcancel()] " . $GLOBALS[ 'lasterror' ] );
         } else {
-            $kill = $appconfig[ 'resources' ][ $k ] . " __docroot:html5__/__application__/util/ga_killprocs.pl __docroot:html5__/__application__/log $k all " . implode( ' ', $v );
+            $kill = $appjsona[ 'resources' ][ $k ] . " __docroot:html5__/__application__/util/ga_killprocs.pl __docroot:html5__/__application__/log $k all " . implode( ' ', $v );
             __~debug:cancel{error_log( "jobcancel() $ " . $kill . " 2>&1\n", 3, "/tmp/mylog" );}
             ob_start();
             exec( $kill, $execout );
@@ -703,12 +753,12 @@ function jobcancel( $jobs,  $error_json_exit = false ) {
     }   
 
     foreach ( $tokillparent as $k => $v ) {
-        if ( !isset( $appconfig[ 'resources' ][ $k ] ) ) {
+        if ( !isset( $appjsona[ 'resources' ][ $k ] ) ) {
             $GLOBALS[ 'lasterror' ] .= "Resource $k missing from resource configuration information in appconfig.json";
             require_once "mail.php";
             error_mail( "[joblog.php jobcancel()] " . $GLOBALS[ 'lasterror' ] );
         } else {
-            $kill = $appconfig[ 'resources' ][ $k ] . " __docroot:html5__/__application__/util/ga_killprocs.pl __docroot:html5__/__application__/log $k child " . implode( ' ', $v );
+            $kill = $appjsona[ 'resources' ][ $k ] . " __docroot:html5__/__application__/util/ga_killprocs.pl __docroot:html5__/__application__/log $k child " . implode( ' ', $v );
             __~debug:cancel{error_log( "jobcancel() $ " . $kill . " 2>&1\n", 3, "/tmp/mylog" );}
             ob_start();
             exec( $kill, $execout );

@@ -98,6 +98,7 @@ function sendudptext( $text ) {
 }    
 
 require "openstack/os_cluster.php";
+require_once "__docroot:html5__/__application__/ajax/joblog.php";
 
 if ($argc == 3) {
     $appId = $argv[1];
@@ -143,7 +144,6 @@ if ($argc == 3) {
         }
     }
 
-
     // startup cluster, run job, shutdown cluster
     // error_log( "globals:\n" . print_r( $GLOBALS, true ) . "\n", 3, "oscluster.log" );
     // sendudptext( "globals:\n" . print_r( $GLOBALS, true ) . "\n" );
@@ -153,6 +153,8 @@ if ($argc == 3) {
     sendudptext( "json:\n" . json_encode( $json_decoded, JSON_PRETTY_PRINT ) . "\n" );
 
 # -------------------- create virtual cluster, get ip's --------------------
+
+    logrunningresource( $json_decoded->_uuid, "openstack", $GLOBALS[ "NC" ] );
 
     sendudpmsg( "Creating virtual cluster" );
 
@@ -181,6 +183,7 @@ if ($argc == 3) {
     sendudptext( "hostfiletext:\n$hostfiletext\n" );
 
 # -------------------- run job on 1st node of virtual cluster --------------------
+
     sendudpmsg( "Running job" );
 
     $json_decoded->_base_directory = str_replace( "__docroot:html5__/__application__", "__docrootactual:html5__", $json_decoded->_base_directory );

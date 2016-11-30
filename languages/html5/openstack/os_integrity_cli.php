@@ -56,7 +56,7 @@ foreach ( $lines as $v ) {
 
 // get php process & mongo running
 
-$ps = preg_split( "/\n/", `ps -ef | grep php`, -1, PREG_SPLIT_NO_EMPTY );
+$ps = preg_split( "/\n/", `COLUMNS=100000 ps -ef | grep php`, -1, PREG_SPLIT_NO_EMPTY );
 
 // print_r( $ps );
 
