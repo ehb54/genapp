@@ -4,6 +4,9 @@ global $appjson;
 
 if ( !isset( $appconfig ) ) {
     $appconfig = "__appconfig__";
+}
+
+if ( !isset( $appjson ) ) {
     if ( NULL == ( $appjson = json_decode( file_get_contents( $appconfig ) ) ) ) {
         echo '{"error":"appconfig could not be decoded"}';
         exit;
