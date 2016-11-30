@@ -795,6 +795,11 @@ foreach my $l ( keys %langs )
                 `$cmd`;
             }
 
+            {
+                my $cmd = "chmod g+w $fo";
+                `$cmd 2>&1`;
+            }
+
             $created .= "$fo\n";
             if ( $minify eq "minify" ) {
                 my $fn = $fo;
