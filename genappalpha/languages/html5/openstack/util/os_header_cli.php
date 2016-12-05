@@ -1,7 +1,6 @@
 <?php
 
-$appconfig = "__appconfig__";
-$appconfig = "appconfig.json";
+$appconfig = isset( $GLOBALS[ 'appconfig' ] ) ? $GLOBALS[ 'appconfig' ] : "appconfig.json";
 
 if ( NULL == ( $json = json_decode( file_get_contents( $appconfig ) ) ) ) {
     echo "error: appconfig could not be decoded\n";

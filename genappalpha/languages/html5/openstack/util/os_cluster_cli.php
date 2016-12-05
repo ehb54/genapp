@@ -4,8 +4,9 @@ $notes =
     "\n" .
     "--------------------\n" .
     "\n" .
-    "usage: $argv[0] number-of-nodes uuid\n" .
+    "usage: $argv[0] number-of-nodes uuid {appconfig}\n" .
     "starts nodes and returns ip addresses\n" .
+    "optionally uses named appconfig file\n" .
     "\n";
 
 
@@ -13,6 +14,10 @@ if ( !isset( $argv[ 1 ] ) ||
      !isset( $argv[ 2 ] ) ) {
     echo $notes;
     exit;
+}
+
+if ( isset( $argv[ 3 ] ) ) {
+   $appconfig = $argv[ 3 ];
 }
 
 require "os_header_cli.php";
