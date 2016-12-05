@@ -205,6 +205,10 @@ if ($argc == 3) {
     
     sendudptext( "$cmd\n" );
 
+    ob_start();
+    file_put_contents( $json_decoded->_log_directory . "/_oscmd_$uuid", $cmd );
+    ob_end_clean();
+
     $results = `$cmd`;
     
 #    sendudptext( "results - pre replace:\n" . $results );
