@@ -117,6 +117,7 @@ function get_userinfo( $error_json_exit = false ) {
                array( 
                    "name"                => $name
                    ,"email"              => "<a class='title' href='mailto:" . $v[ 'email' ] . "'>" . $v[ 'email' ] . "</a>"
+                   ,"group"              => isset( $v[ 'group' ] ) ? $v[ 'group' ] : ""
                    ,"projects"           => count( $v[ 'project' ] )
                    ,"last-login"         => isset( $v["lastlogin"] ) ? date( "Y M d H:i T",$v["lastlogin"]->sec ) : ""
                    ,"registered"         => isset( $v["registered"] ) ? date( "Y M d H:i T",$v["registered"]->sec ) : ""
@@ -193,7 +194,29 @@ function get_userinfo( $error_json_exit = false ) {
                }
                $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;${usecmd}('$cmd','$name','$uid','$manageid');});";
            }
+
+           // group buttons
+
+           $thisbuttons = [];
+           if ( isset( $v[ 'group' ] ) ) {
+               $thisbuttons[] = "Change";
+           } else {
+               $thisbuttons[] = "Set";
+           }
+               
+           $group_buttons = "";
+               
+           foreach ( $thisbuttons as $v2 ) {
+               $cmd = str_replace( ' ', '_', strtolower( $v2 ) );
+               $id = "_usermanage_${cmd}_${name}";
+               $group_buttons .= "<button id='$id'>$v2</button> ";
+               $usecmd = "ga.admin.ajax.group";
+               $users_group = isset( $v[ 'group' ] ) ? $v[ 'group' ] : '';
+               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;${usecmd}('$cmd','$name','$uid','$manageid','$users_group');});";
+           }
+
            $userinfo['buttons'][] = $buttons;
+           $userinfo['group_buttons'][] = $group_buttons;
            $userinfo['script'][]  = $script;
            $userinfo['tagline'][] = $tagline;
        }
@@ -224,8 +247,7 @@ function get_html_userinfo( $error_json_exit = false ) {
     foreach ( $userinfo['data'] as $k => $v ) {
         $html_userinfo .= "<tr><td>" . implode( "</td><td> ",  $v ) . "</td></tr>";
         if ( isset( $userinfo[ 'buttons' ][ $k ] ) ) {
-//            $html_userinfo .= "<tr><td style='align:left' colspan=" . count( $v ) . ">" . $userinfo['buttons'][ $k ] . "</td></tr>";
-            $html_userinfo .= "<tr><td><strong>" . trim( $userinfo[ 'tagline' ][ $k ] ) . "</strong></td><td>" . $userinfo['buttons'][ $k ] . "</td></tr><tr><td colspan=$span><hr></td></tr>";
+            $html_userinfo .= "<tr><td><strong>" . trim( $userinfo[ 'tagline' ][ $k ] ) . "</strong></td><td>" . $userinfo['buttons'][ $k ] . "</td><td>" . $userinfo['group_buttons'][ $k ] . "</tr><tr><td colspan=$span><hr></td></tr>";
             $script .= isset( $userinfo[ 'script' ][ $k ] ) ? $userinfo[ 'script' ][ $k ] : '';
         }
     }        
@@ -448,6 +470,19 @@ function handle_request() {
         case "resend_email_verification" : {
             $mailuser = "Please verify your email address by visiting this link:\n http://" . $app->hostname . "/__application__/ajax/sys_config/sys_register_backend.php?_r=" . $doc[ '_id' ];
             $mailsubject = "[__application__][email verify request]";
+        }
+        break;
+
+        case "set" :
+        case "change" : 
+        {
+
+            $update = [ 
+                '$set' => [ 
+                    'group' => isset( $_REQUEST[ '_group' ] ) ? $_REQUEST[ '_group' ] : ''
+                    ,'manageid' => $newmanageid 
+                ] 
+                ];
         }
         break;
 

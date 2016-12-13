@@ -751,6 +751,71 @@ ga.admin.ajax.remove = function ( cmd, name, id, manageid ) {
     } );
 }
 
+ga.admin.ajax.group = function ( cmd, name, id, manageid, users_group ) {
+    messagebox( {
+        icon  : "admin.png"
+        ,text  : 
+            'Enter the group for user ' + 
+            name +
+            '<form id="sys_musergrp">' +
+            '<input id="sys_musergrp_text" class="help_link" type="text" size="25" value="' + users_group + '">' +
+            '<span class="help">Enter a group for this user, then press ok or cancel</span>' +
+            '</form>'
+        ,eval  : "resetHoverHelp();$('#sys_musergrp').on('keyup keypress', function(e) { var code = e.keyCode || e.which;  if (code  == 13) { e.preventDefault(); return false; }});"
+        ,buttons : [
+            { 
+                id    : "ok"
+                ,label : "Ok"
+                ,cb    : ga.admin.ajax.group.cb
+                ,adata  : [ cmd, name, id, manageid ]
+            }
+            ,{
+                id    : "cancel",
+                label : "Cancel"
+            }
+        ]
+    } );
+}
+
+ga.admin.ajax.group.cb = function ( cmd, name, id, manageid, form ) {
+    __~debug:admin{console.log( "ga.admin.ajax.group.cb( " + cmd + " , " + name + " , " + id + " , " + manageid + " )" );}
+    __~debug:admin{console.log( "ga.admin.ajax.group.cb() sys_musergrp_text is " + $( "#sys_musergrp_text" ).val() );}
+    $.get( 
+        ga.admin.ajax.url
+        ,{
+            tagmode       : "any"
+            ,format       : "json"
+            ,_window      : window.name
+            ,_logon       : $( "#_state" ).data( "_logon" )
+            ,_cmd         : cmd
+            ,_name        : name
+            ,_id          : id
+            ,_manageid    : manageid
+            ,_group       : $( "#sys_musergrp_text" ).val()
+        } )
+        .done( function( data, status, xhr ) {
+            __~debug:admin{console.log( "ga.admin.ajax.group.cb() .getJSON done" )};
+            // required to remove the shebang (#!) 1st line of the script
+            data = JSON.parse( data.split( /\r?\n/)[1]);
+            if ( data[ 'success' ] == "true" ) {
+                // messagebox( { icon : "information.png",
+                // text : "system user management command returned success" } );
+            } else {
+                messagebox( { icon : "toast.png",
+                              text : data[ 'error' ] ? data[ 'error' ] : "unknown error"  } );
+            }
+            __~debug:admin{console.dir( data );}
+            if ( data[ '_submitid' ] ) {
+                $( "#" + data[ '_submitid' ] ).trigger( "click" );
+            }
+        })
+        .fail( function( xhr, status, errorThrown ) {
+            __~debug:admin{console.log( "ga.admin.ajax.group.cb() .getJSON fail: " + errorThrown )};
+            messagebox( { icon : "toast.png",
+                          text : "Error: system user management backend command failed to run: " + errorThrown } );
+        });
+}
+
 ga.extrahidden = function( moduleid ) {
     __~debug:extrahidden{console.log( "ga.extrahidden( " + moduleid + " )" );}
     if ( !ga.set.data[ "extrahidden" ] ||
