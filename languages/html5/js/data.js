@@ -17,6 +17,7 @@ ga.data.dataURLtoFile = function(dataurl, filename) {
 }
 
 ga.data.create_image_htmltocanvas = function(k) {
+    __~debug:canvas{console.log( "create_image_htmltocanvas()" );}
     if ( $( "#" + k  + "_savetofile" ).length )
     {
 	//var a = document.getElementById(k + "_savetofile");
@@ -43,6 +44,7 @@ ga.data.create_image_htmltocanvas = function(k) {
 }
 
 ga.data.create_image = function(k, plot) {
+    __~debug:canvas{console.log( "create_image()" );}
     if ( $( "#" + k  + "_savetofile" ).length )
     {
 	var a = document.getElementById(k + "_savetofile");
