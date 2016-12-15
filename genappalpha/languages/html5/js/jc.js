@@ -5,7 +5,7 @@ ga.jc = function( id, cb ) {
     var i,
         waits;
 
-__~debug:jc{   console.log( "ga.jc( " + id + " )" );};
+    __~debug:jc{console.log( "ga.jc( " + id + " )" );};
 
     if ( ga.jc.cache[ id ] ) {
         cb( ga.jc.cache[ id ] );
