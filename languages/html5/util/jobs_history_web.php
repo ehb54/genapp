@@ -202,10 +202,11 @@ ksort( $final_users );
 
 $totals_info = 
     array(
-    "name"             => "<strong>Totals</strong>"
-    ,"email"           => "<hr>"
-    ,"duration (h)"    => array_key_exists( 'duration', $totals ) ? round( $totals[ 'duration' ] /3600, 3) : 0
-    ,"SUs"             => array_key_exists( 'SUs', $totals ) ? round( $totals[ 'SUs' ] /3600, 0) : 0
+        "name"             => "<strong>Totals</strong>"
+        ,"group"           => "<hr>"
+        ,"email"           => "<hr>"
+        ,"duration (h)"    => array_key_exists( 'duration', $totals ) ? round( $totals[ 'duration' ] /3600, 3) : 0
+        ,"SUs"             => array_key_exists( 'SUs', $totals ) ? round( $totals[ 'SUs' ] /3600, 0) : 0
     );
 
 foreach ( $possible_status as $status => $null) {
@@ -218,11 +219,15 @@ foreach ( $possible_status as $status => $null) {
 
 $i=0;
 
+$group_totals = [];
+
 foreach ( $final_users as $v ) {
     $name = $v[ 'name' ];
+    $group = isset( $v[ 'group' ] ) ? $v[ 'group' ] : "";
     $userinfo[] =
         array(
             "name"             => $name
+            ,"group"           => $group
             ,"email"           => $v[ 'email' ] == "anonymous" ? "anonymous" : ( "<a class='title' href='mailto:" . $v[ 'email' ] . "'>" . $v[ 'email' ] . "</a>" )
 	    ,"duration (h)"    => array_key_exists( 'duration', $User_array[ $name ]) ? round($User_array[ $name ][ 'duration' ] /3600, 3) : 0
 	    ,"SUs"             => array_key_exists( 'SUs', $User_array[ $name ]) ? round($User_array[ $name ][ 'SUs' ] /3600, 0) : 0
@@ -234,6 +239,36 @@ foreach ( $final_users as $v ) {
             $userinfo[$i][ $status ] = 0;
         }
     }
+
+    if ( !isset( $group_totals[ $group ] ) ) {
+        $group_totals[ $group ] = 
+            array( 
+                "name"             => "<strong>Sub-totals</strong>"
+                ,"group"           => $group
+                ,"email"           => "<hr>"
+                ,"duration (h)"    => $userinfo[ $i ][ "duration (h)" ]
+                ,"SUs"             => $userinfo[ $i ][ "SUs"          ]
+            );
+
+        foreach ( $possible_status as $status => $null) {
+            if ( array_key_exists( $status, $User_array[ $name ] ) ) {
+                $group_totals[ $group ][ $status ] = $User_array[ $name ][ $status ];
+            } else {
+                $group_totals[ $group ][ $status ] = 0;
+            }
+        }
+
+    } else {
+        $group_totals[ $group ][ "duration (h)" ] += $userinfo[ $i ][ "duration (h)" ];
+        $group_totals[ $group ][ "SUs"          ] += $userinfo[ $i ][ "SUs"          ];
+
+        foreach ( $possible_status as $status => $null) {
+            if ( array_key_exists( $status, $User_array[ $name ] ) ) {
+                $group_totals[ $group ][ $status ] += $User_array[ $name ][ $status ];
+            }
+        }
+    }        
+
     ++$i;
 }
 
@@ -241,6 +276,10 @@ foreach ( $final_users as $v ) {
 // HTML Table//////
 $html_userinfo = "<table class='padcell'><tr><th>" . implode( "</th><th>", array_keys( $userinfo[ 0 ] ) ) . "</th></tr>";
 $html_userinfo .= "<tr><td>" . implode( "</td><td> ",  $totals_info ) . "</td></tr>";
+
+foreach ( $group_totals as $k => $v ) {
+    $html_userinfo .= "<tr><td>" . implode( "</td><td> ",  $v ) . "</td></tr>";
+}
 
 foreach ( $userinfo as $k => $v ) {
     $html_userinfo .= "<tr><td>" . implode( "</td><td> ",  $v ) . "</td></tr>";
