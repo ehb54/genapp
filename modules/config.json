@@ -66,6 +66,10 @@
                           "id"    : "job",
                           "label" : "Select a job or jobs"
                          }
+                        ,{ 
+                          "id"    : "userjob",
+                          "label" : "Select a job to view"
+                         }
 #                        ,{ 
 #                          "id"    : "sys_jobstatus",
 #                          "label" : "Job status"

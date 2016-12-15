@@ -816,6 +816,19 @@ ga.admin.ajax.group.cb = function ( cmd, name, id, manageid, form ) {
         });
 }
 
+ga.admin.ajax.jobview = function ( cmd, name, id, manageid ) {
+    __~debug:admin{console.log( "ga.admin.ajax.jobview( " + cmd + " , " + name + " , " + id + " , " + manageid + " )" );}
+    $( "#configbody" ).load( "etc/userjob.html", function() {
+        $("#jobtext_label").html( "Jobs for " + name );
+        $.ajax( { url:ga.jc.url , data:{ _window: window.name, _asuser: name } } ).success( function( data ) {
+            $("#seluserjobs").html( data );
+        }).error( function( error ) {
+            $("#seluserjobs").html( "error:" + data );
+        });
+    });
+    $( ".modalDialog" ).addClass( "modalDialog_on" );
+}
+
 ga.extrahidden = function( moduleid ) {
     __~debug:extrahidden{console.log( "ga.extrahidden( " + moduleid + " )" );}
     if ( !ga.set.data[ "extrahidden" ] ||

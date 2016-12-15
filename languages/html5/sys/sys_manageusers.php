@@ -80,10 +80,12 @@ function get_userinfo( $error_json_exit = false ) {
    global $nowsecs;
 
    $userinfo = [];
-   $userinfo[ 'data'    ] = [];
-   $userinfo[ 'buttons' ] = [];
-   $userinfo[ 'script'  ] = [];
-   $userinfo[ 'tagline' ] = [];
+   $userinfo[ 'data'          ] = [];
+   $userinfo[ 'buttons'       ] = [];
+   $userinfo[ 'group_buttons' ] = [];
+   $userinfo[ 'job_buttons'   ] = [];
+   $userinfo[ 'script'        ] = [];
+   $userinfo[ 'tagline'       ] = [];
 
    if ( !db_connect( $error_json_exit ) )
    {
@@ -112,6 +114,7 @@ function get_userinfo( $error_json_exit = false ) {
 
    foreach ( $users as $v ) {
        $name = $v[ 'name' ];
+       $jobcount = $use_db->__application__->jobs->count( array( "user" => $name ) );
        if ( substr( $name, 0, strlen( "_canceled" ) ) != "_canceled" ) {
            $userinfo['data'][] = 
                array( 
@@ -121,7 +124,7 @@ function get_userinfo( $error_json_exit = false ) {
                    ,"projects"           => count( $v[ 'project' ] )
                    ,"last-login"         => isset( $v["lastlogin"] ) ? date( "Y M d H:i T",$v["lastlogin"]->sec ) : ""
                    ,"registered"         => isset( $v["registered"] ) ? date( "Y M d H:i T",$v["registered"]->sec ) : ""
-                   ,"jobs-not-removed"   => $use_db->__application__->jobs->count( array( "user" => $name ) )
+                   ,"jobs-not-removed"   => $jobcount
                    ,"running"            => isset( $runcount[ $name ] ) ? $runcount[ $name ] : 0
                    ,"admin"              => in_array( $v[ 'name' ], $appconfig->restricted->admin ) ? "yes" : ""
                );
@@ -198,7 +201,7 @@ function get_userinfo( $error_json_exit = false ) {
            // group buttons
 
            $thisbuttons = [];
-           if ( isset( $v[ 'group' ] ) ) {
+           if ( isset( $v[ 'group' ] ) && !empty( trim( $v[ 'group' ] ) ) ) {
                $thisbuttons[] = "Change";
            } else {
                $thisbuttons[] = "Set";
@@ -215,10 +218,28 @@ function get_userinfo( $error_json_exit = false ) {
                $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;${usecmd}('$cmd','$name','$uid','$manageid','$users_group');});";
            }
 
-           $userinfo['buttons'][] = $buttons;
+           // job buttons
+
+           $thisbuttons = [];
+           if ( $jobcount ) {
+               $thisbuttons[] = "View";
+           }
+               
+           $job_buttons = "";
+               
+           foreach ( $thisbuttons as $v2 ) {
+               $cmd = str_replace( ' ', '_', strtolower( $v2 ) );
+               $id = "_usermanage_${cmd}_${name}";
+               $job_buttons .= "<button id='$id'>$v2</button> ";
+               $usecmd = "ga.admin.ajax.jobview";
+               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;${usecmd}('$cmd','$name','$uid','$manageid','$users_group');});";
+           }
+
+           $userinfo['buttons'      ][] = $buttons;
            $userinfo['group_buttons'][] = $group_buttons;
-           $userinfo['script'][]  = $script;
-           $userinfo['tagline'][] = $tagline;
+           $userinfo['job_buttons'  ][] = $job_buttons;
+           $userinfo['script'       ][] = $script;
+           $userinfo['tagline'      ][] = $tagline;
        }
    }
    return true;
@@ -247,7 +268,11 @@ function get_html_userinfo( $error_json_exit = false ) {
     foreach ( $userinfo['data'] as $k => $v ) {
         $html_userinfo .= "<tr><td>" . implode( "</td><td> ",  $v ) . "</td></tr>";
         if ( isset( $userinfo[ 'buttons' ][ $k ] ) ) {
-            $html_userinfo .= "<tr><td><strong>" . trim( $userinfo[ 'tagline' ][ $k ] ) . "</strong></td><td>" . $userinfo['buttons'][ $k ] . "</td><td>" . $userinfo['group_buttons'][ $k ] . "</tr><tr><td colspan=$span><hr></td></tr>";
+            $html_userinfo .= "<tr><td><strong>" . trim( $userinfo[ 'tagline' ][ $k ] ) . "</strong></td><td>" 
+                . $userinfo['buttons'][ $k ] . "</td><td>" 
+                . $userinfo['group_buttons'][ $k ] . "</td><td></td><td></td><td></td><td>" 
+                . $userinfo['job_buttons'][ $k ] . "</td>" 
+                . "</tr><tr><td colspan=$span><hr></td></tr>";
             $script .= isset( $userinfo[ 'script' ][ $k ] ) ? $userinfo[ 'script' ][ $k ] : '';
         }
     }        

@@ -35,14 +35,37 @@ function small_string( $s, $count = 1 )
    return $s;
 } 
 
+if ( isset( $_REQUEST[ "_asuser" ] ) ) {
+    $appconfig = json_decode( file_get_contents( "__appconfig__" ) );
+
+    if ( !isset( $appconfig->restricted ) ) {
+        $results[ "error" ] = "appconfig.json no restrictions defined";
+        echo (json_encode($results));
+        exit();
+    }    
+
+    if ( !isset( $appconfig->restricted->admin ) ) {
+        $results[ "error" ] = "appconfig.json no adminstrators defined";
+        echo (json_encode($results));
+        exit();
+    }    
+
+    if ( !in_array( $GLOBALS[ 'logon' ], $appconfig->restricted->admin ) ) {
+        $results[ "error" ] = "not an administrator";
+        echo (json_encode($results));
+        exit();
+    }    
+}   
+
 // error_log( "check empty jqgrid_jobs!" );
-if ( !jqgrid_jobs() )
+if ( !jqgrid_jobs( false, isset( $_REQUEST[ "_asuser" ] ) ?  $_REQUEST[ "_asuser" ] : $GLOBALS[ "logon" ] ) )
 {
   echo '{}';
   exit;
 }
 
-if ( !isset( $_REQUEST[ "_tree" ] ) ) {
+if ( !isset( $_REQUEST[ "_tree" ] ) &&
+     !isset( $_REQUEST[ "_asuser" ] ) ) {
    $rows = array();
    foreach ( $GLOBALS[ 'jqgrid_jobs' ] as $job )
    {
@@ -150,142 +173,220 @@ if ( !isset( $_REQUEST[ "_tree" ] ) ) {
   exit;
 }
 
-// tree version 
-// just return full tree for now?
-__~debug:basemylog{error_log( "request\n" . print_r( $_REQUEST, true ) . "\n", 3, "/tmp/mylog" );}
+if ( isset( $_REQUEST[ "_tree" ] ) ) {
+# tree version 
+# just return full tree for now?
+    __~debug:basemylog{error_log( "request\n" . print_r( $_REQUEST, true ) . "\n", 3, "/tmp/mylog" );}
 
-$reqkey = $_REQUEST[ "_tree" ];
-__~debug:jc{error_log( "reqkey is " . $reqkey );}
+    $reqkey = $_REQUEST[ "_tree" ];
+    __~debug:jc{error_log( "reqkey is " . $reqkey );}
 
-$result_jobs = array();
-$used_top    = array();
-$used_second = array();
-$used_third  = array();
+    $result_jobs = array();
+    $used_top    = array();
+    $used_second = array();
+    $used_third  = array();
 
-foreach ( $GLOBALS[ 'jqgrid_jobs' ] as $job )
-{
-    if ( isset( $job["duration"] ) )
+    foreach ( $GLOBALS[ 'jqgrid_jobs' ] as $job )
     {
-        $duration_o = floatval( $job["duration"] );
-        $duration = $duration_o;
-        $duration_s = sprintf( $duration > 5 * 60 ? "%.0f" : "%.2f", $duration - 60 * intval( $duration / 60 ) );
-        $duration_m = intval( $duration / 60 ) % 60;
-        $duration_h = intval( $duration /(60 * 60 ) ) % 24;
-        $duration_d = intval( $duration /(24 * 60 * 60 ) );
- 
-        $duration = ( $duration_d > 0 ? $duration_d . "d" : "" ) .
-                    ( $duration_h > 0 ? $duration_h . "h" : "" ) .
-                    ( $duration_m > 0 ? $duration_m . "m" : "" ) .
-                    ( $duration_s > 0 ? $duration_s . "s" : "" );
-    } else {
-        $duration_o = 0.0;
-        $duration = "active";
-    }
-    $project = "no_project_specified";
-    if ( isset( $job[ "project" ] ) && strlen( $job[ "project" ] ) )
-    {
-       $project =  $job[ "project" ];
-    }
-    if ( isset( $job[ 'directory' ] ) && isprojectlocked( $job[ 'directory' ] ) )
-    {
-       if ( isset( $job[ 'status' ] ) && count( $job[ 'status' ] ) && end($job[ 'status' ]) != 'failed' && end($job[ 'status' ]) != 'finished' && end($job[ 'status' ]) != 'cancelled' )
-       {
-           $project = "<font color='red'>$project</font>";
-       } else {
-           $project = "<font color='yellow'>$project</font>";
-       }
-    }
-    $endasprogress = 0;
-    if ( !isset( $job["end"] ) &&
-         cached_progress( $job["_id"] ) )
-    {
-        $endasprogress = 1;
-        $job[ "end" ] = sprintf( "%.1f%%", 100.0 * $GLOBALS[ 'cached_progress' ] );
-    }
-    
-    if ( isset( $job[ "start" ] ) )
-    {
-        $time = $job[ "start" ]->sec;
-        $ym  = date( "Y-m",     $time );
-        $d   = date( "d",       $time );
-        $hr  = date( "H",       $time );
-        $hms = date( "H:i:s T", $time );
-    } else {
-        $time = 0;
-        $ym  = "unknown";
-        $d   = "unknown";
-        $hr  = "unknown";
-    }
-
-    // link to root
-
-    if ( !array_key_exists( $ym, $used_top ) )
-    {
-        if ( $reqkey === "#" ) {
-            array_push( $result_jobs, 
-                        array( 
-                            "id"       => $ym,
-                            "parent"   => "#",
-                            "text"     => "<b>$ym</b>",
-                            "children" => true,
-                            "data"    => array( "time"     => $time )
-                        ) );
+        if ( isset( $job["duration"] ) )
+        {
+            $duration_o = floatval( $job["duration"] );
+            $duration = $duration_o;
+            $duration_s = sprintf( $duration > 5 * 60 ? "%.0f" : "%.2f", $duration - 60 * intval( $duration / 60 ) );
+            $duration_m = intval( $duration / 60 ) % 60;
+            $duration_h = intval( $duration /(60 * 60 ) ) % 24;
+            $duration_d = intval( $duration /(24 * 60 * 60 ) );
+            
+            $duration = ( $duration_d > 0 ? $duration_d . "d" : "" ) .
+                ( $duration_h > 0 ? $duration_h . "h" : "" ) .
+                ( $duration_m > 0 ? $duration_m . "m" : "" ) .
+                ( $duration_s > 0 ? $duration_s . "s" : "" );
+        } else {
+            $duration_o = 0.0;
+            $duration = "active";
         }
-        $used_top[ $ym ] = 1;
-    }
-
-    // link to ym
-
-    $ymd = "$ym-$d";
-    if ( !array_key_exists( $ymd, $used_second ) )
-    {
-        if ( $reqkey === $ym ) {
-            array_push( $result_jobs, 
-                        array( 
-                            "id"       => $ymd,
-                            "parent"   => $ym,
-                            "text"     => "<b>$d</b>",
-                            "children" => true,
-                            "data"    => array( "time"     => $time )
-                        ) );
+        $project = "no_project_specified";
+        if ( isset( $job[ "project" ] ) && strlen( $job[ "project" ] ) )
+        {
+            $project =  $job[ "project" ];
         }
-        $used_second[ $ymd ] = 1;
-    }
-
-    // link to module
-    $module = $job["module"];
-    $ymdmodule = "$ymd:$module";
-    if ( !array_key_exists( $ymdmodule, $used_third ) )
-    {
-        if ( $reqkey === $ymd ) {
-            array_push( $result_jobs, 
-                        array( 
-                            "id"       => $ymdmodule,
-                            "parent"   => $ymd,
-                            "text"     => "<b>$module</b>",
-                            "children" => true,
-                            "data"    => array( "time"     => $time )
-                        ) );
+        if ( isset( $job[ 'directory' ] ) && isprojectlocked( $job[ 'directory' ] ) )
+        {
+            if ( isset( $job[ 'status' ] ) && count( $job[ 'status' ] ) && end($job[ 'status' ]) != 'failed' && end($job[ 'status' ]) != 'finished' && end($job[ 'status' ]) != 'cancelled' )
+            {
+                $project = "<font color='red'>$project</font>";
+            } else {
+                $project = "<font color='yellow'>$project</font>";
+            }
         }
-        $used_third[ $ymdmodule ] = 1;
-    }
+        $endasprogress = 0;
+        if ( !isset( $job["end"] ) &&
+             cached_progress( $job["_id"] ) )
+        {
+            $endasprogress = 1;
+            $job[ "end" ] = sprintf( "%.1f%%", 100.0 * $GLOBALS[ 'cached_progress' ] );
+        }
         
-    if ( $reqkey === $ymdmodule || $reqkey === $job[ "_id" ] ) {
-        array_push( $result_jobs, 
-                    array( "id"       => $job[ "_id" ],
-                           "parent"   => $ymdmodule,
-                           "text"     => "<b>$project start: $hms duration: $duration</b>",
-                           "data"     => 
-                           array( 
-                               "time"     => $time,
-                               "job"      => true
-                           )
-                    ) );
+        if ( isset( $job[ "start" ] ) )
+        {
+            $time = $job[ "start" ]->sec;
+            $ym  = date( "Y-m",     $time );
+            $d   = date( "d",       $time );
+            $hr  = date( "H",       $time );
+            $hms = date( "H:i:s T", $time );
+        } else {
+            $time = 0;
+            $ym  = "unknown";
+            $d   = "unknown";
+            $hr  = "unknown";
+        }
+
+        // link to root
+
+            if ( !array_key_exists( $ym, $used_top ) )
+        {
+            if ( $reqkey === "#" ) {
+                array_push( $result_jobs, 
+                            array( 
+                                "id"       => $ym,
+                                "parent"   => "#",
+                                "text"     => "<b>$ym</b>",
+                                "children" => true,
+                                "data"    => array( "time"     => $time )
+                            ) );
+            }
+            $used_top[ $ym ] = 1;
+        }
+
+        // link to ym
+
+            $ymd = "$ym-$d";
+        if ( !array_key_exists( $ymd, $used_second ) )
+        {
+            if ( $reqkey === $ym ) {
+                array_push( $result_jobs, 
+                            array( 
+                                "id"       => $ymd,
+                                "parent"   => $ym,
+                                "text"     => "<b>$d</b>",
+                                "children" => true,
+                                "data"    => array( "time"     => $time )
+                            ) );
+            }
+            $used_second[ $ymd ] = 1;
+        }
+
+        // link to module
+            $module = $job["module"];
+        $ymdmodule = "$ymd:$module";
+        if ( !array_key_exists( $ymdmodule, $used_third ) )
+        {
+            if ( $reqkey === $ymd ) {
+                array_push( $result_jobs, 
+                            array( 
+                                "id"       => $ymdmodule,
+                                "parent"   => $ymd,
+                                "text"     => "<b>$module</b>",
+                                "children" => true,
+                                "data"    => array( "time"     => $time )
+                            ) );
+            }
+            $used_third[ $ymdmodule ] = 1;
+        }
+        
+        if ( $reqkey === $ymdmodule || $reqkey === $job[ "_id" ] ) {
+            array_push( $result_jobs, 
+                        array( "id"       => $job[ "_id" ],
+                               "parent"   => $ymdmodule,
+                               "text"     => "<b>$project start: $hms duration: $duration</b>",
+                               "data"     => 
+                               array( 
+                                   "time"     => $time,
+                                   "job"      => true
+                               )
+                        ) );
+        }
     }
+
+    __~debug:basemylog{error_log( "sys_jobs: result_jobs\n" . print_r( $result_jobs, true ) . "\n", 3, "/tmp/mylog" );}
+    echo json_encode( $result_jobs );
+    exit();
 }
 
-__~debug:basemylog{error_log( "sys_jobs: result_jobs\n" . print_r( $result_jobs, true ) . "\n", 3, "/tmp/mylog" );}
-echo json_encode( $result_jobs );
+# _asuser version // new layout
 
+if ( isset( $_REQUEST[ "_asuser" ] ) ) {
+
+    $jobinfo = [];
+
+    foreach ( $GLOBALS[ 'jqgrid_jobs' ] as $job ) {
+        if ( isset( $job["duration"] ) ) {
+            $duration_o = floatval( $job["duration"] );
+            $duration = $duration_o;
+            $duration_s = sprintf( $duration > 5 * 60 ? "%.0f" : "%.2f", $duration - 60 * intval( $duration / 60 ) );
+            $duration_m = intval( $duration / 60 ) % 60;
+            $duration_h = intval( $duration /(60 * 60 ) ) % 24;
+            $duration_d = intval( $duration /(24 * 60 * 60 ) );
+            
+            $duration = ( $duration_d > 0 ? $duration_d . "d" : "" ) .
+                ( $duration_h > 0 ? $duration_h . "h" : "" ) .
+                ( $duration_m > 0 ? $duration_m . "m" : "" ) .
+                ( $duration_s > 0 ? $duration_s . "s" : "" );
+        } else {
+            $duration_o = 0.0;
+            $duration = "active";
+        }
+        $project = "no_project_specified";
+        if ( isset( $job[ "project" ] ) && strlen( $job[ "project" ] ) ) {
+            $project =  $job[ "project" ];
+        }
+        $o_project = $project;
+        if ( isset( $job[ 'directory' ] ) && isprojectlocked( $job[ 'directory' ] ) ) {
+            if ( isset( $job[ 'status' ] ) && count( $job[ 'status' ] ) && end($job[ 'status' ]) != 'failed' && end($job[ 'status' ]) != 'finished' && end($job[ 'status' ]) != 'cancelled' ) {
+                $project = "<font color='red'>$project</font>";
+            } else {
+                $project = "<font color='yellow'>$project</font>";
+            }
+        }
+        $endasprogress = 0;
+        if ( !isset( $job["end"] ) &&
+             cached_progress( $job["_id"] ) ) {
+            $endasprogress = 1;
+            $job[ "end" ] = sprintf( "%.1f%%", 100.0 * $GLOBALS[ 'cached_progress' ] );
+        }
+        
+        if ( isset( $job[ "start" ] ) )
+        {
+            $time = $job[ "start" ]->sec;
+            $date  = date( "Y-m-d H:i:s T",     $time );
+        } else {
+            $time = 0;
+            $date = "unknown";
+        }
+        
+        $switchok = isset( $job[ "menu" ] ) && isset( $job[ "module" ] );
+            
+        $jobinfo[] =
+            array( 
+                "start"       => $date
+                ,"menu"       => isset( $job[ "menu" ] ) ? $job[ "menu" ] : ""
+                ,"module"     => isset( $job[ "module" ] ) ? ( $switchok ? ( "<a href=?_reqlogin=1&_switch=" . $job[ "menu" ] . "/" . $job[ "module" ] . "/$o_project/" . $job[ '_id' ] . " target='_blank'>" . $job[ "module" ] . "</a>" ) : $job[ "module" ] ) : ""
+                ,"project"    => $project
+                ,"duration"   => $duration
+                ,"processors" => isset( $job[ "numprocs" ] ) ? $job[ "numprocs" ] : ""
+            );
+    }
+
+    arsort( $jobinfo );
+    
+    $html_jobinfo = "<table class='padcell'><tr><th>" . implode( "</th><th>", array_keys( $jobinfo[ 0 ] ) ) . "</th></tr>";
+    foreach ( $jobinfo as $k => $v ) {
+        $html_jobinfo .= "<tr><td>" . implode( "</td><td> ",  $v ) . "</td></tr>";
+    }
+
+    $html_jobinfo .= "</table>";
+
+    echo $html_jobinfo;
+}
 
 ?>
