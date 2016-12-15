@@ -131,8 +131,6 @@ __~debug:altfile{   console.log( "ga.altfile.button.cb" );}
     closeModal();
 }
 
-
-
 ga.altfile.button.lrfile = function( treeid, module, id ) {
   var r      = [],
       hmod   = "#" + module,

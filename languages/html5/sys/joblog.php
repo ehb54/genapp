@@ -210,7 +210,7 @@ function cache_check( $key, $error_json_exit = false ) {
     return false;
 }
 
-function jqgrid_jobs( $error_json_exit = false )
+function jqgrid_jobs( $error_json_exit = false, $user = NULL )
 {
    global $use_db;
    global $db_errors;
@@ -222,7 +222,7 @@ function jqgrid_jobs( $error_json_exit = false )
 
    $coll = $use_db->__application__->jobs;
 
-   if ( $GLOBALS[ 'jqgrid_jobs' ] = $coll->find( array( "user" => $GLOBALS[ 'logon' ], "deleted" => array( '$exists' => false ) ) ) )
+   if ( $GLOBALS[ 'jqgrid_jobs' ] = $coll->find( array( "user" => is_null( $user ) ? $GLOBALS[ 'logon' ] : $user, "deleted" => array( '$exists' => false ) ) ) )
    {
        return true;
    }
@@ -310,7 +310,13 @@ function getmenumodule( $jobid,  $error_json_exit = false )
               $GLOBALS[ "cache" ] == "public"  ) {
              return true;
          } else {
-             return false;
+             $appjson = json_decode( file_get_contents( "__appconfig__" ) );
+             if ( !isset( $appjson->restricted ) ||
+                  !isset( $appjson->restricted->admin ) ||
+                  !in_array( $GLOBALS[ 'logon' ], $appjson->restricted->admin ) ) {
+                 return false;
+             }    
+             return true;
          }
       }
       return false;
