@@ -49,7 +49,7 @@ if ( !in_array( $_REQUEST[ '_logon' ], $appconfig->restricted->admin ) ) {
     exit();
 }    
 
-function db_connect( $error_json_exit = false ) {
+function db_connect2( $error_json_exit = false ) {
    global $use_db;
    global $db_errors;
 
@@ -87,7 +87,7 @@ function get_userinfo( $error_json_exit = false ) {
    $userinfo[ 'script'        ] = [];
    $userinfo[ 'tagline'       ] = [];
 
-   if ( !db_connect( $error_json_exit ) )
+   if ( !db_connect2( $error_json_exit ) )
    {
        return false;
    }
@@ -381,9 +381,9 @@ function handle_request() {
 
     // validate doc
     
-    if ( !db_connect() ) {
+    if ( !db_connect2() ) {
         $results[ 'success' ] = "false";
-        $results[ 'error' ] = "Database error: $db_connect";
+        $results[ 'error' ] = "Database error: $db_errors";
         echo json_encode( $results );
         exit();
     }
@@ -511,6 +511,30 @@ function handle_request() {
         }
         break;
 
+        case "jobcancel" :
+        { 
+            require_once "../joblog.php";
+            if ( !isset( $_REQUEST[ '_jid' ] ) ) {
+                $results[ 'success' ] = "false";
+                $results[ 'error' ] = "Internal error: commane " . $_REQUEST[ '_cmd' ] . " received, but without a job id";
+                echo json_encode( $results );
+                exit();
+            }
+            $GLOBALS[ 'logon' ] = $_REQUEST[ '_name' ];
+            if ( !jobcancel( [ $_REQUEST[ '_jid' ] ], false, true ) ) {
+                $results[ 'success' ] = "false";
+                $results[ 'error' ] = $GLOBALS[ 'lasterror' ];
+                echo json_encode( $results );
+                exit();
+            } else {
+                $results[ "success" ] = "true";
+                $results[ "_submitid" ] = "sys_manage_users_submit";
+                echo json_encode( $results );
+                exit();
+            }
+        }
+        break;
+
         default : {
             $results[ 'success' ] = "false";
             $results[ 'error' ] = "Internal error: Unknown command " . $_REQUEST[ '_cmd' ] . " received";
@@ -536,7 +560,7 @@ function handle_request() {
                                                      $update__~mongojournal{, array("j" => true )} );
         } catch(MongoCursorException $e) {
             $results[ 'success' ] = "false";
-            $results[ 'error' ] = "Database error: $db_connect";
+            $results[ 'error' ] = "Database error: $db_errors";
             echo json_encode( $results );
             exit();
         }
@@ -547,7 +571,7 @@ function handle_request() {
             $use_db->__application__->users->remove( $remove__~mongojournal{, array("j" => true )} );
         } catch(MongoCursorException $e) {
             $results[ 'success' ] = "false";
-            $results[ 'error' ] = "Database error: $db_connect";
+            $results[ 'error' ] = "Database error: $db_errors";
             echo json_encode( $results );
             exit();
         }
@@ -556,7 +580,7 @@ function handle_request() {
                 $use_db->__application__->jobs->remove( [ "user" => $doc[ 'name' ] ]__~mongojournal{, array("j" => true )} );
             } catch(MongoCursorException $e) {
                 $results[ 'success' ] = "false";
-                $results[ 'error' ] = "Database error: $db_connect";
+                $results[ 'error' ] = "Database error: $db_errors";
                 echo json_encode( $results );
                 exit();
             }

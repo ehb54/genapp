@@ -609,7 +609,7 @@ function logrunningresource( $uuid, $resource, $nodes, $error_json_exit = false 
     return true;
 }
 
-function logstoprunning( $error_json_exit = false ) {
+function logstoprunning( $error_json_exit = false, $uuid = false ) {
     global $use_db;
     global $db_errors;
 
@@ -622,7 +622,7 @@ function logstoprunning( $error_json_exit = false ) {
 
     try {
         $use_db->__application__->running->remove(
-            array( "_id" => $_REQUEST[ '_uuid' ] ),
+            array( "_id" => $uuid ? $uuid : $_REQUEST[ '_uuid' ] ),
             array( "justOne" => true )
             );
     } catch( MongoCursorException $e ) {
@@ -633,7 +633,7 @@ function logstoprunning( $error_json_exit = false ) {
     return true;
 }
 
-function jobcancel( $jobs,  $error_json_exit = false ) {
+function jobcancel( $jobs,  $error_json_exit = false, $is_admin = false ) {
     __~debug:cancel{error_log( "jobcancel() called with jobs of " . print_r( $jobs, true ), 3, "/tmp/mylog" );}
 
     $GLOBALS[ 'lasterror' ] = "";
@@ -704,9 +704,11 @@ function jobcancel( $jobs,  $error_json_exit = false ) {
        if ( !logjobupdate( "cancelled", true, $error_json_exit, $uuid ) ) {
            __~debug:cancel{error_log( "jobcancel() $uuid logjobupdate error $db_errors\n", 3, "/tmp/mylog" );}
        }
-       logstoprunning();
+       logstoprunning( false, $uuid );
 
        $specmsg = false;
+
+       $cancel_notice = "This job has been cancelled by " . ( $is_admin ? "administrator" : "user" ) . " request";
 
        if ( isset( $v[ 'resource' ] ) ) {
            if ( $v[ 'resource' ] == "openstack" &&
@@ -716,7 +718,7 @@ function jobcancel( $jobs,  $error_json_exit = false ) {
                os_delete( $v[ 'nodes' ], $uuid, true );
                $specmsg = true;
                $zmq_socket->send( json_encode( array( "_uuid" => $uuid,
-                                                      "Notice" => "This job has been cancelled by user request",
+                                                      "Notice" => $cancel_notice,
                                                       "_cancel" => "true",
                                                       "_status" => "cancelled",
                                                       "_airavata" => ""
@@ -727,13 +729,13 @@ function jobcancel( $jobs,  $error_json_exit = false ) {
 
        if ( !$specmsg ) {
            $zmq_socket->send( json_encode( array( "_uuid" => $uuid,
-                                                  "Notice" => "This job has been cancelled by user request",
+                                                  "Notice" => $cancel_notice,
                                                   "_cancel" => "true",
                                                   "_status" => "cancelled" ) ) );
        }
 
        // $jsonmsg = json_encode( array( "_uuid" => $uuid,
-       //                               "Notice" => "This job has been cancelled by user request",
+       //                               "Notice" => $cancel_notice,
        //                               "_status" => "cancelled" ) );
        
        // socket_sendto( $udp_socket, $jsonmsg, strlen( $jsonmsg ), 0, $appjsona['messaging'][ 'udphostip' ], $appjsona['messaging']['udpport'] );
