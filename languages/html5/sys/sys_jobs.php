@@ -318,6 +318,7 @@ if ( isset( $_REQUEST[ "_tree" ] ) ) {
 if ( isset( $_REQUEST[ "_asuser" ] ) ) {
 
     $jobinfo = [];
+    $script  = "";
 
     foreach ( $GLOBALS[ 'jqgrid_jobs' ] as $job ) {
         if ( isset( $job["duration"] ) ) {
@@ -366,13 +367,28 @@ if ( isset( $_REQUEST[ "_asuser" ] ) ) {
         
         $switchok = isset( $job[ "menu" ] ) && isset( $job[ "module" ] );
             
+        $module = isset( $job[ "module" ] ) ? $job[ "module" ] : "";
+
+        $button_add = "";
+        if ( $duration == "active" ) {
+            $bid = "cancel_" . $job[ '_id' ];
+            $button_add = "<button button id=$bid>Cancel</button>";
+            $script    .= "$('#$bid').click(function(e){e.preventDefault();e.returnValue=false;ga.admin.ajax.cancel('"
+                . $_REQUEST[ '_asuser' ] . "','"
+                . $_REQUEST[ '_id' ] . "','"
+                . $_REQUEST[ '_manageid' ]
+                . "','$module','" 
+                . $job[ '_id' ] 
+                . "');});";
+        }
+
         $jobinfo[] =
             array( 
                 "start"       => $date
                 ,"menu"       => isset( $job[ "menu" ] ) ? $job[ "menu" ] : ""
                 ,"module"     => isset( $job[ "module" ] ) ? ( $switchok ? ( "<a href=?_reqlogin=1&_switch=" . $job[ "menu" ] . "/" . $job[ "module" ] . "/$o_project/" . $job[ '_id' ] . " target='_blank'>" . $job[ "module" ] . "</a>" ) : $job[ "module" ] ) : ""
                 ,"project"    => $project
-                ,"duration"   => $duration
+                ,"duration"   => $duration . $button_add
                 ,"processors" => isset( $job[ "numprocs" ] ) ? $job[ "numprocs" ] : ""
             );
     }
@@ -385,6 +401,7 @@ if ( isset( $_REQUEST[ "_asuser" ] ) ) {
     }
 
     $html_jobinfo .= "</table>";
+    $html_jobinfo .= "</table><script>$script</script>";
 
     echo $html_jobinfo;
 }

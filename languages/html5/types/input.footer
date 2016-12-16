@@ -267,7 +267,7 @@ __~docrootexecutable{$( this ).append( $("<input>").attr("type", "hidden").attr(
 
     subMsging( vuuid, msg___moduleid__, "__moduleid__" );
 
-    var formData = new FormData($('form')[0]);
+    var formData = new FormData($('#__moduleid__')[0]);
 __~debug:ajax{    console.log( "calling ajax" );}
 
     $('#__moduleid___progress').html( "Uploading:<progress></progress>" );
