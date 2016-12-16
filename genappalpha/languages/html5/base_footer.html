@@ -292,6 +292,9 @@ __~debug:mb{      console.log( 'm buttons' + tmp );}
                   case 5 :
                       $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ],  event.data.adata[ 2 ], event.data.adata[ 3 ],  event.data.adata[ 4 ] ); closeaModal( mnum ); } )
                       break;
+                  case 6 :
+                      $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ],  event.data.adata[ 2 ], event.data.adata[ 3 ],  event.data.adata[ 4 ], event.data.adata[ 5 ] ); closeaModal( mnum ); } )
+                      break;
                   default : 
                       console.warn( "in message box unsupported number of adata arguments " + m.buttons[ i ].adata.length )
                       break;

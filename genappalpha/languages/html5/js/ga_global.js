@@ -695,8 +695,8 @@ ga.login.approve.cancel = function () {
 }
 
 ga.admin = {};
-ga.admin.ajax = function ( cmd, name, id, manageid ) {
-    __~debug:admin{console.log( "ga.admin.ajax( " + cmd + " , " + name + " , " + id + " , " + manageid + " )" );}
+ga.admin.ajax = function ( cmd, name, id, manageid, jid ) {
+    __~debug:admin{console.log( "ga.admin.ajax( " + cmd + " , " + name + " , " + id + " , " + manageid + " , " + jid + " )" );}
     $.get( 
         ga.admin.ajax.url
         ,{
@@ -708,6 +708,7 @@ ga.admin.ajax = function ( cmd, name, id, manageid ) {
             ,_name        : name
             ,_id          : id
             ,_manageid    : manageid
+            ,_jid         : jid
         } )
         .done( function( data, status, xhr ) {
             __~debug:admin{console.log( "ga.admin.ajax() .getJSON done" )};
@@ -820,13 +821,39 @@ ga.admin.ajax.jobview = function ( cmd, name, id, manageid ) {
     __~debug:admin{console.log( "ga.admin.ajax.jobview( " + cmd + " , " + name + " , " + id + " , " + manageid + " )" );}
     $( "#configbody" ).load( "etc/userjob.html", function() {
         $("#jobtext_label").html( "Jobs for " + name );
-        $.ajax( { url:ga.jc.url , data:{ _window: window.name, _asuser: name } } ).success( function( data ) {
+        $.ajax( { url:ga.jc.url , data:{ _window: window.name, _asuser: name, _id : id, _manageid : manageid } } ).success( function( data ) {
             $("#seluserjobs").html( data );
         }).error( function( error ) {
             $("#seluserjobs").html( "error:" + data );
         });
     });
     $( ".modalDialog" ).addClass( "modalDialog_on" );
+}
+
+ga.admin.ajax.cancel = function ( name, id, manageid, module, jid ) {
+    __~debug:admin{console.log( "ga.admin.ajax.cancel( " + name + " , " + id + " , " + manageid + " , " + module + " , " + jid + " )" );}
+    messagebox( {
+        icon  : "admin.png"
+        ,text  : "Are you sure you want to cancel this '" + module + "' job belonging to " + name + " ?"
+        ,buttons : [
+            { 
+                id    : "yes"
+                ,label : "Yes, cancel the job"
+                ,cb    : ga.admin.ajax.cancel.cb
+                ,adata  : [ name, id, manageid, jid ]
+            }
+            ,{
+                id    : "no",
+                label : "No"
+            }
+        ]
+    } );
+}
+
+ga.admin.ajax.cancel.cb = function ( name, id, manageid, jid ) {
+    __~debug:admin{console.log( "ga.admin.ajax.cancel.cb( " + name + " , " + id + " , " + manageid + " , " + jid + " )" );}
+    $( ".modalDialog" ).removeClass( "modalDialog_on" );
+    ga.admin.ajax( "jobcancel", name, id, manageid, jid );
 }
 
 ga.extrahidden = function( moduleid ) {
