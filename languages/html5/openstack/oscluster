@@ -149,6 +149,7 @@ if ($argc == 3) {
     // sendudptext( "globals:\n" . print_r( $GLOBALS, true ) . "\n" );
 
     $json_decoded->_clusternodecount = $GLOBALS[ "NC" ];
+    $json_decoded->_clusterppn = $appjson->resources->oscluster->properties->ppn;
 
     sendudptext( "json:\n" . json_encode( $json_decoded, JSON_PRETTY_PRINT ) . "\n" );
 

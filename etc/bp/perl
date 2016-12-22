@@ -3,7 +3,7 @@
 ## user defines
 
 # uncomment below to create a logfile
-$save_in_log = "/tmp/__moduleid__.log";
+# $save_in_log = "/tmp/__moduleid__.log";
 
 # uncomment below to enable messaging
 # $enable_msg = 1;

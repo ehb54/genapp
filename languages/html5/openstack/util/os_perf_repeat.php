@@ -1,9 +1,10 @@
 <?php
 
-$notes = "usage: $0 oscmd_file interval-minutes {post-processing-php}
+$notes = "usage: $0 oscmd_file interval-minutes {performance_executable|-} {post-processing-php} 
 runs os_perf_cli.php for the oscmd_file every interval-minutes
-if post-processing-php is set, it must include a post_processing( \$json, \$results ) function which be called
 upon completion
+if performance_executable is set, it will be run before the main job in the virtual cluster
+if post-processing-php is set and is not '-', it must include a post_processing( \$json, \$results ) function which be called
 ";
 
 if ( isset( $argv[ 1 ] ) ) {
@@ -25,10 +26,17 @@ if ( FALSE === ( $oscmd = file_get_contents( $oscmd_file ) ) ) {
     exit;
 }
 
-if ( isset( $argv[ 3 ] ) ) {
-    require_once $argv[ 3 ];
+$do_perf = "";
+
+if ( isset( $argv[ 3 ] ) &&
+    $argv[ 3 ] != "-" ) {
+    $do_perf = $argv[ 3 ];
+}
+
+if ( isset( $argv[ 4 ] ) ) {
+    require_once $argv[ 4 ];
     if ( !function_exists( 'post_processing' ) ) {
-        echo "no post_processing() function defined in $argv[3]\n";
+        echo "no post_processing() function defined in $argv[4]\n";
         exit;
     }
 }
@@ -55,7 +63,7 @@ if ( $json === FALSE || $json === NULL ) {
 }
 
 while( 1 ) {
-    $results = `php os_perf_cli.php $oscmd_file`;
+    $results = `php os_perf_cli.php $oscmd_file $do_perf`;
     print "$results\n";
     if ( function_exists( 'post_processing' ) ) {
         post_processing( $json, $results );
