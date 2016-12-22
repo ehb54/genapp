@@ -1,9 +1,10 @@
 <?php
 
 $notes = 
-    "usage: $argv[0] oscmd-file\n" .
+    "usage: $argv[0] oscmd-file {performance_executable}\n" .
     "takes oscmd-file\n" .
     "starts up oscluster\n" .
+    "optionally runs performance executable first\n" .
     "modifies oscmd info for new uuid and new cluster info\n" .
     "runs job\n" .
     "deletes oscluster\n" .
@@ -60,9 +61,16 @@ if ( !isset( $argv[ 1 ] ) ) {
     exit;
 }
 
+if ( isset( $argv[ 2 ] ) ) {
+    $perf_exe = $argv[ 2 ];
+    if ( !is_executable( $perf_exe ) ) {
+        echo "performance executable $perf_exe is not executable\n";
+        exit;
+    }
+}
+        
 $uuid = guid();
 echo "guid is $uuid\n";
-
 
 if ( FALSE === ( $oscmd = file_get_contents( $argv[1] ) ) ) {
     echo "could not read file $argv[1]\n";
@@ -117,6 +125,51 @@ ob_end_clean();
 sendudptext( "json with clusters:\n" . json_encode( $json, JSON_PRETTY_PRINT ) . "\n" );
 sendudptext( "hostfiletext:\n$hostfiletext\n" );
 
+# -------------------- optionally run performance test ------------------------
+
+if ( $perf_exe ) {
+    sendudpmsg( "Running performance test" );
+    $perf_json = $json;
+    $perf_json->timeout = 30;
+    $perf_cmd =
+        "ssh " 
+        . $result_json->clusterips[0] 
+        . " \"cd " 
+        . $json->_base_directory
+        . "; $perf_exe '" 
+        . str_replace( '"', '\"', json_encode( $json ) ) 
+        . "'\""
+        . ' 2> '
+        . $json->_log_directory
+        . "/_os_perf_stderr_$uuid"
+        ;
+
+    sendudptext( "$perf_cmd\n" );
+
+    ob_start();
+    file_put_contents( $json->_log_directory . "/_os_perf_cmd_$uuid", $perf_cmd );
+    ob_end_clean();
+    
+    $perf_results = `$perf_cmd`;
+
+#    sendudptext( "perf_results - pre replace:\n" . $perf_results );
+
+    if ( empty( $perf_results ) &&
+         file_exists( $json->_log_directory . "/_os_perf_stderr_$uuid" ) &&
+         filesize( $json->_log_directory . "/_os_perf_stderr_$uuid" ) != 0 
+        ) {
+        $tmp_perf_results = [];
+        $tmp_perf_results[ "error" ] = file_get_contents( $json->_log_directory . "/_os_perf_stderr_$uuid" );
+        $perf_results = json_encode( $tmp_perf_results );
+    }
+
+    $perf_results = str_replace( "__docrootactual:html5__", "__docroot:html5__/__application__", $perf_results );
+
+    sendudptext( "performance results - post replace:\n" . $perf_results );
+}        
+
+# -------------------- run job ------------------------
+
 sendudpmsg( "Running job" );
 
 $cmd = 
@@ -154,6 +207,8 @@ if ( empty( $results ) &&
 $results = str_replace( "__docrootactual:html5__", "__docroot:html5__/__application__", $results );
 
 sendudptext( "results - post replace:\n" . $results );
+
+# -------------------- clean up virtual cluster --------------------
 
 $cmd = "";
 foreach ( $result_json->clusterips as $ip ) {
