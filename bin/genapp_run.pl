@@ -406,7 +406,9 @@ foreach my $l ( keys %langs )
                     }
 
                     if ( grep /__modulejson__/, @l ) {
-                        my $enc_mod_json = encode_json( get_file_json_lang_specific( $module_to_file{ $l }{ $$rplc_menu{ 'menu:modules:id' } }, $l, 1 ) );
+                        my $js = JSON::PP->new;
+                        $js->canonical(1);
+                        my $enc_mod_json = $js->encode( get_file_json_lang_specific( $module_to_file{ $l }{ $$rplc_menu{ 'menu:modules:id' } }, $l, 1 ) );
                         grep s/__modulejson__/$enc_mod_json/g, @l;
                     }
 
@@ -781,26 +783,37 @@ foreach my $l ( keys %langs )
 
             my $fo = "output/$l/$use_output";
             $error .= "duplicate output for $fo\n" if $created{ $fo }++ && !$clobber;
-            mkdir_for_file( $fo );
-            my $fh;
-            if ( !open $fh, ">$fo" )
             {
-                $error .= "language $l: assembly step " . ( $i + 1 ) . ": error opening output file $fo\n";
-                next;
+                my $docopy = 1;
+                if ( -e $fo ) {
+                    open my $fhi, $fo;
+                    my @l = <$fhi>;
+                    close $fhi;
+                    my $cmpdata = join '', @l;
+                    $docopy = ( $cmpdata ne $outdata );
+                }
+                if ( $docopy ) {
+                    mkdir_for_file( $fo );
+                    my $fh;
+                    if ( !open $fh, ">$fo" )
+                    {
+                        $error .= "language $l: assembly step " . ( $i + 1 ) . ": error opening output file $fo\n";
+                        next;
+                    }
+                    print $fh $outdata;
+                    close $fh;
+                    $created .= "$fo\n";
+                }
             }
-            print $fh $outdata;
-            close $fh;
             if ( $setexec ) {
                 my $cmd = "chmod +x $fo";
                 `$cmd`;
             }
-
             {
                 my $cmd = "chmod g+w $fo";
                 `$cmd 2>&1`;
             }
 
-            $created .= "$fo\n";
             if ( $minify eq "minify" ) {
                 my $fn = $fo;
                 $fn =~ s/\.js/.min.js/;
@@ -874,19 +887,35 @@ foreach my $l ( keys %langs )
     {
         my $fo = "output/$l/$k";
         $warn .= "duplicate output for $fo\n" if $created{ $fo }++;
-        mkdir_for_file( $fo );
-        my $cmd = "cp $k $fo\n";
-        $created .= "$fo\n";
-        `$cmd`;
+        my $docopy = 1;
+        if ( -e $fo ) {
+            my $cmd = "cmp $k $fo\n";
+            system( $cmd );
+            $docopy = $?;
+        }
+        if ( $docopy ) {
+            mkdir_for_file( $fo );
+            my $cmd = "cp $k $fo\n";
+            $created .= "$fo\n";
+            `$cmd`;
+        }
     }
     # include_additional_files
     foreach my $k ( keys %include_additional_files ) {
         my $fo = "output/$l/" . $include_additional_files{ $k };
         $warn .= "duplicate output for $fo\n" if $created{ $fo }++;
-        mkdir_for_file( $fo );
-        my $cmd = "cp $k $fo\n";
-        $created .= "$fo\n";
-        `$cmd`;
+        my $docopy = 1;
+        if ( -e $fo ) {
+            my $cmd = "cmp $k $fo\n";
+            system( $cmd );
+            $docopy = $?;
+        }
+        if ( $docopy ) {
+            mkdir_for_file( $fo );
+            my $cmd = "cp $k $fo\n";
+            $created .= "$fo\n";
+            `$cmd`;
+        }
     }
         
     # copy over add/*
@@ -900,10 +929,18 @@ foreach my $l ( keys %langs )
             {
                 my $fo = "output/$l/$k";
                 $warn .= "duplicate output for $fo\n" if $created{ $fo }++;
-                mkdir_for_file( $fo );
-                my $cmd = "cp $gap/languages/$l/add/$k $fo\n";
-                $created .= "$fo\n";
-                print `$cmd`;
+                my $docopy = 1;
+                if ( -e $fo ) {
+                    my $cmd = "cmp $gap/languages/$l/add/$k $fo\n";
+                    system( $cmd );
+                    $docopy = $?;
+                }
+                if ( $docopy ) {
+                    mkdir_for_file( $fo );
+                    my $cmd = "cp $gap/languages/$l/add/$k $fo\n";
+                    $created .= "$fo\n";
+                    print `$cmd`;
+                }
             }
         }
     }
@@ -918,10 +955,18 @@ foreach my $l ( keys %langs )
             {
                 my $fo = "output/$l/$k";
                 $warn .= "duplicate output for $fo\n" if $created{ $fo }++;
-                mkdir_for_file( $fo );
-                my $cmd = "cp add/$k $fo\n";
-                $created .= "$fo\n";
-                print `$cmd`;
+                my $docopy = 1;
+                if ( -e $fo ) {
+                    my $cmd = "cmp add/$k $fo\n";
+                    system( $cmd );
+                    $docopy = $?;
+                }
+                if ( $docopy ) {
+                    mkdir_for_file( $fo );
+                    my $cmd = "cp add/$k $fo\n";
+                    $created .= "$fo\n";
+                    print `$cmd`;
+                }
             }
         }
     }
@@ -936,10 +981,18 @@ foreach my $l ( keys %langs )
             {
                 my $fo = "output/$l/$k";
                 $warn .= "duplicate output for $fo\n" if $created{ $fo }++;
-                mkdir_for_file( $fo );
-                my $cmd = "cp $l/add/$k $fo\n";
-                $created .= "$fo\n";
-                print `$cmd`;
+                my $docopy = 1;
+                if ( -e $fo ) {
+                    my $cmd = "cmp $l/add/$k $fo\n";
+                    system( $cmd );
+                    $docopy = $?;
+                }
+                if ( $docopy ) {
+                    mkdir_for_file( $fo );
+                    my $cmd = "cp $l/add/$k $fo\n";
+                    $created .= "$fo\n";
+                    print `$cmd`;
+                }
             }
         }
     }
@@ -955,8 +1008,8 @@ foreach my $l ( keys %langs )
     }
 } # end for language
 
+print '-'x60 . "\nNo changes.\n" . '-'x60 . "\n"      if !$created;
 print '-'x60 . "\nCreated:\n$created" . '-'x60 . "\n" if $created;
 print '-'x60 . "\nNotices:\n$notice" . '-'x60 . "\n"  if $notice;
 print '-'x60 . "\nWarnings:\n$warn" . '-'x60 . "\n"   if $warn;
 print '-'x60 . "\nErrors:\n$error" . '-'x60 . "\n"    if $error;
-
