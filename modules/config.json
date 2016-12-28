@@ -14,12 +14,28 @@
                           "id"    : "sys_login",
                           "label" : "Login"
                          }
+                        ,{ 
+                          "id"    : "sys_login_globus",
+                          "label" : "Login"
+                         }
+                        ,{ 
+                          "id"    : "sys_login_google",
+                          "label" : "Login"
+                         }
                          ,{ 
                           "id"    : "sys_logoff",
                           "label" : "Logoff"
                          }
                          ,{ 
                           "id"    : "sys_register",
+                          "label" : "Register"
+                         }
+                         ,{ 
+                          "id"    : "sys_register_globus",
+                          "label" : "Register"
+                         }
+                         ,{ 
+                          "id"    : "sys_register_google",
                           "label" : "Register"
                          }
                          ,{ 

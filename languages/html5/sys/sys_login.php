@@ -39,6 +39,41 @@ __~debug:basemylog{error_log( "request\n" . print_r( $_REQUEST, true ) . "\n", 3
 
 $userid = $_REQUEST[ 'userid' ];
 
+
+// connect
+try {
+     $m = new MongoClient();
+} catch ( Exception $e ) {
+    $results[ "error" ] = "Could not connect to the db " . $e->getMessage();
+    echo (json_encode($results));
+    exit();
+}
+  
+$loginok = 0;
+
+$coll = $m->__application__->users;
+$current_user = $coll->findOne( array( "name" => $userid ) );
+
+/// FOR GLOBUS ///////////////////////////////////////////////////////////////////////////
+
+if ( $current_user && isset( $current_user[ 'globusid' ] ) || isset( $current_user[ 'googleid' ] ) ) {              // FOR GLOBUS&GOOGLE ///
+$email = filter_var( $_REQUEST[ 'email' ], FILTER_SANITIZE_EMAIL );
+
+if ( !is_string( $email ) || 
+   !strlen( $email ) ||
+   !filter_var( $email, FILTER_VALIDATE_EMAIL ) )
+{
+  if ( isset( $_REQUEST['globusidlog']) || isset( $_REQUEST['googleidlog'])  )
+    {
+     $results[ "error" ] = "PHP code received empty or invalid email";
+     echo (json_encode($results));
+     exit();
+    }
+}
+}
+//////////////////////////////////////////////////////////////////////////////////////////
+
+if ( $current_user && !isset( $current_user[ 'globusid' ] ) && !isset( $current_user[ 'googleid' ] ) ) {     // FOR GLOBUS&GOOGLE /// 
 if ( isset( $_REQUEST[ 'forgotpassword' ] ) &&
      $_REQUEST[ 'forgotpassword' ] === "on" )
 {
@@ -55,19 +90,9 @@ if ( isset( $_REQUEST[ 'forgotpassword' ] ) &&
     }
     $pw = $_REQUEST[ 'password' ];
 }
-
-// connect
-try {
-     $m = new MongoClient();
-} catch ( Exception $e ) {
-    $results[ "error" ] = "Could not connect to the db " . $e->getMessage();
-    echo (json_encode($results));
-    exit();
 }
-  
-$loginok = 0;
 
-$coll = $m->__application__->users;
+
 
 $results[ 'status' ] = "User not found or incorrect password";
 if ( isset( $pw ) && $doc = $coll->findOne( array( "name" => $userid ) ) )
@@ -85,6 +110,17 @@ if ( isset( $pw ) && $doc = $coll->findOne( array( "name" => $userid ) ) )
       }
    }
 }
+
+// FOR GLOBUS ////////////////////////////////////////////////////////////////////
+if ( isset( $email ) && $doc = $coll->findOne( array( "name" => $userid ) ) )
+{
+  if ( $email == $doc[ 'email' ] )
+     {	
+      $loginok = 1;
+     }
+}
+//////////////////////////////////////////////////////////////////////////////////
+
 
 $addstat = "";
 $did_expiretime              = 0;

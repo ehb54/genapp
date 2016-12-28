@@ -32,19 +32,25 @@ if ( !is_string( $_REQUEST[ 'userid' ] ) ||
 
 $userid = $_REQUEST[ 'userid' ];
 
+
+if ( !isset( $_REQUEST[ "globusid" ] ) && !isset( $_REQUEST[ "googleid" ] ) ){   // FOR GLOBUS&GOOGLE /////
 if ( !is_string( $_REQUEST[ 'password1' ] ) || strlen( $_REQUEST[ 'password1' ] ) < 10 || strlen( $_REQUEST[ 'password1' ] ) > 100 )
 {
     $results[ "error" ] = "empty or invalid password";
     echo (json_encode($results));
     exit();
 }
+}
 
+if ( !isset( $_REQUEST[ "globusid" ] ) && !isset( $_REQUEST[ "googleid" ] ) ){     // FOR GLOBUS&GOOGLE /////
 if( $_REQUEST[ 'password1' ] != $_REQUEST[ 'password2' ] )
 {
     $results[ "error" ] = "Passwords do not match";
     echo (json_encode($results));
     exit();
 }
+}
+
 
 $email = filter_var( $_REQUEST[ 'email' ], FILTER_SANITIZE_EMAIL );
 
@@ -89,18 +95,45 @@ if ( __~enablecaptcha{1}0 ) {
 
 $coll = $m->__application__->users;
 
-if ( $doc = $coll->findOne( array( "name" => $_REQUEST[ 'userid' ] ) ) )
+if ( $doc = $coll->findOne( array( "name" => $_REQUEST[ 'userid' ] ) ) )    // FOR GLOBUS ///
 {
-   $results[ 'status' ] = "User id already registered, please try another";
-   echo (json_encode($results));
-   exit();
+  if ( isset( $_REQUEST[ "globusid" ] ) && isset( $doc[ 'globusid' ] ) ) 
+  { 
+     $results[ 'status' ] = "Globus user id already registered, please try another";
+     echo (json_encode($results));
+     exit();
+  }
 }
 
+if ( $doc = $coll->findOne( array( "name" => $_REQUEST[ 'userid' ] ) ) )    // FOR GOOGLE ///
+{
+  if ( isset( $_REQUEST[ "googleid" ] ) && isset( $doc[ 'googleid' ] ) ) 
+  { 
+     $results[ 'status' ] = "Google user id already registered, please try another";
+     echo (json_encode($results));
+     exit();
+  }
+}
+
+if ( $doc = $coll->findOne( array( "name" => $_REQUEST[ 'userid' ] ) ) && !isset( $_REQUEST[ "globusid" ]) && !isset( $_REQUEST["googleid"] ) )
+{
+  //if ( !isset( $doc['globusid'] ) ||  !isset( $doc['googleid'] )  )
+  //  { 	
+      $results[ 'status' ] = "User id already registered, please try another ";
+      echo (json_encode($results));
+      exit();
+  //  }
+}
+
+
+
+if ( !isset( $_REQUEST[ "globusid" ] ) && !isset( $_REQUEST[ "googleid" ] ) ){      // FOR GLOBUS&GOOGLE ///// 
 if ( PHP_VERSION_ID < 50500 )
 {
   $pw = crypt( $_REQUEST[ 'password1' ] );
 } else {
   $pw = password_hash( $_REQUEST[ 'password1' ], PASSWORD_DEFAULT );
+}
 }
 
 $do_verifyemail     = __~register:verifyemail{1}0;
@@ -111,6 +144,57 @@ if ( $do_requireapproval ) {
     $did = bin2hex( openssl_random_pseudo_bytes ( 20, $cstrong ) );
 }
 
+
+if ( isset( $_REQUEST[ "globusid" ] ) ){   // FOR GLOBUS /////     
+try {
+    $coll->insert( 
+        array( 
+            "name" => $_REQUEST[ 'userid' ]
+            //,"password" => $pw		// FOR GLOBUS /////    
+	    ,"email" => $email  
+	    ,"globusid" => "yes"                     // FOR GLOBUS /////
+            ,"registered" => new MongoDate() 
+            ,"registerip" => $_SERVER[ 'REMOTE_ADDR' ]
+            __~register:verifyemail{,"needsemailverification" => "pending"}
+            __~register:requireapproval{,"needsapproval" => "pending"}
+            __~register:requireapproval{,"approvalid" => $aid}
+            __~register:requireapproval{,"denyid" => $did}
+        )
+        __~mongojournal{, array("j" => true )}
+        );
+} catch(MongoCursorException $e) {
+    $results[ 'status' ] = "User id already registered, please try another. " . $e->getMessage();
+    echo (json_encode($results));
+    exit();
+}
+}
+else
+{
+   if ( isset( $_REQUEST[ "googleid" ] ) ){   // FOR GOOGLE /////  
+  try {
+    $coll->insert( 
+        array( 
+            "name" => $_REQUEST[ 'userid' ]
+            //,"password" => $pw		// FOR GOOGLE /////    
+	    ,"email" => $email  
+	    ,"googleid" => "yes"                     // FOR GOOGLE /////
+            ,"registered" => new MongoDate() 
+            ,"registerip" => $_SERVER[ 'REMOTE_ADDR' ]
+            __~register:verifyemail{,"needsemailverification" => "pending"}
+            __~register:requireapproval{,"needsapproval" => "pending"}
+            __~register:requireapproval{,"approvalid" => $aid}
+            __~register:requireapproval{,"denyid" => $did}
+        )
+        __~mongojournal{, array("j" => true )}
+        );
+} catch(MongoCursorException $e) {
+    $results[ 'status' ] = "User id already registered, please try another. " . $e->getMessage();
+    echo (json_encode($results));
+    exit();
+} 
+}
+else 
+{
 try {
     $coll->insert( 
         array( 
@@ -130,6 +214,9 @@ try {
     echo (json_encode($results));
     exit();
 }
+}
+}
+
 
 $id = '';
 if ( $doc = $coll->findOne( array( "name" => $_REQUEST[ 'userid' ] ) ) ) {

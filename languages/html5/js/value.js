@@ -572,6 +572,7 @@ ga.value.registerid = function(module, id, label, required) {
 }
 
 
+
 ga.value.setInputfromRFile = function(path, mode, ids, mod){ 
     var ids_array = ids.split(',');
     var username = $( '#_state' ).data('_logon');

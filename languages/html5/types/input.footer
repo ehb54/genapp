@@ -268,6 +268,13 @@ __~docrootexecutable{$( this ).append( $("<input>").attr("type", "hidden").attr(
     subMsging( vuuid, msg___moduleid__, "__moduleid__" );
 
     var formData = new FormData($('#__moduleid__')[0]);
+    
+     __~regglobus{ formData.append("globusid", "yes"); }
+     __~reggoogle{ formData.append("googleid", "yes"); }
+    
+     __~logglobus{ formData.append("globusidlog", "yes"); }
+     __~loggoogle{ formData.append("googleidlog", "yes"); }
+
 __~debug:ajax{    console.log( "calling ajax" );}
 
     $('#__moduleid___progress').html( "Uploading:<progress></progress>" );
@@ -275,6 +282,9 @@ __~debug:ajax{    console.log( "calling ajax" );}
     var job_status = "";
 
     ga.event( "", "__moduleid__", "submit: passed submit checks, submitting" );
+
+
+    // var url - coditional based on module's .json setting, and use it in ajax call
 
     $.ajax( {
              dataType: "json",
