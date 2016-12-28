@@ -2,6 +2,8 @@ this_html = '<tr><td><label for="__fields:id__">__fields:label__ </label></td><t
 this_eval = __~fields:pull{'ga.pull.toPull( "__moduleid__", "#__fields:id__", "text", "__fields:pull__", "#__fields:repeat__" );' + }
 __~fields:safefile{ '$( "#__fields:id__" ).blur( function() { ga.valid.safeFile( "#__fields:id__" ); } );' + }
 __~fields:calc{'ga.calc.register( "__moduleid__", "__fields:id__", "__fields:calc__" );' + }
+__~fields:globuslogin{'$("#userid").val( username_globus );' +}
+__~fields:googlelogin{'$("#userid").val( username_google );' +}
 'ga.value.registerid("__moduleid__","__fields:id__","__fields:label__"__~fields:required{,"text"});'
 + '$( "#__fields:id__" ).blur( function() { ga.valid.checkText( "#__fields:id__" ); });'
 + __~fields:specifiedproject{'ga.specproj( "__fields:specifiedproject__", "#__fields:id__" );' +}

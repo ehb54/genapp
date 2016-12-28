@@ -1,0 +1,58 @@
+# this is a module file, any module specific info belongs here
+{
+    "moduleid" : "sys_register_google",
+    "label"    : "Register",
+    "submit_label" : "Register",
+    "noreset"  : "true",
+    "resetoutonload"  : "true",
+    "nojobcontrol"  : "true",
+    "submitpolicy" : "all",
+    "captcha" : "true",
+    "resource"     : "local",
+    "modal"        : "true",
+    "reggoogle"  : "true",
+    "fields"   : [
+                  {
+                   "role"     : "input",
+                   "id"       : "label1",
+                   "label"    : "Register with Google",
+                   "type"     : "label",
+                   "default"  : "header3",
+                   "posthline"   : "true"
+                   },
+                  {
+                   "role"       : "input",
+                   "id"         : "userid",
+                   "label"      : "Enter user id",
+                   "type"       : "text",
+                   "required"   : "true",
+                   "pattern"    : ".{3,}",
+                   "help"       : "Enter a user id of 3 to 30 characters length, starting with an alpha character and only containing alphanumerics",
+                   "size"     : "30",
+		   "googlelogin" : "true",
+		   "readonly"    : "true"   		      
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "email",
+                   "label"    : "Email address",
+                   "type"     : "email",
+                   "required" : "true",
+                   "help"     : "Enter a valid email address",
+                   "size"     : "50",
+		    "googlelogin" : "true",
+		    "readonly"    : "true" 		      
+                  },
+                  {
+                   "role"     : "output",
+                   "id"       : "status",
+                   "label"    : "Status",
+                   "type"     : "textarea",
+                   "rows"    : 4,
+                   "cols"    : 50
+                   }
+        
+                  ],
+# the executable will take inputs in json and produce output in json
+    "executable" : "sys_register_google"
+}

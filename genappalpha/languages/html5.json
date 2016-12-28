@@ -248,6 +248,23 @@
                                      { "openstack/os_header.php" : "once" }
                                     ]
                    }
+                    ,{
+                    "frequency"  : "once"
+                    ,"output"     : "util/globusoauth.php"
+                    ,"inputs"     : [
+			             { "util/globusoauth_header.php" : "once" }
+                                     ,{ "util/globusoauth_body.php" : "once" }
+			             ,{ "util/globusoauth_footer.php" : "once" }
+                                    ]
+                   }   
+                   ,{
+                    "frequency"  : "once"
+                    ,"output"     : "util/googleoauth.php"
+                    ,"inputs"     : [
+			             { "util/googleoauth_header.php" : "once" }
+                                     ,{ "util/googleoauth_body.php" : "once" }
+		                    ]
+                   }   
                    ,{
                     "frequency"  : "once"
                     ,"output"     : "airavata/clientProperties.php"

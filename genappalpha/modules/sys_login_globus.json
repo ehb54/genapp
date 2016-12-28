@@ -1,0 +1,57 @@
+# this is a module file, any module specific info belongs here
+{
+    "moduleid" : "sys_login_globus",
+    "label"    : "Login",
+    "submit_label" : "Login",
+    "noreset"  : "true",
+    "resetonload"  : "true",
+    "nojobcontrol"  : "true",
+    "resource"     : "local",
+    "modal"        : "true",
+    "logglobus"    : "true",
+    "fields"   : [
+                  {
+                   "role"     : "input",
+                   "id"       : "label1",
+                   "label"    : "Login with Globus",
+                   "type"     : "label",
+                   "default"  : "header3",
+                   "posthline"   : "true"
+                   },
+                  {
+                   "role"       : "input",
+                   "id"         : "userid",
+                   "label"      : "Enter user id",
+                   "type"       : "text",
+                   "required"   : "true",
+                   "pattern"  : ".{3,}",
+                   "help"       : "Enter your user id.  If you do not have one, please register",
+                   "size"     : "30",
+		   "globuslogin" : "true",
+		   "readonly"    : "true"   
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "email",
+                   "label"    : "Email address",
+                   "type"     : "email",
+                   "pattern"  : ".{10,}",
+                   "required" : "true",
+                   "size"     : "30",
+                   "help"    : "Enter a valid email address",
+		    "globuslogin" : "true",
+		    "readonly"    : "true" 
+                   },
+                  {
+                   "role"     : "output",
+                   "id"       : "status",
+                   "label"    : "Status",
+                   "type"     : "textarea",
+                   "rows"    : 4,
+                   "cols"    : 50
+                   }
+                  ],
+# the executable will take inputs in json and produce output in json
+    "executable" : "sys_login_globus"
+    ,"submitpolicy" : "all"
+}
