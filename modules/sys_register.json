@@ -25,7 +25,7 @@
                    "label"      : "Enter user id",
                    "type"       : "text",
                    "required"   : "true",
-                   "pattern"    : ".{3,}",
+                   "pattern"    : "^[A-Za-z][A-Za-z0-9]{3,}$",
                    "help"       : "Enter a user id of 3 to 30 characters length, starting with an alpha character and only containing alphanumerics",
                    "size"     : "30"
                    },
