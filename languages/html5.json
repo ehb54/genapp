@@ -376,6 +376,14 @@
                    }
                    ,{
                     "frequency"  : "once",
+                    "output"     : "util/genapp_integrity.php",
+                    "setexecutable" : "true",
+                    "inputs"     : [ 
+                                    { "util/genapp_integrity.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
                     "output"     : "js/ga.js",
 #                   "minify"     : "copy",
 #                    "minify"     : "minify",
