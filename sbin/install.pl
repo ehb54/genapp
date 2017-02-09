@@ -145,6 +145,10 @@ please verify and correct before proceeding
 $cfgjsonnotes
 " if !$$cfgjson{ 'webroot' };
 
+if ( !$$cfgjson{ 'lockdir' } ) {
+    $$cfgjson{ 'lockdir' } = "$gb/etc";
+}
+
 # screen os / os_release
 
 my $os = $$cfgjson{ 'os' } || die "$0: $cfgjsonf does not contain an 'os' tag. $cfgjsonnotes";
@@ -873,6 +877,163 @@ update-rc.d rc.genapp defaults" );
     runcmd( "sudo service apache2 restart" );
     exit();
 }
+
+# ------ scientific linux 7.2 -------
+if ( $os eq 'scientific' && $os_release =~ /^7\.2/ ) {
+
+    runcmdsb( "cat <<_EOF > /etc/yum.repos.d/mongodb.repo
+[mongodb]
+name=MongoDB Repository
+baseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/
+gpgcheck=0
+enabled=1
+_EOF
+# the 3.2 repo didn't seem to work
+#cat <<_EOF > /etc/yum.repos.d/mongodb-org-3.2.repo
+#[mongodb-org-3.2]
+#name=MongoDB Repository
+#baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/3.2/x86_64/
+#gpgcheck=1
+#enabled=1
+#gpgkey=https://www.mongodb.org/static/pgp/server-3.2.asc
+#_EOF
+cat <<_EOF > /etc/yum.repos.d/mongodb-org-2.6.repo
+[mongodb-org-2.6]
+name=MongoDB 2.6 Repository
+baseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/
+gpgcheck=0
+enabled=1
+_EOF
+cat <<_EOF > /etc/yum.repos.d/fengshuo_zeromq.repo
+[home_fengshuo_zeromq]
+name=The latest stable of zeromq builds (CentOS_CentOS-6)
+type=rpm-md
+baseurl=http://download.opensuse.org/repositories/home:/fengshuo:/zeromq/CentOS_CentOS-6/
+gpgcheck=1
+gpgkey=http://download.opensuse.org/repositories/home:/fengshuo:/zeromq/CentOS_CentOS-6/repodata/repomd.xml.key
+enabled=1
+_EOF
+# semanage port -a -t mongod_port_t -p tcp 27017
+");
+
+    # install required modules
+
+#    runcmdsb( "rpm -Uvh http://mirror.webtatic.com/yum/el6/latest.rpm" );
+    runcmdsb( "yum -y groupinstall 'Development tools'" );
+
+    runcmdsb( "yum -y install mlocate wget httpd httpd-devel php php-devel php-pear ImageMagick ImageMagick-devel openssl-devel libuuid-devel mongodb-org mongodb-org-server zeromq-devel" );
+
+    my $rhsclphp    = "";
+    my $rhsclphpetc = "";
+    my $rhsclhttpd  = "";
+
+    runcmdsb( "yes '' | pecl channel-update pecl.php.net" );
+    runcmdsb( "yes '' | pecl install uuid zmq-beta mongo imagick;
+cat <<_EOF >> /etc/php.ini
+; Enable uuid extension module
+extension=uuid.so
+; Enable zmq extension module
+extension=zmq.so
+; Enable imagick extension module
+extension=imagick.so
+; Enable mongo extension module
+extension=mongo.so
+_EOF
+" );
+
+# rh-php56-php-pecl-mongo mongodb mongodb-server zeromq-devel" );
+    runcmdsb( "yes '' | pear channel-update pear.php.net" );
+    runcmdsb( "yes '' | pear install --alldeps Mail Mail_Mime Net_SMTP" );
+
+    `sudo killall mongod 2> /dev/null`;
+    runcmdsb( "service mongod start" );
+
+    runcmdsb( "cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/wsproxy.conf
+# ws proxy pass
+# priority=20
+ProxyPass /ws2 ws://localhost:37777/
+ProxyPass /wss2 ws://localhost:37777/
+_EOF
+cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/genapp.conf
+SetEnv GENAPP $gb
+_EOF
+");
+
+    # genapp html5 likes php at /usr/local/bin/php so make sure it exists
+
+    if ( -e "/usr/bin/php" && !-e "/usr/local/bin/php" ) {
+        runcmd( "sudo bash -c 'ln -s /usr/bin/php /usr/local/bin/php'" );
+    }
+
+    # make the base of the genapp instances directory, create group genapp, add user & apache to genapp group
+
+    runcmdsb( "mkdir -p $appbase
+groupadd genapp
+useradd genapp -r -s /usr/sbin/nologin -d $appbase -g genapp
+chmod g+rwx $appbase
+chown $whoami:genapp $appbase
+chmod g+s $appbase
+mkdir $$cfgjson{'lockdir'} 2> /dev/null
+chown genapp:genapp $$cfgjson{'lockdir'}
+chmod g+rwx $$cfgjson{'lockdir'}
+usermod -g users -G genapp $whoami
+usermod -G genapp \'apache\'" );
+
+    # setup local system definitions
+
+    runcmdsb( "cat <<_EOF > /etc/profile.d/genapp.sh
+export GENAPP=$gb
+export PATH=\\\\\\\$GENAPP/bin:\\\\\\\$PATH
+_EOF
+cat <<_EOF > /etc/profile.d/genapp.csh
+setenv GENAPP $gb
+setenv PATH=\\\\\\\$\{GENAPP\}/bin:\\\\\\\$\{PATH}
+_EOF
+
+" );
+
+    runcmdsb( "cat <<_EOF > $$cfgjson{'webroot'}/php_info.php
+<?php
+phpinfo();
+?>
+_EOF
+" );
+
+
+    # setup genapptest instance
+
+    runcmd( "cd $appbase && $gb/sbin/getapp.pl -force -gen -admin $whoami svn genapptest" );
+
+    # add ws servers to startup
+
+    runcmdsb( "cp $appbase/genapptest/output/html5/util/rc.genapp /etc/init.d" );
+    runcmd( "sg genapp -c '/etc/init.d/rc.genapp start'" );
+
+    die "not yet\n";
+
+    # open ports
+    {
+        my $iptab = `service iptables status | grep ACCEPT | grep INPUT | grep dpt:80`;
+        chomp $iptab;
+        if ( $iptab !~ /tcp/ ) {
+            runcmdsb( "iptables -I INPUT 1 -m state --state NEW -m tcp -p tcp --dport 80 -j ACCEPT
+service iptables save" );
+        }
+    }
+    if ( $$cfgjson{ 'https' } ) {
+        my $iptab = `service iptables status | grep ACCEPT | grep INPUT | grep dpt:443`;
+        chomp $iptab;
+        if ( $iptab !~ /tcp/ ) {
+            runcmdsb( "iptables -I INPUT 1 -m state --state NEW -m tcp -p tcp --dport 443 -j ACCEPT
+service iptables save" );
+        }
+    }
+
+    runcmdsb( "semanage permissive -a httpd_t; service httpd24-httpd restart && chkconfig httpd24-httpd on" );
+    exit();
+}
+
+
 
 die "------------------------------------------------------------
 Operating system identified as $os / release $os_release
