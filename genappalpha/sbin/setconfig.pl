@@ -165,6 +165,10 @@ if ( !$os && -e "/etc/redhat-release" ) {
         $os = "redhat";
         ( $os_release ) = $check =~ /^Red Hat Enterprise Linux Server release (\S+)/;
     }
+    if ( $check =~ /^Scientific Linux release/ ) {
+        $os = "scientific";
+        ( $os_release ) = $check =~ /^Scientific Linux release (\S+)/;
+    }
 }    
 
 if ( !$os  && -e "/etc/slackware-version" ) {
@@ -354,7 +358,7 @@ if ( $$json{ "https" } ) {
 }
 
 if ( !$webroot ) {
-    $webroot = "/var/www/html" if $os =~ /^(ubuntu|centos|redhat)$/;
+    $webroot = "/var/www/html" if $os =~ /^(ubuntu|centos|redhat|scientific)$/;
     $webroot = "/var/www/htdocs" if $os =~ /^slackware$/;
 }
 
