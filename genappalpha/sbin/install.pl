@@ -955,7 +955,7 @@ enabled=1
 _EOF
 ");
 
-    runcmdsb( "semanage port -a -t mongod_port_t -p tcp 27017" ) if !$cernvm;
+    runcmdsb( "semanage port -l | grep mongod_port_t || semanage port -a -t mongod_port_t -p tcp 27017" ) if !$cernvm;
 
     # install required modules
 
@@ -1050,6 +1050,7 @@ _EOF
         if ( $$cfgjson{ 'https' } ) {
             runcmdsb( "firewall-cmd --permanent --zone=public --add-service=https" );
         }
+        runcmdsb( "systemctl restart firewalld.service" );
     }
 
     runcmdsb( "semanage permissive -a httpd_t" ) if !$cernvm;
