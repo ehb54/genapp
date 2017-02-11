@@ -168,6 +168,9 @@ if ( !$os && -e "/etc/redhat-release" ) {
     if ( $check =~ /^Scientific Linux release/ ) {
         $os = "scientific";
         ( $os_release ) = $check =~ /^Scientific Linux release (\S+)/;
+        if ( -e "/etc/cernvm-release" ) {
+            $os_release .= "-cernvm";
+        }
     }
 }    
 
