@@ -916,6 +916,11 @@ update-rc.d rc.genapp defaults" );
 # ------ scientific linux 7.2 -------
 if ( $os eq 'scientific' && $os_release =~ /^7\.2/ ) {
 
+    my $cernvm;
+    if ( $os_release =~ /cernvm$/ ) {
+        $cernvm++;
+    }
+
     runcmdsb( "cat <<_EOF > /etc/yum.repos.d/mongodb.repo
 [mongodb]
 name=MongoDB Repository
@@ -948,13 +953,14 @@ gpgcheck=1
 gpgkey=http://download.opensuse.org/repositories/home:/fengshuo:/zeromq/CentOS_CentOS-6/repodata/repomd.xml.key
 enabled=1
 _EOF
-semanage port -a -t mongod_port_t -p tcp 27017
 ");
+
+    runcmdsb( "semanage port -a -t mongod_port_t -p tcp 27017" ) if !$cernvm;
 
     # install required modules
 
 #    runcmdsb( "rpm -Uvh http://mirror.webtatic.com/yum/el6/latest.rpm" );
-    runcmdsb( "yum -y groupinstall 'Development tools'" );
+    runcmdsb( "yum -y groupinstall 'Development tools'" ) if !$cernvm;
 
     runcmdsb( "yum -y install mlocate wget httpd httpd-devel php php-devel php-pear ImageMagick ImageMagick-devel openssl-devel libuuid-devel mongodb-org mongodb-org-server zeromq-devel" );
 
@@ -969,7 +975,7 @@ semanage port -a -t mongod_port_t -p tcp 27017
         runcmdsb( $cmd );
     }
 
-# rh-php56-php-pecl-mongo mongodb mongodb-server zeromq-devel" );
+    # rh-php56-php-pecl-mongo mongodb mongodb-server zeromq-devel" );
     runcmdsb( "yes '' | pear channel-update pear.php.net" );
     runcmdsb( "yes '' | pear install --alldeps Mail Mail_Mime Net_SMTP" );
 
@@ -1039,12 +1045,15 @@ _EOF
     runcmd( "sg genapp -c '/etc/init.d/rc.genapp start'" );
 
     # open ports
-    runcmdsb( "firewall-cmd --permanent --zone=public --add-service=http" );
-    if ( $$cfgjson{ 'https' } ) {
-        runcmdsb( "firewall-cmd --permanent --zone=public --add-service=https" );
+    if ( !$cernvm ) {
+        runcmdsb( "firewall-cmd --permanent --zone=public --add-service=http" );
+        if ( $$cfgjson{ 'https' } ) {
+            runcmdsb( "firewall-cmd --permanent --zone=public --add-service=https" );
+        }
     }
 
-    runcmdsb( "semanage permissive -a httpd_t; systemctl restart httpd.service && systemctl enable httpd.service" );
+    runcmdsb( "semanage permissive -a httpd_t" ) if !$cernvm;
+    runcmdsb( "systemctl restart httpd.service && systemctl enable httpd.service" );
     exit();
 }
 
