@@ -66,6 +66,41 @@ sub runcmdsb {
     runcmd( $cmd );
 }
 
+sub add_to_phpini {
+    my $phpfile = shift;
+
+    die "$0: $phpfile does not exist\n" if !-e $phpfile;
+    die "$0: $phpfile is not readable\n" if !-r $phpfile;
+
+    open my $fh, $phpfile || die "$0: error reading $phpfile\n";
+    my @phpini = <$fh>;
+    close $fh;
+
+    my @phpext = grep ( /extension\s*=/, @phpini );
+    @phpext = grep ( !/\s*;/, @phpext );
+    @phpext = grep ( s/^\s*extension\s*=\s*//, @phpext );
+    @phpext = grep ( s/^\s*//g, @phpext );
+    @phpext = grep ( s/\.so//, @phpext );
+    grep chomp, @phpext;
+
+    my %hasext;
+    foreach my $i ( @phpext ) {
+        $hasext{ $i }++;
+    }
+
+    my $add;
+    foreach my $check ( @_ ) {
+        if ( !$hasext{ $check } ) {
+            $add .= "; Enable $check extension module\nextension=${check}.so\n";
+        }
+    }
+    my $cmd;
+    if ( $add ) {
+        $cmd = "cat <<_EOF >> $phpfile\n${add}_EOF\n";
+    }
+    return $cmd;
+}
+
 # get system configuration information
 my $cfgjson = {};
 my $cfgjsonf = "$gb/etc/config.json";
@@ -913,7 +948,7 @@ gpgcheck=1
 gpgkey=http://download.opensuse.org/repositories/home:/fengshuo:/zeromq/CentOS_CentOS-6/repodata/repomd.xml.key
 enabled=1
 _EOF
-# semanage port -a -t mongod_port_t -p tcp 27017
+semanage port -a -t mongod_port_t -p tcp 27017
 ");
 
     # install required modules
@@ -928,25 +963,20 @@ _EOF
     my $rhsclhttpd  = "";
 
     runcmdsb( "yes '' | pecl channel-update pecl.php.net" );
-    runcmdsb( "yes '' | pecl install uuid zmq-beta mongo imagick;
-cat <<_EOF >> /etc/php.ini
-; Enable uuid extension module
-extension=uuid.so
-; Enable zmq extension module
-extension=zmq.so
-; Enable imagick extension module
-extension=imagick.so
-; Enable mongo extension module
-extension=mongo.so
-_EOF
-" );
+    runcmdsb( "yes '' | pecl install uuid zmq-beta mongo imagick" );
+
+    if ( my $cmd = add_to_phpini( '/etc/php.ini', 'uuid', 'zmq', 'imagick', 'mongo' ) ) {
+        runcmdsb( $cmd );
+    }
 
 # rh-php56-php-pecl-mongo mongodb mongodb-server zeromq-devel" );
     runcmdsb( "yes '' | pear channel-update pear.php.net" );
     runcmdsb( "yes '' | pear install --alldeps Mail Mail_Mime Net_SMTP" );
 
     `sudo killall mongod 2> /dev/null`;
-    runcmdsb( "service mongod start" );
+    runcmdsb( "service mongod start
+chkconfig mongod on
+" );
 
     runcmdsb( "cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/wsproxy.conf
 # ws proxy pass
@@ -999,7 +1029,6 @@ phpinfo();
 _EOF
 " );
 
-
     # setup genapptest instance
 
     runcmd( "cd $appbase && $gb/sbin/getapp.pl -force -gen -admin $whoami svn genapptest" );
@@ -1009,30 +1038,15 @@ _EOF
     runcmdsb( "cp $appbase/genapptest/output/html5/util/rc.genapp /etc/init.d" );
     runcmd( "sg genapp -c '/etc/init.d/rc.genapp start'" );
 
-    die "not yet\n";
-
     # open ports
-    {
-        my $iptab = `service iptables status | grep ACCEPT | grep INPUT | grep dpt:80`;
-        chomp $iptab;
-        if ( $iptab !~ /tcp/ ) {
-            runcmdsb( "iptables -I INPUT 1 -m state --state NEW -m tcp -p tcp --dport 80 -j ACCEPT
-service iptables save" );
-        }
-    }
+    runcmdsb( "firewall-cmd --permanent --zone=public --add-service=http" );
     if ( $$cfgjson{ 'https' } ) {
-        my $iptab = `service iptables status | grep ACCEPT | grep INPUT | grep dpt:443`;
-        chomp $iptab;
-        if ( $iptab !~ /tcp/ ) {
-            runcmdsb( "iptables -I INPUT 1 -m state --state NEW -m tcp -p tcp --dport 443 -j ACCEPT
-service iptables save" );
-        }
+        runcmdsb( "firewall-cmd --permanent --zone=public --add-service=https" );
     }
 
-    runcmdsb( "semanage permissive -a httpd_t; service httpd24-httpd restart && chkconfig httpd24-httpd on" );
+    runcmdsb( "semanage permissive -a httpd_t; systemctl restart httpd.service && systemctl enable httpd.service" );
     exit();
 }
-
 
 
 die "------------------------------------------------------------
