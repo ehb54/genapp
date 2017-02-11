@@ -670,7 +670,7 @@ https://access.redhat.com/documentation/en-US/Red_Hat_Software_Collections/2/htm
     runcmdsb( "yum -y install mlocate httpd24-httpd httpd24-httpd-devel rh-php56-php rh-php56-php-devel rh-php56-php-pear rh-php56-php-pecl-mongo mongodb-org mongodb-org-server wget libuuid-devel zeromq-devel openssl-devel libpng-devel libjpeg-devel fontconfig-devel freetype-devel fftw-devel libtiff-devel cairo-devel pango pango-devel" );
 
     # need imagemagick from source :(
-    my $imversion = "ImageMagick-6.9.5-3.tar.gz";
+    my $imversion = "ImageMagick-6.9.7-7.tar.gz";
     runcmd( "cd /tmp && wget http://www.imagemagick.org/download/$imversion && tar zxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
 
     my $rhsclphp    = "/opt/rh/rh-php56/root";
@@ -962,7 +962,15 @@ _EOF
 #    runcmdsb( "rpm -Uvh http://mirror.webtatic.com/yum/el6/latest.rpm" );
     runcmdsb( "yum -y groupinstall 'Development tools'" ) if !$cernvm;
 
-    runcmdsb( "yum -y install mlocate wget httpd httpd-devel php php-devel php-pear ImageMagick ImageMagick-devel openssl-devel libuuid-devel mongodb-org mongodb-org-server zeromq-devel" );
+    runcmdsb( "yum -y install mlocate wget httpd httpd-devel php php-devel php-pear openssl-devel libuuid-devel mongodb-org mongodb-org-server zeromq-devel" );
+ 
+    if ( $cernvm ) {
+        # need imagemagick from source :(
+        my $imversion = "ImageMagick-6.9.7-7.tar.gz";
+        runcmd( "cd /tmp && wget http://www.imagemagick.org/download/$imversion && tar zxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
+    } else {
+        runcmdsb( "yum -y install ImageMagick ImageMagick-devel" );
+    }
 
     my $rhsclphp    = "";
     my $rhsclphpetc = "";
@@ -1054,6 +1062,11 @@ _EOF
     }
 
     runcmdsb( "semanage permissive -a httpd_t" ) if !$cernvm;
+
+    if ( $cernvm ) {
+        runcmdsb( "sed --in-place=.prev 's/Listen .*:80/Listen 80/g' /etc/httpd/conf/httpd.conf" );
+    }
+
     runcmdsb( "systemctl restart httpd.service && systemctl enable httpd.service" );
     exit();
 }
