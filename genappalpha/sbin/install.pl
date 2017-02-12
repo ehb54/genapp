@@ -110,10 +110,12 @@ this is used to setup individual applications values.
 to build a default config.json file
 $gb/sbin/setconfig.pl -pj
 and verify the information is correct.
-Particularly, if the machine is not publically exposed, you probably want to change the hostip and hostname, as it will likely report the public ip of your firewall.
-The full options are listed by
-$gb/sbin/setconfig.pl -h
-You can also manually edit $cfgjsonf
+NB: if the machine is not publically exposed, you probably want to change the hostip and hostname, as it will likely report the public ip of your firewall.
+    You can get a full set of options listed by running $gb/sbin/setconfig.pl -h
+    If you know the ethernet interface to run on, $gb/sbin/setconfig.pl -if network-interface-id can be helpful
+    The -f option will force the changes to a previously set $cfgjsonf file
+    The full options are listed by $gb/sbin/setconfig.pl -h
+    You can also manually edit $cfgjsonf
 
 Once you are satisified that the setting are correct 
 you can rerun $gb/sbin/install
