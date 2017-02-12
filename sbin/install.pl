@@ -452,7 +452,8 @@ _EOF
     # add ws servers to startup
 
     runcmdsb( "cp $appbase/genapptest/output/html5/util/rc.genapp /etc/init.d" );
-    runcmd( "sg genapp -c '/etc/init.d/rc.genapp start'" );
+    runcmdsb( "chkconfig --add rc.genapp" );
+    runcmd( "/etc/init.d/rc.genapp start" );
 
     # open ports
     {
@@ -585,7 +586,8 @@ _EOF
     # add ws servers to startup
 
     runcmdsb( "cp $appbase/genapptest/output/html5/util/rc.genapp /etc/init.d" );
-    runcmd( "sg genapp -c '/etc/init.d/rc.genapp start'" );
+    runcmdsb( "chkconfig --add rc.genapp" );
+    runcmd( "/etc/init.d/rc.genapp start" );
 
     # open ports
     {
@@ -768,7 +770,8 @@ _EOF
     # add ws servers to startup
 
     runcmdsb( "cp $appbase/genapptest/output/html5/util/rc.genapp /etc/init.d" );
-    runcmd( "sg genapp -c '/etc/init.d/rc.genapp start'" );
+    runcmdsb( "chkconfig --add rc.genapp" );
+    runcmd( "/etc/init.d/rc.genapp start" );
 
     runcmdsb( "semanage permissive -a httpd_t; service httpd24-httpd restart && chkconfig httpd24-httpd on" );
 
@@ -905,7 +908,7 @@ _EOF
 update-rc.d rc.genapp defaults" );
 
     # start ws servers
-    runcmd( "sg genapp -c '/etc/init.d/rc.genapp start'" );
+    runcmd( "/etc/init.d/rc.genapp start" );
 
 # restart apache2
 
@@ -1050,7 +1053,8 @@ _EOF
     # add ws servers to startup
 
     runcmdsb( "cp $appbase/genapptest/output/html5/util/rc.genapp /etc/init.d" );
-    runcmd( "sg genapp -c '/etc/init.d/rc.genapp start'" );
+    runcmdsb( "chkconfig --add rc.genapp" );
+    runcmd( "/etc/init.d/rc.genapp start" );
 
     # open ports
     if ( !$cernvm ) {

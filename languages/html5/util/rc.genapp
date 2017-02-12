@@ -2,7 +2,7 @@
 
 ### BEGIN INIT INFO
 # Provides:          genapp
-# Required-Start:    $network $local_fs $remote_fs
+# Required-Start:    $network $local_fs $remote_fs mongod
 # Required-Stop:     $network $local_fs $remote_fs
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
@@ -10,5 +10,5 @@
 # Description:       GenApp messaging startup
 ### END INIT INFO
 
-__docroot:html5__/__application__/util/services.php $*
+sg genapp -c "__docroot:html5__/__application__/util/services.php $*"
 
