@@ -671,7 +671,7 @@ https://access.redhat.com/documentation/en-US/Red_Hat_Software_Collections/2/htm
 
     # need imagemagick from source :(
     my $imversion = "ImageMagick-6.9.7-7.tar.gz";
-    runcmd( "cd /tmp && wget http://www.imagemagick.org/download/$imversion && tar zxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
+    runcmd( "rm -f /tmp/$imversion 2>/dev/null;cd /tmp && wget http://transloadit.imagemagick.org/download/releases/$imversion && tar zxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
 
     my $rhsclphp    = "/opt/rh/rh-php56/root";
     my $rhsclphpetc = "/etc/opt/rh/rh-php56/";
@@ -914,7 +914,7 @@ update-rc.d rc.genapp defaults" );
 }
 
 # ------ scientific linux 7.2 -------
-if ( $os eq 'scientific' && $os_release =~ /^7\.2/ ) {
+if ( $os eq 'scientific' && $os_release =~ /^7\.(2|3)(cernvm|)/ ) {
 
     my $cernvm;
     if ( $os_release =~ /cernvm$/ ) {
@@ -967,7 +967,7 @@ _EOF
     if ( $cernvm ) {
         # need imagemagick from source :(
         my $imversion = "ImageMagick-6.9.7-7.tar.gz";
-        runcmd( "cd /tmp && wget http://www.imagemagick.org/download/$imversion && tar zxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
+        runcmd( "rm -f /tmp/$imversion 2>/dev/null; cd /tmp && wget http://transloadit.imagemagick.org/download/releases/$imversion && tar zxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
     } else {
         runcmdsb( "yum -y install ImageMagick ImageMagick-devel" );
     }
