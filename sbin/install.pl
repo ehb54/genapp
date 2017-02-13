@@ -196,7 +196,7 @@ if ( $os eq 'ubuntu' ) {
 }
 
 if ( $os eq 'centos' ) {
-    die "only Centos 6.7, 6.8 and 7.2 currently supported and this appears to be version $os_release\n$sorry" if $os_release !~ /^6\.(7|8)$/ && $os_release !~ /^7\.2/;
+    die "only Centos 6.7, 6.8, 7.2 and 7.3 currently supported and this appears to be version $os_release\n$sorry" if $os_release !~ /^6\.(7|8)$/ && $os_release !~ /^7\.(2|3)/;
 }
 
 if ( $os eq 'redhat' ) {
@@ -480,7 +480,7 @@ service iptables save" );
 }
 
 # ------ centos 7.2 -------
-if ( $os eq 'centos' && $os_release =~ /^7\.2/ ) {
+if ( $os eq 'centos' && $os_release =~ /^7\.(2|3)/ ) {
 
     # install required modules
 
