@@ -546,6 +546,13 @@ table {
 __~footersize{footer { position: fixed; left: 0; bottom: 0; height: __footersize__; width: 100%; background: rgb( __background_color_rgb__ ); z-index:50;}}
 .logo { position: fixed; bottom: 0px; right: 0; z-index:51;}
 .logo img { height:calc( __footersize__ / 1.6 ) }
+.wsstatus { position: fixed; bottom:calc( __footersize__ / 6.25 ); right: 30px; color:red; z-index:51 }
+.helpwsstatus {
+    position:fixed;
+    bottom:calc( __footersize__ + 3px );
+    right:10px;
+    min-width: 20em;
+}
 
 #tab_feedback {
      position: fixed;
@@ -1200,25 +1207,25 @@ __~debug:ws{   console.log( 'setMsging() called' );}
 __~debug:ws{   console.log( 'setMsging trying new session' );}
    conn = new ab.Session( ws 
       , function() {            // Once the connection has been established
+          $(".wsstatus").css( "color", "green" );
 __~debug:ws{          console.log( 'setMsging: connection established' );}
           ga.event( "global", "ws messaging", "connection established" );
           $( '#_state' ).data( "_wssession", conn );
 __~debug:ws{          console.log('websocket opened');}
-//          setInterval(function() {
-//__~debug:ws{            console.log( "ping/pong keepalive" );}
-//            if (ws.bufferedAmount == 0) {
-//              ws.send("Keep alive from client"  ); }
-//            }, 30000 );
+          subMsging( "keepalive", keepalive, "keepalive" );
         }
       , function() {            // When the connection is closed
+            $(".wsstatus").css( "color", "red" );
 __~debug:ws{            console.warn('setMsging connection closed');}
-            if ( gd.data( "_unload" ) == 0 )
-            {
-              ga.event( "global", "ws messaging", "connection failed" );
-            messagebox( { icon: "toast.png",
-                         text: "WebSocket messaging failed to " + ws + "<p>Your firewall may be blocking external access to port " + ws.replace( /^.*:/g, '') + " or the WebSocket server is down.<p>This results in a crippled experience with no messaging.",
-                         buttons : [ { id : "ok", label : "OK" } ] });
+            if ( gd.data( "_unload" ) == 0 ) {
+                return setMsging();
             }
+//            {
+//              ga.event( "global", "ws messaging", "connection failed" );
+//            messagebox( { icon: "toast.png",
+//                         text: "WebSocket messaging failed to " + ws + "<p>Your firewall may be blocking external access to port " + ws.replace( /^.*:/g, '') + " or the WebSocket server is down.<p>This results in a crippled experience with no messaging.",
+//                         buttons : [ { id : "ok", label : "OK" } ] });
+//            }
         }
       , {                       // Additional parameters, we're ignoring the WAMP sub-protocol for older browsers
             'skipSubprotocolCheck': true,
@@ -1229,6 +1236,10 @@ __~debug:ws{            console.warn('setMsging connection closed');}
 
 __~debug:ws{   console.log( 'setMsging end' );}
 }        
+
+function keepalive() {
+    __~debug:ws{console.log( "keepalive received: " + Date().toLocaleString() );}
+}
 
 subd_msging = [];
 

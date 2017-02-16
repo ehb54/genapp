@@ -186,6 +186,13 @@
                    }
                    ,{
                     "frequency"  : "once",
+                    "output"     : "util/msg-keepalive.php",
+                    "inputs"     : [ 
+                                    { "util/msg-keepalive.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
                     "output"     : "util/services.php",
                     "setexecutable" : "true",
                     "inputs"     : [ 
