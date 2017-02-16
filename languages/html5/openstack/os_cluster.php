@@ -60,8 +60,8 @@ function os_cluster_start( $nodes, $uuid ) {
         sendudptext( "userdata $userdata\n" );
     }
 
-    if ( isset( $json->resources->oscluster->properties->network ) ) {
-        $use_network = $json->resources->oscluster->properties->network;
+    if ( isset( $appjson->resources->oscluster->properties->network ) ) {
+        $use_network = $appjson->resources->oscluster->properties->network;
     } else {
         $use_network = "${project}-api";
     }
