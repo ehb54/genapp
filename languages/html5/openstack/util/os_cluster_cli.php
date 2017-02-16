@@ -1,4 +1,4 @@
-<?php
+5~<?php
 
 $notes = 
     "\n" .
@@ -61,6 +61,12 @@ if ( isset( $json->resources->oscluster->properties->user_data ) ) {
     echo "userdata $userdata\n";
 }
 
+if ( isset( $json->resources->oscluster->properties->network ) ) {
+    $use_network = $json->resources->oscluster->properties->network;
+} else {
+    $use_network = "${project}-api";
+}
+
 echo `nova list`;
 
 $cstrong = true;
@@ -75,7 +81,7 @@ for ( $i = 0; $i < $argv[ 1 ]; ++$i ) {
         $json->resources->oscluster->properties->project . "-run-" . $argv[ 2 ] . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
 //        "-run-" . bin2hex( openssl_random_pseudo_bytes ( 16, $cstrong ) );
 
-    $cmd = "nova boot $name --flavor $flavor --image $baseimage --key-name $key --security-groups $secgroup --nic net-name=${project}-api $userdata";
+    $cmd = "nova boot $name --flavor $flavor --image $baseimage --key-name $key --security-groups $secgroup --nic net-name=$use_network $userdata";
     print "$cmd\n";
     $results = `$cmd 2>&1`;
     print $results;

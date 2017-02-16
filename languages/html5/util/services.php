@@ -23,15 +23,16 @@ if ( !is_writeable( $lockdir ) ) {
 global $lock;
 $lock = array();
 
-$lock[ "udp" ]  = "$lockdir/msg-udp-" . $json->messaging->zmqport . ".lock";
-$lock[ "ws"  ]  = "$lockdir/msg-ws-"  . $json->messaging->zmqport . ".lock";
+$lock[ "udp"       ]  = "$lockdir/msg-udp-"       . $json->messaging->zmqport . ".lock";
+$lock[ "ws"        ]  = "$lockdir/msg-ws-"        . $json->messaging->zmqport . ".lock";
+$lock[ "keepalive" ]  = "$lockdir/msg-keepalive-" . $json->messaging->zmqport . ".lock";
 
 global $cmd;
 $cmd = array();
 
-$cmd[ "udp" ] = "msg-udpserver.php";
-$cmd[ "ws"  ] = "msg-wsserver.php";
-
+$cmd[ "udp"       ] = "msg-udpserver.php";
+$cmd[ "ws"        ] = "msg-wsserver.php";
+$cmd[ "keepalive" ] = "msg-keepalive.php";
 
 function stop() {
     global $lock;
@@ -109,7 +110,7 @@ function status( $doprint = true ) {
         }
 
         if ( $doprint ) {
-            printf( "%-8s %-6s $status\n", $k, $pid );
+            printf( "%-9s %-6s $status\n", $k, $pid );
         }
     }
     return $running;
