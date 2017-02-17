@@ -186,6 +186,14 @@ if ( !$$cfgjson{ 'lockdir' } ) {
     $$cfgjson{ 'lockdir' } = "$gb/etc";
 }
 
+die "$0: no messaging:wsport defined in $cfgjson
+please verify and correct before proceeding
+
+$cfgjsonnotes
+" if !$$cfgjson{ 'messaging' }{ 'wsport' };
+
+$wsport = $$cfgjson{ 'messaging' }{ 'wsport' };
+
 # screen os / os_release
 
 my $os = $$cfgjson{ 'os' } || die "$0: $cfgjsonf does not contain an 'os' tag. $cfgjsonnotes";
@@ -264,14 +272,14 @@ mv /tmp/_php.ini /etc/php5/apache2/php.ini
     runcmdsb( "cat <<_EOF > /etc/apache2/mods-available/wsproxy.conf
 # ws proxy pass
 # priority=20
-ProxyPass /ws2 ws://localhost:37777/
+ProxyPass /ws2 ws://localhost:$wsport/
 _EOF
 cat <<_EOF > /etc/apache2/mods-available/wsproxy.load
 _EOF
 cat <<_EOF > /etc/apache2/mods-available/wssproxy.conf
 # wss proxy pass
 # priority=20
-ProxyPass /wss2 ws://localhost:37777/
+ProxyPass /wss2 ws://localhost:$wsport/
 _EOF
 cat <<_EOF > /etc/apache2/mods-available/wssproxy.load
 _EOF
@@ -391,8 +399,8 @@ _EOF
     runcmdsb( "cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/wsproxy.conf
 # ws proxy pass
 # priority=20
-ProxyPass /ws2 ws://localhost:37777/
-ProxyPass /wss2 ws://localhost:37777/
+ProxyPass /ws2 ws://localhost:$wsport/
+ProxyPass /wss2 ws://localhost:$wsport/
 _EOF
 cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/genapp.conf
 SetEnv GENAPP $gb
@@ -525,8 +533,8 @@ _EOF
     runcmdsb( "cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/wsproxy.conf
 # ws proxy pass
 # priority=20
-ProxyPass /ws2 ws://localhost:37777/
-ProxyPass /wss2 ws://localhost:37777/
+ProxyPass /ws2 ws://localhost:$wsport/
+ProxyPass /wss2 ws://localhost:$wsport/
 _EOF
 cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/genapp.conf
 SetEnv GENAPP $gb
@@ -709,8 +717,8 @@ _EOF
     runcmdsb( "cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/wsproxy.conf
 # ws proxy pass
 # priority=20
-ProxyPass /ws2 ws://localhost:37777/
-ProxyPass /wss2 ws://localhost:37777/
+ProxyPass /ws2 ws://localhost:$wsport/
+ProxyPass /wss2 ws://localhost:$wsport/
 _EOF
 cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/genapp.conf
 SetEnv GENAPP $gb
@@ -836,14 +844,14 @@ mv /tmp/_php.ini /etc/php/5.6/apache2/php.ini
     runcmdsb( "cat <<_EOF > /etc/apache2/mods-available/wsproxy.conf
 # ws proxy pass
 # priority=20
-ProxyPass /ws2 ws://localhost:37777/
+ProxyPass /ws2 ws://localhost:$wsport/
 _EOF
 cat <<_EOF > /etc/apache2/mods-available/wsproxy.load
 _EOF
 cat <<_EOF > /etc/apache2/mods-available/wssproxy.conf
 # wss proxy pass
 # priority=20
-ProxyPass /wss2 ws://localhost:37777/
+ProxyPass /wss2 ws://localhost:$wsport/
 _EOF
 cat <<_EOF > /etc/apache2/mods-available/wssproxy.load
 _EOF
@@ -1000,8 +1008,8 @@ chkconfig mongod on
     runcmdsb( "cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/wsproxy.conf
 # ws proxy pass
 # priority=20
-ProxyPass /ws2 ws://localhost:37777/
-ProxyPass /wss2 ws://localhost:37777/
+ProxyPass /ws2 ws://localhost:$wsport/
+ProxyPass /wss2 ws://localhost:$wsport/
 _EOF
 cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/genapp.conf
 SetEnv GENAPP $gb

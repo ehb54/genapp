@@ -253,12 +253,12 @@ if ( $$json{'hostname'} ) {
 }
 
 my $wssport   = $https ? 443 : 80;
-my $wsport    = 37777;
-my $zmqport   = 37778;
+my $wsport    = 30777;
+my $zmqport   = 30778;
 my $zmqhostip = "127.0.0.1";
-my $udpport   = 37779;
+my $udpport   = 30779;
 my $udphostip = "127.0.0.1";
-my $tcpport   = 37780;
+my $tcpport   = 30780;
 my $tcphostip = "127.0.0.1";
 
 if ( $$json{ "messaging" }{ "wssport" } ) {
