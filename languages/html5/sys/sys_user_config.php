@@ -98,17 +98,37 @@ if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) )
       {
           $results[ "error" ] .= "Invalid new project name.  It must contain only letters, numbers and underscores";
       } else {
-          $update[ '$push' ][ 'project' ] = array( 
-                                                 $_REQUEST[ 'newproject-newprojectname' ] => array( 
-                                                                                       'desc'    => $_REQUEST[ 'newproject-newprojectdesc' ], 
-                                                                                       'created' => $now 
-                                                                                       ) 
-                                                 );
-          $results[ 'status' ] .= "Adding project " . $_REQUEST[ 'newproject-newprojectname' ] . ". ";
-          $results[ '_project' ] = $_REQUEST[ 'newproject-newprojectname' ];
-          $results[ 'status' ] .= "Current project is now " . $results[ '_project' ] . ". ";
-          $_SESSION[ $window ][ 'project' ] = $results[ '_project' ];
-          $do_update = 1;
+          # check for duplicate
+          $addok = 1;
+          if ( isset( $doc[ 'project' ] ) ) {
+              foreach ( $doc[ 'project' ] as $v ) {
+                  foreach ( $v as $k2 => $v2 ) {
+                      if ( $k2 == $_REQUEST[ 'newproject-newprojectname' ] ) {
+                          $addok = 0;
+                          break;
+                      }
+                  }
+                  if ( !$addok ) {
+                      break;
+                  }
+              }
+          }
+
+          if ( !$addok ) {
+              $results[ "error" ] .= "Project name already exists.";
+          } else {
+              $update[ '$push' ][ 'project' ] = array( 
+                  $_REQUEST[ 'newproject-newprojectname' ] => array( 
+                      'desc'    => $_REQUEST[ 'newproject-newprojectdesc' ], 
+                      'created' => $now 
+                  ) 
+                  );
+              $results[ 'status' ] .= "Adding project " . $_REQUEST[ 'newproject-newprojectname' ] . ". ";
+              $results[ '_project' ] = $_REQUEST[ 'newproject-newprojectname' ];
+              $results[ 'status' ] .= "Current project is now " . $results[ '_project' ] . ". ";
+              $_SESSION[ $window ][ 'project' ] = $results[ '_project' ];
+              $do_update = 1;
+          }
       }
    } else {
       if ( ( isset( $_REQUEST[ 'project' ] ) &&
@@ -119,6 +139,44 @@ if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) )
          $results[ '_project' ] = $_REQUEST[ 'project' ];
          $results[ 'status' ] .= "Current project is now " . $results[ '_project' ] . ". ";
          $_SESSION[ $window ][ 'project' ] = $results[ '_project' ];
+      }
+   }
+
+   if ( isset( $_REQUEST[ 'newxsedeproject' ] ) &&
+        $_REQUEST[ 'newxsedeproject' ] == "on" )
+   {
+      if ( !preg_match( '/^[-a-zA-Z0-9]+$/', $_REQUEST[ 'newxsedeproject-newxsedeprojectid' ] ) )
+      {
+          $results[ "error" ] .= "Invalid new XSEDE project name.  It must contain only letters, numbers and dashes";
+      } else {
+          # check for duplicate
+          $addok = 1;
+          if ( isset( $doc[ 'xsedeproject' ] ) ) {
+              foreach ( $doc[ 'xsedeproject' ] as $v ) {
+                  foreach ( $v as $k2 => $v2 ) {
+                      if ( $k2 == $_REQUEST[ 'newxsedeproject-newxsedeprojectid' ] ) {
+                          $addok = 0;
+                          break;
+                      }
+                  }
+                  if ( !$addok ) {
+                      break;
+                  }
+              }
+          }
+
+          if ( !$addok ) {
+              $results[ "error" ] .= "XSEDE project id already exists.";
+          } else {
+              $update[ '$push' ][ 'xsedeproject' ] = array( 
+                  $_REQUEST[ 'newxsedeproject-newxsedeprojectid' ] => array( 
+                      'created' => $now 
+                  ) 
+                  );
+              $results[ 'status' ] .= "Adding XSEDE project id " . $_REQUEST[ 'newxsedeproject-newxsedeprojectid' ] . ". ";
+              $do_update = 1;
+              $xsedeadd = 1;
+          }
       }
    }
 
@@ -367,6 +425,19 @@ function update_colors() {
     $results[ '_color' ][ "body"   ][ "text"       ] = $_REQUEST[ "updatecolors-colortext" ];
     $results[ '_color' ][ "footer" ] = [];
     $results[ '_color' ][ "footer"   ][ "background" ] = $_REQUEST[ "updatecolors-colorbg" ];
+}
+
+if ( isset( $xsedeadd ) ) {
+    if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ), array( "xsedeproject" => 1 ) ) ) {
+        if ( isset( $doc[ 'xsedeproject' ] ) ) {
+            $results[ '_xsedeproject' ] = [];
+            foreach ( $doc[ 'xsedeproject' ] as $v ) {
+                foreach ( $v as $k2 => $v2 ) {
+                    $results[ '_xsedeproject' ][] = $k2;
+                }
+            }
+        }
+    }
 }
 
 if ( strlen( trim( $results[ 'error' ] ) ) == 0 )

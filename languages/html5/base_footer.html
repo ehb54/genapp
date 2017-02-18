@@ -347,6 +347,11 @@ function syncState() {
        s.removeData( "_color" );
    }
 
+   if ( s.data( "_xsedeproject" ) ) {
+       ga.xsede.data = s.data( "_xsedeproject" );
+       __~debug:xsedeproject{console.log( "received _xsedeproject data" );console.dir( ga.xsede.data );}
+   }
+
    if ( s.data( "_usergroups" ) ) {
       ga.group.setuser( s.data( "_usergroups" ) );
       s.removeData( "_usergroups" );
@@ -385,6 +390,7 @@ function syncState() {
           ga.group.hideall();
           ga.color.reset();
           hidegroup = 1;
+          ga.xsede.data = {};
           __~frontpage:url{if ( !ga.apprun ) { ga.frontpage( "__frontpage:url__" ); } else }
           { 
               ga.apprun = 0;
@@ -518,6 +524,11 @@ _groups : 1
 .done(function( data ) {
 $( '#_state' ).data( "_logon", data[ "_logon" ] );
 $( '#_state' ).data( "_project", data[ "_project" ] );
+if ( "_xsedeproject" in data ) {
+   ga.xsede.data = data[ "_xsedeproject" ];
+   __~debug:xsedeproject{console.log( "received _xsedeproject data" );console.dir( ga.xsede.data );}
+}
+
 if ( "_groups" in data ) {
     ga.group.set( data[ "_groups" ] );
 }
@@ -528,7 +539,7 @@ if ( "_color" in data ) {
    __~debug:colorcomm{console.log( "getJSON sys status received _color" );console.dir( data[ "_color" ] );}
   $( '#_state' ).data( "_color", data[ "_color" ] );
 }
-__~debug:{console.log( "project from sysstatus:" + data[ "_project" ] );}
+__~debug:project{console.log( "project from sysstatus:" + data[ "_project" ] );}
 if ( ga.urlparams( "_switch" ) ) {
    $( '#_state' ).data( "_switch",  decodeURIComponent( ga.urlparams( "_switch" ) ) );
    if ( ga.urlparams( "_reqlogin" ) ) {

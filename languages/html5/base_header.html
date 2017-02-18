@@ -1164,6 +1164,7 @@ ga.colors({
 });
 
 __~usercolors{ga.directives( "usercolors", "__usercolors__" );}
+__~xsedeproject{ga.directives( "xsedeproject", "__xsedeproject__" );}
 
 ga.color.defaults( {
  "body"   : { "background" : "rgb( __background_color_rgb__ )", "color": "rgb( __text_color_rgb__ )", "text": "rgb( __text_color_rgb__ )" }
@@ -1217,7 +1218,10 @@ __~debug:ws{          console.log('websocket opened');}
             $(".wsstatus").css( "color", "red" );
 __~debug:ws{            console.warn('setMsging connection closed');}
             if ( gd.data( "_unload" ) == 0 ) {
+__~debug:ws{            console.warn('resubing');}
                 return setMsging();
+            } else {
+               console.log( "ws connection closed on unload of page" );
             }
 //            {
 //              ga.event( "global", "ws messaging", "connection failed" );
