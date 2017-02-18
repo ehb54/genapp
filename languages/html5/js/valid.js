@@ -316,6 +316,7 @@ ga.airavata.select = function( defaultresource, select, cb, form ) {
         {
             index = Math.floor( a.resources.length * Math.random() );
             __~debug:airavata{console.log( "random resource " + index )};
+            // bug: index is undefined
             return Object.keys( a.resources[ index ] )[0];
         }
         break;
@@ -351,13 +352,39 @@ ga.airavata.select = function( defaultresource, select, cb, form ) {
         {
             messagebox( {
                 icon  : "toast.png"
-                ,text  : "ga.airavata.select, unknown selectoin type '" + selecttype + "'"
+                ,text  : "ga.airavata.select, unknown selection type '" + selecttype + "'"
             });
             return "abort";
         }
     }
 }
-
         
+ga.xsede = {};
+ga.xsede.select = function( defaultresource, cb, form ) {
+    var a            = ga.xsede.data
+    ;
     
-        
+    __~debug:xsedeproject{console.log( "ga.xsede.select( " + defaultresource + " , " + select + " )" );}
+
+    if ( ( defaultresource == "__resource__" && !a.defaultresource ) ||
+         ( defaultresource != "xsede" && defaultresource != "__resource__" ) ) {
+        __~debug:xsedeproject{console.log( "not a xsede project submission" );}
+        return "notused";
+    }
+
+    if ( !a.resources || !a.resources.length ) {
+        messagebox( {
+            icon  : "warning.png"
+            ,text  : "No XSEDE projects currently defined.  Create one under the user configuration button at the top right."
+        });
+        return "abort";
+    }
+
+    if ( a.projects.length == 1 ) {
+        __~debug:xsedeproject{console.log( "one project, returning it" );}
+        return Object.keys( a.projects )[0];
+    }
+
+    console.log( "choose project todo, returning 1st" );
+    return Object.keys( a.projects )[0];
+}

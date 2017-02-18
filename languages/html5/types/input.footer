@@ -113,6 +113,7 @@ $( "#__moduleid___submit" ).click( function( e ) {
    ga.value.resetDefaultValues( "__moduleid___output", true );
 
    __~captcha{ga.captcha( do___moduleid___submit, $(this) ); return false;}
+   __~debug:xsedeproject{console.log( "xsede project, resource is __resource__" );}
    return do___moduleid___submit( $(this) );
 });
 
@@ -143,6 +144,16 @@ __~debug:job{   console.log( "you clicked" );}
           __~debug:specproj{console.log( "setting specproject" );}
       }
    }  
+
+//   if ( __~xsedeproject{1}0 && !xsedeproject) {
+//      __~debug:xsedeproject{console.log( "xsede resource" );}
+//      switch( project = ga.xsede.select( "__resource__", do___moduleid___submit, $form ) ) {
+//      case "deferred" : __~debug:airavata{console.log( "airavata submit deffered" ); }return false; break;
+//      case "abort"    : __~debug:airavata{console.log( "airavata submit aborted" ); }return false; break;
+//      case "notused"  : __~debug:airavata{console.log( "not airavata" ); }break;
+//      }
+      
+      
 
    if ( !airavataresource ) {
       __~debug:airavata{console.log( "airavataresource not defined" );}

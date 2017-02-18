@@ -59,7 +59,7 @@ __~debug:hide{   console.log( "ga.hide.add( " + module + " , " + id + " , " + hi
 };
 
 // hideifnot is helpful for removing fields if a directive is not set
-// this is currently supported for types/checkbox.input, but could easily be extended by adding the fields:hideifnot tag to other input elements
+// this is currently supported for types/checkbox.input & types/listbox.input, but could easily be extended by adding the fields:hideifnot tag to other input elements
 // note: it also requires a registry of directives (currently done in base_header.html using ga.directives
 
 ga.directives = function( directive, value ) {

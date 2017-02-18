@@ -91,6 +91,7 @@ if ( isset( $_SESSION[ $window ][ 'logon' ] ) ) {
        unset( $_SESSION[ $window ][ 'logon' ] );
        $results[ '_logon' ] = "";
        $results[ '_project' ] = "";
+       __~xsedeproject{$results[ '_xsedeproject' ] = "";}
        echo (json_encode($results));
        exit();
    }
@@ -124,12 +125,34 @@ if ( isset( $_SESSION[ $window ][ 'logon' ] ) ) {
               $results[ "_color" ] = isset( $doc[ "color" ] ) ? $doc[ "color" ] : "";
           }
       }
+
+      if ( 0 && __~xsedeproject{1}0 ) { // don't think we need this
+          $mongook = 1;
+          try {
+              $m = new MongoClient();
+          } catch ( Exception $e ) {
+              $results[ 'error' ] .= "Could not connect to the db " . $e->getMessage();
+              $mongook = 0;
+          }
+          if ( $mongook ) {
+              if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ), array( "xsedeproject" => 1 ) ) ) {
+                  if ( isset( $doc[ 'xsedeproject' ] ) ) {
+                      $results[ '_xsedeproject' ] = [];
+                      foreach ( $doc[ 'xsedeproject' ] as $v ) {
+                          foreach ( $v as $k2 => $v2 ) {
+                              $results[ '_xsedeproject' ][] = $k2;
+                          }
+                      }
+                  }
+              }
+          }
+      }
   }
 } else {
   $results[ '_logon' ] = "";
   $results[ '_project' ] = "";
+  __~xsedeproject{$results[ '_xsedeproject' ] = "";}
 }
-
 
 echo (json_encode($results));
 exit();

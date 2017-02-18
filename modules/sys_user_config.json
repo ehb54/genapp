@@ -18,6 +18,36 @@
                    },
                   {
                    "role"     : "input",
+                   "id"       : "xsedeproject",
+                   "label"    : "XSEDE project ids",
+                   "type"     : "listbox",
+                   "required" : "false",
+                   "pull"     : "xsedeproject",
+                   "hideifnot" : "xsedeproject"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "newxsedeproject",
+                   "label"    : "New XSEDE project id",
+                   "type"     : "checkbox",
+                   "required" : "false",
+                   "repeater" : "true",
+                   "hideifnot" : "xsedeproject"
+                   },
+                  {
+                   "role"     : "input",
+                   "id"       : "newxsedeprojectid",
+                   "label"    : "XSEDE project id",
+                   "type"     : "text",
+                   "pattern"  : "^[-a-zA-Z0-9]+$",
+                   "required" : "true",
+                   "repeat"   : "newxsedeproject",
+                   "size"     : "20",
+                   "help"     : "A project name must only contain alphanumeric or dash characters",
+                   "hideifnot" : "xsedeproject"
+                   },
+                  {
+                   "role"     : "input",
                    "id"       : "project",
                    "label"    : "Select project",
                    "type"     : "listbox",
