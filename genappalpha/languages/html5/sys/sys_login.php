@@ -496,6 +496,20 @@ if ( $loginok == 1 )
    if ( isset( $_REQUEST[ "_switch" ] ) ) {
        $results[ "_switch" ] = $_REQUEST[ "_switch" ];
    }
+
+   if ( __~xsedeproject{1}0 ) {
+       if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ), array( "xsedeproject" => 1 ) ) ) {
+           if ( isset( $doc[ 'xsedeproject' ] ) ) {
+               $results[ '_xsedeproject' ] = [];
+               foreach ( $doc[ 'xsedeproject' ] as $v ) {
+                   foreach ( $v as $k2 => $v2 ) {
+                       $results[ '_xsedeproject' ][] = $k2;
+                   }
+               }
+           }
+       }
+   }
+
 } else {
    if ( isset( $_REQUEST[ 'forgotpassword' ] ) &&
         $_REQUEST[ 'forgotpassword' ] == "on" )
