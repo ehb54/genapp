@@ -545,11 +545,9 @@ table {
 
 __~footersize{footer { position: fixed; left: 0; bottom: 0; height: __footersize__; width: 100%; background: rgb( __background_color_rgb__ ); z-index:50;}}
 .logo { position: fixed; bottom: 0px; right: 0; z-index:51;}
-.logo img { height:calc( __footersize__ / 1.6 ) }
-.wsstatus { position: fixed; bottom:calc( __footersize__ / 6.25 ); right: 30px; color:red; z-index:51 }
+.wsstatus { position: fixed; right: 30px; color:red; z-index:51 }
 .helpwsstatus {
     position:fixed;
-    bottom:calc( __footersize__ + 3px );
     right:10px;
     min-width: 20em;
 }
@@ -1153,6 +1151,7 @@ __~frontpage:url{<script>ga.apprun = ga.urlparams( "apprun" );if ( !ga.apprun ) 
 <div id="global_data"> </div>
 <div id="_state"> </div>
 <script> 
+
 __~style:nomenuhide{$( ".svgmenu" ).hide(); $( "#menuspan" ).removeClass( "help_link");}
 
 if ( 10 != __~enablecaptcha{1}0 ) {
