@@ -568,13 +568,22 @@ function logrunning( $error_json_exit = false ) {
         return false;
     }
 
+    $set_array = array( '$push' => array( "pid" => array( "where" => "local", "pid" => getmypid(), "what" => "parent" ) ) );
+
+    if ( __~xsedeproject{1}0 && 
+         $doc = $use_db->__application__->jobs->findOne( 
+             array( "_id" => $_REQUEST[ '_uuid' ], "user" => $GLOBALS[ 'logon' ] ),
+             array( "xsedeproject" => 1 )
+         ) )
+    {
+        $set_array[ '$set' ] = array( "xsedeproject" =>  $doc[ 'xsedeproject' ] );
+    }
+
     try {
         $use_db->__application__->running->update(
             array( "_id" => $_REQUEST[ '_uuid' ], "user" => $GLOBALS[ 'logon' ] ),
-            array( 
-                '$push' => array( "pid" => array( "where" => "local", "pid" => getmypid(), "what" => "parent" ) )
-            ),
-            array( "upsert" => true__~mongojournal{, "j" => true} ) 
+            $set_array,
+            array( "upsert" => true__~mongojournal{, "j" => true} )
             );
     } catch( MongoCursorException $e ) {
         $GLOBALS[ 'lasterror' ]  = "Error updating. " . $e->getMessage();
