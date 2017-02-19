@@ -332,7 +332,7 @@ ga.airavata.select = function( defaultresource, select, cb, form ) {
                     data[0]( data[1], Object.keys( data[2][$( "#airavata input[name=selectresource]:checked" ).val() ] )[0] );
                 }
             } );
-            msg = '<h3>Select a resource compute resource and press submit</h3><form id="airavata"><table>';
+            msg = '<h3>Select a compute resource and press submit</h3><form id="airavata"><table>';
             for ( i in a.resources ) {
                 for ( key in a.resources[i] ) {
                     msg += '<tr><td><input type="radio" name="selectresource" id="airavata_' + i + '" value="' + i + '"' + ( i==0 ? 'checked="checked"' : '' ) + '></td><td class="hoverhighlight" style="text-align:left"><label for="airavata_' + i + '">' +  a.resources[i][key] + '</label></td></tr>';
@@ -373,7 +373,11 @@ ga.resource.xsedeprojecttokeys = function() {
 
 ga.xsede.select = function( defaultresource, cb, form ) {
     var a        = ga.xsede.data
-       ,resource = defaultresource == "__resource__" ? ga.resource.default : defaultresource    
+        ,resource = defaultresource == "__resource__" ? ga.resource.default : defaultresource    
+        ,msg         = ""
+        ,button_info = []
+        ,i
+        ,key
     ;
     
     __~debug:xsedeproject{console.log( "ga.xsede.select( " + defaultresource + " )" );}
@@ -399,7 +403,26 @@ ga.xsede.select = function( defaultresource, cb, form ) {
         return cb( form );
     }
 
-    __~debug:xsedeproject{console.log( "choose project todo, returning 1st:" + a[ 0 ] );}
-    ga.xsede.useproject = a[ 0 ];
-    return cb( form );
+    button_info.push( {
+        id : "submit_xsedeproject"
+        ,label : "Submit"
+        ,data  : [ cb, form, a ]
+        ,cb    : function( data ) { 
+            ga.xsede.useproject = data[2][$( "#xsedeproject input[name=selectxsedeproject]:checked" ).val() ];
+            __~debug:xsedeproject{console.log( "ga.xsede.select() cb called, project: " + ga.xsede.useproject );}
+            data[0]( data[1] );
+        }
+    } );
+    msg = '<h3>Select an XSEDE project and press submit</h3><form id="xsedeproject"><table>';
+    for ( i in a ) {
+        msg += '<tr><td><input type="radio" name="selectxsedeproject" id="xsedeproject_' + i + '" value="' + i + '"' + ( i==0 ? 'checked="checked"' : '' ) + '></td><td class="hoverhighlight" style="text-align:left"><label for="xsedeproject_' + i + '">' +  a[i] + '</label></td></tr>';
+    }
+    msg += '</table>';
+
+    messagebox( {
+        icon     : "question.png"
+        ,text    : msg
+        ,buttons : button_info
+    });
+    return "deferred";
 }

@@ -526,7 +526,7 @@ $( '#_state' ).data( "_logon", data[ "_logon" ] );
 $( '#_state' ).data( "_project", data[ "_project" ] );
 if ( "_xsedeproject" in data ) {
    ga.xsede.data = data[ "_xsedeproject" ];
-   __~debug:xsedeproject{console.log( "received _xsedeproject data" );console.dir( ga.xsede.data );}
+   __~debug:xsedeproject{console.log( "received _xsedeproject data" ); //console.dir( ga.xsede.data );}
 }
 
 if ( "_resourcedefault" in data ) {
@@ -537,7 +537,7 @@ if ( "_resourcedefault" in data ) {
 if ( __~xsedeproject{1}0 && "_resourcexsedeproject" in data ) {
    ga.resource.xsedeproject = data[ '_resourcexsedeproject' ];
    ga.resource.xsedeprojecttokeys();
-   __~debug:xsedeproject{console.log( "received _resourcexsedeproject:" );console.dir( ga.resource.xsedeproject );console.dir( ga.resource.xsedepkeys );}
+   __~debug:xsedeproject{console.log( "received _resourcexsedeproject:" ); //console.dir( ga.resource.xsedeproject );console.dir( ga.resource.xsedepkeys );}
 }
 
 if ( "_groups" in data ) {
