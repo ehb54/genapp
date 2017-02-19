@@ -2,7 +2,7 @@
 <?php
 
 $debug = false;
-$noudptext = false;
+$noudptext = true;
 
 global $debug;
 global $noudptext;
