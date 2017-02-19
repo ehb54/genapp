@@ -19,8 +19,8 @@ if ( isset( $_SESSION[ $window ][ 'project' ] ) )
   $results[ '_project' ] = "";
 }
 
-$app_json = json_decode( file_get_contents( "__appconfig__" ) );
-if ( !$app_json ) {
+$appjson = json_decode( file_get_contents( "__appconfig__" ) );
+if ( !$appjson ) {
     $results[ "_message" ] = [ "icon" => "toast.png",
                                "text" => "<p>There appears to be an error with the appconfig.json file.</p>"
                                . "<p>This is a serious error which should be forwarded to the site adiminstrator.</p>" 
@@ -28,27 +28,27 @@ if ( !$app_json ) {
         ];
 }
 
-if ( isset( $app_json->submitblock ) ) {
+if ( isset( $appjson->submitblock ) ) {
     __~debug:submitblock{error_log( "submitblock found\n", 3, "/tmp/mylog" );}
-    if ( isset( $app_json->submitblock->{"all"} ) &&
-         isset( $app_json->submitblock->{"all"}->active ) &&
-         $app_json->submitblock->{"all"}->active == 1 ) {
+    if ( isset( $appjson->submitblock->{"all"} ) &&
+         isset( $appjson->submitblock->{"all"}->active ) &&
+         $appjson->submitblock->{"all"}->active == 1 ) {
         __~debug:submitblock{error_log( "submitblock active all found\n", 3, "/tmp/mylog" );}
         $results[ "_message" ] = [ "icon" => "information.png",
-                                   "text" => isset( $app_json->submitblock->{"all"}->text ) 
-                                   ? $app_json->submitblock->{"all"}->text 
+                                   "text" => isset( $appjson->submitblock->{"all"}->text ) 
+                                   ? $appjson->submitblock->{"all"}->text 
                                    : "Submission of jobs to $k is currently disabled."
             ];
     } else {
         __~debug:submitblock{error_log( "submitblock active all not found\n", 3, "/tmp/mylog" );}
         $msg = "";
-        foreach ( $app_json->submitblock as $k => $v ) {
+        foreach ( $appjson->submitblock as $k => $v ) {
             if ( $k != "all" &&
                  isset( $v->active ) &&
                  $v->active == 1 ) {
                 __~debug:submitblock{error_log( "submitblock active $k found\n", 3, "/tmp/mylog" );}
-                $msg .= "<p>" . ( isset( $app_json->submitblock->{"$k"}->text ) 
-                                  ? $app_json->submitblock->{"$k"}->text 
+                $msg .= "<p>" . ( isset( $appjson->submitblock->{"$k"}->text ) 
+                                  ? $appjson->submitblock->{"$k"}->text 
                                   : "Submission of jobs to $k is currently disabled." ) . "</p>";
             }
         }
@@ -58,19 +58,19 @@ if ( isset( $app_json->submitblock ) ) {
         }
     }
 } else {
-    __~debug:submitblock{error_log( "submitblock not found\n" . json_decode( $app_json, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/mylog" );}
+    __~debug:submitblock{error_log( "submitblock not found\n" . json_decode( $appjson, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/mylog" );}
 }
 
-if ( isset( $app_json->motd ) ) {
-    if ( isset( $app_json->motd ) &&
-         $app_json->motd->active == 1 ) {
+if ( isset( $appjson->motd ) ) {
+    if ( isset( $appjson->motd ) &&
+         $appjson->motd->active == 1 ) {
         $motdtext = "";
-        if ( isset( $app_json->motd->text ) ) {
-            $motdtext .= $app_json->motd->text;
+        if ( isset( $appjson->motd->text ) ) {
+            $motdtext .= $appjson->motd->text;
         }
-        if ( isset( $app_json->motd->file ) &&
-             is_readable( $app_json->motd->file ) ) {
-            $motdtext .= ( strlen( $motdtext ) ? "<p><hr></p>" : "" ) . file_get_contents( $app_json->motd->file );
+        if ( isset( $appjson->motd->file ) &&
+             is_readable( $appjson->motd->file ) ) {
+            $motdtext .= ( strlen( $motdtext ) ? "<p><hr></p>" : "" ) . file_get_contents( $appjson->motd->file );
         }
 
         if ( strlen( $motdtext ) ) {
@@ -98,8 +98,8 @@ if ( isset( $_SESSION[ $window ][ 'logon' ] ) ) {
    $results[ '_logon' ] = $_SESSION[ $window ][ 'logon' ];
        
    if ( isset( $_REQUEST[ "_groups" ] ) ) {
-      if ( isset( $app_json->groups ) ) {
-          $results[ "_groups" ] = $app_json->groups;
+      if ( isset( $appjson->groups ) ) {
+          $results[ "_groups" ] = $appjson->groups;
       } else {
           $results[ "_groups" ] = new stdClass();
       }
@@ -126,7 +126,7 @@ if ( isset( $_SESSION[ $window ][ 'logon' ] ) ) {
           }
       }
 
-      if ( 0 && __~xsedeproject{1}0 ) { // don't think we need this
+      if ( __~xsedeproject{1}0 ) {
           $mongook = 1;
           try {
               $m = new MongoClient();
@@ -152,6 +152,18 @@ if ( isset( $_SESSION[ $window ][ 'logon' ] ) ) {
   $results[ '_logon' ] = "";
   $results[ '_project' ] = "";
   __~xsedeproject{$results[ '_xsedeproject' ] = "";}
+}
+
+if ( isset( $appjson->resourcedefault ) ) {
+    $results[ '_resourcedefault' ] = $appjson->resourcedefault;
+}
+if ( __~xsedeproject{1}0 && isset( $appjson->resources ) ) {
+    $results[ '_resourcexsedeproject' ] = [];
+    foreach ( $appjson->resources as $k => $v ) {
+        if ( isset( $v->properties ) && isset( $v->properties->xsedeproject ) ) {
+                $results[ '_resourcexsedeproject' ][] = $k;
+        }
+    }
 }
 
 echo (json_encode($results));
