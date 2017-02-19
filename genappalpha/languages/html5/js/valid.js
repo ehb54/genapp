@@ -373,7 +373,7 @@ ga.resource.xsedeprojecttokeys = function() {
 
 ga.xsede.select = function( defaultresource, cb, form ) {
     var a        = ga.xsede.data
-        ,resource = defaultresource == "__resource__" ? ga.resource.default : defaultresource    
+        ,resource = defaultresource == "__resource__" ? ga.resource.defaultval : defaultresource    
         ,msg         = ""
         ,button_info = []
         ,i

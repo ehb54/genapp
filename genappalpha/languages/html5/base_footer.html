@@ -349,7 +349,7 @@ function syncState() {
 
    if ( s.data( "_xsedeproject" ) ) {
        ga.xsede.data = s.data( "_xsedeproject" );
-       __~debug:xsedeproject{console.log( "received _xsedeproject data" );console.dir( ga.xsede.data );}
+       __~debug:xsedeproject{console.log( "received _xsedeproject data" );//console.dir( ga.xsede.data );}
    }
 
    if ( s.data( "_usergroups" ) ) {
@@ -530,8 +530,8 @@ if ( "_xsedeproject" in data ) {
 }
 
 if ( "_resourcedefault" in data ) {
-   ga.resource.default = data[ '_resourcedefault' ];
-   __~debug:xsedeproject{console.log( "received _resourcedefault:" + ga.resource.default );}
+   ga.resource.defaultval = data[ '_resourcedefault' ];
+   __~debug:xsedeproject{console.log( "received _resourcedefault:" + ga.resource.defaultval );}
 }
 
 if ( __~xsedeproject{1}0 && "_resourcexsedeproject" in data ) {

@@ -818,31 +818,41 @@ foreach my $l ( keys %langs )
                 my $fn = $fo;
                 $fn =~ s/\.js/.min.js/;
 #                $error .= "duplicate output for $fn\n" if $created{ $fn }++;
-                my $cmd = "minify -o $fn $fo";
-                print "$cmd\n";
-                my $res = `$cmd 2>&1\n`;
-                print $res;
-                $error .= "JS minification error: $fo $res" if $res !~ /^Minification complete/;
-                $created .= "$fn\n";
-                my $fd = $fn;
-                $fd =~ s/output\/$l/$gap\/languages\/$l\/add/;
-                print "mv -f $fn $fd\n";
-                print `mv -f $fn $fd\n`;
+                `which minify`;
+                if ( $? ) {
+                    $error .= "minify was requested but does not appear to be installed or is not in the default executable search path\n";
+                } else {
+                    my $cmd = "minify -o $fn $fo";
+                    print "$cmd\n";
+                    my $res = `$cmd 2>&1\n`;
+                    print $res;
+                    $error .= "JS minification error: $fo $res" if $res !~ /^Minification complete/;
+                    $created .= "$fn\n";
+                    my $fd = $fn;
+                    $fd =~ s/output\/$l/$gap\/languages\/$l\/add/;
+                    print "mv -f $fn $fd\n";
+                    print `mv -f $fn $fd\n`;
+                }
             }
             if ( $minify eq "closure" ) {
                 my $fn = $fo;
                 $fn =~ s/\.js/.min.js/;
 #                $error .= "duplicate output for $fn\n" if $created{ $fn }++;
-                my $cmd = "java -jar $gap/etc/closure_compiler.jar --js $fo --js_output_file $fn";
-                print "$cmd\n";
-                my $res = `$cmd 2>&1\n`;
-                print $res;
-                $error .= "JS closure error: $fo $res" if $res =~ /(\d+) error\(s\)/ && $1 ne "0";
-                $created .= "$fn\n";
-                my $fd = $fn;
-                $fd =~ s/output\/$l/$gap\/languages\/$l\/add/;
-                print "mv -f $fn $fd\n";
-                print `mv -f $fn $fd\n`;
+                `which java`;
+                if ( $? ) {
+                    $error .= "closure was requested but this requires java, which does not appear to be installed or is not in the default executable search path\n";
+                } else {
+                    my $cmd = "java -jar $gap/etc/closure_compiler.jar --js $fo --js_output_file $fn";
+                    print "$cmd\n";
+                    my $res = `$cmd 2>&1\n`;
+                    print $res;
+                    $error .= "JS closure error: $fo $res" if $res =~ /(\d+) error\(s\)/ && $1 ne "0";
+                    $created .= "$fn\n";
+                    my $fd = $fn;
+                    $fd =~ s/output\/$l/$gap\/languages\/$l\/add/;
+                    print "mv -f $fn $fd\n";
+                    print `mv -f $fn $fd\n`;
+                }
             }
             if ( $minify eq "copy" ) {
                 my $fn = $fo;
