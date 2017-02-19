@@ -359,20 +359,33 @@ ga.airavata.select = function( defaultresource, select, cb, form ) {
     }
 }
         
+ga.resource = {};
+
 ga.xsede = {};
+
+ga.resource.xsedeprojecttokeys = function() {
+    var i;
+    ga.resource.xsedepkeys = {};
+    for ( i in ga.resource.xsedeproject ) {
+        ga.resource.xsedepkeys[ ga.resource.xsedeproject[ i ] ] = 1;
+    }
+}
+
 ga.xsede.select = function( defaultresource, cb, form ) {
-    var a            = ga.xsede.data
+    var a        = ga.xsede.data
+       ,resource = defaultresource == "__resource__" ? ga.resource.default : defaultresource    
     ;
     
-    __~debug:xsedeproject{console.log( "ga.xsede.select( " + defaultresource + " , " + select + " )" );}
+    __~debug:xsedeproject{console.log( "ga.xsede.select( " + defaultresource + " )" );}
 
-    if ( ( defaultresource == "__resource__" && !a.defaultresource ) ||
-         ( defaultresource != "xsede" && defaultresource != "__resource__" ) ) {
-        __~debug:xsedeproject{console.log( "not a xsede project submission" );}
-        return "notused";
+    delete ga.xsede.useproject;
+
+    if ( !ga.resource.xsedeproject || !( resource in ga.resource.xsedepkeys ) ) {
+        __~debug:xsedeproject{console.log( "ga.xsede.select() resource does not require project, returning" );}
+        return cb( form );
     }
 
-    if ( !a.resources || !a.resources.length ) {
+    if ( !a || !a.length ) {
         messagebox( {
             icon  : "warning.png"
             ,text  : "No XSEDE projects currently defined.  Create one under the user configuration button at the top right."
@@ -380,11 +393,13 @@ ga.xsede.select = function( defaultresource, cb, form ) {
         return "abort";
     }
 
-    if ( a.projects.length == 1 ) {
-        __~debug:xsedeproject{console.log( "one project, returning it" );}
-        return Object.keys( a.projects )[0];
+    if ( a.length == 1 ) {
+        __~debug:xsedeproject{console.log( "one project, selecting it:" + a[ 0 ] );}
+        ga.xsede.useproject = a[ 0 ];
+        return cb( form );
     }
 
-    console.log( "choose project todo, returning 1st" );
-    return Object.keys( a.projects )[0];
+    __~debug:xsedeproject{console.log( "choose project todo, returning 1st:" + a[ 0 ] );}
+    ga.xsede.useproject = a[ 0 ];
+    return cb( form );
 }
