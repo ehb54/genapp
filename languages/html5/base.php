@@ -62,6 +62,9 @@ require_once "../joblog.php";
 if ( isset( $_REQUEST[ "numproc" ] ) ) {
    $GLOBALS[ 'numproc' ] = $_REQUEST[ "numproc" ];
 }
+if ( isset( $_REQUEST[ "_xsedeproject" ] ) ) {
+   $GLOBALS[ 'xsedeproject' ] = $_REQUEST[ "_xsedeproject" ];
+}
 
 $GLOBALS[ 'module'    ] = "__menu:modules:id__";
 $GLOBALS[ 'jobweight' ] = floatval( "__jobweight__" );

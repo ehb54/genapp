@@ -2,7 +2,7 @@
 <?php
 
 $debug = false;
-$noudptext = true;
+$noudptext = false;
 
 global $debug;
 global $noudptext;
@@ -159,7 +159,8 @@ if ($argc == 3) {
 
     sendudpmsg( "Creating virtual cluster" );
 
-    $result = os_cluster_start( $GLOBALS[ "NC" ], $uuid );
+    $result = isset( $json_decoded->_xsedeproject ) ? os_cluster_start( $GLOBALS[ "NC" ], $uuid, $json_decoded->_xsedeproject ) : os_cluster_start( $GLOBALS[ "NC" ], $uuid );
+        
     $result_json = json_decode( $result );
 
     sendudptext( $result );
@@ -239,7 +240,7 @@ if ($argc == 3) {
 # -------------------- remove virtual cluster --------------------
     sendudpmsg( "Remove virtual cluster" );
 
-    os_delete( $GLOBALS[ "NC" ], $uuid );
+    isset( $json_decoded->_xsedeproject ) ? os_delete( $GLOBALS[ "NC" ], $uuid, $json_decoded->_xsedeproject ) : os_delete( $GLOBALS[ "NC" ] );
 
     sendudpmsg( "" );
 
