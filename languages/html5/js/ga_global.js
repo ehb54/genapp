@@ -713,7 +713,7 @@ ga.admin.ajax = function ( cmd, name, id, manageid, jid ) {
         .done( function( data, status, xhr ) {
             __~debug:admin{console.log( "ga.admin.ajax() .getJSON done" )};
             // required to remove the shebang (#!) 1st line of the script
-            data = JSON.parse( data.split( /\r?\n/)[1]);
+            data = JSON.parse( data.replace( /^\s*[\r\n]/gm, '' ).split( /\r?\n/)[1]);
             if ( data[ 'success' ] == "true" ) {
                 // messagebox( { icon : "information.png",
                 // text : "system user management command returned success" } );
@@ -797,7 +797,7 @@ ga.admin.ajax.group.cb = function ( cmd, name, id, manageid, form ) {
         .done( function( data, status, xhr ) {
             __~debug:admin{console.log( "ga.admin.ajax.group.cb() .getJSON done" )};
             // required to remove the shebang (#!) 1st line of the script
-            data = JSON.parse( data.split( /\r?\n/)[1]);
+            data = JSON.parse( data.replace( /^\s*[\r\n]/gm, '' ).split( /\r?\n/)[1]);
             if ( data[ 'success' ] == "true" ) {
                 // messagebox( { icon : "information.png",
                 // text : "system user management command returned success" } );
