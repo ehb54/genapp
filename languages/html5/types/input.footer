@@ -113,8 +113,8 @@ $( "#__moduleid___submit" ).click( function( e ) {
    ga.value.resetDefaultValues( "__moduleid___output", true );
 
    __~captcha{ga.captcha( do___moduleid___submit, $(this) ); return false;}
-   __~debug:xsedeproject{console.log( "xsede project, resource is __resource__" );}
-   return do___moduleid___submit( $(this) );
+   return ga.xsede.select( "__resource__", do___moduleid___submit, $(this) );
+   //   return do___moduleid___submit( $(this) );
 });
 
 function do___moduleid___submit( $form, airavataresource, skipcached ) {
@@ -258,6 +258,7 @@ __~session{   var input = $("<input>").attr("type", "hidden").attr("name", "_sid
     var logonadd = $("<input>").attr("type", "hidden").attr("name", "_logon").val( $( "#_state" ).data( "_logon" ) );$( this ).append($(logonadd));
     var projectadd = $("<input>").attr("type", "hidden").attr("name", "_project").val( $( "#_state" ).data( "_project" ) );$( this ).append($(projectadd));
     var windowadd = $("<input>").attr("type", "hidden").attr("name", "_window").val( window.name );$( this ).append($(windowadd));
+    __~xsedeproject{if ( ga.xsede.useproject ) { $( this ).append( $("<input>").attr("type", "hidden").attr("name", "_xsedeproject").val( ga.xsede.useproject ) ); } }
     var vuuid = uuid.v1();
 __~debug:job{    console.log( "uuid:" + vuuid );}
 __~debug:jc{    console.log( "uuid: " + vuuid );}
