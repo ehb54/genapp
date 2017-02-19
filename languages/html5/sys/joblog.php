@@ -53,6 +53,9 @@ function logjobstart( $error_json_exit = false, $cache = "" )
    if ( isset( $GLOBALS[ "numproc" ] ) ) {
        $insert[ 'numprocs'    ] = $GLOBALS[ 'numproc' ];
    }
+   if ( isset( $GLOBALS[ "xsedeproject" ] ) ) {
+       $insert[ 'xsedeproject'  ] = $GLOBALS[ 'xsedeproject' ];
+   }
    $insert[ 'when'         ] = Array( $now );
    $insert[ 'start'        ] = $now;
    $insert[ 'status'       ] = Array( "started" );
@@ -675,6 +678,12 @@ function jobcancel( $jobs,  $error_json_exit = false, $is_admin = false ) {
        $uuid = $v['_id'];
        $job = $use_db->__application__->jobs->findOne( array( "_id" => $uuid ) );
        $pids = $v['pid'];
+       if ( isset( $v['xsedeproject'] ) ) {
+           $xsedeproject = $v['xsedeproject'];
+       } else {
+           unset( $xsedeproject );
+       }
+
        foreach ( $pids as $k2 => $v2 ) {
            if ( $v2['pid'] < 2 ) {
                require_once "mail.php";
@@ -713,9 +722,8 @@ function jobcancel( $jobs,  $error_json_exit = false, $is_admin = false ) {
        if ( isset( $v[ 'resource' ] ) ) {
            if ( $v[ 'resource' ] == "openstack" &&
                 isset( $v[ 'nodes' ] ) ) {
-               
                require_once "__docroot:html5__/__application__/openstack/os_delete.php";
-               os_delete( $v[ 'nodes' ], $uuid, true );
+               os_delete( $v[ 'nodes' ], $uuid, isset( $xsedeproject ) ? $xsedeproject : $project, true );
                $specmsg = true;
                $zmq_socket->send( json_encode( array( "_uuid" => $uuid,
                                                       "Notice" => $cancel_notice,

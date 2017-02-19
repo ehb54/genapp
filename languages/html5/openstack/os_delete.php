@@ -4,15 +4,21 @@ require_once "os_header.php";
 
 # should also get ip's and issue syncs umount /opt before shutdown (?)
 
-function os_delete( $nodes, $uuid, $quiet = false ) {
+function os_delete( $nodes, $uuid, $project, $quiet = false ) {
     global $appjson;
+
+    if ( !isset( $project ) ) {
+        $project = $appjson->resources->oscluster->properties->project;
+    }
+    putenv( "OS_TENANT_NAME=$project" );
+    putenv( "OS_PROJECT_NAME=$project" );
 
     if ( !$quiet ) {
         sendudpmsg( "Deleting virtual cluster nodes" );
     }
 
     if ( isset( $use_nova_to_get_ids ) ) {
-        $cmd = "nova list | grep ' " .  $appjson->resources->oscluster->properties->project . "-run-" . $uuid . "-... ' | awk '{ print $2 }'";
+        $cmd = "nova list | grep ' ${project}-run-" . $uuid . "-... ' | awk '{ print $2 }'";
 
         if ( !$quiet ) {
             sendudptext( $cmd . "\n" );
@@ -27,7 +33,7 @@ function os_delete( $nodes, $uuid, $quiet = false ) {
         $ids = [];
         for ( $i = 0; $i < $nodes; ++$i ) {
             $ids[] =  
-                $appjson->resources->oscluster->properties->project . "-run-" . $uuid . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
+                "${project}-run-" . $uuid . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
         }
     }
 

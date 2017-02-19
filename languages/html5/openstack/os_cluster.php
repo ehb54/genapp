@@ -11,17 +11,23 @@ $notes =
 require_once "os_header.php";
 require_once "os_delete.php";
 
-function os_cluster_start( $nodes, $uuid ) {
+function os_cluster_start( $nodes, $uuid, $use_project ) {
     global $appjson;
 
     # -------------------- set up OS image info --------------------
 
-    if ( !isset( $appjson->resources->oscluster->properties->project ) ) {
-        echo '{"error":"resources:oscluster:properties:project not defined in appconfig"}';
-        exit;
+    if ( isset( $use_project ) ) {
+        $project = $use_project;
+        putenv( "OS_TENANT_NAME=$project" );
+        putenv( "OS_PROJECT_NAME=$project" );
+    } else {
+        if ( !isset( $appjson->resources->oscluster->properties->project ) ) {
+            echo '{"error":"resources:oscluster:properties:project not defined in appconfig"}';
+            exit;
+        }
+        
+        $project = $appjson->resources->oscluster->properties->project;
     }
-
-    $project = $appjson->resources->oscluster->properties->project;
 
     if ( !isset( $appjson->resources->oscluster->properties->flavor ) ) {
         echo '{"error":"resources:oscluster:properties:flavor not defined in appconfig"}';
@@ -79,7 +85,7 @@ function os_cluster_start( $nodes, $uuid ) {
     for ( $i = 0; $i < $nodes; ++$i ) {
             
         $name =  
-            $appjson->resources->oscluster->properties->project . "-run-" . $uuid . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
+            "${project}-run-" . $uuid . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
         //        "-run-" . bin2hex( openssl_random_pseudo_bytes ( 16, $cstrong ) );
 
         $cmd = "nova boot $name --flavor $flavor --image $baseimage --key-name $key --security-groups $secgroup --nic net-name=$use_network $userdata";

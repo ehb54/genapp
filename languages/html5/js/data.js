@@ -439,6 +439,10 @@ ga.data.textarea = function( hmod_out, v ) {
     __~debug:textareascroll{console.log( "current scrolltop " + jqhmod_out_textarea.scrollTop() + " scrollheight " + jqhmod_out_textarea[0].scrollHeight );}
     __~debug:textareascroll{console.log( "isatend " + ( isatend ? "true" : "false" ) );}
 
+    if ( !v ) {
+        v = '';
+    }
+
 __~debug:textarea{    console.log( "ga.data.textarea( " + hmod_out + " , " + v + " )" );}
     if ( jqhmod_out_textarea.is( ":hidden" ) ) {
 __~debug:textarea{    console.log( "ga.data.textarea( " + hmod_out + " , " + v + " ) show" );}
