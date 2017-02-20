@@ -1,26 +1,35 @@
-5~<?php
+<?php
 
 $notes = 
     "\n" .
     "--------------------\n" .
     "\n" .
-    "usage: $argv[0] number-of-nodes uuid {appconfig}\n" .
+    "usage: $argv[0] project number-of-nodes uuid {appconfig}\n" .
     "starts nodes and returns ip addresses\n" .
     "optionally uses named appconfig file\n" .
     "\n";
 
+require "os_header_cli.php";
+
+$notes .= "Known projects: " . implode( " ", array_keys( all_projects() ) ) . "\n";
 
 if ( !isset( $argv[ 1 ] ) ||
-     !isset( $argv[ 2 ] ) ) {
+     !isset( $argv[ 2 ] ) ||
+     !isset( $argv[ 3 ] ) ) {
     echo $notes;
     exit;
 }
 
-if ( isset( $argv[ 3 ] ) ) {
-   $appconfig = $argv[ 3 ];
+if ( isset( $argv[ 4 ] ) ) {
+   $appconfig = $argv[ 4 ];
 }
 
-require "os_header_cli.php";
+
+$project = $argv[ 1 ];
+
+putenv( "OS_TENANT_NAME=$project" );
+putenv( "OS_PROJECT_NAME=$project" );
+
  
 // -------------------- set up OS image info --------------------
 
@@ -75,10 +84,10 @@ $image = [];
 
 // -------------------- boot instances --------------------
 
-for ( $i = 0; $i < $argv[ 1 ]; ++$i ) {
+for ( $i = 0; $i < $argv[ 2 ]; ++$i ) {
     
     $name =  
-        $json->resources->oscluster->properties->project . "-run-" . $argv[ 2 ] . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
+        "${project}-run-" . $argv[ 3 ] . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
 //        "-run-" . bin2hex( openssl_random_pseudo_bytes ( 16, $cstrong ) );
 
     $cmd = "nova boot $name --flavor $flavor --image $baseimage --key-name $key --security-groups $secgroup --nic net-name=$use_network $userdata";
