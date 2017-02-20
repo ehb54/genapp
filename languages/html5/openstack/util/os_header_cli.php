@@ -84,7 +84,9 @@ function all_projects() {
 
     foreach ( $lines as $v ) {
         $results = preg_match( '/^([^:]*):([^:]*):([^:]*)$/', $v, $matches );
-        $projects[ $matches[ 3 ] ] = 1;
+        if ( strlen( $matches[ 3 ] ) ) {
+            $projects[ $matches[ 3 ] ] = 1;
+        }
     }
     return $projects;
 }
