@@ -101,10 +101,20 @@ $json->uuid = $uuid;
 $appconfig = "$json->_osroot/../../appconfig.json";
 
 require_once "os_cluster.php";
+if ( $json->_xsedeproject ) {
+   $use_project = $json->_xsedeproject;
+} else {
+  if ( isset( $json->resources->oscluster->properties->project ) ) {
+      $use_project = $json->resources->oscluster->properties->project;
+  } else {
+      echo "error: no xsedeproject defined in oscmd-file and resources:oscluster:properties:project not defined in appconfig\n";
+      exit;
+  }
+}
 
 # -------------------- create virtual cluster, get ip's --------------------
 
-$result = os_cluster_start( $json->_clusternodecount, $uuid );
+$result = os_cluster_start( $json->_clusternodecount, $uuid, $use_project );
 echo "result is $result\n";
 $result_json = json_decode( $result );
 sendudptext( $result );
