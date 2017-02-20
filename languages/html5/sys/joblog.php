@@ -604,6 +604,25 @@ function logrunningresource( $uuid, $resource, $nodes, $error_json_exit = false 
         return false;
     }
 
+    if ( __~xsedeproject{1}0 && 
+         $doc = $use_db->__application__->jobs->findOne(
+             array( "_id" => $uuid ),
+             array( "xsedeproject" => 1 ) ) ) {
+
+        $update = [];
+        $update[ "_id" ] = "demo:$resource:" . $doc[ 'xsedeproject' ];
+
+        try {
+            $use_db->global->appresourceproject->update( 
+                $update,
+                $update,
+                array( "upsert" => true__~mongojournal{, "j" => true} ) );
+        } catch(MongoCursorException $e) {
+            $GLOBALS[ 'lasterror' ]  = "Error updating. " . $e->getMessage();
+            return false;
+        }
+    }
+
     try {
         $use_db->__application__->running->update(
             array( "_id" => $uuid ),
