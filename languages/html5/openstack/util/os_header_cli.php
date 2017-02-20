@@ -72,4 +72,21 @@ if ( !isset( $json->resources->oscluster->properties->auth_url ) ) {
 }
 
 putenv( "OS_AUTH_URL=" . $json->resources->oscluster->properties->auth_url );
+
+function all_projects() {
+    $cmd = "echo 'db.appresourceproject.find()' | mongo global | grep openstack";
+    $results = `$cmd`;
+    $results = preg_replace( '/^{ "_id" : "/m', '', $results );
+    $results = preg_replace( '/" }$/m', '', $results );
+    $lines = preg_split( "/\n/", $results, -1, PREG_SPLIT_NO_EMPTY );
+
+    $projects = [];
+
+    foreach ( $lines as $v ) {
+        $results = preg_match( '/^([^:]*):([^:]*):([^:]*)$/', $v, $matches );
+        $projects[ $matches[ 3 ] ] = 1;
+    }
+    return $projects;
+}
+
 ?>

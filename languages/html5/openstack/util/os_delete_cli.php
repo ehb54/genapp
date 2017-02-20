@@ -14,21 +14,22 @@ if ( !isset( $argv[ 1 ] ) ) {
 }
 
 require "os_header_cli.php";
-
-// should also get ip's and issue syncs umount /opt before shutdown (?)
-
-$cmd = "nova list | grep ' " .  $json->resources->oscluster->properties->project . "-run-" . $argv[ 1 ] . "-... ' | awk '{ print $2 }'";
-
-echo $cmd . "\n";
-$results = `$cmd`;
-echo $results;
-
-$ids = preg_split( "/\s+/", $results, -1, PREG_SPLIT_NO_EMPTY );
+$projects = all_projects();
 
 $docmd = "";
 
-foreach ( $ids as $v ) {
-    $docmd .= "nova delete $v &\n";
+foreach ( $projects as $project => $v ) {
+    putenv( "OS_TENANT_NAME=$project" );
+    putenv( "OS_PROJECT_NAME=$project" );
+
+    $cmd = "nova list | grep ' ${project}-run-" . $argv[ 1 ] . "-... ' | awk '{ print $2 }'";
+    # echo $cmd . "\n";
+    $results = `$cmd`;
+    $ids = preg_split( "/\s+/", $results, -1, PREG_SPLIT_NO_EMPTY );
+
+    foreach ( $ids as $v ) {
+        $docmd .= "nova delete $v &\n";
+    }
 }
 
 $docmd .= "wait\n";
