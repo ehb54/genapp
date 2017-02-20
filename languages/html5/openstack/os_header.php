@@ -39,15 +39,18 @@ putenv( "OS_TENANT_DOMAIN_NAME=" . $appjson->resources->oscluster->properties->d
 putenv( "OS_PROJECT_DOMAIN_NAME=" . $appjson->resources->oscluster->properties->domain );
 putenv( "OS_USER_DOMAIN_NAME=" . $appjson->resources->oscluster->properties->domain );
 
-if ( !isset( $appjson->resources->oscluster->properties->project ) ) {
-    echo '{"error":"resources:oscluster:properties:project not defined in appconfig"}';
-    exit;
+
+// if ( !isset( $json->resources->oscluster->properties->project ) ) {
+//    echo "error: resources:oscluster:properties:project not defined in appconfig\n";
+//    exit;
+// }
+
+if ( isset( $json->resources->oscluster->properties->project ) ) {
+    putenv( "OS_TENANT_NAME=" . $json->resources->oscluster->properties->project );
+    putenv( "OS_PROJECT_NAME=" . $json->resources->oscluster->properties->project );
+
+    $project = $json->resources->oscluster->properties->project;
 }
-
-putenv( "OS_TENANT_NAME=" . $appjson->resources->oscluster->properties->project );
-putenv( "OS_PROJECT_NAME=" . $appjson->resources->oscluster->properties->project );
-
-$project = $appjson->resources->oscluster->properties->project;
 
 if ( !isset( $appjson->resources->oscluster->properties->user ) ) {
     echo '{"error":"resources:oscluster:properties:user not defined in appconfig"}';

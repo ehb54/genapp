@@ -80,7 +80,7 @@ function start() {
     echo "starting services...\n";
 
     $run = "__docroot:html5__/__application__/util/ws_start.sh";
-    exec( "nohup $run > /dev/null 2&>1&" );
+    exec( "nohup $run > /dev/null 2>&1&" );
     sleep( SLEEPTIME );
 }
 
