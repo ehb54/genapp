@@ -17,8 +17,12 @@ $projects = [];
 
 foreach ( $lines as $v ) {
     $results = preg_match( '/^([^:]*):([^:]*):([^:]*)$/', $v, $matches );
-    $apps    [ $matches[ 1 ] ] = 1;
-    $projects[ $matches[ 3 ] ] = 1;
+    if ( strlen( $matches[ 1 ] ) ) {
+        $apps    [ $matches[ 1 ] ] = 1;
+    }
+    if ( strlen( $matches[ 3 ] ) ) {
+        $projects[ $matches[ 3 ] ] = 1;
+    }
 }
 
 # print_r( $apps );
