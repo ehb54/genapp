@@ -682,7 +682,7 @@ https://access.redhat.com/documentation/en-US/Red_Hat_Software_Collections/2/htm
     runcmdsb( "yum -y install mlocate httpd24-httpd httpd24-httpd-devel rh-php56-php rh-php56-php-devel rh-php56-php-pear rh-php56-php-pecl-mongo mongodb-org mongodb-org-server wget libuuid-devel zeromq-devel openssl-devel libpng-devel libjpeg-devel fontconfig-devel freetype-devel fftw-devel libtiff-devel cairo-devel pango pango-devel" );
 
     # need imagemagick from source :(
-    my $imversion = "ImageMagick-6.9.7-7.tar.gz";
+    my $imversion = "ImageMagick-6.9.7-9.tar.gz";
     runcmd( "rm -f /tmp/$imversion 2>/dev/null;cd /tmp && wget http://transloadit.imagemagick.org/download/releases/$imversion && tar zxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
 
     my $rhsclphp    = "/opt/rh/rh-php56/root";
@@ -979,7 +979,7 @@ _EOF
  
     if ( $cernvm ) {
         # need imagemagick from source :(
-        my $imversion = "ImageMagick-6.9.7-7.tar.gz";
+        my $imversion = "ImageMagick-6.9.7-9.tar.gz";
         runcmd( "rm -f /tmp/$imversion 2>/dev/null; cd /tmp && wget http://transloadit.imagemagick.org/download/releases/$imversion && tar zxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
     } else {
         runcmdsb( "yum -y install ImageMagick ImageMagick-devel" );
