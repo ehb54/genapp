@@ -688,6 +688,9 @@ splashlogin = function() {
           
 	  __~register:globuslogin{ + '$( "#splash_login_globus" ).click( function() { my_globus_call();});' }            
           __~register:globuslogin{ + '$( "#splash_register_globus" ).click( function() { my_globus_call(1);});' }  
+		       
+          __~hideregularlogin{ + '$( "#splash_login" ).hide();' }
+	  __~hideregularlogin{ + '$( "#splash_register" ).hide();' }	       
         }
                     ,0
                     ,4
