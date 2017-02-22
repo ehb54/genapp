@@ -27,7 +27,13 @@ foreach ( $projects as $project => $v ) {
     $results = `$cmd`;
     $ids = preg_split( "/\s+/", $results, -1, PREG_SPLIT_NO_EMPTY );
 
+    $padded = 0;
+
     foreach ( $ids as $v ) {
+        if ( !$padded ) {
+            $docmd .= "export OS_TENANT_NAME=$project OS_PROJECT_NAME=$project\n";
+            $padded = 1;
+        }
         $docmd .= "nova delete $v &\n";
     }
 }
