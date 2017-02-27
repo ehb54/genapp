@@ -90,6 +90,11 @@ $user_username_edited .= '_globus';
 $user_username_split = explode("@", $user_username);
 echo ( $user_username_split[0] );
 
+if (isset( $app->oauth2->stripdomain) && ($app->oauth2->stripdomain == 'true' || $app->oauth2->stripdomain == 'yes'))
+ {
+   $user_username_edited = $user_username_split[0];
+ }	
+
 
 /////////// Access token (other tokens) to get XSEDE profile info ///////////////////////////////
 $url_token_xsede = 'https://userportal.xsede.org';                //
