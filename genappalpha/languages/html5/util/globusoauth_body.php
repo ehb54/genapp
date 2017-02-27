@@ -109,7 +109,7 @@ if (isset( $app->oauth2->only) )
 
      if (!$source)
      {
-         $redirect_uri = $redirect_uri = "http://" . $app->hostname . "/__application__/". "/?sourcefailed=1";
+         $redirect_uri = ( isset( $app->oauth2->use_https ) ? "https" : "http" ) . "://" . $app->hostname . "/__application__/". "/?sourcefailed=1";
 	 header('Location: ' . filter_var($redirect_uri, FILTER_SANITIZE_URL));	
 
 	 exit();
