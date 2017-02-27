@@ -90,6 +90,35 @@ $user_username_edited .= '_globus';
 $user_username_split = explode("@", $user_username);
 echo ( $user_username_split[0] );
 
+$source = 0;
+
+if (isset( $app->oauth2->only) )
+  {
+     echo "<br>";
+     echo $app->oauth2->only[0];
+     echo "<br>";
+     echo ( $user_username_split[1] );
+     
+     foreach($app->oauth2->only as $val) 
+     {
+     	if ( $user_username_split[1] == $val)
+	{
+	   $source = 1;
+	}					
+     }
+
+     if (!$source)
+     {
+         $redirect_uri = $redirect_uri = "http://" . $app->hostname . "/__application__/". "/?sourcefailed=1";
+	 header('Location: ' . filter_var($redirect_uri, FILTER_SANITIZE_URL));	
+
+	 exit();
+     }     
+  }
+
+
+
+
 if (isset( $app->oauth2->stripdomain) && ($app->oauth2->stripdomain == 'true' || $app->oauth2->stripdomain == 'yes'))
  {
    $user_username_edited = $user_username_split[0];

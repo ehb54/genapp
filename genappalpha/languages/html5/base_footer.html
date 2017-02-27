@@ -212,6 +212,9 @@ $( "#login" ).click( function() {
 
 __~register:globuslogin{ if ( ga.urlparams("weloggedinglobus") ) { var username_globus = ga.urlparams("username_split"); var email_globus = ga.urlparams("email"); if ( ga.urlparams("register") ) { $( "#configbody" ).load( "etc/sys_register_globus.html" ); $( ".modalDialog" ).addClass( "modalDialog_on" ); window.history.replaceState( {}, "__title__ __version__", "/__application__/" );  } else { $( "#configbody" ).load( "etc/sys_login_globus.html" ); $( ".modalDialog" ).addClass( "modalDialog_on" );  window.history.replaceState( {}, "__title__ __version__", "/__application__/" ); } } }
 
+__~register:globuslogin{ if ( ga.urlparams("sourcefailed") ) { messagebox( { icon: "toast.png", text: "Invalid source of registration! <br> Please use allowed Globus credentials to register/login" } );} }
+
+
 __~register:googlelogin{ if ( ga.urlparams("weloggedingoogle") ) { var username_google = ga.urlparams("username"); var email_google = ga.urlparams("email"); if ( ga.urlparams("register") ) { $( "#configbody" ).load( "etc/sys_register_google.html" ); $( ".modalDialog" ).addClass( "modalDialog_on" ); window.history.replaceState( {}, "__title__ __version__", "/__application__/" );  } else { $( "#configbody" ).load( "etc/sys_login_google.html" ); $( ".modalDialog" ).addClass( "modalDialog_on" );  window.history.replaceState( {}, "__title__ __version__", "/__application__/" ); } } }
 
 
