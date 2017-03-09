@@ -2,6 +2,8 @@
 __~debug:runjob{error_log( "jobrun start\n", 3, "/tmp/php_errors" );}
 function shutdown() {
     posix_kill(posix_getpid(), SIGHUP);
+    sleep(1);
+    posix_kill(posix_getpid(), SIGTERM);
 }
 
 // Do some initial processing
