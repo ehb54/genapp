@@ -2,11 +2,18 @@
 
 session_start();
 
-$reg = $_POST[ 'register' ];
-
 if (!isset($_SESSION['first'])) {
+  if (isset($_POST[ 'register' ])) {
+        $reg = $_POST[ 'register' ];
+
+        //$_SESSION['first'] = $reg;
+   }
+   else {
+       $reg = 0;
+   }
+
   $_SESSION['first'] = $reg;
-} 		
+}
 
 
 $app = json_decode( file_get_contents( "__appconfig__" ) );
