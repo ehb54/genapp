@@ -163,7 +163,8 @@
                     "inputs"     : [ 
                                     { "util/jobs_history_web.php" : "once" }
                                    ]
-                   }             ,{
+                  }
+                  ,{
                     "frequency"  : "once",
                     "output"     : "util/msg-udpserver.php",
                     "inputs"     : [ 
@@ -189,6 +190,14 @@
                     "output"     : "util/msg-keepalive.php",
                     "inputs"     : [ 
                                     { "util/msg-keepalive.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+		    "setexecutable" : "true", 
+                    "output"     : "util/integrity.php",
+                    "inputs"     : [ 
+                                    { "util/integrity.php" : "once" }
                                    ]
                    }
                    ,{
