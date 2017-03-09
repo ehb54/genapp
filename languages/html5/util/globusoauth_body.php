@@ -126,7 +126,7 @@ if (isset( $app->oauth2->stripdomain) && ($app->oauth2->stripdomain == 'true' ||
 
 
 /////////// Access token (other tokens) to get XSEDE profile info ///////////////////////////////
-$url_token_xsede = 'https://userportal.xsede.org';                //
+$url_token_xsede = 'https://portal.xsede.org';                //
 
   $options_use_token_xsede = array(
     'http' => array(
