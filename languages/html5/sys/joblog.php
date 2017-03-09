@@ -568,6 +568,22 @@ function logrunning( $error_json_exit = false ) {
         return false;
     }
 
+    if ( !( $doc = $use_db->global->apps->findOne( array( "_id" => "__application__" ) ) ) ) {
+        try {
+            $use_db->global->apps->insert( array( "_id" => "__application__" )__~mongojournal{, array("j" => true )} );
+        } catch(MongoCursorException $e) {
+            $db_error = "Error updating the database. " . $e->getMessage();
+            if ( $error_json_exit )
+            {
+                $results[ 'error' ] .= $db_error;
+                $results[ '_status' ] = 'complete';
+                echo (json_encode($results));
+                exit();
+            }
+            return false;
+        }
+    }
+
     $set_array = array( '$push' => array( "pid" => array( "where" => "local", "pid" => getmypid(), "what" => "parent" ) ) );
 
     if ( __~xsedeproject{1}0 && 
@@ -610,7 +626,7 @@ function logrunningresource( $uuid, $resource, $nodes, $error_json_exit = false 
              array( "xsedeproject" => 1 ) ) ) {
 
         $update = [];
-        $update[ "_id" ] = "demo:$resource:" . $doc[ 'xsedeproject' ];
+        $update[ "_id" ] = "__application__:$resource:" . $doc[ 'xsedeproject' ];
 
         try {
             $use_db->global->appresourceproject->update( 
