@@ -12,7 +12,7 @@ if ( !isset( $argv[ 1 ] ) ) {
 require "os_header_cli.php";
 
 $project = $argv[ 1 ];
-putenv( "OS_TENANT_NAME=$project" );
+#putenv( "OS_TENANT_NAME=$project" );
 putenv( "OS_PROJECT_NAME=$project" );
 
 $cmd = "nova secgroup-list 2>&1";

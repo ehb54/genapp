@@ -29,7 +29,6 @@ if ( !isset( $json->resources->oscluster->properties->domain ) ) {
     exit;
 }
 
-putenv( "OS_TENANT_DOMAIN_NAME=" . $json->resources->oscluster->properties->domain );
 putenv( "OS_PROJECT_DOMAIN_NAME=" . $json->resources->oscluster->properties->domain );
 putenv( "OS_USER_DOMAIN_NAME=" . $json->resources->oscluster->properties->domain );
 
@@ -39,7 +38,6 @@ putenv( "OS_USER_DOMAIN_NAME=" . $json->resources->oscluster->properties->domain
 // }
 
 if ( isset( $json->resources->oscluster->properties->project ) ) {
-    putenv( "OS_TENANT_NAME=" . $json->resources->oscluster->properties->project );
     putenv( "OS_PROJECT_NAME=" . $json->resources->oscluster->properties->project );
 
     $project = $json->resources->oscluster->properties->project;
