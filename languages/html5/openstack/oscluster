@@ -240,7 +240,7 @@ if ($argc == 3) {
 # -------------------- remove virtual cluster --------------------
     sendudpmsg( "Remove virtual cluster" );
 
-    isset( $json_decoded->_xsedeproject ) ? os_delete( $GLOBALS[ "NC" ], $uuid, $json_decoded->_xsedeproject ) : os_delete( $GLOBALS[ "NC" ] );
+    isset( $json_decoded->_xsedeproject ) ? os_delete( $GLOBALS[ "NC" ], $uuid, $json_decoded->_xsedeproject ) : os_delete( $GLOBALS[ "NC" ], $uuid );
 
     sendudpmsg( "" );
 
