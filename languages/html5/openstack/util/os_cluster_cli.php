@@ -27,7 +27,7 @@ if ( isset( $argv[ 4 ] ) ) {
 
 $project = $argv[ 1 ];
 
-putenv( "OS_TENANT_NAME=$project" );
+#putenv( "OS_TENANT_NAME=$project" );
 putenv( "OS_PROJECT_NAME=$project" );
 
  

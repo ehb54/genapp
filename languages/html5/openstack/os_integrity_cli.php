@@ -33,7 +33,7 @@ foreach ( $lines as $v ) {
 $results = "";
 
 foreach ( $projects as $project => $v ) {
-    putenv( "OS_TENANT_NAME=$project" );
+#    putenv( "OS_TENANT_NAME=$project" );
     putenv( "OS_PROJECT_NAME=$project" );
 
     $cmd = "nova list | grep ' ${project}-run-........-....-....-....-............-... ' ";

@@ -19,7 +19,7 @@ $projects = all_projects();
 $docmd = "";
 
 foreach ( $projects as $project => $v ) {
-    putenv( "OS_TENANT_NAME=$project" );
+#    putenv( "OS_TENANT_NAME=$project" );
     putenv( "OS_PROJECT_NAME=$project" );
 
     $cmd = "nova list | grep ' ${project}-run-" . $argv[ 1 ] . "-... ' | awk '{ print $2 }'";
@@ -31,7 +31,7 @@ foreach ( $projects as $project => $v ) {
 
     foreach ( $ids as $v ) {
         if ( !$padded ) {
-            $docmd .= "export OS_TENANT_NAME=$project OS_PROJECT_NAME=$project\n";
+            $docmd .= "export OS_PROJECT_NAME=$project\n";
             $padded = 1;
         }
         $docmd .= "nova delete $v &\n";
