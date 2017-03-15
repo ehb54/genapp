@@ -10,7 +10,7 @@ function os_delete( $nodes, $uuid, $project, $quiet = false ) {
     if ( !isset( $project ) ) {
         $project = $appjson->resources->oscluster->properties->project;
     }
-    putenv( "OS_TENANT_NAME=$project" );
+#    putenv( "OS_TENANT_NAME=$project" );
     putenv( "OS_PROJECT_NAME=$project" );
 
     if ( !$quiet ) {

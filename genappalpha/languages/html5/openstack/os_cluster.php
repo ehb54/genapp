@@ -16,10 +16,8 @@ function os_cluster_start( $nodes, $uuid, $use_project ) {
 
     # -------------------- set up OS image info --------------------
 
-    if ( isset( $use_project ) ) {
+    if ( isset( $use_project ) && !empty( $use_project ) ) {
         $project = $use_project;
-        putenv( "OS_TENANT_NAME=$project" );
-        putenv( "OS_PROJECT_NAME=$project" );
     } else {
         if ( !isset( $appjson->resources->oscluster->properties->project ) ) {
             echo '{"error":"resources:oscluster:properties:project not defined in appconfig"}';
@@ -28,6 +26,9 @@ function os_cluster_start( $nodes, $uuid, $use_project ) {
         
         $project = $appjson->resources->oscluster->properties->project;
     }
+
+#    putenv( "OS_TENANT_NAME=$project" );
+    putenv( "OS_PROJECT_NAME=$project" );
 
     if ( !isset( $appjson->resources->oscluster->properties->flavor ) ) {
         echo '{"error":"resources:oscluster:properties:flavor not defined in appconfig"}';
