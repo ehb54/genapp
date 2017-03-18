@@ -609,7 +609,7 @@ function logrunning( $error_json_exit = false ) {
     return true;
 }
 
-function logrunningresource( $uuid, $resource, $nodes, $error_json_exit = false ) {
+function logrunningresource( $uuid, $resource, $nodes, $nodesppn, $error_json_exit = false ) {
     global $use_db;
     global $db_errors;
 
@@ -644,7 +644,8 @@ function logrunningresource( $uuid, $resource, $nodes, $error_json_exit = false 
             array( "_id" => $uuid ),
             array( 
                 '$set' => array( "resource" => $resource
-                                 ,"nodes"   => $nodes )
+                                 ,"nodes"   => $nodes
+                                 ,"nodeppn" => $nodesppn )
             ),
             array( "upsert" => true__~mongojournal{, "j" => true} ) 
             );
