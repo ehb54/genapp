@@ -117,13 +117,49 @@ if ($argc == 3) {
         exit;
     }
 
+    # figure out number of nodes to boot
+
     $GLOBALS['NP'] = $json_decoded->numproc;
 
-    if ( !isset( $appjson->resources->oscluster->properties->ppn ) ) {
-        echo '{"error":"PPNs not defined in appconfig for this flavor."}';
+    if ( 
+        ( isset( $json_decoded->os_ppn ) ||
+          isset( $json_decoded->os_flavor ) ||
+          isset( $json_decoded->os_nodes ) ) &&
+        !( isset( $json_decoded->os_ppn ) &&
+           isset( $json_decoded->os_flavor ) &&
+           isset( $json_decoded->os_nodes ) ) ) {
+        echo '{"error":"module json error: os_ppn, os_flavor & os_nodes must either be set all together or not at all"}';
         exit;
     }
-    
+        
+    if ( isset( $json_decoded->os_flavor ) ) {
+        $use_flavor   = str_replace( "_", ".", $json_decoded->os_flavor );
+        $ppn          = $json_decoded->os_ppn;
+        $nc           = $json_decoded->os_nodes;
+    } else {
+        if ( !isset( $appjson->resources->oscluster->properties->flavor ) ) {
+            echo '{"error":"resources:oscluster:properties:flavor not defined in appconfig"}';
+            exit;
+        }
+        $use_flavor = $appjson->resources->oscluster->properties->flavor;
+
+        if ( !isset( $appjson->resources->oscluster->properties->ppn ) ) {
+            echo '{"error":"PPNs not defined in appconfig for this flavor."}';
+            exit;
+        }
+        $ppn = $appjson->resources->oscluster->properties->ppn;
+
+        $nc = ceil( $json_decoded->numproc / $ppn );
+    }
+
+    if ( !isset( $appjson->resources->oscluster->properties->flavors ) ||
+         !isset( $appjson->resources->oscluster->properties->flavors->$use_flavor ) ) {
+        echo '{"error":"selected flavor ' . $use_flavor . ' not in appconfig flavors list"}';
+        exit;
+    }
+
+    $flavor_ppn = $appjson->resources->oscluster->properties->flavors->$use_flavor;
+
     if ( !isset( $json_decoded->_uuid ) ) {
         echo '{"error":"no _uuid defined in json input."}';
         exit;
@@ -131,7 +167,7 @@ if ($argc == 3) {
         
     $uuid = $json_decoded->_uuid;
 
-    $GLOBALS['NC'] = ceil( $json_decoded->numproc / $appjson->resources->oscluster->properties->ppn );
+    $GLOBALS['NC'] = $nc;
 
     # setup up udp messaging if available
 
@@ -149,17 +185,19 @@ if ($argc == 3) {
     // sendudptext( "globals:\n" . print_r( $GLOBALS, true ) . "\n" );
 
     $json_decoded->_clusternodecount = $GLOBALS[ "NC" ];
-    $json_decoded->_clusterppn = $appjson->resources->oscluster->properties->ppn;
+    $json_decoded->_clusterppn = $ppn;
 
     sendudptext( "json:\n" . json_encode( $json_decoded, JSON_PRETTY_PRINT ) . "\n" );
 
 # -------------------- create virtual cluster, get ip's --------------------
 
-    logrunningresource( $json_decoded->_uuid, "openstack", $GLOBALS[ "NC" ] );
+    logrunningresource( $json_decoded->_uuid, "openstack", $GLOBALS[ "NC" ], $flavor_ppn );
 
     sendudpmsg( "Creating virtual cluster" );
 
-    $result = isset( $json_decoded->_xsedeproject ) ? os_cluster_start( $GLOBALS[ "NC" ], $uuid, $json_decoded->_xsedeproject ) : os_cluster_start( $GLOBALS[ "NC" ], $uuid );
+    $xsedeproject = isset( $json_decoded->_xsedeproject ) ? $json_decoded->_xsedeproject : NULL;
+
+    $result = os_cluster_start( $GLOBALS[ "NC" ], $uuid, $xsedeproject, $use_flavor );
         
     $result_json = json_decode( $result );
 
@@ -175,7 +213,7 @@ if ($argc == 3) {
     $json_decoded->_clusteripsjoined = implode( ",", $result_json->clusterips );
 
     $json_decoded->_clusterhostfile = "hostfile-$uuid.txt";
-    $tmp_slots = " slots=" . $appjson->resources->oscluster->properties->ppn;
+    $tmp_slots = " slots=$ppn";
     $hostfiletext = implode( "$tmp_slots\n", $result_json->clusterips ) . "$tmp_slots\n";
     ob_start();
     file_put_contents( $json_decoded->_clusterhostfile, $hostfiletext );
