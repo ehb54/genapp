@@ -644,8 +644,23 @@ function logrunningresource( $uuid, $resource, $nodes, $nodesppn, $error_json_ex
             array( "_id" => $uuid ),
             array( 
                 '$set' => array( "resource" => $resource
-                                 ,"nodes"   => $nodes
-                                 ,"nodeppn" => $nodesppn )
+                                 ,"nodes"   => intval( $nodes )
+                                 ,"nodeppn" => intval( $nodesppn ) )
+            ),
+            array( "upsert" => true__~mongojournal{, "j" => true} ) 
+            );
+    } catch( MongoCursorException $e ) {
+        $GLOBALS[ 'lasterror' ]  = "Error updating. " . $e->getMessage();
+        return false;
+    }
+
+    try {
+        $use_db->__application__->jobs->update(
+            array( "_id" => $uuid ),
+            array( 
+                '$set' => array( "numprocs" => intval( $nodes * $nodesppn )
+                                 ,"nodes"   => intval( $nodes )
+                                 ,"nodeppn" => intval( $nodesppn ) )
             ),
             array( "upsert" => true__~mongojournal{, "j" => true} ) 
             );
