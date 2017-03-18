@@ -11,7 +11,7 @@ $notes =
 require_once "os_header.php";
 require_once "os_delete.php";
 
-function os_cluster_start( $nodes, $uuid, $use_project ) {
+function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
     global $appjson;
 
     # -------------------- set up OS image info --------------------
@@ -30,12 +30,16 @@ function os_cluster_start( $nodes, $uuid, $use_project ) {
 #    putenv( "OS_TENANT_NAME=$project" );
     putenv( "OS_PROJECT_NAME=$project" );
 
-    if ( !isset( $appjson->resources->oscluster->properties->flavor ) ) {
-        echo '{"error":"resources:oscluster:properties:flavor not defined in appconfig"}';
-        exit;
-    }
+    if ( isset( $use_flavor ) && !empty( $use_flavor ) ) {
+        $flavor = $use_flavor;
+    } else {
+        if ( !isset( $appjson->resources->oscluster->properties->flavor ) ) {
+            echo '{"error":"resources:oscluster:properties:flavor not defined in appconfig"}';
+            exit;
+        }
 
-    $flavor = $appjson->resources->oscluster->properties->flavor;
+        $flavor = $appjson->resources->oscluster->properties->flavor;
+    }
 
     if ( !isset( $appjson->resources->oscluster->properties->baseimage ) ) {
         echo '{"error":"resources:oscluster:properties:baseimage not defined in appconfig"}';
