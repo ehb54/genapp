@@ -28,7 +28,7 @@ foreach ( $lines as $v ) {
 # print_r( $apps );
 # print_r( $projects );
 
-# -------------- get all nova data --------------
+# -------------- get all openstack instance data --------------
 
 $results = "";
 
@@ -36,7 +36,7 @@ foreach ( $projects as $project => $v ) {
 #    putenv( "OS_TENANT_NAME=$project" );
     putenv( "OS_PROJECT_NAME=$project" );
 
-    $cmd = "nova list | grep ' ${project}-run-........-....-....-....-............-... ' ";
+    $cmd = "openstack server list -c ID -c Name -c Status -c Networks | grep ' ${project}-run-........-....-....-....-............-... ' ";
 
     $results .= `$cmd`;
 }
@@ -53,12 +53,12 @@ foreach ( $lines as $v ) {
     foreach ( $projects as $project => $v2 ) {
         
         preg_match(
-            '/^\s*\|\s*(\S+)\s+'
-            . '\|\s+' . $project . '-run-(........-....-....-....-............)-(...)\s+'
-            . '\|\s+(\S+)\s+'
-            . '\|\s+(\S+)\s+'
-            . '\|\s+(\S+)\s+'
-            . '\|(?:\s+.*=(\S+)|())\s+'
+            '/^\s*\|\s*(\S+)\s+'                                                                # ID        1
+            . '\|\s+' . $project . '-run-(........-....-....-....-............)-(...)\s+'       # Name      2,3
+            . '\|\s+(\S+)\s+'                                                                   # Status    4
+#            . '\|\s+(\S+)\s+'
+#            . '\|\s+(\S+)\s+'
+            . '\|(?:\s+.*=(\S+)|())\s+'                                                         # Networks  5
             . '/'
             , $v
             , $matches
@@ -72,9 +72,9 @@ foreach ( $lines as $v ) {
             $vmno   = $matches[ 3 ];
             $ivmno  = intval( $matches[ 3 ] );
             $status = $matches[ 4 ];
-            $state  = $matches[ 5 ];
-            $power  = $matches[ 6 ];
-            $ip     = $matches[ 7 ];
+#            $state  = $matches[ 5 ];
+#            $power  = $matches[ 6 ];
+            $ip     = $matches[ 5 ];
             
             if ( !isset( $info[ $jid ] ) ) {
                 $info[ $jid ] = [];
@@ -87,8 +87,8 @@ foreach ( $lines as $v ) {
             $info[ $jid ][ $vmno ][ "vmid" ]   = $vmid;
             $info[ $jid ][ $vmno ][ "vmname" ] = "$project-$vmid-$vmno";
             $info[ $jid ][ $vmno ][ "status" ] = $status;
-            $info[ $jid ][ $vmno ][ "state" ]  = $state;
-            $info[ $jid ][ $vmno ][ "power" ]  = $power;
+#            $info[ $jid ][ $vmno ][ "state" ]  = $state;
+#            $info[ $jid ][ $vmno ][ "power" ]  = $power;
             $info[ $jid ][ $vmno ][ "ip" ]     = $ip;
         }
     }
