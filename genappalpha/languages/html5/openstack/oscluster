@@ -215,6 +215,7 @@ if ($argc == 3) {
     $json_decoded->_clusterhostfile = "hostfile-$uuid.txt";
     $tmp_slots = " slots=$ppn";
     $hostfiletext = implode( "$tmp_slots\n", $result_json->clusterips ) . "$tmp_slots\n";
+    # $hostfiletext = str_replace( $result_json->clusterips[0], "localhost", $hostfiletext );
     ob_start();
     file_put_contents( $json_decoded->_clusterhostfile, $hostfiletext );
     ob_end_clean();
