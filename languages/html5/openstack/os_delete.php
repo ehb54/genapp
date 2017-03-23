@@ -4,7 +4,7 @@ require_once "os_header.php";
 
 # should also get ip's and issue syncs umount /opt before shutdown (?)
 
-function os_delete( $nodes, $uuid, $project, $quiet = false ) {
+function os_delete( $nodes, $uuid, $project = NULL, $quiet = false ) {
     global $appjson;
 
     if ( !isset( $project ) ) {
@@ -40,7 +40,7 @@ function os_delete( $nodes, $uuid, $project, $quiet = false ) {
     $docmd = "";
     
     foreach ( $ids as $v ) {
-        $docmd .= "nova delete $v &\n";
+        $docmd .= "openstack server delete $v &\n";
     }
 
     $docmd .= "wait\n";
