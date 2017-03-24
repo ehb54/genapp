@@ -105,7 +105,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
             $cmd = "";
             if ( count( $image ) ) {
                 foreach ( $image as $v ) {
-                    $cmd .= "nova delete $v &\n";
+                    $cmd .= "openstack server delete $v &\n";
                 }
                 $cmd .= "wait\n";
 
@@ -115,6 +115,9 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
             }
             sendudpmsg( "Errors found when trying to boot a virtual cluster node" );
             echo '{"error":"OpenStack:' . implode( "<p>OpenStack:", $results_error ) . '"}';
+            if ( isset( $tempfile ) ) {
+                unlink( $tempfile );
+            }
             exit;
         }        
 
@@ -149,7 +152,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
                 $cmd = "";
                 if ( count( $image ) ) {
                     foreach ( $image as $v2 ) {
-                        $cmd .= "nova delete $v2 &\n";
+                        $cmd .= "openstack server delete $v2 &\n";
                     }
                     $cmd .= "wait\n";
 
@@ -175,7 +178,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
                     $cmd = "";
                     if ( count( $image ) ) {
                         foreach ( $image as $v2 ) {
-                            $cmd .= "nova delete $v2 &\n";
+                            $cmd .= "openstack server delete $v2 &\n";
                         }
                         $cmd .= "wait\n";
 

@@ -102,7 +102,7 @@ for ( $i = 0; $i < $argv[ 2 ]; ++$i ) {
         $cmd = "";
         if ( count( $image ) ) {
             foreach ( $image as $v ) {
-                $cmd .= "nova delete $v &\n";
+                $cmd .= "openstack server delete $v &\n";
             }
             $cmd .= "wait\n";
 
@@ -110,6 +110,9 @@ for ( $i = 0; $i < $argv[ 2 ]; ++$i ) {
             echo `$cmd`;
         }
         echo '{"error":"OpenStack:' . implode( "<p>OpenStack:", $results_error ) . '"}';
+        if ( isset( $tempfile ) ) {
+            unlink( $tempfile );
+        }
         exit;
     }        
     $image[] = $name;
@@ -143,7 +146,7 @@ do {
             $cmd = "";
             if ( count( $image ) ) {
                 foreach ( $image as $v2 ) {
-                    $cmd .= "nova delete $v2 &\n";
+                    $cmd .= "openstack server delete $v2 &\n";
                 }
                 $cmd .= "wait\n";
 
@@ -167,7 +170,7 @@ do {
                 $cmd = "";
                 if ( count( $image ) ) {
                     foreach ( $image as $v2 ) {
-                        $cmd .= "nova delete $v2 &\n";
+                        $cmd .= "openstack server delete $v2 &\n";
                     }
                     $cmd .= "wait\n";
 
