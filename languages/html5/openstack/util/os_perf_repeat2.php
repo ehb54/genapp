@@ -101,21 +101,20 @@ while( 1 ) {
             echo "error no tag defined for this run\n";
             exit;
         }
+        $tag = $v->tag;
         if ( isset( $v->prerun ) ) {
-            $cmd = "cd $basedir;$v->prerun\n";
+            $cmd = "(cd $basedir;$v->prerun)\n";
         }
         $cmd .= "php os_perf_cli2.php $oscmd_file '" . ( isset( $v->modify ) ? json_encode( $v->modify ) : "{}" ) . "' $do_perf\n";
         echo "cmd is $cmd\n";
 
-        if ( 0 ) {
-            $results = `$cmd`;
-            if ( function_exists( 'post_processing' ) ) {
-                post_processing( $json, $results, $tag );
-            }
+        $results = `$cmd`;
+        echo "results are <\n$results\n>\n";
+        if ( function_exists( 'post_processing' ) ) {
+            post_processing( $json, $results, $tag );
         }
     }        
 
-    exit;
     print "sleeping ${minutes} minutes\n";
     sleep( 60 * $minutes );
 }
