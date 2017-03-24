@@ -78,7 +78,7 @@ if ( isset( $argv[ 3 ] ) ) {
 }
         
 $uuid = guid();
-echo "guid is $uuid\n";
+sendudpmsg( "guid is $uuid" );
 
 if ( FALSE === ( $oscmd = file_get_contents( $argv[1] ) ) ) {
     echo "could not read file $argv[1]\n";
@@ -88,7 +88,7 @@ if ( FALSE === ( $oscmd = file_get_contents( $argv[1] ) ) ) {
 # --- process file ---
 
 preg_match( 
-    '/^ssh \S+ "(?:cd \S+; (\S+)) \'({.*})\'" (2> \S+)$/'
+    '/^.*ssh \S+ "(?:cd \S+; (\S+)) \'({.*})\'" (2> \S+)$/'
     , $oscmd
     , $matches
     );
@@ -110,9 +110,9 @@ require_once "os_cluster.php";
 
 # modify json with optional mods
 
-$json->uuid = $uuid;
+$json->_uuid = $uuid;
 foreach( $modify_json as $k => $v ) {
-    echo "modify json $k => $v\n";
+    sendudptext( "modify json $k => $v" );
     $json->$k = $v;
 }
 
@@ -164,8 +164,8 @@ if ( !isset( $appjson->resources->oscluster->properties->flavors ) ||
 
 $flavor_ppn = $appjson->resources->oscluster->properties->flavors->$use_flavor;
 
-echo "ppn is $ppn\n";
-echo "flavor_ppn is $flavor_ppn\n";
+sendudptext( "ppn is $ppn" );
+sendudptext( "flavor_ppn is $flavor_ppn" );
 
 if ( !isset( $json->_uuid ) ) {
     echo '{"error":"no _uuid defined in json input."}';
@@ -186,7 +186,7 @@ unset( $json->_udpport );
 $xsedeproject = isset( $json->_xsedeproject ) ? $json->_xsedeproject : NULL;
 
 $result = os_cluster_start( $json->_clusternodecount, $uuid, $xsedeproject, $use_flavor );
-echo "result is $result\n";
+sendudpmsg( "result is $result" );
 $result_json = json_decode( $result );
 sendudptext( $result );
 if ( isset( $result_json->error ) ) {
@@ -253,6 +253,7 @@ if ( isset( $perf_exe ) ) {
 
 sendudpmsg( "Running job" );
 
+
 $cmd = 
     "ssh " 
     . $result_json->clusterips[0] 
@@ -266,13 +267,24 @@ $cmd =
     . "/_os_stderr_$uuid"
     ;
 
+if ( isset( $json->cmd_timeout ) ) {
+   $cmd = "timeout $json->cmd_timeout $cmd";
+}
+
 sendudptext( "$cmd\n" );
 
 ob_start();
 file_put_contents( $json->_log_directory . "/_oscmd_$uuid", $cmd );
 ob_end_clean();
 
-$results = `$cmd`;
+# $results = `$cmd`;
+unset( $output );
+$retval = 0;
+exec( $cmd, $output, $retval );
+$results = implode( $output );
+if ( $retval == 124 ) { # timed out
+   $results = '{"error":"command timed out after ' . $json->cmd_timeout . '"}';
+}
 
 #    sendudptext( "results - pre replace:\n" . $results );
 
