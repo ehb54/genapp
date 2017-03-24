@@ -4,6 +4,8 @@ $notes = "usage: $0 control-json
 runs os_perf_cli.php as described in the control json
 ";
 
+require_once "parallel.php";
+
 if ( isset( $argv[ 1 ] ) ) {
     $control_json_file = $argv[ 1 ];
 } else {
@@ -102,6 +104,8 @@ foreach ( $control_json->run as $v ) {
 
 while( 1 ) {
 
+    prll_init( isset( $control_json->parallel ) ? $control_json->parallel : 1 );
+
     if ( isset( $control_json->cacheemails ) ) {
         $cacheemails = $control_json->cacheemails;
         `rm -f $cacheemails 2> /dev/null`;
@@ -116,6 +120,9 @@ while( 1 ) {
     } else {
         $cacheemails = NULL;
     }
+
+    $tags = [];
+    $cmds = [];
     
     foreach ( $control_json->run as $v ) {
         # modify oscmd json and produce temporary new oscmd file
@@ -126,19 +133,47 @@ while( 1 ) {
             exit;
         }
         $tag = $v->tag;
+
+        if ( isset( $control_json->freshtagbase ) ) {
+            $basedir = "$control_json->freshtagbase/$tag";
+            if ( !isset( $v->modify ) ) {
+                $v->modify = new stdClass();
+            }
+            $v->modify->_base_directory  = $basedir;
+            if ( !file_exists( $basedir ) ) {
+                if ( !mkdir( $basedir, 0777, true ) ) {
+                    echo "error making $basedir\n";
+                }
+            }
+            `chmod g+w $basedir`;
+        }
         $cmd = "";
         if ( isset( $v->prerun ) ) {
             $cmd = "(cd $basedir;$v->prerun)\n";
         }
-        $cmd .= "php os_perf_cli2.php $oscmd_file '" . ( isset( $v->modify ) ? json_encode( $v->modify ) : "{}" ) . "' $do_perf\n";
+        $cmd .= "php os_perf_cli3.php $oscmd_file '" . ( isset( $v->modify ) ? json_encode( $v->modify ) : "{}" ) . "' $do_perf\n";
         echo "cmd is $cmd\n";
+        $tags[ $tag ] = $v;
+        $cmds[ $tag ] = $cmd;
 
-        $results = `$cmd`;
+        prll_add( $tag, $cmd );
+    }
+
+    prll_run();
+
+    foreach ( $tags as $tag => $v ) {
+
+        $results = $prll[ 'sout' ][ $tag ];
         echo "results are <\n$results\n>\n";
         if ( function_exists( 'post_processing' ) ) {
+            if ( isset( $v->modify ) ) {
+                foreach( $v->modify as $k => $v ) {
+                    $json->$k = $v;
+                }
+            }
             post_processing( $json, $results, $tag, $cacheemails );
         }
-    }        
+    }
 
     if ( isset( $control_json->cacheemails ) ) {
         $cmd = "mail -s \"$control_json->mailhdr\" $control_json->sendcacheemail < $cacheemails";

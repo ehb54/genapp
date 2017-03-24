@@ -65,7 +65,7 @@ foreach ( $lines as $v ) {
             );
         
         if ( count( $matches ) ) {
-            
+
             # print_r( $matches );
             $vmid   = $matches[ 1 ];
             $jid    = $matches[ 2 ];
@@ -76,6 +76,11 @@ foreach ( $lines as $v ) {
 #            $power  = $matches[ 6 ];
             $ip     = $matches[ 5 ];
             
+            if ( substr( $jid, 0, 2 ) == "OR" ) {
+                # skip out of band command line runs
+                continue;
+            }
+
             if ( !isset( $info[ $jid ] ) ) {
                 $info[ $jid ] = [];
             }
