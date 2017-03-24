@@ -93,6 +93,21 @@ $basedir = $json->_base_directory;
 
 while( 1 ) {
 
+    if ( isset( $control_json->cacheemails ) ) {
+        $cacheemails = $control_json->cacheemails;
+        `rm -f $cacheemails 2> /dev/null`;
+        if ( !isset( $control_json->sendcacheemail ) ) {
+            echo "control_json:cacheemails is set but not control_json:sendcacheemail\n";
+            exit;
+        }
+        if ( !isset( $control_json->mailhdr ) ) {
+            echo "control_json:cacheemails is set but not control_json:mailhdr\n";
+            exit;
+        }
+    } else {
+        $cacheemails = NULL;
+    }
+    
     foreach ( $control_json->run as $v ) {
         # modify oscmd json and produce temporary new oscmd file
         echo "----------------------------------------\n";
@@ -111,10 +126,18 @@ while( 1 ) {
         $results = `$cmd`;
         echo "results are <\n$results\n>\n";
         if ( function_exists( 'post_processing' ) ) {
-            post_processing( $json, $results, $tag );
+            post_processing( $json, $results, $tag, $cacheemails );
         }
     }        
 
+    if ( isset( $control_json->cacheemails ) ) {
+        $cmd = "mail -s \"$control_json->mailhdr\" $control_json->$sendcacheemail < $cacheemails";
+        echo `$cmd`;
+    }
+
+    if ( isset( $control_json->once ) ) {
+        exit;
+    }
     print "sleeping ${minutes} minutes\n";
     sleep( 60 * $minutes );
 }
