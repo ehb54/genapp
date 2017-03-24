@@ -91,6 +91,15 @@ if ( !isset( $json->_base_directory ) ) {
 
 $basedir = $json->_base_directory;
 
+echo "total runs " . count( $control_json->run ) . "\n";
+foreach ( $control_json->run as $v ) {
+    if ( !isset( $v->tag ) ) {
+        echo "error no tag defined for this run\n";
+        exit;
+    }
+    echo $v->tag . "\n";
+}
+
 while( 1 ) {
 
     if ( isset( $control_json->cacheemails ) ) {
