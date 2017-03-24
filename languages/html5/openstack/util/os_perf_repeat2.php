@@ -131,7 +131,8 @@ while( 1 ) {
     }        
 
     if ( isset( $control_json->cacheemails ) ) {
-        $cmd = "mail -s \"$control_json->mailhdr\" $control_json->$sendcacheemail < $cacheemails";
+        $cmd = "mail -s \"$control_json->mailhdr\" $control_json->sendcacheemail < $cacheemails";
+        echo "$cmd\n";
         echo `$cmd`;
     }
 
