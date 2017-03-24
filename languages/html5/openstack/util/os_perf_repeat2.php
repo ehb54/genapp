@@ -126,6 +126,7 @@ while( 1 ) {
             exit;
         }
         $tag = $v->tag;
+        $cmd = "";
         if ( isset( $v->prerun ) ) {
             $cmd = "(cd $basedir;$v->prerun)\n";
         }
