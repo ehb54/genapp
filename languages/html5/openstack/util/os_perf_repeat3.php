@@ -128,6 +128,25 @@ while( 1 ) {
 
     $retries_left = isset( $control_json->retryerror ) ? $control_json->retryerror : 0;
 
+    if ( isset( $control_json->cacheemails ) ) {
+        $cacheemails = $control_json->cacheemails;
+        `rm -f $cacheemails 2> /dev/null`;
+        if ( !isset( $control_json->sendcacheemail ) ) {
+            echo "control_json:cacheemails is set but not control_json:sendcacheemail\n";
+            exit;
+        }
+        if ( !isset( $control_json->mailhdr ) ) {
+            echo "control_json:cacheemails is set but not control_json:mailhdr\n";
+            exit;
+        }
+    } else {
+        $cacheemails = NULL;
+    }
+
+    $tags = [];
+
+    $trys = 0;
+
     do {
 
         echo "================================================================================\n";
@@ -136,22 +155,6 @@ while( 1 ) {
 
         prll_init( isset( $control_json->parallel ) ? $control_json->parallel : 1 );
 
-        if ( isset( $control_json->cacheemails ) ) {
-            $cacheemails = $control_json->cacheemails;
-            `rm -f $cacheemails 2> /dev/null`;
-            if ( !isset( $control_json->sendcacheemail ) ) {
-                echo "control_json:cacheemails is set but not control_json:sendcacheemail\n";
-                exit;
-            }
-            if ( !isset( $control_json->mailhdr ) ) {
-                echo "control_json:cacheemails is set but not control_json:mailhdr\n";
-                exit;
-            }
-        } else {
-            $cacheemails = NULL;
-        }
-
-        $tags = [];
         $cmds = [];
         
         foreach ( $control_json->run as $v ) {
@@ -197,7 +200,7 @@ while( 1 ) {
         # clean up any ERROR states
         
         $lines = [];
-        exec( "openstack server list --name '.*-run-OR-.*' --status ERROR -c ID -f value", $lines );
+        exec( "openstack server list --name '.*-run-OR.*' --status ERROR -c ID -f value", $lines );
         if ( count( $lines ) ) {
             $cmd = "openstack server delete " . implode( ' ', $lines );
             echo $cmd;
@@ -206,15 +209,21 @@ while( 1 ) {
             echo "no run-OR instances in ERROR state\n";
         }
 
-        foreach ( $tags as $tag => $v ) {
-            
-            $results = $prll[ 'sout' ][ $tag ];
+        foreach ( $prll[ 'sout' ] as $tag => $results ) {
             $json_results = json_decode( $results );
-            if ( $json_results != NULL && !isset( $json_results->error ) ) {
+            $falsefail = 0;
+            if ( isset( $control_json->failfirst ) && $trys == 0 &&
+                 $control_json->failfirst >  mt_rand() / mt_getrandmax() ) {
+                $falsefail = 1;
+                echo "Notice: fake failure $tag\n";
+            }
+                    
+            if ( $json_results != NULL && !isset( $json_results->error ) && !$falsefail ) {
                 unset( $nogoodresults[ $tag ] );
             }
             $lastresults[ $tag ] = $results;
         }
+        $trys++;
     } while ( $retries_left-- > 0 && count( $nogoodresults ) );
 
     if ( count( $nogoodresults ) ) {
