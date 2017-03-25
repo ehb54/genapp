@@ -52,6 +52,16 @@ if ( isset( $control_json->prerun ) ) {
     echo "$do_perf will be run before every job\n";
 }
 
+if ( isset( $control_json->loops ) ) {
+    $loops = $control_json->loops;
+    echo "$loops loops of these runs will be performed\n";
+}
+
+if ( isset( $control_json->loops ) && isset( $control_json->once ) ) {
+    echo "error in control_json, both loops and once can not be set\n";
+    exit;
+}
+
 if ( isset( $control_json->postproc ) ) {
     require_once $control_json->postproc;
     if ( !function_exists( 'post_processing' ) ) {
@@ -104,66 +114,116 @@ foreach ( $control_json->run as $v ) {
 
 while( 1 ) {
 
-    prll_init( isset( $control_json->parallel ) ? $control_json->parallel : 1 );
+    $nogoodresults = [];
+    $lastresults = [];
 
-    if ( isset( $control_json->cacheemails ) ) {
-        $cacheemails = $control_json->cacheemails;
-        `rm -f $cacheemails 2> /dev/null`;
-        if ( !isset( $control_json->sendcacheemail ) ) {
-            echo "control_json:cacheemails is set but not control_json:sendcacheemail\n";
-            exit;
-        }
-        if ( !isset( $control_json->mailhdr ) ) {
-            echo "control_json:cacheemails is set but not control_json:mailhdr\n";
-            exit;
-        }
-    } else {
-        $cacheemails = NULL;
-    }
-
-    $tags = [];
-    $cmds = [];
-    
     foreach ( $control_json->run as $v ) {
-        # modify oscmd json and produce temporary new oscmd file
-        echo "----------------------------------------\n";
-        echo json_encode( $v, JSON_PRETTY_PRINT ) . "\n";
         if ( !isset( $v->tag ) ) {
             echo "error no tag defined for this run\n";
             exit;
         }
         $tag = $v->tag;
-
-        if ( isset( $control_json->freshtagbase ) ) {
-            $basedir = "$control_json->freshtagbase/$tag";
-            if ( !isset( $v->modify ) ) {
-                $v->modify = new stdClass();
-            }
-            $v->modify->_base_directory  = $basedir;
-            if ( !file_exists( $basedir ) ) {
-                if ( !mkdir( $basedir, 0777, true ) ) {
-                    echo "error making $basedir\n";
-                }
-            }
-            `chmod g+w $basedir`;
-        }
-        $cmd = "";
-        if ( isset( $v->prerun ) ) {
-            $cmd = "(cd $basedir;$v->prerun)\n";
-        }
-        $cmd .= "php os_perf_cli3.php $oscmd_file '" . ( isset( $v->modify ) ? json_encode( $v->modify ) : "{}" ) . "' $do_perf\n";
-        echo "cmd is $cmd\n";
-        $tags[ $tag ] = $v;
-        $cmds[ $tag ] = $cmd;
-
-        prll_add( $tag, $cmd );
+        $nogoodresults[ $tag ] = 1;
     }
 
-    prll_run();
+    $retries_left = isset( $control_json->retryerror ) ? $control_json->retryerror : 0;
+
+    do {
+
+        echo "================================================================================\n";
+        echo "starting processing loop, loops left: " . ( isset( $loops ) ? $loops - 1 : "infinite" ) . ", retries left: $retries_left\n";
+        echo "================================================================================\n";
+
+        prll_init( isset( $control_json->parallel ) ? $control_json->parallel : 1 );
+
+        if ( isset( $control_json->cacheemails ) ) {
+            $cacheemails = $control_json->cacheemails;
+            `rm -f $cacheemails 2> /dev/null`;
+            if ( !isset( $control_json->sendcacheemail ) ) {
+                echo "control_json:cacheemails is set but not control_json:sendcacheemail\n";
+                exit;
+            }
+            if ( !isset( $control_json->mailhdr ) ) {
+                echo "control_json:cacheemails is set but not control_json:mailhdr\n";
+                exit;
+            }
+        } else {
+            $cacheemails = NULL;
+        }
+
+        $tags = [];
+        $cmds = [];
+        
+        foreach ( $control_json->run as $v ) {
+            # modify oscmd json and produce temporary new oscmd file
+            echo "----------------------------------------\n";
+            echo json_encode( $v, JSON_PRETTY_PRINT ) . "\n";
+            if ( !isset( $v->tag ) ) {
+                echo "error no tag defined for this run\n";
+                exit;
+            }
+            $tag = $v->tag;
+            if ( !isset( $nogoodresults[ $tag ] ) ) {
+                continue;
+            }
+
+            if ( isset( $control_json->freshtagbase ) ) {
+                $basedir = "$control_json->freshtagbase/$tag";
+                if ( !isset( $v->modify ) ) {
+                    $v->modify = new stdClass();
+                }
+                $v->modify->_base_directory  = $basedir;
+                if ( !file_exists( $basedir ) ) {
+                    if ( !mkdir( $basedir, 0777, true ) ) {
+                        echo "error making $basedir\n";
+                    }
+                }
+                `chmod g+w $basedir`;
+            }
+            $cmd = "";
+            if ( isset( $v->prerun ) ) {
+                $cmd = "(cd $basedir;$v->prerun)\n";
+            }
+            $cmd .= "php os_perf_cli3.php $oscmd_file '" . ( isset( $v->modify ) ? json_encode( $v->modify ) : "{}" ) . "' $do_perf\n";
+            echo "cmd is $cmd\n";
+            $tags[ $tag ] = $v;
+            $cmds[ $tag ] = $cmd;
+
+            prll_add( $tag, $cmd );
+        }
+
+        prll_run();
+
+        # clean up any ERROR states
+        
+        $lines = [];
+        exec( "openstack server list --name '.*-run-OR-.*' --status ERROR -c ID -f value", $lines );
+        if ( count( $lines ) ) {
+            $cmd = "openstack server delete " . implode( ' ', $lines );
+            echo $cmd;
+            echo `$cmd`;
+        } else {
+            echo "no run-OR instances in ERROR state\n";
+        }
+
+        foreach ( $tags as $tag => $v ) {
+            
+            $results = $prll[ 'sout' ][ $tag ];
+            $json_results = json_decode( $results );
+            if ( $json_results != NULL && !isset( $json_results->error ) ) {
+                unset( $nogoodresults[ $tag ] );
+            }
+            $lastresults[ $tag ] = $results;
+        }
+    } while ( $retries_left-- > 0 && count( $nogoodresults ) );
+
+    if ( count( $nogoodresults ) ) {
+        echo "Notice: errors still present in " . count( $nogoodresults ) . " of the runs for this loop\n";
+    }
 
     foreach ( $tags as $tag => $v ) {
 
-        $results = $prll[ 'sout' ][ $tag ];
+        $results = $lastresults[ $tag ];
         echo "results are <\n$results\n>\n";
         if ( function_exists( 'post_processing' ) ) {
             if ( isset( $v->modify ) ) {
@@ -181,9 +241,17 @@ while( 1 ) {
         echo `$cmd`;
     }
 
+    
     if ( isset( $control_json->once ) ) {
+        echo "'once' set, so exiting after one loop\n";
         exit;
     }
+
+    if ( isset( $loops ) && --$loops <= 0 ) {
+        echo "remaining loops is $loops, so exiting\n";
+        exit;
+    }
+
     print "sleeping ${minutes} minutes\n";
     sleep( 60 * $minutes );
 }
