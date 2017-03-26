@@ -199,15 +199,7 @@ while( 1 ) {
 
         # clean up any ERROR states
         
-        $lines = [];
-        exec( "openstack server list --name '.*-run-OR.*' --status ERROR -c ID -f value", $lines );
-        if ( count( $lines ) ) {
-            $cmd = "openstack server delete " . implode( ' ', $lines );
-            echo $cmd;
-            echo `$cmd`;
-        } else {
-            echo "no run-OR instances in ERROR state\n";
-        }
+        echo `php os_delete_error.php`;
 
         foreach ( $prll[ 'sout' ] as $tag => $results ) {
             $json_results = json_decode( $results );
@@ -224,11 +216,12 @@ while( 1 ) {
             $lastresults[ $tag ] = $results;
         }
         $trys++;
-    } while ( $retries_left-- > 0 && count( $nogoodresults ) );
 
-    if ( count( $nogoodresults ) ) {
-        echo "Notice: errors still present in " . count( $nogoodresults ) . " of the runs for this loop\n";
-    }
+        if ( count( $nogoodresults ) ) {
+            echo "Notice: errors still present in " . count( $nogoodresults ) . " of the runs for this loop\n";
+        }
+
+    } while ( $retries_left-- > 0 && count( $nogoodresults ) );
 
     foreach ( $tags as $tag => $v ) {
 
