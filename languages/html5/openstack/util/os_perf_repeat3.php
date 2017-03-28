@@ -55,7 +55,7 @@ if ( isset( $control_json->prerun ) ) {
 $tagprefix = "";
 
 if ( isset( $control_json->tagprefix ) ) {
-    $tagprefix = $control_json->tagprefix;
+    $tagprefix = $control_json->tagprefix . '-';
     echo "tagprefix $tagprefix will be prepended to each tag\n";
 }
 
