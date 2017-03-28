@@ -11,9 +11,7 @@ $notes =
 require "os_header_cli.php";
 $projects = all_projects();
 
-$docmd = "openstack server delete ";
-
-$any = 0;
+$docmd = "";
 
 foreach ( $projects as $project => $v ) {
 #    putenv( "OS_TENANT_NAME=$project" );
@@ -23,12 +21,11 @@ foreach ( $projects as $project => $v ) {
     exec( "openstack server list --name '.*-run-OR.*' --status ERROR -c ID -f value", $lines );
     echo "checking for ERROR state project $project returned " . implode( ' ', $lines ) . "\n";
     if ( count( $lines ) ) {
-        $docmd .= implode( ' ', $lines ) . ' ';
-        $any++;
+        $docmd .= "env OS_PROJECT_NAME=$project openstack server delete " . implode( ' ', $lines ) . "\n";
     }
 }
 
-if ( $any ) {
+if ( !empty( $docmd ) ) {
     echo "$docmd\n";
     echo `$docmd`;
 } else {

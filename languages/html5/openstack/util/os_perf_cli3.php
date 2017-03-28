@@ -314,7 +314,7 @@ sendudptext( $syncres );
 # -------------------- remove virtual cluster --------------------
 sendudpmsg( "Remove virtual cluster" );
 
-os_delete( $json->_clusternodecount, $uuid );
+os_delete( $json->_clusternodecount, $uuid, $xsedeproject );
 
 sendudpmsg( "" );
 
