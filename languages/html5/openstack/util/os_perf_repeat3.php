@@ -248,7 +248,7 @@ while( 1 ) {
                     $json->$k = $v;
                 }
             }
-            post_processing( $json, $results, $tag, $cacheemails );
+            post_processing( $json, $results, $tag, $cacheemails, $tagprefix );
         }
     }
 
