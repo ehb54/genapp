@@ -52,6 +52,13 @@ if ( isset( $control_json->prerun ) ) {
     echo "$do_perf will be run before every job\n";
 }
 
+$tagprefix = "";
+
+if ( isset( $control_json->tagprefix ) ) {
+    $tagprefix = $control_json->tagprefix;
+    echo "tagprefix $tagprefix will be prepended to each tag\n";
+}
+
 if ( isset( $control_json->loops ) ) {
     $loops = $control_json->loops;
     echo "$loops loops of these runs will be performed\n";
@@ -122,7 +129,7 @@ while( 1 ) {
             echo "error no tag defined for this run\n";
             exit;
         }
-        $tag = $v->tag;
+        $tag = $tagprefix . $v->tag;
         $nogoodresults[ $tag ] = 1;
     }
 
@@ -165,7 +172,7 @@ while( 1 ) {
                 echo "error no tag defined for this run\n";
                 exit;
             }
-            $tag = $v->tag;
+            $tag = $tagprefix . $v->tag;
             if ( !isset( $nogoodresults[ $tag ] ) ) {
                 continue;
             }
@@ -214,6 +221,14 @@ while( 1 ) {
                 unset( $nogoodresults[ $tag ] );
             }
             $lastresults[ $tag ] = $results;
+            if ( isset( $prll[ 'eout' ][ '$tag' ] ) && !empty( $prll[ 'eout' ][ '$tag' ] ) ) {
+                file_put_contents( "prll/stderr", 
+                                   "------------------------------------------------------------\n"
+                                   . "$tag\n"
+                                   . "------------------------------------------------------------\n"
+                                   . $prll[ 'eout' ][ '$tag' ]
+                                   , FILE_APPEND );
+            }
         }
         $trys++;
 

@@ -9,6 +9,10 @@ $notes =
     "optionally uses named appconfig file\n" .
     "\n";
 
+if ( isset( $argv[ 4 ] ) ) {
+   $appconfig = $argv[ 4 ];
+}
+
 require "os_header_cli.php";
 
 $notes .= "Known projects: " . implode( " ", array_keys( all_projects() ) ) . "\n";
@@ -19,11 +23,6 @@ if ( !isset( $argv[ 1 ] ) ||
     echo $notes;
     exit;
 }
-
-if ( isset( $argv[ 4 ] ) ) {
-   $appconfig = $argv[ 4 ];
-}
-
 
 $project = $argv[ 1 ];
 

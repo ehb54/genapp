@@ -104,11 +104,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
             sendudpmsg( "Errors found when trying to boot a virtual cluster node" );
             $cmd = "";
             if ( count( $image ) ) {
-                foreach ( $image as $v ) {
-                    $cmd .= "openstack server delete $v &\n";
-                }
-                $cmd .= "wait\n";
-
+                $cmd = "openstack server delete --wait " . implode( ' ', $image );
                 sendudptext( $cmd );
                 sendudpmsg( "Removing successfully booted virtual cluster nodes" );
                 sendudptext( `$cmd 2>&1` );
@@ -151,11 +147,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
             if ( count( $status ) != 1 ) {
                 $cmd = "";
                 if ( count( $image ) ) {
-                    foreach ( $image as $v2 ) {
-                        $cmd .= "openstack server delete $v2 &\n";
-                    }
-                    $cmd .= "wait\n";
-
+                    $cmd = "openstack server delete --wait " . implode( ' ', $image );
                     sendudptext( $cmd );
                     sendudpmsg( "Removing successfully booted virtual cluster nodes" );
                     sendudptext( `$cmd 2>&1` );
@@ -177,11 +169,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
                 if ( !$status_ok ) {
                     $cmd = "";
                     if ( count( $image ) ) {
-                        foreach ( $image as $v2 ) {
-                            $cmd .= "openstack server delete $v2 &\n";
-                        }
-                        $cmd .= "wait\n";
-
+                        $cmd = "openstack server delete --wait " . implode( ' ', $image );
                         sendudptext( $cmd );
                         sendudpmsg( "Removing successfully booted virtual cluster nodes" );
                         sendudptext( `$cmd 2>&1` );
