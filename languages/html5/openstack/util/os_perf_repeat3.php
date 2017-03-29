@@ -155,6 +155,7 @@ while( 1 ) {
     $trys = 0;
 
     do {
+        file_put_contents( $cacheemails, "starting processing loop, loops left: " . ( isset( $loops ) ? $loops - 1 : "infinite" ) . ", retries left: $retries_left\n", FILE_APPEND );
 
         echo "================================================================================\n";
         echo "starting processing loop, loops left: " . ( isset( $loops ) ? $loops - 1 : "infinite" ) . ", retries left: $retries_left\n";
