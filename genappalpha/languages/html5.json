@@ -155,7 +155,16 @@
                                     { "util/jobs_history.php" : "once" }
                                    ]
                    }
-      
+
+                    ,{
+                    "frequency"  : "once",
+		    "setexecutable" : "true", 
+                    "output"     : "util/whosloggedin.php",
+                    "inputs"     : [ 
+                                    { "util/whosloggedin.php" : "once" }
+                                   ]
+                   }     
+
                   ,{
                     "frequency"  : "once",
 		    "setexecutable" : "true", 
