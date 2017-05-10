@@ -19,10 +19,15 @@ while (false !== ($entry = $d->read())) {
   }
 }
 
-$latest_filename_array = explode("_", $latest_filename);
-$sessid = end($latest_filename_array);
 
-session_id($sessid);
+if (0 === strpos($latest_filename, 'sess')) 
+{
+  $latest_filename_array = explode("_", $latest_filename);
+  $sessid = end($latest_filename_array);
+
+  session_id($sessid);
+}
+
 session_start(); 
 
 echo "List of currently logged in users: \n";
