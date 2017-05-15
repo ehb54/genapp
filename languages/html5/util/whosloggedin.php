@@ -1,4 +1,4 @@
-#!/usr/bin/php 
+#!/usr/local/bin/php 
 <?php
 
 $app = json_decode( file_get_contents( "__appconfig__" ) );
@@ -37,46 +37,73 @@ $path = $app->phpsessionpath;
 //     echo $val["logon"] . "\t" . $val["app"] . "\n";
 //  }
 //}
-/////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
 
 $path_sess = $path . "/sess_*";
 $files = glob($path_sess);
-//var_dump($files);
-
 $users = array();
 $apps  = array();
 
+//IF loop over sessions via regex() ////////////////////////////////////////
 foreach($files as $file) 
 {
-  $file_array = explode("_", $file);
-  $sessid = end($file_array);
-     
-  //echo $sessid . "\n"; 
-
-  session_id($sessid);
-  session_start();
-
-  foreach ($_SESSION as $key=>$val){
-  if (isset($val["logon"]) && isset($val["app"]))
-     {
-        $users[] = $val['logon'];
-	$apps[] = $val['app'];
-	//echo $val["logon"] . "\t" . $val["app"] . "\n";
-     }	
+  $i = 0;	
+  $data = file_get_contents($file);	
+  $arr = explode(";",$data);
+      
+  //var_dump($arr);	 
+  foreach($arr as $el) 
+  { 
+    ++$i;
+    if (strpos($el, 'logon') !== false)
+      {
+         $is_matched_1 = preg_match('/"(.+?)"/', $arr[$i], $matches_1);
+	 if ($is_matched_1)
+	   {
+	     $users[] = $matches_1[0];
+           }  
+      }  
+    if (strpos($el, 'app') !== false)
+      {
+	 $is_matched_2 = preg_match('/"(.+?)"/', $arr[$i], $matches_2);
+	 if ($is_matched_2)
+	   {
+	     $apps[] = $matches_2[0];
+           }
+      }  
   } 
- session_commit();
 }
 
-echo "List of currently logged in users: \n";
+//IF loop over sessions via regex() /////////////////////////////////////////////
+//foreach($files as $file) 
+//{
+//  $file_array = explode("_", $file);
+//  $sessid = end($file_array);
+//     
+//  //echo $sessid . "\n"; 
+//
+//  session_id($sessid);
+//  session_start();
+//
+//  foreach ($_SESSION as $key=>$val){
+//  if (isset($val["logon"]) && isset($val["app"]))
+//     {
+//        $users[] = $val['logon'];
+//	$apps[] = $val['app'];
+//	//echo $val["logon"] . "\t" . $val["app"] . "\n";
+//     }	
+//  } 
+// session_commit();
+//}
+////////////////////////////////////////////////////////////////////////////////
+
+echo "\nList of currently logged in users: \n";
 echo "--------------------------------\n";
-echo "User" . "\t" . "Application" . "\n";
+echo "User" . "\t\t" . "Application" . "\n";
 echo "--------------------------------\n";
 
 foreach ($users as $index => $value){
   echo $users[$index] . "\t" . $apps[$index] . "\n";
 }
-//var_dump($users);
-//var_dump($_SESSION);
-
 
 ?>
