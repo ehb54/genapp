@@ -55,7 +55,7 @@ foreach($files as $file)
   foreach($arr as $el) 
   { 
     ++$i;
-    if (strpos($el, 'logon') !== false)
+    if (strpos($el, '"logon"') !== false)
       {
          $is_matched_1 = preg_match('/"(.+?)"/', $arr[$i], $matches_1);
 	 if ($is_matched_1)
@@ -63,7 +63,7 @@ foreach($files as $file)
 	     $users[] = $matches_1[0];
            }  
       }  
-    if (strpos($el, 'app') !== false)
+    if (strpos($el, '"app"') !== false)
       {
 	 $is_matched_2 = preg_match('/"(.+?)"/', $arr[$i], $matches_2);
 	 if ($is_matched_2)
