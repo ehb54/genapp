@@ -111,10 +111,11 @@ sub json_expand_util {
                 my $ntag = ( $tag ? "$tag:" : "" ) . $k;
                 if ( ref( $v ) eq 'ARRAY' )
                 {
-                    if ( $array_count )
-                    {
-                        die "Error: only one ARRAY currently supported per hash found at $ntag in ?.json\n";
-                    }
+# allow for general usage, probably should be a warning if active field
+#                    if ( $array_count )
+#                    {
+#                        die "Error: only one ARRAY currently supported per hash found at $ntag in ?.json\n";
+#                    }
                     $array_count++;
                 }
                 json_expand_util( $v, $ref, ( $tag ? "$tag:" : "" ) . $k, $depth + 1 );
