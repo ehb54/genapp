@@ -4,6 +4,8 @@
 var ga = {};
 ga.tmp = {};
 
+ga.multistage = {};
+
 ga.fielderrors = 0;
 
 // extend jstree for singleselect & conditional select plugins:
