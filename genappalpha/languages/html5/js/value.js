@@ -66,6 +66,40 @@ ga.value.checkFloatIntOK = function( tag, value ) {
 }
 
 
+ga.value.sethiddenfields = function(multistage, mod){
+    var ids_array = [],
+    i,
+    j,
+    children,
+    t;
+
+    $.each(multistage, function(k, v) {
+	$.each(v, function(k, v) {
+	  //console.log(v);
+	  ids_array.push(v); 
+	});    
+    });
+    ids_array = ga.repeat.map.convert( ids_array );
+
+    for (i=0; i < ids_array.length; i++) {
+	if ( $("#" + ids_array[i]).data("repeater") )
+	{
+	    //console.log("Repeater's ID: " + ids_array[i]);
+	    //ga.repeat.change(mod, ids_array[i]);
+	    //children = ga.repeat.children( mod, ids_array[i] );
+	    
+	    //for ( j in children ) {
+            //    t = ids_array[i] + "-" + j;
+	    //	console.log(t);
+	    //  $('#' + t).hide();  
+	    //}
+	    $("#" + ids_array[i] + "-repeater").hide();
+	}
+	$('#' + ids_array[i] + ', label[for=' + ids_array[i] + ']').hide();  
+    }
+}
+
+
 ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
     var lines = text.trim().split(/[\r\n]+/g);
     var linesContent = [];
