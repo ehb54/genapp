@@ -1334,11 +1334,25 @@ __~debug:sid{   console.log( "sid ajax:" + k + " => " + v );}
     ga.airavata.data = v;
     __~debug:airavata{console.dir( ga.airavata.data );}
    }
+   
+   if ( k == "moduleinfo" ){
+     $.each(v, function(k, v){
+       ga.multistage = v;
+       //$.each(v, function(k, v){ 
+          //ga.multistage[ k ] = v;
+          //console.log(k, v);
+       // });
+      });
+     console.dir(ga.multistage);
+    }
+     
  }); 
 });
 }
 
 getSid();
+
+
 
 function generateUUID(){
     var d = new Date().getTime();

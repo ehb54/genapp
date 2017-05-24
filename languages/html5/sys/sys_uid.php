@@ -28,5 +28,44 @@ if ( isset( $json->resources ) &&
     }
 }
 
+require_once "../airavata/modulesUtils.php";
+
+$module = getModulesNames();
+
+$response[ 'moduleinfo' ] = []; 
+
+//$fileStr = '';
+//$fileStr = ""; 
+
+//$toeval = array();
+
+foreach ($module as $currentmodule){
+
+   $mj = '__docroot:html5__/__application__/etc/module_' . $currentmodule . '.php';
+      
+   $contents = file_get_contents($mj);
+   if (!strpos($contents, '"multistage"')) continue;
+
+   require_once $mj;
+   
+   //$fileStr .= 'require_once "' . $mj . '";';
+   //$fileStr .= "require_once \"" . $mj . "\";";
+   //$fileStr = 'require_once "' . $mj . '";';
+   //$fileStr = 'require ("' . $mj . '");';
+   //array_push($toeval,$fileStr);	
+  
+
+   foreach ( $GLOBALS[ 'modulejson' ][ $currentmodule ]->fields as $v ) {
+        if ( isset( $v->multistage ) ){
+	    //$response[ 'moduleinfo' ][ $currentmodule ] = json_decode( '$v->multistage' );
+	    $response[ 'moduleinfo' ][ $currentmodule ] = $v->multistage;
+	}
+   }
+}
+//eval($fileStr);
+//for ($i = 0; $i < count($toeval); ++$i) {
+//        eval($toeval[$i]);
+//   }
+
 echo (json_encode($response));
 ?>
