@@ -1336,14 +1336,22 @@ __~debug:sid{   console.log( "sid ajax:" + k + " => " + v );}
    }
    
    if ( k == "moduleinfo" ){
-     $.each(v, function(k, v){
-       ga.multistage = v;
-       //$.each(v, function(k, v){ 
-          //ga.multistage[ k ] = v;
-          //console.log(k, v);
-       // });
+    $.each(v, function(k, v){
+       ga.multistage[k] = v;
+       ga.stages[k] = [];
+       ga.stagesdefault[k] = [];
+       var mod = k;
+       $.each(v, function(k, v){ 
+          ga.stages[mod].push(k);
+          ga.stagesdefault[mod].push(k);
+          //console.log(k);
+        });
+      ga.stages[k].sort();
+      ga.stagesdefault[k].sort();
       });
-     console.dir(ga.multistage);
+    
+    console.dir(ga.stages);
+    console.dir(ga.multistage);
     }
      
  }); 
