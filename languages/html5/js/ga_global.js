@@ -5,6 +5,9 @@ var ga = {};
 ga.tmp = {};
 
 ga.multistage = {};
+ga.stages = {};
+ga.stagesdefault = {};
+ga.currentstage = 0;
 
 ga.fielderrors = 0;
 

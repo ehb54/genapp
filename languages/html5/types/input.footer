@@ -287,6 +287,12 @@ __~docrootexecutable{$( this ).append( $("<input>").attr("type", "hidden").attr(
      __~logglobus{ formData.append("globusidlog", "yes"); }
      __~loggoogle{ formData.append("googleidlog", "yes"); }
 
+     
+     if ( ga.multistage["__moduleid__"] )
+      {
+        ga.value.modifyformdata(ga.multistage, "__moduleid__", formData, ga.stages["__moduleid__"], ga.currentstage);
+      }
+
 __~debug:ajax{    console.log( "calling ajax" );}
 
     $('#__moduleid___progress').html( "Uploading:<progress></progress>" );
@@ -322,6 +328,13 @@ __~debug:ajax{    console.log( "calling ajax" );}
              processData: false
             } )
     .done( function( data, status, xhr ) {
+    
+    if ( ga.multistage["__moduleid__"] )
+      {
+        ga.value.showfields(ga.multistage, "__moduleid__", ga.stages["__moduleid__"], ga.currentstage);
+    	delete ga.stages["__moduleid__"][ga.currentstage]; 
+    	++ga.currentstage;	
+      }	
 __~debug:ajax{           console.log( "data, status, xhr" );}
 __~debug:ajax{           console.log( data );}
 __~debug:ajax{           console.log( status );}
@@ -396,6 +409,16 @@ __moduleid___reset = function() {
     }
     ga.event( "", "__moduleid__", "reset clicked" );
     ga.valid.clearerrorcounter();
+
+   if ( ga.multistage["__moduleid__"] )
+     {
+       ga.currentstage = 0;
+       ga.value.sethiddenfields(ga.multistage,"__moduleid__");
+       ga.stages["__moduleid__"].length = 0;
+       ga.stages["__moduleid__"] = ga.stagesdefault["__moduleid__"].slice();
+       console.log("Reset: " + ga.stages["__moduleid__"]);
+     }
+
     //    ga.value.resetDefaultValues( "__moduleid__" );
     ga.valuen.restore.dflt(  "__moduleid__" );
     ga.value.resetDefaultValues( "__moduleid___output", true );

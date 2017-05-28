@@ -67,13 +67,9 @@ ga.value.checkFloatIntOK = function( tag, value ) {
 
 
 ga.value.sethiddenfields = function(multistage, mod){
-    var ids_array = [],
-    i,
-    j,
-    children,
-    t;
-
-    $.each(multistage, function(k, v) {
+var ids_array = [], i;
+    
+    $.each(multistage[mod], function(k, v) {
 	$.each(v, function(k, v) {
 	  //console.log(v);
 	  ids_array.push(v); 
@@ -85,19 +81,75 @@ ga.value.sethiddenfields = function(multistage, mod){
 	if ( $("#" + ids_array[i]).data("repeater") )
 	{
 	    //console.log("Repeater's ID: " + ids_array[i]);
-	    //ga.repeat.change(mod, ids_array[i]);
-	    //children = ga.repeat.children( mod, ids_array[i] );
-	    
-	    //for ( j in children ) {
-            //    t = ids_array[i] + "-" + j;
-	    //	console.log(t);
-	    //  $('#' + t).hide();  
-	    //}
 	    $("#" + ids_array[i] + "-repeater").hide();
 	}
 	$('#' + ids_array[i] + ', label[for=' + ids_array[i] + ']').hide();  
     }
 }
+
+ga.value.showfields = function(multistage, mod, stages, currentstage){
+var ids_array = [], i;
+    
+    $.each(multistage[mod], function(k, v) {
+	console.log(k);
+
+	if( k == stages[currentstage]) {
+	    
+	    $.each(v, function(k, v) {
+		console.log(v);
+		ids_array.push(v); 
+	    });
+	}	
+	
+    });
+    for (i=0; i < ids_array.length; i++) {
+	if ( $("#" + ids_array[i]).data("repeater") )
+	{
+	    //console.log("Repeater's ID: " + ids_array[i]);
+	    $("#" + ids_array[i] + "-repeater").show();
+	}
+	$('#' + ids_array[i] + ', label[for=' + ids_array[i] + ']').show();  
+    }
+}
+
+ga.value.modifyformdata =  function(multistage, mod, formData, stages, currentstage){
+var ids_array = [],
+    i,
+    j,
+    children,
+    t;
+   
+    console.log(stages);
+    $.each(multistage[mod], function(k, v) {
+	console.log(k);
+	
+	if(jQuery.inArray(k, stages) !== -1) {
+	    
+	  $.each(v, function(k, v) {
+	    //console.log(v);
+	    ids_array.push(v); 
+	  });
+	}
+    });
+    ids_array = ga.repeat.map.convert( ids_array );
+
+    for (i=0; i < ids_array.length; i++) {
+	if ( $("#" + ids_array[i]).data("repeater") )
+	{
+           //ga.repeat.change(mod, ids_array[i]);
+	   children = ga.repeat.children( mod, ids_array[i] );
+	   
+	   for ( j in children ) {         
+               t = ids_array[i] + "-" + j; // For CHECKBOXES for now... 
+	   	//console.log(t);
+	       formData.delete( t );  
+	   }
+	}
+	formData.delete( ids_array[i] );  
+    }
+    formData.append( "currentstage" , ga.stages[mod][currentstage]  );  
+}
+
 
 
 ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
