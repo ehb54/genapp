@@ -384,7 +384,10 @@ if ( $pj ) {
     print "-"x80 . "\n";
     print "Final config.json:\n";
     print "-"x80 . "\n";
-    print $fh JSON::PP->can( "encode_json" ) ? encode_json( $json, { utf8 => 1, pretty => 1 } ) : to_json( $json, { utf8 => 1, pretty => 1 } );
+    {
+        my $js = JSON->new;
+        print $fh $js->pretty->encode( $json );
+    }
     print "-"x80 . "\n";
 }
 
