@@ -51,6 +51,7 @@ my $rc = eval {
 };
 # use JSON -support_by_pp;
 
+
 # utility subs
 
 sub runcmd {
@@ -233,7 +234,10 @@ chdir "$targetsvn" || die "$0: could not change to directory $targetsvn\n";
 
     $f = "appconfig.json";
     open  $fh, ">$f" || die "$0: could not open $f for writing\n";
-    print $fh JSON::PP->can( "encode_json" ) ? encode_json( $json, { utf8 => 1, pretty => 1 } ) : to_json( $json, { utf8 => 1, pretty => 1 } );
+    {
+        my $js = JSON->new;
+        print $fh $js->pretty->encode( $json );
+    }
     close $fh;
 }
 
