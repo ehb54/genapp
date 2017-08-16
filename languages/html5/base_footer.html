@@ -376,6 +376,7 @@ function syncState() {
 //          $( "#register" ).html( "" );
 //          $( "#userconfig" ).html( "<img src=\"etc/config.png\" width=40px id=\"config\" class=\"config\">" );
           ga.license.get();
+          ga.get_sys_status();
           hm = 1;
       } else {
           if ( !$( "#files" ).is(":hidden") ) {

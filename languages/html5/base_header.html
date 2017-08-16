@@ -1350,8 +1350,8 @@ __~debug:sid{   console.log( "sid ajax:" + k + " => " + v );}
       ga.stagesdefault[k].sort();
       });
     
-    console.dir(ga.stages);
-    console.dir(ga.multistage);
+    __~debug:staging{console.dir(ga.stages);}
+    __~debug:staging{console.dir(ga.multistage);}
     }
      
  }); 
