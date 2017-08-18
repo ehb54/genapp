@@ -5,7 +5,7 @@ provides monitoring to for multiple websites to specified users per site
 all info is stored in config.json
 
 you can use the system sendmail or smtp
-for smtp leave mail an empty object -  "mail":{}
+for sendmail leave mail an empty object -  "mail":{}
 timing can be adjusted
 ccall if available will cc those users of all messages (if you want multiple addresses here, comma separate)
 
