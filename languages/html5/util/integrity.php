@@ -53,10 +53,11 @@ foreach ( $apps as $v ) {
     echo $results;
     echo "------------------------------------------------------------\n";
     $runningids = preg_split( "/\n/", $results, -1, PREG_SPLIT_NO_EMPTY );
-    foreach ( $runningids as $v ) {
-        echo "runningid $v\n";
-        $runningidsa[ $v ] = 1;
-        $allidsa[ $v ] = 1;
+    foreach ( $runningids as $v2 ) {
+        echo "runningid $v2\n";
+        $runningidsa[ $v2 ] = 1;
+        $allidsa[ $v2 ] = 1;
+        $appsbyid[ $v2 ] = $v;
     }
 }
 
@@ -75,6 +76,13 @@ foreach ( $allidsa as $k => $v ) {
             $todo[ $users[ $k ] ] .= "sudo kill $pids[$k]\n";
         } else {
             $disposition = "remove running";
+            if ( !isset( $users[ $k ] ) ) {
+                $users[ $k ] = "unknown";
+            }
+            if ( !isset( $todo[ $users[ $k ] ] ) ) {
+                $todo[ $users[ $k ] ] = "";
+            }
+            $todo[ $users[ $k ] ] .= "mongo $appsbyid[$k] --eval 'db.running.remove({_id:\"$k\"})'\n";
         }
     }
 
