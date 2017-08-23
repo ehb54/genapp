@@ -19,12 +19,12 @@ if ( !isset( $_REQUEST[ '_uuid' ] ) ) {
 }
 
 if ( !isset( $_REQUEST[ '_logon' ] ) ) {
-    $results[ "error" ] = "No _logon specified in the request";
+    $results[ "error" ] = "No logon specified in the request";
     echo (json_encode($results));
     exit();
 }
 
-$appconfig = json_decode( file_get_contents( "/home/ehb/demo/appconfig.json" ) );
+$appconfig = json_decode( file_get_contents( "__appconfig__" ) );
 
 if ( !isset( $appconfig->restricted ) ) {
     $results[ "error" ] = "appconfig.json no restrictions defined";
