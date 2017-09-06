@@ -433,6 +433,7 @@
                                     ,{ "js/captcha.js"          : "once" }
                                     ,{ "js/register.js"         : "once" }
                                     ,{ "js/calc.js"             : "once" }
+                                    ,{ "js/bokeh.js"            : "once" }
                                    ]
                    }
                    ,{
@@ -466,8 +467,9 @@
                         ,{ "add/js/grid.locale-en.js"               : "once" }
                         ,{ "add/js/jquery.base64.min.js"            : "once" }
 			,{ "add/js/html2canvas.min.js"              : "once" }
+                        ,{ "add/js/bokeh-0.12.7.min.js"             : "once" }
+                        ,{ "add/js/bokeh-widgets-0.12.7.min.js"     : "once" }
                         ,{ "add/js/ga.min.js"                       : "once" }
-		
                     ]
                    }
                   ]

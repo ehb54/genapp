@@ -717,9 +717,14 @@ __~debug:values{   console.log( "ga.value.setLastValue() pkg:" + pkg + " tag:" +
                 $( "#global_data" ).data( dv, t.html() );
                 break;
             case "plot2d" :
-__~debug:values{ console.log( "ga.value.setLastValue() on undefined plot2d not yet: " + tl ); }
-__~debug:plottwod{ console.log( "ga.value.setLastValue() on undefined plot2d not yet: " + tl ); }
-                           break;
+               __~debug:values{console.log( "ga.value.setLastValue() on undefined plot2d not yet: " + tl );}
+               __~debug:plottwod{console.log( "ga.value.setLastValue() on undefined plot2d not yet: " + tl );}
+               break;
+            case "bokeh" :
+               __~debug:values{console.log( "ga.value.setLastValue() on bokeh: " + tl );}
+               __~debug:bokeh{console.log( "ga.value.setLastValue() on bokeh: " + tl );}
+               ga.bokeh.renderdata( pkg, tag.replace( /^#/, "" ) );
+               break;
             case "filelink" :
             case "filelinkm" :
                 $( "#global_data" ).data( tl, $( tag + "_filelink" ).html() );
@@ -771,6 +776,10 @@ __~debug:plottwod{                     console.log( "ga.value.setLastValue() plo
                          t.plot( p2d, ga.value.get.plot2d.plot_options( tag ) );
                      }
                      break;
+            case "bokeh" : 
+                    __~debug:values{console.log( "ga.value.setLastValue() bokeh" );}
+                    __~debug:bokeh{console.log( "ga.value.setLastValue() bokeh" );}
+                     break;
             case "filelink" : 
             case "filelinkm" : 
                      $( tag + "_filelink" ).html( $( "#global_data" ).data( tl ) );
@@ -798,6 +807,9 @@ __~debug:values{   console.log( "ga.value.saveLastValue() pkg:" + pkg + " tag:" 
        case "plot2d" : 
 __~debug:values{ console.log( "ga.value.saveLastValue() on plot2d not yet" );  }
                        break;
+       case "bokeh" : 
+            __~debug:bokeh{console.log( "ga.value.saveLastValue() on bokeh not yet" );}
+            break;
        case "filelink" : 
        case "filelinkm" : 
                      $( "#global_data" ).data( pkg + ":" + tag + ":last_value", $( tag + "_filelink" ).html() ); 
@@ -856,6 +868,10 @@ __~debug:plottwod{                     console.log( "ga.value.resetDefaultValue(
                         ga.value.clear.plot2d( tag );
                         t.plot( [[]], ga.value.get.plot2d.plot_options( tag ) ); break;
                         break;
+          case "bokeh" :
+              __~debug:bokeh{console.log( "reset default value for bokeh" );}
+              ga.bokeh.reset( pkg, tag.replace( /^#/, "" ) );
+              break;
           case "image" : 
           __~debug:image{console.log( "reset default value for image" );}
           t.html("");

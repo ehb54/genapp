@@ -16,11 +16,5 @@
             ,"type"    : "checkbox"
             ,"help"    : "Correct fixable errors"
         }
-        ,{
-            "role"    : "output"
-            ,"id"     : "jobintegrityreport"
-            ,"label"  : ""
-            ,"type"   : "html"
-        }
     ]
 }

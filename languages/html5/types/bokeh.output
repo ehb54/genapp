@@ -1,0 +1,5 @@
+<tr><td><label for="__fields:id__">__fields:label__ </label></td><td><div name="__fields:id__" id="__fields:id__" type="bokeh"></div></td></tr>
+<script>
+ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );
+ga.value.extra_resets( "__fields:id__" );
+</script>

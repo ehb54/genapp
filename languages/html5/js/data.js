@@ -218,12 +218,13 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
                             });
                 }
 		
-		
-		
-
-		
                 savekey = mod_out + ":#" + k + ":last_value";
                 $( "#global_data" ).data( savekey , v ); 
+                break;
+            case "bokeh" : 
+                __~debug:bokeh{console.log( "ga.data.update() type: bokeh v is " );console.log( v );}
+                // strip header, process eval & html
+                ga.bokeh.render( mod, k, v );
                 break;
             case "atomicstructure" : 
                 //                               Jmol.setDocument( 0 );
