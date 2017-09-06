@@ -10,7 +10,7 @@ my $max_repeater_depth = 25;
 # subroutines for general usage
 
 use JSON;
-use JSON::PP;
+#use JSON::PP;
 
 # use Switch;
 # use Data::Dumper;
