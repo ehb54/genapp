@@ -51,9 +51,13 @@ ga.bokeh.render = function( mod, tag, v ) {
 
 ga.bokeh.renderdata = function( mod, tag ) {
     __~debug:bokeh{console.log( "ga.bokeh.renderdata( " + mod + " , " + tag + " )" );}
-    // probably want to loop through the render items...
+    var i, len, str = "";
     if ( ga.bokeh.data[ mod ] && ga.bokeh.data[ mod ][ tag ] && ga.bokeh.data[ mod ][ tag ].docs_json && ga.bokeh.data[ mod ][ tag ].render_items ) {
-        $( "#" + tag ).html( '<div class="bk-root"><div class="bk-plotdiv" id="' + ga.bokeh.data[ mod ][ tag ].render_items[ 0 ].elementid + '"></div></div>' );
+        len = ga.bokeh.data[ mod ][ tag ].render_items.length;
+        for ( i = 0; i < len; ++i ) {
+            str += '<div class="bk-root"><div class="bk-plotdiv" id="' + ga.bokeh.data[ mod ][ tag ].render_items[ i ].elementid + '"></div></div>';
+        }
+        $( "#" + tag ).html( str );
         Bokeh.embed.embed_items( ga.bokeh.data[ mod ][ tag ].docs_json, ga.bokeh.data[ mod ][ tag ].render_items );
     }
 }
