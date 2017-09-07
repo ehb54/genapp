@@ -62,7 +62,6 @@ ga.bokeh.renderdata = function( mod, tag ) {
     }
 }
 
-
 ga.bokeh.savedata = function( mod, tag, bokehresult ) {
     __~debug:bokeh{console.log( "ga.bokeh.savedata( " + mod + " , " + tag + " , bokehresult )" );}
     ga.bokeh.data[ mod ] = ga.bokeh.data[ mod ] || {};
@@ -71,7 +70,9 @@ ga.bokeh.savedata = function( mod, tag, bokehresult ) {
 
 ga.bokeh.reset = function( mod, tag ) {
     __~debug:bokeh{console.log( "ga.bokeh.reset( " + mod + " , " + tag + " )" );}
-    ga.bokeh.data[ mod ] = ga.bokeh.data[ mod ] || {};
+    if ( !ga.bokeh.data[ mod ] || !ga.bokeh.data[ mod ][ tag ] ) {
+        return;
+    }
     ga.bokeh.data[ mod ][ tag ] = {};
     $( "#" + tag ).html("");
 }

@@ -142,6 +142,9 @@ switch( $_REQUEST[ 'action' ] )
               error_log( $GLOBALS[ "getmenumodule" ], 3, "/tmp/mylog" );
               $results[ "_switch" ] = $GLOBALS[ "getmenumodule" ] . "/" . $GLOBALS[ "getmenumoduleproject" ] . "/" . $jobs[ 0 ];
               $results[ "-close" ] = true;
+              session_start(); 
+              $_SESSION[ $window ][ "project" ] = $GLOBALS[ "getmenumoduleproject" ];
+              session_write_close();
           }
        }
        $anydone = true;
