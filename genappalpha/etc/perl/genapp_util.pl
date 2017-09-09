@@ -925,7 +925,7 @@ sub module_exists {
 
     return 1 if -e $f;
 
-    foreach my $k ( keys $langs ) {
+    foreach my $k ( keys %$langs ) {
         return 1 if -e "$k/$f";
     }
     return 0;
@@ -950,7 +950,7 @@ sub get_available_module_files {
 
     $avail_module_files{ $f }++ if -e $f;
 
-    foreach my $k ( keys $langs ) {
+    foreach my $k ( keys %$langs ) {
         $avail_module_files{ $f }++ if -e "$k/$f";
     }
     %avail_module_files;
@@ -1145,7 +1145,7 @@ sub check_files {
 #        print "l in modules_by_language is $l\n";
 #        print Dumper ( %$l );
 
-        foreach my $k ( keys $modules_by_language{ $l } ) {
+        foreach my $k ( keys %{$modules_by_language{ $l }} ) {
 # local dir modules take precedence
             my $f = "modules/$k.json";
             if ( !module_exists( $f, \%langs ) ) {
@@ -1193,7 +1193,7 @@ sub check_files {
 
     foreach my $l ( keys \%module_files ) {
 #        print "lang $l\n";
-        foreach my $f ( keys $module_files{ $l } )
+        foreach my $f ( keys %{$module_files{ $l }} )
         {
             my $json = get_file_json_lang_specific( $f, $l, 1 );
             print "checking " . ( $l ? "for language $l " : "" ) . "module file $get_file_json_last\n";
@@ -1452,7 +1452,7 @@ sub check_files {
             }
             $graphviz_modules .= "  \"$menu\" -> \"$module\";\n";
 
-#            while ( my ( $k, $v ) = each $rplc_menu )
+#            while ( my ( $k, $v ) = each %$rplc_menu )
 #            {
 #                print "$k => $v\n";
 #            }
