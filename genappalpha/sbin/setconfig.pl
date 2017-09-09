@@ -386,7 +386,7 @@ if ( $pj ) {
     print "-"x80 . "\n";
     {
         my $js = JSON->new;
-        print $fh $js->pretty->encode( $json );
+        print $js->pretty->encode( $json );
     }
     print "-"x80 . "\n";
 }
