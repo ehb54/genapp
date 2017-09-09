@@ -1141,7 +1141,7 @@ sub check_files {
 
     my %module_files;
 
-    foreach my $l ( keys \%modules_by_language ) {
+    foreach my $l ( keys %{\%modules_by_language} ) {
 #        print "l in modules_by_language is $l\n";
 #        print Dumper ( %$l );
 
@@ -1191,7 +1191,7 @@ sub check_files {
 
     my %graphviz_repeaters;
 
-    foreach my $l ( keys \%module_files ) {
+    foreach my $l ( keys %{\%module_files} ) {
 #        print "lang $l\n";
         foreach my $f ( keys %{$module_files{ $l }} )
         {
