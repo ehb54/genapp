@@ -96,7 +96,7 @@ $rplc_directives = start_json( $directives, $ref_directives );
 my $path = `pwd`;
 chomp $path;
 
-while ( my ( $k, $v ) = each $rplc_directives )
+while ( my ( $k, $v ) = each %$rplc_directives )
 {
     print "$k $v\n" if $debug_srplc;
 }
@@ -279,7 +279,7 @@ foreach my $l ( keys %langs )
                         $rplc_mod = start_json( $mod_json, $ref_mod );
 #                       $rplc_mod = rewind_json( $ref_mod );
                         print "--------- input module rplc ---------\n" if $debug_srplc;
-                        while ( my ( $k, $v ) = each $rplc_mod )
+                        while ( my ( $k, $v ) = each %$rplc_mod )
                         {
                             print "s/__${k}__/${v}/g\n" if $debug_srplc;
                             $use_input =~ s/__${k}__/${v}/g;
@@ -306,7 +306,7 @@ foreach my $l ( keys %langs )
                             do {
                                 print " field " . $$rplc_mod{ $v } . " " . $$rplc_mod{ 'fields:type' } . "\n" if $debug_main || $debug_oncefield;
                                 my $use_input = $k;
-                                while ( my ( $k, $v ) = each $rplc_mod )
+                                while ( my ( $k, $v ) = each %$rplc_mod )
                                 {
                                     print "s/__${k}__/${v}/g\n" if $debug_main || $debug_oncefield;
                                     $use_input =~ s/__${k}__/${v}/g;
@@ -328,17 +328,17 @@ foreach my $l ( keys %langs )
                                     my @l = <$fh>;
                                     close $fh;
 # do replacements
-                                    while ( my ( $k, $v ) = each $rplc_directives )
+                                    while ( my ( $k, $v ) = each %$rplc_directives )
                                     {
                                         print "directives: s/__${k}__/${v}/g\n" if $debug_srplc || $debug_oncefield;
                                         grep s/__${k}__/${v}/g, @l;
                                     }
-                                    while ( my ( $k, $v ) = each $rplc_menu )
+                                    while ( my ( $k, $v ) = each %$rplc_menu )
                                     {
                                         print "menu: s/__${k}__/${v}/g\n" if $debug_srplc || $debug_oncefield;
                                         grep s/__${k}__/${v}/g, @l;
                                     }
-                                    while ( my ( $k, $v ) = each $rplc_mod )
+                                    while ( my ( $k, $v ) = each %$rplc_mod )
                                     {
                                         print "mod: s/__${k}__/${v}/g\n" if $debug_srplc || $debug_oncefield;
                                         grep s/__${k}__/${v}/g, @l;
@@ -399,14 +399,14 @@ foreach my $l ( keys %langs )
                     {
                         print "$f replacement $$r[ $i ]\n" if $debug_srplc;
                     }
-                    while ( my ( $k, $v ) = each $rplc_directives )
+                    while ( my ( $k, $v ) = each %$rplc_directives )
                     {
                         print "directives: s/__${k}__/${v}/g\n" if $debug_srplc;
                         grep s/__${k}__/${v}/g, @l;
                     }
 
                     if ( grep /__modulejson__/, @l ) {
-                        my $js = JSON::PP->new;
+                        my $js = JSON->new;
                         $js->canonical(1);
                         my $enc_mod_json = $js->encode( get_file_json_lang_specific( $module_to_file{ $l }{ $$rplc_menu{ 'menu:modules:id' } }, $l, 1 ) );
                         grep s/__modulejson__/$enc_mod_json/g, @l;
@@ -418,11 +418,11 @@ foreach my $l ( keys %langs )
                         my $mod_json = get_file_json_lang_specific( $module_to_file{ $l }{ $$rplc_menu{ "menu:modules:id" } }, $l, 1 );
                         my $ref_mod = {};
                         my $rplc_mod = start_json( $mod_json, $ref_mod );
-#                        while ( my ( $k, $v ) = each $rplc_menu )
+#                        while ( my ( $k, $v ) = each %$rplc_menu )
 #                        {
 #                            print "nd:menu: s/__${k}__/${v}/g\n" if $debug_srplc || $debug_oncefield;
 #                        }
-#                        while ( my ( $k, $v ) = each $rplc_mod )
+#                        while ( my ( $k, $v ) = each %$rplc_mod )
 #                        {
 #                            print "nd:mod: s/__${k}__/${v}/g\n" if $debug_srplc || $debug_oncefield;
 #                        }
@@ -506,12 +506,12 @@ foreach my $l ( keys %langs )
 #                       $rplc_menu2 = rewind_json( $ref_menu2 );
                         do {
                             @l = @l_sav;
-                            while ( my ( $k, $v ) = each $rplc_directives )
+                            while ( my ( $k, $v ) = each %$rplc_directives )
                             {
                                 print "s/__${k}__/${v}/g\n" if $debug_srplc;
                                 grep s/__${k}__/${v}/g, @l;
                             }
-                            while ( my ( $k, $v ) = each $rplc_menu2 )
+                            while ( my ( $k, $v ) = each %$rplc_menu2 )
                             {
                                 if ( $k eq 'menu:icon' && $imagesinline ) {
                                     # print "menuicon found $v\n";
@@ -569,12 +569,12 @@ foreach my $l ( keys %langs )
                             do {
                                 print "rplc menu:id " . $$rplc_menu2{ "menu:id" } . " " . $$rplc_menu{ 'menu:id' } . "\n" if $debug_srplc; 
                                 @l = @l_sav;
-                                while ( my ( $k, $v ) = each $rplc_directives )
+                                while ( my ( $k, $v ) = each %$rplc_directives )
                                 {
                                     print "s/__${k}__/${v}/g\n" if $debug_srplc;
                                     grep s/__${k}__/${v}/g, @l;
                                 }
-                                while ( my ( $k, $v ) = each $rplc_menu2 )
+                                while ( my ( $k, $v ) = each %$rplc_menu2 )
                                 {
                                     print "s/__${k}__/${v}/g\n" if $debug_srplc;
                                     grep s/__${k}__/${v}/g, @l;
@@ -589,7 +589,7 @@ foreach my $l ( keys %langs )
                                 print "ref_mod: " . Dumper($ref_mod) . "\n" if $debug_srplc;
                                 my $rplc_mod = {};
 # need the extra module tag to not confuse with higher level replacements
-                                while ( my ( $k, $v ) = each $ref_mod )
+                                while ( my ( $k, $v ) = each %$ref_mod )
                                 {
                                     $$rplc_mod{ "module:$k" } = $v;
                                 }
@@ -620,7 +620,7 @@ foreach my $l ( keys %langs )
                                     $l[ $sp ] = $lu[ 0 ];
                                 }
 # and finally replace again
-                                while ( my ( $k, $v ) = each $rplc_mod )
+                                while ( my ( $k, $v ) = each %$rplc_mod )
                                 {
                                     print "s/__${k}__/${v}/g\n" if $debug_srplc;
                                     grep s/__${k}__/${v}/g, @l;
@@ -636,7 +636,7 @@ foreach my $l ( keys %langs )
 # todo if $freq = 'module' find specific module json and make subs (add support in genapp_util ?
                             if ( ref( $rplc_menu ) eq 'HASH' )
                             {
-                                while ( my ( $k, $v ) = each $rplc_menu )
+                                while ( my ( $k, $v ) = each %$rplc_menu )
                                 {
                                     print "s/__${k}__/${v}/g\n" if $debug_srplc;
                                     grep s/__${k}__/${v}/g, @l;
@@ -647,7 +647,7 @@ foreach my $l ( keys %langs )
                                 $rplc_mod = start_json( $mod_json, $ref_mod );
 #                               $rplc_mod = rewind_json( $ref_mod );
                                 print "--------- menu/module rplc ---------\n" if $debug_srplc;
-                                while ( my ( $k, $v ) = each $rplc_mod )
+                                while ( my ( $k, $v ) = each %$rplc_mod )
                                 {
                                     print "s/__${k}__/${v}/g\n" if $debug_srplc;
                                     grep s/__${k}__/${v}/g, @l;
@@ -673,7 +673,7 @@ foreach my $l ( keys %langs )
                                     if ( $$rplc_mod{ 'fields:role' } eq $role )
                                     {
                                         my $use_input = $k;
-                                        while ( my ( $k, $v ) = each $rplc_mod )
+                                        while ( my ( $k, $v ) = each %$rplc_mod )
                                         {
                                             print "s/__${k}__/${v}/g\n" if $debug_srplc;
                                             $use_input =~ s/__${k}__/${v}/g;
@@ -693,7 +693,7 @@ foreach my $l ( keys %langs )
                                         }
                                         my @l = <$fh>;
                                         close $fh;
-                                        while ( my ( $k, $v ) = each $rplc_mod )
+                                        while ( my ( $k, $v ) = each %$rplc_mod )
                                         {
                                             print "s/__${k}__/${v}/g\n" if $debug_srplc;
                                             grep s/__${k}__/${v}/g, @l;
@@ -752,7 +752,7 @@ foreach my $l ( keys %langs )
 # write output
 
             my $use_output = $output;
-            while ( my ( $k, $v ) = each $rplc_directives )
+            while ( my ( $k, $v ) = each %$rplc_directives )
             {
                 print "s/__${k}__/${v}/g\n" if $debug_srplc;
                 $use_output =~ s/__${k}__/${v}/g;
@@ -762,7 +762,7 @@ foreach my $l ( keys %langs )
                 print '-'x40 . "\n" if $debug_srplc;
                 print "menu rplcs\n" if $debug_srplc;
                 print '-'x40 . "\n" if $debug_srplc;
-                while ( my ( $k, $v ) = each $rplc_menu )
+                while ( my ( $k, $v ) = each %$rplc_menu )
                 {
                     print "s/__${k}__/${v}/g\n" if $debug_srplc;
                     $use_output =~ s/__${k}__/${v}/g;
@@ -770,7 +770,7 @@ foreach my $l ( keys %langs )
 
                 if ( $freq =~ /^(menu|config|configbase):modules:id$/ )
                 {
-                    while ( my ( $k, $v ) = each $rplc_mod )
+                    while ( my ( $k, $v ) = each %$rplc_mod )
                     {
                         print "s/__${k}__/${v}/g\n" if $debug_srplc;
                         $use_output =~ s/__${k}__/${v}/g;
