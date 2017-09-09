@@ -343,7 +343,8 @@ _EOF
     # add ws servers to startup
 
     runcmdsb( "cp $appbase/genapptest/output/html5/util/rc.genapp /etc/init.d
-update-rc.d rc.genapp defaults" );
+update-rc.d rc.genapp defaults 99
+update-rc.d mongodb defaults" );
 
     # start ws servers
     runcmd( "sg genapp -c '/etc/init.d/rc.genapp start'" );
@@ -915,7 +916,8 @@ _EOF
     # add ws servers to startup
 
     runcmdsb( "cp $appbase/genapptest/output/html5/util/rc.genapp /etc/init.d
-update-rc.d rc.genapp defaults" );
+update-rc.d rc.genapp defaults 99
+update-rc.d mongodb defaults" );
 
     # start ws servers
     runcmd( "/etc/init.d/rc.genapp start" );
