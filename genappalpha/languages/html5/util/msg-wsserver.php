@@ -52,12 +52,25 @@ use Ratchet\ConnectionInterface;
 use Ratchet\Wamp\WampServerInterface;
 
 // connect
-try {
-     $mongo = new MongoClient();
-} catch ( Exception $e ) {
-    echo "msg_wsserver: could not connect to mongodb\n";
-    exit();
-}
+# connect
+$keeptrying = 0;
+do {
+    try {
+        $mongo = new MongoClient();
+        $keeptrying = 0;
+    } catch ( Exception $e ) {
+        echo "msg_wsserver: could not connect to mongodb, sleeping 15s\n";
+        sleep( 15 );
+        $keeptrying = 1;
+    }
+} while ( $keeptrying );
+
+#try {
+#     $mongo = new MongoClient();
+#} catch ( Exception $e ) {
+#    echo "msg_wsserver: could not connect to mongodb\n";
+#    exit();
+#}
 
 __~debug:ws{       echo "msg-wsserver: mongo client open\n";}
 
