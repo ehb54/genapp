@@ -1,0 +1,28 @@
+#!/bin/sh -x
+
+cd /tmp
+wget https://storage.googleapis.com/golang/go1.9.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.9.linux-amd64.tar.gz
+
+cat > /etc/profile.d/go.sh <<__EOF
+#!/bin/sh
+
+export GOROOT=/usr/local/go
+export PATH=\$PATH:\$GOROOT/bin
+
+__EOF
+
+cat > /etc/profile.d/go.csh <<__EOF
+#!/bin/csh
+
+setenv GOROOT /usr/local/go
+setenv PATH \${PATH}:\${GOROOT}/bin
+
+__EOF
+
+chmod +x /etc/profile.d/go.sh /etc/profile.d/go.csh
+. /etc/profile.d/go.sh
+go get github.com/pebbe/zmq3
+go get github.com/pebbe/zmq4
+go get github.com/fredli74/lockfile
+
