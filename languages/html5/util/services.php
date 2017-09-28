@@ -25,6 +25,7 @@ $lock = array();
 
 $lock[ "udp"       ]  = "$lockdir/msg-udp-"       . $json->messaging->zmqport . ".lock";
 $lock[ "ws"        ]  = "$lockdir/msg-ws-"        . $json->messaging->zmqport . ".lock";
+$lock[ "tcp"       ]  = "$lockdir/msg-tcp-"       . $json->messaging->zmqport . ".lock";
 $lock[ "keepalive" ]  = "$lockdir/msg-keepalive-" . $json->messaging->zmqport . ".lock";
 
 global $cmd;
@@ -32,6 +33,7 @@ $cmd = array();
 
 $cmd[ "udp"       ] = "msg-udpserver.php";
 $cmd[ "ws"        ] = "msg-wsserver.php";
+$cmd[ "tcp"       ] = "msg-tcpserver";
 $cmd[ "keepalive" ] = "msg-keepalive.php";
 
 function stop() {
@@ -43,9 +45,14 @@ function stop() {
 
     foreach ( $lock as $k => $v ) {
         if ( file_exists( $v ) ) {
-            $link = readlink ( $v );
+            if ( is_link( $v ) ) {
+                $link = readlink ( $v );
 
-            $pid = substr( $link, 6 );
+                $pid = substr( $link, 6 );
+            } else {
+                $pid = rtrim( file_get_contents( $v ) );
+                $link = "/proc/$pid";
+            }
 
             if ( file_exists( $link ) ) {
                 posix_kill( $pid, SIGTERM );
@@ -59,9 +66,14 @@ function stop() {
     $remaining = 0;
     foreach ( $lock as $k => $v ) {
         if ( file_exists( $v ) ) {
-            $link = readlink ( $v );
+            if ( is_link( $v ) ) {
+                $link = readlink ( $v );
 
-            $pid = substr( $link, 6 );
+                $pid = substr( $link, 6 );
+            } else {
+                $pid = rtrim( file_get_contents( $v ) );
+                $link = "/proc/$pid";
+            }
 
             if ( file_exists( $link ) ) {
                 $remaining++;
@@ -99,13 +111,20 @@ function status( $doprint = true ) {
         $pid = "";
 
         if ( file_exists( $v ) ) {
-            $link = readlink ( $v );
+            if ( is_link( $v ) ) {
+                $link = readlink ( $v );
 
-            $pid = substr( $link, 6 );
+                $pid = substr( $link, 6 );
+            } else {
+                $pid = rtrim( file_get_contents( $v ) );
+                $link = "/proc/$pid";
+            }
 
             if ( file_exists( $link ) ) {
                 $status = "running";
                 $running++;
+            } else {
+                $pid = "";
             }
         }
 

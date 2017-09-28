@@ -203,6 +203,22 @@
                    }
                    ,{
                     "frequency"  : "once",
+                    "output"     : "util/msg-tcpserver.go",
+                    "inputs"     : [ 
+                                    { "util/msg-tcpserver.go" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "util/build-tcp.sh",
+                    "setexecutable" :"true",
+                    "execute"    : "atend",
+                    "inputs"     : [ 
+                                     { "util/build-tcp.sh" : "once" }
+                                   ]
+                   }    
+                   ,{
+                    "frequency"  : "once",
 		    "setexecutable" : "true", 
                     "output"     : "util/integrity.php",
                     "inputs"     : [ 
