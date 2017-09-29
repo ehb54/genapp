@@ -109,7 +109,7 @@ func getappconfig() {
 			panic( "error: in "  + appconfig + " : no messaging:tcprport defined" );
 		}
 		if _, ok := messaging["tcptimeout"]; ok {
-			if _, ok := jdata["_msgid"].(float64); ok {
+			if _, ok := messaging["tcptimeout"].(float64); ok {
 				timeout = time.Duration(messaging["tcptimeout"].(float64)) * time.Second
 			}
 		}
@@ -230,9 +230,20 @@ func handleConn(client net.Conn, id uint64) {
 
 	use_timeout := timeout;
 
-	if _, ok := jdata["_timeout"]; ok {
-		if _, ok := jdata["_msgid"].(float64); ok {
-			use_timeout = time.Duration(jdata["_timeout"].(float64)) * time.Second
+	if _, ok := jdata["timeout"]; ok {
+		if _, ok := jdata["timeout"].(float64); ok {
+			use_timeout = time.Duration(jdata["timeout"].(float64)) * time.Second
+		} else if _, ok := jdata["timeout"].(string); ok {
+			msgidret, err := strconv.ParseUint(jdata["timeout"].(string), 10, 64 );
+			if err != nil {
+				rmap := map[string]string{"error":"_question:timeout specified but could not be converted to a time: " + err.Error()}
+				rmapj, _ := json.Marshal( rmap )
+				client.Write( rmapj )
+				fmt.Println("json marhsal error:" + err.Error() )
+				fmt.Printf("closed: %v <-> %v\n", client.LocalAddr(), client.RemoteAddr())
+				return;
+			}
+			use_timeout = time.Duration(msgidret) * time.Second
 		}
 	}
 
@@ -247,6 +258,9 @@ func handleConn(client net.Conn, id uint64) {
 	case res := <-rchanmap[id]:
 		delete(rchanmap, id)
 		client.Write(res)
+		ackmap := map[string]string{"_uuid":jdata["_uuid"].(string),"_msgid":strconv.FormatUint( id, 10 ),"_question_answered":""}
+		ackmapj, _ := json.Marshal( ackmap )
+		zmqclient.SendMessage( ackmapj )
 		__~debug:tcp{fmt.Printf("response len %d: %v <-> %v\n", len(res), client.LocalAddr(), client.RemoteAddr())}
 	case <-time.After(use_timeout): // maybe set override in request
 		mutex.Lock() // handle possible race condition: timeout happens in race with response received
@@ -255,6 +269,9 @@ func handleConn(client net.Conn, id uint64) {
 			res := <-rchanmap[id]
 			delete(rchanmap, id)
 			client.Write(res)
+			ackmap := map[string]string{"_uuid":jdata["_uuid"].(string),"_msgid":strconv.FormatUint( id, 10 ),"_question_answered":""}
+			ackmapj, _ := json.Marshal( ackmap )
+			zmqclient.SendMessage( ackmapj )
 			__~debug:tcp{fmt.Printf("response len %d: %v <-> %v\n", len(res), client.LocalAddr(), client.RemoteAddr())}
 			return
 		}
@@ -263,6 +280,9 @@ func handleConn(client net.Conn, id uint64) {
 		rmap := map[string]string{"error":"timeout"}
 		rmapj, _ := json.Marshal( rmap )
 		client.Write( rmapj )
+		ackmap := map[string]string{"_uuid":jdata["_uuid"].(string),"_msgid":strconv.FormatUint( id, 10 ),"_question_timeout":""}
+		ackmapj, _ := json.Marshal( ackmap )
+		zmqclient.SendMessage( ackmapj )
 	}
 
 	__~debug:tcp{fmt.Printf("closed: %v <-> %v\n", client.LocalAddr(), client.RemoteAddr())}
