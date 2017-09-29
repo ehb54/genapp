@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/fredli74/lockfile"
-	zmq "github.com/pebbe/zmq3"
+	zmq "github.com/pebbe/zmq__zmqversion__"
 	"encoding/json"
 	"net"
 	"io"
@@ -13,7 +13,7 @@ import (
 	"time"
 	"sync"
 	"strconv"
-	"reflect"
+        __~debug:tcp{"reflect"}
 )
 
 var appconfig = "/home/ehb/genapptest_svn/appconfig.json"
