@@ -12,6 +12,8 @@ import (
 	"io/ioutil"
 	"time"
 	"sync"
+	"strconv"
+	"reflect"
 )
 
 var appconfig = "/home/ehb/genapptest_svn/appconfig.json"
@@ -163,13 +165,17 @@ func handleConn(client net.Conn, id uint64) {
 	zmqclient.Connect( zmqlisten )
 
         line, err := b.ReadBytes('\n')
+	is_closed := false
         if err != nil { // EOF, or worse
 		if err == io.EOF {
 			__~debug:tcp{fmt.Printf("eof: %v <-> %v\n", client.LocalAddr(), client.RemoteAddr())}
+			is_closed = true
 		} else {
 			__~debug:tcp{fmt.Printf("read client error: %v <-> %v %v\n", client.LocalAddr(), client.RemoteAddr(), err.Error())}
 		}
-		return
+		if len(line) < 2 {
+			return
+		}
         }
 	// do we have good json?
 
@@ -215,6 +221,11 @@ func handleConn(client net.Conn, id uint64) {
 		__~debug:tcp{fmt.Println("json marhsal error:" + err.Error() )}
 		__~debug:tcp{fmt.Printf("closed: %v <-> %v\n", client.LocalAddr(), client.RemoteAddr())}
 		return;
+	}
+
+	if is_closed {
+		__~debug:tcp{fmt.Printf("closed: %v <-> %v\n", client.LocalAddr(), client.RemoteAddr())}
+		return
 	}
 
 	use_timeout := timeout;
@@ -273,7 +284,9 @@ func handleRconn(client net.Conn) {
 		} else {
 			__~debug:tcp{fmt.Printf("read client error on tcpr: %v <-> %v %v\n", client.LocalAddr(), client.RemoteAddr(), err.Error())}
 		}
-		return
+		if len(line) < 2 {
+			return
+		}
         }
         __~debug:tcp{fmt.Println("tcprserver received" + string(line))}
 	// check message, if ok, channel response to rchanmap[_msgid] for tcp response
@@ -319,17 +332,35 @@ func handleRconn(client net.Conn) {
 		__~debug:tcp{fmt.Printf("closed tcpr: %v <-> %v\n", client.LocalAddr(), client.RemoteAddr())}
 		return;
 	}
-	if _, ok := jdata["_msgid"].(float64); !ok {
+
+	var msgid uint64;
+
+	if _, ok := jdata["_msgid"].(float64); ok {
+		msgid = uint64(jdata["_msgid"].(float64));
+	} else if _, ok := jdata["_msgid"].(string); ok {
+		msgidret, err := strconv.ParseUint(jdata["_msgid"].(string), 10, 64 );
+		if err != nil {
+			// send error json back and exit
+			rmap := map[string]string{"error":"json _msgid not numeric, error converting string"}
+			rmapj, _ := json.Marshal( rmap )
+			client.Write( rmapj )
+			__~debug:tcp{fmt.Println(err.Error())}
+			__~debug:tcp{fmt.Printf("tcpr: _msgid not numeric 1: %v <-> %v\n", client.LocalAddr(), client.RemoteAddr())}
+			__~debug:tcp{fmt.Printf("closed tcpr: %v <-> %v\n", client.LocalAddr(), client.RemoteAddr())}
+			return;
+		}
+		msgid = msgidret
+	} else {
+		__~debug:tcp{fmt.Printf(" type of _msgid  kind:%s  type:%s\n", reflect.TypeOf(jdata["_msgid"]).Kind(), reflect.TypeOf( jdata["_msgid"]))}
 		// send error json back and exit
 		rmap := map[string]string{"error":"json _msgid not numeric"}
 		rmapj, _ := json.Marshal( rmap )
 		client.Write( rmapj )
-		__~debug:tcp{fmt.Printf("tcpr: _msgid not numeric: %v <-> %v\n", client.LocalAddr(), client.RemoteAddr())}
+		__~debug:tcp{fmt.Printf("tcpr: _msgid not numeric 2: %v <-> %v\n", client.LocalAddr(), client.RemoteAddr())}
 		__~debug:tcp{fmt.Printf("closed tcpr: %v <-> %v\n", client.LocalAddr(), client.RemoteAddr())}
 		return;
 	}
-	msgid := uint64(jdata["_msgid"].(float64));
-	
+
 	mutex.Lock() // handle possible race condition: timeout happens in race with response received
 	if _, ok := rchanmap[ msgid ]; !ok {
 		mutex.Unlock();

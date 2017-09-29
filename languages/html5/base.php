@@ -213,6 +213,12 @@ $_SESSION[ $window ][ 'submitpolicy'    ] = $app_json->submitpolicy;
 
 session_write_close();
 
+if ( isset( $app_json->messaging->tcphostip ) &&
+     isset( $app_json->messaging->tcpport ) ) {
+    $_REQUEST[ '_tcphost' ] = $app_json->messaging->tcphostip;
+    $_REQUEST[ '_tcpport' ] = $app_json->messaging->tcpport;
+}
+
 $_REQUEST[ '_udphost' ] =  $_SESSION[ $window ][ 'udphost' ];
 $_REQUEST[ '_udpport' ] =  $_SESSION[ $window ][ 'udpport' ];
 $_REQUEST[ 'resourcedefault' ] = $_SESSION[ $window ][ 'resourcedefault' ];
