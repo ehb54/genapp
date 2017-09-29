@@ -60,11 +60,16 @@ ga.qr.question = function( mod, q ) {
     // build the form
 
     if ( q._question.title ) {
-        //  qtext += "<h1>" + q._question.title + "</h1>";
-        qtext += q._question.title;
+        qtext += "<h3>" + q._question.title + "</h3>";
+    }
+
+    if ( q._question.text ) {
+        qtext += q._question.text;
     }
 
     id = q._uuid + "-" + q._msgid;
+
+
     qtext += '<form id="' + id + '"><table>';
 
     for ( i = 0; i < q._question.fields.length; ++i ) {
@@ -79,6 +84,15 @@ ga.qr.question = function( mod, q ) {
             
         if ( tf.id && tf.type ) {
             switch ( tf.type ) {
+            case "label" : {
+                qtext += "<tr><td colspan=2>";
+                if ( tf.label ) {
+                    qtext += tf.label;
+                }
+                qtext += '</td></tr>';
+            }
+            break;
+
             case "text" : {
                 qtext += "<tr><td>";
                 if ( tf.label ) {
