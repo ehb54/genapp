@@ -127,6 +127,13 @@
                    }
                    ,{
                     "frequency"  : "once",
+                    "output"     : "ajax/sys_config/qr_post.php",
+                    "inputs"     : [ 
+                                    { "sys/qr_post.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
                     "setexecutable" : "true",
                     "output"     : "ajax/sys_config/sys_file_manager_run.php",
                     "inputs"     : [ 
@@ -426,7 +433,7 @@
                    ,{
                     "frequency"  : "once",
                     "output"     : "js/ga.js",
-#                   "minify"     : "copy",
+#                    "minify"     : "copy",
 #                    "minify"     : "minify",
 #                    "minify"     : "closure",
                     "inputs"     : [ 
@@ -450,6 +457,7 @@
                                     ,{ "js/register.js"         : "once" }
                                     ,{ "js/calc.js"             : "once" }
                                     ,{ "js/bokeh.js"            : "once" }
+                                    ,{ "js/qr.js"               : "once" }
                                    ]
                    }
                    ,{

@@ -13,6 +13,8 @@ if ( !isset( $_SESSION[ $window ] ) )
    $_SESSION[ $window ] = array( "logon" => "", "project" => "" );
 }
 
+session_write_close();
+
 if ( !isset( $_SESSION[ $window ][ 'logon' ] ) ||
      !isset( $_REQUEST[ '_logon' ] ) )
 {
