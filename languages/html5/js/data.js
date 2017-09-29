@@ -323,6 +323,16 @@ __~debug:values{        console.log( "ga.data.update() atomic structure jmol scr
                             // could probably just send data._question==v, data._uuid & data._msgid
                             ga.qr.question( mod, data );
                         }
+                        if ( k == "_question_answered" )
+                        { 
+                            // could probably just send data._question==v, data._uuid & data._msgid
+                            ga.qr.answered( mod, data );
+                        }
+                        if ( k == "_question_timeout" )
+                        { 
+                            // could probably just send data._question==v, data._uuid & data._msgid
+                            ga.qr.timeout( mod, data );
+                        }
                         if ( /^_getinput/.test( k ) )
                         { 
                             __~debug:getinput{console.log( "found " + k + " in msging" );}
