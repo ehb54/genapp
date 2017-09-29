@@ -2,6 +2,7 @@
 /* assumes: jquery > 1.11.0, jqtree >= 3.0.9, jquery-base64 */
 
 ga.qr               = {};
+ga.qr.openq         = {};
 
 // ----------------------------------------------------------------------------------------------------------
 // background
@@ -10,7 +11,7 @@ ga.qr               = {};
 // ----------------------------------------------------------------------------------------------------------
 // summary of data structures
 // ----------------------------------------------------------------------------------------------------------
-//
+// ga.qr.openq      : map of open messages
 // ----------------------------------------------------------------------------------------------------------
 // summary of operations
 // ----------------------------------------------------------------------------------------------------------
@@ -18,6 +19,8 @@ ga.qr               = {};
 // ga.qr.post       : post reponse via ajax
 // ga.qr.cb         : callback from question
 // ga.qr.rerror     : return error
+// ga.qr.answered   : question response acknowledged (could have been a simultaneously attached session)
+// ga.qr.timeout    : question response timeout
 // ----------------------------------------------------------------------------------------------------------
 
 ga.qr.question = function( mod, q ) {
@@ -88,8 +91,8 @@ ga.qr.question = function( mod, q ) {
                 if ( tf.readonly ) {
                     qtext += ' readonly';
                 }
-                if ( tf.default ) {
-                    qtext += ' value="' + tf.default + '"';
+                if ( tf['default'] ) {
+                    qtext += ' value="' + tf['default'] + '"';
                 }
                 if ( tf.pattern ) {
                     qtext += ' pattern="' + tf.pattern + '"';
@@ -136,10 +139,13 @@ ga.qr.question = function( mod, q ) {
 
     __~debug:qr{console.log( "qtext:" + qtext );}
 
+    ga.qr.openq[ id ] = "open";
+    
     messagebox( {
-        icon : "question.png",
-        text : qtext,
-        buttons : [
+        icon : "question.png"
+        ,text : qtext
+        ,eval : '$("#' + id + '").on("keyup keypress", function(e) { var code = e.keyCode || e.which;  if (code  == 13) { e.preventDefault(); return false; }});'
+        ,buttons : [
             { 
                 id    : "ok"
                 ,label : "OK"
@@ -160,9 +166,51 @@ ga.qr.cb = function( q, result ) {
     __~debug:qr{console.log( "ga.qr.cb( data )" );}
     __~debug:qr{console.dir( q );}
     __~debug:qr{console.dir( data );}
+
+    var id = q._uuid + "-" + q._msgid;
+
+    if ( ga.qr.openq[ id ] ) {
+        switch( ga.qr.openq[ id ] ) {
+        case "open" : 
+            break;
+
+        case "answered" : {
+            messagebox( {
+                icon : "information.png"
+                ,text : "Question has already been answered in another session"
+            } );
+            delete ga.qr.openq[ id ];
+            return;
+        }
+            break;
+            
+        case "timeout" : {
+            messagebox( {
+                icon : "information.png"
+                ,text : "The time for answering a question has expired"
+            } );
+            delete ga.qr.openq[ id ];
+            return;
+        }
+            break;
+            
+        default : {
+            messagebox( {
+                icon : "toast.png"
+                ,text : "Internal error, unknown message state"
+            } );
+            delete ga.qr.openq[ id ];
+            return;
+        }
+            break;
+        }                
+        delete ga.qr.openq[ id ];
+    } else {
+        return;
+    }
+        
     // r needs _uuid, _msgid and assembled response info
     var r = {};
-    var id = q._uuid + "-" + q._msgid;
     r._uuid = q._uuid;
     r._msgid = parseFloat( q._msgid );
     r._response = {};
@@ -188,8 +236,33 @@ ga.qr.cb = function( q, result ) {
     ga.qr.post( r )
 }
 
+ga.qr.answered = function( mod, q ) {
+    __~debug:qr{console.log( "ga.qr.answered( moq, q )" );}
+    __~debug:qr{console.dir( q );}
+    
+    var id;
+    if ( q._uuid && q._msgid ) {
+        id = q._uuid + "-" + q._msgid;
+        if ( ga.qr.openq[ id ] ) {
+            ga.qr.openq[ id ] = "answered";
+        }
+    }
+}
+
+ga.qr.timeout = function( mod, q ) {
+    __~debug:qr{console.log( "ga.qr.timeout( moq, q )" );}
+    __~debug:qr{console.dir( q );}
+    var id;
+    if ( q._uuid && q._msgid ) {
+        id = q._uuid + "-" + q._msgid;
+        if ( ga.qr.openq[ id ] ) {
+            ga.qr.openq[ id ] = "timeout";
+        }
+    }
+}
+
 ga.qr.rerror = function( q, text ) {
-    __~debug:qr{console.log( "ga.qr.cb( data )" );}
+    __~debug:qr{console.log( "ga.qr.rerror( q, " + text + " )" );}
     __~debug:qr{console.dir( q );}
     __~debug:qr{console.dir( data );}
     // r needs _uuid, _msgid and assembled response info
