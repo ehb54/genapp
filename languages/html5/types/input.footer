@@ -181,12 +181,12 @@ __~debug:job{                 console.log( "joblocked returned:" + data );}
           {
              case "1" :
              {
-                 messagebox( { icon:"warning.png", text:"This project directory is currently locked by another project.\nYou can wait until it completes, change the project in user configuration or clear the lock in the job manager." } );
+                 ga.msg.box( { icon:"warning.png", text:"This project directory is currently locked by another project.\nYou can wait until it completes, change the project in user configuration or clear the lock in the job manager." } );
                  return;
              } break;
              case "2" :
              {
-                 messagebox( { icon:"warning.png", text:"You must be logged in to submit this module." } );
+                 ga.msg.box( { icon:"warning.png", text:"You must be logged in to submit this module." } );
                  return;
              } break;
              case "0" :
@@ -197,7 +197,7 @@ __~debug:job{                 console.log( "ok, but we are not submitting yet" )
              default : 
              {
                 if ( /^Your job/.test( data ) ) {
-                   messagebox( { icon : "warning.png",
+                   ga.msg.box( { icon : "warning.png",
                                  text : data } );
                    return;
                 }
@@ -212,7 +212,7 @@ __~debug:job{                 console.log( "ok, but we are not submitting yet" )
           }
        }
        ,error: function() { // your error handler
-          messagebox( { icon:"toast.png", text:"Checking the project lock failed. This is possibly a server or network issue" } );
+          ga.msg.box( { icon:"toast.png", text:"Checking the project lock failed. This is possibly a server or network issue" } );
        }
        ,complete: function() { 
           this.off('submit');

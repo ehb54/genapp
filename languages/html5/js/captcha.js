@@ -15,7 +15,7 @@ ga.captcha = function( cb, form ) {
         data = $.parseJSON( data );
         __~debug:captcha{console.log( "ga.captcha() success id = " + data.id );}
         if ( data.error ) {
-            messagebox( {
+            ga.msg.box( {
                 icon : "toast.png"
                 ,text  : data.error
             } );
@@ -32,7 +32,7 @@ ga.captcha = function( cb, form ) {
             '</form>'
         ;
         __~debug:captchahtml{console.log( msg );}
-        messagebox( {
+        ga.msg.box( {
             text  : msg
             ,eval  : "resetHoverHelp();$('#sys_captcha').on('keyup keypress', function(e) { var code = e.keyCode || e.which;  if (code  == 13) { e.preventDefault(); return false; }});"
             ,buttons : [
@@ -48,7 +48,7 @@ ga.captcha = function( cb, form ) {
             ]
         } );
     }).error( function( error ) {
-        messagebox( {
+        ga.msg.box( {
             icon : "toast.png"
             ,text  : "Error contacting server"
         } );
@@ -71,7 +71,7 @@ ga.captcha.verify = function( data ) {
                 vdata = $.parseJSON( vdata );
                 __~debug:captcha{console.log( "ga.captcha_verify() success id = " + vdata.id );}
                 if ( vdata.error ) {
-                    messagebox( {
+                    ga.msg.box( {
                         icon : "toast.png"
                         ,text  : vdata.error
                     } );
@@ -84,7 +84,7 @@ ga.captcha.verify = function( data ) {
                 }
            })
         .error( function( error ) {
-            messagebox( {
+            ga.msg.box( {
                 icon : "toast.png"
                 ,text  : "Error contacting server"
             } );

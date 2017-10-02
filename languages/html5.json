@@ -17,6 +17,13 @@
   "assembly"    : [
                    {
                     "frequency"  : "once",
+                    "output"     : "css/ga.css",
+                    "inputs"     : [ 
+                                    { "css/ga.css" : "once"        }
+                                   ]
+                    },
+                   {
+                    "frequency"  : "once",
                     "output"     : "ajax/sys_uid.php",
                     "inputs"     : [ 
                                     { "sys/sys_uid.php" : "once"        }
@@ -458,6 +465,7 @@
                                     ,{ "js/calc.js"             : "once" }
                                     ,{ "js/bokeh.js"            : "once" }
                                     ,{ "js/qr.js"               : "once" }
+                                    ,{ "js/msg.js"              : "once" }
                                    ]
                    }
                    ,{

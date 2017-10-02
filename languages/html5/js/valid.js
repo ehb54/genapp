@@ -261,7 +261,7 @@ __~debug:valid{   console.log( "ga.valid.checksubmit( " + module + " )" );}
 }
 
 ga.valid.showerrormessage = function() {
-    messagebox( {
+    ga.msg.box( {
 	icon : "warning.png",
 	text : "" + ga.fielderrors + " fields are missing or not set correctly!",
 	buttons : [
@@ -296,7 +296,7 @@ ga.airavata.select = function( defaultresource, select, cb, form ) {
     }
 
     if ( !a.resources || !a.resources.length ) {
-        messagebox( {
+        ga.msg.box( {
             icon  : "warning.png"
             ,text  : "No resources currently enabled for Airavata submission"
         });
@@ -340,7 +340,7 @@ ga.airavata.select = function( defaultresource, select, cb, form ) {
             }
             msg += '</table>';
 
-            messagebox( {
+            ga.msg.box( {
                 icon     : "question.png"
                 ,text    : msg
                 ,buttons : button_info
@@ -350,7 +350,7 @@ ga.airavata.select = function( defaultresource, select, cb, form ) {
         break;
         default :
         {
-            messagebox( {
+            ga.msg.box( {
                 icon  : "toast.png"
                 ,text  : "ga.airavata.select, unknown selection type '" + selecttype + "'"
             });
@@ -390,7 +390,7 @@ ga.xsede.select = function( defaultresource, cb, form ) {
     }
 
     if ( !a || !a.length ) {
-        messagebox( {
+        ga.msg.box( {
             icon  : "warning.png"
             ,text  : "No XSEDE projects currently defined.  Create one under the user configuration button at the top right."
         });
@@ -419,7 +419,7 @@ ga.xsede.select = function( defaultresource, cb, form ) {
     }
     msg += '</table>';
 
-    messagebox( {
+    ga.msg.box( {
         icon     : "question.png"
         ,text    : msg
         ,buttons : button_info
