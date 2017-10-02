@@ -241,7 +241,7 @@ ga.qr.question = function( mod, q ) {
 
     ga.qr.openq[ id ] = "open";
 
-    messagebox( {
+    ga.msg.box( {
         icon : "question.png"
         ,text : qtext
         ,eval : '$("#' + id + '").on("keyup keypress", function(e) { var code = e.keyCode || e.which;  if (code  == 13) { e.preventDefault(); return false; }});'
@@ -262,7 +262,7 @@ ga.qr.cb = function( q, result ) {
             break;
 
         case "answered" : {
-            messagebox( {
+            ga.msg.box( {
                 icon : "information.png"
                 ,text : "Question has already been answered in another session"
             } );
@@ -272,7 +272,7 @@ ga.qr.cb = function( q, result ) {
             break;
             
         case "timeout" : {
-            messagebox( {
+            ga.msg.box( {
                 icon : "information.png"
                 ,text : "The time for answering a question has expired"
             } );
@@ -282,7 +282,7 @@ ga.qr.cb = function( q, result ) {
             break;
             
         default : {
-            messagebox( {
+            ga.msg.box( {
                 icon : "toast.png"
                 ,text : "Internal error, unknown message state"
             } );
@@ -362,7 +362,7 @@ ga.qr.rerror = function( q, text ) {
         r._response.id = q._question.id;
     }
     ga.qr.post( r )
-    messagebox( {
+    ga.msg.box( {
         icon : "toast.png",
         text : text
     });
@@ -383,7 +383,7 @@ ga.qr.post = function( r ) {
     }).success( function( data ) {
         console.log( "ajax delete done" );
         if ( data.error && data.error.length ) {
-            messagebox( {
+            ga.msg.box( {
                 icon : "toast.png",
                 text : "ajax data error: " + data.error,
                 buttons : [
@@ -394,7 +394,7 @@ ga.qr.post = function( r ) {
     }).error( function( error ) {
         console.log( "ajax error" );
         console.dir( error );
-        messagebox( {
+        ga.msg.box( {
             icon : "toast.png",
             text : "ajax error: " + error.statusText,
             buttons : [

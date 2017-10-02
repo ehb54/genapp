@@ -51,7 +51,7 @@ ga.license = function( req ) {
 
     if ( needs.length ) {
 
-        messagebox( {
+        ga.msg.box( {
             icon  : "warning.png",
             text  : msg,
             buttons : button_info
