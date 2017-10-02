@@ -380,7 +380,7 @@ ga.cache.msg = function( cachefound, cachedelete, cb_get_results, cb_do_submit, 
     case "notify" : 
         {               
             if ( ga.restricted.data[ cachedelete ] ) {
-                messagebox( {
+                ga.msg.box( {
                     icon  : "question.png"
                     ,text  : "Show or clear previously computed results."
                     ,buttons : [
@@ -404,13 +404,13 @@ ga.cache.msg = function( cachefound, cachedelete, cb_get_results, cb_do_submit, 
                 } );
                 return;
             } else {
-                messagebox( { icon:"information.png", text:"Showing previously computed results." } );
+                ga.msg.box( { icon:"information.png", text:"Showing previously computed results." } );
             }
         }
         break;
     case "askrecompute" : 
         if ( ga.restricted.data[ cachedelete ] ) {
-            messagebox( {
+            ga.msg.box( {
                 icon  : "question.png"
                 ,text  : "Previously computed results are available."
                 ,buttons : [
@@ -439,7 +439,7 @@ ga.cache.msg = function( cachefound, cachedelete, cb_get_results, cb_do_submit, 
                 ]
             } );
         } else {
-            messagebox( {
+            ga.msg.box( {
                 icon  : "question.png"
                 ,text  : "Previously computed results are available."
                 ,buttons : [
@@ -464,7 +464,7 @@ ga.cache.msg = function( cachefound, cachedelete, cb_get_results, cb_do_submit, 
     default: 
         {               
             if ( ga.restricted.data[ cachedelete ] ) {
-                messagebox( {
+                ga.msg.box( {
                     icon  : "question.png"
                     ,text  : "Show or clear previously computed results."
                     ,buttons : [
@@ -497,8 +497,8 @@ ga.cache.msg = function( cachefound, cachedelete, cb_get_results, cb_do_submit, 
         
 ga.cache.clear = function( uuid, cachedelete ) {
     __~debug:cache{ console.log( "ga.cache.clear( " + uuid + " , " + cachedelete + " )" );}
-    // maybe messagebox to confirm delete of cached results
-    messagebox( {
+    // maybe ga.msg.box to confirm delete of cached results
+    ga.msg.box( {
         icon  : "admin.png"
         ,text  : "Are you sure you want to permanently remove this previously computed result?"
         ,buttons : [
@@ -533,10 +533,10 @@ ga.cache.doclear = function( uuid, cachedelete ) {
             .done( function( data, status, xhr ) {
                 __~debug:cache{console.log( "ga.cache.doclear() .getJSON done" )};
                 if ( data[ 'success' ] == "true" ) {
-                    messagebox( { icon : "information.png",
+                    ga.msg.box( { icon : "information.png",
                                   text : "Previously computed results cleared" } );
                 } else {
-                    messagebox( { icon : "toast.png",
+                    ga.msg.box( { icon : "toast.png",
                                   text : data[ 'error' ] } );
                 }
                 __~debug:cache{console.dir( data );}
@@ -544,11 +544,11 @@ ga.cache.doclear = function( uuid, cachedelete ) {
             .fail( function( xhr, status, errorThrown ) {
                 __~debug:cache{console.log( "ga.cache.doclear() .getJSON fail" )};
                 console.warn( "could not clear cache data" );
-                messagebox( { icon : "toast.png",
+                ga.msg.box( { icon : "toast.png",
                               text : "Error: server failed to clear cached entry" } );
             });
     } else {
-        messagebox( { icon : "toast.png",
+        ga.msg.box( { icon : "toast.png",
                       text : "Internal error: no url defined for cache clear" } );
     }
 }
@@ -598,14 +598,14 @@ ga.login.verify = function( data ) {
         }
     }                                
 
-    messagebox( msg );
+    ga.msg.box( msg );
 }
 
 ga.login.verify.resend = function () {
     __~debug:loginverify{console.log( "ga.login.verify.resend()" );}
     var form = $( "#sys_login" );
     if ( !form ) {
-        return messagebox( { icon : "toast.png", text: "Internal error: form missing" } );
+        return ga.msg.box( { icon : "toast.png", text: "Internal error: form missing" } );
     }
     form.append( '<input type="hidden" name="_resendverify" class="toclear">' );
     do_sys_login_submit( form );
@@ -613,7 +613,7 @@ ga.login.verify.resend = function () {
 
 ga.login.verify.change = function () {
     __~debug:loginverify{console.log( "ga.login.verify.change()" );}
-    return messagebox( {
+    return ga.msg.box( {
         icon : "question.png"
         ,text : '<center><label  class="header3 ">Change email address</label></center><form id="_changeemail"><table><tr><td><label for="_changeemail1">Email address </label></td><td><input type="email" name="_changeemail1" id="_changeemail1" required size="50" class="help_link"><span class="help">Enter a valid email address.  This will be required if you forget your password.  Otherwise, you will have to create a new account lose access to your projects</span><span id="_changeemail1_msg" class="warning field_msg" > </span></td></tr><tr><td><label for="_changeemail2">Repeat email address </label></td><td><input type="email" name="_changeemail2" id="_changeemail2" required size="50" class="help_link"><span class="help">Enter a valid email address.  This will be required if you forget your password.  Otherwise, you will have to create a new account lose access to your projects</span><span id="_changeemail2_msg" class="warning field_msg" > </span></td></tr></table></form><script>$( "#_changeemail1" ).keypress( function() { $( "#_changeemail1_msg" ).html( "" );});$( "#_changeemail2" ).keypress( function() { $( "#_changeemail2_msg" ).html( "" );});$( "#_changeemail2" ).blur( function() { ga.valid.checkMatch( "#_changeemail2", "#_changeemail1" ); } );setHoverHelp();</script>'
         ,buttons : [ 
@@ -634,7 +634,7 @@ ga.login.verify.change.doit = function () {
     __~debug:loginverify{console.log( "ga.login.verify.change.doit()" );}
     var form = $( "#sys_login" );
     if ( !form ) {
-        return messagebox( { icon : "toast.png", text: "Internal error: form missing" } );
+        return ga.msg.box( { icon : "toast.png", text: "Internal error: form missing" } );
     }
 // window to input email 2x to verify
     form.append( '<input type="hidden" name="_resendverify" class="toclear">' );
@@ -648,7 +648,7 @@ ga.login.verify.cancel = function () {
     __~debug:loginverify{console.log( "ga.login.verify.cancel()" );}
     var form = $( "#sys_login" );
     if ( !form ) {
-        return messagebox( { icon : "toast.png", text: "Internal error: form missing" } );
+        return ga.msg.box( { icon : "toast.png", text: "Internal error: form missing" } );
     }
     form.append( '<input type="hidden" name="_cancel" class="toclear">' );
     do_sys_login_submit( form );
@@ -676,14 +676,14 @@ ga.login.approve = function( data ) {
         }
     }                                
 
-    messagebox( msg );
+    ga.msg.box( msg );
 }
 
 ga.login.approve.resend = function () {
     __~debug:loginapprove{console.log( "ga.login.approve.resend()" );}
     var form = $( "#sys_login" );
     if ( !form ) {
-        return messagebox( { icon : "toast.png", text: "Internal error: form missing" } );
+        return ga.msg.box( { icon : "toast.png", text: "Internal error: form missing" } );
     }
     form.append( '<input type="hidden" name="_resendapprove" class="toclear">' );
     do_sys_login_submit( form );
@@ -693,7 +693,7 @@ ga.login.approve.cancel = function () {
     __~debug:loginapprove{console.log( "ga.login.approve.cancel()" );}
     var form = $( "#sys_login" );
     if ( !form ) {
-        return messagebox( { icon : "toast.png", text: "Internal error: form missing" } );
+        return ga.msg.box( { icon : "toast.png", text: "Internal error: form missing" } );
     }
     form.append( '<input type="hidden" name="_cancel" class="toclear">' );
     do_sys_login_submit( form );
@@ -720,10 +720,10 @@ ga.admin.ajax = function ( cmd, name, id, manageid, jid ) {
             // required to remove the shebang (#!) 1st line of the script
             data = JSON.parse( data.replace( /^\s*[\r\n]/gm, '' ).split( /\r?\n/)[1]);
             if ( data[ 'success' ] == "true" ) {
-                // messagebox( { icon : "information.png",
+                // ga.msg.box( { icon : "information.png",
                 // text : "system user management command returned success" } );
             } else {
-                messagebox( { icon : "toast.png",
+                ga.msg.box( { icon : "toast.png",
                               text : data[ 'error' ] ? data[ 'error' ] : "unknown error"  } );
             }
             __~debug:admin{console.dir( data );}
@@ -733,13 +733,13 @@ ga.admin.ajax = function ( cmd, name, id, manageid, jid ) {
         })
         .fail( function( xhr, status, errorThrown ) {
             __~debug:admin{console.log( "ga.admin.ajax() .getJSON fail: " + errorThrown )};
-            messagebox( { icon : "toast.png",
+            ga.msg.box( { icon : "toast.png",
                           text : "Error: system user management backend command failed to run: " + errorThrown } );
         });
 }
 
 ga.admin.ajax.remove = function ( cmd, name, id, manageid ) {
-    messagebox( {
+    ga.msg.box( {
         icon  : "admin.png"
         ,text  : "Are you sure you want to permanently remove this user, all of their job history and their stored data?"
         ,buttons : [
@@ -758,7 +758,7 @@ ga.admin.ajax.remove = function ( cmd, name, id, manageid ) {
 }
 
 ga.admin.ajax.group = function ( cmd, name, id, manageid, users_group ) {
-    messagebox( {
+    ga.msg.box( {
         icon  : "admin.png"
         ,text  : 
             'Enter the group for user ' + 
@@ -804,10 +804,10 @@ ga.admin.ajax.group.cb = function ( cmd, name, id, manageid, form ) {
             // required to remove the shebang (#!) 1st line of the script
             data = JSON.parse( data.replace( /^\s*[\r\n]/gm, '' ).split( /\r?\n/)[1]);
             if ( data[ 'success' ] == "true" ) {
-                // messagebox( { icon : "information.png",
+                // ga.msg.box( { icon : "information.png",
                 // text : "system user management command returned success" } );
             } else {
-                messagebox( { icon : "toast.png",
+                ga.msg.box( { icon : "toast.png",
                               text : data[ 'error' ] ? data[ 'error' ] : "unknown error"  } );
             }
             __~debug:admin{console.dir( data );}
@@ -817,7 +817,7 @@ ga.admin.ajax.group.cb = function ( cmd, name, id, manageid, form ) {
         })
         .fail( function( xhr, status, errorThrown ) {
             __~debug:admin{console.log( "ga.admin.ajax.group.cb() .getJSON fail: " + errorThrown )};
-            messagebox( { icon : "toast.png",
+            ga.msg.box( { icon : "toast.png",
                           text : "Error: system user management backend command failed to run: " + errorThrown } );
         });
 }
@@ -837,7 +837,7 @@ ga.admin.ajax.jobview = function ( cmd, name, id, manageid ) {
 
 ga.admin.ajax.cancel = function ( name, id, manageid, module, jid ) {
     __~debug:admin{console.log( "ga.admin.ajax.cancel( " + name + " , " + id + " , " + manageid + " , " + module + " , " + jid + " )" );}
-    messagebox( {
+    ga.msg.box( {
         icon  : "admin.png"
         ,text  : "Are you sure you want to cancel this '" + module + "' job belonging to " + name + " ?"
         ,buttons : [

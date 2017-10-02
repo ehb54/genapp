@@ -91,7 +91,7 @@ __~debug:altfile{   console.log( "ga.altfile.button.call  module:" + module + " 
    if ( ga.altfile.bdata[ module ][ id ].call.length ) {
        tmp = $( '#_state' ).data( '_logon' );
        if ( !tmp || !tmp.length ) {
-           messagebox( {
+           ga.msg.box( {
                icon : "warning.png",
                text : "You must login to browse server information",
                buttons : [

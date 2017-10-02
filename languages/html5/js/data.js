@@ -316,7 +316,7 @@ __~debug:values{        console.log( "ga.data.update() atomic structure jmol scr
                     if ( !/^_fs_/.test( k ) || !ga.data.nofcrefresh[ mod ] ) {
                         if ( k == "_message" )
                         { 
-                            messagebox( v );
+                            ga.msg.box( v );
                         }
                         if ( k == "_question" )
                         { 

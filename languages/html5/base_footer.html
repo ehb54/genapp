@@ -148,7 +148,7 @@ function closeModal3()
 __~debug:msg{       console.log( "popping message" );}
        var m = ws.shift();
        $( "#_state" ).data( "__msgs", ws );
-       messagebox( m, 1 );
+       ga.msg.box( m, 1 );
    }
    __~usesplash{setTimeout(function() { splashlogin() }, 500 );}
 }
@@ -205,14 +205,14 @@ $( "#login" ).click( function() {
 });
 
 
-     __~register:globuslogin{ function my_globus_call(code) {$.ajax({ type: 'POST', data: {'register':code}, url:'util/globusoauth.php', cache: false }).done( function(data){window.location.href = data;	}).fail( function(){ messagebox( { icon: "toast.png", text: "There was an error, Globus!", buttons : [ { id : "ok", label : "OK" } ] });  return; }); } }
+     __~register:globuslogin{ function my_globus_call(code) {$.ajax({ type: 'POST', data: {'register':code}, url:'util/globusoauth.php', cache: false }).done( function(data){window.location.href = data;	}).fail( function(){ ga.msg.box( { icon: "toast.png", text: "There was an error, Globus!", buttons : [ { id : "ok", label : "OK" } ] });  return; }); } }
    
-   __~register:googlelogin{  function my_google_call(code) { $.ajax({ type: 'POST', data: {'register':code}, url:'util/googleoauth.php', cache: false }).done( function(data){  window.location.href = data; }).fail ( function(){  messagebox( { icon: "toast.png", text: "There was an error, Google!", buttons : [ { id : "ok", label : "OK" } ] });  return; });  } }
+   __~register:googlelogin{  function my_google_call(code) { $.ajax({ type: 'POST', data: {'register':code}, url:'util/googleoauth.php', cache: false }).done( function(data){  window.location.href = data; }).fail ( function(){  ga.msg.box( { icon: "toast.png", text: "There was an error, Google!", buttons : [ { id : "ok", label : "OK" } ] });  return; });  } }
 
 
 __~register:globuslogin{ if ( ga.urlparams("weloggedinglobus") ) { var username_globus = ga.urlparams("username_split"); var email_globus = ga.urlparams("email"); if ( ga.urlparams("register") ) { $( "#configbody" ).load( "etc/sys_register_globus.html" ); $( ".modalDialog" ).addClass( "modalDialog_on" ); window.history.replaceState( {}, "__title__ __version__", "/__application__/" );  } else { $( "#configbody" ).load( "etc/sys_login_globus.html" ); $( ".modalDialog" ).addClass( "modalDialog_on" );  window.history.replaceState( {}, "__title__ __version__", "/__application__/" ); } } }
 
-__~register:globuslogin{ if ( ga.urlparams("sourcefailed") ) { messagebox( { icon: "toast.png", text: "Invalid source of registration! <br> Please use allowed Globus credentials to register/login" } );} }
+__~register:globuslogin{ if ( ga.urlparams("sourcefailed") ) { ga.msg.box( { icon: "toast.png", text: "Invalid source of registration! <br> Please use allowed Globus credentials to register/login" } );} }
 
 
 __~register:googlelogin{ if ( ga.urlparams("weloggedingoogle") ) { var username_google = ga.urlparams("username"); var email_google = ga.urlparams("email"); if ( ga.urlparams("register") ) { $( "#configbody" ).load( "etc/sys_register_google.html" ); $( ".modalDialog" ).addClass( "modalDialog_on" ); window.history.replaceState( {}, "__title__ __version__", "/__application__/" );  } else { $( "#configbody" ).load( "etc/sys_login_google.html" ); $( ".modalDialog" ).addClass( "modalDialog_on" );  window.history.replaceState( {}, "__title__ __version__", "/__application__/" ); } } }
@@ -257,80 +257,6 @@ $( "#register" ).click( function() {
    $( "#configbody" ).load( "etc/sys_register.html", function() { ga.apprun=1; } );
    $( ".modalDialog" ).addClass( "modalDialog_on" );
 });
-
-function messagebox( m, force, mnum )
-{
-   mnum = mnum || 3;
-
-   if ( !force )
-   {
-      if ( $( ".modalDialog" + mnum ).hasClass( "modalDialog" + mnum + "_on" ) )
-      {
-          var ws = $( "#_state" ).data( "__msgs" );
-          if ( !ws || (ws && ( Object.prototype.toString.call( ws ) != '[object Array]' ) ) )
-          {
-             ws = [];
-          }
-          ws.push( m );
-          $( "#_state" ).data( "__msgs",  ws );
-          return;
-      }
-   }
-   if ( m.icon )
-   {
-      $( "#configbody" + mnum ).html( "<table style='width:95%;vertical-align:middle'><tr><td style='width:10%'><img src='pngs/" + m.icon + "' width=40px></td><td style='text-align:center'>" + m.text + "</td></tr></table>" );
-   } else {
-      $( "#configbody" + mnum ).html( "<center>" + m.text + "</center>" );
-   }
-
-   if ( m.buttons ) {
-      tmp = "<center><table><tr>";
-      for ( i = 0; i < m.buttons.length; i++ ) {
-          tmp = tmp + '<td><button id="_mbb_' + m.buttons[ i ].id + '">' + m.buttons[ i ].label + '</button></td>';
-      }
-      tmp = tmp + "</tr></table><center>";
-__~debug:mb{      console.log( 'm buttons' + tmp );}
-      $( "#configbody" + mnum ).append( tmp );
-      for ( i = 0; i < m.buttons.length; i++ ) {
-          if ( m.buttons[ i ].cb ) {
-              if ( m.buttons[ i ].adata ) {
-                  switch( m.buttons[ i ].adata.length ) {
-                  case 2 :
-                      $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ] ); closeaModal( mnum ); } );
-                      break;
-                  case 3 :
-                      $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ],  event.data.adata[ 2 ]  ); closeaModal( mnum ); } );
-                      break;
-                  case 4 :
-                      $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ],  event.data.adata[ 2 ], event.data.adata[ 3 ] ); closeaModal( mnum ); } );
-                      break;
-                  case 5 :
-                      $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ],  event.data.adata[ 2 ], event.data.adata[ 3 ],  event.data.adata[ 4 ] ); closeaModal( mnum ); } )
-                      break;
-                  case 6 :
-                      $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ],  event.data.adata[ 2 ], event.data.adata[ 3 ],  event.data.adata[ 4 ], event.data.adata[ 5 ] ); closeaModal( mnum ); } )
-                      break;
-                  default : 
-                      console.warn( "in message box unsupported number of adata arguments " + m.buttons[ i ].adata.length )
-                      break;
-                  }
-              } else {
-                  $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { __~debug:fc{console.log( "you callback clicked " + event.data.label );} event.data.cb( event.data.data ); closeaModal( mnum ); } );
-              }
-          } else {
-              $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { __~debug:fc{console.log( "you clicked " + event.data.label );} closeaModal( mnum ); } );
-          }
-      }
-   }      
-   if ( m.ptext ) {
-      $( "#configbody" + mnum ).append( m.ptext );
-   }
-   if ( m.eval ) {
-      eval( m.eval );
-   }
-   ga.repeats.save();
-   $( ".modalDialog" + mnum ).addClass( "modalDialog" + mnum + "_on" );
-}
 
 function syncState() {
    window.history.replaceState( {}, "__title__ __version__", "/__application__/" );
@@ -455,7 +381,7 @@ __~debug:fc{      console.log( "fs_refresh used " + fsr );}
          if ( !ga.menumodules[ sw[0] + "/" + sw[1] ] ||
               !/^[a-zA-Z0-9_\-\.]+$/.test( sw[0] + sw[1] + sw[2] + sw[3] ) ) {
              console.warn( "bad switch: '" + sw[0] + sw[1] + sw[2] + sw[3] + "'" );
-             messagebox( { icon: "toast.png", text: "Invalid switch parameters" } );
+             ga.msg.box( { icon: "toast.png", text: "Invalid switch parameters" } );
          } else {
 __~debug:switch{         console.log( "switch to " + sw[0] + " module " + sw[1] + " project " + sw[2] + " id " + sw[3] );}
 __~debug:job{         console.log( "ajax/" + sw[0] + ".html" );}
@@ -505,7 +431,7 @@ __~debug:job{            console.log( "now to eval: subMsging( '" + sw[3] + "', 
 __~debug:project{   console.log( "project " + p );}
    var m = s.data( '_message' );
    if ( m ) {
-       messagebox( m );
+       ga.msg.box( m );
        s.removeData( '_message' );
    }
    var fsc = s.data( '_fs_clear' );
@@ -563,7 +489,7 @@ if ( ga.urlparams( "_switch" ) ) {
    ga.startup="";
 }
 if ( "_message" in data ) {
-    messagebox( data[ "_message" ] );
+    ga.msg.box( data[ "_message" ] );
 }
 syncState();
 });
@@ -572,7 +498,7 @@ syncState();
 $( document ).ready( function() { ga.get_sys_status(); });
 
 ga.fc.delete_warn_delete = function( ids ) {
-    messagebox( {
+    ga.msg.box( {
                    icon  : "warning.png",
                    text  : ga.fc.delete_node_message( ids ),
                    ptext : ga.fc.delete_node_message_files( ids ),
@@ -590,7 +516,7 @@ ga.fc.delete_warn_delete = function( ids ) {
 }
 
 ga.fc.delete_error_msg = function( ids, text ) {
-    messagebox( {
+    ga.msg.box( {
                    icon : "warning.png",
                    text : text,
                    buttons : [
@@ -600,7 +526,7 @@ ga.fc.delete_error_msg = function( ids, text ) {
 }
 
 ga.fc.ajax_error_msg = function( text ) {
-    messagebox( {
+    ga.msg.box( {
                    icon : "toast.png",
                    text : text,
                    buttons : [
@@ -639,7 +565,7 @@ splashlogin = function() {
         !$( ".modalDialog2" ).hasClass( "modalDialog2_on" ) &&
         !$( ".modalDialog3" ).hasClass( "modalDialog3_on" )
        ) {
-        messagebox( {
+        ga.msg.box( {
             text : 
             '<h2>__title__ __version__</h2>' +
                 '<table id="splash" width="60%">' +

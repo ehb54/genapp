@@ -222,7 +222,7 @@ ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
 		if ( !reg.test(elements[i]) )
 		{
 		    __~debug:values{ console.log( "Achtung!!! " +  elements[i]); }
-		    messagebox( {
+		    ga.msg.box( {
 			icon : "warning.png",
 			text : "Wrong format of the input file! Input value on the line #" + lineNumberErr + " is not a valid number. Options are: [Integer | Float point number | Number with exponent]. Check your input file",
 			buttons : [
@@ -237,7 +237,7 @@ ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
 		//console.log( "Number: " +  elements[i]);
 		if ( !( ga.value.checkFloatIntOK("#" + ids_array[i], value) ) )
 		{
-		    messagebox( {
+		    ga.msg.box( {
 			icon : "warning.png",
 			text : "Wrong format of the input file! Input value on the line #" + lineNumberErr + " is not a valid number. Options are: [Integer | Float point number | Number with exponent]. Check your input file",
 			buttons : [
@@ -253,7 +253,7 @@ ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
 		}
 		break;	
 	    default:
-		messagebox( {
+		ga.msg.box( {
 		    icon : "warning.png",
 		    text : "Selected input type is currently not supported. Contact the developer",
 		    buttons : [
@@ -377,7 +377,7 @@ ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
 		if ( !reg.test(elements[i]) )
 		{
 		    __~debug:values{ console.log( "Achtung!!! " +  elements[i]); }
-		    messagebox( {
+		    ga.msg.box( {
 			icon : "warning.png",
 			text : "Wrong format of the input file! Input value on the line #" + lineNumberErr + " is not a valid number. Options are: [Integer | Float point number | Number with exponent]. Check your input file",
 			buttons : [
@@ -392,7 +392,7 @@ ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
 		//console.log( "Number: " +  elements[i]);
 		if ( !( ga.value.checkFloatIntOK("#" + ids_array[i], value) ) )
 		{
-		    messagebox( {
+		    ga.msg.box( {
 			icon : "warning.png",
 			text : "Wrong format of the input file! Input value on the line #" + lineNumberErr + " is not a valid number. Options are: [Integer | Float point number | Number with exponent]. Check your input file",
 			buttons : [
@@ -408,7 +408,7 @@ ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
 		}
 		break;	
 	    default:
-		messagebox( {
+		ga.msg.box( {
 		    icon : "warning.png",
 		    text : "Selected input type is currently not supported. Contact the developer",
 		    buttons : [
@@ -448,7 +448,7 @@ ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
 		    if ( !reg.test(elements[i].toLowerCase()) )
 		    {
 			__~debug:values{ console.log( "Achtung!!! " +  elements[i]); }
-			messagebox( {
+			ga.msg.box( {
 			    icon : "warning.png",
 			    text : "Wrong format of the input file! Checkbox input value on the line #" + lineNumberErr + " is not valid. Options are: [1 | 0 | yes | no | true | false | t | f | T | F | y | n | Y | N ]. Check your input file",
 			    buttons : [
@@ -462,7 +462,7 @@ ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
 		    var value = [elements[i]];
 		    if ( !( ga.value.checkFloatIntOK("#" + ids_array[i], value) ) )
 		    {
-			messagebox( {
+			ga.msg.box( {
 			    icon : "warning.png",
 			    text : "Wrong format of the input file! Input value on the line #" + lineNumberErr + " is not a valid number. Options are: [Integer | Float point number | Number with exponent]. Check your input file",
 			    buttons : [
@@ -481,7 +481,7 @@ ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
 		    if ( !reg.test(elements[i]) )
 		    {
 			__~debug:values{ console.log( "Achtung!!! " +  elements[i]); }
-			messagebox( {
+			ga.msg.box( {
 			    icon : "warning.png",
 			    text : "Wrong format of the input file! Input value on the line #" + lineNumberErr + " is not a valid number. Options are: [Integer | Float point number | Number with exponent]. Check your input file",
 			    buttons : [
@@ -492,7 +492,7 @@ ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
 		    }
 		    break;
 		default:
-		    messagebox( {
+		    ga.msg.box( {
 			icon : "warning.png",
 			text : "Selected input type is currently not supported. Contact the developer",
 			buttons : [
@@ -506,7 +506,7 @@ ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
 	}
 	else
 	{
-	    messagebox( {
+	    ga.msg.box( {
 		icon : "warning.png",
 		text : "Wrong format of the input file! Number of parameters is inconsistent with the model chosen. Check your parameter file",
 		buttons : [
@@ -517,7 +517,7 @@ ga.value.processInputfromFiles = function (text, mode, ids_array, mod){
 	}
 	break;
     default:
-	messagebox( {
+	ga.msg.box( {
 	    icon : "warning.png",
 	    text : "Selected file parsing mode is currently not supported. Contact the developer",
 	    buttons : [

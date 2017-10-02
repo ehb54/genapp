@@ -80,7 +80,7 @@ ga.calc.register = function( mod, id, calc ) {
     ga.calc.data[ mod ].calc[ id ].calc = calc;
     ga.calc.data[ mod ].calc[ id ].tokens = ga.calc.tokens( calc );
     if ( ga.calc.data[ mod ].calc[ id ].tokens._error ) {
-        messagebox( { 
+        ga.msg.box( { 
             icon: "toast.png",
             text: "Module field calc internal error: " + ga.calc.data[ mod ].calc[ id ].tokens._error + " in calc field id " + id
         } );
@@ -92,7 +92,7 @@ ga.calc.register = function( mod, id, calc ) {
     ga.calc.data[ mod ].calc[ id ].dependents = ga.calc.dependents( mod, id );
     __~debug:calcdeps{console.log( "ga.calc.register() dependent depth is " + ga.calc.depthofdeps( mod, id ) );}
     if ( ga.calc.depthofdeps( mod, id ) > 99 ) {
-        messagebox( {
+        ga.msg.box( {
             icon: "toast.png",
             text: "Module field calc internal error: maximum recursion depth found in calc field id " + id
         } );
@@ -100,7 +100,7 @@ ga.calc.register = function( mod, id, calc ) {
     }
     ga.calc.data[ mod ].calc[ id ].tree = ga.calc.mktree( ga.calc.data[ mod ].calc[ id ].tokens );
     if ( ga.calc.data[ mod ].calc[ id ].tree._error ) {
-        messagebox( { 
+        ga.msg.box( { 
             icon: "toast.png",
             text: "Module field calc internal error: " + ga.calc.data[ mod ].calc[ id ].tree._error + " in calc field id " + id
         } );
@@ -221,7 +221,7 @@ ga.calc.process = function( mod, id ) {
     var result = ga.calc.evaltree( jQuery.extend( true, {}, ga.calc.data[ mod ].calc[ id ].tree ) );
 
     if ( result._error ) {
-        messagebox( { 
+        ga.msg.box( { 
             icon: "toast.png",
             text: "Module field calc internal error: " + ga.calc.data[ mod ].calc[ id ].tokens._error + " in calc field id " + id
         } );
