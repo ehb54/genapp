@@ -33,7 +33,9 @@ ga.qr.question = function( mod, q ) {
     var etext = "";
     var id;
     var fid;
-    var qbuttons = {};
+    var qbuttons = [];
+    var b;
+    var usedids = {};
 
     // initial error checking
 
@@ -83,6 +85,10 @@ ga.qr.question = function( mod, q ) {
         }
             
         if ( tf.id && tf.type ) {
+            if ( usedids[tf.id] ) {
+                etext += "Duplicate id in _question fields:" + tf.id + ". ";
+            }
+            usedids[tf.id] = 1;
             switch ( tf.type ) {
             case "label" : {
                 qtext += "<tr><td colspan=2>";
@@ -147,19 +153,69 @@ ga.qr.question = function( mod, q ) {
     }
     qtext += '</table></form>';
 
-    if ( etext.length ) {
-        return ga.qr.rerror( q, etext );
-    }
+    if ( q._question.buttons &&
+         q._question.buttons.length ) {
+        for ( i = 0; i < q._question.buttons.length; ++i ) {
+            b = q._question.buttons[ i ];
+            switch ( typeof b ) {
+                case "string" : 
+                bid = b.replace(/\W/g, '').toLowerCase();
+                if ( usedids[bid] ) {
+                    etext += "Duplicate id in _question fields & buttons:" + bid + ". ";
+                }
+                usedids[bid] = 1;
 
-    __~debug:qr{console.log( "qtext:" + qtext );}
+                qbuttons.push( {
+                    id : bid
+                    ,label : b
+                    ,cb    : ga.qr.cb
+                    ,adata : [ q, bid ]
+                } );
+                break;
 
-    ga.qr.openq[ id ] = "open";
-    
-    messagebox( {
-        icon : "question.png"
-        ,text : qtext
-        ,eval : '$("#' + id + '").on("keyup keypress", function(e) { var code = e.keyCode || e.which;  if (code  == 13) { e.preventDefault(); return false; }});'
-        ,buttons : [
+                case "object" : 
+                if ( !b.id ) {
+                    etext += "Buttons array object entry " + ( i + 1 ) + " does not have an id. ";
+                } else {
+                    if ( usedids[b.id] ) {
+                        etext += "Duplicate id in _question fields & buttons:" + b.id + ". ";
+                    }
+                    usedids[b.id] = 1;
+                    if ( b.id != b.id.replace(/\W/g, '') ) {
+                        etext += "Buttons array object entry " + ( i + 1 ) + " id is not pure alphanumeric. ";
+                    }
+                }
+                        
+                if ( !b.label ) {
+                    etext += "Buttons array object entry " + ( i + 1 ) + " does not have a label. ";
+                }
+                if ( !etext.length ) {
+                    qbuttons.push( {
+                        id : b.id
+                        ,label : b.label
+                        ,cb    : ga.qr.cb
+                        ,adata : [ q, b.id ]
+                    } );
+                    break;
+                };
+                break;
+            default :
+                etext += "Buttons array entry " + ( i + 1 ) + " unknown type: " + typeof b + ". ";
+                break;
+            }
+        }
+    } else {
+        bid = "ok";
+        if ( usedids[bid] ) {
+            etext += "Duplicate id in _question fields & buttons:" + bid + ". ";
+        }
+        usedids[bid] = 1;
+        bid = "cancel";
+        if ( usedids[bid] ) {
+            etext += "Duplicate id in _question fields & buttons:" + bid + ". ";
+        }
+        usedids[bid] = 1;
+        qbuttons = [
             { 
                 id    : "ok"
                 ,label : "OK"
@@ -173,6 +229,23 @@ ga.qr.question = function( mod, q ) {
                 ,adata  : [ q, "cancel" ]
             }
         ]
+        ;
+    }
+
+    if ( etext.length ) {
+        return ga.qr.rerror( q, etext );
+    }
+
+    __~debug:qr{console.log( "qtext:" + qtext );}
+
+
+    ga.qr.openq[ id ] = "open";
+
+    messagebox( {
+        icon : "question.png"
+        ,text : qtext
+        ,eval : '$("#' + id + '").on("keyup keypress", function(e) { var code = e.keyCode || e.which;  if (code  == 13) { e.preventDefault(); return false; }});'
+        ,buttons : qbuttons
     } );
 }
 
