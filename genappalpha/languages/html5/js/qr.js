@@ -154,6 +154,9 @@ ga.qr.question = function( mod, q ) {
                     qtext += '</tr><tr>';
                 }
                 qtext += '<td><select id="' + tf.id + '"';
+                if ( tf.fontfamily ) {
+                    qtext += ' style="font-family: ' + tf.fontfamily + ';"';
+                }
                 if ( tf.size ) {
                     qtext += ' size=' + tf.size;
                 }
@@ -163,7 +166,7 @@ ga.qr.question = function( mod, q ) {
                     break;
                 }
                 for ( j = 0; j < tf.values.length; ++j ) {
-                    qtext += '<option value="' + j + '">' + tf.values[ j ] + '</option>';
+                    qtext += '<option value="' + j + '">' + tf.values[ j ].replace( / /g, '\&nbsp' ) + '</option>';
                 }
                 qtext += '</select></td></tr>';
             }
