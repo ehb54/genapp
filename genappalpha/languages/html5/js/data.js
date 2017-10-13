@@ -438,11 +438,11 @@ __~debug:values{        console.log( "ga.data.update() atomic structure jmol scr
     }
     if ( do_close )
     {
-        closeModal();
+        ga.msg.close( 1 );
     }
     if ( do_close2 )
     {
-        closeModal2();
+        ga.msg.close( 2 );
     }
     return retobj;
 };

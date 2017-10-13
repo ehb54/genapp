@@ -127,8 +127,8 @@ ga.altfile.button.simplecall = function( module, id ) {
 }
 
 ga.altfile.button.cb = function() {
-__~debug:altfile{   console.log( "ga.altfile.button.cb" );}
-    closeModal();
+    __~debug:altfile{console.log( "ga.altfile.button.cb" );}
+    ga.msg.close( 1 );
 }
 
 ga.altfile.button.lrfile = function( treeid, module, id ) {
