@@ -151,9 +151,11 @@ ga.qr.question = function( mod, q ) {
                 }
                 qtext += '</td>';
                 if ( tf.size && tf.size > 1 ) {
-                    qtext += '</tr><tr>';
+                    qtext += '</tr><tr><td colspan=2>';
+                } else {
+                    qtext += '<td>';
                 }
-                qtext += '<td><select id="' + tf.id + '"';
+                qtext += '<select id="' + tf.id + '"';
                 if ( tf.fontfamily ) {
                     qtext += ' style="font-family: ' + tf.fontfamily + ';"';
                 }
