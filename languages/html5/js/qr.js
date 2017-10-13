@@ -29,6 +29,7 @@ ga.qr.question = function( mod, q ) {
     var qtext = "";
     var r = {};
     var i;
+    var j;
     var tf;
     var etext = "";
     var id;
@@ -143,8 +144,33 @@ ga.qr.question = function( mod, q ) {
             }
             break;
 
+            case "listbox" : {
+                qtext += "<tr><td>";
+                if ( tf.label ) {
+                    qtext += '<label for="' + tf.id + '" class="highlight">' + tf.label + '</label>';
+                }
+                qtext += '</td>';
+                if ( tf.size && tf.size > 1 ) {
+                    qtext += '</tr><tr>';
+                }
+                qtext += '<td><select id="' + tf.id + '"';
+                if ( tf.size ) {
+                    qtext += ' size=' + tf.size;
+                }
+                qtext += '>';
+                if ( !tf.values ) {
+                    etext += "No values for listbox " + tf.id + ". ";
+                    break;
+                }
+                for ( j = 0; j < tf.values.length; ++j ) {
+                    qtext += '<option value="' + j + '">' + tf.values[ j ] + '</option>';
+                }
+                qtext += '</select></td></tr>';
+            }
+            break;
+
             default : {
-                etext += "Unknown or currently unsupported field:type " + tf.fype + ". ";
+                etext += "Unknown or currently unsupported field:type " + tf.type + ". ";
             }
             break;
 
@@ -311,6 +337,7 @@ ga.qr.cb = function( q, result ) {
         __~debug:qr{console.dir( this );}
         switch ( this.type ) {
             case "text" :
+            case "select-one" : 
             r._response[ this.id ] = this.value;
             break;
             case "checkbox" :
