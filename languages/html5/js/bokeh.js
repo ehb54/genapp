@@ -23,7 +23,7 @@ ga.bokeh.getdata = function( tag, scriptin ) {
         }
         if ( !mode ) {
             mode = 1;
-            result.docs_json = $.parseJSON( lines[ i ].replace( /^\s*var\s+docs_json\s+=\s+/, "" ).replace( /;$/, "" ) );
+            result.docs_json = $.parseJSON( lines[ i ].replace( /^\s*var\s+docs_json\s+=\s+/, "" ).replace( /(^'|('|);$)/g, "" ) );
             __~debug:bokeh{console.log( "ga.bokeh.getdata() found docs_json:");console.dir( result.docs_json );}
             continue;
         }
