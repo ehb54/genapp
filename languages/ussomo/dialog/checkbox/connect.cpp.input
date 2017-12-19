@@ -1,0 +1,6 @@
+void __class__::set___fields:id__()
+{
+   (*parameters)[ "__fields:id__" ] = cb___fields:id__->isChecked() ? "true" : "false";
+   __~fields:repeater{showhide( repeats[ cb___fields:id__ ], cb___fields:id__->isChecked() );}
+}
+

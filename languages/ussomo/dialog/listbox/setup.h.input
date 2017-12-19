@@ -1,0 +1,4 @@
+      QLabel *                                lbl___fields:id__;
+      QListBox *                              lb___fields:id__;
+
+      map < QString, QString >                value_map___fields:id__;

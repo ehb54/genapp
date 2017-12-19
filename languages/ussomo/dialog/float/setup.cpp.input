@@ -1,0 +1,30 @@
+   lbl___fields:id__ = new QLabel( tr( " __fields:label__ :" ), this );
+   lbl___fields:id__->setAlignment( Qt::AlignLeft|Qt::AlignVCenter );
+   lbl___fields:id__->setPalette( QPalette( USglobal->global_colors.cg_label, USglobal->global_colors.cg_label, USglobal->global_colors.cg_label ) );
+   lbl___fields:id__->setFont( QFont( USglobal->config_list.fontFamily, USglobal->config_list.fontSize, QFont::Bold ) );
+
+   background->addWidget( lbl___fields:id__, row, col++ );
+
+   le___fields:id__ = new QLineEdit(this);
+   le___fields:id__->setValidator( new QDoubleValidator( le___fields:id__ ) );
+   __~fields:min{( (QDoubleValidator *)le___fields:id__->validator() )->setBottom( __fields:min__ );}
+   __~fields:max{( (QDoubleValidator *)le___fields:id__->validator() )->setTop( __fields:min__ );}
+   __~fields:decimals{( (QDoubleValidator *)le___fields:id__->validator() )->setDecimals( __fields:decimals__ );}
+   le___fields:id__->setText( parameters->count( "__fields:id__" ) ? (*parameters)[ "__fields:id__" ] : "" );
+   le___fields:id__->setEnabled( true );
+   le___fields:id__->setFont( QFont(USglobal->config_list.fontFamily, USglobal->config_list.fontSize ) );
+   le___fields:id__->setPalette( QPalette( USglobal->global_colors.cg_normal, USglobal->global_colors.cg_normal, USglobal->global_colors.cg_normal ) );
+   connect( le___fields:id__, SIGNAL( textChanged( const QString & ) ), SLOT( update___fields:id__( const QString & )));
+
+   background->addWidget( le___fields:id__, row, col++ );
+
+   if ( colmax < col ) {
+      colmax = col;
+   }
+
+   if ( 0 == __~fields:norow{1}0 ) {
+      row++;
+      col = 0;
+   }
+
+   __~fields:repeat{repeats[ cb___fields:repeat__ ].push_back( lbl___fields:id__ ); repeats[ cb___fields:repeat__ ].push_back( le___fields:id__ );}

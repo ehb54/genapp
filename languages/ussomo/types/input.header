@@ -1,0 +1,31 @@
+void __application__::module_load___menu:id_____menu:modules:id__()
+{
+   delete_widgets_layouts( panel1_sub_widgets, panel1_sub_layouts );
+   panel1_widget_map.clear();
+   panel1_inputs.clear();
+   panel1_outputs.clear();
+   panel1_map_input.clear();
+   panel1_is_input.clear();
+
+   current_module_id = "__menu:modules:id__";
+
+   {
+      QLabel * lbl = new QLabel( "", this );
+      lbl->setMaximumHeight( 12 );
+      lbl->show();
+      gl_panel1->addWidget( lbl, 1, 0 );
+      panel1_sub_widgets.push_back( lbl );
+
+   }
+
+   QGridLayout * gl = new QGridLayout( 0, 1, 1, 3, 3 );
+   {
+      QLabel * lbl = new QLabel( "", this );
+      lbl->setMaximumHeight( 12 );
+      lbl->show();
+      gl->addWidget( lbl, 0, 2 );
+      panel1_sub_widgets.push_back( lbl );
+   }
+
+   int ppos = 0; // the base position in the gl_sub_panel
+
