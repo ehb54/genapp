@@ -1,0 +1,38 @@
+Notes for integrating into us-somo
+
+
+Include:
+
+#include "__classlower__.h"
+
+Calling (slot):
+
+to parent include ( private slots: )
+    void call___moduleid__();
+
+   connect( pb___moduleid__ , SIGNAL( clicked() ), SLOT( call___moduleid__() ) );
+
+void ??::call___moduleid__()
+{
+   map < QString, QString > parameters;
+
+   // setup any preliminary params
+
+   __class__ * __moduleid___instance = 
+      new __class__( us_hydrodyn, & parameters, this );
+   US_Hydrodyn::fixWinButtons( __moduleid___instance );
+   __moduleid___instance->exec();
+   delete __moduleid___instance;
+
+   ( ( US_Hydrodyn * ) us_hydrodyn )->gparams[ "buffer_nth_shown" ] =
+      parameters.count( "buffer_nth_shown" ) ? parameters[ "buffer_nth_shown" ] : "";
+
+   if ( !parameters.count( "button" ) ||
+        parameters[ "button" ] != "go"
+   )
+   {
+      return;
+   }
+
+   // process final params
+}
