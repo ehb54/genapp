@@ -1,0 +1,36 @@
+   lbl___fields:id__ = new QLabel( tr( " __fields:label__ :" ), this );
+   lbl___fields:id__->setAlignment( Qt::AlignLeft|Qt::AlignVCenter );
+   lbl___fields:id__->setPalette( QPalette( USglobal->global_colors.cg_label, USglobal->global_colors.cg_label, USglobal->global_colors.cg_label ) );
+   lbl___fields:id__->setFont( QFont( USglobal->config_list.fontFamily, USglobal->config_list.fontSize, QFont::Bold ) );
+
+   background->addWidget( lbl___fields:id__, row, col++ );
+
+   lb___fields:id__ = new QListBox(this);
+   lb___fields:id__->setEnabled( true );
+   lb___fields:id__->setFont( QFont(USglobal->config_list.fontFamily, USglobal->config_list.fontSize ) );
+   lb___fields:id__->setPalette( QPalette( USglobal->global_colors.cg_normal, USglobal->global_colors.cg_normal, USglobal->global_colors.cg_normal ) );
+   connect( lb___fields:id__, SIGNAL( selectionChanged() ), SLOT( set___fields:id__() ) );
+
+   {
+       QStringList qsl = QStringList::split( "~", "__fields:values__" );
+       bool any_selected = false;
+       for ( int i = 0; i < (int) qsl.size(); i += 2 ) {
+           lb___fields:id__->insertItem( qsl[ i ] );
+           value_map___fields:id__[ qsl[ i ] ] = qsl[ i + 1 ];
+           __~fields:default{if ( qsl[ i + 1 ] == "__fields:default__" ) { lb___fields:id__->setSelected( i / 2, true ); any_selected = true; }}
+       }
+       if ( qsl.size() && !any_selected ) {
+           lb___fields:id__->setSelected( 0, true );
+       }
+   }
+
+   background->addWidget( lb___fields:id__, row, col++ );
+   if ( colmax < col ) {
+      colmax = col;
+   }
+   if ( 0 == __~fields:norow{1}0 ) {
+      row++;
+      col = 0;
+   }
+
+   __~fields:repeat{repeats[ cb___fields:repeat__ ].push_back( lbl___fields:id__ ); repeats[ cb___fields:repeat__ ].push_back( lb___fields:id__ );}

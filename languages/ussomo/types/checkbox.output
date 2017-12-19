@@ -1,0 +1,23 @@
+   {
+      QLabel * lbl = new QLabel( "__fields:label__  ", this );
+      lbl->setMaximumHeight( 22 );
+      lbl->show();
+      gl->addWidget( lbl, ppos, 0 );
+      panel1_sub_widgets.push_back( lbl );
+
+      QCheckBox * cb = new QCheckBox( this );
+      cb->setMaximumHeight( 22 );
+      cb->setPalette( *palette_cb );
+      cb->setEnabled( false );
+      cb->show();
+      gl->addWidget( cb, ppos, 1 );
+      panel1_sub_widgets.push_back( cb );
+
+      QString id = "__moduleid__:__fields:id__";
+      global_data_types[ id ] = "cb";
+      panel1_widget_map[ id ] = cb;
+      panel1_outputs.push_back( id );
+      save_default_value( id );
+
+      ppos++;
+   }

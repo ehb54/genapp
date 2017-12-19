@@ -1,0 +1,9 @@
+void __class__::set___fields:id__()
+{
+   (*parameters)[ "__fields:id__" ] =
+                  value_map___fields:id__.count( lb___fields:id__->currentText() ) ?
+                  value_map___fields:id__[ lb___fields:id__->currentText() ] :
+                  ""
+                  ;
+}
+

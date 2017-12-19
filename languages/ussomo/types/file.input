@@ -1,0 +1,30 @@
+   {
+      QLabel * lbl = new QLabel( "__fields:label__  ", this );
+      lbl->setMaximumHeight( 22 );
+      lbl->show();
+      gl->addWidget( lbl, ppos, 0 );
+      panel1_sub_widgets.push_back( lbl );
+
+      mQPushButton * pb = new mQPushButton( this );
+      pb->setText( "Browse..." );
+      pb->setMaximumHeight( 22 );
+      pb->show();
+      gl->addWidget( pb, ppos, 1 );
+      panel1_sub_widgets.push_back( pb );
+      connect( pb, SIGNAL( clicked() ), this, SLOT( browse___moduleid_____fields:id__() ) );
+
+      QLabel * lbl2 = new QLabel( "", this );
+      pb->mbuddy = lbl2;
+      lbl2->setMaximumHeight( 22 );
+      lbl2->show();
+      gl->addWidget( lbl2, ppos, 2 );
+      panel1_sub_widgets.push_back( lbl2 );
+
+      QString id = "__moduleid__:__fields:id__";
+      global_data_types[ id ] = "file__~fields:multiple{s}";
+      panel1_widget_map[ id ] = pb;
+      panel1_inputs.push_back( id );
+      save_default_value( id );
+
+      ppos++;
+   }

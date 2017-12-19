@@ -1,0 +1,11 @@
+#!/bin/bash -x
+
+if [[ -z "${ULTRASCAN}" ]]; then
+    echo "error ULTRASCAN environment variable must be defined"
+    exit
+fi
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+cp $DIR/__classlower__.h $ULTRASCAN/develop/include/
+cp $DIR/__classlower__.cpp $ULTRASCAN/develop/src/

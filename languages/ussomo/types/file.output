@@ -1,0 +1,23 @@
+   {
+      QLabel * lbl = new QLabel( "__fields:label__  ", this );
+      lbl->setMaximumHeight( 22 );
+      lbl->show();
+      gl->addWidget( lbl, ppos, 0 );
+      panel1_sub_widgets.push_back( lbl );
+
+      mQLabel * lbl2 = new mQLabel( "", this );
+      
+      lbl2->setMaximumHeight( 22 );
+      lbl2->show();
+      gl->addWidget( lbl2, ppos, 1 );
+      panel1_sub_widgets.push_back( lbl2 );
+      connect( lbl2, SIGNAL( pressed() ), this, SLOT( browse___moduleid_____fields:id__() ) );
+
+      QString id = "__moduleid__:__fields:id__";
+      global_data_types[ id ] = "outfile__~fields:multiple{s}";
+      panel1_widget_map[ id ] = lbl2;
+      panel1_outputs.push_back( id );
+      save_default_value( id );
+
+      ppos++;
+   }

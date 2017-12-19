@@ -1,0 +1,5 @@
+void __class__::update___fields:id__( const QString & str )
+{
+   (*parameters)[ "__fields:id__" ] = str;
+}
+

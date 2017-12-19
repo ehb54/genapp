@@ -1,0 +1,6 @@
+void __class__::__fields:id__()
+{
+    (*parameters)[ "button" ] = "__fields:id__";
+    close();
+}
+

@@ -1,0 +1,25 @@
+   cb___fields:id__ = new QCheckBox(this);
+   cb___fields:id__->setText( tr( "__fields:label__ " ) );
+   cb___fields:id__->setChecked( parameters->count( "__fields:id__" ) ? ( (*parameters)[ "__fields:id__" ] == "true" ? true : false ) : false );
+   cb___fields:id__->setEnabled( true );
+   cb___fields:id__->setFont( QFont(USglobal->config_list.fontFamily, USglobal->config_list.fontSize ) );
+   cb___fields:id__->setPalette( QPalette( USglobal->global_colors.cg_normal, USglobal->global_colors.cg_normal, USglobal->global_colors.cg_normal ) );
+   connect( cb___fields:id__, SIGNAL( clicked() ), SLOT( set___fields:id__() ) );
+
+   if ( col == 0 ) {
+       background->addMultiCellWidget( cb___fields:id__, row, row, 0, 1 );
+       col = 2;
+   } else {
+       background->addWidget( cb___fields:id__, row, col++ );
+   }
+
+   if ( colmax < col ) {
+      colmax = col;
+   }
+
+   if ( 0 == __~fields:norow{1}0 ) {
+      row++;
+      col = 0;
+   }
+
+   __~fields:repeat{repeats[ cb___fields:repeat__ ].push_back( cb___fields:id__ );}
