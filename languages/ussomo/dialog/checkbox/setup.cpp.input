@@ -4,6 +4,11 @@
    cb___fields:id__->setEnabled( true );
    cb___fields:id__->setFont( QFont(USglobal->config_list.fontFamily, USglobal->config_list.fontSize ) );
    cb___fields:id__->setPalette( QPalette( USglobal->global_colors.cg_normal, USglobal->global_colors.cg_normal, USglobal->global_colors.cg_normal ) );
+#if QT_VERSION > 0x040000
+   AUTFBACK( cb___fields:id__ );
+   __~fields:help{cb___fields:id__->setToolTip( tr( "__fields:help__" ) );}
+#endif
+
    connect( cb___fields:id__, SIGNAL( clicked() ), SLOT( set___fields:id__() ) );
 
    if ( col == 0 ) {
