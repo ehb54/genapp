@@ -3,6 +3,10 @@
    pb___fields:id__->setPalette( QPalette(USglobal->global_colors.cg_pushb, USglobal->global_colors.cg_pushb_disabled, USglobal->global_colors.cg_pushb_active ) );
    connect( pb___fields:id__, SIGNAL( clicked() ), SLOT( __fields:id__() ) );
 
+#if QT_VERSION > 0x040000
+   __~fields:help{pb___fields:id__->setToolTip( tr( "__fields:help__" ) );}
+#endif
+
    if ( 0 == __~fields:bottomrow{1}0 ) {
        if ( col == 0 ) {
            background->addMultiCellWidget( pb___fields:id__, row, row, 0, 1 );

@@ -3,6 +3,11 @@
    lbl___fields:id__->setPalette( QPalette( USglobal->global_colors.cg_label, USglobal->global_colors.cg_label, USglobal->global_colors.cg_label ) );
    lbl___fields:id__->setFont( QFont( USglobal->config_list.fontFamily, USglobal->config_list.fontSize, QFont::Bold ) );
 
+#if QT_VERSION > 0x040000
+   AUTFBACK( lbl___fields:id__ );
+   __~fields:help{lbl___fields:id__->setToolTip( tr( "__fields:help__" ) );}
+#endif
+
    background->addWidget( lbl___fields:id__, row, col++ );
 
    le___fields:id__ = new QLineEdit(this);
@@ -15,6 +20,10 @@
    le___fields:id__->setFont( QFont(USglobal->config_list.fontFamily, USglobal->config_list.fontSize ) );
    le___fields:id__->setPalette( QPalette( USglobal->global_colors.cg_normal, USglobal->global_colors.cg_normal, USglobal->global_colors.cg_normal ) );
    connect( le___fields:id__, SIGNAL( textChanged( const QString & ) ), SLOT( update___fields:id__( const QString & )));
+
+#if QT_VERSION > 0x040000
+   __~fields:help{le___fields:id__->setToolTip( tr( "__fields:help__" ) );}
+#endif
 
    background->addWidget( le___fields:id__, row, col++ );
 
