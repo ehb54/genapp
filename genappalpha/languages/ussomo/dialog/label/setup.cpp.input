@@ -4,6 +4,11 @@
    lbl___fields:id__->setPalette(QPalette(USglobal->global_colors.cg_frame, USglobal->global_colors.cg_frame, USglobal->global_colors.cg_frame));
    lbl___fields:id__->setFont(QFont( USglobal->config_list.fontFamily, USglobal->config_list.fontSize + 1, QFont::Bold));
 
+#if QT_VERSION > 0x040000
+   AUTFBACK( lbl___fields:id__ );
+   __~fields:help{lbl___fields:id__->setToolTip( tr( "__fields:help__" ) );}
+#endif
+
    col = 1__~fields:extracol{ + __fields:extracol__};
    background->addMultiCellWidget( lbl___fields:id__, row, row, 0, col++ );
    if ( colmax < col ) {

@@ -1,8 +1,14 @@
 void __class__::set___fields:id__()
 {
    (*parameters)[ "__fields:id__" ] =
+#if QT_VERSION < 0x040000
                   value_map___fields:id__.count( lb___fields:id__->currentText() ) ?
                   value_map___fields:id__[ lb___fields:id__->currentText() ] :
+#else
+                 !lb___fields:id__->selectedItems().isEmpty() &&
+                  value_map___fields:id__.count( lb___fields:id__->selectedItems().first()->text() ) ?
+                  value_map___fields:id__[  lb___fields:id__->selectedItems().first()->text() ] :
+#endif
                   ""
                   ;
 }
