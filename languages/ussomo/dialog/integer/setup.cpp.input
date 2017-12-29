@@ -13,7 +13,7 @@
    le___fields:id__ = new QLineEdit(this);
    le___fields:id__->setValidator( new QIntValidator( le___fields:id__ ) );
    __~fields:min{( (QIntValidator *)le___fields:id__->validator() )->setBottom( __fields:min__ );}
-   __~fields:max{( (QIntValidator *)le___fields:id__->validator() )->setTop( __fields:min__ );}
+   __~fields:max{( (QIntValidator *)le___fields:id__->validator() )->setTop( __fields:max__ );}
    le___fields:id__->setText( parameters->count( "__fields:id__" ) ? (*parameters)[ "__fields:id__" ] : "" );
    le___fields:id__->setEnabled( true );
    le___fields:id__->setFont( QFont(USglobal->config_list.fontFamily, USglobal->config_list.fontSize ) );
