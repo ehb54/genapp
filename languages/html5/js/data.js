@@ -4,8 +4,21 @@
 ga.data = {};
 ga.data.nofcrefresh = {};
 
-// apply the data to the screen output, return an object with job_status
+// play with tooltips upon hover
+function showTooltip(x, y, content, bg_color) {
+        $('<div id="rtooltip">' + content + '</div>').css({
+            'position' : 'absolute',
+	    'top'      : y + 5,
+	    'left'     : x + 5,
+            'border'   : '1px solid #181616',
+            'padding'  : '2px',
+            'background-color' : bg_color,
+	    'color'    : 'white'
+        }).appendTo( "body" );
+    }
 
+
+// apply the data to the screen output, return an object with job_status
 
 ga.data.dataURLtoFile = function(dataurl, filename) {
     var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
@@ -122,7 +135,36 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 		    ga.dataplotglobal = v.data;
 		    //console.dir(ga.pl );
 		    
+		    //console.dir(ga.value.get.plot2d.plot_options( htag, v.options ));
+
 		    plot = $.plot( htag, v.data, ga.value.get.plot2d.plot_options( htag, v.options ) );
+
+		    // play with tooltip responce upon hover //////////////////////////////////////////
+		    var previousPoint = null;
+		    $( htag ).bind("plothover", function (event, pos, item) {
+			if (item) {
+			    if (previousPoint != item.dataIndex) {
+				previousPoint = item.dataIndex;
+				
+				$("#rtooltip").remove();
+				var x = item.datapoint[0].toFixed(2),
+				    y = item.datapoint[1].toFixed(2);
+				
+				if (item.series.rdata.length) //specific for Rotdif's 'rdata' for residues...
+				{
+				    showTooltip(item.pageX, item.pageY, "Residue: " + item.series.rdata[item.dataIndex], item.series.color );
+				    //alert(item.series.rdata);
+				}
+			    }
+			}
+			else {
+			    $("#rtooltip").remove();
+			    //$("#tooltip").hide();
+			    previousPoint = null;
+			}
+		    });
+		    // END of tooltip responce /////////////////////////////////////////////////////
+		    
 		} else {
                     plot = $.plot( htag, v,  ga.value.get.plot2d.plot_options( htag ) );
                 }
