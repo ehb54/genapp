@@ -53,6 +53,7 @@ __~fields:changescalex{ <table cellpadding="10"><tr><td><button id="__fields:id_
 
 __~fields:changescaley{ <table cellpadding="10"><tr><td><button id="__fields:id___changescaley" type="button" class="hidden">Change Y-axis Scale: Log/Lin</button></td><td><span id="__fields:id___changescaley_message" style="color:green;"></span></td></tr> </table><script> $( "#__fields:id___changescaley" ).click( function() {console.log("Inside Click: ");  if(ga.plotglobal.yscale=="log"){ga.plotglobal.yscale=""; $("#__fields:id___changescaley_message").html("Y-Lin");}else{ga.plotglobal.yscale="log";$("#__fields:id___changescaley_message").html("Y-Log");} console.dir(ga.plotglobal); var plot=$.plot( "#__fields:id__", ga.dataplotglobal, ga.value.get.plot2d.plot_options("#__fields:id__", ga.plotglobal ) ); });  </script>} 
 
+__~fields:customtooltips{ <script> ga.customtooltips = 1; </script>}
 
 
 <table>

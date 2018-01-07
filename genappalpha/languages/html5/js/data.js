@@ -140,29 +140,32 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 		    plot = $.plot( htag, v.data, ga.value.get.plot2d.plot_options( htag, v.options ) );
 
 		    // play with tooltip responce upon hover //////////////////////////////////////////
-		    var previousPoint = null;
-		    $( htag ).bind("plothover", function (event, pos, item) {
-			if (item) {
-			    if (previousPoint != item.dataIndex) {
-				previousPoint = item.dataIndex;
-				
-				$("#rtooltip").remove();
-				var x = item.datapoint[0].toFixed(2),
+		    if (ga.customtooltips)
+		    {
+			var previousPoint = null;
+			$( htag ).bind("plothover", function (event, pos, item) {
+			    if (item) {
+				if (previousPoint != item.dataIndex) {
+				    previousPoint = item.dataIndex;
+				    
+				    $("#rtooltip").remove();
+				    var x = item.datapoint[0].toFixed(2),
 				    y = item.datapoint[1].toFixed(2);
-				
-				if (item.series.rdata.length) //specific for Rotdif's 'rdata' for residues...
-				{
-				    showTooltip(item.pageX, item.pageY, "Residue: " + item.series.rdata[item.dataIndex], item.series.color );
-				    //alert(item.series.rdata);
+				    
+				    if (item.series.tooltips.length) //specific for Rotdif's 'rdata' for residues...
+				    {
+					showTooltip(item.pageX, item.pageY, item.series.tooltips[item.dataIndex], item.series.color );
+					//alert(item.series.rdata);
+				    }
 				}
 			    }
-			}
-			else {
-			    $("#rtooltip").remove();
-			    //$("#tooltip").hide();
+			    else {
+				$("#rtooltip").remove();
+				//$("#tooltip").hide();
 			    previousPoint = null;
-			}
-		    });
+			    }
+			});
+		    }
 		    // END of tooltip responce /////////////////////////////////////////////////////
 		    
 		} else {
