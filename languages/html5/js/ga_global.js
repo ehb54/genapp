@@ -10,6 +10,7 @@ ga.stagesdefault = {};
 ga.currentstage = 0;
 
 ga.fielderrors = 0;
+ga.customtooltips = 0;
 
 // extend jstree for singleselect & conditional select plugins:
 
