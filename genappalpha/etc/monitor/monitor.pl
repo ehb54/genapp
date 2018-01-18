@@ -19,10 +19,14 @@ $cf = "$mb/config.json";
 
 die "$0: configuration file $cf does not exist\n" if !-e $cf;
 
-$version = "Web monitor 0.6";
+$version = "Web monitor 0.7";
 
 sub read_params {
     print "read_params\n";
+    undef %msgs;
+    undef %failmsgs;
+    undef @check;
+
     my $json = {};
     {
         my $f = $cf;
