@@ -116,6 +116,10 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
             }
             switch ( match.attr( "type" ) )
             {
+	    case "plot3d" :
+		htag = "#" + k;
+		Plotly.plot(k, v.data, v.layout);
+		break;
             case "plot2d" : 
                 __~debug:plottwod{console.log( "ga.data.update v is " );console.dir( v );}
                 htag = "#" + k;

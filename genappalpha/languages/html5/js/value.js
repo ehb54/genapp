@@ -716,7 +716,15 @@ __~debug:values{   console.log( "ga.value.setLastValue() pkg:" + pkg + " tag:" +
                 $( "#global_data" ).data( tl, t.html() ); 
                 $( "#global_data" ).data( dv, t.html() );
                 break;
-            case "plot2d" :
+            case "plot3d" :
+	        console.log("PLOT3D: " + tag);
+	        var tag_s = tag;
+	        tag_s = tag_s.replace(/^#/, "");
+	        console.log("PLOT3D: " + tag_s);
+	        Plotly.newPlot(tag_s,[],{});
+	        Plotly.purge(tag_s);
+	        break;
+	    case "plot2d" :
                __~debug:values{console.log( "ga.value.setLastValue() on undefined plot2d not yet: " + tl );}
                __~debug:plottwod{console.log( "ga.value.setLastValue() on undefined plot2d not yet: " + tl );}
                break;
@@ -864,14 +872,19 @@ __~debug:values{                         console.log( "ga.value.resetDefaultValu
                         break;
           case "plot2d" : 
 __~debug:plottwod{                     console.log( "ga.value.resetDefaultValue() plot2d" );}
+	                console.log( "ga.value.resetDefaultValue() plot2d, t is " + tag );
                         $( "#global_data" ).data( pkg + ":" + tag + ":last_value", [[]] );
                         ga.value.clear.plot2d( tag );
-                        t.plot( [[]], ga.value.get.plot2d.plot_options( tag ) ); break;
+                        t.plot( [[]], ga.value.get.plot2d.plot_options( tag ) ); 
                         break;
           case "bokeh" :
               __~debug:bokeh{console.log( "reset default value for bokeh" );}
               ga.bokeh.reset( pkg, tag.replace( /^#/, "" ) );
               break;
+	  case "plot3d" :
+	      console.log( "reset default value for plot3d: " + tag );
+	      Plotly.purge(tag.replace( /^#/, "" ));
+	      break;
           case "image" : 
           __~debug:image{console.log( "reset default value for image" );}
           t.html("");

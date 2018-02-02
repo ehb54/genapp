@@ -491,6 +491,7 @@
                         {  "add/js/jquery-1.11.0.min.js"            : "once" }
                         ,{ "add/js/spectrum.min.js"                 : "once" }
                         ,{ "add/js/jq.flot-0.8.3+eb+nav+sel.min.js" : "once" }
+			,{ "add/js/plotly-latest.min.js"            : "once" }
                         ,{ "add/js/uuid.min.js"                     : "once" }
                         ,{ "add/js/autobahn.min.js"                 : "once" }
                         ,{ "add/js/jsmol.min.js"                    : "once" }
