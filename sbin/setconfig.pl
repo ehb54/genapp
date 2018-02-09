@@ -233,12 +233,14 @@ if ( $$json{'hostip'} ) {
     $$json{ 'hostip' }         = $hostip;
 }
 
-$hostname = `host $hostip` if !$hostname;
-chomp $hostname;
-if ( $hostname =~ /(not found|no PTR record)/ ) {
-    $hostname = $hostip;
-} else {
-    ( $hostname ) = $hostname =~ /\s+(\S+)\.$/;
+if ( !$hostname ) {
+    $hostname = `host $hostip`;
+    chomp $hostname;
+    if ( $hostname =~ /(not found|no PTR record)/ ) {
+        $hostname = $hostip;
+    } else {
+        ( $hostname ) = $hostname =~ /\s+(\S+)\.$/;
+    }
 }
 
 if ( $$json{'hostname'} ) {
