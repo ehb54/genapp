@@ -254,6 +254,21 @@ if ( $$json{'hostname'} ) {
     $$json{ 'hostname' }         = $hostname;
 }
 
+$hostname = $$json{ 'hostname' };
+# verify hostname matches ip address
+{
+    my $nametoip;
+    if ( `which dig 2> /dev/null` ) {
+        $nametoip = `dig +short $hostname`;
+    } else {
+        $nametoip = `host $hostname | awk '/has address/ { print \$4 }'`;
+    }
+    chomp $nametoip;
+    if ( $nametoip ne $hostip ) {
+        $notice .= "WARNING: the ip address from a DNS lookup [$nametoip] of the hostname [$hostname] does not match the hostip [$hostip]. This will create issues unless you really understand what you are doing!\n";
+    }
+}
+
 my $wssport   = $https ? 443 : 80;
 my $wsport    = 30777;
 my $zmqport   = 30778;
