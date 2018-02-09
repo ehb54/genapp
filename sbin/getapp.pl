@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-$svnbase = "gw105.iu.xsede.org/svn/base";
+$svnbase = "svn.genapp.rocks/svn/base";
 
 $|=1;
 

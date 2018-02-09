@@ -12,7 +12,7 @@ $debug++;
     "ubuntu", "/home", "/var/www/html",   "/opt/genapp/__app__/output/html5",        "/opt/genapp",        "genapp", 1, " echo '' | mkpasswd -s | cut -c1-9",
     );
 
-$svndemo = "gw105.iu.xsede.org/svn/base/demo";
+$svndemo = "svn.genapp.rocks/svn/base/demo";
 
 # end configuration
 
