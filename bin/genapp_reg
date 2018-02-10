@@ -1,0 +1,156 @@
+#!/usr/bin/perl
+
+# genappconfig
+# $debug++;
+my $gb   = $ENV{ "GENAPP" } || die "$0: environment variable GENAPP must be set\n";
+
+$notes = "usage: $0
+adds app name and cwd to $gb/etc/apps.json
+";
+
+print "perl version is $]\n" if $debug;
+print "command is: $0 @ARGV\n" if $debug;
+
+if ( $] < 5.018 ) {
+    if ( -e "$gb/perl/bin/perl" ) {
+        $pv =`$gb/perl/bin/perl -e 'print \$];'`;
+        if ( $pv >= 5.018 ) {
+            print "will run new version\n" if $debug;
+            unshift @ARGV, $0;
+            exec( "$gb/perl/bin/perl", @ARGV );
+        } else {
+            die "$gb/perl/bin/perl exists, but not a correct version of perl (needs a minimum of 5.18)\n";
+        }
+    } else {
+        die "you need to install a version of perl >= 5.18 in $gb/perl\n
+there is a script $gb/sbin/install-perl-stable to do this";
+    }
+}
+
+require "$gb/etc/perl/genapp_util.pl";
+
+# -- read directives.json
+
+my $directivesfile = "directives.json";
+
+{
+    my $f = $directivesfile;
+    if ( -e $f ) {
+        print "reading $f\n" if $debug;
+        open my $fh, $f || die "$0: can not open $f\n";
+        my @ol = <$fh>;
+        close $fh;
+        my @l = grep !/^\s*#/ , @ol;
+            my $l = join '', @l;
+        eval {
+            $dirjson = decode_json( $l );
+            1;
+        } || do {
+            my $e = $@;
+            
+            # figure out line #
+
+            my ( $cp ) = $e =~ /at character offset (\d+) /;
+            my $i;
+            my $cpos = $cp;
+            for ( $i = 0; $i < @ol; ++$i ) {
+                next if $ol[ $i ] =~ /^\s*#/;
+                    $cpos -= length( $ol[ $i ] );
+                last if $cpos < 0;
+            }
+
+            my $sline = $i - 2;
+            my $eline = $i + 2;
+            $sline = 0 if $sline < 0;
+            $eline = @ol - 1 if $eline >= @ol;
+
+            print "JSON Error in file $f near these lines:\n";
+            for ( my $j = $sline; $j <= $eline; ++$j ) {
+                my $uj = $j + 1;
+                print "$uj: $ol[$j]";
+                print "$uj: " .'^'x(length($ol[$j])) . "\n" if $j == $i;
+            }
+            die;
+        };
+    } else {
+        die "$0: no $f found in current directory\n";
+    }
+}
+
+# -- read apps.json
+
+my $appsfile = "$gb/etc/apps.json";
+my $appsjson = {};
+{
+    my $f = $appsfile;
+    if ( -e $f ) {
+        print "reading $f\n" if $debug;
+        open my $fh, $f || die "$0: can not open $f\n";
+        my @ol = <$fh>;
+        close $fh;
+        my @l = grep !/^\s*#/ , @ol;
+            my $l = join '', @l;
+        eval {
+            $appsjson = decode_json( $l );
+            1;
+        } || do {
+            my $e = $@;
+            
+            # figure out line #
+
+            my ( $cp ) = $e =~ /at character offset (\d+) /;
+            my $i;
+            my $cpos = $cp;
+            for ( $i = 0; $i < @ol; ++$i ) {
+                next if $ol[ $i ] =~ /^\s*#/;
+                    $cpos -= length( $ol[ $i ] );
+                last if $cpos < 0;
+            }
+
+            my $sline = $i - 2;
+            my $eline = $i + 2;
+            $sline = 0 if $sline < 0;
+            $eline = @ol - 1 if $eline >= @ol;
+
+            print "JSON Error in file $f near these lines:\n";
+            for ( my $j = $sline; $j <= $eline; ++$j ) {
+                my $uj = $j + 1;
+                print "$uj: $ol[$j]";
+                print "$uj: " .'^'x(length($ol[$j])) . "\n" if $j == $i;
+            }
+            die;
+        };
+    }
+}
+
+die "no 'application' in $directivesfile\n" if !$$dirjson{ 'application' };
+$appname = $$dirjson{ 'application' };
+
+my $pwd = `pwd -P`;
+chomp $pwd;
+
+$debug++;
+
+my $key = "${appname}:${pwd}";
+
+if ( $$appsjson{ $key } ) {
+    print "$key already in $appsfile\n";
+    exit;
+}
+
+$$appsjson{ $key } = true;
+
+$f = $appsfile;
+
+open  $fh, ">$f" || die "$0: could not open $f for writing\n";
+{
+    my $js = JSON->new;
+    print $fh $js->pretty->encode( $appsjson );
+}
+close $fh;
+`( chgrp genapp $appsfile && chmod g+w $appsfile ) 2> /dev/null`;
+print "added $key to $appsfile\n";
+
+
+
+    
