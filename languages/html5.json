@@ -3,6 +3,7 @@
   "id"          : "html5",
   "description" : "This is our first try at an html5 based genapp module",
   "version"     : 1,
+  "register"    : "genapp_reg",
 # options are for directives in the inputs (one source base can create tweaked versions)
   "options"     : {
                     "imagesinline" : "true"
