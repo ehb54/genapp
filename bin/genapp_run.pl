@@ -1016,6 +1016,11 @@ foreach my $l ( keys %langs )
         }
         undef @post_cmds;
     }
+    if ( $$lang{ 'register' } ) {
+        my $cmd = $$lang{ 'register' };
+        my $res = `$cmd`;
+        print "registering:$res\n" if $debug_main;
+    }
 } # end for language
 
 print '-'x60 . "\nNo changes.\n" . '-'x60 . "\n"      if !$created;
