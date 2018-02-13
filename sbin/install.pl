@@ -356,7 +356,7 @@ update-rc.d mongodb defaults" );
 }
 
 # ------ centos 6.7 & 6.8 -------
-if ( $os eq 'centos' && ( $os_version == 6.7 || $os_version == 6.8 ) ) {
+if ( $os eq 'centos' && ( $os_release == 6.7 || $os_release == 6.8 ) ) {
     # install required modules
 
 #    runcmdsb( "rpm -Uvh http://mirror.webtatic.com/yum/el6/latest.rpm" );
