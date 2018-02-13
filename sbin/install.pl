@@ -204,7 +204,7 @@ if ( $os eq 'ubuntu' ) {
 }
 
 if ( $os eq 'centos' ) {
-    die "only Centos 6.7, 6.8, 6.9, 7.2 and 7.3 currently supported and this appears to be version $os_release\n$sorry" if $os_release !~ /^6\.(7|8|9)$/ && $os_release !~ /^7\.(2|3)/;
+    die "only Centos 6.7, 6.8, 6.9, 7.2, 7.3 and 7.4 currently supported and this appears to be version $os_release\n$sorry" if $os_release !~ /^6\.(7|8|9)$/ && $os_release !~ /^7\.(2|3|4)/;
 }
 
 if ( $os eq 'redhat' ) {
@@ -392,6 +392,7 @@ _EOF
 #_EOF
 " );
 
+    runcmdsb( "scl enable rh-php56 'pear upgrade --force --alldeps http://pear.php.net/get/PEAR-1.10.5'" );
     runcmdsb( "scl enable rh-php56 'pear install --alldeps Mail Mail_Mime Net_SMTP'" );
 
     `sudo killall mongod 2> /dev/null`;
@@ -419,8 +420,8 @@ _EOF
             my $bdir = "/var/www.previous";
             my $ext ;
             while ( -e $bdir ) {
-                $ext++;
-                $bdir = "/var/www.previous-$ext";
+               $ext++;
+               $bdir = "/var/www.previous-$ext";
             }
             $warnings .= "/var/www is backed up in $bdir";
             runcmdsb( "mv /var/www $bdir" );
@@ -504,7 +505,7 @@ service iptables save" );
 }
 
 # ------ centos 7.2 -------
-if ( $os eq 'centos' && $os_release =~ /^7\.(2|3)/ ) {
+if ( $os eq 'centos' && $os_release =~ /^7\.(2|3|4)/ ) {
 
     # install required modules
 
@@ -541,6 +542,7 @@ _EOF
 #_EOF
 " );
 
+    runcmdsb( "scl enable rh-php56 'pear upgrade --force --alldeps http://pear.php.net/get/PEAR-1.10.5'" );
     runcmdsb( "scl enable rh-php56 'pear install --alldeps Mail Mail_Mime Net_SMTP'" );
 
     `sudo killall mongod 2> /dev/null`;
@@ -568,8 +570,8 @@ _EOF
             my $bdir = "/var/www.previous";
             my $ext ;
             while ( -e $bdir ) {
-                $ext++;
-                $bdir = "/var/www.previous-$ext";
+               $ext++;
+               $bdir = "/var/www.previous-$ext";
             }
             $warnings .= "/var/www is backed up in $bdir";
             runcmdsb( "mv /var/www $bdir" );
@@ -740,7 +742,9 @@ _EOF
 #_EOF
 " );
 
+    runcmdsb( "scl enable rh-php56 'pear upgrade --force --alldeps http://pear.php.net/get/PEAR-1.10.5'" );
     runcmdsb( "scl enable rh-php56 'pear install --alldeps Mail Mail_Mime Net_SMTP'" );
+
     `sudo killall mongod 2> /dev/null`;
     runcmdsb( "service mongod start" );
 
@@ -767,8 +771,8 @@ _EOF
             my $bdir = "/var/www.previous";
             my $ext ;
             while ( -e $bdir ) {
-                $ext++;
-                $bdir = "/var/www.previous-$ext";
+               $ext++;
+               $bdir = "/var/www.previous-$ext";
             }
             $warnings .= "/var/www is backed up in $bdir";
             runcmdsb( "mv /var/www $bdir" );
@@ -776,7 +780,7 @@ _EOF
             runcmdsb( "rm /var/www" );
         }
     }
-
+      
     runcmdsb( "ln -sf $rhsclhttpd/var/www /var/www" );
 
     # genapp html5 likes php at /usr/local/bin/php so make sure it exists
