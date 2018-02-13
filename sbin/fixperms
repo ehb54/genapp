@@ -1,0 +1,208 @@
+#!/usr/bin/perl
+
+$svnbase = "svn.genapp.rocks/svn/base";
+
+$|=1;
+
+# $debug++;
+
+my $gb   = $ENV{ "GENAPP" } || die "$0: environment variable GENAPP must be set\n";
+
+print "perl version is $]\n" if $debug;
+print "command is: $0 @ARGV\n" if $debug;
+
+if ( $] < 5.018 ) {
+    if ( -e "$gb/perl/bin/perl" ) {
+        my $pv =`$gb/perl/bin/perl -e 'print \$];'`;
+        if ( $pv >= 5.018 ) {
+            print "will run new version\n" if $debug;
+            unshift @ARGV, $0;
+            exec( "$gb/perl/bin/perl", @ARGV );
+        } else {
+            die "$gb/perl/bin/perl exists, but not a correct version of perl (needs a minimum of 5.18)\n";
+        }
+    } else {
+        die "you need to install a version of perl >= 5.18 in $gb/perl\n
+there is a script $gb/sbin/install-perl-stable to do this";
+    }
+}
+
+require "$gb/etc/perl/genapp_util.pl";
+
+sub runcmd {
+    my $cmd = $_[0];
+    my $out;
+    print "running shell command:\n--------\n$cmd\n--------\n" if $debug;
+    open my $fh, "$cmd |";
+    while ( <$fh> ) {
+        $out .= $_;
+        print;
+    }
+    close $fh;
+    die "$0: command $cmd failed\n" if $?;
+    $out;
+}
+
+sub runcmdsb {
+    my $cmd = $_[0];
+    $cmd =~ s/"/\\\"/g;
+    $cmd = "sudo bash -c \"$cmd\"";
+    print "sd cmd is <$cmd>\n" if $debug;
+    runcmd( $cmd );
+}
+
+# -- read directives.json
+
+my $directivesfile = "directives.json";
+
+{
+    my $f = $directivesfile;
+    if ( -e $f ) {
+        print "reading $f\n" if $debug;
+        open my $fh, $f || die "$0: can not open $f\n";
+        my @ol = <$fh>;
+        close $fh;
+        my @l = grep !/^\s*#/ , @ol;
+            my $l = join '', @l;
+        eval {
+            $dirjson = decode_json( $l );
+            1;
+        } || do {
+            my $e = $@;
+            
+            # figure out line #
+
+            my ( $cp ) = $e =~ /at character offset (\d+) /;
+            my $i;
+            my $cpos = $cp;
+            for ( $i = 0; $i < @ol; ++$i ) {
+                next if $ol[ $i ] =~ /^\s*#/;
+                    $cpos -= length( $ol[ $i ] );
+                last if $cpos < 0;
+            }
+
+            my $sline = $i - 2;
+            my $eline = $i + 2;
+            $sline = 0 if $sline < 0;
+            $eline = @ol - 1 if $eline >= @ol;
+
+            print "JSON Error in file $f near these lines:\n";
+            for ( my $j = $sline; $j <= $eline; ++$j ) {
+                my $uj = $j + 1;
+                print "$uj: $ol[$j]";
+                print "$uj: " .'^'x(length($ol[$j])) . "\n" if $j == $i;
+            }
+            die;
+        };
+    } else {
+        die "$0: no $f found in current directory\n";
+    }
+}
+
+
+die "no languages key defined in directives.json\n" if !$$dirjson{ "languages" };
+
+{
+    my $ishtml;
+    foreach my $k ( @{$$dirjson{ "languages" }} ) {
+        if ( $k eq "html5" ) {
+            $ishtml++;
+        }
+    }
+    die "an html language is not specified in directives.json languages, permission resetting not needed\n" if !$ishtml;
+}
+
+#--- get config.json info
+
+my $cfgjson = {};
+my $cfgjsonf = "$gb/etc/config.json";
+my $cfgjsonnotes = '-'x80 . "\n
+$cfgjsonf contains global system information.
+this is used to setup individual applications values.
+to build a default config.json file
+$gb/sbin/setconfig.pl -pj
+and verify the information is correct.
+Particularly, if the machine is not publically exposed, you probably want to change the hostip and hostname, as it will likely report the public ip of your firewall.
+The full options are listed by
+$gb/sbin/setconfig.pl -h
+You can also manually edit $cfgjsonf
+
+Once you are satisified that the setting are correct 
+you can rerun $0
+" . '-'x80 . "\n"
+;
+
+{
+    my $f = $cfgjsonf;
+    if ( -e $f ) {
+        print "reading $f\n" if $debug;
+        open my $fh, $f || die "$0: can not open $f\n";
+        my @ol = <$fh>;
+        close $fh;
+        my @l = grep !/^\s*#/ , @ol;
+            my $l = join '', @l;
+        eval {
+            $cfgjson = decode_json( $l );
+            1;
+        } || do {
+            my $e = $@;
+            
+            # figure out line #
+
+            my ( $cp ) = $e =~ /at character offset (\d+) /;
+            my $i;
+            my $cpos = $cp;
+            for ( $i = 0; $i < @ol; ++$i ) {
+                next if $ol[ $i ] =~ /^\s*#/;
+                    $cpos -= length( $ol[ $i ] );
+                last if $cpos < 0;
+            }
+
+            my $sline = $i - 2;
+            my $eline = $i + 2;
+            $sline = 0 if $sline < 0;
+            $eline = @ol - 1 if $eline >= @ol;
+
+            print "JSON Error in file $f near these lines:\n";
+            for ( my $j = $sline; $j <= $eline; ++$j ) {
+                my $uj = $j + 1;
+                print "$uj: $ol[$j]";
+                print "$uj: " .'^'x(length($ol[$j])) . "\n" if $j == $i;
+            }
+            die;
+        };
+    } else {
+        my $res = `$gb/sbin/setconfig.pl -pj`;
+        print "$0 : 
+" . '-'x80 . "
+please verify these settings are correct
+" . '-'x80 . "
+$res
+$cfgjsonnotes
+";
+        exit;
+    }
+}
+
+# fix perms
+{
+    my $dir = `pwd`;
+    chomp $dir;
+
+    # $targetdir should be directives:application
+
+    die "no application defined in $dir/directives.json\n" if !$$dirjson{'application'};
+    my $targetdir = $$dirjson{'application'};
+
+    # check if ajax results util are not correct symlinks before removing ... do it individually
+    if ( $$cfgjson{ 'webroot' } ne $$dirjson{'docroot'}{'html5'} ) {
+        die "Error: the config.json webroot [$$cfgjson{'webroot'}] does not match the directives.json docroot:html5 [$$dirjson{'docroot'}{'html5'}].  This must be manually corrected before proceeding.\n";
+    }
+
+    my $cmds = 
+"chgrp -R genapp . && chmod -R g+rw . && find . -type d | xargs chmod g+xs
+";
+    print "Resetting permissions:
+$cmds";
+    runcmdsb( $cmds );
+}
