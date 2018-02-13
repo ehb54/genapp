@@ -414,6 +414,21 @@ _EOF
 
     # scl puts httpd root in $rhsclphp so link it
 
+    if ( -e "/var/www" ) {
+        if ( -d "/var/www" || -f "/var/www" ) {
+            my $bdir = "/var/www.previous";
+            my $ext ;
+            while ( -e $bdir ) {
+                $ext++;
+                $bdir = "/var/www.previous-$ext";
+            }
+            $warnings .= "/var/www is backed up in $bdir";
+            runcmdsb( "mv /var/www $bdir" );
+        } else {
+            runcmdsb( "rm /var/www" );
+        }
+    }
+
     runcmdsb( "ln -sf $rhsclhttpd/var/www /var/www" );
 
     # genapp html5 likes php at /usr/local/bin/php so make sure it exists
@@ -547,6 +562,21 @@ _EOF
     runcmdsb( "ln -sf $rhsclphp/usr/bin/php /usr/bin/php" );
 
     # scl puts httpd root in $rhsclphp so link it
+
+    if ( -e "/var/www" ) {
+        if ( -d "/var/www" || -f "/var/www" ) {
+            my $bdir = "/var/www.previous";
+            my $ext ;
+            while ( -e $bdir ) {
+                $ext++;
+                $bdir = "/var/www.previous-$ext";
+            }
+            $warnings .= "/var/www is backed up in $bdir";
+            runcmdsb( "mv /var/www $bdir" );
+        } else {
+            runcmdsb( "rm /var/www" );
+        }
+    }
 
     runcmdsb( "ln -sf $rhsclhttpd/var/www /var/www" );
 
@@ -731,6 +761,21 @@ _EOF
     runcmdsb( "ln -sf $rhsclphp/usr/bin/php /usr/bin/php" );
 
     # scl puts httpd root in $rhsclphp so link it
+
+    if ( -e "/var/www" ) {
+        if ( -d "/var/www" || -f "/var/www" ) {
+            my $bdir = "/var/www.previous";
+            my $ext ;
+            while ( -e $bdir ) {
+                $ext++;
+                $bdir = "/var/www.previous-$ext";
+            }
+            $warnings .= "/var/www is backed up in $bdir";
+            runcmdsb( "mv /var/www $bdir" );
+        } else {
+            runcmdsb( "rm /var/www" );
+        }
+    }
 
     runcmdsb( "ln -sf $rhsclhttpd/var/www /var/www" );
 
