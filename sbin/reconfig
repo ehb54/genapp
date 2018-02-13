@@ -1,0 +1,216 @@
+#!/usr/bin/perl
+
+# genappconfig
+# $debug++;
+my $gb   = $ENV{ "GENAPP" } || die "$0: environment variable GENAPP must be set\n";
+
+$notes = "usage: $0
+Checks local directory's directives.json
+if it contains target language html5 or if there exists an appconfig.json
+merge global config.json settings into appconfig.json or create new
+";
+
+print "perl version is $]\n" if $debug;
+print "command is: $0 @ARGV\n" if $debug;
+
+if ( $] < 5.018 ) {
+    if ( -e "$gb/perl/bin/perl" ) {
+        $pv =`$gb/perl/bin/perl -e 'print \$];'`;
+        if ( $pv >= 5.018 ) {
+            print "will run new version\n" if $debug;
+            unshift @ARGV, $0;
+            exec( "$gb/perl/bin/perl", @ARGV );
+        } else {
+            die "$gb/perl/bin/perl exists, but not a correct version of perl (needs a minimum of 5.18)\n";
+        }
+    } else {
+        die "you need to install a version of perl >= 5.18 in $gb/perl\n
+there is a script $gb/sbin/install-perl-stable to do this";
+    }
+}
+
+require "$gb/etc/perl/genapp_util.pl";
+
+sub runcmd {
+    my $cmd = $_[0];
+    my $out;
+    print "running shell command:\n--------\n$cmd\n--------\n" if $debug;
+    open my $fh, "$cmd |";
+    while ( <$fh> ) {
+        $out .= $_;
+        print;
+    }
+    close $fh;
+    die "$0: command $cmd failed\n" if $?;
+    $out;
+}
+
+sub runcmdsb {
+    my $cmd = $_[0];
+    $cmd =~ s/"/\\\"/g;
+    $cmd = "sudo bash -c \"$cmd\"";
+    print "sd cmd is <$cmd>\n" if $debug;
+    runcmd( $cmd );
+}
+
+# -- read apps.json
+
+my $appsfile = "$gb/etc/apps.json";
+my $appsjson = {};
+{
+    my $f = $appsfile;
+    if ( -e $f ) {
+        print "reading $f\n" if $debug;
+        open my $fh, $f || die "$0: can not open $f\n";
+        my @ol = <$fh>;
+        close $fh;
+        my @l = grep !/^\s*#/ , @ol;
+            my $l = join '', @l;
+        eval {
+            $appsjson = decode_json( $l );
+            1;
+        } || do {
+            my $e = $@;
+            
+            # figure out line #
+
+            my ( $cp ) = $e =~ /at character offset (\d+) /;
+            my $i;
+            my $cpos = $cp;
+            for ( $i = 0; $i < @ol; ++$i ) {
+                next if $ol[ $i ] =~ /^\s*#/;
+                    $cpos -= length( $ol[ $i ] );
+                last if $cpos < 0;
+            }
+
+            my $sline = $i - 2;
+            my $eline = $i + 2;
+            $sline = 0 if $sline < 0;
+            $eline = @ol - 1 if $eline >= @ol;
+
+            print "JSON Error in file $f near these lines:\n";
+            for ( my $j = $sline; $j <= $eline; ++$j ) {
+                my $uj = $j + 1;
+                print "$uj: $ol[$j]";
+                print "$uj: " .'^'x(length($ol[$j])) . "\n" if $j == $i;
+            }
+            die;
+        };
+    }
+}
+
+$debug++;
+
+for my $k ( keys %$appsjson ) {
+    my ( $app, $path ) = $k =~ /^([^:]+):(.*)$/;
+    print "Checking application $app in directory $path\n";
+    if ( !-e "$path/appconfig.json" ) {
+        print "no $path/appconfig.json, skipping\n" if $debug;
+        next;
+    }
+    if ( !-d $path ) {
+        print "$path does not exist, skipping\n" if $debug;
+        next;
+    }
+        
+    chdir $path || die "could not change to directory $path\n";
+    print `$gb/bin/genapp_mkappconfig`;
+    if ( !$? ) {
+        print "running genapp in $path\n";
+        print `genapp`;
+        if ( $? ) {
+            $errors .=  "Error in trying to run genapp for application $app in directory $path\n";
+        }
+    } else {
+        $errors .=  "Error in trying to run genapp_mkappconfig for application $app in directory $path\n";
+    }
+}
+
+
+if ( $errors ) {
+    print
+        "="x80 . "\n"
+        . "Errors found:\n"
+        . "="x80 . "\n"
+        . $errors
+        . "="x80 . "\n"
+        ;
+} else {
+    #--- get config.json info
+
+    my $cfgjson = {};
+    my $cfgjsonf = "$gb/etc/config.json";
+    my $cfgjsonnotes = '-'x80 . "\n
+$cfgjsonf contains global system information.
+this is used to setup individual applications values.
+to build a default config.json file
+$gb/sbin/setconfig.pl -pj
+and verify the information is correct.
+Particularly, if the machine is not publically exposed, you probably want to change the hostip and hostname, as it will likely report the public ip of your firewall.
+The full options are listed by
+$gb/sbin/setconfig.pl -h
+You can also manually edit $cfgjsonf
+
+Once you are satisified that the setting are correct 
+you can rerun $0
+" . '-'x80 . "\n"
+;
+    my $f = $cfgjsonf;
+    if ( -e $f ) {
+        print "reading $f\n" if $debug;
+        open my $fh, $f || die "$0: can not open $f\n";
+        my @ol = <$fh>;
+        close $fh;
+        my @l = grep !/^\s*#/ , @ol;
+        my $l = join '', @l;
+        eval {
+            $cfgjson = decode_json( $l );
+            1;
+        } || do {
+            my $e = $@;
+            
+            # figure out line #
+
+            my ( $cp ) = $e =~ /at character offset (\d+) /;
+            my $i;
+            my $cpos = $cp;
+            for ( $i = 0; $i < @ol; ++$i ) {
+                next if $ol[ $i ] =~ /^\s*#/;
+                $cpos -= length( $ol[ $i ] );
+                last if $cpos < 0;
+            }
+
+            my $sline = $i - 2;
+            my $eline = $i + 2;
+            $sline = 0 if $sline < 0;
+            $eline = @ol - 1 if $eline >= @ol;
+
+            print "JSON Error in file $f near these lines:\n";
+            for ( my $j = $sline; $j <= $eline; ++$j ) {
+                my $uj = $j + 1;
+                print "$uj: $ol[$j]";
+                print "$uj: " .'^'x(length($ol[$j])) . "\n" if $j == $i;
+            }
+            die;
+        };
+    }
+
+    runcmd( "/etc/init.d/rc.genapp restart" ) if -x "/etc/init.d/rc.genapp";
+    if ( $$cfgjson{ 'webroot' } ) {
+        my $apacherestart;
+        
+        if ( $$cfgjson{'os'} eq "ubuntu"     ) { $apacherestart = "service apache2 restart"; }
+        if ( $$cfgjson{'os'} eq "centos"     ) { $apacherestart = "service httpd24-httpd restart"; }
+        if ( $$cfgjson{'os'} eq "redhat"     ) { $apacherestart = "service httpd24-httpd restart"; }
+        if ( $$cfgjson{'os'} eq "scientific" ) { $apacherestart = "systemctl restart httpd.service"; }
+
+        print "apacherestart is $apacherestart\n";
+        runcmdsb( $apacherestart ) if $apacherestart;
+    }
+        
+    print 
+        "="x80 . "\n"
+        . "reconfig successful\n"
+        . "="x80 . "\n"
+        ;
+}
