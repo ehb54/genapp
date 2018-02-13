@@ -159,7 +159,11 @@ if ( !$os && -e "/etc/redhat-release" ) {
     if ( $check =~ /^CentOS .* release/ ) {
         $os = "centos";
         ( $os_release ) = $check =~ /^CentOS .* release (\S+)/;
-        
+    } else {
+        if ( $check =~ /^CentOS release/ ) {
+            $os = "centos";
+            ( $os_release ) = $check =~ /^CentOS release (\S+)/;
+        }
     }
     if ( $check =~ /^Red Hat Enterprise Linux Server release/ ) {
         $os = "redhat";
