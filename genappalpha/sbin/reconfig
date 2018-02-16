@@ -53,6 +53,10 @@ sub runcmdsb {
     runcmd( $cmd );
 }
 
+$user =  getpwuid($<);
+
+die "user must not be root to run $0\n" if $user eq 'root';
+
 # -- read apps.json
 
 my $appsfile = "$gb/etc/apps.json";
@@ -116,8 +120,10 @@ for my $k ( keys %$appsjson ) {
     chdir $path || die "could not change to directory $path\n";
     print `$gb/bin/genapp_mkappconfig`;
     if ( !$? ) {
+        print "changing ownership to $user:genpp in $path\n";
+        runcmdsb( "chown -R $user:genapp ." );
         print "running genapp in $path\n";
-        print `genapp`;
+        runcmd( "genapp" );
         if ( $? ) {
             $errors .=  "Error in trying to run genapp for application $app in directory $path\n";
         }
@@ -195,7 +201,7 @@ you can rerun $0
         };
     }
 
-    runcmd( "/etc/init.d/rc.genapp restart" ) if -x "/etc/init.d/rc.genapp";
+    runcmd( "sudo /etc/init.d/rc.genapp restart" ) if -x "/etc/init.d/rc.genapp";
     if ( $$cfgjson{ 'webroot' } ) {
         my $apacherestart;
         
