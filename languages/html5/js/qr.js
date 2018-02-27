@@ -167,8 +167,18 @@ ga.qr.question = function( mod, q ) {
                     etext += "No values for listbox " + tf.id + ". ";
                     break;
                 }
-                for ( j = 0; j < tf.values.length; ++j ) {
-                    qtext += '<option value="' + j + '">' + tf.values[ j ].replace( / /g, '\&nbsp' ) + '</option>';
+                if ( tf.returns ) {
+                    if ( tf.returns && tf.returns.length != tf.values.length ) {
+                        etext += "Listbox values length (" + tf.values.length + ") does not equal return length (" + tf.returns.length + ") for listbox " + tf.id + ". ";
+                        break;
+                    }
+                    for ( j = 0; j < tf.values.length; ++j ) {
+                        qtext += '<option value="' + tf.returns[ j ] + '">' + tf.values[ j ].replace( / /g, '\&nbsp' ) + '</option>';
+                    }
+                } else {
+                    for ( j = 0; j < tf.values.length; ++j ) {
+                        qtext += '<option value="' + j + '">' + tf.values[ j ].replace( / /g, '\&nbsp' ) + '</option>';
+                    }
                 }
                 qtext += '</select></td></tr>';
             }
