@@ -128,6 +128,36 @@ ga.qr.question = function( mod, q ) {
             }
             break;
 
+            case "textarea" : {
+                qtext += "<tr><td>";
+                if ( tf.label ) {
+                    qtext += '<label for="' + tf.id + '">' + tf.label + '</label>';
+                }
+                qtext += '</td><td><textarea id="' + tf.id + '"';
+                if ( tf.required ) {
+                    qtext += ' required';
+                }
+                // if ( tf.readonly ) {
+                // always readonly for now
+                qtext += ' readonly';
+                // }
+                if ( tf.fontfamily ) {
+                    qtext += ' style="font-family: ' + tf.fontfamily + ';"';
+                }
+                if ( tf.cols ) {
+                    qtext += ' cols=' + tf.cols + '';
+                }
+                if ( tf.rows ) {
+                    qtext += ' rows=' + tf.rows + '';
+                }
+                qtext += ">";
+                if ( tf['default'] ) {
+                    qtext += tf['default'];
+                }
+                qtext += '</textarea></td></tr>';
+            }
+            break;
+
             case "checkbox" : {
                 qtext += "<tr><td>";
                 if ( tf.label ) {
