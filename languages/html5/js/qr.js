@@ -145,10 +145,10 @@ ga.qr.question = function( mod, q ) {
                     qtext += ' style="font-family: ' + tf.fontfamily + ';"';
                 }
                 if ( tf.cols ) {
-                    qtext += ' cols=' + tf.cols + '';
+                    qtext += ' cols=' + tf.cols;
                 }
                 if ( tf.rows ) {
-                    qtext += ' rows=' + tf.rows + '';
+                    qtext += ' rows=' + tf.rows;
                 }
                 qtext += ">";
                 if ( tf['default'] ) {
@@ -314,6 +314,7 @@ ga.qr.question = function( mod, q ) {
 
     ga.msg.box( {
         icon : "question.png"
+        ,noclose : 1
         ,text : qtext
         ,eval : '$("#' + id + '").on("keyup keypress", function(e) { var code = e.keyCode || e.which;  if (code  == 13) { e.preventDefault(); return false; }});'
         ,buttons : qbuttons

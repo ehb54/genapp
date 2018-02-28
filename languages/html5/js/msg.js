@@ -27,6 +27,17 @@ ga.msg.box = function( m, force, mnum ) {
       $( "#configbody" + mnum ).html( "<center>" + m.text + "</center>" );
    }
 
+   if ( m.noclose ) {
+       if ( $( "#closeModal" + mnum ).hasClass( "close" + mnum ) ) {
+           $( "#closeModal" + mnum ).removeClass( "close" + mnum ).html( "" );
+       } else {
+           if ( mnum < 4 &&
+                !$( "#closeModal" + mnum ).hasClass( "close" + mnum ) ) {
+               $( "#closeModal" + mnum ).addClass( "close" + mnum ).html( "X" );
+           }
+       }
+   }
+
    if ( m.buttons ) {
       tmp = "<center><table><tr>";
       for ( i = 0; i < m.buttons.length; i++ ) {
