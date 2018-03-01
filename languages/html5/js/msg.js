@@ -30,11 +30,11 @@ ga.msg.box = function( m, force, mnum ) {
    if ( m.noclose ) {
        if ( $( "#closeModal" + mnum ).hasClass( "close" + mnum ) ) {
            $( "#closeModal" + mnum ).removeClass( "close" + mnum ).html( "" );
-       } else {
-           if ( mnum < 4 &&
-                !$( "#closeModal" + mnum ).hasClass( "close" + mnum ) ) {
-               $( "#closeModal" + mnum ).addClass( "close" + mnum ).html( "X" );
-           }
+       }
+   } else {
+       if ( mnum < 4 &&
+            !$( "#closeModal" + mnum ).hasClass( "close" + mnum ) ) {
+           $( "#closeModal" + mnum ).addClass( "close" + mnum ).html( "X" );
        }
    }
 
