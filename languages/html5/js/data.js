@@ -118,6 +118,8 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
             {
 	    case "plot3d" :
 		htag = "#" + k;
+		v.layout = $.extend( {}, v.layout, {showlegend: false } );
+		console.log("JSON Options: " + JSON.stringify(v.layout));
 		Plotly.plot(k, v.data, v.layout);
 		break;
             case "plot2d" : 
