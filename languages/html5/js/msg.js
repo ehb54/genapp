@@ -41,7 +41,11 @@ ga.msg.box = function( m, force, mnum ) {
    if ( m.buttons ) {
       tmp = "<center><table><tr>";
       for ( i = 0; i < m.buttons.length; i++ ) {
-          tmp = tmp + '<td><button id="_mbb_' + m.buttons[ i ].id + '">' + m.buttons[ i ].label + '</button></td>';
+          if ( m.buttons[ i ].help ) {
+              tmp = tmp + '<td><button id="_mbb_' + m.buttons[ i ].id + '" class="help_link">' + m.buttons[ i ].label + '</button><span class="help">' + m.buttons[ i ].help + '</span></td>';
+          } else {
+              tmp = tmp + '<td><button id="_mbb_' + m.buttons[ i ].id + '">' + m.buttons[ i ].label + '</button></td>';
+          }
       }
       tmp = tmp + "</tr></table><center>";
        __~debug:mb{console.log( 'm buttons' + tmp );}
@@ -84,6 +88,7 @@ ga.msg.box = function( m, force, mnum ) {
       eval( m.eval );
    }
    ga.repeats.save();
+   resetHoverHelp();
    $( ".modalDialog" + mnum ).addClass( "modalDialog" + mnum + "_on" );
 }
 
