@@ -37,6 +37,9 @@ ga.qr.question = function( mod, q ) {
     var qbuttons = [];
     var b;
     var usedids = {};
+    var ifhelp;
+    var ifhhelp;
+    var helpspan;
 
     // initial error checking
 
@@ -90,22 +93,33 @@ ga.qr.question = function( mod, q ) {
                 etext += "Duplicate id in _question fields:" + tf.id + ". ";
             }
             usedids[tf.id] = 1;
+            
+            if ( tf.help ) {
+                ifhelp = ' class="help_link"';
+                ifhhelp = ' class="highlight help_link"'; 
+                help_span = '<span class="help">' + tf.help + '</span>';
+            } else {
+                ifhelp = '';
+                ifhhelp = ' class="highlight"';
+                help_span = '';
+            }
+
             switch ( tf.type ) {
             case "label" : {
-                qtext += "<tr><td colspan=2>";
+                qtext += '<tr><td colspan=2><label' + ifhelp+ '>';
                 if ( tf.label ) {
                     qtext += tf.label;
                 }
-                qtext += '</td></tr>';
+                qtext += '</label>' + help_span + '</td></tr>';
             }
             break;
 
             case "text" : {
                 qtext += "<tr><td>";
                 if ( tf.label ) {
-                    qtext += '<label for="' + tf.id + '">' + tf.label + '</label>';
+                    qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
                 }
-                qtext += '</td><td><input type="text" id="' + tf.id + '"';
+                qtext += '</td><td><input type="text" id="' + tf.id + '"' + ifhelp;
                 if ( tf.required ) {
                     qtext += ' required';
                 }
@@ -124,16 +138,16 @@ ga.qr.question = function( mod, q ) {
                 if ( tf.size ) {
                     qtext += ' size="' + tf.size + '"';
                 }
-                qtext += '></td></tr>';
+                qtext += '>' + help_span + '</td></tr>';
             }
             break;
 
             case "textarea" : {
                 qtext += "<tr><td>";
                 if ( tf.label ) {
-                    qtext += '<label for="' + tf.id + '">' + tf.label + '</label>';
+                    qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
                 }
-                qtext += '</td><td><textarea id="' + tf.id + '"';
+                qtext += '</td><td><textarea id="' + tf.id + '"' + ifhelp;
                 if ( tf.required ) {
                     qtext += ' required';
                 }
@@ -154,30 +168,30 @@ ga.qr.question = function( mod, q ) {
                 if ( tf['default'] ) {
                     qtext += tf['default'];
                 }
-                qtext += '</textarea></td></tr>';
+                qtext += '</textarea>' + help_span + '</td></tr>';
             }
             break;
 
             case "checkbox" : {
                 qtext += "<tr><td>";
                 if ( tf.label ) {
-                    qtext += '<label for="' + tf.id + '" class="highlight">' + tf.label + '</label>';
+                    qtext += '<label for="' + tf.id + '"' + ifhhelp + '>' + tf.label + '</label>';
                 }
-                qtext += '</td><td><input type="checkbox" id="' + tf.id + '"';
+                qtext += '</td><td><input type="checkbox" id="' + tf.id + '"' + ifhelp;
                 if ( tf.checked ) {
                     qtext += ' checked';
                 }
                 if ( tf.readonly ) {
                     qtext += ' readonly';
                 }
-                qtext += '></td></tr>';
+                qtext += '>' + help_span + '</td></tr>';
             }
             break;
 
             case "listbox" : {
                 qtext += "<tr><td>";
                 if ( tf.label ) {
-                    qtext += '<label for="' + tf.id + '" class="highlight">' + tf.label + '</label>';
+                    qtext += '<label for="' + tf.id + '"' + ifhhelp + '>' + tf.label + '</label>';
                 }
                 qtext += '</td>';
                 if ( tf.size && tf.size > 1 ) {
@@ -185,7 +199,7 @@ ga.qr.question = function( mod, q ) {
                 } else {
                     qtext += '<td>';
                 }
-                qtext += '<select id="' + tf.id + '"';
+                qtext += '<select id="' + tf.id + '"' + ifhelp;
                 if ( tf.fontfamily ) {
                     qtext += ' style="font-family: ' + tf.fontfamily + ';"';
                 }
@@ -210,7 +224,7 @@ ga.qr.question = function( mod, q ) {
                         qtext += '<option value="' + j + '">' + tf.values[ j ].replace( / /g, '\&nbsp' ) + '</option>';
                     }
                 }
-                qtext += '</select></td></tr>';
+                qtext += '</select>' + help_span + '</td></tr>';
             }
             break;
 
@@ -246,6 +260,12 @@ ga.qr.question = function( mod, q ) {
 
                 case "object" : 
                 if ( !b.id ) {
+                    if ( b.label ) {
+                        b.id = b.label.replace(/\W/g, '').toLowerCase();
+                    }
+                }
+                        
+                if ( !b.id ) {
                     etext += "Buttons array object entry " + ( i + 1 ) + " does not have an id. ";
                 } else {
                     if ( usedids[b.id] ) {
@@ -267,6 +287,9 @@ ga.qr.question = function( mod, q ) {
                         ,cb    : ga.qr.cb
                         ,adata : [ q, b.id ]
                     } );
+                    if ( b.help ) {
+                        qbuttons[ qbuttons.length - 1 ].help = b.help;
+                    }
                     break;
                 };
                 break;
