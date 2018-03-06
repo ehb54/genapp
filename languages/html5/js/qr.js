@@ -17,6 +17,7 @@ ga.qr.openq         = {};
 // ----------------------------------------------------------------------------------------------------------
 // ga.qr.question   : entry point for asking a question
 // ga.qr.post       : post reponse via ajax
+// ga.qr.postfiles  : postfiles is called if files (local or remote) present. This function uploads the files.
 // ga.qr.cb         : callback from question
 // ga.qr.rerror     : return error
 // ga.qr.answered   : question response acknowledged (could have been a simultaneously attached session)
@@ -32,6 +33,7 @@ ga.qr.question = function( mod, q ) {
     var j;
     var tf;
     var etext = "";
+    var qeval = "";
     var id;
     var fid;
     var qbuttons = [];
@@ -75,7 +77,6 @@ ga.qr.question = function( mod, q ) {
 
     id = q._uuid + "-" + q._msgid;
 
-
     qtext += '<form id="' + id + '"><table>';
 
     for ( i = 0; i < q._question.fields.length; ++i ) {
@@ -114,12 +115,79 @@ ga.qr.question = function( mod, q ) {
             }
             break;
 
+            // for files we are going to have to have a file server (php) which receives the file for the user and coordinates with
+            // the msg server? or wait until the file is uploaded to send ?
+            // let's get the button up first
+
+            case "file" : {
+                qtext += "<tr><td>";
+                if ( tf.label ) {
+                    qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
+                }
+                qtext += '</td><td><input type="file" id="' + tf.id + '" name="' + tf.id + '[]"' + ifhelp;
+                if ( tf.required ) {
+                    qtext += ' required';
+                }
+                if ( tf.multiple ) {
+                    qtext += ' multiple';
+                }
+                if ( tf.accept ) {
+                    qtext += ' accept="' + tf.accept + '"';
+                }
+                qtext += '>' + help_span + '</td></tr>';
+            }
+            break;
+
+            case "lrfile" : {
+                qtext += "<tr><td>";
+                if ( tf.label ) {
+                    qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
+                }
+                qtext += '</td><td>'
+                    + '<input type="file" id="' + tf.id + '" name="' + tf.id + '[]" data-add="' + tf.id + '_altval"' + ifhelp;
+                if ( tf.required ) {
+                    qtext += ' required';
+                }
+                if ( tf.multiple ) {
+                    qtext += ' multiple';
+                }
+                if ( tf.accept ) {
+                    qtext += ' accept="' + tf.accept + '"';
+                }
+                qtext += '>'
+                    + help_span
+                    + ' or <button id="' + tf.id + '_button" name="' + tf.id + '_button" data-type="lrfile"' + ifhelp 
+                    + '><span class="buttontext">Browse server</span></button>'
+                    + help_span 
+                    + '</td><td><span id="' + tf.id + '_altval"></td></span>'
+                    + '<input type="hidden" name="_selaltval_' + tf.id + '" value="' + tf.id + '_altval"</input>'
+                    + '</td></tr>'
+                ;
+                qeval += 'ga.altfile("' + id + '","' + tf.id + '","' + tf.id + '_altval" );'
+                    + '$( "#' + id + '" ).change( function(){ $( "#' + tf.id + '_altval" ).html( "<i>Local</i>: " + $( "#' + tf.id + '" ).val().replace(/^C:.fakepath./,""));'
+                // + $("#__fields:id___msg").html("");
+                    + '});'
+                    + 'ga.altfile.button( "' + id + '","' + tf.id + '","' + tf.label + '","rfile",function(v){ga.altfile.button.lrfile(v,"' + id + '","' + tf.id + '")});'
+                ;
+                if ( tf.required ) {
+                    qeval += ',"lrfile"';
+                }
+                // qeval += '$("#' + id + '_button").click( function( e ) {e.preventDefault();e.returnValue = false;});';
+                qeval += '$("#' + tf.id + '_button").on("click",function(){return ga.altfile.button.call("' + id + '","' + tf.id + '");});'
+                    // __~fields:setinputfromfile{'ga.value.setInputfromFile("#__fields:id__", "__fields:setinputfromfile__", "__fields:setinputfromfileids__", "__moduleid__");' +}
+                ;
+                console.log( "qeval:" );
+                console.log( qeval );
+            }
+            break;
+
+
             case "text" : {
                 qtext += "<tr><td>";
                 if ( tf.label ) {
                     qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
                 }
-                qtext += '</td><td><input type="text" id="' + tf.id + '"' + ifhelp;
+                qtext += '</td><td><input type="text" id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
                 if ( tf.required ) {
                     qtext += ' required';
                 }
@@ -147,7 +215,7 @@ ga.qr.question = function( mod, q ) {
                 if ( tf.label ) {
                     qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
                 }
-                qtext += '</td><td><textarea id="' + tf.id + '"' + ifhelp;
+                qtext += '</td><td><textarea id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
                 if ( tf.required ) {
                     qtext += ' required';
                 }
@@ -177,7 +245,7 @@ ga.qr.question = function( mod, q ) {
                 if ( tf.label ) {
                     qtext += '<label for="' + tf.id + '"' + ifhhelp + '>' + tf.label + '</label>';
                 }
-                qtext += '</td><td><input type="checkbox" id="' + tf.id + '"' + ifhelp;
+                qtext += '</td><td><input type="checkbox" id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
                 if ( tf.checked ) {
                     qtext += ' checked';
                 }
@@ -199,7 +267,7 @@ ga.qr.question = function( mod, q ) {
                 } else {
                     qtext += '<td>';
                 }
-                qtext += '<select id="' + tf.id + '"' + ifhelp;
+                qtext += '<select id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
                 if ( tf.fontfamily ) {
                     qtext += ' style="font-family: ' + tf.fontfamily + ';"';
                 }
@@ -332,22 +400,21 @@ ga.qr.question = function( mod, q ) {
 
     __~debug:qr{console.log( "qtext:" + qtext );}
 
-
     ga.qr.openq[ id ] = "open";
 
     ga.msg.box( {
         icon : "question.png"
         ,noclose : 1
-        ,text : qtext
-        ,eval : '$("#' + id + '").on("keyup keypress", function(e) { var code = e.keyCode || e.which;  if (code  == 13) { e.preventDefault(); return false; }});'
+        ,text : qtext + '<p></p>'
+        ,eval : '$("#' + id + '").on("keyup keypress", function(e) { var code = e.keyCode || e.which;  if (code  == 13) { e.preventDefault(); return false; }});' + qeval
         ,buttons : qbuttons
-    } );
+        ,ptext : '<p></p>'
+    }, 0, 2 );
 }
 
 ga.qr.cb = function( q, result ) {
-    __~debug:qr{console.log( "ga.qr.cb( data )" );}
+    __~debug:qr{console.log( "ga.qr.cb( q, result )" );}
     __~debug:qr{console.dir( q );}
-    __~debug:qr{console.dir( data );}
 
     var id = q._uuid + "-" + q._msgid;
 
@@ -400,10 +467,20 @@ ga.qr.cb = function( q, result ) {
     if ( q._question && q._question.id ) {
         r._response.id = q._question.id;
     }
+
+    var hasfiles = false;
     // add form values
+    // console.dir( $('#' + id + ' *') );
     $('#' + id + ' *').filter(':input').each(function(){
         //your code here
-        __~debug:qr{console.dir( this );}
+        // __~debug:qr{console.dir( this );}
+        if ( this.dataset &&
+             this.dataset.type == "rfile_val" &&
+             this.value.length ) {
+            console.log( "has rfile" );
+            hasfiles = true;
+        }
+            
         switch ( this.type ) {
             case "text" :
             case "select-one" : 
@@ -414,9 +491,22 @@ ga.qr.cb = function( q, result ) {
                 r._response[ this.id ] = true;
             }
             break;
+            case "file" :
+            __~debug:qr{console.log( "found type file\n")};
+            if ( this.files.length == 0 ) {
+                this.remove();
+            } else {
+                hasfiles = true;
+            }
+            break;
         }                
     });
-    ga.qr.post( r )
+
+    if ( hasfiles ) {
+        ga.qr.postfiles( id, r );
+    } else {
+        ga.qr.post( r )
+    }
 }
 
 ga.qr.answered = function( mod, q ) {
@@ -501,3 +591,76 @@ ga.qr.post = function( r ) {
     ;
 }
 
+ga.qr.postfiles = function( id, r ) {
+    __~debug:qr{console.log( "ga.qr.postfiles( r )" );}
+
+    var id_prog = '#' + id + '_progress';
+    var i;
+
+    ga.msg.box( {
+        icon : "information.png"
+        ,noclose : 1
+        ,text : 'Uploading files:<progress id="' + id + '_progress"></progress>'
+    });
+
+    var formData =  new FormData( $( "#" + id )[ 0 ]); 
+
+    console.log( "formData values" );
+
+    __~debug:qr{for (var key of formData.keys()){console.log( key + " ->" );console.log( formData.getAll( key ));}console.log( "end of formData values" );}
+
+    formData.append( "_window", window.name );
+    formData.append( "_logon", $( "#_state" ).data( "_logon" ) );
+    formData.append( "_uuid", r._uuid );
+
+    $.ajax( {
+        dataType: "json"
+        ,cache:false
+        //             timeout:3000,  // for testing
+        ,type:"POST"
+        ,url:"ajax/sys/uploader.php"
+        ,data: formData
+        ,xhr: function() {  // Custom XMLHttpRequest
+            var myXhr = $.ajaxSettings.xhr();
+            if(myXhr.upload){ // Check if upload property exists
+                myXhr.upload.addEventListener('progress',
+                                              function(e) {
+                                                  if(e.lengthComputable){
+                                                      $( id_prog ).attr({value:e.loaded,max:e.total});
+                                                  } }
+                                              //                     progressHandlingFunction
+                                              , false);
+            }
+            return myXhr;
+        },
+        contentType: false,
+        processData: false
+    } )
+        .success( function( data ) {
+            ga.msg.close( 3 );
+            console.log( "ga.postfiles post done" );
+            if ( data.error && data.error.length ) {
+                delete ga.qr.openq[ id ];
+                ga.qr.rerror( r, "ajax data error: " + data.error );
+            } else {
+                // process data and extract filenames if ok, continue with ga.qr.post()
+                console.log( data );
+                if ( data.files ) {
+                    for ( var i in data.files ) {
+                        if ( data.files.hasOwnProperty( i ) ) {
+                            r[ i ] = data.files[ i ];
+                        }
+                    }
+                }
+                ga.qr.post( r );
+            }
+        })
+        .error( function( error ) {
+            ga.msg.close( 3 );
+            console.log( "ajax error" );
+            console.dir( error );
+            delete ga.qr.openq[ id ];
+            ga.qr.rerror( r, "ajax error: " + error.statusText );
+        });
+    ;
+}

@@ -142,12 +142,10 @@ var ids_array = [],
 	   for ( j in children ) {         
                t = ids_array[i] + "-" + j; // For CHECKBOXES for now... 
 	   	//console.log(t);
-	       //formData.delete( t );
-	       delete formData( t );
+	       formData.delete( t );
 	   }
 	}
-	//formData.delete( ids_array[i] );  
-	delete formData( ids_array[i] );  
+	formData.delete( ids_array[i] );  
     }
     formData.append( "currentstage" , ga.stages[mod][currentstage]  );  
 }

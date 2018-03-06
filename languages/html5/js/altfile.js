@@ -143,7 +143,7 @@ __~debug:altfile{  console.log( "ga.altfile.button.lrfile treeid " + treeid + " 
   $.each( $(treeid).jstree("get_checked", true), function() {
 __~debug:altfile{  console.log( "ga.altfile.button.lrfile() .each this.id " + this.id + " decoded " + $.base64.decode( this.id ) + " this.children.length " + this.children.length );}
      if ( !this.children.length ) {
-       add += '<input type="hidden" name="' + id + '_altval[]" value="' + this.id + '" class="' + hclass + '">';
+       add += '<input type="hidden" name="' + id + '_altval[]" value="' + this.id + '" class="' + hclass + '" data-type="rfile_val">';
          r.push( $.base64.decode( this.id ).substr( 2 ) );
      }
   });
@@ -206,7 +206,7 @@ __~debug:altfile{  console.log( "ga.altfile.button.rfile treeid " + treeid + " m
   $.each( $(treeid).jstree("get_checked", true), function() {
 __~debug:altfile{  console.log( "ga.altfile.button.rfile() .each this.id " + this.id + " decoded " + $.base64.decode( this.id ) + " this.children.length " + this.children.length );}
      if ( !this.children.length ) {
-       add += '<input type="hidden" name="' + id + '_altval[]" value="' + this.id + '" class="' + hclass + '">';
+       add += '<input type="hidden" name="' + id + '_altval[]" value="' + this.id + '" class="' + hclass + '" data-type="rfile_val">';
        r.push( $.base64.decode( this.id ).substr( 2 ) );
      }
   });
