@@ -392,6 +392,13 @@
                    }
                    ,{
                     "frequency"  : "once",
+                    "output"     : "ajax/sys/uploader.php",
+                    "inputs"     : [ 
+                                    { "sys/uploader.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
                     "output"     : "util/test_mail.php",
                     "setexecutable" : "true",
                     "inputs"     : [ 
@@ -467,6 +474,7 @@
                                     ,{ "js/bokeh.js"            : "once" }
                                     ,{ "js/qr.js"               : "once" }
                                     ,{ "js/msg.js"              : "once" }
+                                    ,{ "js/ws.js"               : "once" }
                                    ]
                    }
                    ,{

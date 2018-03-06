@@ -593,131 +593,6 @@ gd = $( "#global_data" );
 gd.data( "_unload", 0 );
 window.onbeforeunload = function (e) { gd.data( "_unload", 1 ); __~debug:ws{console.log( "before unload" );} };
 
-function setMsging()
-{
-__~debug:ws{   console.log( 'setMsging() called' );}
-   var ws = $( "#_state" ).data( "_ws" );
-   if ( !ws )
-   {
-      console.log( "setMsging: ws not defined" );
-      return;
-   }
-
-   var conn = $( '#_state' ).data( "_wssession" );
-   if ( conn && conn.isOpen )
-   {
-      console.log( "setMsging: connection is already open" );
-      return;
-   }
-    
-__~debug:ws{   console.log( 'setMsging trying new session' );}
-   conn = new ab.Session( ws 
-      , function() {            // Once the connection has been established
-          $(".wsstatus").css( "color", "green" );
-__~debug:ws{          console.log( 'setMsging: connection established' );}
-          ga.event( "global", "ws messaging", "connection established" );
-          $( '#_state' ).data( "_wssession", conn );
-__~debug:ws{          console.log('websocket opened');}
-          subMsging( "keepalive", keepalive, "keepalive" );
-        }
-      , function() {            // When the connection is closed
-            $(".wsstatus").css( "color", "red" );
-__~debug:ws{            console.warn('setMsging connection closed');}
-            if ( gd.data( "_unload" ) == 0 ) {
-__~debug:ws{            console.warn('resubing');}
-                return setMsging();
-            } else {
-               console.log( "ws connection closed on unload of page" );
-            }
-//            {
-//              ga.event( "global", "ws messaging", "connection failed" );
-//            ga.msg.box( { icon: "toast.png",
-//                         text: "WebSocket messaging failed to " + ws + "<p>Your firewall may be blocking external access to port " + ws.replace( /^.*:/g, '') + " or the WebSocket server is down.<p>This results in a crippled experience with no messaging.",
-//                         buttons : [ { id : "ok", label : "OK" } ] });
-//            }
-        }
-      , {                       // Additional parameters, we're ignoring the WAMP sub-protocol for older browsers
-            'skipSubprotocolCheck': true,
-            'maxRetries': 60,
-            'retryDelay': 2000
-        }
-    );
-
-__~debug:ws{   console.log( 'setMsging end' );}
-}        
-
-function keepalive() {
-    __~debug:ws{console.log( "keepalive received: " + Date().toLocaleString() );}
-}
-
-subd_msging = [];
-
-function subMsging( vuuid, onevent, moduleid )
-{
-__~debug:msg{   console.log( "subMsging: called " + moduleid + " " + vuuid );}
-   if ( moduleid in subd_msging )
-   {
-__~debug:msg{      console.log( "subMsging: calling unsubMsging for " + moduleid + " " + subd_msging[ moduleid ] );}
-      unsubMsging( subd_msging[ moduleid ], moduleid );
-   }
-__~debug:msg{   console.log( "subMsging: added to subd_msging: " + moduleid + " " + vuuid );}
-   subd_msging[ moduleid ] = vuuid;
-
-   var ws = $( "#_state" ).data( "_ws" );
-   if ( !ws )
-   {
-      console.log( "subMsging: ws not defined" );
-      return;
-   }
-
-   var conn = $( '#_state' ).data( "_wssession" );
-   if ( !conn )
-//   if ( conn && !conn.isOpen )
-   {
-      console.log( "subMsging: connection is not open" );
-      return;
-   }
-
-   conn.subscribe( vuuid, onevent );
-// this doesn't work:
-// .then( function( subscription ) { $( '#_state' ).data( "_wssub:" + vuuid, subscription ) } );
-}
-
-function unsubMsging( vuuid, moduleid )
-{
-__~debug:msg{   console.log( "unsubMsging: called " + moduleid + " " + vuuid );}
-   if ( moduleid in subd_msging )
-   {
-__~debug:msg{      console.log( "unsubMsging: found and deleting " + moduleid + " " + subd_msging[ moduleid ] );}
-      delete subd_msging[ moduleid ];
-   } else {
-__~debug:msg{      console.log( "unsubMsging: not found so not unsubscribing" );}
-      return;
-   }
-   var ws = $( "#_state" ).data( "_ws" );
-   if ( !ws )
-   {
-      console.log( "subMsging: ws not defined" );
-      return;
-   }
-
-   var conn = $( '#_state' ).data( "_wssession" );
-   if ( !conn )
-//   if ( conn && !conn.isOpen )
-   {
-      console.log( "subMsging: connection is not open" );
-      return;
-   }
-
-   conn.unsubscribe( vuuid );
-   $( '#_state' ).data( "_wssub:" + vuuid, null );
-}
-
-function msgGenericEvent( vuuid, data )
-{
-   console.log( 'msgGenericEvent ' + vuuid + ' : ' + data.json);
-}
-
 function getSid()
 {
 $.ajax({
@@ -734,7 +609,7 @@ __~debug:sid{   console.log( "sid ajax:" + k + " => " + v );}
    if ( k == "_ws" ) {
      __~debug:ws{console.log( "getSid:_ws returned " + v );}
      $( "#_state" ).data( "_ws", v );
-     setMsging();
+     ga.ws.set();
    }
    if ( k == "_airavata" ) {
     ga.airavata.data = v;
@@ -809,32 +684,6 @@ __~frontpage:url{ga.frontpageurl = "__frontpage:url__";}
 //}
 
 //ga.fc( "#", fs_test );
-
-function resetHoverHelp() {
-    __~debug:help{console.log("resetHoverHelp()");}
-   if ( $( "#global_data" ).data( "hoverhelp" ) ||
-        $( "#global_data" ).data( "hoverhelp" ) != 0 )
-   {
-       $( ".help_link" ).removeClass( "help_link_on" );
-       $( ".help_link" ).addClass( "help_link_on" );
-   }
-}
-
-function setHoverHelp() {
-    __~debug:help{console.log("setHoverHelp()");}
-    __~debug:help{console.log("setHoverHelp() gd hoverhelp " + $( "#global_data" ).data( "hoverhelp" ) );}
-   if ( !$( "#global_data" ).data( "hoverhelp" ) ||
-        $( "#global_data" ).data( "hoverhelp" ) == 0 )
-   {
-       __~debug:help{console.log("setHoverHelp() turning hoverhelp off");}
-       $( ".help_link" ).removeClass( "help_link_on" );
-       $( "#hoverhelp" ).html( "Help off" );
-   } else {
-       __~debug:help{console.log("setHoverHelp() turning hoverhelp on");}
-       $( ".help_link" ).addClass( "help_link_on" );
-       $( "#hoverhelp" ).html( "Help on" );
-   }
-}
 
 function setLogin() {
    if ( !$( "#global_data" ).data( "login" ) ||

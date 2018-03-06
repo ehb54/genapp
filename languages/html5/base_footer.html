@@ -38,7 +38,7 @@ __~altversion{        // console.log( myHtml );}
         ga.tmp.menuclicked = 1;
         if ( ga.valuen.lastload && $( "#" + ga.valuen.lastload ).is( ":visible" ) ) { ga.valuen.save( ga.valuen.lastload ); }
         ga.loader.show();
-        $( "#panelmain" ).load( "ajax/" + myTag + ".html", function(){ resetHoverHelp(); ga.loader.hide(); } );
+        $( "#panelmain" ).load( "ajax/" + myTag + ".html", function(){ ga.hhelp.reset(); ga.loader.hide(); } );
 __~docsbaseurl{        $( "#tab_docs > a" ).attr( "href", "__docsbaseurl__/" + myTag + "/" + myTag + ".html" );}
         if ( !ga.set.data[ "nohidemenu:" + myTag ] ) { $( "#menuspan" ).trigger( "click" ); };
     } );
@@ -89,10 +89,10 @@ $( "#hoverhelp" ).click(function() {
     __~debug:help{console.log( "hoverhelp clicked() evaluates on");}
        $( "#global_data" ).data( "hoverhelp", 0 );
    }
-   setHoverHelp();
+   ga.hhelp.set();
 });
 $( "#global_data" ).data( "hoverhelp", 1 );
-setHoverHelp();
+ga.hhelp.set();
 
 $( "#config" ).click( function() {
    var s = $( '#_state' );
@@ -267,7 +267,7 @@ function syncState() {
             $( "#menuspan" ).trigger( "click" );
         }
         $( "#global_data" ).data( "hoverhelp", 1 );
-        resetHoverHelp();
+        ga.hhelp.reset();
         if ( hiderestricted ) {
           ga.restricted.hideall();
         }
@@ -334,8 +334,8 @@ __~docsbaseurl{           $( "#tab_docs > a" ).attr( "href", "__docsbaseurl__/" 
                eval( "delete loaded_" + sw[1] );
                $( "#panel_" + sw[ 0 ] ).load( "ajax/" + sw[0] + "/" + sw[1] + ".html",
                    function(){
-__~debug:job{            console.log( "now to eval: subMsging( '" + sw[3] + "', msg_" + sw[1] + ",'" + sw[1] + "');get_results_" + sw[1] + "('" + sw[3] + "',0,1,1);" );}
-                       ga.trytilltrue( "typeof loaded_" + sw[1] + " === 'number'", sw[ 1 ] + "_reset(); subMsging('" + sw[3] + "', msg_" + sw[1] + ",'" + sw[1] + "');get_results_" + sw[1] + "('" + sw[3] + "',0,1,1);", 20, 200 );
+__~debug:job{            console.log( "now to eval: ga.ws.sub( '" + sw[3] + "', msg_" + sw[1] + ",'" + sw[1] + "');get_results_" + sw[1] + "('" + sw[3] + "',0,1,1);" );}
+                       ga.trytilltrue( "typeof loaded_" + sw[1] + " === 'number'", sw[ 1 ] + "_reset(); ga.ws.sub('" + sw[3] + "', msg_" + sw[1] + ",'" + sw[1] + "');get_results_" + sw[1] + "('" + sw[3] + "',0,1,1);", 20, 200 );
                    }); 
                 }); 
              });
@@ -574,6 +574,6 @@ $( '.logo img' ).css( "height", ga.tmp.ftr.logo.toString() + ga.tmp.ftr.unit  );
 $( '.wsstatus' ).css( "bottom", ga.tmp.ftr.ws.toString() + ga.tmp.ftr.unit  );
 $( '.helpwsstatus' ).css( "bottom", ga.tmp.ftr.org ).css( "bottom", "+=3px" );
 ga.tmp.ftr = {};
-resetHoverHelp();</script>
+ga.hhelp.reset();</script>
 </body>
 </html>
