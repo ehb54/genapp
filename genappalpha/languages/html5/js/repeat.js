@@ -379,7 +379,7 @@ ga.repeat.change = function( mod, id, init ) {
     }
     __~debug:pull{else { console.log( "ga.repeat.change() did not find pull json for id " + id );} }
 
-    resetHoverHelp();
+    ga.hhelp.reset();
 }
 
 ga.repeat.map.convert = function( ids_array ) {

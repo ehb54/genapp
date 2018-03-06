@@ -616,7 +616,7 @@ ga.login.verify.change = function () {
     __~debug:loginverify{console.log( "ga.login.verify.change()" );}
     return ga.msg.box( {
         icon : "question.png"
-        ,text : '<center><label  class="header3 ">Change email address</label></center><form id="_changeemail"><table><tr><td><label for="_changeemail1">Email address </label></td><td><input type="email" name="_changeemail1" id="_changeemail1" required size="50" class="help_link"><span class="help">Enter a valid email address.  This will be required if you forget your password.  Otherwise, you will have to create a new account lose access to your projects</span><span id="_changeemail1_msg" class="warning field_msg" > </span></td></tr><tr><td><label for="_changeemail2">Repeat email address </label></td><td><input type="email" name="_changeemail2" id="_changeemail2" required size="50" class="help_link"><span class="help">Enter a valid email address.  This will be required if you forget your password.  Otherwise, you will have to create a new account lose access to your projects</span><span id="_changeemail2_msg" class="warning field_msg" > </span></td></tr></table></form><script>$( "#_changeemail1" ).keypress( function() { $( "#_changeemail1_msg" ).html( "" );});$( "#_changeemail2" ).keypress( function() { $( "#_changeemail2_msg" ).html( "" );});$( "#_changeemail2" ).blur( function() { ga.valid.checkMatch( "#_changeemail2", "#_changeemail1" ); } );setHoverHelp();</script>'
+        ,text : '<center><label  class="header3 ">Change email address</label></center><form id="_changeemail"><table><tr><td><label for="_changeemail1">Email address </label></td><td><input type="email" name="_changeemail1" id="_changeemail1" required size="50" class="help_link"><span class="help">Enter a valid email address.  This will be required if you forget your password.  Otherwise, you will have to create a new account lose access to your projects</span><span id="_changeemail1_msg" class="warning field_msg" > </span></td></tr><tr><td><label for="_changeemail2">Repeat email address </label></td><td><input type="email" name="_changeemail2" id="_changeemail2" required size="50" class="help_link"><span class="help">Enter a valid email address.  This will be required if you forget your password.  Otherwise, you will have to create a new account lose access to your projects</span><span id="_changeemail2_msg" class="warning field_msg" > </span></td></tr></table></form><script>$( "#_changeemail1" ).keypress( function() { $( "#_changeemail1_msg" ).html( "" );});$( "#_changeemail2" ).keypress( function() { $( "#_changeemail2_msg" ).html( "" );});$( "#_changeemail2" ).blur( function() { ga.valid.checkMatch( "#_changeemail2", "#_changeemail1" ); } );ga.hhelp.set();</script>'
         ,buttons : [ 
             { 
                 id     : "_changeemailbutton"
@@ -768,7 +768,7 @@ ga.admin.ajax.group = function ( cmd, name, id, manageid, users_group ) {
             '<input id="sys_musergrp_text" class="help_link" type="text" size="25" value="' + users_group + '">' +
             '<span class="help">Enter a group for this user, then press ok or cancel</span>' +
             '</form>'
-        ,eval  : "resetHoverHelp();$('#sys_musergrp').on('keyup keypress', function(e) { var code = e.keyCode || e.which;  if (code  == 13) { e.preventDefault(); return false; }});"
+        ,eval  : "ga.hhelp.reset();$('#sys_musergrp').on('keyup keypress', function(e) { var code = e.keyCode || e.which;  if (code  == 13) { e.preventDefault(); return false; }});"
         ,buttons : [
             { 
                 id    : "ok"
@@ -883,4 +883,35 @@ ga.extrahidden = function( moduleid ) {
     jqmod.append( html );
     
     delete ga.set.data[ "extrahidden" ][ moduleid ];
+}
+
+ga.hhelp = {};
+
+// resetHoverHelp() -> ga.hhelp.reset()
+// setHoverHelp() -> ga.hhelp.set()
+
+ga.hhelp.reset = function() {
+    __~debug:help{console.log("ga.hhelp.reset()");}
+   if ( $( "#global_data" ).data( "hoverhelp" ) ||
+        $( "#global_data" ).data( "hoverhelp" ) != 0 )
+   {
+       $( ".help_link" ).removeClass( "help_link_on" );
+       $( ".help_link" ).addClass( "help_link_on" );
+   }
+}
+
+ga.hhelp.set = function() {
+    __~debug:help{console.log("ga.hhelp.set()");}
+    __~debug:help{console.log("ga.hhelp.set() gd hoverhelp " + $( "#global_data" ).data( "hoverhelp" ) );}
+   if ( !$( "#global_data" ).data( "hoverhelp" ) ||
+        $( "#global_data" ).data( "hoverhelp" ) == 0 )
+   {
+       __~debug:help{console.log("ga.hhelp.set() turning hoverhelp off");}
+       $( ".help_link" ).removeClass( "help_link_on" );
+       $( "#hoverhelp" ).html( "Help off" );
+   } else {
+       __~debug:help{console.log("ga.hhelp.set() turning hoverhelp on");}
+       $( ".help_link" ).addClass( "help_link_on" );
+       $( "#hoverhelp" ).html( "Help on" );
+   }
 }

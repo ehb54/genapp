@@ -88,7 +88,7 @@ ga.msg.box = function( m, force, mnum ) {
       eval( m.eval );
    }
    ga.repeats.save();
-   resetHoverHelp();
+   ga.hhelp.reset();
    $( ".modalDialog" + mnum ).addClass( "modalDialog" + mnum + "_on" );
 }
 

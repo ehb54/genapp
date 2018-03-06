@@ -59,7 +59,7 @@ __~nojobcontrol{           do_refresh = 0;}
                   clearTimeout( __moduleid___timeout_handler );
                   __moduleid___timeout_handler = "unset";
               }
-              unsubMsging( id, "__moduleid__" );
+              ga.ws.unsub( id, "__moduleid__" );
               eval( __moduleid___done_eval );
            } else {
                if ( !last_timeout || last_timeout < 2000 )
@@ -87,7 +87,7 @@ __~debug:job{        console.log( "get results fail" );}
                clearTimeout( __moduleid___timeout_handler );
                __moduleid___timeout_handler = "unset";
            }
-           unsubMsging( id, "__moduleid__" );
+           ga.ws.unsub( id, "__moduleid__" );
            eval( __moduleid___done_eval );
           } );
     return false;
@@ -106,7 +106,7 @@ $( "#__moduleid___submit" ).click( function( e ) {
        __~debug:jobtimeout{console.log( "Unsetting previous handler uuid " + __moduleid___timeout_handler_uuid );}
        clearTimeout( __moduleid___timeout_handler );
        if ( __moduleid___timeout_handler_uuid ) {
-           unsubMsging( __moduleid___timeout_handler_uuid, "__moduleid__" );
+           ga.ws.unsub( __moduleid___timeout_handler_uuid, "__moduleid__" );
        }
        __moduleid___timeout_handler = "unset";
    }
@@ -277,7 +277,7 @@ __~docrootexecutable{$( this ).append( $("<input>").attr("type", "hidden").attr(
 
     ga.extrahidden( "__moduleid__" );
 
-    subMsging( vuuid, msg___moduleid__, "__moduleid__" );
+    ga.ws.sub( vuuid, msg___moduleid__, "__moduleid__" );
 
     var formData = new FormData($('#__moduleid__')[0]);
     
@@ -362,7 +362,7 @@ __~nojobcontrol{           do_refresh = 0;}
                    clearTimeout( __moduleid___timeout_handler );
                    __moduleid___timeout_handler = "unset";
                }
-               unsubMsging( vuuid, "__moduleid__" );
+               ga.ws.unsub( vuuid, "__moduleid__" );
                eval( __moduleid___done_eval );
            } else {
                __moduleid___timeout_handler = setTimeout( get_results___moduleid__, 2000, vuuid, 2000, 0 );
@@ -382,7 +382,7 @@ __~debug:ajax{           console.log( errorThrown );}
                clearTimeout( __moduleid___timeout_handler );
                __moduleid___timeout_handler = "unset";
            }
-           unsubMsging( vuuid, "__moduleid__" );
+           ga.ws.unsub( vuuid, "__moduleid__" );
            eval( __moduleid___done_eval );
           } );
           } else {
@@ -403,7 +403,7 @@ __moduleid___reset = function() {
        __~debug:jobtimeout{console.log( "Unsetting previous handler uuid " + __moduleid___timeout_handler_uuid );}
        clearTimeout( __moduleid___timeout_handler );
        if ( __moduleid___timeout_handler_uuid ) {
-           unsubMsging( __moduleid___timeout_handler_uuid, "__moduleid__" );
+           ga.ws.unsub( __moduleid___timeout_handler_uuid, "__moduleid__" );
        }
        __moduleid___timeout_handler = "unset";
     }
@@ -431,7 +431,7 @@ $( "#__moduleid___reset" ).click( function() {
    return __moduleid___reset();
 });
 
-setHoverHelp();
+ga.hhelp.set();
 __~resetonload{ga.value.resetDefaultValues( "__moduleid__" );ga.value.resetDefaultValues( "__moduleid___output" ); ga.value.resetDefaultValue( "__moduleid___output", "__moduleid___output_msgs" );}
 __~resetoutonload{ga.value.resetDefaultValues( "__moduleid___output" ); ga.value.resetDefaultValue( "__moduleid___output", "#__moduleid___output_msgs" );}
 eval( input_repeats );

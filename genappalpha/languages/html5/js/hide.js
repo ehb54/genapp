@@ -43,7 +43,7 @@ __~debug:hide{    console.log( "ga.hide.update( " + module + " , " + id + " ) sh
         } 
     }
 // fix up help
-    setHoverHelp();
+    ga.hhelp.set();
 __~debug:hide{    console.log( "ga.hide.update( " + module + " , " + id + " ) returns" );}
 }
 

@@ -34,7 +34,7 @@ ga.captcha = function( cb, form ) {
         __~debug:captchahtml{console.log( msg );}
         ga.msg.box( {
             text  : msg
-            ,eval  : "resetHoverHelp();$('#sys_captcha').on('keyup keypress', function(e) { var code = e.keyCode || e.which;  if (code  == 13) { e.preventDefault(); return false; }});"
+            ,eval  : "ga.hhelp.reset();$('#sys_captcha').on('keyup keypress', function(e) { var code = e.keyCode || e.which;  if (code  == 13) { e.preventDefault(); return false; }});"
             ,buttons : [
                 { 
                     id    : "submit"
