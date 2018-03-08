@@ -119,8 +119,27 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 	    case "plot3d" :
 		htag = "#" + k;
 		v.layout = $.extend( {}, v.layout, {showlegend: false } );
+		
+		ga.plot3dglobal     = v.layout;
+		ga.dataplot3dglobal = v.data;
+		ga.plotted3d        = 0;
+		
 		console.log("JSON Options: " + JSON.stringify(v.layout));
+
+		if ( $( htag  + "_showcollapse" ).length )
+		{
+		    $(htag + "_showcollapse").removeClass( "hidden" );
+		}
+		
+		//if(!ga.showcollapse3d)
+		//{
 		Plotly.plot(k, v.data, v.layout);
+		//}
+		if (ga.showcollapse3d)
+		{
+		    ga.plotted3d=1;
+		    $(  htag  + "_showcollapse" ).trigger( "click" );
+		}
 		break;
             case "plot2d" : 
                 __~debug:plottwod{console.log( "ga.data.update v is " );console.dir( v );}
@@ -145,7 +164,7 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 
 		    plot = $.plot( htag, v.data, ga.value.get.plot2d.plot_options( htag, v.options ) );
 
-		    // play with tooltip responce upon hover //////////////////////////////////////////
+		    // play with tooltip response upon hover //////////////////////////////////////////
 		    if (ga.customtooltips)
 		    {
 			var previousPoint = null;
@@ -172,7 +191,7 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 			    }
 			});
 		    }
-		    // END of tooltip responce /////////////////////////////////////////////////////
+		    // END of tooltip response /////////////////////////////////////////////////////
 		    
 		} else {
                     plot = $.plot( htag, v,  ga.value.get.plot2d.plot_options( htag ) );
@@ -207,6 +226,14 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 		    {
 			$(htag + "_changescaley_message").html("Y-lin");
 		    }
+		}
+
+		if ( $( htag  + "_showcollapse" ).length )
+		{
+		    $(htag + "_showcollapse").removeClass( "hidden" );
+		    $(htag).show();
+		    ga.plotted2d=1;
+		    $(  htag  + "_showcollapse" ).trigger( "click" );
 		}
 
 		//ga.data.create_image_htmltocanvas(k);
@@ -269,7 +296,7 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
                             });
                 }
 		
-                savekey = mod_out + ":#" + k + ":last_value";
+		savekey = mod_out + ":#" + k + ":last_value";
                 $( "#global_data" ).data( savekey , v ); 
                 break;
             case "bokeh" : 
