@@ -15,4 +15,7 @@ ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );
 ga.value.extra_resets( "__fields:id__" );
 </script>
 
+
+__~fields:showcollapse{ <table cellpadding="10"><tr><td><button id="__fields:id___showcollapse" type="button" class="hidden">Show 3D plot</button></td><td><span id="__fields:id___showcollapse_message" style="color:green;"></span></td></tr> </table><script> ga.showcollapse3d=1; $( "#__fields:id___showcollapse" ).click( function() {console.log("Inside Click: ");  if(!ga.plotted3d){ $("#__fields:id__").show();$("#__fields:id___showcollapse").html("Hide 3D plot");console.log("show!"); ga.plotted3d=1;}else{$("#__fields:id__").hide();ga.plotted3d=0;$("#__fields:id___showcollapse").html("Show 3D plot");console.log("hide!");} });  </script>} 
+
 <table>
