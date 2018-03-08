@@ -876,6 +876,30 @@ __~debug:plottwod{                     console.log( "ga.value.resetDefaultValue(
                         $( "#global_data" ).data( pkg + ":" + tag + ":last_value", [[]] );
                         ga.value.clear.plot2d( tag );
                         t.plot( [[]], ga.value.get.plot2d.plot_options( tag ) ); 
+	                if (ga.showcollapse2d)
+	                {
+			    $( tag + "_div").hide(); 
+			    
+			    if( $( tag + "_savetofile").length )
+			    {
+				$( tag + "_savetofile").hide();
+				$( tag + "_savetofile_link").hide();
+			    } 
+			    if( $( tag + "_changescalex").length )
+			    {
+				$( tag + "_changescalex").hide();
+				$( tag + "_changescalex_message").hide();
+			    } 
+			    if( $( tag + "_changescaley").length )
+			    {
+				$( tag + "_changescaley").hide();
+				$( tag + "_changescaley_message").hide();
+		            }
+			    if ( $( tag + "_showcollapse" ).length )
+			    {
+				$(tag + "_showcollapse").addClass( "hidden" );
+			    }
+			}
                         break;
           case "bokeh" :
               __~debug:bokeh{console.log( "reset default value for bokeh" );}
@@ -884,6 +908,10 @@ __~debug:plottwod{                     console.log( "ga.value.resetDefaultValue(
 	  case "plot3d" :
 	      console.log( "reset default value for plot3d: " + tag );
 	      Plotly.purge(tag.replace( /^#/, "" ));
+	      if ( $( tag + "_showcollapse" ).length )
+		{
+		    $(tag + "_showcollapse").addClass( "hidden" );
+		}
 	      break;
           case "image" : 
           __~debug:image{console.log( "reset default value for image" );}
