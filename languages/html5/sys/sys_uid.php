@@ -43,25 +43,30 @@ foreach ($module as $currentmodule){
 
    $mj = '__docroot:html5__/__application__/etc/module_' . $currentmodule . '.php';
       
-   $contents = file_get_contents($mj);
-   if (!strpos($contents, '"multistage"')) continue;
+   if (file_exists($mj)) 
+   {   
+       $contents = file_get_contents($mj);
+       $pos = strpos($contents, '"multistage"');
 
-   require_once $mj;
+       if ($pos === false) continue;
+
+       require_once $mj;
    
-   //$fileStr .= 'require_once "' . $mj . '";';
-   //$fileStr .= "require_once \"" . $mj . "\";";
-   //$fileStr = 'require_once "' . $mj . '";';
-   //$fileStr = 'require ("' . $mj . '");';
-   //array_push($toeval,$fileStr);	
+	//$fileStr .= 'require_once "' . $mj . '";';
+   	//$fileStr .= "require_once \"" . $mj . "\";";
+  	//$fileStr = 'require_once "' . $mj . '";';
+   	//$fileStr = 'require ("' . $mj . '");';
+   	//array_push($toeval,$fileStr);	
   
 
-   foreach ( $GLOBALS[ 'modulejson' ][ $currentmodule ]->fields as $v ) {
-        if ( isset( $v->multistage ) ){
-	    //$response[ 'moduleinfo' ][ $currentmodule ] = json_decode( '$v->multistage' );
-	    $response[ 'moduleinfo' ][ $currentmodule ] = $v->multistage;
-	}
-   }
-}
+	foreach ( $GLOBALS[ 'modulejson' ][ $currentmodule ]->fields as $v ) {
+        	if ( isset( $v->multistage ) ){
+	    	//$response[ 'moduleinfo' ][ $currentmodule ] = json_decode( '$v->multistage' );
+	    	$response[ 'moduleinfo' ][ $currentmodule ] = $v->multistage;
+		}
+  	}
+    }
+}	
 //eval($fileStr);
 //for ($i = 0; $i < count($toeval); ++$i) {
 //        eval($toeval[$i]);
