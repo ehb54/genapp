@@ -5,6 +5,7 @@ ga.msg              = {};
 
 ga.msg.box = function( m, force, mnum ) {
    mnum = mnum || 3;
+    __~debug:msgbox{console.log( 'ga.msg.box() mnum:' + mnum );}
 
    if ( !force )
    {
@@ -48,7 +49,7 @@ ga.msg.box = function( m, force, mnum ) {
           }
       }
       tmp = tmp + "</tr></table><center>";
-       __~debug:mb{console.log( 'm buttons' + tmp );}
+       __~debug:msgbox{console.log( 'm buttons' + tmp );}
       $( "#configbody" + mnum ).append( tmp );
       for ( i = 0; i < m.buttons.length; i++ ) {
           if ( m.buttons[ i ].cb ) {
@@ -106,9 +107,10 @@ ga.msg.close1 = function() {
 ga.msg.close2 = function() {
    ga.repeats.restore();
    $( ".modalDialog2" ).removeClass( "modalDialog2_on" );
-   setTimeout(function(){
-       $( "#configbody2" ).html( "" );
-   }, 400);
+   $( "#configbody2" ).html( "" );
+//   setTimeout(function(){
+//       $( "#configbody2" ).html( "" );
+//   }, 400);
    if ( ga.usesplash ) {
        setTimeout(function() { splashlogin() }, 500 );
    }
@@ -146,6 +148,7 @@ ga.msg.close4 = function() {
 }
 
 ga.msg.close = function( mnum ) {
+    __~debug:msgbox{console.log( 'ga.msg.close() mnum:' + mnum );}
     switch( mnum ) {
         case 1 : ga.msg.close1(); break;
         case 2 : ga.msg.close2(); break;
@@ -156,6 +159,7 @@ ga.msg.close = function( mnum ) {
 }
 
 ga.msg.clicks = function() {
+    __~debug:msgbox{console.log( 'ga.msg.clicks()' );}
     $( "#closeModal" ).click( function() {
         ga.msg.close( 1 );
     });
