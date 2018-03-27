@@ -176,8 +176,8 @@ ga.qr.question = function( mod, q ) {
                 qeval += '$("#' + tf.id + '_button").on("click",function(){return ga.altfile.button.call("' + id + '","' + tf.id + '");});'
                     // __~fields:setinputfromfile{'ga.value.setInputfromFile("#__fields:id__", "__fields:setinputfromfile__", "__fields:setinputfromfileids__", "__moduleid__");' +}
                 ;
-                console.log( "qeval:" );
-                console.log( qeval );
+                __~debug:qr{console.log( "qeval:" );}
+                __~debug:qr{console.log( qeval );}
             }
             break;
 
@@ -291,6 +291,10 @@ ga.qr.question = function( mod, q ) {
                     for ( j = 0; j < tf.values.length; ++j ) {
                         qtext += '<option value="' + j + '">' + tf.values[ j ].replace( / /g, '\&nbsp' ) + '</option>';
                     }
+                }
+                if ( tf.default ) {
+                    qeval += '$("#' + tf.id + ' option[value=\'' + tf.default + '\']").attr("selected", "true");';
+                    console.log( "Listbox qeval: " + qeval );
                 }
                 qtext += '</select>' + help_span + '</td></tr>';
             }
