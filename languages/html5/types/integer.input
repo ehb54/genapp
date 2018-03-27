@@ -1,5 +1,5 @@
 ga.tmp.html = '';
-__~fields:repeater{ga.tmp.html = '<tr><td></td><td colspan="4"><span id="__fields:id__-repeater"></span></td></tr>';}
+__~fields:repeater{ga.tmp.html = '<tr><td></td><td colspan="4"><table id="__fields:id__-repeater"></table></td></tr>';}
 __~fields:hidden{ga.tmp.html = ga.tmp.html.replace( '<td></td>', '' );}
 this_html = '<tr__~fields:hidden{ class="hidden"}>' +
 '<td__~fields:hidden{ class="hidden"}><label for="__fields:id__">__fields:label__ </label></td>' + 
