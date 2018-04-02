@@ -257,6 +257,25 @@ ga.qr.question = function( mod, q ) {
             break;
 
             case "listbox" : {
+                if ( tf.header ) {
+                    qtext += '<tr><td colspan=2';
+                    if ( tf.fontfamily || tf.fontsize ) {
+                        qtext += ' style="';
+                        if ( tf.fontfamily ) {
+                            qtext += 'font-family:' + tf.fontfamily + ';';
+                        }
+                        if ( tf.fontsize ) {
+                            qtext += 'font-size:' + tf.fontsize + ';';
+                        }
+                        qtext += '"';
+                    }
+                    if( tf.width ) {
+                        tf.header = tf.header.padEnd( tf.width );
+                    }
+                    tf.header = tf.header.replace( / /g, '&nbsp;' );
+                    console.log( tf.header );
+                    qtext += '>' + tf.header + '</td></tr>';
+                }
                 qtext += "<tr><td>";
                 if ( tf.label ) {
                     qtext += '<label for="' + tf.id + '"' + ifhhelp + '>' + tf.label + '</label>';
