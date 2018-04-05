@@ -293,6 +293,9 @@ ga.qr.question = function( mod, q ) {
                 if ( tf.size ) {
                     qtext += ' size=' + tf.size;
                 }
+                if ( tf.multiple ) {
+                    qtext += ' multiple';
+                }
                 qtext += '>';
                 if ( !tf.values ) {
                     etext += "No values for listbox " + tf.id + ". ";
@@ -508,6 +511,9 @@ ga.qr.cb = function( q, result ) {
             case "text" :
             case "select-one" : 
             r._response[ this.id ] = this.value;
+            break;
+            case "select-multiple" : 
+            r._response[ this.id ] = $( "#" + this.id ).val() || [];
             break;
             case "checkbox" :
             if ( this.checked ) {
