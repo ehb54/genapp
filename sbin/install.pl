@@ -304,7 +304,10 @@ mkdir $$cfgjson{'lockdir'}
 chown genapp:genapp $$cfgjson{'lockdir'}
 chmod g+rwx $$cfgjson{'lockdir'}
 usermod -g users -G genapp $whoami
-usermod -G genapp \'www-data\'" );
+usermod -G genapp \'www-data\'
+chgrp -R genapp $gb
+chmod g+w $gb/etc
+" );
 
     # setup local system definitions
 
@@ -332,10 +335,15 @@ _EOF
     runcmdsb( "cat <<_EOF >> /etc/apache2/conf-enabled/security.conf
 # add Alias /genapptest $$cfgjson{'webroot'}/genapptest
 <Directory $$cfgjson{'webroot'}/genapptest>
- Options Indexes FollowSymLinks
+ Options FollowSymLinks
  AllowOverride None
  Order Allow,Deny
  Allow from all
+</Directory>
+<Directory /var/www/>
+	Options FollowSymLinks
+	AllowOverride None
+	Require all granted
 </Directory>
 _EOF
 " );
@@ -347,7 +355,7 @@ update-rc.d rc.genapp defaults 99
 update-rc.d mongodb defaults" );
 
     # start ws servers
-    runcmd( "sg genapp -c '/etc/init.d/rc.genapp start'" );
+    runcmdsb( "sg genapp -c '/etc/init.d/rc.genapp start'" );
 
 # restart apache2
 
@@ -409,6 +417,15 @@ SetEnv GENAPP $gb
 _EOF
 ");
 
+    runcmdsb( "cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/noindices.conf
+<Directory \"$rhsclhttpd/var/www/html\">
+    Options FollowSymLinks
+    AllowOverride None
+    Require all granted
+</Directory>
+_EOF
+");
+
     # scl puts php in $rhsclphp so link it
 
     runcmdsb( "ln -sf $rhsclphp/usr/bin/php /usr/bin/php" );
@@ -450,7 +467,10 @@ mkdir $$cfgjson{'lockdir'}
 chown genapp:genapp $$cfgjson{'lockdir'}
 chmod g+rwx $$cfgjson{'lockdir'}
 usermod -g users -G genapp $whoami
-usermod -G genapp \'apache\'" );
+usermod -G genapp \'apache\'
+chgrp -R genapp $gb
+chmod g+w $gb/etc
+" );
 
     # setup local system definitions
 
@@ -480,7 +500,7 @@ _EOF
 
     runcmdsb( "cp $appbase/genapptest/output/html5/util/rc.genapp /etc/init.d" );
     runcmdsb( "chkconfig --add rc.genapp" );
-    runcmd( "/etc/init.d/rc.genapp start" );
+    runcmdsb( "/etc/init.d/rc.genapp start" );
 
     # open ports
     {
@@ -504,7 +524,7 @@ service iptables save" );
     exit();
 }
 
-# ------ centos 7.2 -------
+# ------ centos 7.2,7.3,7.4 -------
 if ( $os eq 'centos' && $os_release =~ /^7\.(2|3|4)/ ) {
 
     # install required modules
@@ -559,6 +579,15 @@ SetEnv GENAPP $gb
 _EOF
 ");
 
+    runcmdsb( "cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/noindices.conf
+<Directory \"$rhsclhttpd/var/www/html\">
+    Options FollowSymLinks
+    AllowOverride None
+    Require all granted
+</Directory>
+_EOF
+");
+
     # scl puts php in $rhsclphp so link it
 
     runcmdsb( "ln -sf $rhsclphp/usr/bin/php /usr/bin/php" );
@@ -600,7 +629,10 @@ mkdir $$cfgjson{'lockdir'}
 chown genapp:genapp $$cfgjson{'lockdir'}
 chmod g+rwx $$cfgjson{'lockdir'}
 usermod -g users -G genapp $whoami
-usermod -G genapp \'apache\'" );
+usermod -G genapp \'apache\'
+chgrp -R genapp $gb
+chmod g+w $gb/etc
+" );
 
     # setup local system definitions
 
@@ -630,7 +662,7 @@ _EOF
 
     runcmdsb( "cp $appbase/genapptest/output/html5/util/rc.genapp /etc/init.d" );
     runcmdsb( "chkconfig --add rc.genapp" );
-    runcmd( "/etc/init.d/rc.genapp start" );
+    runcmdsb( "/etc/init.d/rc.genapp start" );
 
     # open ports
     {
@@ -760,6 +792,15 @@ SetEnv GENAPP $gb
 _EOF
 ");
 
+    runcmdsb( "cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/noindices.conf
+<Directory \"$rhsclhttpd/var/www/html\">
+    Options FollowSymLinks
+    AllowOverride None
+    Require all granted
+</Directory>
+_EOF
+");
+
     # scl puts php in $rhsclphp so link it
 
     runcmdsb( "ln -sf $rhsclphp/usr/bin/php /usr/bin/php" );
@@ -801,7 +842,10 @@ mkdir $$cfgjson{'lockdir'}
 chown genapp:genapp $$cfgjson{'lockdir'}
 chmod g+rwx $$cfgjson{'lockdir'}
 usermod -g users -G genapp $whoami
-usermod -G genapp \'apache\'" );
+usermod -G genapp \'apache\'
+chgrp -R genapp $gb
+chmod g+w $gb/etc
+" );
 
     # setup local system definitions
 
@@ -831,7 +875,7 @@ _EOF
 
     runcmdsb( "cp $appbase/genapptest/output/html5/util/rc.genapp /etc/init.d" );
     runcmdsb( "chkconfig --add rc.genapp" );
-    runcmd( "/etc/init.d/rc.genapp start" );
+    runcmdsb( "/etc/init.d/rc.genapp start" );
 
     runcmdsb( "semanage permissive -a httpd_t; service httpd24-httpd restart && chkconfig httpd24-httpd on" );
 
@@ -926,7 +970,10 @@ mkdir $$cfgjson{'lockdir'}
 chown genapp:genapp $$cfgjson{'lockdir'}
 chmod g+rwx $$cfgjson{'lockdir'}
 usermod -g users -G genapp $whoami
-usermod -G genapp \'www-data\'" );
+usermod -G genapp \'www-data\'
+chgrp -R genapp $gb
+chmod g+w $gb/etc
+" );
 
     # setup local system definitions
 
@@ -954,10 +1001,15 @@ _EOF
     runcmdsb( "cat <<_EOF >> /etc/apache2/conf-enabled/security.conf
 # add Alias /genapptest $$cfgjson{'webroot'}/genapptest
 <Directory $$cfgjson{'webroot'}/genapptest>
- Options Indexes FollowSymLinks
+ Options FollowSymLinks
  AllowOverride None
  Order Allow,Deny
  Allow from all
+</Directory>
+<Directory /var/www/>
+	Options FollowSymLinks
+	AllowOverride None
+	Require all granted
 </Directory>
 _EOF
 " );
@@ -969,7 +1021,7 @@ update-rc.d rc.genapp defaults 99
 update-rc.d mongodb defaults" );
 
     # start ws servers
-    runcmd( "/etc/init.d/rc.genapp start" );
+    runcmdsb( "/etc/init.d/rc.genapp start" );
 
 # restart apache2
 
@@ -978,7 +1030,7 @@ update-rc.d mongodb defaults" );
 }
 
 # ------ scientific linux 7.2 -------
-if ( $os eq 'scientific' && $os_release =~ /^7\.(2|3)(cernvm|)/ ) {
+if ( $os eq 'scientific' && $os_release =~ /^7\.(2|3|4)(cernvm|)/ ) {
 
     my $cernvm;
     if ( $os_release =~ /cernvm$/ ) {
@@ -1067,6 +1119,15 @@ SetEnv GENAPP $gb
 _EOF
 ");
 
+    runcmdsb( "cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/noindices.conf
+<Directory \"$rhsclhttpd/var/www/html\">
+    Options FollowSymLinks
+    AllowOverride None
+    Require all granted
+</Directory>
+_EOF
+");
+
     # genapp html5 likes php at /usr/local/bin/php so make sure it exists
 
     if ( -e "/usr/bin/php" && !-e "/usr/local/bin/php" ) {
@@ -1085,7 +1146,10 @@ mkdir $$cfgjson{'lockdir'} 2> /dev/null
 chown genapp:genapp $$cfgjson{'lockdir'}
 chmod g+rwx $$cfgjson{'lockdir'}
 usermod -g users -G genapp $whoami
-usermod -G genapp \'apache\'" );
+usermod -G genapp \'apache\'
+chgrp -R genapp $gb
+chmod g+w $gb/etc
+" );
 
     # setup local system definitions
 
@@ -1115,7 +1179,7 @@ _EOF
 
     runcmdsb( "cp $appbase/genapptest/output/html5/util/rc.genapp /etc/init.d" );
     runcmdsb( "chkconfig --add rc.genapp" );
-    runcmd( "/etc/init.d/rc.genapp start" );
+    runcmdsb( "/etc/init.d/rc.genapp start" );
 
     # open ports
     if ( !$cernvm ) {

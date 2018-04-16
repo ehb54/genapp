@@ -10,5 +10,5 @@
 # Description:       GenApp messaging startup
 ### END INIT INFO
 
-sg genapp -c "__docroot:html5__/__application__/util/services.php $*"
+su genapp -s /bin/sh -c "__docroot:html5__/__application__/util/services.php $*"
 
