@@ -390,13 +390,13 @@
                                     { "sys/sys_captcha_verify.php" : "once" }
                                    ]
                    }
-                 #  ,{
-                 #   "frequency"  : "once",
-                 #   "output"     : "ajax/sys/uploader.php",
-                 #   "inputs"     : [ 
-                 #                   { "sys/uploader.php" : "once" }
-                 #                  ]
-                 #  }
+                  ,{
+                    "frequency"  : "once",
+                    "output"     : "ajax/sys/uploader.php",
+                    "inputs"     : [ 
+                                    { "sys/uploader.php" : "once" }
+                                   ]
+                   }
                    ,{
                     "frequency"  : "once",
                     "output"     : "util/test_mail.php",
