@@ -85,6 +85,11 @@ ga.qr.question = function( mod, q ) {
         if ( !tf.id ) {
             etext += "No id in field " + i + ". ";
         }
+
+        if ( !/^[A-Za-z][A-Za-z0-9_]*$/.test( tf.id ) ) {
+            etext += "Invalid id for field " + i + ' with id value "' + tf.id + '". Only alpha in first character and alphanumeric and underscores subsequently allowed.';
+        }
+
         if ( !tf.type ) {
             etext += "No type in field " + i + ". ";
         }
@@ -314,8 +319,8 @@ ga.qr.question = function( mod, q ) {
                         qtext += '<option value="' + j + '">' + tf.values[ j ].replace( / /g, '\&nbsp' ) + '</option>';
                     }
                 }
-                if ( tf.default ) {
-                    qeval += '$("#' + tf.id + ' option[value=\'' + tf.default + '\']").attr("selected", "true");';
+                if ( tf['default'] ) {
+                    qeval += '$("#' + tf.id + ' option[value=\'' + tf['default'] + '\']").attr("selected", "true");';
                     console.log( "Listbox qeval: " + qeval );
                 }
                 qtext += '</select>' + help_span + '</td></tr>';
