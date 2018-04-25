@@ -56,10 +56,18 @@ ga.msg.box = function( m, force, mnum ) {
               if ( m.buttons[ i ].adata ) {
                   switch( m.buttons[ i ].adata.length ) {
                   case 2 :
-                      $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ] ); ga.msg.close( mnum ); } );
+                      if ( m.closeif ) {
+                          $( "#_mbb_" + m.buttons[ i ].id ).off().on( "click" , m.buttons[ i ], function( event ) { if ( event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ] ) ) { ga.msg.close( mnum ); } } );
+                      } else {
+                          $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ] ); ga.msg.close( mnum ); } );
+                      }
                       break;
                   case 3 :
-                      $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ],  event.data.adata[ 2 ]  ); ga.msg.close( mnum ); } );
+                      if ( m.closeif ) {
+                          $( "#_mbb_" + m.buttons[ i ].id ).off().on( "click" , m.buttons[ i ], function( event ) { if ( event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ], event.data.adata[ 2 ] ) ) { ga.msg.close( mnum ); } } );
+                      } else {
+                          $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ],  event.data.adata[ 2 ]  ); ga.msg.close( mnum ); } );
+                      }
                       break;
                   case 4 :
                       $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ],  event.data.adata[ 2 ], event.data.adata[ 3 ] ); ga.msg.close( mnum ); } );
@@ -97,7 +105,7 @@ ga.msg.close1 = function() {
    ga.repeats.restore();
    $( ".modalDialog" ).removeClass( "modalDialog_on" );
    setTimeout(function(){
-       $( "#configbody" ).html( "" );
+       $( "#configbody" ).empty();
    }, 400);
    if ( ga.usesplash ) {
        setTimeout(function() { splashlogin() }, 500 );
@@ -107,9 +115,9 @@ ga.msg.close1 = function() {
 ga.msg.close2 = function() {
    ga.repeats.restore();
    $( ".modalDialog2" ).removeClass( "modalDialog2_on" );
-   $( "#configbody2" ).html( "" );
+   $( "#configbody2" ).empty();
 //   setTimeout(function(){
-//       $( "#configbody2" ).html( "" );
+//       $( "#configbody2" ).empty();
 //   }, 400);
    if ( ga.usesplash ) {
        setTimeout(function() { splashlogin() }, 500 );
@@ -119,7 +127,7 @@ ga.msg.close2 = function() {
 ga.msg.close3 = function() {
    ga.repeats.restore();
    $( ".modalDialog3" ).removeClass( "modalDialog3_on" );
-   $( "#configbody3" ).html( "" );
+   $( "#configbody3" ).empty();
    var ws = $( "#_state" ).data( "__msgs" );
    if ( ws && ws.length )
    {
@@ -136,7 +144,7 @@ ga.msg.close3 = function() {
 ga.msg.close4 = function() {
     ga.repeats.restore();
     $( ".modalDialog4" ).removeClass( "modalDialog4_on" );
-    $( "#configbody4" ).html( "" );
+    $( "#configbody4" ).empty();
     if ( ga.frontpageurl && !ga.apprun ) {
         ga.frontpage( ga.frontpageurl ); 
     } else  { 

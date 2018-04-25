@@ -172,11 +172,12 @@ ga.qr.question = function( mod, q ) {
                     + '$( "#' + id + '" ).change( function(){ $( "#' + tf.id + '_altval" ).html( "<i>Local</i>: " + $( "#' + tf.id + '" ).val().replace(/^C:.fakepath./,""));'
                 // + $("#__fields:id___msg").html("");
                     + '});'
-                    + 'ga.altfile.button( "' + id + '","' + tf.id + '","' + tf.label + '","rfile",function(v){ga.altfile.button.lrfile(v,"' + id + '","' + tf.id + '")});'
+                    + 'ga.altfile.button( "' + id + '","' + tf.id + '","' + tf.label + '","rfile",function(v){ga.altfile.button.lrfile(v,"' + id + '","' + tf.id + '")}';
                 ;
                 if ( tf.required ) {
                     qeval += ',"lrfile"';
                 }
+                qeval += ');';
                 // qeval += '$("#' + id + '_button").click( function( e ) {e.preventDefault();e.returnValue = false;});';
                 qeval += '$("#' + tf.id + '_button").on("click",function(){return ga.altfile.button.call("' + id + '","' + tf.id + '");});'
                     // __~fields:setinputfromfile{'ga.value.setInputfromFile("#__fields:id__", "__fields:setinputfromfile__", "__fields:setinputfromfileids__", "__moduleid__");' +}
@@ -210,6 +211,68 @@ ga.qr.question = function( mod, q ) {
                 }
                 if ( tf.size ) {
                     qtext += ' size="' + tf.size + '"';
+                }
+                qtext += '>' + help_span + '</td></tr>';
+            }
+            break;
+
+            case "integer" : {
+                qtext += "<tr><td>";
+                if ( tf.label ) {
+                    qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
+                }
+                qtext += '</td><td><input type="number" id="' + tf.id + '" step="1" name="' + tf.id + '"' + ifhelp;
+                if ( tf.required ) {
+                    qtext += ' required';
+                }
+                if ( tf.readonly ) {
+                    qtext += ' readonly';
+                }
+                if ( tf['default'] ) {
+                    qtext += ' value="' + tf['default'] + '"';
+                }
+                if ( tf.pattern ) {
+                    qtext += ' pattern="' + tf.pattern + '"';
+                }
+                if ( tf.min ) {
+                    qtext += ' min="' + tf.min + '"';
+                }
+                if ( tf.max ) {
+                    qtext += ' max="' + tf.max + '"';
+                }
+                qtext += '>' + help_span + '</td></tr>';
+            }
+            break;
+
+            case "float" : {
+                qtext += "<tr><td>";
+                if ( tf.label ) {
+                    qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
+                }
+                qtext += '</td><td><input type="number" id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
+                if ( tf.required ) {
+                    qtext += ' required';
+                }
+                if ( tf.readonly ) {
+                    qtext += ' readonly';
+                }
+                if ( tf.required ) {
+                    qtext += ' required';
+                }
+                if ( tf['default'] ) {
+                    qtext += ' value="' + tf['default'] + '"';
+                }
+                if ( tf.pattern ) {
+                    qtext += ' pattern="' + tf.pattern + '"';
+                }
+                if ( tf.step ) {
+                    qtext += ' step="' + tf.step + '"';
+                }
+                if ( tf.min ) {
+                    qtext += ' min="' + tf.min + '"';
+                }
+                if ( tf.max ) {
+                    qtext += ' max="' + tf.max + '"';
                 }
                 qtext += '>' + help_span + '</td></tr>';
             }
@@ -278,7 +341,7 @@ ga.qr.question = function( mod, q ) {
                         tf.header = tf.header.padEnd( tf.width );
                     }
                     tf.header = tf.header.replace( / /g, '&nbsp;' );
-                    console.log( tf.header );
+                    __~debug:qr{console.log( tf.header );}
                     qtext += '>' + tf.header + '</td></tr>';
                 }
                 qtext += "<tr><td>";
@@ -292,6 +355,9 @@ ga.qr.question = function( mod, q ) {
                     qtext += '<td>';
                 }
                 qtext += '<select id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
+                if ( tf.required ) {
+                    qtext += ' required';
+                }
                 if ( tf.fontfamily ) {
                     qtext += ' style="font-family: ' + tf.fontfamily + ';"';
                 }
@@ -321,7 +387,7 @@ ga.qr.question = function( mod, q ) {
                 }
                 if ( tf['default'] ) {
                     qeval += '$("#' + tf.id + ' option[value=\'' + tf['default'] + '\']").attr("selected", "true");';
-                    console.log( "Listbox qeval: " + qeval );
+                    __~debug:qr{console.log( "Listbox qeval: " + qeval );}
                 }
                 qtext += '</select>' + help_span + '</td></tr>';
             }
@@ -336,6 +402,9 @@ ga.qr.question = function( mod, q ) {
         }
     }
     qtext += '</table></form>';
+
+    // maybe add qtext, qeval to adata for cb so that the msg can be redone ?
+    // or push required into messagebox (ugh)
 
     if ( q._question.buttons &&
          q._question.buttons.length ) {
@@ -353,7 +422,7 @@ ga.qr.question = function( mod, q ) {
                     id : bid
                     ,label : b
                     ,cb    : ga.qr.cb
-                    ,adata : [ q, bid ]
+                    ,adata : [ q, bid, b.skiprequired ? 0 : 1 ]
                 } );
                 break;
 
@@ -384,7 +453,7 @@ ga.qr.question = function( mod, q ) {
                         id : b.id
                         ,label : b.label
                         ,cb    : ga.qr.cb
-                        ,adata : [ q, b.id ]
+                        ,adata : [ q, b.id, b.skiprequired ? 0 : 1 ]
                     } );
                     if ( b.help ) {
                         qbuttons[ qbuttons.length - 1 ].help = b.help;
@@ -413,13 +482,13 @@ ga.qr.question = function( mod, q ) {
                 id    : "ok"
                 ,label : "OK"
                 ,cb    : ga.qr.cb
-                ,adata  : [ q, "ok" ]
+                ,adata  : [ q, "ok", 1 ]
             }
             ,{ 
                 id    : "cancel"
                 ,label : "Cancel"
                 ,cb    : ga.qr.cb
-                ,adata  : [ q, "cancel" ]
+                ,adata  : [ q, "cancel", 0 ]
             }
         ]
         ;
@@ -434,8 +503,9 @@ ga.qr.question = function( mod, q ) {
     ga.qr.openq[ id ] = "open";
 
     ga.msg.box( {
-        icon : "question.png"
+        icon : q._question.icon ? q._question.icon : "question.png"
         ,noclose : 1
+        ,closeif : 1
         ,text : qtext + '<p></p>'
         ,eval : '$("#' + id + '").on("keyup keypress", function(e) { var code = e.keyCode || e.which;  if (code  == 13) { e.preventDefault(); return false; }});' + qeval
         ,buttons : qbuttons
@@ -443,7 +513,7 @@ ga.qr.question = function( mod, q ) {
     }, 0, 2 );
 }
 
-ga.qr.cb = function( q, result ) {
+ga.qr.cb = function( q, result, required ) {
     __~debug:qr{console.log( "ga.qr.cb( q, result )" );}
     __~debug:qr{console.dir( q );}
 
@@ -460,7 +530,7 @@ ga.qr.cb = function( q, result ) {
                 ,text : "Question has already been answered in another session"
             } );
             delete ga.qr.openq[ id ];
-            return;
+            return true;
         }
             break;
             
@@ -470,7 +540,7 @@ ga.qr.cb = function( q, result ) {
                 ,text : "The time for answering a question has expired"
             } );
             delete ga.qr.openq[ id ];
-            return;
+            return true;
         }
             break;
             
@@ -480,15 +550,68 @@ ga.qr.cb = function( q, result ) {
                 ,text : "Internal error, unknown message state"
             } );
             delete ga.qr.openq[ id ];
-            return;
+            return true;
         }
             break;
         }                
-        delete ga.qr.openq[ id ];
     } else {
-        return;
+        ga.msg.box( {
+            icon : "warning.png"
+            ,text : q._question.requiredmsg ? q._question.requiredmsg : "Not all required fields have been entered."
+        });
+        return true;
     }
         
+    // check if required fields missing
+    if ( required ) {
+        var missing_required = false;
+        $('#' + id + ' *').filter(':input').each(function(){
+            if ( this.required ) {
+                __~debug:qr{console.log( "required:" + this.id );}
+                var do_switch = true;
+                if ( this.dataset &&
+                     this.dataset.type == "rfile_val" &&
+                     this.value.length ) {
+                    __~debug:qr{console.log( "has rfile" );}
+                    do_switch = false;
+                } 
+
+                if ( do_switch ) {
+                    switch ( this.type ) {
+                    case "text" :
+                    case "number" :
+                    case "select-one" : 
+                        if ( !this.value.length ) {
+                            __~debug:qr{console.log( "missing select one" );}
+                            missing_required = true;
+                        }
+                        break;
+                    case "select-multiple" : 
+                        if ( !($( "#" + this.id ).val() || []).length() ) {
+                            __~debug:qr{console.log( "missing required select multiple" );}
+                            missing_required = true;
+                        }
+                        break;
+                    case "file" :
+                        if ( this.files.length == 0 ) {
+                            missing_required = true;
+                        }
+                        break;
+                    }
+                }
+            }
+        });
+
+        if ( missing_required ) {
+            ga.msg.box( {
+                icon : "warning.png"
+                ,text : q._question.requiredmsg ? q._question.requiredmsg : "Not all required fields have been entered."
+                } );
+            return false;
+        }
+    }
+    delete ga.qr.openq[ id ];
+
     // r needs _uuid, _msgid and assembled response info
     var r = {};
     r._uuid = q._uuid;
@@ -503,17 +626,17 @@ ga.qr.cb = function( q, result ) {
     // add form values
     // console.dir( $('#' + id + ' *') );
     $('#' + id + ' *').filter(':input').each(function(){
-        //your code here
         // __~debug:qr{console.dir( this );}
         if ( this.dataset &&
              this.dataset.type == "rfile_val" &&
              this.value.length ) {
-            console.log( "has rfile" );
+            __~debug:qr{console.log( "has rfile" );}
             hasfiles = true;
         }
             
         switch ( this.type ) {
             case "text" :
+            case "number" :
             case "select-one" : 
             r._response[ this.id ] = this.value;
             break;
@@ -541,6 +664,7 @@ ga.qr.cb = function( q, result ) {
     } else {
         ga.qr.post( r )
     }
+    return true;
 }
 
 ga.qr.answered = function( mod, q ) {
@@ -601,7 +725,7 @@ ga.qr.post = function( r ) {
         dataType : 'json',
         method   : 'POST'
     }).success( function( data ) {
-        console.log( "ajax delete done" );
+        __~debug:qr{console.log( "ajax delete done" );}
         if ( data.error && data.error.length ) {
             ga.msg.box( {
                 icon : "toast.png",
@@ -639,7 +763,7 @@ ga.qr.postfiles = function( id, r ) {
 
     var formData =  new FormData( $( "#" + id )[ 0 ]); 
 
-    console.log( "formData values" );
+    __~debug:qr{console.log( "formData values" );}
 
     __~debug:qr{for (var key of formData.keys()){console.log( key + " ->" );console.log( formData.getAll( key ));}console.log( "end of formData values" );}
 
@@ -672,13 +796,13 @@ ga.qr.postfiles = function( id, r ) {
     } )
         .success( function( data ) {
             ga.msg.close( 3 );
-            console.log( "ga.postfiles post done" );
+            __~debug:qr{console.log( "ga.postfiles post done" );}
             if ( data.error && data.error.length ) {
                 delete ga.qr.openq[ id ];
                 ga.qr.rerror( r, "ajax data error: " + data.error );
             } else {
                 // process data and extract filenames if ok, continue with ga.qr.post()
-                console.log( data );
+                __~debug:qr{console.log( data );}
                 if ( data.files ) {
                     for ( var i in data.files ) {
                         if ( data.files.hasOwnProperty( i ) ) {
