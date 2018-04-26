@@ -28,7 +28,7 @@ ga.value.checkFloatIntOK = function( tag, value ) {
 		    value.splice(0, value.length)
 		    value.push( t.attr( "max" ) );
 		} else {
-		    $( tag + "_msg" ).html( "" );
+		    $( tag + "_msg" ).empty();
 		}
 	    }
 	}
@@ -55,7 +55,7 @@ ga.value.checkFloatIntOK = function( tag, value ) {
 			    value.splice(0, value.length);
 			    value.push( parseInt( parseFloat( temp_int ) + .5 ) );
 			} else {
-			    $( tag + "_msg" ).html( "" );
+			    $( tag + "_msg" ).empty();
 			}
 		    }
 		}
@@ -769,7 +769,7 @@ __~debug:values{        console.log( "ga.value.setLastValue() atomic structure j
 __~debug:values{        console.log( "ga.value.setLastValue() atomic structure jmol getAppletHtml finished" );}
                   } else {
 __~debug:values{        console.log( "ga.value.setLastValue() atomic structure global data NOT found for tag " + stag );}
-                      t.html("");
+                      t.empty();
                   }
                   break;
 
@@ -915,24 +915,24 @@ __~debug:plottwod{                     console.log( "ga.value.resetDefaultValue(
 	      break;
           case "image" : 
           __~debug:image{console.log( "reset default value for image" );}
-          t.html("");
+          t.empty();
           break;
           case "video" : 
           __~debug:video{console.log( "reset default value for video" );}
-          t.html("");
+          t.empty();
           break;
 
           case "atomicstructure" : 
                         var stag = tag.replace( /^#/, "" );
 __~debug:values{                         console.log( "ga.value.resetDefaultValue() atomic structure " + pkg + ":" + tag + ":last_value" );}
                         $( "#global_data" ).data( pkg + ":" + tag + ":last_value", "" );
-                        $( tag ).html("");
+                        $( tag ).empty();
                         break;
           default: t.val( t.attr( "value" ) ); break;
       }
    }
    ga.value.saveLastValue( pkg, tag );
-   $( tag + "_msg" ).html("");
+   $( tag + "_msg" ).empty();
 }
 
 ga.value.resetDefaultValues = function( pkg, msgs ) {
@@ -1021,10 +1021,10 @@ __~debug:plottwod{ console.log( "ga.value.clear.plot2d( " + tag + " )" );}
         tagylabel = tag + "_ylabel";
         tagxy     = tag + "_xy";
 
-    $( tagtitle  ).html("");
-    $( tagxlabel ).html("");
-    $( tagylabel ).html("");
-    $( tagxy     ).html("");
+    $( tagtitle  ).empty();
+    $( tagxlabel ).empty();
+    $( tagylabel ).empty();
+    $( tagxy     ).empty();
 }
 
 

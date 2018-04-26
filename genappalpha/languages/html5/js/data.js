@@ -98,7 +98,7 @@ __~debug:getinput{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_
 
     if ( msging_f ) {
 __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
-        $( "#" + mod + "_progress" ).html( "" );
+        $( "#" + mod + "_progress" ).empty();
         jqhmod_out_msgs.text( "" );
     }
 
@@ -509,7 +509,7 @@ __~debug:values{        console.log( "ga.data.update() atomic structure jmol scr
     });
     ga.value.saveLastValues( mod_out );
     ga.value.saveLastValue( mod_out, hmod_out_msgs );
-    $( hmod_out + '_progress' ).html( "" );
+    $( hmod_out + '_progress' ).empty();
     if ( state_changed )
     {
         syncState();
