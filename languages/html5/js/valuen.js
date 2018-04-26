@@ -33,7 +33,7 @@ ga.valuen.restore = function( form, data, html ) {
     // return;
     //}
 
-    $( hform + " .field_msg" ).html("");
+    $( hform + " .field_msg" ).empty();
 
     // add repeaters repeatedly until no more unassigned repeaters exist
     

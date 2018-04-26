@@ -74,5 +74,5 @@ ga.bokeh.reset = function( mod, tag ) {
         return;
     }
     ga.bokeh.data[ mod ][ tag ] = {};
-    $( "#" + tag ).html("");
+    $( "#" + tag ).empty();
 }

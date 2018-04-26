@@ -9,7 +9,7 @@ __~debug:check{   console.log( "checkMatch " + tag1 + " " + tag2 );}
    {
       $( tag1 + "_msg" ).html( " does not match" );
    } else {
-      $( tag1 + "_msg" ).html( "" );
+      $( tag1 + "_msg" ).empty();
    }
 }
     
@@ -35,7 +35,7 @@ ga.valid.checkText = function( tag ) {
 	}
 	else {
 	    ok = 1;
-	    $( tag + "_msg" ).html("");
+	    $( tag + "_msg" ).empty();
 	}
     }	
     else {
@@ -79,7 +79,7 @@ ga.valid.checkFloat = function( tag ) {
 		t.val( t.attr( "max" ) );
 		$( tag + "_msg" ).html( " value set to maximum allowed" );
             } else {                                                             
-		$( tag + "_msg" ).html( "" );
+		$( tag + "_msg" ).empty();
 	    }
 	} 
     }
@@ -120,7 +120,7 @@ ga.valid.checkInt = function( tag ) {
                     $( tag + "_msg" ).html( " value rounded to nearset integer" );
                     t.val( parseInt( parseFloat( fieldValue ) + .5 ) );
 		} else {
-                    $( tag + "_msg" ).html( "" );
+                    $( tag + "_msg" ).empty();
 		}
             }
 	}
@@ -136,7 +136,7 @@ ga.valid.safeFile = function( tag ) {
        t.val( t.prop( "defaultValue" ) );
        $( tag + "_msg" ).html( "Not an acceptable filename, reset to default" );
    } else {
-       $( tag + "_msg" ).html( "" );
+       $( tag + "_msg" ).empty();
    }
 }
 

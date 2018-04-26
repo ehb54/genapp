@@ -170,7 +170,7 @@ ga.qr.question = function( mod, q ) {
                 ;
                 qeval += 'ga.altfile("' + id + '","' + tf.id + '","' + tf.id + '_altval" );'
                     + '$( "#' + id + '" ).change( function(){ $( "#' + tf.id + '_altval" ).html( "<i>Local</i>: " + $( "#' + tf.id + '" ).val().replace(/^C:.fakepath./,""));'
-                // + $("#__fields:id___msg").html("");
+                // + $("#__fields:id___msg").empty();
                     + '});'
                     + 'ga.altfile.button( "' + id + '","' + tf.id + '","' + tf.label + '","rfile",function(v){ga.altfile.button.lrfile(v,"' + id + '","' + tf.id + '")}';
                 ;
