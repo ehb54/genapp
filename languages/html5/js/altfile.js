@@ -151,7 +151,7 @@ __~debug:altfile{  console.log( "ga.altfile.button.lrfile() .each this.id " + th
   if ( r.length ) {
 __~debug:altfile{     console.log( "filename:" + r ); }      
      $( hid + "_altval").html( "<i>Server</i>: " + r );
-     $( hid + "_msg").html( "" );
+     $( hid + "_msg").empty();
      $( hid ).val("");
      $( hmod ).append( add );
 __~debug:altfile{     console.log( "added: " + add );}
@@ -186,7 +186,7 @@ __~debug:altfile{  console.log( "ga.altfile.button.rpath treeid " + treeid + " m
 
   if ( r.length ) {
      $( hid + "_altval").html( "<i>Server</i>: " + r );
-     $( hid + "_msg").html( "" );
+     $( hid + "_msg").empty();
      $( hid ).val("");
      $( hmod ).append( add );
 __~debug:altfile{     console.log( "added: " + add );}
@@ -213,7 +213,7 @@ __~debug:altfile{  console.log( "ga.altfile.button.rfile() .each this.id " + thi
 
   if ( r.length ) {
      $( hid + "_altval").html( "<i>Server</i>: " + r );
-     $( hid + "_msg").html( "" );
+     $( hid + "_msg").empty();
      $( hid ).val("");
      $( hmod ).append( add );
 __~debug:altfile{     console.log( "added: " + add );}
@@ -246,7 +246,7 @@ __~debug:altfile{  console.log( "ga.altfile.button.job() .each this.id " + this.
 
   if ( r.length ) {
      $( hid + "_altval").html( "<table>" + r + "</table>" );
-     $( hid + "_msg").html( "" );
+     $( hid + "_msg").empty();
      $( hid ).val("");
      $( hmod ).append( add );
 __~debug:altfile{     console.log( "added: " + add );}

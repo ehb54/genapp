@@ -223,11 +223,11 @@ function syncState() {
               clearem = 1;
           }
 
-          $( "#login" ).html( "" );
+          $( "#login" ).empty();
           $( "#logoff" ).html( "Logoff " + l );
           $( "#files" ).show();
           $( "#jobs" ).show();
-//          $( "#register" ).html( "" );
+//          $( "#register" ).empty();
 //          $( "#userconfig" ).html( "<img src=\"etc/config.png\" width=40px id=\"config\" class=\"config\">" );
           ga.license.get();
           ga.get_sys_status();
@@ -237,8 +237,8 @@ function syncState() {
               clearem = 1;
           }
           $( "#login" ).html( "Login" );
-          $( "#logoff" ).html( "" );
-          $( "#sel_project" ).html( "" );
+          $( "#logoff" ).empty();
+          $( "#sel_project" ).empty();
           $( "#files" ).hide();
           $( "#jobs" ).hide();
           ga.license.data = {};
@@ -261,8 +261,8 @@ function syncState() {
         ga.fc.clear( "#" ); 
         ga.jc.clear( "#" ); 
         ga.valuen.reset();
-        $( "#panelmain" ).html( "" );
-        $( "#seabug" ).html( "" );
+        $( "#panelmain" ).empty();
+        $( "#seabug" ).empty();
         if ( !$( ".sidebar" ).is(':visible') ) {
             $( "#menuspan" ).trigger( "click" );
         }
@@ -352,7 +352,7 @@ __~debug:job{            console.log( "now to eval: ga.ws.sub( '" + sw[3] + "', 
       {
           $( "#sel_project" ).html( "Project " + p );
       } else {
-          $( "#sel_project" ).html( "" );
+          $( "#sel_project" ).empty();
       }
       s.data( '_project:last', p );
    }
@@ -531,7 +531,7 @@ splashlogin = function() {
                 '$( "#configbody" ).load( "etc/sys_login.html" );' +
                 '$( ".modalDialog" ).addClass( "modalDialog_on" );' +
                 '$( ".modalDialog4" ).removeClass( "modalDialog4_on" );' +
-                '$( "#configbody4" ).html( "" );' +
+                '$( "#configbody4" ).empty();' +
                 '});' +
             '$( "#splash_register" ).click( function() {' +
                 'ga.repeats.save();' +
@@ -539,7 +539,7 @@ splashlogin = function() {
                 '$( "#configbody" ).load( "etc/sys_register.html" );' +
                 '$( ".modalDialog" ).addClass( "modalDialog_on" );' +
                 '$( ".modalDialog4" ).removeClass( "modalDialog4_on" );' +
-                '$( "#configbody4" ).html( "" );' +
+                '$( "#configbody4" ).empty();' +
             '});'
 	    __~register:googlelogin{ + '$( "#splash_login_google" ).click( function() { my_google_call();});' }
 	  __~register:googlelogin{ + '$( "#splash_register_google" ).click( function() { my_google_call(1);});' }

@@ -30,7 +30,7 @@ ga.msg.box = function( m, force, mnum ) {
 
    if ( m.noclose ) {
        if ( $( "#closeModal" + mnum ).hasClass( "close" + mnum ) ) {
-           $( "#closeModal" + mnum ).removeClass( "close" + mnum ).html( "" );
+           $( "#closeModal" + mnum ).removeClass( "close" + mnum ).empty();
        }
    } else {
        if ( mnum < 4 &&
