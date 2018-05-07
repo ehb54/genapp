@@ -717,10 +717,11 @@ __~debug:values{   console.log( "ga.value.setLastValue() pkg:" + pkg + " tag:" +
                 $( "#global_data" ).data( dv, t.html() );
                 break;
             case "plot3d" :
-	        console.log("PLOT3D: " + tag);
+            case "plotly" :
+	    __~debug:plotly{console.log("PLOT3D: " + tag);}
 	        var tag_s = tag;
 	        tag_s = tag_s.replace(/^#/, "");
-	        console.log("PLOT3D: " + tag_s);
+	    __~debug:plotly{console.log("PLOT3D: " + tag_s);}
 	        Plotly.newPlot(tag_s,[],{});
 	        Plotly.purge(tag_s);
 	        break;
@@ -782,6 +783,14 @@ __~debug:plottwod{                     console.log( "ga.value.setLastValue() plo
                          t.plot( p2d.data, ga.value.get.plot2d.plot_options( tag, p2d.options ) );
                      } else {
                          t.plot( p2d, ga.value.get.plot2d.plot_options( tag ) );
+                     }
+                     break;
+            case "plot3d" : 
+            case "plotly" : 
+            __~debug:values{console.log( "ga.value.setLastValue() on plotly trying" );}
+                     var ptly = gd.data( tl );
+                     if ( ptly.data ) {
+	                 Plotly.plot(tag.replace( /^#/, "" ), ptly.data, ptly.layout);
                      }
                      break;
             case "bokeh" : 
@@ -906,6 +915,7 @@ __~debug:plottwod{                     console.log( "ga.value.resetDefaultValue(
               ga.bokeh.reset( pkg, tag.replace( /^#/, "" ) );
               break;
 	  case "plot3d" :
+	  case "plotly" :
 	      console.log( "reset default value for plot3d: " + tag );
 	      Plotly.purge(tag.replace( /^#/, "" ));
 	      if ( $( tag + "_showcollapse" ).length )
