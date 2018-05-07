@@ -117,14 +117,17 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
             switch ( match.attr( "type" ) )
             {
 	    case "plot3d" :
+	    case "plotly" :
 		htag = "#" + k;
+                __~debug:plotly{console.log( "Plotly v:" + JSON.stringify( v ) );}
 		v.layout = $.extend( {}, v.layout, {showlegend: false } );
 		
 		ga.plot3dglobal     = v.layout;
 		ga.dataplot3dglobal = v.data;
 		ga.plotted3d        = 0;
 		
-		console.log("JSON Options: " + JSON.stringify(v.layout));
+		__~debug:plotly{console.log("Plotly JSON Options: " + JSON.stringify(v.layout));}
+		__~debug:plotly{console.log("plotly JSON Data: " + JSON.stringify(v.data));}
 
 		if ( $( htag  + "_showcollapse" ).length )
 		{
@@ -140,6 +143,8 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 		    ga.plotted3d=1;
 		    $(  htag  + "_showcollapse" ).trigger( "click" );
 		}
+		savekey = mod_out + ":#" + k + ":last_value";
+                $( "#global_data" ).data( savekey , v ); 
 		break;
             case "plot2d" : 
                 __~debug:plottwod{console.log( "ga.data.update v is " );console.dir( v );}
