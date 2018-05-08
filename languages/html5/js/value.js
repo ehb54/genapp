@@ -885,7 +885,8 @@ __~debug:plottwod{                     console.log( "ga.value.resetDefaultValue(
                         $( "#global_data" ).data( pkg + ":" + tag + ":last_value", [[]] );
                         ga.value.clear.plot2d( tag );
                         t.plot( [[]], ga.value.get.plot2d.plot_options( tag ) ); 
-	                if (ga.showcollapse2d)
+	                //if (ga.showcollapse2d)
+	               if($( tag + "_showcollapse" ).length)
 	                {
 			    $( tag + "_div").hide(); 
 			    

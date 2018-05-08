@@ -9,13 +9,21 @@ ga.stages = {};
 ga.stagesdefault = {};
 ga.currentstage = 0;
 
-ga.fielderrors = 0;
-ga.customtooltips = 0;
+//ga.fielderrors = 0;
+//ga.customtooltips = 0;
+//ga.showcollapse3d = 0;
+//ga.showcollapse2d = 0;
 
-ga.showcollapse3d = 0;
-ga.firstplotted3d = 0;
+ga.fielderrors    = {};  
+ga.customtooltips = {};
+ga.showcollapse3d = {};
+ga.plotted3d      = {};
+ga.showcollapse2d = {};
+ga.plotted2d      = {};
 
-ga.showcollapse2d = 0;
+//ga.firstplotted3d = 0;
+
+
 
 // extend jstree for singleselect & conditional select plugins:
 
