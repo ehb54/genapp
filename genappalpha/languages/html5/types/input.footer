@@ -132,7 +132,7 @@ __~submit_cb{   ga.altfile.bdata[ "__moduleid__" ].cb("#__submit_cb__"); ga.altf
 __~debug:job{   console.log( "you clicked" );}
 
    if ( !ga.valid.checksubmit( "__moduleid__" ) ) {
-       ga.valid.showerrormessage();
+       ga.valid.showerrormessage( "__moduleid__" );
        return false;
    }
 
@@ -408,7 +408,7 @@ __moduleid___reset = function() {
        __moduleid___timeout_handler = "unset";
     }
     ga.event( "", "__moduleid__", "reset clicked" );
-    ga.valid.clearerrorcounter();
+    ga.valid.clearerrorcounter( "__moduleid__" );
 
    if ( ga.multistage["__moduleid__"] )
      {
