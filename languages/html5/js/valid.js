@@ -214,13 +214,15 @@ __~debug:valid{   console.log( "ga.valid.checksubmit( " + module + " )" );}
       return 1;
    }
 
+   ga.valid.clearerrorcounter( module );
+    
    for ( i in ga.altfile.bdata[ module ] ) {
       if ( ga.altfile.bdata[ module ][ i ].req  ) {
 	  //console.log( "ga.altfile.bdata[ module ][ i ].req = " +  ga.altfile.bdata[ module ][ i ].req);
           switch ( ga.altfile.bdata[ module ][ i ].req ) {
-              case "lrfile" : ok = ok && ga.valid.checkLrfile( "#" + i ); if ($("#" + i).length && !ga.valid.checkLrfile( "#" + i )) {++ga.fielderrors;} break;
-              case "rpath"  : ok = ok && ga.valid.checkRpath ( "#" + i ); if ($("#" + i).length && !ga.valid.checkRpath ( "#" + i )) {++ga.fielderrors;} break;
-              case "rfile"  : ok = ok && ga.valid.checkRfile ( "#" + i ); if ($("#" + i).length && !ga.valid.checkRfile ( "#" + i )) {++ga.fielderrors;} break;
+              case "lrfile" : ok = ok && ga.valid.checkLrfile( "#" + i ); if ($("#" + i).length && !ga.valid.checkLrfile( "#" + i )) {++ga.fielderrors[module];} break;
+              case "rpath"  : ok = ok && ga.valid.checkRpath ( "#" + i ); if ($("#" + i).length && !ga.valid.checkRpath ( "#" + i )) {++ga.fielderrors[module];} break;
+              case "rfile"  : ok = ok && ga.valid.checkRfile ( "#" + i ); if ($("#" + i).length && !ga.valid.checkRfile ( "#" + i )) {++ga.fielderrors[module];} break;
               default       : console.log( "ga.valid.checksubmit() unsupported required check " +  ga.altfile.bdata[ module ][ i ].req ); break;
           }
       }
@@ -231,18 +233,18 @@ __~debug:valid{   console.log( "ga.valid.checksubmit( " + module + " )" );}
 	    //console.log( "ga.value.types[ module ][ i ].req = " +  ga.value.types[ module ][ i ].req);
             switch ( ga.value.types[ module ][ i ].req ) {
 	    case "float": 
-		if ($("#" + i).length && !ga.valid.checkFloat( "#" + i )) {++ga.fielderrors;}
+		if ($("#" + i).length && !ga.valid.checkFloat( "#" + i )) {++ga.fielderrors[module];}
 		break;
 	    case "integer": 
-		if ($("#" + i).length && !ga.valid.checkInt( "#" + i )) {++ga.fielderrors;}
+		if ($("#" + i).length && !ga.valid.checkInt( "#" + i )) {++ga.fielderrors[module];}
 		break;
 	    case "text": 
-		if ($("#" + i).length && !ga.valid.checkText( "#" + i )) {++ga.fielderrors;}
+		if ($("#" + i).length && !ga.valid.checkText( "#" + i )) {++ga.fielderrors[module];} 
 		//console.log( "pattern of " + i + ": " + $('#'+i).attr("pattern") );
 		//console.log( "text_req Check: " +  ga.valid.checkText( "#" + i ));
 		break;	
 	    case "file": 
-		if ($("#" + i).length && !ga.valid.checkLrfile( "#" + i )) {++ga.fielderrors;}
+		if ($("#" + i).length && !ga.valid.checkLrfile( "#" + i )) {++ga.fielderrors[module];}
 		break;
 	    default: 
 		console.log( "ga.valid.checksubmit() unsupported required check " +  ga.value.types[ module ][ i ].req ); break;
@@ -251,28 +253,28 @@ __~debug:valid{   console.log( "ga.valid.checksubmit( " + module + " )" );}
 	}
     }
     
-    if (ga.fielderrors > 0)
+    if (ga.fielderrors[module] > 0)
     {
    	ok = 0;
     }
     
-    //console.log( "ga.fielderrors = " + ga.fielderrors );     
+    //console.log( "ga.fielderrors = " + ga.fielderrors[module] );     
     return ok;
 }
 
-ga.valid.showerrormessage = function() {
+ga.valid.showerrormessage = function( module ) {
     ga.msg.box( {
 	icon : "warning.png",
-	text : "" + ga.fielderrors + " fields are missing or not set correctly!",
+	text : "" + ga.fielderrors[ module ] + " fields are missing or not set correctly!",
 	buttons : [
 	    { id    : "ok",
 	      label : "OK" } ]
     });
-    ga.fielderrors = 0;
+    ga.fielderrors[ module ] = 0;
 }
 
-ga.valid.clearerrorcounter = function() {
-    ga.fielderrors = 0;
+ga.valid.clearerrorcounter = function( module ) {
+    ga.fielderrors[ module ] = 0;
 }
 
 

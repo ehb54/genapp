@@ -124,7 +124,7 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 		
 		ga.plot3dglobal     = v.layout;
 		ga.dataplot3dglobal = v.data;
-		ga.plotted3d        = 0;
+		ga.plotted3d[ mod ] = 0;
 		
 		__~debug:plotly{console.log("Plotly JSON Options: " + JSON.stringify(v.layout));}
 		__~debug:plotly{console.log("plotly JSON Data: " + JSON.stringify(v.data));}
@@ -138,9 +138,9 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 		//{
 		Plotly.plot(k, v.data, v.layout);
 		//}
-		if (ga.showcollapse3d)
+		if ( ga.showcollapse3d[ mod ] )
 		{
-		    ga.plotted3d=1;
+		    ga.plotted3d[ mod ] = 1;
 		    $(  htag  + "_showcollapse" ).trigger( "click" );
 		}
 		savekey = mod_out + ":#" + k + ":last_value";
@@ -170,7 +170,7 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 		    plot = $.plot( htag, v.data, ga.value.get.plot2d.plot_options( htag, v.options ) );
 
 		    // play with tooltip response upon hover //////////////////////////////////////////
-		    if (ga.customtooltips)
+		    if ( ga.customtooltips[ mod ] ) 
 		    {
 			var previousPoint = null;
 			$( htag ).bind("plothover", function (event, pos, item) {
@@ -237,7 +237,7 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 		{
 		    $(htag + "_showcollapse").removeClass( "hidden" );
 		    $(htag).show();
-		    ga.plotted2d=1;
+		    ga.plotted2d[ mod ]=1;
 		    $(  htag  + "_showcollapse" ).trigger( "click" );
 		}
 
