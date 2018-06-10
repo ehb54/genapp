@@ -90,7 +90,8 @@ ga.data.update = function( mod, data, msging_f, msg_id ) {
         thtml,
         t,
         jsmolfile,
-        match;
+        match,
+        t2;
 
 __~debug:data{    console.log( "ga.data.update( " + mod + " , " + data + " )" );}
 __~debug:data{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_msgs );} 
@@ -309,6 +310,11 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
                 // strip header, process eval & html
                 ga.bokeh.render( mod, k, v );
                 break;
+
+            case "ngl" : 
+                ga.value.nglshow( mod_out, k, v );
+                break;
+
             case "atomicstructure" : 
                 //                               Jmol.setDocument( 0 );
                 savekey = mod_out + ":#" + k + ":last_value";

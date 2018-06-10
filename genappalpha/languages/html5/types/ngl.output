@@ -1,0 +1,10 @@
+</table>
+<p><label for="__fields:id__">__fields:label__ <div id="__fields:id__" type="ngl" __~fields:help{ class="help_link"}></div>
+__~fields:help{<span class="help">__fields:help__</span>}</label></p>
+<p><div id="__fields:id___plot" style="__~fields:width{width:__fields:width__;}__~fields:height{height:__fields:height__;}"></div></p>
+<p><div id="__fields:id___buttons"></div></p>
+<script>
+ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );
+ga.value.extra_resets( "__fields:id__" );
+</script>
+<table>

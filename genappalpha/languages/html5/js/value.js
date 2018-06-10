@@ -729,6 +729,9 @@ __~debug:values{   console.log( "ga.value.setLastValue() pkg:" + pkg + " tag:" +
                __~debug:values{console.log( "ga.value.setLastValue() on undefined plot2d not yet: " + tl );}
                __~debug:plottwod{console.log( "ga.value.setLastValue() on undefined plot2d not yet: " + tl );}
                break;
+	    case "ngl" :
+               ga.ngl.clear( tl, tag );
+               break;
             case "bokeh" :
                __~debug:values{console.log( "ga.value.setLastValue() on bokeh: " + tl );}
                __~debug:bokeh{console.log( "ga.value.setLastValue() on bokeh: " + tl );}
@@ -797,6 +800,12 @@ __~debug:plottwod{                     console.log( "ga.value.setLastValue() plo
                     __~debug:values{console.log( "ga.value.setLastValue() bokeh" );}
                     __~debug:bokeh{console.log( "ga.value.setLastValue() bokeh" );}
                      break;
+            case "ngl" : 
+                var ngld = gd.data( tl );
+                if ( ngld ) {
+                    ga.value.nglshow( pkg, tag.replace(/^#/, ""), ngld );
+                }
+                break;
             case "filelink" : 
             case "filelinkm" : 
                      $( tag + "_filelink" ).html( $( "#global_data" ).data( tl ) );
@@ -858,7 +867,9 @@ __~debug:values{   console.log( "ga.value.saveLastValues( " + pkg + " ) for " + 
 
 ga.value.resetDefaultValue = function( pkg, tag ) {
 __~debug:values{   console.log( "ga.value.resetDefaultValue( " + pkg + " , " + tag + " )" );}
+    __~debug:resetvalues{console.log( "ga.value.resetDefaultValue( " + pkg + " , " + tag + " )" );}
    var t = $( tag );
+   var tl;
 __~debug:values{   console.log( "ga.value.resetDefaultValue() type:" + t.attr( "type" ) );}
 __~debug:values{   console.log( "ga.value.resetDefaultValue() tagname:" + t.prop( "tagName" ) );}
    if(  t.prop( "tagName" ) == 'SELECT' ) {
@@ -866,6 +877,20 @@ __~debug:values{   console.log( "ga.value.resetDefaultValue() tagname:" + t.prop
    } else {
       switch( t.attr( "type" ) )
       {
+          case "ngl" : {
+              tl = pkg + ":" + tag + ":last_value"; 
+              ga.ngl.clear( tl, tag );
+
+//              tl = pkg + ":" + tag + ":last_value"; 
+//              if ( ga.stage[ tl ] ) {
+//                  ga.stage[ tl ].dispose();
+//                  delete ga.stage[ tl ];
+//              }
+//              $( tag + "_plot" ).empty(); 
+//              $( "#global_data" ).removeData( tl ); 
+          }
+          break;
+
           case "file" : __~debug:values{console.log( "ga.value.resetDefaultValue() file set is insecure, skipped" );} return; break;
           case "checkbox" : 
                         $( "#global_data" ).removeData( pkg + ":" + tag + ":repeat:count" );
@@ -947,7 +972,8 @@ __~debug:values{                         console.log( "ga.value.resetDefaultValu
 }
 
 ga.value.resetDefaultValues = function( pkg, msgs ) {
-__~debug:values{   console.log( "ga.value.resetDefautValues( " + pkg + " )" );}
+    __~debug:values{console.log( "ga.value.resetDefautValues( " + pkg + " )" );}
+    __~debug:resetvalues{console.log( "ga.value.resetDefautValues( " + pkg + " )" );}
     var i,
     hmod_textarea;
     if ( !/_output$/.test( pkg ) ) {
@@ -973,17 +999,18 @@ __~debug:values{   console.log( "ga.value.resetDefautValues( " + pkg + " )" );}
 }
 
 ga.value.extra_resets = function( id ) {
-__~debug:values{     console.log( "ga.value.extra_resets( " + id + " )" );}
+    __~debug:values{console.log( "ga.value.extra_resets( " + id + " )" );}
+    __~debug:resetvalues{console.log( "ga.value.extra_resets( " + id + " )" );}
     ga.value.extra_resets.data = ga.value.extra_resets.data || {};
     ga.value.extra_resets.data[ id ] = 1;
 }
 
 ga.value.extra_resets.clear = function() {
-__~debug:values{     console.log( "ga.value.extra_resets.clear()" );}
+    __~debug:values{console.log( "ga.value.extra_resets.clear()" );}
+    __~debug:resetvalues{console.log( "ga.value.extra_resets.clear()" );}
     ga.value.extra_resets.data = {};
 }
     
-
 ga.value.setLastValueOutput = function( mod ) {
 __~debug:values{     console.log( "ga.value.setLastValueOutput( " + mod + " )" );}
     var hmod            = "#" + mod,
@@ -1276,3 +1303,82 @@ __~debug:plotticsx{    console.log( "tr " + axis._ehb.tr + " tval " + tval + " p
 
     return "";
 };
+
+ga.ngl = {};
+
+ga.ngl.types = [
+    "backbone"
+    ,"ball+stick"
+//    ,"base"
+    ,"cartoon"
+    ,"contact"
+//    ,"crossing"
+    ,"helixorient"
+    ,"hyperball"
+    ,"label"
+    ,"licorice"
+    ,"line"
+    ,"point"
+    ,"ribbon"
+    ,"rocket"
+    ,"rope"
+    ,"spacefill"
+    ,"surface"
+    ,"trace"
+    ,"tube"
+];
+
+// ga.ngl.types = [
+//    "cartoon"
+//    ,"spacefill"
+//];
+
+ga.ngl.clear = function ( tl, tid ) {
+    if ( ga.ngl[ tl ] ) {
+        if ( ga.ngl[ tl ].stage ) {
+            ga.ngl[ tl ].stage.dispose();
+        }
+        delete ga.ngl[ tl ];
+    }
+    $( tid + "_plot" ).empty();
+    $( tid + "_buttons" ).empty();
+    $( "#global_data" ).removeData( tl );
+}
+
+ga.value.nglshow = function( mod, id, v ) {
+    __~debug:ngl{console.log( "ga.value.nglshow( " + mod + " , " + id  + " , " + JSON.stringify( v ) + " )" );}
+    var tid = "#" + id;
+    ga.ngl = ga.ngl || {};
+    var savekey = mod + ":" + tid + ":last_value";
+    ga.ngl.clear( savekey, tid );
+    if ( v.loadname ) {
+        if ( !v.loadparams ) {
+            v.loadparams = {};
+        }
+        if ( !v.representation ) {
+            v.representation = "cartoon";
+        }
+        ga.ngl[ savekey ] = {};
+        ga.ngl[ savekey ].stage = new NGL.Stage( id + "_plot" );
+        ga.ngl[ savekey ].stage.loadFile( v.loadname, v.loadparams ).then( function (component) {
+            ga.ngl[ savekey ].component = component;
+            ga.ngl[ savekey ].reps = {};
+            ga.ngl[ savekey ].reps[ v.representation ] = component.addRepresentation( v.representation );
+            // provide a "good" view of the structure
+            component.autoView();
+            
+            var al = ga.ngl.types.length;
+            var htmladd = "";
+            var evaladd = "";
+            for ( var i = 0; i < al; ++i ) {
+                htmladd += '<button id="' + ga.ngl.types[ i ].replace( '+', '' ) + '">' + ga.ngl.types[ i ] + '</button>';
+                evaladd += '$("#' + ga.ngl.types[ i ].replace( '+', '' ) + '").on("click", function() { var sk = ga.ngl["' + savekey + '"]; var comp = sk.component; var crep = sk.reps["' + ga.ngl.types[ i ] + '"]; if ( comp && crep ) { comp.removeRepresentation( crep ); delete sk.reps["' + ga.ngl.types[ i ] + '"]; } else { sk.reps["' + ga.ngl.types[ i ] + '"] = comp.addRepresentation("' + ga.ngl.types[ i ] + '");} return false; });';
+            }
+            $( tid + "_buttons" ).html( htmladd );
+            __~debug:ngl{console.log( evaladd );}
+            eval ( evaladd );
+        });
+        $( "#global_data" ).data( savekey , v ); 
+    }
+    ga.value.extra_resets( id );
+}    
