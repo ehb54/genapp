@@ -42,6 +42,9 @@ ga.qr.question = function( mod, q ) {
     var ifhelp;
     var ifhhelp;
     var helpspan;
+    var gridcss;
+    var gridref;
+    var align;
 
     // initial error checking
 
@@ -77,331 +80,703 @@ ga.qr.question = function( mod, q ) {
 
     id = q._uuid + "-" + q._msgid;
 
-    qtext += '<form id="' + id + '"><table>';
+    if ( q._question.grid ) {
 
-    for ( i = 0; i < q._question.fields.length; ++i ) {
-        tf = q._question.fields[ i ];
+        ga.grid.align = ga.grid.align || "left";
+        gridcss = "display:grid;grid-gap:";
+        gridref = ga.grid.init();
 
-        if ( !tf.id ) {
-            etext += "No id in field " + i + ". ";
-        }
-
-        if ( !/^[A-Za-z][A-Za-z0-9_]*$/.test( tf.id ) ) {
-            etext += "Invalid id for field " + i + ' with id value "' + tf.id + '". Only alpha in first character and alphanumeric and underscores subsequently allowed.';
-        }
-
-        if ( !tf.type ) {
-            etext += "No type in field " + i + ". ";
-        }
-            
-        if ( tf.id && tf.type ) {
-            if ( usedids[tf.id] ) {
-                etext += "Duplicate id in _question fields:" + tf.id + ". ";
-            }
-            usedids[tf.id] = 1;
-            
-            if ( tf.help ) {
-                ifhelp = ' class="help_link"';
-                ifhhelp = ' class="highlight help_link"'; 
-                help_span = '<span class="help">' + tf.help + '</span>';
+        if ( typeof q._question.grid === 'object' ) {
+            if ( !q._question.grid.colwidths ) {
+                etext += " _question:grid specified, but it is not a number and colwidths not defined.";
             } else {
-                ifhelp = '';
-                ifhhelp = ' class="highlight"';
-                help_span = '';
+                if ( typeof q._question.grid.colwidths !== "object" ) {
+                    etext += " _question:grid:colwidths specified, but it is not an array.";
+                }
+            }
+                
+            if ( etext.length ) {
+                return ga.qr.rerror( q, etext );
             }
 
-            switch ( tf.type ) {
-            case "label" : {
-                qtext += '<tr><td colspan=2><label' + ifhelp+ '>';
-                if ( tf.label ) {
-                    qtext += tf.label;
-                }
-                qtext += '</label>' + help_span + '</td></tr>';
+            if ( q._question.grid.gap ) {
+                gridcss += q._question.grid.gap;
+            } else {
+                gridcss += "10px";
             }
-            break;
 
-            // for files we are going to have to have a file server (php) which receives the file for the user and coordinates with
-            // the msg server? or wait until the file is uploaded to send ?
-            // let's get the button up first
+            gridcss += ";grid-template-columns:";
 
-            case "file" : {
-                qtext += "<tr><td>";
-                if ( tf.label ) {
-                    qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
-                }
-                qtext += '</td><td><input type="file" id="' + tf.id + '" name="' + tf.id + '[]"' + ifhelp;
-                if ( tf.required ) {
-                    qtext += ' required';
-                }
-                if ( tf.multiple ) {
-                    qtext += ' multiple';
-                }
-                if ( tf.accept ) {
-                    qtext += ' accept="' + tf.accept + '"';
-                }
-                qtext += '>' + help_span + '</td></tr>';
+            for ( i = 0; i < q._question.grid.colwidths.length; ++i ) {
+                gridcss += q._question.grid.colwidths[ i ] + "fr ";
             }
-            break;
-
-            case "lrfile" : {
-                qtext += "<tr><td>";
-                if ( tf.label ) {
-                    qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
-                }
-                qtext += '</td><td>'
-                    + '<input type="file" id="' + tf.id + '" name="' + tf.id + '[]" data-add="' + tf.id + '_altval"' + ifhelp;
-                if ( tf.required ) {
-                    qtext += ' required';
-                }
-                if ( tf.multiple ) {
-                    qtext += ' multiple';
-                }
-                if ( tf.accept ) {
-                    qtext += ' accept="' + tf.accept + '"';
-                }
-                qtext += '>'
-                    + help_span
-                    + ' or <button id="' + tf.id + '_button" name="' + tf.id + '_button" data-type="lrfile"' + ifhelp 
-                    + '><span class="buttontext">Browse server</span></button>'
-                    + help_span 
-                    + '</td><td><span id="' + tf.id + '_altval"></td></span>'
-                    + '<input type="hidden" name="_selaltval_' + tf.id + '" value="' + tf.id + '_altval"</input>'
-                    + '</td></tr>'
-                ;
-                qeval += 'ga.altfile("' + id + '","' + tf.id + '","' + tf.id + '_altval" );'
-                    + '$( "#' + id + '" ).change( function(){ $( "#' + tf.id + '_altval" ).html( "<i>Local</i>: " + $( "#' + tf.id + '" ).val().replace(/^C:.fakepath./,""));'
-                // + $("#__fields:id___msg").empty();
-                    + '});'
-                    + 'ga.altfile.button( "' + id + '","' + tf.id + '","' + tf.label + '","rfile",function(v){ga.altfile.button.lrfile(v,"' + id + '","' + tf.id + '")}';
-                ;
-                if ( tf.required ) {
-                    qeval += ',"lrfile"';
-                }
-                qeval += ');';
-                // qeval += '$("#' + id + '_button").click( function( e ) {e.preventDefault();e.returnValue = false;});';
-                qeval += '$("#' + tf.id + '_button").on("click",function(){return ga.altfile.button.call("' + id + '","' + tf.id + '");});'
-                    // __~fields:setinputfromfile{'ga.value.setInputfromFile("#__fields:id__", "__fields:setinputfromfile__", "__fields:setinputfromfileids__", "__moduleid__");' +}
-                ;
-                __~debug:qr{console.log( "qeval:" );}
-                __~debug:qr{console.log( qeval );}
+        } else {
+            gridcss += "10px;grid-template-columns:auto ";
+            if ( q._question.grid < 2 ) {
+                q._question.grid = 2;
             }
-            break;
-
-
-            case "text" : {
-                qtext += "<tr><td>";
-                if ( tf.label ) {
-                    qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
-                }
-                qtext += '</td><td><input type="text" id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
-                if ( tf.required ) {
-                    qtext += ' required';
-                }
-                if ( tf.readonly ) {
-                    qtext += ' readonly';
-                }
-                if ( tf['default'] ) {
-                    qtext += ' value="' + tf['default'] + '"';
-                }
-                if ( tf.pattern ) {
-                    qtext += ' pattern="' + tf.pattern + '"';
-                }
-                if ( tf.maxlength ) {
-                    qtext += ' maxlength="' + tf.maxlength + '"';
-                }
-                if ( tf.size ) {
-                    qtext += ' size="' + tf.size + '"';
-                }
-                qtext += '>' + help_span + '</td></tr>';
+            for ( i = 1; i < q._question.grid; ++i ) {
+                gridcss += " auto";
             }
-            break;
+        }            
+        gridcss += ";";
+            
+        qtext += '<form id="' + id + '" style="' + gridcss + '">';
 
-            case "integer" : {
-                qtext += "<tr><td>";
-                if ( tf.label ) {
-                    qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
-                }
-                qtext += '</td><td><input type="number" id="' + tf.id + '" step="1" name="' + tf.id + '"' + ifhelp;
-                if ( tf.required ) {
-                    qtext += ' required';
-                }
-                if ( tf.readonly ) {
-                    qtext += ' readonly';
-                }
-                if ( tf['default'] ) {
-                    qtext += ' value="' + tf['default'] + '"';
-                }
-                if ( tf.pattern ) {
-                    qtext += ' pattern="' + tf.pattern + '"';
-                }
-                if ( tf.min ) {
-                    qtext += ' min="' + tf.min + '"';
-                }
-                if ( tf.max ) {
-                    qtext += ' max="' + tf.max + '"';
-                }
-                qtext += '>' + help_span + '</td></tr>';
+        row_start = 0;
+
+        for ( i = 0; i < q._question.fields.length; ++i ) {
+
+            tf = q._question.fields[ i ];
+
+            if ( !tf.id ) {
+                etext += "No id in field " + i + ". ";
             }
-            break;
 
-            case "float" : {
-                qtext += "<tr><td>";
-                if ( tf.label ) {
-                    qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
-                }
-                qtext += '</td><td><input type="number" id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
-                if ( tf.required ) {
-                    qtext += ' required';
-                }
-                if ( tf.readonly ) {
-                    qtext += ' readonly';
-                }
-                if ( tf.required ) {
-                    qtext += ' required';
-                }
-                if ( tf['default'] ) {
-                    qtext += ' value="' + tf['default'] + '"';
-                }
-                if ( tf.pattern ) {
-                    qtext += ' pattern="' + tf.pattern + '"';
-                }
-                if ( tf.step ) {
-                    qtext += ' step="' + tf.step + '"';
-                }
-                if ( tf.min ) {
-                    qtext += ' min="' + tf.min + '"';
-                }
-                if ( tf.max ) {
-                    qtext += ' max="' + tf.max + '"';
-                }
-                qtext += '>' + help_span + '</td></tr>';
+            if ( !/^[A-Za-z][A-Za-z0-9_]*$/.test( tf.id ) ) {
+                etext += "Invalid id for field " + i + ' with id value "' + tf.id + '". Only alpha in first character and alphanumeric and underscores subsequently allowed.';
             }
-            break;
 
-            case "textarea" : {
-                qtext += "<tr><td>";
-                if ( tf.label ) {
-                    qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
-                }
-                qtext += '</td><td><textarea id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
-                if ( tf.required ) {
-                    qtext += ' required';
-                }
-                // if ( tf.readonly ) {
-                // always readonly for now
-                qtext += ' readonly';
-                // }
-                if ( tf.fontfamily ) {
-                    qtext += ' style="font-family: ' + tf.fontfamily + ';"';
-                }
-                if ( tf.cols ) {
-                    qtext += ' cols=' + tf.cols;
-                }
-                if ( tf.rows ) {
-                    qtext += ' rows=' + tf.rows;
-                }
-                qtext += ">";
-                if ( tf['default'] ) {
-                    qtext += tf['default'];
-                }
-                qtext += '</textarea>' + help_span + '</td></tr>';
+            if ( !tf.type ) {
+                etext += "No type in field " + i + ". ";
             }
-            break;
+            
 
-            case "checkbox" : {
-                qtext += "<tr><td>";
-                if ( tf.label ) {
-                    qtext += '<label for="' + tf.id + '"' + ifhhelp + '>' + tf.label + '</label>';
-                }
-                qtext += '</td><td><input type="checkbox" id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
-                if ( tf.checked ) {
-                    qtext += ' checked';
-                }
-                if ( tf.readonly ) {
-                    qtext += ' readonly';
-                }
-                qtext += '>' + help_span + '</td></tr>';
-            }
-            break;
+            if ( tf.id && tf.type ) {
+                align = "text-align:" + ( tf.grid && tf.grid.align ? tf.grid.align : ga.grid.align ) + ";";
 
-            case "listbox" : {
-                if ( tf.header ) {
-                    qtext += '<tr><td colspan=2';
-                    if ( tf.fontfamily || tf.fontsize ) {
-                        qtext += ' style="';
-                        if ( tf.fontfamily ) {
-                            qtext += 'font-family:' + tf.fontfamily + ';';
-                        }
-                        if ( tf.fontsize ) {
-                            qtext += 'font-size:' + tf.fontsize + ';';
-                        }
-                        qtext += '"';
-                    }
-                    if( tf.width ) {
-                        tf.header = tf.header.padEnd( tf.width );
-                    }
-                    tf.header = tf.header.replace( / /g, '&nbsp;' );
-                    __~debug:qr{console.log( tf.header );}
-                    qtext += '>' + tf.header + '</td></tr>';
+                if ( usedids[tf.id] ) {
+                    etext += "Duplicate id in _question fields:" + tf.id + ". ";
                 }
-                qtext += "<tr><td>";
-                if ( tf.label ) {
-                    qtext += '<label for="' + tf.id + '"' + ifhhelp + '>' + tf.label + '</label>';
-                }
-                qtext += '</td>';
-                if ( tf.size && tf.size > 1 ) {
-                    qtext += '</tr><tr><td colspan=2>';
+                usedids[tf.id] = 1;
+                
+                if ( tf.help ) {
+                    ifhelp = ' class="help_link"';
+                    ifhhelp = ' class="highlight help_link"'; 
+                    help_span = '<span class="help">' + tf.help + '</span>';
                 } else {
-                    qtext += '<td>';
+                    ifhelp = '';
+                    ifhhelp = ' class="highlight"';
+                    help_span = '';
                 }
-                qtext += '<select id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
-                if ( tf.required ) {
-                    qtext += ' required';
+
+                switch ( tf.type ) {
+                case "label" : {
+                    ga.grid.newrow( gridref );
+                    qtext += ga.grid.next( gridref, tf.grid ? tf.grid.label : null, align ) + '<label' + ifhelp+ '>';
+                    if ( tf.label ) {
+                        qtext += tf.label;
+                    }
+                    qtext += '</label>' + help_span + '</div>';
                 }
-                if ( tf.fontfamily ) {
-                    qtext += ' style="font-family: ' + tf.fontfamily + ';"';
-                }
-                if ( tf.size ) {
-                    qtext += ' size=' + tf.size;
-                }
-                if ( tf.multiple ) {
-                    qtext += ' multiple';
-                }
-                qtext += '>';
-                if ( !tf.values ) {
-                    etext += "No values for listbox " + tf.id + ". ";
                     break;
+
+                    // for files we are going to have to have a file server (php) which receives the file for the user and coordinates with
+                    // the msg server? or wait until the file is uploaded to send ?
+                    // let's get the button up first
+
+                case "file" : {
+                    ga.grid.newrow( gridref );
+                    if ( tf.label ) {
+                        qtext += ga.grid.next( gridref, tf.grid ? tf.grid.label : null, align ) + '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label></div>';
+                    }
+                    qtext += ga.grid.next( gridref, tf.grid ? tf.grid.data : null, align ) + '<input type="file" id="' + tf.id + '" name="' + tf.id + '[]"' + ifhelp;
+                    if ( tf.required ) {
+                        qtext += ' required';
+                    }
+                    if ( tf.multiple ) {
+                        qtext += ' multiple';
+                    }
+                    if ( tf.accept ) {
+                        qtext += ' accept="' + tf.accept + '"';
+                    }
+                    qtext += '>' + help_span + '</div>';
                 }
-                if ( tf.returns ) {
-                    if ( tf.returns && tf.returns.length != tf.values.length ) {
-                        etext += "Listbox values length (" + tf.values.length + ") does not equal return length (" + tf.returns.length + ") for listbox " + tf.id + ". ";
+                    break;
+
+                case "lrfile" : {
+                    ga.grid.newrow( gridref );
+                    if ( tf.label ) {
+                        qtext += ga.grid.next( gridref, tf.grid ? tf.grid.label : null, align ) + '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label></div>';
+                    }
+                    qtext += ga.grid.next( gridref, tf.grid ? tf.grid.data : null, align ) + '<input type="file" id="' + tf.id + '" name="' + tf.id + '[]" data-add="' + tf.id + '_altval"' + ifhelp;
+                    if ( tf.required ) {
+                        qtext += ' required';
+                    }
+                    if ( tf.multiple ) {
+                        qtext += ' multiple';
+                    }
+                    if ( tf.accept ) {
+                        qtext += ' accept="' + tf.accept + '"';
+                    }
+                    qtext += '>'
+                        + help_span
+                        + ' or <button id="' + tf.id + '_button" name="' + tf.id + '_button" data-type="lrfile"' + ifhelp 
+                        + '><span class="buttontext">Browse server</span></button>'
+                        + help_span 
+                        + '<span id="' + tf.id + '_altval"></span>'
+                        + '<input type="hidden" name="_selaltval_' + tf.id + '" value="' + tf.id + '_altval"</input>'
+                        + '</div>'
+                    ;
+                    qeval += 'ga.altfile("' + id + '","' + tf.id + '","' + tf.id + '_altval" );'
+                        + '$( "#' + id + '" ).change( function(){ $( "#' + tf.id + '_altval" ).html( "<i>Local</i>: " + $( "#' + tf.id + '" ).val().replace(/^C:.fakepath./,""));'
+                    // + $("#__fields:id___msg").empty();
+                        + '});'
+                        + 'ga.altfile.button( "' + id + '","' + tf.id + '","' + tf.label + '","rfile",function(v){ga.altfile.button.lrfile(v,"' + id + '","' + tf.id + '")}';
+                    ;
+                    if ( tf.required ) {
+                        qeval += ',"lrfile"';
+                    }
+                    qeval += ');';
+                    // qeval += '$("#' + id + '_button").click( function( e ) {e.preventDefault();e.returnValue = false;});';
+                    qeval += '$("#' + tf.id + '_button").on("click",function(){return ga.altfile.button.call("' + id + '","' + tf.id + '");});'
+                    // __~fields:setinputfromfile{'ga.value.setInputfromFile("#__fields:id__", "__fields:setinputfromfile__", "__fields:setinputfromfileids__", "__moduleid__");' +}
+                    ;
+                    __~debug:qr{console.log( "qeval:" );}
+                    __~debug:qr{console.log( qeval );}
+                }
+                    break;
+
+
+                case "text" : {
+                    ga.grid.newrow( gridref );
+                    if ( tf.label ) {
+                        qtext += ga.grid.next( gridref, tf.grid ? tf.grid.label : null, align ) + '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label></div>';
+                    }
+                    qtext += ga.grid.next( gridref, tf.grid ? tf.grid.data : null, align ) + '<input type="text" id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
+                    if ( tf.required ) {
+                        qtext += ' required';
+                    }
+                    if ( tf.readonly ) {
+                        qtext += ' readonly';
+                    }
+                    if ( tf['default'] ) {
+                        qtext += ' value="' + tf['default'] + '"';
+                    }
+                    if ( tf.pattern ) {
+                        qtext += ' pattern="' + tf.pattern + '"';
+                    }
+                    if ( tf.maxlength ) {
+                        qtext += ' maxlength="' + tf.maxlength + '"';
+                    }
+                    if ( tf.size ) {
+                        qtext += ' size="' + tf.size + '"';
+                    }
+                    qtext += '>' + help_span + '</div>';
+                }
+                    break;
+
+                case "integer" : {
+                    ga.grid.newrow( gridref );
+                    if ( tf.label ) {
+                        qtext += ga.grid.next( gridref, tf.grid ? tf.grid.label : null, align ) + '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label></div>';
+                    }
+                    qtext += ga.grid.next( gridref, tf.grid ? tf.grid.data : null, align ) + '<input type="number" id="' + tf.id + '" step="1" name="' + tf.id + '"' + ifhelp;
+                    if ( tf.required ) {
+                        qtext += ' required';
+                    }
+                    if ( tf.readonly ) {
+                        qtext += ' readonly';
+                    }
+                    if ( tf['default'] ) {
+                        qtext += ' value="' + tf['default'] + '"';
+                    }
+                    if ( tf.pattern ) {
+                        qtext += ' pattern="' + tf.pattern + '"';
+                    }
+                    if ( tf.min ) {
+                        qtext += ' min="' + tf.min + '"';
+                    }
+                    if ( tf.max ) {
+                        qtext += ' max="' + tf.max + '"';
+                    }
+                    qtext += '>' + help_span + '</div>';
+                }
+                    break;
+
+                case "float" : {
+                    ga.grid.newrow( gridref );
+                    if ( tf.label ) {
+                        qtext += ga.grid.next( gridref, tf.grid ? tf.grid.label : null, align ) + '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label></div>';
+                    }
+                    qtext += ga.grid.next( gridref, tf.grid ? tf.grid.data : null, align ) + '<input type="number" id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
+                    if ( tf.required ) {
+                        qtext += ' required';
+                    }
+                    if ( tf.readonly ) {
+                        qtext += ' readonly';
+                    }
+                    if ( tf.required ) {
+                        qtext += ' required';
+                    }
+                    if ( tf['default'] ) {
+                        qtext += ' value="' + tf['default'] + '"';
+                    }
+                    if ( tf.pattern ) {
+                        qtext += ' pattern="' + tf.pattern + '"';
+                    }
+                    if ( tf.step ) {
+                        qtext += ' step="' + tf.step + '"';
+                    }
+                    if ( tf.min ) {
+                        qtext += ' min="' + tf.min + '"';
+                    }
+                    if ( tf.max ) {
+                        qtext += ' max="' + tf.max + '"';
+                    }
+                    qtext += '>' + help_span + '</div>';
+                }
+                    break;
+
+                case "textarea" : {
+                    ga.grid.newrow( gridref );
+                    if ( tf.label ) {
+                        qtext += ga.grid.next( gridref, tf.grid ? tf.grid.label : null, align ) + '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label></div>';
+                    }
+                    qtext += ga.grid.next( gridref, tf.grid ? tf.grid.data : null, align ) + '<textarea id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
+                    if ( tf.required ) {
+                        qtext += ' required';
+                    }
+                    // if ( tf.readonly ) {
+                    // always readonly for now
+                    qtext += ' readonly';
+                    // }
+                    if ( tf.fontfamily ) {
+                        qtext += ' style="font-family: ' + tf.fontfamily + ';"';
+                    }
+                    if ( tf.cols ) {
+                        qtext += ' cols=' + tf.cols;
+                    }
+                    if ( tf.rows ) {
+                        qtext += ' rows=' + tf.rows;
+                    }
+                    qtext += ">";
+                    if ( tf['default'] ) {
+                        qtext += tf['default'];
+                    }
+                    qtext += '</textarea>' + help_span + '</div>';
+                }
+                    break;
+
+                case "checkbox" : {
+                    ga.grid.newrow( gridref );
+                    if ( tf.label ) {
+                        qtext += ga.grid.next( gridref, tf.grid ? tf.grid.label : null, align ) + '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label></div>';
+                    }
+                    qtext += ga.grid.next( gridref, tf.grid ? tf.grid.data : null, align ) + '<input type="checkbox" id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
+                    if ( tf.checked ) {
+                        qtext += ' checked';
+                    }
+                    if ( tf.readonly ) {
+                        qtext += ' readonly';
+                    }
+                    qtext += '>' + help_span + '</div>';
+                }
+                    break;
+
+                case "listbox" : {
+                    ga.grid.newrow( gridref );
+                    if ( tf.header ) {
+                        if ( tf.label ) {
+                            ga.grid.next( gridref, tf.grid ? tf.grid.label : null );
+                        }
+                        qtext += '<div style="';
+                        if ( tf.fontfamily || tf.fontsize ) {
+                            if ( tf.fontfamily ) {
+                                qtext += 'font-family:' + tf.fontfamily + ';';
+                            }
+                            if ( tf.fontsize ) {
+                                qtext += 'font-size:' + tf.fontsize + ';';
+                            }
+                        }
+                        qtext += ga.grid.nextstyle( gridref, tf.grid ? tf.grid.data : null, align );
+                        qtext += '"';
+                        if( tf.width ) {
+                            tf.header = tf.header.padEnd( tf.width );
+                        }
+                        tf.header = tf.header.replace( / /g, '&nbsp;' );
+                        __~debug:qr{console.log( tf.header );}
+                        qtext += '>' + tf.header + '</div>';
+                        ga.grid.newrow( gridref );
+                    }
+                    if ( tf.label ) {
+                        qtext += ga.grid.next( gridref, tf.grid ? tf.grid.label : null, align ) + '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label></div>';
+                    }
+                    qtext += ga.grid.next( gridref, tf.grid ? tf.grid.data : null, align ) + '<select id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
+                    if ( tf.required ) {
+                        qtext += ' required';
+                    }
+                    if ( tf.fontfamily ) {
+                        qtext += ' style="font-family: ' + tf.fontfamily + ';"';
+                    }
+                    if ( tf.size ) {
+                        qtext += ' size=' + tf.size;
+                    }
+                    if ( tf.multiple ) {
+                        qtext += ' multiple';
+                    }
+                    qtext += '>';
+                    if ( !tf.values ) {
+                        etext += "No values for listbox " + tf.id + ". ";
                         break;
                     }
-                    for ( j = 0; j < tf.values.length; ++j ) {
-                        qtext += '<option value="' + tf.returns[ j ] + '">' + tf.values[ j ].replace( / /g, '\&nbsp' ) + '</option>';
+                    if ( tf.returns ) {
+                        if ( tf.returns && tf.returns.length != tf.values.length ) {
+                            etext += "Listbox values length (" + tf.values.length + ") does not equal return length (" + tf.returns.length + ") for listbox " + tf.id + ". ";
+                            break;
+                        }
+                        for ( j = 0; j < tf.values.length; ++j ) {
+                            qtext += '<option value="' + tf.returns[ j ] + '">' + tf.values[ j ].replace( / /g, '\&nbsp' ) + '</option>';
+                        }
+                    } else {
+                        for ( j = 0; j < tf.values.length; ++j ) {
+                            qtext += '<option value="' + j + '">' + tf.values[ j ].replace( / /g, '\&nbsp' ) + '</option>';
+                        }
                     }
-                } else {
-                    for ( j = 0; j < tf.values.length; ++j ) {
-                        qtext += '<option value="' + j + '">' + tf.values[ j ].replace( / /g, '\&nbsp' ) + '</option>';
+                    if ( tf['default'] ) {
+                        qeval += '$("#' + tf.id + ' option[value=\'' + tf['default'] + '\']").attr("selected", "true");';
+                        __~debug:qr{console.log( "Listbox qeval: " + qeval );}
                     }
+                    qtext += '</select>' + help_span + '</div>';
                 }
-                if ( tf['default'] ) {
-                    qeval += '$("#' + tf.id + ' option[value=\'' + tf['default'] + '\']").attr("selected", "true");';
-                    __~debug:qr{console.log( "Listbox qeval: " + qeval );}
+                    break;
+
+                default : {
+                    etext += "Unknown or currently unsupported field:type " + tf.type + ". ";
                 }
-                qtext += '</select>' + help_span + '</td></tr>';
-            }
-            break;
+                    break;
 
-            default : {
-                etext += "Unknown or currently unsupported field:type " + tf.type + ". ";
-            }
-            break;
-
+                }
             }
         }
+        qtext += '</form>';
+    } else {
+        qtext += '<form id="' + id + '"><table>';
+
+        for ( i = 0; i < q._question.fields.length; ++i ) {
+            tf = q._question.fields[ i ];
+
+            if ( !tf.id ) {
+                etext += "No id in field " + i + ". ";
+            }
+
+            if ( !/^[A-Za-z][A-Za-z0-9_]*$/.test( tf.id ) ) {
+                etext += "Invalid id for field " + i + ' with id value "' + tf.id + '". Only alpha in first character and alphanumeric and underscores subsequently allowed.';
+            }
+
+            if ( !tf.type ) {
+                etext += "No type in field " + i + ". ";
+            }
+            
+            if ( tf.id && tf.type ) {
+                if ( usedids[tf.id] ) {
+                    etext += "Duplicate id in _question fields:" + tf.id + ". ";
+                }
+                usedids[tf.id] = 1;
+                
+                if ( tf.help ) {
+                    ifhelp = ' class="help_link"';
+                    ifhhelp = ' class="highlight help_link"'; 
+                    help_span = '<span class="help">' + tf.help + '</span>';
+                } else {
+                    ifhelp = '';
+                    ifhhelp = ' class="highlight"';
+                    help_span = '';
+                }
+
+                switch ( tf.type ) {
+                case "label" : {
+                    qtext += '<tr><td colspan=2><label' + ifhelp+ '>';
+                    if ( tf.label ) {
+                        qtext += tf.label;
+                    }
+                    qtext += '</label>' + help_span + '</td></tr>';
+                }
+                    break;
+
+                    // for files we are going to have to have a file server (php) which receives the file for the user and coordinates with
+                    // the msg server? or wait until the file is uploaded to send ?
+                    // let's get the button up first
+
+                case "file" : {
+                    qtext += "<tr><td>";
+                    if ( tf.label ) {
+                        qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
+                    }
+                    qtext += '</td><td><input type="file" id="' + tf.id + '" name="' + tf.id + '[]"' + ifhelp;
+                    if ( tf.required ) {
+                        qtext += ' required';
+                    }
+                    if ( tf.multiple ) {
+                        qtext += ' multiple';
+                    }
+                    if ( tf.accept ) {
+                        qtext += ' accept="' + tf.accept + '"';
+                    }
+                    qtext += '>' + help_span + '</td></tr>';
+                }
+                    break;
+
+                case "lrfile" : {
+                    qtext += "<tr><td>";
+                    if ( tf.label ) {
+                        qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
+                    }
+                    qtext += '</td><td>'
+                        + '<input type="file" id="' + tf.id + '" name="' + tf.id + '[]" data-add="' + tf.id + '_altval"' + ifhelp;
+                    if ( tf.required ) {
+                        qtext += ' required';
+                    }
+                    if ( tf.multiple ) {
+                        qtext += ' multiple';
+                    }
+                    if ( tf.accept ) {
+                        qtext += ' accept="' + tf.accept + '"';
+                    }
+                    qtext += '>'
+                        + help_span
+                        + ' or <button id="' + tf.id + '_button" name="' + tf.id + '_button" data-type="lrfile"' + ifhelp 
+                        + '><span class="buttontext">Browse server</span></button>'
+                        + help_span 
+                        + '</td><td><span id="' + tf.id + '_altval"></td></span>'
+                        + '<input type="hidden" name="_selaltval_' + tf.id + '" value="' + tf.id + '_altval"</input>'
+                        + '</td></tr>'
+                    ;
+                    qeval += 'ga.altfile("' + id + '","' + tf.id + '","' + tf.id + '_altval" );'
+                        + '$( "#' + id + '" ).change( function(){ $( "#' + tf.id + '_altval" ).html( "<i>Local</i>: " + $( "#' + tf.id + '" ).val().replace(/^C:.fakepath./,""));'
+                    // + $("#__fields:id___msg").empty();
+                        + '});'
+                        + 'ga.altfile.button( "' + id + '","' + tf.id + '","' + tf.label + '","rfile",function(v){ga.altfile.button.lrfile(v,"' + id + '","' + tf.id + '")}';
+                    ;
+                    if ( tf.required ) {
+                        qeval += ',"lrfile"';
+                    }
+                    qeval += ');';
+                    // qeval += '$("#' + id + '_button").click( function( e ) {e.preventDefault();e.returnValue = false;});';
+                    qeval += '$("#' + tf.id + '_button").on("click",function(){return ga.altfile.button.call("' + id + '","' + tf.id + '");});'
+                    // __~fields:setinputfromfile{'ga.value.setInputfromFile("#__fields:id__", "__fields:setinputfromfile__", "__fields:setinputfromfileids__", "__moduleid__");' +}
+                    ;
+                    __~debug:qr{console.log( "qeval:" );}
+                    __~debug:qr{console.log( qeval );}
+                }
+                    break;
+
+
+                case "text" : {
+                    qtext += "<tr><td>";
+                    if ( tf.label ) {
+                        qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
+                    }
+                    qtext += '</td><td><input type="text" id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
+                    if ( tf.required ) {
+                        qtext += ' required';
+                    }
+                    if ( tf.readonly ) {
+                        qtext += ' readonly';
+                    }
+                    if ( tf['default'] ) {
+                        qtext += ' value="' + tf['default'] + '"';
+                    }
+                    if ( tf.pattern ) {
+                        qtext += ' pattern="' + tf.pattern + '"';
+                    }
+                    if ( tf.maxlength ) {
+                        qtext += ' maxlength="' + tf.maxlength + '"';
+                    }
+                    if ( tf.size ) {
+                        qtext += ' size="' + tf.size + '"';
+                    }
+                    qtext += '>' + help_span + '</td></tr>';
+                }
+                    break;
+
+                case "integer" : {
+                    qtext += "<tr><td>";
+                    if ( tf.label ) {
+                        qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
+                    }
+                    qtext += '</td><td><input type="number" id="' + tf.id + '" step="1" name="' + tf.id + '"' + ifhelp;
+                    if ( tf.required ) {
+                        qtext += ' required';
+                    }
+                    if ( tf.readonly ) {
+                        qtext += ' readonly';
+                    }
+                    if ( tf['default'] ) {
+                        qtext += ' value="' + tf['default'] + '"';
+                    }
+                    if ( tf.pattern ) {
+                        qtext += ' pattern="' + tf.pattern + '"';
+                    }
+                    if ( tf.min ) {
+                        qtext += ' min="' + tf.min + '"';
+                    }
+                    if ( tf.max ) {
+                        qtext += ' max="' + tf.max + '"';
+                    }
+                    qtext += '>' + help_span + '</td></tr>';
+                }
+                    break;
+
+                case "float" : {
+                    qtext += "<tr><td>";
+                    if ( tf.label ) {
+                        qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
+                    }
+                    qtext += '</td><td><input type="number" id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
+                    if ( tf.required ) {
+                        qtext += ' required';
+                    }
+                    if ( tf.readonly ) {
+                        qtext += ' readonly';
+                    }
+                    if ( tf.required ) {
+                        qtext += ' required';
+                    }
+                    if ( tf['default'] ) {
+                        qtext += ' value="' + tf['default'] + '"';
+                    }
+                    if ( tf.pattern ) {
+                        qtext += ' pattern="' + tf.pattern + '"';
+                    }
+                    if ( tf.step ) {
+                        qtext += ' step="' + tf.step + '"';
+                    }
+                    if ( tf.min ) {
+                        qtext += ' min="' + tf.min + '"';
+                    }
+                    if ( tf.max ) {
+                        qtext += ' max="' + tf.max + '"';
+                    }
+                    qtext += '>' + help_span + '</td></tr>';
+                }
+                    break;
+
+                case "textarea" : {
+                    qtext += "<tr><td>";
+                    if ( tf.label ) {
+                        qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
+                    }
+                    qtext += '</td><td><textarea id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
+                    if ( tf.required ) {
+                        qtext += ' required';
+                    }
+                    // if ( tf.readonly ) {
+                    // always readonly for now
+                    qtext += ' readonly';
+                    // }
+                    if ( tf.fontfamily ) {
+                        qtext += ' style="font-family: ' + tf.fontfamily + ';"';
+                    }
+                    if ( tf.cols ) {
+                        qtext += ' cols=' + tf.cols;
+                    }
+                    if ( tf.rows ) {
+                        qtext += ' rows=' + tf.rows;
+                    }
+                    qtext += ">";
+                    if ( tf['default'] ) {
+                        qtext += tf['default'];
+                    }
+                    qtext += '</textarea>' + help_span + '</td></tr>';
+                }
+                    break;
+
+                case "checkbox" : {
+                    qtext += "<tr><td>";
+                    if ( tf.label ) {
+                        qtext += '<label for="' + tf.id + '"' + ifhhelp + '>' + tf.label + '</label>';
+                    }
+                    qtext += '</td><td><input type="checkbox" id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
+                    if ( tf.checked ) {
+                        qtext += ' checked';
+                    }
+                    if ( tf.readonly ) {
+                        qtext += ' readonly';
+                    }
+                    qtext += '>' + help_span + '</td></tr>';
+                }
+                    break;
+
+                case "listbox" : {
+                    if ( tf.header ) {
+                        qtext += '<tr><td colspan=2';
+                        if ( tf.fontfamily || tf.fontsize ) {
+                            qtext += ' style="';
+                            if ( tf.fontfamily ) {
+                                qtext += 'font-family:' + tf.fontfamily + ';';
+                            }
+                            if ( tf.fontsize ) {
+                                qtext += 'font-size:' + tf.fontsize + ';';
+                            }
+                            qtext += '"';
+                        }
+                        if( tf.width ) {
+                            tf.header = tf.header.padEnd( tf.width );
+                        }
+                        tf.header = tf.header.replace( / /g, '&nbsp;' );
+                        __~debug:qr{console.log( tf.header );}
+                        qtext += '>' + tf.header + '</td></tr>';
+                    }
+                    qtext += "<tr><td>";
+                    if ( tf.label ) {
+                        qtext += '<label for="' + tf.id + '"' + ifhhelp + '>' + tf.label + '</label>';
+                    }
+                    qtext += '</td>';
+                    if ( tf.size && tf.size > 1 ) {
+                        qtext += '</tr><tr><td colspan=2>';
+                    } else {
+                        qtext += '<td>';
+                    }
+                    qtext += '<select id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
+                    if ( tf.required ) {
+                        qtext += ' required';
+                    }
+                    if ( tf.fontfamily ) {
+                        qtext += ' style="font-family: ' + tf.fontfamily + ';"';
+                    }
+                    if ( tf.size ) {
+                        qtext += ' size=' + tf.size;
+                    }
+                    if ( tf.multiple ) {
+                        qtext += ' multiple';
+                    }
+                    qtext += '>';
+                    if ( !tf.values ) {
+                        etext += "No values for listbox " + tf.id + ". ";
+                        break;
+                    }
+                    if ( tf.returns ) {
+                        if ( tf.returns && tf.returns.length != tf.values.length ) {
+                            etext += "Listbox values length (" + tf.values.length + ") does not equal return length (" + tf.returns.length + ") for listbox " + tf.id + ". ";
+                            break;
+                        }
+                        for ( j = 0; j < tf.values.length; ++j ) {
+                            qtext += '<option value="' + tf.returns[ j ] + '">' + tf.values[ j ].replace( / /g, '\&nbsp' ) + '</option>';
+                        }
+                    } else {
+                        for ( j = 0; j < tf.values.length; ++j ) {
+                            qtext += '<option value="' + j + '">' + tf.values[ j ].replace( / /g, '\&nbsp' ) + '</option>';
+                        }
+                    }
+                    if ( tf['default'] ) {
+                        qeval += '$("#' + tf.id + ' option[value=\'' + tf['default'] + '\']").attr("selected", "true");';
+                        __~debug:qr{console.log( "Listbox qeval: " + qeval );}
+                    }
+                    qtext += '</select>' + help_span + '</td></tr>';
+                }
+                    break;
+
+                default : {
+                    etext += "Unknown or currently unsupported field:type " + tf.type + ". ";
+                }
+                    break;
+
+                }
+            }
+        }
+        qtext += '</table></form>';
     }
-    qtext += '</table></form>';
 
     // maybe add qtext, qeval to adata for cb so that the msg can be redone ?
     // or push required into messagebox (ugh)

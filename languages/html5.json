@@ -449,7 +449,7 @@
                     "frequency"  : "once",
                     "output"     : "js/ga.js",
 #                    "minify"     : "copy",
-#                     "minify"     : "minify",
+#                    "minify"     : "minify",
 #                    "minify"     : "closure",
                     "inputs"     : [ 
                                     {  "js/ga_global.js"        : "once" }
@@ -472,6 +472,7 @@
                                     ,{ "js/register.js"         : "once" }
                                     ,{ "js/calc.js"             : "once" }
                                     ,{ "js/bokeh.js"            : "once" }
+                                    ,{ "js/grid.js"             : "once" }
                                     ,{ "js/qr.js"               : "once" }
                                     ,{ "js/msg.js"              : "once" }
                                     ,{ "js/ws.js"               : "once" }
@@ -510,6 +511,7 @@
                         ,{ "add/js/grid.locale-en.js"               : "once" }
                         ,{ "add/js/jquery.base64.min.js"            : "once" }
 			,{ "add/js/html2canvas.min.js"              : "once" }
+                        ,{ "add/js/ngl.js"                          : "once" }
                         ,{ "add/js/ga.min.js"                       : "once" }
                     ]
                    }
