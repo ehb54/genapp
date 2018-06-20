@@ -1111,6 +1111,23 @@ sub check_files {
         if ( $f =~ 'menu.json' )
         {
             $menu = $json;
+            # check for menu.json issues
+            my $ref_menu = {};
+            my $rplc_menu = start_json( $menu, $ref_menu );
+            my $freq = "menu:id";
+            my %used_menu_ids;
+            my %used_module_ids;
+            do {
+                $used_menu_ids{ $$rplc_menu{ $freq } }++;
+            } while( $rplc_menu = next_json( $ref_menu, $freq ) );
+            my $rplc_menu = start_json( $menu, $ref_menu );
+            $freq = "menu:modules:id";
+            do {
+                $error .= "menu.json error: menu:id \"$$rplc_menu{$freq}\" is duplicated as a module:id\n"
+                    if $used_menu_ids{ $$rplc_menu{ $freq } };
+                $error .= "menu.json error: menu:module:id \"$$rplc_menu{$freq}\" is duplicated\n"
+                    if $used_module_ids{ $$rplc_menu{ $freq } }++;
+            } while( $rplc_menu = next_json( $ref_menu, $freq ) );
         }
 
         if ( $f eq 'config.json' ||
