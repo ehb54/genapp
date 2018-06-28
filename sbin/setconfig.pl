@@ -30,7 +30,7 @@ my $rc = eval {
 my $notes = "
 usage: $0
 
-sets up $GENAPP/config.json
+sets up $gb/config.json
 
 options
  -f                            force overwrite of identified values to those previously stored
@@ -159,6 +159,7 @@ if ( !$os && -e "/etc/redhat-release" ) {
     if ( $check =~ /^CentOS .* release/ ) {
         $os = "centos";
         ( $os_release ) = $check =~ /^CentOS .* release (\S+)/;
+        
     } else {
         if ( $check =~ /^CentOS release/ ) {
             $os = "centos";
@@ -238,7 +239,7 @@ if ( $$json{'hostip'} ) {
 }
 
 if ( !$hostname ) {
-    $hostname = `host $hostip`;
+    $hostname = `host $hostip` if !$hostname;
     chomp $hostname;
     if ( $hostname =~ /(not found|no PTR record)/ ) {
         $hostname = $hostip;
@@ -263,7 +264,7 @@ $hostname = $$json{ 'hostname' };
 {
     my $nametoip;
     if ( `which dig 2> /dev/null` ) {
-        $nametoip = `dig +short $hostname`;
+        $nametoip = `dig \@8.8.8.8 +short $hostname`;
     } else {
         $nametoip = `host $hostname | awk '/has address/ { print \$4 }'`;
     }
@@ -272,6 +273,7 @@ $hostname = $$json{ 'hostname' };
         $notice .= "WARNING: the ip address from a DNS lookup [$nametoip] of the hostname [$hostname] does not match the hostip [$hostip]. This will create issues unless you really understand what you are doing!\n";
     }
 }
+
 
 my $wssport   = $https ? 443 : 80;
 my $wsport    = 30777;
