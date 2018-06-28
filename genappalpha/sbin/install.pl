@@ -200,11 +200,11 @@ my $os = $$cfgjson{ 'os' } || die "$0: $cfgjsonf does not contain an 'os' tag. $
 my $os_release = $$cfgjson{ 'os_release' } || die "$0: $cfgjsonf does not contain an 'os_release' tag. $cfgjsonnotes";
 
 if ( $os eq 'ubuntu' ) {
-    die "only ubuntu 14.04 an 16.04 currently supported and this appears to be version $os_release\n$sorry" if $os_release != 14.04 && $os_release != 16.04;
+    die "only ubuntu 14.04, 16.04 and 18.04 are currently supported and this appears to be version $os_release\n$sorry" if $os_release != 14.04 && $os_release != 16.04 && $os_release != 18.04;
 }
 
 if ( $os eq 'centos' ) {
-    die "only Centos 6.7, 6.8, 6.9, 7.2, 7.3 and 7.4 currently supported and this appears to be version $os_release\n$sorry" if $os_release !~ /^6\.(7|8|9)$/ && $os_release !~ /^7\.(2|3|4)/;
+    die "only Centos 6.7, 6.8, 6.9, 7.2, 7.3, 7.4 and 7.5 currently supported and this appears to be version $os_release\n$sorry" if $os_release !~ /^6\.(7|8|9)$/ && $os_release !~ /^7\.(2|3|4|5)/;
 }
 
 if ( $os eq 'redhat' ) {
@@ -524,8 +524,8 @@ service iptables save" );
     exit();
 }
 
-# ------ centos 7.2,7.3,7.4 -------
-if ( $os eq 'centos' && $os_release =~ /^7\.(2|3|4)/ ) {
+# ------ centos 7.2,7.3,7.4,7.5 -------
+if ( $os eq 'centos' && $os_release =~ /^7\.(2|3|4|5)/ ) {
 
     # install required modules
 
@@ -901,11 +901,13 @@ service iptables save" );
 }
 
 # ------ ubuntu 16.04 ------
-if ( $os eq 'ubuntu' && $os_release == 16.04 ) {
+if ( $os eq 'ubuntu' && ( $os_release == 16.04 || $os_release == 18.04 ) ) {
     # install required modules
 
+    my $zmqv = "3" if $os_release == 18.04;
+
     runcmd( "sudo add-apt-repository -y ppa:ondrej/php && sudo apt-get -y update" );
-    runcmd( "sudo apt-get -y install mlocate build-essential apache2 php5.6-dev libapache2-mod-php5.6 php5.6-xml pkg-config re2c libzmq-dev uuid-dev abiword wget mongodb libmagickwand-6.q16-dev" );
+    runcmd( "sudo apt-get -y install mlocate build-essential apache2 php5.6-dev libapache2-mod-php5.6 php5.6-xml pkg-config re2c libzmq${zmqv}-dev uuid-dev abiword wget mongodb libmagickwand-6.q16-dev" );
 
 # php-pear php-imagick php-mail php-mail-mime php-mongodb mongodb" );
 
