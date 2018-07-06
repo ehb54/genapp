@@ -121,7 +121,7 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 	    case "plotly" :
 		htag = "#" + k;
                 __~debug:plotly{console.log( "Plotly v:" + JSON.stringify( v ) );}
-		v.layout = $.extend( {}, v.layout, {showlegend: false } );
+		// v.layout = $.extend( {}, v.layout, {showlegend: false } );
 		
 		ga.plot3dglobal     = v.layout;
 		ga.dataplot3dglobal = v.data;
