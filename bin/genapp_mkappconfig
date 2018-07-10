@@ -238,6 +238,8 @@ sub setappconfig {
     $$json{ "messaging" }{ "udpport" }   = $$cfgjson{ "messaging" }{ "udpport" } || die "$0 udpport not defined in $cfgjsonf. $cfgjsonnotes";
     $$json{ "messaging" }{ "tcphostip" } = $$cfgjson{ "messaging" }{ "tcphostip" } || die "$0 tcphostip not defined in $cfgjsonf. $cfgjsonnotes";
     $$json{ "messaging" }{ "tcpport" }   = $$cfgjson{ "messaging" }{ "tcpport" } || die "$0 tcpport not defined in $cfgjsonf. $cfgjsonnotes";
+    $$json{ "messaging" }{ "tcprport" }  = $$cfgjson{ "messaging" }{ "tcprport" } || die "$0 tcprport not defined in $cfgjsonf. $cfgjsonnotes";
+    $$json{ "messaging" }{ "tcptimeout" }  = $$cfgjson{ "messaging" }{ "tcptimeout" } || die "$0 tcptimeout not defined in $cfgjsonf. $cfgjsonnotes";
 
     $$json{ "restricted" }{ "admin" } = ( $admin ) if $admin;
 
@@ -329,6 +331,18 @@ if ( !$hasappconfig ) {
     if ( $$appjson{ 'messaging' }{ 'tcpport' } ne $$cfgjson{ 'messaging' }{ 'tcpport' } ) {
         $changes .= "messaging:tcpport updated from [$$appjson{'messaging'}{'tcpport'}] to [$$cfgjson{'messaging'}{'tcpport'}]\n";
         $$appjson{ 'messaging' }{ 'tcpport' } = $$cfgjson{ 'messaging' }{ 'tcpport' };
+    }
+
+    die "$0 tcprport not defined in $cfgjsonf. $cfgjsonnotes" if !$$cfgjson{ 'messaging' }{ 'tcprport' };
+    if ( $$appjson{ 'messaging' }{ 'tcprport' } ne $$cfgjson{ 'messaging' }{ 'tcprport' } ) {
+        $changes .= "messaging:tcprport updated from [$$appjson{'messaging'}{'tcprport'}] to [$$cfgjson{'messaging'}{'tcprport'}]\n";
+        $$appjson{ 'messaging' }{ 'tcprport' } = $$cfgjson{ 'messaging' }{ 'tcprport' };
+    }
+
+    die "$0 tcptimeout not defined in $cfgjsonf. $cfgjsonnotes" if !$$cfgjson{ 'messaging' }{ 'tcptimeout' };
+    if ( $$appjson{ 'messaging' }{ 'tcptimeout' } ne $$cfgjson{ 'messaging' }{ 'tcptimeout' } ) {
+        $changes .= "messaging:tcptimeout updated from [$$appjson{'messaging'}{'tcptimeout'}] to [$$cfgjson{'messaging'}{'tcptimeout'}]\n";
+        $$appjson{ 'messaging' }{ 'tcptimeout' } = $$cfgjson{ 'messaging' }{ 'tcptimeout' };
     }
 
     if ( $changes ) {
