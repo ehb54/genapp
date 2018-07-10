@@ -275,14 +275,16 @@ $hostname = $$json{ 'hostname' };
 }
 
 
-my $wssport   = $https ? 443 : 80;
-my $wsport    = 30777;
-my $zmqport   = 30778;
-my $zmqhostip = "127.0.0.1";
-my $udpport   = 30779;
-my $udphostip = "127.0.0.1";
-my $tcpport   = 30780;
-my $tcphostip = "127.0.0.1";
+my $wssport    = $https ? 443 : 80;
+my $wsport     = 30777;
+my $zmqport    = 30778;
+my $zmqhostip  = "127.0.0.1";
+my $udpport    = 30779;
+my $udphostip  = "127.0.0.1";
+my $tcpport    = 30780;
+my $tcphostip  = "127.0.0.1";
+my $tcprport   = 30781;
+my $tcptimeout = 300;
 
 if ( $$json{ "messaging" }{ "wssport" } ) {
     if ( $$json{'messaging'}{'wssport'} != $wssport ) {
@@ -370,6 +372,28 @@ if ( $$json{ "messaging" }{ "tcphostip" } ) {
     }
 } else {
     $$json{ 'messaging'}{'tcphostip' }         = $tcphostip;
+}
+
+if ( $$json{ "messaging" }{ "tcprport" } ) {
+    if ( $$json{'messaging'}{'tcprport'} ne $tcprport ) {
+        $notice .= "The identified tcprport for this server [$tcprport] is different than that stored [$$json{'messaging'}{'tcprport'}] in $f. " . ( $fo ? "Overwriting with identified value." : "Leaving stored value untouched (use -f to overwrite)." ) . "\n";
+    }
+    if ( $fo ) {
+        $$json{ 'messaging'}{'tcprport' }         = $tcprport;
+    }
+} else {
+    $$json{ 'messaging'}{'tcprport' }         = $tcprport;
+}
+
+if ( $$json{ "messaging" }{ "tcptimeout" } ) {
+    if ( $$json{'messaging'}{'tcptimeout'} ne $tcptimeout ) {
+        $notice .= "The identified tcptimeout for this server [$tcptimeout] is different than that stored [$$json{'messaging'}{'tcptimeout'}] in $f. " . ( $fo ? "Overwriting with identified value." : "Leaving stored value untouched (use -f to overwrite)." ) . "\n";
+    }
+    if ( $fo ) {
+        $$json{ 'messaging'}{'tcptimeout' }         = $tcptimeout;
+    }
+} else {
+    $$json{ 'messaging'}{'tcptimeout' }         = $tcptimeout;
 }
 
 if ( $$json{ "https" } ) {
