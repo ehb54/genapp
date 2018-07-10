@@ -16,7 +16,7 @@ import (
         __~debug:tcp{"reflect"}
 )
 
-var appconfig = "/home/ehb/genapptest_svn/appconfig.json"
+var appconfig = "__appconfig__"
 
 var timeout time.Duration = 60 * time.Second // in seconds, maybe set override in request
 
