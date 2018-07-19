@@ -731,6 +731,17 @@ sub get_file_json {
         $get_file_json_last .= " merged with $f2";
     }
 
+    # remove tags with structures and store in last_json
+
+    if ( $$json{ 'dependencies' } ) {
+        print "found dependencies\n";
+        my $js = JSON->new;
+        $extra_subs{ '__dependencies__' } = $js->encode( $$json{ 'dependencies' } );
+        delete $$json{ 'dependencies' };
+    } else {
+        delete $extra_subs{ '__dependencies__' };
+    }
+        
     $json;
 }
 

@@ -412,6 +412,11 @@ foreach my $l ( keys %langs )
                         grep s/__modulejson__/$enc_mod_json/g, @l;
                     }
 
+                    foreach my $sub ( keys %extra_subs ) {
+                        print "doing extra sub $sub to $extra_subs{$sub}\n";
+                        grep s/$sub/$extra_subs{$sub}/g, @l;
+                    }
+
                     if ( $$rplc_menu{ "menu:modules:id" } )
                     {
                         print "mod_f is " . $$rplc_menu{ "menu:modules:id" } . "\n" if $debug_srplc;
