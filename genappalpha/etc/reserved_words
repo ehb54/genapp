@@ -86,3 +86,4 @@ global_data
 global
 config
 text
+dependencies
