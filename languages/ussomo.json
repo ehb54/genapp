@@ -1,0 +1,54 @@
+{
+    "id"          : "ussomo",
+    "description" : "US-SOMO files",
+    "version"     : 1,
+    "assembly"    : [
+        {
+            "frequency"  : "menu:modules:id",
+            "output"     : "__menu:modules:id__.cpp",
+            "inputs"     : [ 
+                { "__mtype__/header.cpp"                          : "once"       },
+                { "__mtype__/__fields:type__/setup.cpp.input"     : "fields:id"  },
+                { "__mtype__/middle.cpp"                          : "once"       },
+                { "__mtype__/__fields:type__/connect.cpp.input"   : "fields:id"  },
+                { "__mtype__/footer.cpp"                          : "once"       }
+            ]
+        }
+        ,{
+            "frequency"  : "menu:modules:id",
+            "output"     : "__menu:modules:id__.h",
+            "inputs"     : [ 
+                { "__mtype__/header.h"                            : "once"       },
+                { "__mtype__/__fields:type__/setup.h.input"       : "fields:id"  },
+                { "__mtype__/middle.h"                            : "once"       },
+                { "__mtype__/__fields:type__/connect.h.input"     : "fields:id"  },
+                { "__mtype__/footer.h"                            : "once"       }
+            ]
+        }
+        ,{
+            "frequency"  : "menu:modules:id",
+            "output"     : "help___menu:modules:id__.html",
+            "inputs"     : [ 
+                { "__mtype__/helpheader.input"                    : "once"       },
+                { "__mtype__/helpitem.input"                      : "fields:id"  },
+                { "__mtype__/helpfooter.input"                    : "once"       }
+            ]
+        }
+        ,{
+            "frequency"  : "menu:modules:id",
+            "output"     : "notes___menu:modules:id__",
+            "inputs"     : [ 
+                { "__mtype__/notes"                               : "once"       }
+            ]
+        }
+        ,{
+            "frequency"  : "menu:modules:id",
+            "output"     : "copy___menu:modules:id__",
+            "setexecutable" : "true",
+            "inputs"     : [ 
+                { "__mtype__/copy"                               : "once"       }
+            ]
+        }
+    ]
+}
+
