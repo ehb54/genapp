@@ -413,7 +413,7 @@ foreach my $l ( keys %langs )
                     }
 
                     foreach my $sub ( keys %extra_subs ) {
-                        print "doing extra sub $sub to $extra_subs{$sub}\n";
+                        print "doing extra sub $sub to $extra_subs{$sub}\n" if $debug_srplc;
                         grep s/$sub/$extra_subs{$sub}/g, @l;
                     }
 
