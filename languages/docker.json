@@ -1,0 +1,16 @@
+{
+    "id"          : "docker",
+    "description" : "Docker container generation",
+    "version"     : 1,
+    "assembly"    : [
+        {
+            "frequency"  : "once"
+            ,"output"     : "build_docker.pl"
+            ,"inputs"     : [ 
+                { "build_docker_header.pl"   : "once" }
+                ,{ "build_docker_module.pl"  : "menu:modules:id" }
+                ,{ "build_docker_footer.pl"  : "once" }
+            ]
+        }
+    ]
+}
