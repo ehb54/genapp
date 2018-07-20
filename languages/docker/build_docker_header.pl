@@ -42,4 +42,8 @@ my $rc = eval {
 my %dependencies;
 my %module_json;
 my $executable_path = "__executable_path:docker__";
+my $workdir = "/genapp/run";
 
+my $wdir = $0;
+$wdir =~ s/\/[^\/]*$//;
+chdir $wdir || die "Error: could not chdir to $wdir\n";

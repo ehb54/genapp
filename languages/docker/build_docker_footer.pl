@@ -1,15 +1,10 @@
 # process each module with dependencies
 
-# process each module with dependencies
-
-my $warn;
-my $error;
-
 foreach my $mod ( keys %dependencies ) {
     print "checking $mod\n";
     if ( $dependencies{ $mod } =~ /^__dependencies__/ ) {
         print "no dependencies\n";
-        $error .= "Module '$mod' has no 'dependencies' defined, can not create docker container.\n";
+        $error .= "Module '$mod' : no dependencies defined, can not create docker container.\n";
         next;
     }
     $depjson = decode_json( $dependencies{ $mod } );
@@ -21,16 +16,122 @@ foreach my $mod ( keys %dependencies ) {
     print "executable is $$modjson{'executable'}\n";
 
 
-    # mkdir for dockerfile
-
     # build up and output docker file based upon dependencies
     # executable needs copying
+    my $out;
+    my $has_error;
+    my $has_base;
+    my @copys;
+    my $has_cpanm;
+    
+    for ( my $i = 0; $i < @$depjson; ++$i ) {
+        my $entry = $$depjson[$i];
+        if ( scalar ( keys %$entry ) != 1 ) {
+            $has_error++;
+            $error .= "Module '$mod' : dependencies entry " . ( $i + 1 ) . " '" . encode_json( $entry ) . "' does not have exactly 1 key\n";
+            break;
+        }
 
-    # create command to build and post (?) dockerfile
+        my $k = (keys %$entry)[0];
+        my $v = $$entry{$k};
+        $k = lc( $k );
+        print "k $k\n";
+        if ( ref( $v ) ne 'ARRAY' ) {
+            my @v = ( $v );
+            $v = \@v;
+        }
+        print "v " . ref( $v ) . "\n";
+        # create command to build and post (?) dockerfile
+
+        for ( my $j = 0; $j < @$v; ++$j ) {
+            print "\$v[$j] = $$v[$j]\n";
+            my $val = $$v[$j];
+            if ( length( ref( $val ) ) ) {
+                $error .= "Module '$mod' : dependencies entry " . ( $i + 1 ) . " '" . encode_json( $entry ) . "' improper value in list entry number " . ( $j + 1 ) . "\n";
+                $has_error++;
+                next;
+            }
+            print "length ref val = " . length( ref( $val ) ) . "\n";
+            if ( $k eq 'base' ) {
+                if ( $hasbase ) {
+                    $error .= "Module '$mod' : dependencies entry " . ( $i + 1 ) . " '" . encode_json( $entry ) . "' multiple 'base' tags found, only one allowed\n";
+                    $has_error;
+                    last;
+                }
+                $out .= "FROM $val\n";
+                $out .= "WORKDIR $workdir\n";
+                $has_base++;
+                next;
+            }
+            if ( !$has_base ) {
+                $warn .= "No 'base' entry found in first position, defaulting to 'ubuntu'\n";
+                $out .= "FROM ubuntu\n";
+                $out .= "WORKDIR $workdir\n";
+                $has_base++;
+                next;
+            }                
+            if ( $k eq 'cpan' ) {
+                if ( !$has_cpanm ) {
+                    $out .= "RUN curl -L http://cpanmin.us | perl - App::cpanminus\n";
+                    $out .= "RUN mv /usr/bin/perl /usr/bin/perl.save\n";
+                    $out .= "RUN ln -s /usr/local/bin/perl /usr/bin/perl\n";
+                    $has_cpanm++;
+                }
+                $out .= "RUN cpanm $val\n";
+                next;
+            }
+
+            if ( $k eq 'file' ) {
+                my $dest = $val;
+                $dest =~ s/^.*\///g;
+                $out .= "COPY $dest $dest\n";
+                push @copys, $val;
+                next;
+            }
+
+            $error .= "Module '$mod' : dependencies entry " . ( $i + 1 ) . " '" . encode_json( $entry ) . "' unknown tag '$k'\n";
+            $has_error++;
+            last;
+        }
+    }
+
+    next if $has_error;
+
+    # add executable
+
+    $out .= "COPY $$modjson{'executable'} $$modjson{'executable'}\n";
+    push @copys, "$executable_path/$$modjson{'executable'}";
+
+    # add CMD
+
+    $out .= "CMD [\"./$$modjson{'executable'}\"]\n";
+
+    # write dockerfile
+    if ( !-d $mod ) {
+        if ( -e $mod ) {
+            $error .= "File $mod exists in output folder, but it not directory\n";
+            next;
+        }
+        if ( !mkdir $mod ) {
+            $error .= "Could not create subdir $mod $!\n";
+            next;
+        }
+    }
+        
+    my $df = "$mod/Dockerfile";
+    my $fh;
+    if ( !( open $fh, ">$df" ) ) {
+        $error .= "Could not create file $df for writing\n";
+        next;
+    }
+    print $fh $out;
+    close $fh;
+
+    # do copies
+    $cmd = "cp " . ( join " ", @copys ) . " $mod/";
+    print "$cmd\n";
+    print `$cmd`;
 }
-
-
-
     
 print "Warnings:\n$warn" if $warn;
-print "Errors:\n$error" if $error;
+die "Errors:\n$error" if $error;
