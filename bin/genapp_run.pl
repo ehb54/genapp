@@ -574,6 +574,17 @@ foreach my $l ( keys %langs )
                             do {
                                 print "rplc menu:id " . $$rplc_menu2{ "menu:id" } . " " . $$rplc_menu{ 'menu:id' } . "\n" if $debug_srplc; 
                                 @l = @l_sav;
+                                if ( grep /__modulejson__/, @l ) {
+                                    my $js = JSON->new;
+                                    $js->canonical(1);
+                                    my $enc_mod_json = $js->encode( get_file_json_lang_specific( $module_to_file{ $l }{ $$rplc_menu2{ 'menu:modules:id' } }, $l, 1 ) );
+                                    grep s/__modulejson__/$enc_mod_json/g, @l;
+                                }
+                                foreach my $sub ( keys %extra_subs ) {
+                                    print "doing extra sub $sub to $extra_subs{$sub}\n" if $debug_srplc;
+                                    grep s/$sub/$extra_subs{$sub}/g, @l;
+                                }
+
                                 while ( my ( $k, $v ) = each %$rplc_directives )
                                 {
                                     print "s/__${k}__/${v}/g\n" if $debug_srplc;
@@ -630,7 +641,9 @@ foreach my $l ( keys %langs )
                                     print "s/__${k}__/${v}/g\n" if $debug_srplc;
                                     grep s/__${k}__/${v}/g, @l;
                                 }
-                                
+
+                                # print "outdata 3--------\n";
+                                # print join '', @l;
                                 print "adding to outdata------------------------------\n" if $debug_srplc;
                                 $outdata .= join '', @l;
                                 $rplc_menu2 = next_json( $ref_menu2, $v );
