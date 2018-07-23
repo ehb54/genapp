@@ -1,8 +1,9 @@
 # process each module with dependencies
 
 foreach my $mod ( keys %dependencies ) {
-    print "checking $mod\n";
-    if ( $dependencies{ $mod } =~ /^__dependencies__/ ) {
+    my $menu = $menus{ $mod };
+    print "checking $menu:$mod\n";
+    if ( $dependencies{ $mod } =~ /^_{2}dependencies__/ ) {
         print "no dependencies\n";
         $error .= "Module '$mod' : no dependencies defined, can not create docker container.\n";
         next;
@@ -35,23 +36,19 @@ foreach my $mod ( keys %dependencies ) {
         my $k = (keys %$entry)[0];
         my $v = $$entry{$k};
         $k = lc( $k );
-        print "k $k\n";
         if ( ref( $v ) ne 'ARRAY' ) {
             my @v = ( $v );
             $v = \@v;
         }
-        print "v " . ref( $v ) . "\n";
         # create command to build and post (?) dockerfile
 
         for ( my $j = 0; $j < @$v; ++$j ) {
-            print "\$v[$j] = $$v[$j]\n";
             my $val = $$v[$j];
             if ( length( ref( $val ) ) ) {
                 $error .= "Module '$mod' : dependencies entry " . ( $i + 1 ) . " '" . encode_json( $entry ) . "' improper value in list entry number " . ( $j + 1 ) . "\n";
                 $has_error++;
                 next;
             }
-            print "length ref val = " . length( ref( $val ) ) . "\n";
             if ( $k eq 'base' ) {
                 if ( $hasbase ) {
                     $error .= "Module '$mod' : dependencies entry " . ( $i + 1 ) . " '" . encode_json( $entry ) . "' multiple 'base' tags found, only one allowed\n";
@@ -59,14 +56,14 @@ foreach my $mod ( keys %dependencies ) {
                     last;
                 }
                 $out .= "FROM $val\n";
-                $out .= "WORKDIR $workdir\n";
+                $out .= "WORKDIR $bindir\n";
                 $has_base++;
                 next;
             }
             if ( !$has_base ) {
                 $warn .= "No 'base' entry found in first position, defaulting to 'ubuntu'\n";
                 $out .= "FROM ubuntu\n";
-                $out .= "WORKDIR $workdir\n";
+                $out .= "WORKDIR $bindir\n";
                 $has_base++;
                 next;
             }                
@@ -85,6 +82,7 @@ foreach my $mod ( keys %dependencies ) {
                 my $dest = $val;
                 $dest =~ s/^.*\///g;
                 $out .= "COPY $dest $dest\n";
+                $val = "$executable_path/$val" if $val !~ /^\//;
                 push @copys, $val;
                 next;
             }
@@ -104,21 +102,40 @@ foreach my $mod ( keys %dependencies ) {
 
     # add CMD
 
-    $out .= "CMD [\"./$$modjson{'executable'}\"]\n";
+    ## always run in $rundir ?
+    $out .= "WORKDIR $rundir\n";
+
+    ## straight form: 
+    ## $out .= "CMD [\"$bindir/$$modjson{'executable'}\"]\n";
+
+    ## abaco MSG form:
+    $out .= "CMD $bindir/$$modjson{'executable'} `echo \$MSG`\n";
 
     # write dockerfile
-    if ( !-d $mod ) {
-        if ( -e $mod ) {
-            $error .= "File $mod exists in output folder, but it not directory\n";
+    if ( !-d $menu ) {
+        if ( -e $menu ) {
+            $error .= "File $menu exists in output folder, but is not a directory\n";
             next;
         }
-        if ( !mkdir $mod ) {
-            $error .= "Could not create subdir $mod $!\n";
+        if ( !mkdir $menu ) {
+            $error .= "Could not create subdir $menu $!\n";
+            next;
+        }
+    }
+
+    my $destdir = "$menu/$mod";
+    if ( !-d $destdir ) {
+        if ( -e $destdir ) {
+            $error .= "File $destdir exists in output folder, but is not a directory\n";
+            next;
+        }
+        if ( !mkdir $destdir ) {
+            $error .= "Could not create subdir $destdir $!\n";
             next;
         }
     }
         
-    my $df = "$mod/Dockerfile";
+    my $df = "$destdir/Dockerfile";
     my $fh;
     if ( !( open $fh, ">$df" ) ) {
         $error .= "Could not create file $df for writing\n";
@@ -128,9 +145,14 @@ foreach my $mod ( keys %dependencies ) {
     close $fh;
 
     # do copies
-    $cmd = "cp " . ( join " ", @copys ) . " $mod/";
+    $cmd = "cp " . ( join " ", @copys ) . " $destdir/";
     print "$cmd\n";
-    print `$cmd`;
+    system( $cmd );
+
+    # build containers
+    $cmd = "cd $destdir && docker build -t genapp___application___${menu}_${mod} .";
+    print "$cmd\n";
+    system( $cmd );
 }
     
 print "Warnings:\n$warn" if $warn;
