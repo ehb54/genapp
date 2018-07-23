@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+$| = 1;
+
 {
     if ( $] < 5.018 ) {
         my $f = "/etc/profile.d/genapp.sh";
@@ -41,8 +43,11 @@ my $rc = eval {
 
 my %dependencies;
 my %module_json;
+my %menus;
+
 my $executable_path = "__executable_path:docker__";
-my $workdir = "/genapp/run";
+my $bindir          = "/genapp/bin";
+my $rundir          = "/genapp/run";
 
 my $wdir = $0;
 $wdir =~ s/\/[^\/]*$//;
