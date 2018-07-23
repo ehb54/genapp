@@ -10,3 +10,5 @@ __modulejson__
 __EOF
     ;
 
+$menus{ "__menu:modules:id__" } = "__menu:id__";
+
