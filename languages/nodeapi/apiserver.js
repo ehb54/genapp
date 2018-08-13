@@ -4,11 +4,12 @@
 
 // should read appconfig to get this info
 
-const stagebase      = "/home/ehb/node/stage2";
+const stagebase      = "__docroot:nodeapi__";
 const mongo_url      = "mongodb://localhost:27017/";
 const mongo_db_name  = "__application__"; 
-const listen_port    = 8080;
-const listen_host    = "0.0.0.0";
+var appconfig;
+var listen_port;
+var listen_host;
 
 // system defines
 
@@ -397,6 +398,61 @@ app.post( '/jobsubmit', async ( req, res ) => {
 
 
 app.get( /.*/, ( req, res ) => res.send( '{"error":"unknown"}' ));
+
+// get appconfig
+
+try {
+    var appconfig_json = fs.readFileSync( '__appconfig__', 'utf8' );
+    console.log( appconfig_json );
+} catch (err) {
+    console.log( "Could not open appconfig file '__appconfig__' : " + err.message );
+    process.exit( -101 );
+}
+
+try {
+    appconfig = JSON.parse( appconfig_json );
+} catch (err) {
+    console.log( "Could not JSON parse  '__appconfig__' : " + err.message );
+    process.exit( -102 );
+}
+
+if ( !appconfig.nodeapi ) {
+    console.log( "'__appconfig__' missing 'nodeapi' information" );
+    process.exit( -103 );
+}
+
+if ( !appconfig.nodeapi.listen ) {
+    console.log( "'__appconfig__' missing 'nodeapi:listen' information" );
+    process.exit( -104 );
+}
+
+if ( !appconfig.nodeapi.listen.host ) {
+    console.log( "'__appconfig__' missing 'nodeapi:listen:host' information" );
+    process.exit( -105 );
+}
+
+if ( !appconfig.nodeapi.listen.port ) {
+    console.log( "'__appconfig__' missing 'nodeapi:listen:port' information" );
+    process.exit( -106 );
+}
+
+if ( !appconfig.nodeapi.listen.host.length ) {
+    console.log( "'__appconfig__' empty 'nodeapi:listen:host' information" );
+    process.exit( -107 );
+}
+
+if ( isNaN( appconfig.nodeapi.listen.port ) ) {
+    console.log( "'__appconfig__' incorrect 'nodeapi:listen:port' information" );
+    process.exit( -108 );
+}
+
+if ( appconfig.nodeapi.listen.port < 1 || appconfig.nodeapi.listen.port > 65535 ) {
+    console.log( "'__appconfig__' invalid value for 'nodeapi:listen:port'" );
+    process.exit( -109 );
+}
+
+listen_host = appconfig.nodeapi.listen.host;
+listen_port = appconfig.nodeapi.listen.port;
 
 // setup stage (SYNC - ok, since it is before startup of server)
 
