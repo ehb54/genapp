@@ -7,4 +7,3 @@ MongoClient.connect( mongo_url, ( err, db ) => {
     console.log( "connected to mongo:" + mongo_url );
     logmodules();
 });
-
