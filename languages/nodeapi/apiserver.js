@@ -280,6 +280,20 @@ app.post( '/jobsubmit', async ( req, res ) => {
         return writeend( res, robj );
     }
 
+    // check module
+    await mongodb.collection("modules").findOne({ _id : query.module } )
+        .then( ( doc ) => {
+            console.log( "found module " + doc._id );
+        })
+        .catch( ( err ) => {
+            console.log( "did not find module " + query.module + " Error:" + err.message );
+            robj.error = "Module not defined";
+        });
+    
+    if ( robj.error ) {
+        return writeend( res, robj );
+    }
+
     // setup job dir and stage files
 
     let jobdir = stagebase + "/" + query.user + "/" + query.id;
