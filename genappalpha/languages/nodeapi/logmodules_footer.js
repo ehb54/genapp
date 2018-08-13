@@ -1,4 +1,4 @@
-    process.exit();
+    process.exit(0);
 };
 
 MongoClient.connect( mongo_url, ( err, db ) => {
