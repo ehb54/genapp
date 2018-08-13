@@ -891,13 +891,21 @@ foreach my $l ( keys %langs )
                 print "doexec is '$doexec'\n";
                 if ( $doexec eq 'true' ) {
                     my $cmd = "bash $fo";
-                    $fo = "./$fo" if $fo !~ /\.sh$/;
+                    if ( $fo =~ /\.js$/ ) {
+                        $fo = "node $fo";
+                    } else {
+                        $fo = "./$fo" if $fo !~ /\.sh$/;
+                    }
                     print "executing: $cmd\n";
                     print `$cmd`;
                 }
                 if ( $doexec eq 'atend' ) {
                     my $cmd = "cd output/$l; bash $use_output";
-                    $cmd = "cd output/$l; ./$use_output" if $use_output !~ /\.sh$/;
+                    if ( $use_output =~ /\.js$/ ) {
+                        $cmd = "cd output/$l; node $use_output";
+                    } else {
+                        $cmd = "cd output/$l; ./$use_output" if $use_output !~ /\.sh$/;
+                    }
                     push @post_cmds, $cmd;
                     print "pushing $cmd to post processing commands\n";
                 }
