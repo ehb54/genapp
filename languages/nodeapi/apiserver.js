@@ -510,5 +510,4 @@ MongoClient.connect( mongo_url, ( err, db ) => {
     mongodb = db.db( mongo_db_name );
     console.log( "connected to mongo:" + mongo_url );
     app.listen( listen_port, listen_host, () => console.log('Listening on host:' + listen_host + ' port:' + listen_port ) );
-}); 
-
+});
