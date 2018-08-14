@@ -504,7 +504,6 @@ try {
 
 // startup services:
 
-
 MongoClient.connect( mongo_url, ( err, db ) => {
     if (err) throw err;
     mongodb = db.db( mongo_db_name );
