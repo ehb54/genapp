@@ -7,6 +7,10 @@
         ,executable_path : "__executable_path:nodeapi__"
     };
 
+    if ( mjson.resource ) {
+        mobj.resource = mjson.resource;
+    }
+
     await mongodb.collection( "modules" ).replaceOne( { _id: "__menu:modules:id__" }, mobj, { upsert : true, writeConcern: { j : true } } )
         .then( ( res ) => {
             console.log( "logmodules: added to mongo modules: __menu:modules:id__" );

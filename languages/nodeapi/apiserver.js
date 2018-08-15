@@ -13,19 +13,21 @@ var listen_host;
 
 // system defines
 
-const fs = require('fs');
-const express = require('express');
-const fileUpload = require('express-fileupload');
-const app = express();
-const util = require('util');
-const MongoClient = require('mongodb').MongoClient;
-const url = require('url');
-const bcrypt = require('bcrypt');
-const saltRounds = 10;
-const validator = require('validator');
-const requestIp = require('request-ip');
-const apiutil = require('./apiutil.js');
-const { spawn } = require('child_process');
+const fs             = require('fs');
+const express        = require('express');
+const fileUpload     = require('express-fileupload');
+const bodyParser     = require('body-parser');
+
+const app            = express();
+const util           = require('util');
+const MongoClient    = require('mongodb').MongoClient;
+const url            = require('url');
+const bcrypt         = require('bcrypt');
+const saltRounds     = 10;
+const validator      = require('validator');
+const requestIp      = require('request-ip');
+const apiutil        = require('./apiutil.js');
+const { spawn }      = require('child_process');
 
 // global variables
  
@@ -33,9 +35,10 @@ var mongodb;
 
 // utility routines
 
-const p_fs_mkdir  = util.promisify( fs.mkdir );
-const p_fs_stat   = util.promisify( fs.stat );
-const p_fs_access = util.promisify( fs.access );
+const p_fs_mkdir     = util.promisify( fs.mkdir );
+const p_fs_stat      = util.promisify( fs.stat );
+const p_fs_access    = util.promisify( fs.access );
+const p_fs_writeFile = util.promisify( fs.writeFile );
 
 async function mkdir( path ) {
     // try to make
@@ -83,7 +86,9 @@ app.use( fileUpload({
 //    limits: { fileSize: 10 * 1024 } // 10K
 }));
 
-app.use( requestIp.mw() )
+app.use( requestIp.mw() );
+
+app.use( bodyParser.raw() );
 
 var req_ip = function( req ) {
 //    console.dir( req );
@@ -319,6 +324,8 @@ app.post( '/jobsubmit', async ( req, res ) => {
         return writeend( res, robj );
     }
 
+    // handle files
+
     if ( req.files ) {
         let keys = Object.keys( req.files );
         console.log( "found files keys = " + JSON.stringify( keys ) );
@@ -337,6 +344,41 @@ app.post( '/jobsubmit', async ( req, res ) => {
             }
             // console.log( JSON.stringify( req.files[thisfile] ) );
         }
+    }
+
+    // handle body - json input
+
+    let json_input = "";
+
+    if ( req.body && req.body.text ) {
+        console.log( "found request body text found = " + req.body.text );
+        json_input = req.body.text;
+        let json_input_obj = {};
+        try {
+            json_input_obj = JSON.parse( json_input );
+        } catch ( err ) {
+            robj.error = "Invalid JSON : " + err.message;
+        }
+        json_input_obj._uuid = query._uuid;
+        // TODO: add other variables ... _basedir etc or in jobrun.js?  
+        // we could also add the ._uuid in jobrun.js .... perhaps a better place to avoid the stringify below?
+        json_input = JSON.stringify( json_input_obj );
+    }
+
+    if ( robj.error ) {
+        return writeend( res, robj );
+    }
+
+    // write input regardless if empty or not
+
+    let inputlog = query.directorylog + "/_input_" + query._uuid;
+    await p_fs_writeFile( inputlog, json_input )
+        .catch( ( err ) => {
+            robj.error = "Error creating log file " + inputlog + " : " + err.message;
+        })
+
+    if ( robj.error ) {
+        return writeend( res, robj );
     }
 
     // open logout file for spawn'd process
@@ -385,10 +427,11 @@ app.post( '/jobsubmit', async ( req, res ) => {
         const subprocess = 
             spawn( 'node',
                    [ 
-                       'jobrun.js'
+                       __dirname + '/jobrun.js'
                        ,JSON.stringify(
                            {
                                _uuid : query._uuid
+                               ,jsoninputfile : inputlog
                            }
                        ) 
                    ],
@@ -415,53 +458,40 @@ app.get( /.*/, ( req, res ) => res.send( '{"error":"unknown"}' ));
 
 // get appconfig
 
-try {
-    var appconfig_json = fs.readFileSync( '__appconfig__', 'utf8' );
-    console.log( appconfig_json );
-} catch (err) {
-    console.log( "Could not open appconfig file '__appconfig__' : " + err.message );
-    process.exit( -101 );
-}
-
-try {
-    appconfig = JSON.parse( appconfig_json );
-} catch (err) {
-    console.log( "Could not JSON parse  '__appconfig__' : " + err.message );
-    process.exit( -102 );
-}
+appconfig = apiutil.read_appconfig();
 
 if ( !appconfig.nodeapi ) {
-    console.log( "'__appconfig__' missing 'nodeapi' information" );
+    console.log( appconfig_file + " missing 'nodeapi' information" );
     process.exit( -103 );
 }
 
 if ( !appconfig.nodeapi.listen ) {
-    console.log( "'__appconfig__' missing 'nodeapi:listen' information" );
+    console.log( appconfig_file + " missing 'nodeapi:listen' information" );
     process.exit( -104 );
 }
 
 if ( !appconfig.nodeapi.listen.host ) {
-    console.log( "'__appconfig__' missing 'nodeapi:listen:host' information" );
+    console.log( appconfig_file + " missing 'nodeapi:listen:host' information" );
     process.exit( -105 );
 }
 
 if ( !appconfig.nodeapi.listen.port ) {
-    console.log( "'__appconfig__' missing 'nodeapi:listen:port' information" );
+    console.log( appconfig_file + " missing 'nodeapi:listen:port' information" );
     process.exit( -106 );
 }
 
 if ( !appconfig.nodeapi.listen.host.length ) {
-    console.log( "'__appconfig__' empty 'nodeapi:listen:host' information" );
+    console.log( appconfig_file + " empty 'nodeapi:listen:host' information" );
     process.exit( -107 );
 }
 
 if ( isNaN( appconfig.nodeapi.listen.port ) ) {
-    console.log( "'__appconfig__' incorrect 'nodeapi:listen:port' information" );
+    console.log( appconfig_file + " incorrect 'nodeapi:listen:port' information" );
     process.exit( -108 );
 }
 
 if ( appconfig.nodeapi.listen.port < 1 || appconfig.nodeapi.listen.port > 65535 ) {
-    console.log( "'__appconfig__' invalid value for 'nodeapi:listen:port'" );
+    console.log( appconfig_file + " invalid value for 'nodeapi:listen:port'" );
     process.exit( -109 );
 }
 
