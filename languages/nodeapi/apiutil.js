@@ -1,5 +1,7 @@
 'use_strict';
 
+const fs = require('fs');
+
 module.exports = {
     logjobstart: async ( mongodb, query ) => {
         let now = new Date();
@@ -120,4 +122,30 @@ module.exports = {
                 throw err;
             });
     }
+    ,
+    read_appconfig : ( appconfig_file ) => {
+        appconfig_file = appconfig_file || '__appconfig__';
+        let appconfig = {};
+
+        let appconfig_json = "";
+        try {
+            appconfig_json = fs.readFileSync( appconfig_file, 'utf8' );
+            console.log( appconfig_json );
+        } catch (err) {
+            console.log( "Could not open appconfig file " + appconfig_file + " : " + err.message );
+            process.exit( -101 );
+        }
+
+        try {
+            appconfig = JSON.parse( appconfig_json );
+        } catch (err) {
+            console.log( "Could not JSON parse  " + appconfig_file + " : " + err.message );
+            process.exit( -102 );
+        }
+
+        return appconfig;
+    }
+
+
 };
+
