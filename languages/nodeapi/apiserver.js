@@ -314,7 +314,12 @@ app.post( '/jobsubmit', async ( req, res ) => {
         return writeend( res, robj );
     }
 
-    query.directorylog = jobdir + "/" + "_log";
+    let logdir = "__logdirectory__";
+    logdir.replace( "_" + "_logdirectory__", "" );
+    if ( logdir.length ) {
+        logdir = "/" + logdir;
+    }
+    query.directorylog = jobdir + logdir;
     await mkdir( query.directorylog )
         .catch( ( err ) => {
             robj.err = err.message;
@@ -369,12 +374,12 @@ app.post( '/jobsubmit', async ( req, res ) => {
         return writeend( res, robj );
     }
 
-    // write input regardless if empty or not
+    // write args regardless if empty or not
 
-    let inputlog = query.directorylog + "/_input_" + query._uuid;
-    await p_fs_writeFile( inputlog, json_input )
+    let argslog = query.directorylog + "/_args_" + query._uuid;
+    await p_fs_writeFile( argslog, json_input )
         .catch( ( err ) => {
-            robj.error = "Error creating log file " + inputlog + " : " + err.message;
+            robj.error = "Error creating log file " + argslog + " : " + err.message;
         })
 
     if ( robj.error ) {
@@ -383,6 +388,7 @@ app.post( '/jobsubmit', async ( req, res ) => {
 
     // open logout file for spawn'd process
 
+    // TODO: move to log directory _log_+uuid
     const logoutfile = "./logfile";
 
     console.log( "trying to open logoutfile" );
@@ -431,7 +437,7 @@ app.post( '/jobsubmit', async ( req, res ) => {
                        ,JSON.stringify(
                            {
                                _uuid : query._uuid
-                               ,jsoninputfile : inputlog
+                               ,jsoninputfile : argslog
                            }
                        ) 
                    ],
