@@ -13,6 +13,7 @@ const util = require('util');
 const MongoClient = require('mongodb').MongoClient;
 const execSync = require('child_process').execSync;
 const apiutil = require('./apiutil.js');
+const { exec }      = require('child_process');
 
 var request = {};
 try {
@@ -41,6 +42,12 @@ try {
     console.log( "error reading jsoninput file : " + err.message );
 }
 
+var error_exit = function( id, message ) {
+    // TODO update mongo job (apiutil)
+    console.log( message );
+    process.exit( id );
+}
+
 MongoClient.connect( mongo_url, async ( err, db ) => {
     if (err) throw err;
     mongodb = db.db( mongo_db_name );
@@ -57,12 +64,11 @@ MongoClient.connect( mongo_url, async ( err, db ) => {
         })
         .catch( ( err ) => {
             console.log( "did not find job " + request._uuid + " Error:" + err.message );
-            process.exit(-203);
+            process.exit( -203 );
         });
     
     if ( !job.directory ) {
-        console.log( "job " + job._id + " Error: no directory defined in job" );
-        process.exit( -204 );
+        error_exit( -204, "job " + job._id + " Error: no directory defined in job" );
     }
 
     // lookup job's module in mongo
@@ -75,14 +81,12 @@ MongoClient.connect( mongo_url, async ( err, db ) => {
             module = doc;
         })
         .catch( ( err ) => {
-            console.log( "did not find module " + job.module + " Error:" + err.message );
-            process.exit( -205 );
+            error_exit( -205, "did not find module " + job.module + " Error:" + err.message );
         });
     
     if ( !module.executable ||
          !module.executable_path ) {
-        console.log( "module " + job.module + " Error: excutable and/or executable path not defined" );
-        process.exit( -206 );
+        error_exit( -206, "module " + job.module + " Error: excutable and/or executable path not defined" );
     }
 
     console.log( "found job, module, should be ready to run next" );
@@ -93,14 +97,35 @@ MongoClient.connect( mongo_url, async ( err, db ) => {
     await fsaccess( cmd, fs.constants.X_OK )
         .then ()
         .catch ( (err) => {
-            console.log( cmd + " : not found or not executable" );
-            process.exit( -207 );
+            error_exit( -207, cmd + " : not found or not executable" );
         });
 
-    cmd = "cd " + job.directory + ";" + cmd + " '" + json_input + "'";
-    // TODO write out cmd file with stderr stdout etc
-    console.log( "command is <" + cmd + ">" );
-    // TODO run command
+    let stderr = `${job.directorylog}/_stderr_${request._uuid}`;
+    cmd = `(cd ${job.directory}; ${cmd} '${json_input}') 2> ${stderr} | head -c50000000`;
 
-    // TODO closeout
+    // TODO write out cmd file with stderr stdout etc
+    try {
+        let cmdlog = job.directorylog + "/_cmds_" + request._uuid;
+        console.log( "cmdlog is " + cmdlog );
+        fs.writeFileSync( cmdlog, cmd + "\n" );
+    } catch ( err ) {
+        error_exit( -208, "Error creating cmd file " + cmdlog + " : " + err.message );
+    }
+
+    console.log( "command is <" + cmd + ">" );
+
+    exec( cmd, { maxBuffer : 1024 * 1024 }, ( err, stdout, stderr ) => {
+        if ( err ) {
+            error_exit( -209, `Error running cmd $cmd : ${err.message}` );
+        }
+        try {
+            let stdout_file = `${job.directorylog}/_cmds_${request._uuid}`;
+            console.log( "stdout_file is: " + stdout_file );
+            fs.writeFileSync( stdout_file, stdout );
+        } catch ( err ) {
+            error_exit( -208, `Error creating stdout_file ${stdout_file} : ${err.message}` );
+        }
+
+        // TODO closeout, log job finished etc (apiutil)
+    });
 });
