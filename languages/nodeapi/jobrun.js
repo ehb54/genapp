@@ -1,7 +1,5 @@
 'use_strict';
 
-// TODO update mongo job
-
 console.log( "jobrun called: cwd:" + process.cwd() + " json:" + JSON.stringify( process.argv ) );
 
 const stagebase      = "__docroot:nodeapi__";
@@ -32,7 +30,9 @@ if ( !request.jsoninputfile ) {
     console.log( "jobrun: no jsoninputfile found in input" );
     process.exit(-202);
 }
-    
+
+// var org_request = request;
+
 var appconfig = apiutil.read_appconfig();
 
 var json_input;
@@ -42,9 +42,15 @@ try {
     console.log( "error reading jsoninput file : " + err.message );
 }
 
-var error_exit = function( id, message ) {
-    // TODO update mongo job (apiutil)
+async function error_exit( id, message ) {
     console.log( message );
+
+    await apiutil.logjobupdate( mongodb, id, "finished", true )
+        .catch( ( err ) => {
+            console.log( "logjobupdate error:" + err.message );
+            robj.error = "logjobupdate error:" + err.message;
+        });
+    
     process.exit( id );
 }
 
@@ -68,7 +74,7 @@ MongoClient.connect( mongo_url, async ( err, db ) => {
         });
     
     if ( !job.directory ) {
-        error_exit( -204, "job " + job._id + " Error: no directory defined in job" );
+        return error_exit( -204, "job " + job._id + " Error: no directory defined in job" );
     }
 
     // lookup job's module in mongo
@@ -81,12 +87,12 @@ MongoClient.connect( mongo_url, async ( err, db ) => {
             module = doc;
         })
         .catch( ( err ) => {
-            error_exit( -205, "did not find module " + job.module + " Error:" + err.message );
+            return error_exit( -205, "did not find module " + job.module + " Error:" + err.message );
         });
     
     if ( !module.executable ||
          !module.executable_path ) {
-        error_exit( -206, "module " + job.module + " Error: excutable and/or executable path not defined" );
+        return error_exit( -206, "module " + job.module + " Error: excutable and/or executable path not defined" );
     }
 
     console.log( "found job, module, should be ready to run next" );
@@ -97,35 +103,66 @@ MongoClient.connect( mongo_url, async ( err, db ) => {
     await fsaccess( cmd, fs.constants.X_OK )
         .then ()
         .catch ( (err) => {
-            error_exit( -207, cmd + " : not found or not executable" );
+            return error_exit( -207, cmd + " : not found or not executable" );
         });
 
+    // fix up json_input, write as _args
+
+    try {
+        json_obj = JSON.parse( json_input );
+    } catch ( err ) {
+        return error_exit( -208, `Error parsing JSON input: ${err.message}` );
+    }
+
+    json_obj._uuid           = request._uuid;
+    json_obj._base_directory = job.directory;
+    json_obj._log_directory  = job.directorylog;
+
+    json_input = JSON.stringify( json_obj );
+
+    try {
+        let argslog = job.directorylog + "/_args_" + request._uuid;
+        console.log( "argslog is " + argslog );
+        fs.writeFileSync( argslog, json_input );
+    } catch ( err ) {
+        return error_exit( -208, `Error creating argslog file ${argslog} : ${err.message}` );
+    }
+
     let stderr = `${job.directorylog}/_stderr_${request._uuid}`;
+
+    // this can change based on resource type, but for now, simply pass json_input in cmd line
     cmd = `(cd ${job.directory}; ${cmd} '${json_input}') 2> ${stderr} | head -c50000000`;
 
-    // TODO write out cmd file with stderr stdout etc
     try {
         let cmdlog = job.directorylog + "/_cmds_" + request._uuid;
         console.log( "cmdlog is " + cmdlog );
         fs.writeFileSync( cmdlog, cmd + "\n" );
     } catch ( err ) {
-        error_exit( -208, "Error creating cmd file " + cmdlog + " : " + err.message );
+        return error_exit( -208, "Error creating cmd file " + cmdlog + " : " + err.message );
     }
 
     console.log( "command is <" + cmd + ">" );
 
-    exec( cmd, { maxBuffer : 1024 * 1024 }, ( err, stdout, stderr ) => {
+    await apiutil.logjobupdate( mongodb, request._uuid, "running", true )
+        .catch( ( err ) => {
+            return error_exit( -208, "logjobupdate error:" + err.message );
+        });
+
+    exec( cmd, { maxBuffer : 1024 * 1024 }, async ( err, stdout, stderr ) => {
         if ( err ) {
-            error_exit( -209, `Error running cmd $cmd : ${err.message}` );
+            return error_exit( -209, `Error running cmd $cmd : ${err.message}` );
         }
         try {
-            let stdout_file = `${job.directorylog}/_cmds_${request._uuid}`;
+            let stdout_file = `${job.directorylog}/_stdout_${request._uuid}`;
             console.log( "stdout_file is: " + stdout_file );
             fs.writeFileSync( stdout_file, stdout );
         } catch ( err ) {
-            error_exit( -208, `Error creating stdout_file ${stdout_file} : ${err.message}` );
+            return error_exit( -210, `Error creating stdout_file ${stdout_file} : ${err.message}` );
         }
 
-        // TODO closeout, log job finished etc (apiutil)
+        await apiutil.logjobupdate( mongodb, request._uuid, "finished", true )
+            .catch( ( err ) => {
+                return error_exit( -211, "logjobupdate upon finish error:" + err.message );
+            });
     });
 });
