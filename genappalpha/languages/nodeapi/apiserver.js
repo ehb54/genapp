@@ -76,7 +76,7 @@ async function mkuserjobdir( name, id ) {
 
 // Server bits
 
-var writeend = function( res, robj ) {
+function writeend( res, robj ) {
     res.write( JSON.stringify( robj ) );
     res.end();
 }
@@ -364,10 +364,6 @@ app.post( '/jobsubmit', async ( req, res ) => {
         } catch ( err ) {
             robj.error = "Invalid JSON : " + err.message;
         }
-        json_input_obj._uuid = query._uuid;
-        // TODO: add other variables ... _basedir etc or in jobrun.js?  
-        // we could also add the ._uuid in jobrun.js .... perhaps a better place to avoid the stringify below?
-        json_input = JSON.stringify( json_input_obj );
     }
 
     if ( robj.error ) {
@@ -376,7 +372,7 @@ app.post( '/jobsubmit', async ( req, res ) => {
 
     // write args regardless if empty or not
 
-    let argslog = query.directorylog + "/_args_" + query._uuid;
+    let argslog = query.directorylog + "/_posted_args_" + query._uuid;
     await p_fs_writeFile( argslog, json_input )
         .catch( ( err ) => {
             robj.error = "Error creating log file " + argslog + " : " + err.message;
@@ -388,8 +384,7 @@ app.post( '/jobsubmit', async ( req, res ) => {
 
     // open logout file for spawn'd process
 
-    // TODO: move to log directory _log_+uuid
-    const logoutfile = "./logfile";
+    const logoutfile = query.directorylog + "/_runlog_" + query._uuid;
 
     console.log( "trying to open logoutfile" );
     const p_fs_open = util.promisify( fs.open );
@@ -420,13 +415,6 @@ app.post( '/jobsubmit', async ( req, res ) => {
         return writeend( res, robj );
     }
 
-    await apiutil.logjobupdate( mongodb, query._uuid, "finished", true )
-        .catch( ( err ) => {
-            console.log( "logjobupdate error:" + err.message );
-            robj.error = "logjobupdate error:" + err.message;
-        });
-
-
     // all ok so far, spawn new process handler
 
     try {
@@ -452,10 +440,16 @@ app.post( '/jobsubmit', async ( req, res ) => {
         subprocess.unref();
     } catch ( err ) {
         console.log( "spawn error: " + err.message );
+        robj.error = `process spawn error: ${err.message}`;
+        await apiutil.logjobupdate( mongodb, query._uuid, "finished", true )
+            .catch( ( err ) => {
+                console.log( "logjobupdate error:" + err.message );
+                robj.error = "logjobupdate error:" + err.message;
+            });
+        return writeend( res, robj );
     }
         
-
-    robj.error = "submitjob not fully implemented";
+    robj.status = "submitted";
     writeend( res, robj );
 });
 
