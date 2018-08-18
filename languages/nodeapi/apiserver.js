@@ -241,11 +241,10 @@ app.post( '/jobsubmit', async ( req, res ) => {
     if ( 
         !query.user ||
             !query.pw ||
-            !query.id ||
             !query._uuid ||
             !query.module 
     ) {
-        robj.error = "submitjob: incorrect format";
+        robj.error = "jobsubmit: incorrect format";
         return writeend( res, robj );
     }
 
@@ -301,11 +300,11 @@ app.post( '/jobsubmit', async ( req, res ) => {
 
     // setup job dir and stage files
 
-    let jobdir = stagebase + "/" + query.user + "/" + query.id;
+    let jobdir = stagebase + "/" + query.user + "/" + query._uuid;
 
     query.directory = jobdir;
 
-    await mkuserjobdir( query.user, query.id )
+    await mkuserjobdir( query.user, query._uuid )
         .catch( ( err ) => {
             robj.err = err.message;
         });
@@ -453,6 +452,77 @@ app.post( '/jobsubmit', async ( req, res ) => {
     writeend( res, robj );
 });
 
+app.get( '/jobstatus', async ( req, res ) => {
+    let ip = req_ip( req );
+
+    let q = url.parse( req.url, true );
+    let query = q.query;
+    console.log( JSON.stringify( query ) );
+    
+    let robj = {};
+    if ( 
+        !query.user ||
+            !query.pw ||
+            !query._uuid
+    ) {
+        robj.error = "jobstatus: incorrect format";
+        return writeend( res, robj );
+    }
+
+    let dobj = {};
+
+    // check user
+    await mongodb.collection("users").findOne({ name : query.user } )
+        .then( ( doc ) => {
+            console.log( "found user " + doc.name );
+            dobj.found = true;
+            dobj.hash = doc.password;
+        })
+        .catch( ( err ) => {
+            console.log( "did not find user " + query.user + " Error:" + err.message );
+            robj.error = "Incorrect password or user not found";
+        });
+    
+    if ( robj.error ) {
+        return writeend( res, robj );
+    }
+
+    // check pw
+    await bcrypt.compare( query.pw, dobj.hash )
+        .then( ( res ) => {
+            if ( !res ) {
+                robj.error = "Incorrect password or user not found.";
+            } // else pw ok
+        })
+        .catch( ( err ) => {
+            robj.error = "Error:" + err.message;
+        });
+
+    // delete pw as not needed any longer
+    delete query.pw;
+
+    if ( robj.error ) {
+        return writeend( res, robj );
+    }
+
+    // get job status for query._uuid, return
+    // check user
+    await mongodb.collection("jobs").findOne({ _id : query._uuid } )
+        .then( ( doc ) => {
+            console.log( "found job " + doc._id );
+            if ( !doc.status || !doc.status.length ) {
+                robj.error = `Job ${query._uuid} has no status!`;
+            } else {
+                robj.status = doc.status[ doc.status.length - 1 ];
+            }
+        })
+        .catch( ( err ) => {
+            robj.error = `Job ${query._uuid} not found.`;
+            console.log( robj.error );
+        });
+
+    writeend( res, robj );
+});
 
 app.get( /.*/, ( req, res ) => res.send( '{"error":"unknown"}' ));
 
