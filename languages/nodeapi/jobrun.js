@@ -143,7 +143,7 @@ MongoClient.connect( mongo_url, async ( err, db ) => {
 
     console.log( "command is <" + cmd + ">" );
 
-    await apiutil.logjobupdate( mongodb, request._uuid, "running", true )
+    await apiutil.logjobupdate( mongodb, request._uuid, "running", false )
         .catch( ( err ) => {
             return error_exit( -208, "logjobupdate error:" + err.message );
         });
