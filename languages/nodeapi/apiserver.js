@@ -506,7 +506,7 @@ app.get( '/jobstatus', async ( req, res ) => {
     }
 
     // get job status for query._uuid, return
-    // check user
+
     await mongodb.collection("jobs").findOne({ _id : query._uuid } )
         .then( ( doc ) => {
             console.log( "found job " + doc._id );
@@ -524,7 +524,138 @@ app.get( '/jobstatus', async ( req, res ) => {
     writeend( res, robj );
 });
 
-app.get( /.*/, ( req, res ) => res.send( '{"error":"unknown"}' ));
+app.get( '/jobresults', async ( req, res ) => {
+    let ip = req_ip( req );
+
+    let q = url.parse( req.url, true );
+    let query = q.query;
+    console.log( JSON.stringify( query ) );
+    
+    let robj = {};
+    if ( 
+        !query.user ||
+            !query.pw ||
+            !query._uuid ||
+            !query.file
+    ) {
+        robj.error = "jobstatus: incorrect format";
+        res.status( 400 );
+        return writeend( res, robj );
+    }
+
+    let dobj = {};
+
+    // check user
+    await mongodb.collection("users").findOne({ name : query.user } )
+        .then( ( doc ) => {
+            console.log( "found user " + doc.name );
+            dobj.found = true;
+            dobj.hash = doc.password;
+        })
+        .catch( ( err ) => {
+            console.log( "did not find user " + query.user + " Error:" + err.message );
+            robj.error = "Incorrect password or user not found";
+        });
+    
+    if ( robj.error ) {
+        res.status( 400 );
+        return writeend( res, robj );
+    }
+
+    // check pw
+    await bcrypt.compare( query.pw, dobj.hash )
+        .then( ( res ) => {
+            if ( !res ) {
+                robj.error = "Incorrect password or user not found.";
+            } // else pw ok
+        })
+        .catch( ( err ) => {
+            robj.error = "Error:" + err.message;
+        });
+
+    // delete pw as not needed any longer
+    delete query.pw;
+
+    if ( robj.error ) {
+        res.status( 400 );
+        return writeend( res, robj );
+    }
+
+    // get job status for query._uuid, return
+    let job = {};
+
+    await mongodb.collection("jobs").findOne({ _id : query._uuid } )
+        .then( ( doc ) => {
+            console.log( "found job " + doc._id );
+            if ( !doc.status || !doc.status.length ) {
+                robj.error = `Job ${query._uuid} has no status!`;
+            } else {
+                robj.status = doc.status[ doc.status.length - 1 ];
+                job = doc;
+            }
+        })
+        .catch( ( err ) => {
+            robj.error = `Job ${query._uuid} not found.`;
+            console.log( robj.error );
+        });
+
+    if ( robj.error ) {
+        res.status( 400 );
+        return writeend( res, robj );
+    }
+
+    if ( robj.status != "finished" ) {
+        robj.error = "Error: job not in finished state";
+        res.status( 409 );
+        return writeend( res, robj );
+    }
+
+    if ( !job.directory ) {
+        robj.error = "Error: job does not have a directory";
+        res.status( 404 );
+        return writeend( res, robj );
+    }
+        
+    let file = `${job.directory}/${query.file}`;
+    console.log( `/jobresult file ${file}` );
+
+    await p_fs_access( file, fs.constants.R_OK )
+        .catch( ( err ) => {
+            robj.error = `file ${file} not found.`;
+            console.log( robj.error );
+        });
+
+    if ( robj.error ) {
+        res.status( 418 );
+        return writeend( res, robj );
+    }
+
+    await p_fs_stat( file )
+        .then( ( stats ) => {
+            console.log( `${file} content-length: ${stats.size}` );
+            res.setHeader("content-length", stats.size );
+        })
+        .catch ( ( error ) =>  {
+            console.log( `ignored: could not get stats for ${file}` );
+        });
+        
+    res.setHeader("content-type", "application/octet-stream");
+    fs.createReadStream( file ).pipe( res );
+});
+
+app.get( /.*/, ( req, res ) => {
+    let ip = req_ip( req );
+
+    console.log( `${Date().toString()} ${ip} GET ${req.url}`);
+    res.status( 404 ).send( '{"error":"unknown"}' )
+});
+
+app.post( /.*/, ( req, res ) => {
+    let ip = req_ip( req );
+
+    console.log( `${Date().toString()} ${ip} POST ${req.url}`);
+    res.status( 404 ).send( '{"error":"unknown"}' )
+});
 
 // get appconfig
 
