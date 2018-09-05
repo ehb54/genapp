@@ -646,14 +646,14 @@ app.get( '/jobresults', async ( req, res ) => {
 app.get( /.*/, ( req, res ) => {
     let ip = req_ip( req );
 
-    console.log( `${Date().toString()} ${ip} GET ${req.url}`);
+    console.log( `${Date().toString()} ${ip} 404 GET ${req.url}`);
     res.status( 404 ).send( '{"error":"unknown"}' )
 });
 
 app.post( /.*/, ( req, res ) => {
     let ip = req_ip( req );
 
-    console.log( `${Date().toString()} ${ip} POST ${req.url}`);
+    console.log( `${Date().toString()} ${ip} 404 POST ${req.url}`);
     res.status( 404 ).send( '{"error":"unknown"}' )
 });
 
