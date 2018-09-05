@@ -1,0 +1,39 @@
+{
+    "id"          : "nodeapi",
+    "description" : "Node api server generation",
+    "version"     : 1,
+    "assembly"    : [
+        {
+            "frequency"     : "once",
+            "output"        : "apiserver.js",
+            "inputs"     : [ 
+                { "apiserver.js" : "once" }
+            ]
+        }    
+        ,{
+            "frequency"     : "once",
+            "output"        : "apiutil.js",
+            "inputs"     : [ 
+                { "apiutil.js" : "once" }
+            ]
+        }    
+        ,{
+            "frequency"     : "once",
+            "output"        : "jobrun.js",
+            "inputs"     : [ 
+                { "jobrun.js" : "once" }
+            ]
+        }    
+        ,{
+            "frequency"      : "once"
+            ,"setexecutable" : "true"
+            ,"execute"       : "atend"
+            ,"output"        : "logmodules.js"
+            ,"inputs"        : [ 
+                { "logmodules_header.js"   : "once" }
+                ,{ "logmodules_module.js"  : "menu:modules:id" }
+                ,{ "logmodules_footer.js"   : "once" }
+            ]
+        }
+    ]
+}
