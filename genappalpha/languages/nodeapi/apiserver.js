@@ -662,37 +662,37 @@ app.post( /.*/, ( req, res ) => {
 appconfig = apiutil.read_appconfig();
 
 if ( !appconfig.nodeapi ) {
-    console.log( appconfig_file + " missing 'nodeapi' information" );
+    console.log( appconfig.file + " missing 'nodeapi' information" );
     process.exit( -103 );
 }
 
 if ( !appconfig.nodeapi.listen ) {
-    console.log( appconfig_file + " missing 'nodeapi:listen' information" );
+    console.log( appconfig.file + " missing 'nodeapi:listen' information" );
     process.exit( -104 );
 }
 
 if ( !appconfig.nodeapi.listen.host ) {
-    console.log( appconfig_file + " missing 'nodeapi:listen:host' information" );
+    console.log( appconfig.file + " missing 'nodeapi:listen:host' information" );
     process.exit( -105 );
 }
 
 if ( !appconfig.nodeapi.listen.port ) {
-    console.log( appconfig_file + " missing 'nodeapi:listen:port' information" );
+    console.log( appconfig.file + " missing 'nodeapi:listen:port' information" );
     process.exit( -106 );
 }
 
 if ( !appconfig.nodeapi.listen.host.length ) {
-    console.log( appconfig_file + " empty 'nodeapi:listen:host' information" );
+    console.log( appconfig.file + " empty 'nodeapi:listen:host' information" );
     process.exit( -107 );
 }
 
 if ( isNaN( appconfig.nodeapi.listen.port ) ) {
-    console.log( appconfig_file + " incorrect 'nodeapi:listen:port' information" );
+    console.log( appconfig.file + " incorrect 'nodeapi:listen:port' information" );
     process.exit( -108 );
 }
 
 if ( appconfig.nodeapi.listen.port < 1 || appconfig.nodeapi.listen.port > 65535 ) {
-    console.log( appconfig_file + " invalid value for 'nodeapi:listen:port'" );
+    console.log( appconfig.file + " invalid value for 'nodeapi:listen:port'" );
     process.exit( -109 );
 }
 
