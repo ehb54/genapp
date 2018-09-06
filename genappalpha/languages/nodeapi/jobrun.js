@@ -45,10 +45,9 @@ try {
 async function error_exit( id, message ) {
     console.log( message );
 
-    await apiutil.logjobupdate( mongodb, id, "finished", true )
+    await apiutil.logjobupdate( mongodb, request._uuid, "finished", true )
         .catch( ( err ) => {
             console.log( "logjobupdate error:" + err.message );
-            robj.error = "logjobupdate error:" + err.message;
         });
     
     process.exit( id );
