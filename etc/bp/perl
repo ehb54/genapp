@@ -55,7 +55,7 @@ if ( !@ARGV )
     exit;
 }
 
-$ref = decode_json( shift );
+$req = decode_json( shift );
 
 ## messaging setup
 
@@ -67,10 +67,10 @@ if ( $enable_msg ) {
         require IO::Socket;   IO::Socket->import();
     };
 
-    my $domsg = $$ref{ "_uuid" } && $$ref{ "_udpport" } && $$ref{ "_udphost" };
+    my $domsg = $$req{ "_uuid" } && $$req{ "_udpport" } && $$req{ "_udphost" };
 
     my $sock;
-    $sock = IO::Socket::INET->new( Proto => 'udp', PeerPort => $$ref{ "_udpport" }, PeerAddr => $$ref{ "_udphost" } ) if $domsg;
+    $sock = IO::Socket::INET->new( Proto => 'udp', PeerPort => $$req{ "_udpport" }, PeerAddr => $$req{ "_udphost" } ) if $domsg;
 
     sub sendmsg {
         return if !$domsg;
@@ -80,7 +80,7 @@ if ( $enable_msg ) {
 
         if ( length( $text ) || length( $prog ) ) {
             my $msg  = {};
-            $$msg{ "_uuid" } = $$ref{ "_uuid" };
+            $$msg{ "_uuid" } = $$req{ "_uuid" };
             $$msg{ "_textarea" } = $text if length( $text );
             $$msg{ "_progress" } = $prog if length( $prog );
             $sock->send( encode_json( $msg ) );
@@ -117,7 +117,7 @@ if ( length( $save_in_log ) ) {
     print OUT `date`;
     print OUT "$0\n";
     print OUT "--- input ---\n";
-    print OUT Dumper($ref);
+    print OUT Dumper($req);
     print OUT "--- output ---\n";
     print OUT Dumper($res);
     print OUT "-"x20 . "\n";
