@@ -143,6 +143,8 @@ module.exports = {
             process.exit( -102 );
         }
 
+        appconfig.file = appconfig_file;
+
         return appconfig;
     }
 
