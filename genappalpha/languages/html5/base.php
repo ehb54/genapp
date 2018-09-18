@@ -196,7 +196,7 @@ if ( $app_json == NULL ) {
     }
     $results[ "_message" ] = [ "icon" => "toast.png",
                                "text" => "<p>There appears to be an error with the appconfig.json file.</p>"
-                               . "<p>This is a serious error which should be forwarded to the site adiminstrator.</p>" 
+                               . "<p>This is a serious error which should be forwarded to the site administrator.</p>" 
                                . "<p>Do not expect much to work properly until this is fixed.</p>" 
         ];
     $results[ "error" ] .= "appconfig.json is invalid";
