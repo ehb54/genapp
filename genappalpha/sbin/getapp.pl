@@ -217,6 +217,23 @@ sub setappconfig {
     my $targetdir  = $_[1];
     my $admin      = $_[2];
 
+    my $f      = "$targetdir/appconfig.json.template";
+
+    # restrictive default
+    my $usesubmitpolicy = "login"; 
+
+    if ( -e $f && -r $f) {
+        # read for submitpolicy for now
+        open my $fh, $f;
+        my @l = <$fh>;
+        close $fh;
+        @l = grep !/^\s*#/, @l;
+        my $appjson = decode_json( ( join '', @l ) );
+        if ( $$appjson{ 'submitpolicy' } ) {
+            $usesubmitpolicy = $$appjson{ 'submitpolicy' };
+        }
+    }
+
     my $json = {};
     $$json{ "hostip"   } = $$cfgjson{ 'hostip' }   || die "$0 hostip not defined in $cfgjsonf. $cfgjsonnotes";
     $$json{ "hostname" } = $$cfgjson{ 'hostname' } || die "$0 hostname not defined in $cfgjsonf. $cfgjsonnotes";
@@ -235,7 +252,7 @@ sub setappconfig {
     $$json{ "resources" }{ "local" } = "";
 
     $$json{ "resourcedefault" } = "local";
-    $$json{ "submitpolicy" } = "login";
+    $$json{ "submitpolicy" } = $usesubmitpolicy;
 
     $$json{ "lockdir" } = "$gb/etc";
 
