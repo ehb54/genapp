@@ -122,6 +122,7 @@ for my $k ( keys %$appsjson ) {
     if ( !$? ) {
         print "changing ownership to $user:genpp in $path\n";
         runcmdsb( "chown -R $user:genapp ." );
+        runcmdsb( "chmod -R g+rw ." );
         print "running genapp in $path\n";
         runcmd( "genapp" );
         if ( $? ) {
