@@ -208,7 +208,7 @@ if ( $os eq 'centos' ) {
 }
 
 if ( $os eq 'redhat' ) {
-    die "only Red Hat Enterprise Linux Server 6.7 and 6.8 are currently supported and this appears to be version $os_release\n$sorry" if $os_release !~ /^6\.(7|8)$/;
+    die "only Red Hat Enterprise Linux Server 6.7 and 6.8 are currently supported and this appears to be version $os_release\n$sorry" if $os_release !~ /^6\.(7|8)$/ && $os_release !~ /^7\.5/;
 }    
 
 if ( $os eq 'slackware' ) {
@@ -686,8 +686,9 @@ service iptables save" );
     exit();
 }
 
-# ------ redhat -------
-if ( $os eq 'redhat' ) {
+# ------ redhat 6.x -------
+
+if ( $os eq 'redhat' && $os_release =~ /^6\.(2|3|4|5)/ ) {
     # install required modules
 
 #    runcmdsb( "rpm -Uvh http://mirror.webtatic.com/yum/el6/latest.rpm" );
@@ -748,7 +749,7 @@ https://access.redhat.com/documentation/en-US/Red_Hat_Software_Collections/2/htm
 
     # need imagemagick from source :(
     my $imversion = "ImageMagick-6.9.7-10.tar.xz";
-    runcmd( "rm -f /tmp/$imversion 2>/dev/null;cd /tmp && wget http://transloadit.imagemagick.org/download/releases/$imversion && tar Jxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
+    runcmd( "rm -fr /tmp/$imversion 2>/dev/null;cd /tmp && wget http://transloadit.imagemagick.org/download/releases/$imversion && tar Jxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
 
     my $rhsclphp    = "/opt/rh/rh-php56/root";
     my $rhsclphpetc = "/etc/opt/rh/rh-php56/";
@@ -1085,7 +1086,7 @@ _EOF
     if ( $cernvm ) {
         # need imagemagick from source :(
         my $imversion = "ImageMagick-6.9.7-10.tar.xz";
-        runcmd( "rm -f /tmp/$imversion 2>/dev/null; cd /tmp && wget http://transloadit.imagemagick.org/download/releases/$imversion && tar Jxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
+        runcmd( "rm -fr /tmp/$imversion 2>/dev/null; cd /tmp && wget http://transloadit.imagemagick.org/download/releases/$imversion && tar Jxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
     } else {
         runcmdsb( "yum -y install ImageMagick ImageMagick-devel" );
     }
@@ -1199,6 +1200,213 @@ _EOF
     }
 
     runcmdsb( "systemctl restart httpd.service && systemctl enable httpd.service" );
+    exit();
+}
+
+# ------ redhat 7.x -------
+
+if ( $os eq 'redhat' && $os_release =~ /^7\.5/ ) {
+    # install required modules
+
+    runcmdsb( "cat <<_EOF > /etc/yum.repos.d/mongodb.repo
+[mongodb]
+name=MongoDB Repository
+baseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/
+gpgcheck=0
+enabled=1
+_EOF
+# the 3.2 repo didn't seem to work
+cat <<_EOF > /etc/yum.repos.d/mongodb-org-3.6.repo
+[mongodb-org-3.6]
+name=MongoDB Repository
+baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/3.6/x86_64/
+gpgcheck=1
+enabled=1
+gpgkey=https://www.mongodb.org/static/pgp/server-3.6.asc
+_EOF
+# semanage port -a -t mongod_port_t -p tcp 27017
+");
+
+
+    runcmdsb( "yum-config-manager --enable rhel-server-rhscl-7-rpms" );
+    {
+        my @res = `sudo subscription-manager list --available --all 2>&1 | grep 'not yet registered'`;
+        die "$0: could not enable rhel-server-rhscl-7-rpms, the system does not appear to be registered. Try \$ sudo subscription-manager register --help" if @res;
+        @res = `sudo yum repolist 2> /dev/null | grep rhscl`;
+        die '-'x80 . "
+$0: you appeared to be registered, but need to attach to a pool.  you can use:
+\$ sudo subscription-manager list --available
+and identify a 'Pool ID:'=pool_id and then use that pool_id to
+\$ sudo subscription-manager attach --pool=pool_id
+" . '-'x80 . "
+You may also find info at this url:
+https://access.redhat.com/documentation/en-US/Red_Hat_Software_Collections/2/html-single/2.1_Release_Notes/index.html#sect-Installation-Subscribe
+" . '-'x80 . "
+" if !@res;
+    }
+
+    runcmdsb( "yum -y install mlocate git httpd24-httpd httpd24-httpd-devel rh-php56-php rh-php56-php-devel rh-php56-php-pear rh-php56-php-pecl-mongo mongodb-org mongodb-org-server wget libuuid-devel openssl-devel libpng-devel libjpeg-devel fontconfig-devel freetype-devel fftw-devel libtiff-devel cairo-devel pango pango-devel" );
+
+    # need zeromq from source :(
+
+    runcmd( "rm -fr /tmp/libzmq 2>/dev/null; cd /tmp && git clone git://github.com/zeromq/libzmq.git && cd libzmq && ./autogen.sh && ./configure && make -j$CPUS && make -j$CPUS check && sudo make -j$CPUS install && cat <<_EOF > /etc/ld.so.conf.d/zeromq.conf
+/usr/local/lib
+_EOF
+sudo ldconfig
+ " ) if !-e "/usr/local/lib/libzmq.so" || !-e "/etc/ld.so.conf.d/zeromq.conf";
+
+    # need imagemagick from source :(
+    my $imversion = "ImageMagick-6.9.7-10.tar.xz";
+    runcmd( "rm -fr /tmp/$imversion 2>/dev/null;cd /tmp && wget http://transloadit.imagemagick.org/download/releases/$imversion && tar Jxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
+
+    my $rhsclphp    = "/opt/rh/rh-php56/root";
+    my $rhsclphpetc = "/etc/opt/rh/rh-php56/";
+    my $rhsclhttpd  = "/opt/rh/httpd24/root";
+
+    runcmdsb( "sed -i 's/PHP -C -n -q/PHP -C -q/' $rhsclphp/usr/bin/pecl" );
+    runcmdsb( "yes '' | $rhsclphp/usr/bin/pecl channel-update pecl.php.net" );
+    runcmdsb( "yes '' | $rhsclphp/usr/bin/pecl install uuid zmq-beta mongo imagick;
+cat <<_EOF > $rhsclphpetc/php.d/uuid.ini
+; Enable uuid extension module
+extension=uuid.so
+_EOF
+cat <<_EOF > $rhsclphpetc/php.d/zmq.ini
+; Enable zmq extension module
+extension=zmq.so
+_EOF
+cat <<_EOF > $rhsclphpetc/php.d/imagick.ini
+; Enable imagick extension module
+extension=imagick.so
+_EOF
+#cat <<_EOF > $rhsclphpetc/php.d/mongo.ini
+#; Enable mongo extension module
+#extension=mongo.so
+#_EOF
+" );
+
+    runcmdsb( "scl enable rh-php56 'pear upgrade --force --alldeps http://pear.php.net/get/PEAR-1.10.5'" );
+    runcmdsb( "scl enable rh-php56 'pear install --alldeps Mail Mail_Mime Net_SMTP'" );
+
+    `sudo killall mongod 2> /dev/null`;
+    runcmdsb( "service mongod start" );
+
+    # add proxy support for ws, wss
+    runcmdsb( "cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/wsproxy.conf
+# ws proxy pass
+# priority=20
+ProxyPass /ws2 ws://localhost:$wsport/
+ProxyPass /wss2 ws://localhost:$wsport/
+_EOF
+cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/genapp.conf
+SetEnv GENAPP $gb
+_EOF
+");
+
+    runcmdsb( "cat <<_EOF > $rhsclhttpd/etc/httpd/conf.d/noindices.conf
+<Directory \"$rhsclhttpd/var/www/html\">
+    Options FollowSymLinks
+    AllowOverride None
+    Require all granted
+</Directory>
+_EOF
+");
+
+    # scl puts php in $rhsclphp so link it
+
+    runcmdsb( "ln -sf $rhsclphp/usr/bin/php /usr/bin/php" );
+
+    # scl puts httpd root in $rhsclphp so link it
+
+    if ( -e "/var/www" ) {
+        if ( -d "/var/www" || -f "/var/www" ) {
+            my $bdir = "/var/www.previous";
+            my $ext ;
+            while ( -e $bdir ) {
+               $ext++;
+               $bdir = "/var/www.previous-$ext";
+            }
+            $warnings .= "/var/www is backed up in $bdir";
+            runcmdsb( "mv /var/www $bdir" );
+        } else {
+            runcmdsb( "rm /var/www" );
+        }
+    }
+      
+    runcmdsb( "ln -sf $rhsclhttpd/var/www /var/www" );
+
+    # genapp html5 likes php at /usr/local/bin/php so make sure it exists
+
+    if ( -e "/usr/bin/php" && !-e "/usr/local/bin/php" ) {
+        runcmdsb( "ln -s /usr/bin/php /usr/local/bin/php" );
+    }
+
+    # make the base of the genapp instances directory, create group genapp, add user & apache to genapp group
+
+    runcmdsb( "mkdir -p $appbase
+groupadd genapp
+useradd genapp -r -s /usr/sbin/nologin -d $appbase -g genapp
+chmod g+rwx $appbase
+chown $whoami:genapp $appbase
+chmod g+s $appbase
+mkdir $$cfgjson{'lockdir'}
+chown genapp:genapp $$cfgjson{'lockdir'}
+chmod g+rwx $$cfgjson{'lockdir'}
+usermod -g users -G genapp $whoami
+usermod -G genapp \'apache\'
+chgrp -R genapp $gb
+chmod g+w $gb/etc
+" );
+
+    # setup local system definitions
+
+    runcmdsb( "cat <<_EOF > /etc/profile.d/genapp.sh
+export GENAPP=$gb
+export PATH=\\\\\\\$GENAPP/bin:\\\\\\\$PATH
+_EOF
+cat <<_EOF > /etc/profile.d/genapp.csh
+setenv GENAPP $gb
+setenv PATH=\\\\\\\$\{GENAPP\}/bin:\\\\\\\$\{PATH}
+_EOF
+
+" );
+
+    runcmdsb( "cat <<_EOF > $$cfgjson{'webroot'}/php_info.php
+<?php
+phpinfo();
+?>
+_EOF
+" );
+
+    # setup genapptest instance
+
+    runcmd( "cd $appbase && $gb/sbin/getapp.pl -force -gen -admin $whoami svn genapptest" );
+
+    # add ws servers to startup
+
+    runcmdsb( "cp $appbase/genapptest/output/html5/util/rc.genapp /etc/init.d" );
+    runcmdsb( "chkconfig --add rc.genapp" );
+    runcmdsb( "/etc/init.d/rc.genapp start" );
+
+    runcmdsb( "semanage permissive -a httpd_t; service httpd24-httpd restart && chkconfig httpd24-httpd on" );
+
+    {
+        my $iptab = `service iptables status | grep ACCEPT | grep INPUT | grep dpt:80`;
+        chomp $iptab;
+        if ( $iptab !~ /tcp/ ) {
+            runcmdsb( "iptables -I INPUT 1 -m state --state NEW -m tcp -p tcp --dport 80 -j ACCEPT
+service iptables save" );
+        }
+    }
+    if ( $$cfgjson{ 'https' } ) {
+        my $iptab = `service iptables status | grep ACCEPT | grep INPUT | grep dpt:443`;
+        chomp $iptab;
+        if ( $iptab !~ /tcp/ ) {
+            runcmdsb( "iptables -I INPUT 1 -m state --state NEW -m tcp -p tcp --dport 443 -j ACCEPT
+service iptables save" );
+        }
+    }
+
+#    runcmdsb( "service httpd restart && chkconfig httpd on" );
     exit();
 }
 
