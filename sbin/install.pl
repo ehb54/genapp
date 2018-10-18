@@ -1208,22 +1208,15 @@ _EOF
 if ( $os eq 'redhat' && $os_release =~ /^7\.5/ ) {
     # install required modules
 
-    runcmdsb( "cat <<_EOF > /etc/yum.repos.d/mongodb.repo
-[mongodb]
-name=MongoDB Repository
-baseurl=http://downloads-distro.mongodb.org/repo/redhat/os/x86_64/
-gpgcheck=0
-enabled=1
-_EOF
-# the 3.2 repo didn't seem to work
-cat <<_EOF > /etc/yum.repos.d/mongodb-org-3.6.repo
+    runcmdsb( "cat <<_EOF > /etc/yum.repos.d/mongodb-org-3.6.repo
 [mongodb-org-3.6]
 name=MongoDB Repository
-baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/3.6/x86_64/
+baseurl=https://repo.mongodb.org/yum/redhat/_releasever/mongodb-org/3.6/x86_64/
 gpgcheck=1
 enabled=1
 gpgkey=https://www.mongodb.org/static/pgp/server-3.6.asc
 _EOF
+sed -i 's/redhat\/_/redhat\/\$/' /etc/yum.repos.d/mongodb-org-3.6.repo
 # semanage port -a -t mongod_port_t -p tcp 27017
 ");
 
