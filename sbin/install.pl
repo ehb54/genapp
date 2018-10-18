@@ -1216,7 +1216,7 @@ gpgcheck=1
 enabled=1
 gpgkey=https://www.mongodb.org/static/pgp/server-3.6.asc
 _EOF
-sed -i 's/redhat\/_/redhat\/\$/' /etc/yum.repos.d/mongodb-org-3.6.repo
+sed -i 's/_/\$/' /etc/yum.repos.d/mongodb-org-3.6.repo
 # semanage port -a -t mongod_port_t -p tcp 27017
 ");
 
@@ -1382,24 +1382,27 @@ _EOF
 
     runcmdsb( "semanage permissive -a httpd_t; service httpd24-httpd restart && chkconfig httpd24-httpd on" );
 
-    {
+# iptables replaced by FirewaddD on RH7
+
+    if ( 0 ) {
+      {
         my $iptab = `service iptables status | grep ACCEPT | grep INPUT | grep dpt:80`;
         chomp $iptab;
         if ( $iptab !~ /tcp/ ) {
             runcmdsb( "iptables -I INPUT 1 -m state --state NEW -m tcp -p tcp --dport 80 -j ACCEPT
-service iptables save" );
+    service iptables save" );
         }
-    }
-    if ( $$cfgjson{ 'https' } ) {
+      }
+      if ( $$cfgjson{ 'https' } ) {
         my $iptab = `service iptables status | grep ACCEPT | grep INPUT | grep dpt:443`;
         chomp $iptab;
         if ( $iptab !~ /tcp/ ) {
             runcmdsb( "iptables -I INPUT 1 -m state --state NEW -m tcp -p tcp --dport 443 -j ACCEPT
-service iptables save" );
+    service iptables save" );
         }
+      }
     }
 
-#    runcmdsb( "service httpd restart && chkconfig httpd on" );
     exit();
 }
 
