@@ -53,6 +53,8 @@ when using usage[2];
 
 ";
 
+$sudo = "sudo" if !-e "$gb/etc/no_sudo";
+
 my $admin;
 my $force;
 my $gen;
@@ -363,7 +365,7 @@ sub runcmd {
 sub runcmdsb {
     my $cmd = $_[0];
     $cmd =~ s/"/\\\"/g;
-    $cmd = "sudo bash -c \"$cmd\"";
+    $cmd = "$sudo bash -c \"$cmd\"";
     print "sd cmd is <$cmd>\n" if $debug;
     runcmd( $cmd );
 }
