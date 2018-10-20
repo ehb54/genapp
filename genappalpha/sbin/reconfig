@@ -31,6 +31,8 @@ there is a script $gb/sbin/install-perl-stable to do this";
 
 require "$gb/etc/perl/genapp_util.pl";
 
+$sudo = "sudo" if !-e "$gb/etc/no_sudo";
+
 sub runcmd {
     my $cmd = $_[0];
     my $out;
@@ -48,7 +50,7 @@ sub runcmd {
 sub runcmdsb {
     my $cmd = $_[0];
     $cmd =~ s/"/\\\"/g;
-    $cmd = "sudo bash -c \"$cmd\"";
+    $cmd = "$sudo bash -c \"$cmd\"";
     print "sd cmd is <$cmd>\n" if $debug;
     runcmd( $cmd );
 }
@@ -202,7 +204,7 @@ you can rerun $0
         };
     }
 
-    runcmd( "sudo /etc/init.d/rc.genapp restart" ) if -x "/etc/init.d/rc.genapp";
+    runcmd( "$sudo /etc/init.d/rc.genapp restart" ) if -x "/etc/init.d/rc.genapp";
     if ( $$cfgjson{ 'webroot' } ) {
         my $apacherestart;
         
