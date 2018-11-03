@@ -479,11 +479,25 @@ if ( $loginok == 1 )
       exit();
    }
 
-   $results[ 'status' ] = $addstat . "Login successful";
+   $results[ 'status' ] = $addstat . "Login successful. ";
    $results[ '_logon' ] = $userid;
    $_SESSION[ $window ][ 'logon' ] = $userid;
    $_SESSION[ $window ][ 'app'   ] = "__application__";
    session_commit();
+
+   # store session id
+   {
+       $msession = $m->__application__->session;
+       try {
+           $msession->update( [ "_id"  => session_id() ],
+                              [ '$set' => [ "name" => $userid ] ],
+                              [ 'upsert' => true
+                              __~mongojournal{, writeConcern => [ "j" => true ]}
+                              ] );
+       } catch(MongoCursorException $e) {
+           $results[ 'status' ] .= "Unable to store session id. ";
+       }
+   }
 
    if ( isset( $doc[ "groups" ] ) ) {
        $results[ "_usergroups" ] = $doc[ "groups" ];
