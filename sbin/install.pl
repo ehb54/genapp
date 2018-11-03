@@ -901,7 +901,7 @@ service iptables save" );
     exit();
 }
 
-# ------ ubuntu 16.04 ------
+# ------ ubuntu 16.04 & 18.04 ------
 if ( $os eq 'ubuntu' && ( $os_release == 16.04 || $os_release == 18.04 ) ) {
     # install required modules
 
