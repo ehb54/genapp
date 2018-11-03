@@ -158,21 +158,22 @@ CMD /etc/init.d/mongodb start && \
 
 ## dependencies
 
-RUN apt-get install libcurl4-openssl-dev libreadline-dev
+RUN apt-get install -y libcurl4-openssl-dev libreadline-dev unzip
 
 ## php7
 
 RUN cd $SRCBASE && \
     curl -o php-7.2.10.tar.gz -L http://php.net/get/php-7.2.10.tar.gz/from/this/mirror && \
-    tar xzf tar xzf php-7.2.10.tar.gz && \
+    tar xzf php-7.2.10.tar.gz && \
     rm php-7.2.10.tar.gz && \
     cd php-7.2.10 && \
-    ./configure --prefix=/usr/local/php/7.2.10 && \
+    ./configure --prefix=/usr/local/php/7.2.10 \
         --disable-all --enable-cli --enable-mbstring --with-curl  --disable-cgi --enable-json --with-readline && \
     make -j4 && \
     make install -j4
 
 ## seedme2 foldershare
+
 RUN cd $SRCBASE && \
     curl -O https://dibbs.seedme.org/sites/dibbs.seedme.org/files/downloads/foldershare.0.5.4.zip && \
     unzip foldershare* && \
