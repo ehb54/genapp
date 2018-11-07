@@ -24,7 +24,10 @@ if ( !isset( $_SESSION[ $window ][ 'logon' ] ) ||
 }
 
 try {
-    $m = new MongoClient();
+    $m = new MongoClient(
+         __~mongo:url{"__mongo:url__"}
+         __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
+         );
 } catch ( Exception $e ) {
     $results[ 'error' ] .= "Could not connect to the db " . $e->getMessage();
     echo (json_encode($results));

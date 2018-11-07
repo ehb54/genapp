@@ -43,7 +43,10 @@ if ( $_REQUEST[ '_logon' ] != $_SESSION[ $window ][ 'logon' ] )
    $results[ '_logon' ] = "";
    $results[ 'error'  ] = 'Possible security violation user mismatch. ';
    try {
-      $m = new MongoClient();
+      $m = new MongoClient(         
+         __~mongo:url{"__mongo:url__"}
+         __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
+         );
    } catch ( Exception $e ) {
       $results[ 'error' ] .= "Could not connect to the db " . $e->getMessage();
       echo (json_encode($results));
@@ -90,7 +93,10 @@ if ( !sizeof( $_REQUEST ) )
 }
 
 try {
-     $m = new MongoClient();
+     $m = new MongoClient(
+         __~mongo:url{"__mongo:url__"}
+         __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
+     );
 } catch ( Exception $e ) {
     $results = "Could not connect to the db " . $e->getMessage();
     echo (json_encode($results));
