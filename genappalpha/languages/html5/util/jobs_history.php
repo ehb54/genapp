@@ -58,7 +58,10 @@ $date_2 = new MongoDate(strtotime($end_date->format("Y-m-d H:i:s") . " +1 day"))
 
 //echo $arg1. $arg2 . "\n";
 
-$m = new MongoClient();
+$m = new MongoClient(
+             __~mongo:url{"__mongo:url__"}
+             __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
+             );
 $db = $m->selectDB("__application__");
 
 $collection_jobs = $db->jobs;

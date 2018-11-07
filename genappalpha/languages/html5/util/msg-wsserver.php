@@ -94,7 +94,10 @@ use Ratchet\Wamp\WampServerInterface;
 $keeptrying = 0;
 do {
     try {
-        $mongo = new MongoClient();
+        $mongo = new MongoClient(
+             __~mongo:url{"__mongo:url__"}
+             __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
+             );
         $keeptrying = 0;
     } catch ( Exception $e ) {
         echo "msg_wsserver: could not connect to mongodb, sleeping 15s\n";
