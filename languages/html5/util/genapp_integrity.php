@@ -27,7 +27,10 @@ foreach ( $ps as $v ) {
 
 # connect
 try {
-     $mongo = new MongoClient();
+     $mongo = new MongoClient(
+             __~mongo:url{"__mongo:url__"}
+             __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
+             );
 } catch ( Exception $e ) {
     echo "could not connect to mongodb\n";
     exit();

@@ -52,7 +52,10 @@ function db_connect( $error_json_exit = false ) {
 
    if ( !isset( $use_db ) ) {
       try {
-         $use_db = new MongoClient();
+         $use_db = new MongoClient(
+         __~mongo:url{"__mongo:url__"}
+         __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
+         );
       } catch ( Exception $e ) {
          $db_errors = "Could not connect to the db " . $e->getMessage();
          if ( $error_json_exit )
