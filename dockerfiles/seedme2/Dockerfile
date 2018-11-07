@@ -148,11 +148,6 @@ RUN echo "# add Alias /genapptest $WEBROOT/genapptest\n\
 </Directory>\n"\
 > /etc/apache2/conf-enabled/security.conf
 
-CMD /etc/init.d/mongodb start && \
-    /etc/init.d/rc.genapp start && \
-    /etc/init.d/apache2 start && \
-    while true; do sleep 600; done
-    
 
 # seedme2 integration additions
 
@@ -181,4 +176,68 @@ RUN cd $SRCBASE && \
     cp foldershare/applications/foldershare /usr/bin && \
     sed -i '1s/^.*$/#!\/usr\/local\/php\/7.2.10\/bin\/php/' /usr/bin/foldershare
 
+## need to expose mongod
+### generate certs
+
+RUN cd /etc/ssl/ && \
+    openssl req -newkey rsa:2048 -new -subj '/C=US/CN=127.0.0.1' -x509 -days 365 -nodes -out mongodb-cert.crt -keyout mongodb-cert.key && \
+    cat mongodb-cert.key mongodb-cert.crt > mongodb.pem
+
+### setup mongod for certs
+
+RUN echo "# mongod.conf \
+# for documentation of all options, see: \
+#   http://docs.mongodb.org/manual/reference/configuration-options/ \
+\
+# Where and how to store data. \
+storage: \
+  dbPath: /var/lib/mongodb \
+  journal: \
+    enabled: true \
+#  engine: \
+#  mmapv1: \
+#  wiredTiger: \
+ \
+# where to write logging data. \
+systemLog: \
+  destination: file \
+  logAppend: true \
+  path: /var/log/mongodb/mongod.log \
+ \
+# network interfaces \
+net: \
+  port: 27017 \
+  bindIp: 127.0.0.1 \
+  ssl: \
+    mode: requireSSL \
+    PEMKeyFile: /etc/ssl/mongodb.pem \
+ \
+# how the process runs \
+processManagement: \
+  timeZoneInfo: /usr/share/zoneinfo \
+ \
+#security: \
+ \
+#operationProfiling: \
+ \
+#replication: \
+ \
+#sharding: \
+ \
+## Enterprise-Only Options: \
+ \
+#auditLog: \
+ \
+#snmp: \
+" > /etc/mongod.conf
+
+### add to config.json
+RUN $GENAPP/sbin/setconfig.pl -mongossl 127.0.0.1 /etc/ssl/mongod-crt.crt &&
+    $GENAPP/sbin/reconfig
+
+# forever loop
+CMD /etc/init.d/mongodb start && \
+    /etc/init.d/rc.genapp start && \
+    /etc/init.d/apache2 start && \
+    while true; do sleep 600; done
     
