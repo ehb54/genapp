@@ -250,6 +250,9 @@ sub setappconfig {
 
     $$json{ "lockdir" } = "$gb/etc";
 
+    $$json{ "mongo" }{ "url" }    = $$cfgjson{ "mongo" }{ "url" }    if $$cfgjson{ "mongo" }{ "url" };
+    $$json{ "mongo" }{ "cafile" } = $$cfgjson{ "mongo" }{ "cafile" } if $$cfgjson{ "mongo" }{ "cafile" };
+
     $f = "$targetdir/appconfig.json";
     open  $fh, ">$f" || die "$0: could not open $f for writing\n";
     {
@@ -341,12 +344,22 @@ if ( !$hasappconfig ) {
 
     die "$0 tcptimeout not defined in $cfgjsonf. $cfgjsonnotes" if !$$cfgjson{ 'messaging' }{ 'tcptimeout' };
     if ( $$appjson{ 'messaging' }{ 'tcptimeout' } ne $$cfgjson{ 'messaging' }{ 'tcptimeout' } ) {
+        $mongochanges++;
         $changes .= "messaging:tcptimeout updated from [$$appjson{'messaging'}{'tcptimeout'}] to [$$cfgjson{'messaging'}{'tcptimeout'}]\n";
         $$appjson{ 'messaging' }{ 'tcptimeout' } = $$cfgjson{ 'messaging' }{ 'tcptimeout' };
     }
 
+    if ( $$dirjson{ 'mongo' }{ 'url' } ne $$cfgjson{ 'mongo' }{ 'url' } ) {
+        $mongochanges++;
+        $$dirjson{ 'mongo' }{ 'url' } = $$cfgjson{ 'mongo' }{ 'url' };
+    }
+
+    if ( $$dirjson{ 'mongo' }{ 'cafile' } ne $$cfgjson{ 'mongo' }{ 'cafile' } ) {
+        $mongochanges++;
+        $$dirjson{ 'mongo' }{ 'cafile' } = $$cfgjson{ 'mongo' }{ 'cafile' };
+    }
+
     if ( $changes ) {
-        
         $f = "$cwd/appconfig.json";
         open  $fh, ">$f" || die "$0: could not open $f for writing\n";
         {
@@ -359,7 +372,23 @@ if ( !$hasappconfig ) {
         print $changes;
         print '-'x( length( "updated $f" ) + 10 ) . "\n";
     } else {
-        print "no differences\n" if $debug;
+        print "appconfig.json: no differences\n" if $debug;
+    }
+
+    if ( $mongochanges ) {
+        $f = "$cwd/directives.json";
+        open  $fh, ">$f" || die "$0: could not open $f for writing\n";
+        {
+            my $js = JSON->new;
+            print $fh $js->pretty->encode( $dirjson );
+        }
+        close $fh;
+        print '-'x( length( "updated $f" ) + 10 ) . "\n";
+        print "updated $f\n";
+        print $changes;
+        print '-'x( length( "updated $f" ) + 10 ) . "\n";
+    } else {
+        print "directives.json: no differences\n" if $debug;
     }
 }
 

@@ -57,7 +57,7 @@ sub runcmdsb {
 
 $user =  getpwuid($<);
 
-die "user must not be root to run $0\n" if $user eq 'root';
+die "user must not be root to run $0\n" if $user eq 'root' && $sudo;
 
 # -- read apps.json
 
