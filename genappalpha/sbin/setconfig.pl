@@ -40,7 +40,8 @@ options
  -if network-interface-id      find and set hostip from that of specified interface (e.g. eth0, eth1, lo, etc)
  -pj                           print resulting config.json
  -https                        use https and wss
- -webroot webroot              specifiy the webroot directory
+ -webroot webroot              specify the webroot directory
+ -mongossl hostname cafile     specify the hostname and certificate file for mongod
 ";
 
 my $pj;
@@ -67,12 +68,12 @@ while ( @ARGV ) {
     }
     if ( $option =~ /^-hostip$/ ) {
         die "$0: option $option requries an argument\n" . $notes if !@ARGV;
-        $hostip = shift @ARGV;;
+        $hostip = shift @ARGV;
         next;
     }
     if ( $option =~ /^-hostname$/ ) {
         die "$0: option $option requries an argument\n" . $notes if !@ARGV;
-        $hostname = shift @ARGV;;
+        $hostname = shift @ARGV;
         next;
     }
     if ( $option =~ /^-webroot$/ ) {
@@ -90,6 +91,13 @@ while ( @ARGV ) {
     }
     if ( $option =~ /^-https$/ ) {
         $https++;
+        next;
+    }
+    if ( $option =~ /^-mongossl$/ ) {
+        $mongosslhost = shift @ARGV;
+        $mongourl = "mongodb://${mongosslhost}:27017/?ssl=true";
+        die "$0: option $option requries two arguments\n" . $notes if !@ARGV;
+        $mongocafile = shift @ARGV;
         next;
     }
 
@@ -421,6 +429,28 @@ if ( $$json{ "webroot" } ) {
     }
 } else {
     $$json{'webroot'}         = $webroot;
+}
+
+if ( $$json{ "mongo" }{ "url" } ) {
+    if ( $$json{'mongo'}{'url'} ne $mongourl ) {
+        $notice .= "The identified mongod url for this server [$mongourl] is different than that stored [$$json{'mongo'}{'url'}] in $f. " . ( $fo ? "Overwriting with identified value." : "Leaving stored value untouched (use -f to overwrite)." ) . "\n";
+    }
+    if ( $fo ) {
+        $$json{'mongo'}{'url'} = $mongourl;
+    }
+} else {
+    $$json{'mongo'}{'url'} = $mongourl;
+}
+
+if ( $$json{ "mongo" }{ "cafile" } ) {
+    if ( $$json{'mongo'}{'cafile'} ne $mongocafile ) {
+        $notice .= "The identified mongod certificate file for this server [$mongocafile] is different than that stored [$$json{'mongo'}{'cafile'}] in $f. " . ( $fo ? "Overwriting with identified value." : "Leaving stored value untouched (use -f to overwrite)." ) . "\n";
+    }
+    if ( $fo ) {
+        $$json{'mongo'}{'cafile'} = $mongocafile;
+    }
+} else {
+    $$json{'mongo'}{'cafile'} = $mongocafile;
 }
 
 open my $fh, ">$f" || die "$0: can not open $f for writing, check permissions\n";
