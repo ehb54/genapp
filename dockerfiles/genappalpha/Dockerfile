@@ -153,6 +153,9 @@ RUN echo "# add Alias /genapptest $WEBROOT/genapptest\n\
 </Directory>\n"\
 > /etc/apache2/conf-enabled/security.conf
 
+RUN /etc/init.d/apache2 stop && \
+    rm -fr /var/run/apache2/apache2.pid ; exit 0
+
 CMD /etc/init.d/mongodb start && \
     /etc/init.d/rc.genapp start && \
     /etc/init.d/apache2 start && \
