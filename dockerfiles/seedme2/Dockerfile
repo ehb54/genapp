@@ -53,7 +53,10 @@ RUN apt-get update && \
     apt-get install -y mongodb && \
     apt-get install -y libmagickwand-6.q16-dev && \
     apt-get install -y openssh-server && \
-    cd $SRCBASE && svn co svn://svn.genapp.rocks/svn/base/genappalpha genapp
+    apt-get install -y vim && \
+    apt-get install -y emacs-nox
+
+RUN cd $SRCBASE && svn co svn://svn.genapp.rocks/svn/base/genappalpha genapp
 
 RUN touch $GENAPPETC/no_sudo
 
