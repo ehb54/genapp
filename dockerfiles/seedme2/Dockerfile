@@ -153,6 +153,8 @@ RUN echo "# add Alias /genapptest $WEBROOT/genapptest\n\
 </Directory>\n"\
 > /etc/apache2/conf-enabled/security.conf
 
+RUN /etc/init.d/apache2 stop && \
+    rm -fr /var/run/apache2/apache2.pid ; exit 0
 
 # seedme2 integration additions
 
@@ -190,55 +192,58 @@ RUN cd /etc/ssl/ && \
 
 ### setup mongod for certs
 
-RUN echo "# mongod.conf \
-# for documentation of all options, see: \
-#   http://docs.mongodb.org/manual/reference/configuration-options/ \
-\
-# Where and how to store data. \
-storage: \
-  dbPath: /var/lib/mongodb \
-  journal: \
-    enabled: true \
-#  engine: \
-#  mmapv1: \
-#  wiredTiger: \
- \
-# where to write logging data. \
-systemLog: \
-  destination: file \
-  logAppend: true \
-  path: /var/log/mongodb/mongod.log \
- \
-# network interfaces \
-net: \
-  port: 27017 \
-  bindIp: 127.0.0.1 \
-  ssl: \
-    mode: requireSSL \
-    PEMKeyFile: /etc/ssl/mongodb.pem \
- \
-# how the process runs \
-processManagement: \
-  timeZoneInfo: /usr/share/zoneinfo \
- \
-#security: \
- \
-#operationProfiling: \
- \
-#replication: \
- \
-#sharding: \
- \
-## Enterprise-Only Options: \
- \
-#auditLog: \
- \
-#snmp: \
-" > /etc/mongod.conf
+RUN echo "# mongodb.conf\n\
+# for documentation of all options, see:\n\
+#   http://docs.mongodb.org/manual/reference/configuration-options/\n\
+\n\
+# Where and how to store data.\n\
+storage:\n\
+  dbPath: /var/lib/mongodb\n\
+  journal:\n\
+    enabled: true\n\
+#  engine:\n\
+#  mmapv1:\n\
+#  wiredTiger:\n\
+\n\
+# where to write logging data.\n\
+systemLog:\n\
+  destination: file\n\
+  logAppend: true\n\
+  path: /var/log/mongodb/mongodb.log\n\
+\n\
+# network interfaces\n\
+net:\n\
+  port: 27017\n\
+  bindIp: 127.0.0.1\n\
+  ssl:\n\
+    mode: requireSSL\n\
+    PEMKeyFile: /etc/ssl/mongodb.pem\n\
+\n\
+# how the process runs\n\
+processManagement:\n\
+  timeZoneInfo: /usr/share/zoneinfo\n\
+\n\
+#security:\n\
+\n\
+#operationProfiling:\n\
+\n\
+#replication:\n\
+\n\
+#sharding:\n\
+\n\
+## Enterprise-Only Options:\n\
+\n\
+#auditLog:\n\
+\n\
+#snmp:\n\
+" > /etc/mongodb.conf
 
 ### add to config.json
-RUN $GENAPP/sbin/setconfig.pl -mongossl 127.0.0.1 /etc/ssl/mongod-crt.crt &&
+RUN . /etc/profile.d/genapp.sh && \
+    $GENAPP/sbin/setconfig.pl -mongossl 127.0.0.1 /etc/ssl/mongodb-cert.crt && \
     $GENAPP/sbin/reconfig
+RUN /etc/init.d/apache2 stop && \
+    rm -fr /var/run/apache2/apache2.pid ; exit 0
 
 # forever loop
 CMD /etc/init.d/mongodb start && \
