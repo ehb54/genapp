@@ -61,7 +61,9 @@ RUN touch $GENAPPETC/no_sudo
 
 RUN curl -L http://cpanmin.us | perl - App::cpanminus
     
-RUN cpanm JSON Hash::Merge Data::Dumper Try::Tiny LWP::UserAgent MIME::Lite MIME::Base64 LWP::Protocol::https
+RUN cpanm JSON Hash::Merge Data::Dumper Try::Tiny LWP::UserAgent MIME::Lite MIME::Base64
+RUN cpanm -n Net::SSLeay IO::Socket::SSL
+RUN cpanm LWP::Protocol::https
 
 RUN pear channel-update pear.php.net
 RUN pear install --alldeps Mail Mail_Mime Net_SMTP
