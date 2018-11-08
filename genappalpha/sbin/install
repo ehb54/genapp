@@ -43,6 +43,8 @@ install Try::Tiny
 install LWP::UserAgent
 install MIME::Lite
 install MIME::Base64
+notest install Net::SSLeay
+notest install IO::Socket::SSL
 install LWP::Protocol::https
 _EOF
 #    sudo -E bash -c "$PERL -MCPAN -e 'install \"JSON\";install \"Hash::Merge\";install \"Data::Dumper\";install \"Try::Tiny\";install \"LWP::UserAgent\";install \"MIME::Lite\";install \"MIME::Base64\";install \"LWP::Protocol::https\";'"
@@ -56,6 +58,8 @@ install Try::Tiny
 install LWP::UserAgent
 install MIME::Lite
 install MIME::Base64
+notest install Net::SSLeay
+notest install IO::Socket::SSL
 install LWP::Protocol::https
 _EOF
 #    $PERL -MCPAN -e "install \"JSON\";install \"Hash::Merge\";install \"Data::Dumper\";install \"Try::Tiny\";install \"LWP::UserAgent\";install \"MIME::Lite\";install \"MIME::Base64\";install \"LWP::Protocol::https\";"
