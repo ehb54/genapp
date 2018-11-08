@@ -1046,6 +1046,8 @@ foreach my $l ( keys %langs )
     }
     if ( $$lang{ 'register' } ) {
         my $cmd = $$lang{ 'register' };
+        $cmd =~ s/__genapp__/$gap/g;
+        $error .= "registration command $cmd does not exist\n" if !-e $cmd;
         my $res = `$cmd`;
         print "registering:$res\n" if $debug_main;
     }
