@@ -214,10 +214,12 @@ systemLog:\n\
 # network interfaces\n\
 net:\n\
   port: 27017\n\
-  bindIp: 127.0.0.1\n\
+  bindIp: 0.0.0.0\n\
   ssl:\n\
     mode: requireSSL\n\
     PEMKeyFile: /etc/ssl/mongodb.pem\n\
+# to avoid "The server certificate does not match the hostname\n\
+#   allowInvalidHostnames: true\n\
 \n\
 # how the process runs\n\
 processManagement:\n\
