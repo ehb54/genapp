@@ -184,10 +184,15 @@ RUN cd $SRCBASE && \
     sed -i '1s/^.*$/#!\/usr\/local\/php\/7.2.10\/bin\/php/' /usr/bin/foldershare
 
 ## need to expose mongod
+ENV MONGO_DOMAIN genapp_docker_mongo
+
 ### generate certs
 
+RUN sed "1s/127.0.0.1\tlocalhost/127.0.0.1\tlocalhost\tgenapp_docker_mongo/" /etc/hosts > /etc/hosts.$MONGO_DOMAIN
+RUN cat /etc/hosts.$MONGO_DOMAIN
+
 RUN cd /etc/ssl/ && \
-    openssl req -newkey rsa:2048 -new -subj '/C=US/CN=127.0.0.1' -x509 -days 365 -nodes -out mongodb-cert.crt -keyout mongodb-cert.key && \
+    openssl req -newkey rsa:2048 -new -subj "/C=US/CN=$MONGO_DOMAIN" -x509 -days 365 -nodes -out mongodb-cert.crt -keyout mongodb-cert.key && \
     cat mongodb-cert.key mongodb-cert.crt > mongodb.pem
 
 ### setup mongod for certs
@@ -219,7 +224,10 @@ net:\n\
     mode: requireSSL\n\
     PEMKeyFile: /etc/ssl/mongodb.pem\n\
 # to avoid "The server certificate does not match the hostname\n\
-#   allowInvalidHostnames: true\n\
+# this doesn't seem to work (or I'm not understanding its meaning\n\
+# what happens is that we still get invalid hostname in cert errors\n\
+# alternative was to use the domain name trick (editing /etc/hosts)\n\
+#    allowInvalidHostnames: true\n\
 \n\
 # how the process runs\n\
 processManagement:\n\
@@ -242,13 +250,16 @@ processManagement:\n\
 
 ### add to config.json
 RUN . /etc/profile.d/genapp.sh && \
-    $GENAPP/sbin/setconfig.pl -mongossl 127.0.0.1 /etc/ssl/mongodb-cert.crt && \
+    $GENAPP/sbin/setconfig.pl -mongossl $MONGO_DOMAIN /etc/ssl/mongodb-cert.crt && \
     $GENAPP/sbin/reconfig
 RUN /etc/init.d/apache2 stop && \
     rm -fr /var/run/apache2/apache2.pid ; exit 0
 
 # forever loop
-CMD /etc/init.d/mongodb start && \
+CMD cp /etc/hosts.$MONGO_DOMAIN /etc/hosts && \
+    cat /etc/hosts && \
+    cat /etc/ssl/mongodb-cert.crt && \
+    /etc/init.d/mongodb start && \
     /etc/init.d/rc.genapp start && \
     /etc/init.d/apache2 start && \
     while true; do sleep 600; done
