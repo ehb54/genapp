@@ -6,8 +6,8 @@ __~fields:repeater{+ '<tr><td></td><td colspan="4"><table id="__fields:id__-repe
 
 this_eval = __~fields:pull{'ga.pull.toPull( "__moduleid__", "#__fields:id__", "listbox", "__fields:pull__", "#__fields:repeat__" );' + }
 __~fields:repeater{'ga.repeat.repeater( "__moduleid__", "__fields:id__", "listbox" );' +}
-__~fields:default{'$("#__fields:id__ option[value=\'__fields:default__\']").attr("selected", "true");' +}
-'$( "#__fields:id__" ).attr( "value", $( "#__fields:id__" ).val() );' +
+__~fields:default{'$("#__fields:id__ option[value=\'__fields:default__\']").prop("selected", "true");' +}
+'$( "#__fields:id__" ).prop( "value", $( "#__fields:id__" ).val() );' +
 'ga.value.setLastValue( "__moduleid__", "#__fields:id__"__~fields:default{, "__fields:default__"} );'
 __~fields:repeater{+ 'ga.repeat.change( "__moduleid__", "__fields:id__" );$( "#__fields:id__" ).change( function() { ga.repeat.change( "__moduleid__", "__fields:id__" ); } );'}
 
