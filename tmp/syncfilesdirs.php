@@ -293,7 +293,13 @@ function scan_fs( $dir = "" ) {
     foreach ( $sdir as $key => $value ) {
         if ( !in_array( $value, [ ".", ".." ] ) ) {
             $name = $dir .  "/" . $value;
-            $info = [];
+            $stat = stat( $use_dir . "/" . $value );
+            $info = 
+                [ 
+                  "size" => $stat[ "size" ]
+                  ,"create" => $stat[ "ctime" ]
+                  ,"modify" => $stat[ "mtime" ]
+                ];
 
             if ( is_dir( $use_dir . "/" . $value ) ) {
                 array_push( $g_info[ "fs" ][ "dirs" ], [ $name => $info ] );
