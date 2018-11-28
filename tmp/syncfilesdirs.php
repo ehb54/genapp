@@ -4,11 +4,14 @@
 $debug = 0;
 
 $notes = <<<__EOD
-usage: php $argv[0] --cred seedme2_credentials_file --fs fs_base_directory
+  usage: php $argv[0] {-r} --cred seedme2_credentials_file --fs fs_base_directory
+    copies data from fs to seedme2 
+  option:
+    -r     remove files and directories present on seedme2 but not present on fs
 __EOD;
 
 $options = getopt(
-    ""
+    "r"
     ,[
      "cred:"
      ,"fs:"
@@ -103,8 +106,8 @@ function nextcmd() {
             $basedir .= "/";
             debugecho(  "last command was $lastcmd, responses:--\n" . $responses . "\n--" );
             debugecho( "basedir is '$basedir'" );
-            switch( substr( $lastcmd, 0, 4 ) ) {
-                case "ls -" : {
+            switch( substr( $lastcmd, 0, 3 ) ) {
+                case "ls " : {
                     $files = explode( "\n", $responses );
                     array_shift( $files );
                     array_pop( $files );
@@ -116,13 +119,13 @@ function nextcmd() {
                     debugecho( "files after replace:--\n" . implode( "\n", $files ) . "\n--" );
                     # push commands
                     foreach ( $files as $value ) {
-                        array_push( $cmds, [ "runcmd" => "stat '$value'" ] );
-                        array_push( $cmds, [ "waitfor" => "foldershare> " ] );
+                        $cmds[] = [ "runcmd" => "stat '$value'" ];
+                        $cmds[] = [ "waitfor" => "foldershare> " ];
                     }
                 }
                 break;
 
-                case "stat" : {
+                case "sta" : {
                     # check response FileType:
                     # if Directory, push ls -l of it
                     $basedir = substr( $basedir, 0, -1 );
@@ -144,8 +147,9 @@ function nextcmd() {
                     debugecho( "for $basedir filetype is $fileType" );
                     switch( $fileType ) {
                         case "Directory" : {
-                            array_push( $cmds, [ "runcmd" => "ls -l '$basedir'" ] );
-                            array_push( $cmds, [ "waitfor" => "foldershare> " ] );
+                            $cmds[] = [ "runcmd" => "ls -l '$basedir'" ];
+                            $cmds[] = [ "waitfor" => "foldershare> " ];
+                            $info[ "depth" ] = count( explode( "/", $basedir ) ) - 2;
                             array_push( $g_info[ "seedme2" ][ "dirs" ], [ $basedir => $info ] );
                         }
                         break;
@@ -164,6 +168,18 @@ function nextcmd() {
                 }
                 break;
 
+                case "rm " : # remove file, nothing to respond to (could check errors?)
+                    break;
+
+                case "rmd" : # remove directory, nothing to respond to (could check errors?)
+                    break;
+
+                case "mkd" : # create directory, nothing to respond to (could check errors?)
+                    break;
+
+                case "put" : # upload file, nothing to respond to (could check errors?)
+                    break;
+                    
                 default : {
                     echo "unsupported lastcmd '$lastcmd'\n";
                     exit( 3 );
@@ -316,28 +332,110 @@ function local_fs() {
     scan_fs();
 }
 
+function info_array( $source, $type ) {
+    global $g_info;
+
+    $result = [];
+
+    foreach ( $g_info[ $source ][ $type ] as $key => $value ) {
+        $result[] = implode( "", array_keys( $value ) );
+    }
+    return $result;
+}
+    
+function remove_from_seedme2_nonexistent() {
+    global $cmds;
+
+    debugecho( "remove_from_seedme2_nonexistent", 0 );
+
+    $seedme2files = info_array( "seedme2", "files" );
+    $seedme2dirs  = info_array( "seedme2", "dirs" );
+    $fsfiles      = info_array( "fs", "files" );
+    $fsdirs       = info_array( "fs", "dirs" );
+
+    $removefiles  = array_diff( $seedme2files, $fsfiles );
+    $removedirs   = array_reverse( array_diff( $seedme2dirs, $fsdirs ) );
+
+    debugecho( "remove files:\n" . implode( "\n", $removefiles ), 0 );
+    debugecho( "remove dirs:\n" . implode( "\n", $removedirs ), 0 );
+
+    foreach ( $removefiles as $value ) {
+        $cmds[] = [ "runcmd" => "rm '$value'" ];
+        $cmds[] = [ "waitfor" => "foldershare> " ];
+    }
+
+    foreach ( $removedirs as $value ) {
+        $cmds[] = [ "runcmd" => "rmdir '$value'" ];
+        $cmds[] = [ "waitfor" => "foldershare> " ];
+    }
+
+    debugecho( "remove commands:\n" . json_encode( $cmds, JSON_PRETTY_PRINT ), 0 );
+}
+
+function create_directories_on_seedme2() {
+    global $cmds;
+
+    debugecho( "create_directories_on_seedme2", 0 );
+
+    $seedme2dirs  = info_array( "seedme2", "dirs" );
+    $fsdirs       = info_array( "fs", "dirs" );
+
+    $createdirs   = array_diff( $fsdirs, $seedme2dirs );
+
+    debugecho( "createdirs dirs:\n" . implode( "\n", $createdirs ), 0 );
+
+    foreach ( $createdirs as $value ) {
+        $cmds[] = [ "runcmd" => "mkdir '$value'" ];
+        $cmds[] = [ "waitfor" => "foldershare> " ];
+    }
+
+    debugecho( "create directories commands:\n" . json_encode( $cmds, JSON_PRETTY_PRINT ), 0 );
+}
+    
+function upload_files_to_seedme2() {
+    global $cmds;
+    global $fs;
+
+    debugecho( "upload_files_to_seedme2", 0 );
+
+    $seedme2files  = info_array( "seedme2", "files" );
+    $fsfiles       = info_array( "fs", "files" );
+
+    $uploadfiles   = array_diff( $fsfiles, $seedme2files );
+
+    debugecho( "upload files:\n" . implode( "\n", $uploadfiles ), 0 );
+
+    foreach ( $uploadfiles as $value ) {
+        $cmds[] = [ "runcmd" => "put '${fs}$value' '$value'" ];
+        $cmds[] = [ "waitfor" => "foldershare> " ];
+    }
+
+    debugecho( "upload files commands:\n" . json_encode( $cmds, JSON_PRETTY_PRINT ), 0 );
+}
+    
 # work thru the stages
 # stages are
 #  1: get seedme2 fs info
 #  2: get local fs info
-#  3: sync dirs
-#  4: sync files
+#  3: optionally remove nonexistent on fs from seedme2
+#  4: create directories not present on seedme2
+#  5: upload files not present on seedme2 or differeing in size
 
-$startatstage  = 2;
-$finishatstage = 2;
+$startatstage  = 1;
+$finishatstage = 5;
 
 function stage_loop() {
     global $g_info;
     global $finishatstage;
     global $startatstage;
     global $cmds;
+    global $options;
     
     for ( $stage = $startatstage; $stage <= $finishatstage; $stage++ ) {
+        debugecho( "stage $stage", 0 );
 
         switch ( $stage ) {
             case 1 : { # getseedme2 fs info
-                debugecho( "stage $stage", 0 );
-
                 $cmds = [
                     [ "waitfor" => "foldershare> " ]
                     ,[ "runcmd" => "ls -l" ]
@@ -348,14 +446,40 @@ function stage_loop() {
             break;
             
             case 2 : { # get local fs info
-                debugecho( "stage $stage", 0 );
                 local_fs();
             }
             break;
 
-            default : { # no more stages
-                debugecho( "stage $stage", 0 );
-                debugecho( "no more stages", 0 );
+            case 3 : { # optionally remove nonexistent on fs from seedme2
+                if ( isset( $options[ "r" ] ) ) {
+                    remove_from_seedme2_nonexistent();
+                    if ( count( $cmds ) ) {
+                        process_cmds();
+                    }
+                } else {
+                    debugecho( "stage skipped", 0 );
+                }
+            }
+            break;
+
+            case 4 : { # create directories on seedme2
+                create_directories_on_seedme2();
+                if ( count( $cmds ) ) {
+                    process_cmds();
+                }
+            }
+            break;
+
+            case 5 : { # upload files to seedme2
+                upload_files_to_seedme2();
+                if ( count( $cmds ) ) {
+                    process_cmds();
+                }
+            }
+            break;
+
+            default : { # invalid stage
+                debugecho( "stage invalid", 0 );
             }
             break;
         }
@@ -363,7 +487,7 @@ function stage_loop() {
     }
 
     debugecho( "stage loop done", 0 );
-    echo json_encode( $g_info, JSON_PRETTY_PRINT ) . "\n";
+    debugecho( json_encode( $g_info, JSON_PRETTY_PRINT ), 1 );
 
     exit;
 }
