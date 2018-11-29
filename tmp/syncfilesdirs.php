@@ -406,7 +406,8 @@ function upload_files_to_seedme2() {
     debugecho( "upload files:\n" . implode( "\n", $uploadfiles ), 0 );
 
     foreach ( $uploadfiles as $value ) {
-        $cmds[] = [ "runcmd" => "put '${fs}$value' '$value'" ];
+        $dest = preg_replace( "/\/[^\/]+$/", "", $value );
+        $cmds[] = [ "runcmd" => "put '${fs}$value' '$dest'" ];
         $cmds[] = [ "waitfor" => "foldershare> " ];
     }
 
