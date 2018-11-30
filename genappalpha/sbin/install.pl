@@ -208,7 +208,7 @@ if ( $os eq 'centos' ) {
 }
 
 if ( $os eq 'redhat' ) {
-    die "only Red Hat Enterprise Linux Server 6.7 and 6.8 are currently supported and this appears to be version $os_release\n$sorry" if $os_release !~ /^6\.(7|8)$/ && $os_release !~ /^7\.5/;
+    die "only Red Hat Enterprise Linux Server 6.7, 6.8, 7.5 and 7.6 are currently supported and this appears to be version $os_release\n$sorry" if $os_release !~ /^6\.(7|8)$/ && $os_release !~ /^7\.(5|6)/;
 }    
 
 if ( $os eq 'slackware' ) {
@@ -749,7 +749,7 @@ https://access.redhat.com/documentation/en-US/Red_Hat_Software_Collections/2/htm
 
     # need imagemagick from source :(
     my $imversion = "ImageMagick-6.9.7-10.tar.xz";
-    runcmd( "rm -fr /tmp/$imversion 2>/dev/null;cd /tmp && wget http://transloadit.imagemagick.org/download/releases/$imversion && tar Jxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
+    runcmd( "rm -fr /tmp/$imversion 2>/dev/null;cd /tmp && wget http://imagemagick.org/download/releases/$imversion && tar Jxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
 
     my $rhsclphp    = "/opt/rh/rh-php56/root";
     my $rhsclphpetc = "/etc/opt/rh/rh-php56/";
@@ -1086,7 +1086,7 @@ _EOF
     if ( $cernvm ) {
         # need imagemagick from source :(
         my $imversion = "ImageMagick-6.9.7-10.tar.xz";
-        runcmd( "rm -fr /tmp/$imversion 2>/dev/null; cd /tmp && wget http://transloadit.imagemagick.org/download/releases/$imversion && tar Jxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
+        runcmd( "rm -fr /tmp/$imversion 2>/dev/null; cd /tmp && wget http://imagemagick.org/download/releases/$imversion && tar Jxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
     } else {
         runcmdsb( "yum -y install ImageMagick ImageMagick-devel" );
     }
@@ -1205,7 +1205,7 @@ _EOF
 
 # ------ redhat 7.x -------
 
-if ( $os eq 'redhat' && $os_release =~ /^7\.5/ ) {
+if ( $os eq 'redhat' && $os_release =~ /^7\.(5|6)/ ) {
     # install required modules
 
     runcmdsb( "cat <<_EOF > /etc/yum.repos.d/mongodb-org-3.6.repo
@@ -1249,8 +1249,13 @@ sudo ldconfig
  " ) if !-e "/usr/local/lib/libzmq.so" || !-e "/etc/ld.so.conf.d/zeromq.conf";
 
     # need imagemagick from source :(
-    my $imversion = "ImageMagick-6.9.7-10.tar.xz";
-    runcmd( "rm -fr /tmp/$imversion 2>/dev/null;cd /tmp && wget http://transloadit.imagemagick.org/download/releases/$imversion && tar Jxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
+    # might need fix to freetype2 https://bugzilla.redhat.com/show_bug.cgi?id=1651788
+    if ( $os_release eq '7.6' ) {
+        runcmdsb( "sed -i '801s/FT_ENCODING_PRC/FT_ENCODING_GB2312/' /usr/include/freetype2/freetype/freetype.h" );
+    }
+
+    my $imversion = "ImageMagick-6.9.10-14.tar.xz";
+    runcmd( "rm -fr /tmp/$imversion 2>/dev/null;cd /tmp && wget http://imagemagick.org/download/releases/$imversion && tar Jxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
 
     my $rhsclphp    = "/opt/rh/rh-php56/root";
     my $rhsclphpetc = "/etc/opt/rh/rh-php56/";
