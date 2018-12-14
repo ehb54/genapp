@@ -49,6 +49,7 @@ let
 long
 native
 package
+plot
 private
 protected
 public
