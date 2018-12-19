@@ -78,6 +78,9 @@ ga.calc.tokens = function( calc ) {
                     break;
                 }
                 last_is_atom.pop();
+                last_is_atom.pop();
+                last_is_atom.push( 1 );
+                console.log( "closing paren 0" );
             } else {
                 last_is_atom[ last_is_atom.length - 1 ] = 0;
             }
@@ -101,6 +104,9 @@ ga.calc.tokens = function( calc ) {
                             break;
                         }
                         last_is_atom.pop();
+                        last_is_atom.pop();
+                        last_is_atom.push( 1 );
+                        console.log( "closing paren 1" );
                     } else {
                         if ( ga.calc.is_function_paren.test( new_tokens[ 0 ] ) ) {
                             last_is_atom.push( 0 );
@@ -111,6 +117,10 @@ ga.calc.tokens = function( calc ) {
         }
 
         console.log( "ga.calc.tokens() new token: " + new_tokens[ 0 ] );
+        console.log( "new tokens:" );
+        console.dir( new_tokens );
+        console.log( "last_is_atom:" );
+        console.dir( last_is_atom );
 
         calc = calc.substring( new_tokens[ 0 ].length );
         tokens.push( new_tokens[ 0 ] );
@@ -148,7 +158,7 @@ ga.calc.parensub = function( a ) {
         }
     }
 
-    console.warn( "closing paren error" );
+    return { _error : "Closing parenthesis error" };
 }
 
 // --- build tree ---
@@ -169,6 +179,9 @@ ga.calc.mktree = function( a, obj ) {
         if ( ga.calc.is_function_paren.test( token ) ) {
             // console.log( "function paren test" );
             tmp = ga.calc.parensub( a.slice( i ) );
+            if ( tmp._error ) {
+                return tmp;
+            }
             i += tmp.newofs;
             token = { op : token, args : [ ga.calc.mktree( tmp.a ) ] };
             paren = 1;
@@ -176,6 +189,9 @@ ga.calc.mktree = function( a, obj ) {
             if ( ga.calc.is_open_paren.test( token ) ) {
                 // console.log( "open paren test" );
                 tmp = ga.calc.parensub( a.slice( i ) );
+                if ( tmp._error ) {
+                    return tmp;
+                }
                 i += tmp.newofs;
                 token = ga.calc.mktree( tmp.a );
                 paren = 1;
@@ -814,11 +830,12 @@ ga.calc.evaltree = function( obj ) {
 // --- test area ----
 
 var calcs = [];
+var true_results = [];
 
 var vars = {};
-vars[ "m" ] = 10;
+vars[ "m" ] = 1;
 vars[ "e" ] = 2;
-vars[ "c" ] = 1;
+vars[ "c" ] = 3;
 
 // calcs.push( [ 1 , "," , 1 ] );
 // calcs.push( [ 1 , "," , 1 , "," , 2 ] );
@@ -857,8 +874,30 @@ vars[ "c" ] = 1;
 // calcs.push( [ "sqrt(", "e", ")" ] );
 
 // calcs.push( [ "2", "*", "m", "^", "2" ] );
-// calcs.push( ga.calc.tokens( "2*m^2" ) );
 // calcs.push( ga.calc.tokens( "sqrt(e)" ) );
+calcs.push( ga.calc.tokens( "((m+e))+1" ) );
+var m = vars[ "m" ];
+var e = vars[ "e" ];
+var c = vars[ "c" ];
+
+true_results.push( ((m+e))+1 );
+calcs.push( ga.calc.tokens( "(m+e)*c" ) );
+true_results.push( (m+e)*c );
+calcs.push( ga.calc.tokens( "m*c^2" ) );
+true_results.push( Math.pow( m*c, 2 ) );
+calcs.push( ga.calc.tokens( "m*(c^2)" ) );
+true_results.push( m * Math.pow( c, 2 ) );
+calcs.push( ga.calc.tokens( "sqrt( m*(c^2) )" ) );
+true_results.push( Math.sqrt( m * Math.pow( c, 2 ) ) );
+calcs.push( ga.calc.tokens( "abs(m-e)/(c-2)" ) );
+true_results.push( Math.abs(m-e)/(c-2) );
+
+calcs.push( ga.calc.tokens( "m*((c^2)" ) );
+true_results.push( "invalid" );
+calcs.push( ga.calc.tokens( "m*(c c^2)" ) );
+true_results.push( "invalid" );
+calcs.push( ga.calc.tokens( "m*(c c^2))" ) );
+true_results.push( "invalid" );
 
 var ourtree;
 
@@ -870,4 +909,10 @@ for ( var i = 0; i < calcs.length; ++i ) {
     console.log( util.inspect( ourtree, false, null ) );
     console.log( "============================================================" );
     console.log( "eval our tree: " + util.inspect( ga.calc.evaltree( ourtree ), false, null ) );
+    if ( true_results[ i ] == "invalid" ) {
+        console.log( true_results[ i ] == util.inspect( ga.calc.evaltree( ourtree ), false, null ) ? "match - it shouldn't " : "does not match - this is correct" );
+    } else {
+        console.log( true_results[ i ] == util.inspect( ga.calc.evaltree( ourtree ), false, null ) ? "match" : "does not match" );
+    }
+
 }

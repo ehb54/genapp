@@ -82,7 +82,7 @@ ga.calc.register = function( mod, id, calc ) {
     if ( ga.calc.data[ mod ].calc[ id ].tokens._error ) {
         ga.msg.box( { 
             icon: "toast.png",
-            text: "Module field calc internal error: " + ga.calc.data[ mod ].calc[ id ].tokens._error + " in calc field id " + id
+            text: "Module field calc internal error (tokens): " + ga.calc.data[ mod ].calc[ id ].tokens._error + " in calc field id " + id
         } );
         return;
     }
@@ -102,7 +102,7 @@ ga.calc.register = function( mod, id, calc ) {
     if ( ga.calc.data[ mod ].calc[ id ].tree._error ) {
         ga.msg.box( { 
             icon: "toast.png",
-            text: "Module field calc internal error: " + ga.calc.data[ mod ].calc[ id ].tree._error + " in calc field id " + id
+            text: "Module field calc internal error (tree): " + ga.calc.data[ mod ].calc[ id ].tree._error + " in calc field id " + id
         } );
         return;
     }
@@ -223,7 +223,7 @@ ga.calc.process = function( mod, id ) {
     if ( result._error ) {
         ga.msg.box( { 
             icon: "toast.png",
-            text: "Module field calc internal error: " + ga.calc.data[ mod ].calc[ id ].tokens._error + " in calc field id " + id
+            text: "Module field calc internal error: " + result._error + " in calc field id " + id
         } );
         return;
     }
@@ -274,6 +274,8 @@ ga.calc.tokens = function( calc ) {
                     break;
                 }
                 last_is_atom.pop();
+                last_is_atom.pop();
+                last_is_atom.push( 1 );
             } else {
                 last_is_atom[ last_is_atom.length - 1 ] = 0;
             }
@@ -296,6 +298,8 @@ ga.calc.tokens = function( calc ) {
                             break;
                         }
                         last_is_atom.pop();
+                        last_is_atom.pop();
+                        last_is_atom.push( 1 );
                     } else {
                         if ( ga.calc.is_function_paren.test( new_tokens[ 0 ] ) ) {
                             last_is_atom.push( 0 );
