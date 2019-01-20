@@ -23,6 +23,7 @@ foreach my $mod ( keys %dependencies ) {
     my $has_error;
     my $has_base;
     my @copys;
+    my %copymap;
     my $has_cpanm;
     
     for ( my $i = 0; $i < @$depjson; ++$i ) {
@@ -84,6 +85,7 @@ foreach my $mod ( keys %dependencies ) {
                 $out .= "COPY $dest $dest\n";
                 $val = "$executable_path/$val" if $val !~ /^\//;
                 push @copys, $val;
+                $copymap{ $val }++;
                 next;
             }
 
@@ -93,12 +95,23 @@ foreach my $mod ( keys %dependencies ) {
         }
     }
 
-    next if $has_error;
-
     # add executable
 
     $out .= "COPY $$modjson{'executable'} $$modjson{'executable'}\n";
     push @copys, "$executable_path/$$modjson{'executable'}";
+
+    ## if executable is not equal to module name, create symlink to enable appconfig:resource:docker*
+    if ( $$modjson{'executable'} ne $mod ) {
+        ### check if there is a clobber first, this is an error!
+        if ( $copymap{ $mod } ) {
+            $error .= "Module '$mod' : executable name does not match module id, yet there is a dependency of the same name\n";
+            $has_error++;
+        } else {
+            $out .= "RUN ln -s $$modjson{'executable'} $mod\n";
+        }
+    }
+    
+    next if $has_error;
 
     # add CMD
 
