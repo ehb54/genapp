@@ -162,11 +162,75 @@ foreach my $mod ( keys %dependencies ) {
     print "$cmd\n";
     system( $cmd );
 
+    # in dockerhub mode? (i.e. push and name appropriately)
+
+    $dhmode = "__dockerhub:user__" ne '_' . '_dockerhub:user__';
+    $dhtag = "";
+    if ( $dhmode ) {
+        if ( "__dockerhub:id__" ne '_' . '_dockerhub:id__' ) {
+            $dhtag = "__dockerhub:id__";
+            $dhtag =~ s/ //g;
+        } else {
+            $dhtag = lc( `hostname` );
+            chomp $dhtag;
+            $dhtag =~ s/[^a-z0-9_.-]/_/g;
+        }
+        if ( length( $dhtag ) ) {
+            $dhtag .= "_";
+        }
+        $dhnopush = "__dockerhub:nopush__" ne '_' . '_dockerhub:nopush__';
+        if ( $dhnopush ) {
+            $warn .= "No push to dockerhub flag set!\n";
+        }
+    }
+
+    # make container name
+
+    # current docker:local resource specifier $cname = "genapp___application___${menu}_${mod}";
+    $cname = lc( "genapp_${dhtag}__application__" );
+    if ( length( $cname ) > 30 ) {
+        $warn .= "truncating docker image name '$cname' to leftmost 30 characters\n";
+        $cname = substr( $cname, 0, 30 );
+    }
+    $tname = "${menu}-${mod}";
+
+    if ( length( $tname ) > 128 ) {
+        $warn .= "truncating docker image tag '$tname' to leftmost 128 characters\n";
+        $tname = substr( $tname, 0, 128 );
+    }
+    
+    $uname = "$cname:$tname";
+
+    if ( $dhmode ) {
+        $uname = "__dockerhub:user__/$uname";
+    }
+
     # build containers
-    $cmd = "cd $destdir && docker build -t genapp___application___${menu}_${mod} .";
+    $cmd = "cd $destdir && docker build -t $uname .";
     print "$cmd\n";
     system( $cmd );
+
+    # push to dockerhub
+
+    if ( $dhmode && !$dhnopush ) {
+        $cmd = "docker push $uname 2>&1";
+        print "$cmd\n";
+        my $result = `$cmd`;
+        if ( $result =~ /denied:/ ) {
+            $error .= "You must $ docker login -u __dockerhub:user__\n";
+        }
+    }
 }
     
-print "Warnings:\n$warn" if $warn;
-die "Errors:\n$error" if $error;
+print "================================================================================
+Warnings:
+--------------------------------------------------------------------------------
+${warn}================================================================================
+" if $warn;
+
+die "================================================================================
+Errors:
+--------------------------------------------------------------------------------
+${error}================================================================================
+
+" if $error;
