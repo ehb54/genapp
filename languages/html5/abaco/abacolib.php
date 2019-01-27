@@ -55,6 +55,8 @@ if ( !isset( $secrets->abaco->host ) ||
 function gettoken() {
     global $secrets;
 
+    $results = [];
+
     try {
         $response = Requests::post( $secrets->abaco->host . "/token"
                                     ,[]
@@ -95,6 +97,8 @@ function gettoken() {
 function registoractor( $token, $boby ) {
     global $secrets;
 
+    $results = [];
+
     try {
         $response = Requests::post( $secrets->abaco->host . "/actors/v2"
                                     ,[
@@ -127,6 +131,8 @@ function registoractor( $token, $boby ) {
 function getactors( $token ) {
     global $secrets;
 
+    $results = [];
+
     try {
         $response = Requests::get( $secrets->abaco->host . "/actors/v2"
                                     ,[
@@ -157,6 +163,8 @@ function getactors( $token ) {
 
 function getactor( $token, $actorid ) {
     global $secrets;
+
+    $results = [];
 
     try {
         $response = Requests::get( $secrets->abaco->host . "/actors/v2/$actor"
@@ -189,6 +197,8 @@ function getactor( $token, $actorid ) {
 function deleteactor( $token, $actorid ) {
     global $secrets;
 
+    $results = [];
+
     try {
         $response = Requests::delete( $secrets->abaco->host . "/actors/v2/$actor"
                                       ,[
@@ -219,6 +229,8 @@ function deleteactor( $token, $actorid ) {
 
 function startexecution( $token, $actorid, $msg ) {
     global $secrets;
+
+    $results = [];
 
     try {
         $response = Requests::post( $secrets->abaco->host . "/actors/v2/$actor/messages"
@@ -287,6 +299,8 @@ function getexecution( $token, $actorid, $execid ) {
 function getexecutions( $token, $actorid ) {
     global $secrets;
 
+    $results = [];
+
     try {
         $response = Requests::get( $secrets->abaco->host . "/actors/v2/$actor/executions"
                                     ,[
@@ -318,6 +332,8 @@ function getexecutions( $token, $actorid ) {
 
 function getmessages( $token, $actorid ) {
     global $secrets;
+
+    $results = [];
 
     try {
         $response = Requests::get( $secrets->abaco->host . "/actors/v2/$actor/messages"
