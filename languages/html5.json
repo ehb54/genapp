@@ -275,6 +275,22 @@
                    }
                    ,{
                     "frequency"  : "once"
+                    ,"output"     : "abaco/abacolib.php"
+                    ,"setexecutable" : "true"
+                    ,"inputs"     : [
+                                     { "abaco/abacolib.php" : "once" }
+                                    ]
+                   }
+                   ,{
+                    "frequency"  : "once"
+                    ,"output"     : "abaco/abacorun.php"
+                    ,"setexecutable" : "true"
+                    ,"inputs"     : [
+                                     { "abaco/abacorun.php" : "once" }
+                                    ]
+                   }
+                   ,{
+                    "frequency"  : "once"
                     ,"output"     : "oscluster"
                     ,"setexecutable" : "true"
                     ,"inputs"     : [
