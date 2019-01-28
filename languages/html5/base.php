@@ -850,11 +850,14 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
       }
       ob_end_clean();
       // this is overriding too much, needs correction
-      if( $cmdprefix == "airavatarun" ||
-          $cmdprefix == "oscluster" ) { 
-         $cmd = "$adir/$cmdprefix";
-         $cmd .= $cmdprefix == "oscluster" ? " __executable__" : " __menu:modules:id__";
-         $cmd .= " '$json'"; 
+      if ( $cmdprefix == "airavatarun" ||
+           $cmdprefix == "oscluster" || 
+           substr( $cmdprefix, 0, 5 ) == "abaco" ) {
+          $cmd = "$adir/$cmdprefix";
+          if ( substr( $cmdprefix, 0, 5 ) != "abaco" ) {
+              $cmd .= $cmdprefix == "oscluster" ? " __executable__" : " __menu:modules:id__";
+          }
+          $cmd .= " '$json'"; 
       } else {
           if ( substr( $cmdprefix, 0, 6 ) == "docker" ) {
               $cmd = "$cmdprefix '$json'";

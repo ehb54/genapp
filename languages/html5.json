@@ -282,7 +282,15 @@
                    }
                    ,{
                     "frequency"  : "once"
-                    ,"output"     : "abaco/abacorun.php"
+                    ,"output"     : "util/commlib.php"
+                    ,"inputs"     : [
+                                     { "util/commlib.php" : "once" }
+                                    ]
+                   }
+
+                   ,{
+                    "frequency"  : "once"
+                    ,"output"     : "abaco/abacorun"
                     ,"setexecutable" : "true"
                     ,"inputs"     : [
                                      { "abaco/abacorun.php" : "once" }
