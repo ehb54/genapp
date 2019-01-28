@@ -4,6 +4,10 @@
 
 include( '__docroot:html5__/__application__/vendor/rmccue/requests/Requests.php' );
 $secrets = json_decode( file_get_contents( "__secrets__" ) );
+$dockerhub       = (object) [];
+$dockerhub->user = "__dockerhub:user__";
+$dockerhub->id   = str_replace( ' ', '', "__dockerhub:id__" );
+$appname         = "__application__";
 
 # end custom bits
 
@@ -52,6 +56,51 @@ if ( !isset( $secrets->abaco->host ) ||
     exit();
 }
 
+function container_name( $menu, $mod ) {
+    global $dockerhub;
+    global $appname;
+
+    # name needs to match in docker/build_docker_footer.pl
+
+    $results = [];
+
+    if ( !strlen( $dockerhub->user ) ) {
+        $results[ "error" ] = "directives:dockerhub:user not defined";
+        $results[ '_status' ] = 'failed';
+        return json_encode( $results );
+    }
+
+    $dhtag = "";
+    if ( $dockerhub->id != '_' . '_dockerhub:id__' ) {
+        $dhtag = $dockerhub->id;
+    } else {
+        $dhtag = strtolower( `hostname` );
+        $dhtag = preg_replace( '/[^a-z0-9_.-]/', '', $dhtag );
+    }
+    if ( strlen( $dhtag ) ) {
+        $dhtag .= "_";
+    }
+
+    # make container name
+
+    # current docker:local resource specifier 
+    $cname = strtolower( "genapp_${dhtag}$appname" );
+    if ( strlen( $cname ) > 30 ) {
+        $cname = substr( $cname, 0, 30 );
+    }
+    $tname = "${menu}-${mod}";
+
+    if ( strlen( $tname ) > 128 ) {
+        $tname = substr( $tname, 0, 128 );
+    }
+    
+    $uname = "$cname:$tname";
+
+    $uname = "__dockerhub:user__/$uname";
+
+    return $uname;
+}
+
 function gettoken() {
     global $secrets;
 
@@ -94,7 +143,7 @@ function gettoken() {
     return json_encode( $results );
 }
 
-function registoractor( $token, $boby ) {
+function registoractor( $token, $cname, $id ) {
     global $secrets;
 
     $results = [];
@@ -105,7 +154,12 @@ function registoractor( $token, $boby ) {
                                         'Authorization' => 'Bearer ' . $token
                                         ,'Content-Type' => 'application/json'
                                     ]
-                                    ,$body
+                                    ,json_encode(
+                                        [
+                                         'image' => $cname
+                                         ,'name' => $cname
+                                         ,'description' => $id
+                                        ] )
             );
     } catch ( Exception $e ) {
         $error = $e;
@@ -167,7 +221,7 @@ function getactor( $token, $actorid ) {
     $results = [];
 
     try {
-        $response = Requests::get( $secrets->abaco->host . "/actors/v2/$actor"
+        $response = Requests::get( $secrets->abaco->host . "/actors/v2/$actorid"
                                     ,[
                                         'Authorization' => 'Bearer ' . $token
                                         ,'Content-Type' => 'application/json'
@@ -200,7 +254,7 @@ function deleteactor( $token, $actorid ) {
     $results = [];
 
     try {
-        $response = Requests::delete( $secrets->abaco->host . "/actors/v2/$actor"
+        $response = Requests::delete( $secrets->abaco->host . "/actors/v2/$actorid"
                                       ,[
                                           'Authorization' => 'Bearer ' . $token
                                           ,'Content-Type' => 'application/json'
@@ -233,7 +287,7 @@ function startexecution( $token, $actorid, $msg ) {
     $results = [];
 
     try {
-        $response = Requests::post( $secrets->abaco->host . "/actors/v2/$actor/messages"
+        $response = Requests::post( $secrets->abaco->host . "/actors/v2/$actorid/messages"
                                     ,[
                                         'Authorization' => 'Bearer ' . $token
                                         ,'Content-Type' => 'application/json'
@@ -268,7 +322,39 @@ function getexecution( $token, $actorid, $execid ) {
     global $secrets;
 
     try {
-        $response = Requests::get( $secrets->abaco->host . "/actors/v2/$actor/executions/$execid"
+        $response = Requests::get( $secrets->abaco->host . "/actors/v2/$actorid/executions/$execid"
+                                    ,[
+                                        'Authorization' => 'Bearer ' . $token
+                                        ,'Content-Type' => 'application/json'
+                                    ]
+            );
+
+    } catch ( Exception $e ) {
+        $error = $e;
+    }  
+
+    if ( !isset( $error ) &&
+         $response->status_code == 200 ) {
+        $results = json_decode( $response->body );
+        $results->_status = "success";
+    } else {
+        if ( isset( $error ) ) {
+            $results[ "error" ] = $error->getMessage();
+            $results[ '_status' ] = 'failed';
+        } else {
+            echo "error in response:" . 
+            $results[ "error" ] = "Response error $response->status_code\n";
+            $results[ '_status' ] = 'failed';
+        }
+    }
+    return json_encode( $results );
+}
+
+function getlog( $token, $actorid, $execid ) {
+    global $secrets;
+
+    try {
+        $response = Requests::get( $secrets->abaco->host . "/actors/v2/$actorid/executions/$execid/logs"
                                     ,[
                                         'Authorization' => 'Bearer ' . $token
                                         ,'Content-Type' => 'application/json'
@@ -302,7 +388,7 @@ function getexecutions( $token, $actorid ) {
     $results = [];
 
     try {
-        $response = Requests::get( $secrets->abaco->host . "/actors/v2/$actor/executions"
+        $response = Requests::get( $secrets->abaco->host . "/actors/v2/$actorid/executions"
                                     ,[
                                         'Authorization' => 'Bearer ' . $token
                                         ,'Content-Type' => 'application/json'
@@ -336,7 +422,7 @@ function getmessages( $token, $actorid ) {
     $results = [];
 
     try {
-        $response = Requests::get( $secrets->abaco->host . "/actors/v2/$actor/messages"
+        $response = Requests::get( $secrets->abaco->host . "/actors/v2/$actorid/messages"
                                     ,[
                                         'Authorization' => 'Bearer ' . $token
                                         ,'Content-Type' => 'application/json'
