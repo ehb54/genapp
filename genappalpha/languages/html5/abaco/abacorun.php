@@ -4,6 +4,7 @@
 # user config
 
 $debug = 1;
+$debug_to_file = 1;
 
 # end user config
 
@@ -17,7 +18,7 @@ if ( $argc != 2 ) {
     $results->error = $notes;
     $results->_status = "failed";
     echo json_encode( $results );
-    exit();
+    exit;
 }
 
 $jsoninput = json_decode( $argv[ 1 ] );
@@ -26,7 +27,7 @@ if ( $jsoninput == null ) {
     $results->error = "'abacorun received malformed JSON input.";
     $results->_status = "failed";
     echo json_encode( $results );
-    exit();
+    exit;
 }
 
 if (
@@ -37,33 +38,43 @@ if (
     $results->error = "'abacorun JSON input missing _menu, _module and/or _uuid definitions.";
     $results->_status = "failed";
     echo json_encode( $results );
-    exit();
+    exit;
 }
 
 function error_handler( $results ) {
     # if UDP/TCP messaging defined, message appropriately
     echo json_encode( $results );
-    exit();
+    sendudpmsg( "ABACO", "Error" );
+    exit;
 }    
 
 function debug_msg( $msg, $level = 1 ) {
     global $debug;
+    global $debug_to_file;
     # possibly udp this
+    $out = "";
     if ( isset( $debug ) && $debug >= $level ) {
         if ( is_object( $msg ) ) {
-            echo json_encode( $msg, JSON_PRETTY_PRINT );
+            $out .= json_encode( $msg, JSON_PRETTY_PRINT );
         } else {
-            echo $msg;
+            $out .= $msg;
         }
-        echo "\n";
+        $out .= "\n";
+        if ( $debug_to_file ) {
+            error_log( $out, 3, "/tmp/abacorun.log" );
+        } else {
+            echo $out;
+        }
     }
 }    
 
 # setup udp/tcp? messaging if available
 
 include "abacolib.php";
-# include "mongolib.php";
+include "__docroot:html5__/__application__/util/commlib.php";
 
+setupcomm( $jsoninput );
+sendudpmsg( "ABACO", "Starting" );
 # gettoken & process
 
 $tokens = json_decode( gettoken() );
@@ -72,6 +83,7 @@ if ( $tokens->_status != "success" ) {
     $results->_status = "failed";
     error_handler( $results );
 }   
+sendudpmsg( "ABACO", "Got token" );
 
 debug_msg( "token is $tokens->access_token" );
 debug_msg( "token expires in $tokens->expires_in" );
@@ -88,6 +100,7 @@ if ( $register->_status != "success" ) {
     error_handler( $results );
 }   
 $actorid = $register->result->id;
+sendudpmsg( "ABACO", "Actor registered" );
 
 debug_msg( "actorid is $actorid" );
 
@@ -105,6 +118,7 @@ do {
         error_handler( $results );
     }   
 } while ( $actorstatus->result->status != "READY" );
+sendudpmsg( "ABACO", "Actor ready" );
 
 # startexecution
 
@@ -114,6 +128,7 @@ if ( $execution->_status != "success" ) {
     $results->_status = "failed";
     error_handler( $results );
 }   
+sendudpmsg( "ABACO", "Execution started" );
 
 $execid = $execution->result->executionId;
 debug_msg( "execid is $execid" );
@@ -132,6 +147,7 @@ do {
         error_handler( $results );
     }   
 } while ( $execresults->result->status == "SUBMITTED" );
+sendudpmsg( "ABACO", "Execution complete" );
 
 # get logs
 
@@ -142,6 +158,7 @@ if ( $execution->_status != "success" ) {
     $results->_status = "failed";
     error_handler( $results );
 }   
+sendudpmsg( "ABACO", "Logs received" );
 
 # delete actor
 
@@ -152,6 +169,7 @@ if ( $deleteresults->_status != "success" ) {
     $results->_status = "failed";
     error_handler( $results );
 }   
+sendudpmsg( "ABACO", "" );
 
 # return results
 
