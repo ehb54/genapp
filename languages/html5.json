@@ -276,7 +276,6 @@
                    ,{
                     "frequency"  : "once"
                     ,"output"     : "abaco/abacolib.php"
-                    ,"setexecutable" : "true"
                     ,"inputs"     : [
                                      { "abaco/abacolib.php" : "once" }
                                     ]
