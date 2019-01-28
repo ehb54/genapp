@@ -24,9 +24,14 @@ $zmq_socket = $context->getSocket(ZMQ::SOCKET_PUSH, '__application__ udp pusher'
 $zmq_socket->connect("tcp://" . $json->messaging->zmqhostip . ":" . $json->messaging->zmqport );
 
 $udp_socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-socket_bind($udp_socket, $json->messaging->udphostip, $json->messaging->udpport );
+$useudphost = $json->messaging->udphostip;
+if ( isset( $json->messaging->udplisten ) ) {
+    $useudphost = $json->messaging->udplisten;
+}
 
-echo "msg_udpserver: listening UDP host:" . $json->messaging->udphostip . " UDP port:" . $json->messaging->udpport . " sending ZMQ host:" . $json->messaging->zmqhostip . " port:" . $json->messaging->zmqport . PHP_EOL;
+socket_bind($udp_socket, $useudphost, $json->messaging->udpport );
+
+echo "msg_udpserver: listening UDP host: $useudphost UDP port:" . $json->messaging->udpport . " sending ZMQ host:" . $json->messaging->zmqhostip . " port:" . $json->messaging->zmqport . PHP_EOL;
 
 do {
    $from = '';

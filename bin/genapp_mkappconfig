@@ -242,6 +242,7 @@ sub setappconfig {
     $$json{ "messaging" }{ "tcptimeout" }  = $$cfgjson{ "messaging" }{ "tcptimeout" } || die "$0 tcptimeout not defined in $cfgjsonf. $cfgjsonnotes";
 
     $$json{ "restricted" }{ "admin" } = ( $admin ) if $admin;
+    $$json{ "messaging" }{ "udplisten" } = $$cfgjson{ "messaging" }{ "udplisten" } if $$cfgjson{ "messaging" }{ "udplisten" };
 
     $$json{ "resources" }{ "local" } = "";
 
