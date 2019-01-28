@@ -163,7 +163,8 @@ foreach my $mod ( keys %dependencies ) {
     system( $cmd );
 
     # in dockerhub mode? (i.e. push and name appropriately)
-
+    # name needs to match in html5/abacolib.php
+    
     $dhmode = "__dockerhub:user__" ne '_' . '_dockerhub:user__';
     $dhtag = "";
     if ( $dhmode ) {
@@ -186,7 +187,7 @@ foreach my $mod ( keys %dependencies ) {
 
     # make container name
 
-    # current docker:local resource specifier $cname = "genapp___application___${menu}_${mod}";
+    # current docker:local resource specifier
     $cname = lc( "genapp_${dhtag}__application__" );
     if ( length( $cname ) > 30 ) {
         $warn .= "truncating docker image name '$cname' to leftmost 30 characters\n";
