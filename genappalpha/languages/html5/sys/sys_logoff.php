@@ -18,11 +18,7 @@ try {
      {
          $msession = $m->__application__->session;
          try {
-             $msession->update( [ "_id"  => session_id() ],
-                                [ '$set' => [ "active" => false ] ],
-                                [ 'upsert' => true
-                                  __~mongojournal{, writeConcern => [ "j" => true ]}
-                                ] );
+             $msession->remove( [ "_id" => session_id() ], [ __~mongojournal{"j" => true, }"justOne" => true ] );
          } catch(MongoCursorException $e) {
 # TODO log somehow (email?)
 #             $results[ 'status' ] .= "Unable to store session id. ";
