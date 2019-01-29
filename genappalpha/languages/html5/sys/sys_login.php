@@ -495,7 +495,8 @@ if ( $loginok == 1 )
            $msession->update( [ "_id"  => session_id() ],
                               [ '$set' => [ 
                                     "name" => $userid,
-                                    "active" => true
+                                    "active" => true,
+                                    "created" => new MongoDate()
                                 ] ],
                               [ 'upsert' => true
                               __~mongojournal{, writeConcern => [ "j" => true ]}
