@@ -493,7 +493,10 @@ if ( $loginok == 1 )
        $msession = $m->__application__->session;
        try {
            $msession->update( [ "_id"  => session_id() ],
-                              [ '$set' => [ "name" => $userid ] ],
+                              [ '$set' => [ 
+                                    "name" => $userid,
+                                    "active" => true
+                                ] ],
                               [ 'upsert' => true
                               __~mongojournal{, writeConcern => [ "j" => true ]}
                               ] );
