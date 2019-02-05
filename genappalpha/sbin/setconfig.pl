@@ -40,6 +40,7 @@ options
  -if network-interface-id      find and set hostip from that of specified interface (e.g. eth0, eth1, lo, etc)
  -pj                           print resulting config.json
  -https                        use https and wss
+ -publicport                   specify a public port (used for websockets)
  -webroot webroot              specify the webroot directory
  -mongossl hostname cafile     specify the hostname and certificate file for mongod
 ";
@@ -79,6 +80,11 @@ while ( @ARGV ) {
     if ( $option =~ /^-webroot$/ ) {
         die "$0: option $option requries an argument\n" . $notes if !@ARGV;
         $webroot = shift @ARGV;;
+        next;
+    }
+    if ( $option =~ /^-publicport$/ ) {
+        die "$0: option $option requries an argument\n" . $notes if !@ARGV;
+        $publicport = shift @ARGV;;
         next;
     }
     if ( $option =~ /^-h$/ ) {
@@ -284,6 +290,7 @@ $hostname = $$json{ 'hostname' };
 
 
 my $wssport    = $https ? 443 : 80;
+my $wssport    = $publicport if $publicport;
 my $wsport     = 30777;
 my $zmqport    = 30778;
 my $zmqhostip  = "127.0.0.1";
