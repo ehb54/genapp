@@ -145,8 +145,6 @@ __~register:globuslogin{ if ( ga.urlparams("sourcefailed") ) { ga.msg.box( { ico
 
 __~register:googlelogin{ if ( ga.urlparams("weloggedingoogle") ) { var username_google = ga.urlparams("username"); var email_google = ga.urlparams("email"); if ( ga.urlparams("register") ) { $( "#configbody" ).load( "etc/sys_register_google.html" ); $( ".modalDialog" ).addClass( "modalDialog_on" ); window.history.replaceState( {}, "__title__ __version__", "/__application__/" );  } else { $( "#configbody" ).load( "etc/sys_login_google.html" ); $( ".modalDialog" ).addClass( "modalDialog_on" );  window.history.replaceState( {}, "__title__ __version__", "/__application__/" ); } } }
 
-
-
 $( "#files" ).click( function() {
    var s = $( '#_state' );
    var l = s.data( '_logon' );
@@ -227,6 +225,7 @@ function syncState() {
           $( "#logoff" ).html( "Logoff " + l );
           $( "#files" ).show();
           $( "#jobs" ).show();
+          __~seedme2:url{$( "#seedme2" ).show();}
 //          $( "#register" ).empty();
 //          $( "#userconfig" ).html( "<img src=\"etc/config.png\" width=40px id=\"config\" class=\"config\">" );
           ga.license.get();
@@ -238,6 +237,7 @@ function syncState() {
           }
           $( "#login" ).html( "Login" );
           $( "#logoff" ).empty();
+          __~seedme2:url{$( "#seedme2" ).hide();}
           $( "#sel_project" ).empty();
           $( "#files" ).hide();
           $( "#jobs" ).hide();
