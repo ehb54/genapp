@@ -169,6 +169,15 @@ if ( !is_dir( $dir ) || !chdir( $dir ) )
 if ( !$wascancelled ) {
     ob_start();
     if ( !is_file("$logdir/_stdout_$id") || FALSE === ( $strresults = file_get_contents( "$logdir/_stdout_$id" ) ) ) {
+       sleep( 1 );
+    }      
+    if ( !is_file("$logdir/_stdout_$id") || FALSE === ( $strresults = file_get_contents( "$logdir/_stdout_$id" ) ) ) {
+       sleep( 2 );
+    }      
+    if ( !is_file("$logdir/_stdout_$id") || FALSE === ( $strresults = file_get_contents( "$logdir/_stdout_$id" ) ) ) {
+       sleep( 5 );
+    }      
+    if ( !is_file("$logdir/_stdout_$id") || FALSE === ( $strresults = file_get_contents( "$logdir/_stdout_$id" ) ) ) {
         $cont = ob_get_contents();
         ob_end_clean();
         $results[ "error" ] = "output results not found " . $dir . " " . $cont;
