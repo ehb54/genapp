@@ -130,6 +130,9 @@ class genapp(object):
         s.sendto( msgj, ( self.json_variables['_udphost'], int( self.json_variables['_udpport'] ) ) )
         return {'status':'ok'}
 
+    # extend plotshow with figure id which should be in the jsoninput
+    # the jsoninput figure id should have an assigned port, which we will use
+
     def plotshow( self, mpl, plt ):
         """Show a plot for matplotlib via GenApp UI on the defined host"""
 
@@ -140,6 +143,7 @@ class genapp(object):
         mpl.rcParams['webagg.address'] = "0.0.0.0"
         mpl.rcParams['webagg.port'] = 8080
         plt.show()
+        # also need to message that plot is available
 
     @staticmethod
     def test():
