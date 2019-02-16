@@ -1,0 +1,153 @@
+"""
+GenApp helper library
+"""
+
+import json
+import socket
+
+class genapp(object):
+
+    def __init__( self, jsoninput ):
+        """Always initialize with json input either as a json string or as a dict or object"""
+        if isinstance( jsoninput, dict ) :
+            self.jsoninput = jsoninput
+        else:
+            if isinstance( jsoninput, basestring ) :
+                try:
+                    self.jsoninput = json.loads( jsoninput )
+                except ValueError:
+                    raise Exception( 'jsoninput decoding error: malformed json string' )
+            else:
+                raise Exception( 'GenApp must be initialized with jsoninput either as a json string or as a dict' )
+
+        if not '_uuid' in self.jsoninput:
+            raise Exception( 'jsoninput must contain key "_uuid"' )
+
+        self.udp_enabled  = '_udphost' in self.jsoninput and '_udpport' in self.jsoninput
+        self.tcp_enabled  = '_tcphost' in self.jsoninput and '_tcpport' in self.jsoninput
+        self.tcpr_enabled = self.tcp_enabled and '_tcprport' in self.jsoninput
+        self.mpl_enabled  = '_mplhost' in self.jsoninput
+
+    def info( self ):
+        return {
+            'udp_enabled'   : self.udp_enabled
+            ,'tcp_enabled'  : self.tcp_enabled
+            ,'tcpr_enabled' : self.tcpr_enabled
+            ,'mpl_enabled'  : self.mpl_enabled
+            ,'_uuid'        : self.jsoninput['_uuid']
+        }
+
+    def tcpquestion( self, question, timeout=300, buffersize=65536 ):
+        # question is either a dict or json string
+        # timeout is in seconds
+        # buffersize is for the answer, so if you expect larger than 64k of total json string size, use a larger number
+
+        if not self.tcpr_enabled:
+            return { 'error':'no tcp support' }
+
+        # build question
+
+        msg = {
+            '_uuid'    : self.jsoninput['_uuid']
+            ,'timeout' : timeout
+        }
+
+        if isinstance( question, basestring ):
+            try:
+                msg['_question'] = json.loads(question)
+            except ValueError:
+                return {'error':'json question decoding error'}
+        elif isinstance( question, dict ):
+            msg['_question'] = question
+        else:
+            return {'error':'question must be a json string or dict'}
+
+        msgj = json.dumps(msg)
+        # a newline is also required when sending a question
+        msgj += '\n'
+
+        # send question
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((self.json_variables['_tcphost'],int( self.json_variables['_tcpport']) ))
+        s.send(msgj)
+
+        # receive answer
+
+        data = s.recv(buffersize)
+        s.close()
+        return json.loads(data)
+
+    def tcpmessage( self, message ):
+        """send a message over tcp"""
+
+        if not self.tcp_enabled:
+            return { 'error':'no tcp support' }
+
+        msg = {
+            '_uuid'    : self.jsoninput['_uuid']
+        }
+
+        if isinstance( message, basestring ):
+            try:
+                msg['_message'] = json.loads(message)
+            except ValueError:
+                return {'error':'tcpmessage:json message decoding error'}
+        elif isinstance( message, dict ):
+            msg['_message'] = message
+        else:
+            return {'error':'message must be a json string or dict'}
+
+
+        # send question
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((self.json_variables['_tcphost'],int( self.json_variables['_tcpport']) ))
+        s.send(msgj)
+        s.close()
+        return {'status':'ok'}
+
+    def udpmessage( self, message ):
+        """send a message over udp"""
+
+        if not self.udp_enabled:
+            return { 'error':'no udp support' }
+
+        msg = {
+            '_uuid'    : self.jsoninput['_uuid']
+        }
+
+        if isinstance( message, basestring ):
+            try:
+                msg['_message'] = json.loads(message)
+            except ValueError:
+                return {'error':'tcpmessage:json message decoding error'}
+        elif isinstance( message, dict ):
+            msg['_message'] = message
+        else:
+            return {'error':'message must be a json string or dict'}
+
+        # send message
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.sendto( msgj, ( self.json_variables['_udphost'], int( self.json_variables['_udpport'] ) ) )
+        return {'status':'ok'}
+
+    def plotshow( self, mpl, plt ):
+        """Show a plot for matplotlib via GenApp UI on the defined host"""
+
+        if not self.mpl_enabled:
+            return { 'error':'no mpl support' }
+
+        mpl.rcParams['webagg.open_in_browser'] = False
+        mpl.rcParams['webagg.address'] = "0.0.0.0"
+        mpl.rcParams['webagg.port'] = 8080
+        plt.show()
+
+    @staticmethod
+    def test():
+        ga = genapp( {
+            '_uuid'     : 'my_uuid'
+            ,'_udphost' : '127.0.0.1'
+            ,'_udpport'  : 2234
+            ,'_mplhost'  : '127.0.0.1'
+        } )
+
+        print json.dumps( ga.info() )
