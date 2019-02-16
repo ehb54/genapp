@@ -144,6 +144,7 @@ class genapp(object):
         mpl.rcParams['webagg.port'] = 8080
         plt.show()
         # also need to message that plot is available
+        # and register atend pickler
 
     @staticmethod
     def test():
