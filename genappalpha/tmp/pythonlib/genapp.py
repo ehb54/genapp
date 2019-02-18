@@ -4,6 +4,7 @@ GenApp helper library
 
 import json
 import socket
+import pickle
 
 class genapp(object):
 
@@ -27,6 +28,7 @@ class genapp(object):
         self.tcp_enabled  = '_tcphost' in self.jsoninput and '_tcpport' in self.jsoninput
         self.tcpr_enabled = self.tcp_enabled and '_tcprport' in self.jsoninput
         self.mpl_enabled  = '_mplhost' in self.jsoninput
+        # if mpl_enabled, check mpl plot ports and interval timer keepalive
 
     def info( self ):
         return {
@@ -133,7 +135,7 @@ class genapp(object):
     # extend plotshow with figure id which should be in the jsoninput
     # the jsoninput figure id should have an assigned port, which we will use
 
-    def plotshow( self, mpl, plt ):
+    def plotshow( self, mpl, plt, port ):
         """Show a plot for matplotlib via GenApp UI on the defined host"""
 
         if not self.mpl_enabled:
@@ -141,10 +143,14 @@ class genapp(object):
 
         mpl.rcParams['webagg.open_in_browser'] = False
         mpl.rcParams['webagg.address'] = "0.0.0.0"
-        mpl.rcParams['webagg.port'] = 8080
+        mpl.rcParams['webagg.port'] = port
+        # this should be pushed to backend_webagg.py right before server starts
+        # perhaps we could redefine the class member externally?
+        print "now messsage that plot (will shortly be) available"
         plt.show()
-        # also need to message that plot is available
-        # and register atend pickler
+        print "register atend pickler doesn't seem relevant, pickle here"
+        pickle.dump( plt.figure(), file( 'plot-' + str( port ) + '.pickle' , 'w' ) )
+        print "pickle saved"
 
     @staticmethod
     def test():
