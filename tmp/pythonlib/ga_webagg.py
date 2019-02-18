@@ -33,5 +33,5 @@ line_ani = animation.FuncAnimation(fig1, update_line, 25, fargs=(data, l),
 
 
 ga.test()
-ga.plotshow( matplotlib, plt )
+ga.plotshow( matplotlib, plt, 8081 )
 
