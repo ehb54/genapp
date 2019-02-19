@@ -2,9 +2,11 @@
 GenApp helper library
 """
 
+import sys
 import json
 import socket
 import pickle
+import cStringIO
 
 class genapp(object):
 
@@ -147,10 +149,21 @@ class genapp(object):
         # this should be pushed to backend_webagg.py right before server starts
         # perhaps we could redefine the class member externally?
         print "now messsage that plot (will shortly be) available"
+        self.stdout_off()
         plt.show()
+        self.stdout_on()
         print "register atend pickler doesn't seem relevant, pickle here"
         pickle.dump( plt.figure(), file( 'plot-' + str( port ) + '.pickle' , 'w' ) )
         print "pickle saved"
+
+    @staticmethod
+    def stdout_off():
+        sys.stdout = cStringIO.StringIO()
+
+    @staticmethod
+    def stdout_on():
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__
 
     @staticmethod
     def test():
