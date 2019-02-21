@@ -204,7 +204,7 @@ if ( $os eq 'ubuntu' ) {
 }
 
 if ( $os eq 'centos' ) {
-    die "only Centos 6.7, 6.8, 6.9, 7.2, 7.3, 7.4 and 7.5 currently supported and this appears to be version $os_release\n$sorry" if $os_release !~ /^6\.(7|8|9)$/ && $os_release !~ /^7\.(2|3|4|5)/;
+    die "only Centos 6.7, 6.8, 6.9, 7.2, 7.3, 7.4, 7.5 and 7.6 are currently supported and this appears to be version $os_release\n$sorry" if $os_release !~ /^6\.(7|8|9)$/ && $os_release !~ /^7\.(2|3|4|5|6)/;
 }
 
 if ( $os eq 'redhat' ) {
@@ -524,8 +524,8 @@ service iptables save" );
     exit();
 }
 
-# ------ centos 7.2,7.3,7.4,7.5 -------
-if ( $os eq 'centos' && $os_release =~ /^7\.(2|3|4|5)/ ) {
+# ------ centos 7.2,7.3,7.4,7.5,7.6 -------
+if ( $os eq 'centos' && $os_release =~ /^7\.(2|3|4|5|6)/ ) {
 
     # install required modules
 
@@ -748,7 +748,7 @@ https://access.redhat.com/documentation/en-US/Red_Hat_Software_Collections/2/htm
     runcmdsb( "yum -y install mlocate httpd24-httpd httpd24-httpd-devel rh-php56-php rh-php56-php-devel rh-php56-php-pear rh-php56-php-pecl-mongo mongodb-org mongodb-org-server wget libuuid-devel zeromq-devel openssl-devel libpng-devel libjpeg-devel fontconfig-devel freetype-devel fftw-devel libtiff-devel cairo-devel pango pango-devel" );
 
     # need imagemagick from source :(
-    my $imversion = "ImageMagick-6.9.7-10.tar.xz";
+    my $imversion = "ImageMagick-6.9.10-28.tar.xz";
     runcmd( "rm -fr /tmp/$imversion 2>/dev/null;cd /tmp && wget http://imagemagick.org/download/releases/$imversion && tar Jxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
 
     my $rhsclphp    = "/opt/rh/rh-php56/root";
@@ -1085,7 +1085,7 @@ _EOF
  
     if ( $cernvm ) {
         # need imagemagick from source :(
-        my $imversion = "ImageMagick-6.9.7-10.tar.xz";
+        my $imversion = "ImageMagick-6.9.10-28.tar.xz";
         runcmd( "rm -fr /tmp/$imversion 2>/dev/null; cd /tmp && wget http://imagemagick.org/download/releases/$imversion && tar Jxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
     } else {
         runcmdsb( "yum -y install ImageMagick ImageMagick-devel" );
@@ -1254,7 +1254,7 @@ sudo ldconfig
         runcmdsb( "sed -i '801s/FT_ENCODING_PRC/FT_ENCODING_GB2312/' /usr/include/freetype2/freetype/freetype.h" );
     }
 
-    my $imversion = "ImageMagick-6.9.10-14.tar.xz";
+    my $imversion = "ImageMagick-6.9.10-28.tar.xz";
     runcmd( "rm -fr /tmp/$imversion 2>/dev/null;cd /tmp && wget http://imagemagick.org/download/releases/$imversion && tar Jxf $imversion && cd ImageMagick-* && ./configure && make -j$CPUS && sudo make install" ) if !-e "/usr/local/bin/MagickWand-config";
 
     my $rhsclphp    = "/opt/rh/rh-php56/root";
