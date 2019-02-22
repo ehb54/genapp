@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [[ $EUID -eq 0 ]]; then
+   echo "This script can not be run as root" 
+   exit 1
+fi
+
 export GENAPP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 echo genapp base directory is $GENAPP
 
