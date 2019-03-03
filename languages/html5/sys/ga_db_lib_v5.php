@@ -80,7 +80,7 @@ function ga_db_open( $error_json_exit = false ) {
     return $results;
 }
 
-function ga_db_findOne( $coll, $appname = "__application__",$query, $fields = [], $error_json_exit = false ) {
+function ga_db_findOne( $coll, $appname = "__application__", $query, $fields = [], $error_json_exit = false ) {
     global $ga_db_mongo;
     global $ga_db_errors;
     if ( !strlen( $appname ) ) {
@@ -103,7 +103,7 @@ function ga_db_findOne( $coll, $appname = "__application__",$query, $fields = []
     return $results;
 }
 
-function ga_db_find( $coll, $appname = "__application__",$query, $fields = [], $error_json_exit = false ) {
+function ga_db_find( $coll, $appname = "__application__", $query, $fields = [], $error_json_exit = false ) {
     global $ga_db_mongo;
     global $ga_db_errors;
     if ( !strlen( $appname ) ) {
