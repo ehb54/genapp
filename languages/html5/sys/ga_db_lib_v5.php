@@ -42,6 +42,8 @@ $results = array (
 ==========================================================
 */
 
+date_default_timezone_set("UTC");
+
 global $ga_db_errors;
 
 function ga_db_status( $results ) {
@@ -80,7 +82,17 @@ function ga_db_open( $error_json_exit = false ) {
     return $results;
 }
 
-function ga_db_findOne( $coll, $appname = "__application__", $query, $fields = [], $error_json_exit = false ) {
+# uncomment below to log
+# $ga_db_log_file = "/tmp/my_log_file"; # or whereever
+
+if ( isset( $ga_db_log_file ) ) {
+    date_default_timezone_get();
+}
+
+function ga_db_findOne( $coll, $appname = "__application__", $query, $projection = [], $error_json_exit = false ) {
+    if ( isset( $ga_db_log_file ) ) {
+        error_log( date('m/d/Y h:i:s a', time() ) . " ga_db_findOne( $coll, $appname,\n" . json_decode( $query, JSON_PRETTY_PRINT ) . "\n" . json_decode( $projection, JSON_PRETTY_PRINT ) . "\n" . ( $error_json_exit ? "true" : "false" ) . ") =\n", 3, $ga_db_log_file );
+    }
     global $ga_db_mongo;
     global $ga_db_errors;
     if ( !strlen( $appname ) ) {
@@ -88,7 +100,7 @@ function ga_db_findOne( $coll, $appname = "__application__", $query, $fields = [
     }
     $results = [];
     try {
-        $results[ "output" ] = $ga_db_mongo->$appname->$coll->findOne( $query, $fields );
+        $results[ "output" ] = $ga_db_mongo->$appname->$coll->findOne( $query, $projection );
         $results[ '_status' ] = 'success';
     } catch ( Exception $e ) {
         $ga_db_errors = "Could not work findOne method of db " .  $e->getMessage();
@@ -100,10 +112,13 @@ function ga_db_findOne( $coll, $appname = "__application__", $query, $fields = [
             exit();
          }
     }
+    if ( isset( $debug ) ) {
+        error_log( json_decode( $results, JSON_PRETTY_PRINT ) . "\n", 3, $ga_db_log_file );
+    }
     return $results;
 }
 
-function ga_db_find( $coll, $appname = "__application__", $query, $fields = [], $error_json_exit = false ) {
+function ga_db_find( $coll, $appname = "__application__", $query, $projection = [], $error_json_exit = false ) {
     global $ga_db_mongo;
     global $ga_db_errors;
     if ( !strlen( $appname ) ) {
@@ -111,7 +126,7 @@ function ga_db_find( $coll, $appname = "__application__", $query, $fields = [], 
     }
     $results = [];
     try {
-        $results[ "output" ] = $ga_db_mongo->$appname->$coll->find( $query, $fields );
+        $results[ "output" ] = $ga_db_mongo->$appname->$coll->find( $query, $projection );
         $results[ '_status' ] = 'success';
     } catch ( MongoCursorException $e ) {
         $ga_db_errors = "Could not work with find method of db " .  $e->getMessage();
