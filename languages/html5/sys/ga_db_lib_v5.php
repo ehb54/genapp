@@ -18,14 +18,15 @@
 =================== Usage ===============================
 
 ga_db_open( $error_json_exit );
-$results = ga_db_findOne( $coll, $appname, $query, $fields, $options , $error_json_exit );
-$results = ga_db_find( $coll, $appname, $query, $fields, $error_json_exit );
+$results = ga_db_findOne( $coll, $appname, $query, $projection, $error_json_exit );
+$results = ga_db_find( $coll, $appname, $query, $projection, $error_json_exit );
 $results = ga_db_insert( $coll, $appname, $insert, $options, $error_json_exit );
 $results = ga_db_update( $coll, $appname, $criteria, $update, $options, $error_json_exit );
 $results = ga_db_remove( $coll, $appname, $criteria, $options, $error_json_exit );
 $results = ga_db_distinct( $coll, $appname, $key, $query, $error_json_exit );
 $results = ga_db_date( $tstamp, $error_json_exit );
 $results = ga_db_Id( $datastring, $error_json_exit );
+$results = ga_db_command( $appname, $command, $options, $error_json_exit );
 
 =================== Return ===============================
 
@@ -104,6 +105,35 @@ function ga_db_findOne( $coll, $appname = "__application__", $query, $projection
         $results[ '_status' ] = 'success';
     } catch ( Exception $e ) {
         $ga_db_errors = "Could not work findOne method of db " .  $e->getMessage();
+        $results[ "error" ] = $ga_db_errors;
+        $results[ '_status' ] = 'failed';
+         if ( $error_json_exit )
+         {
+            echo (json_encode($results));
+            exit();
+         }
+    }
+    if ( isset( $debug ) ) {
+        error_log( json_decode( $results, JSON_PRETTY_PRINT ) . "\n", 3, $ga_db_log_file );
+    }
+    return $results;
+}
+
+function ga_db_command( $appname = "__application__", $command, $options = [], $error_json_exit = false ) {
+    if ( isset( $ga_db_log_file ) ) {
+        error_log( date('m/d/Y h:i:s a', time() ) . " ga_db_command( $appname,\n" . json_decode( $command, JSON_PRETTY_PRINT ) . "\n" . json_decode( $options, JSON_PRETTY_PRINT ) . "\n" . ( $error_json_exit ? "true" : "false" ) . ") =\n", 3, $ga_db_log_file );
+    }
+    global $ga_db_mongo;
+    global $ga_db_errors;
+    if ( !strlen( $appname ) ) {
+        $appname = "__application__";
+    }
+    $results = [];
+    try {
+        $results[ "output" ] = $ga_db_mongo->$appname->command( $command, $options );
+        $results[ '_status' ] = 'success';
+    } catch ( Exception $e ) {
+        $ga_db_errors = "Error using command method of db " .  $e->getMessage();
         $results[ "error" ] = $ga_db_errors;
         $results[ '_status' ] = 'failed';
          if ( $error_json_exit )
