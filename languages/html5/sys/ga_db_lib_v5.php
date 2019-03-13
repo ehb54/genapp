@@ -134,7 +134,7 @@ function ga_db_count( $coll, $appname = "__application__", $query, $options = []
         $results[ "output" ] = $ga_db_mongo->$appname->$coll->count( $query, $options );
         $results[ '_status' ] = 'success';
     } catch ( Exception $e ) {
-        $ga_db_errors = "Could not work findOne method of db " .  $e->getMessage();
+        $ga_db_errors = "Could not work count method of db " .  $e->getMessage();
         $results[ "error" ] = $ga_db_errors;
         $results[ '_status' ] = 'failed';
         if ( $error_json_exit )
