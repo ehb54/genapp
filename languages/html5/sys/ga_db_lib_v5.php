@@ -14,6 +14,8 @@
  * ga_db_selectDB -> selectDB() : Removed
  * ga_db_date -> new MongoDate()
  * ga_db_Id -> new MongoId() 
+ * ga_db_command -> command()
+ * ga_db_save -> save()
  
 =================== Usage ===============================
 
@@ -28,6 +30,7 @@ $results = ga_db_date( $tstamp, $error_json_exit );
 $results = ga_db_Id( $datastring, $error_json_exit );
 $results = ga_db_command( $appname, $command, $options, $error_json_exit );
 $results = ga_db_count( $coll, $appname, $query, $options, $error_json_exit );
+$results = ga_db_save( $coll, $appname, $document, $options, $error_json_exit );
 
 =================== Return ===============================
 
@@ -135,6 +138,35 @@ function ga_db_count( $coll, $appname = "__application__", $query, $options = []
         $results[ '_status' ] = 'success';
     } catch ( Exception $e ) {
         $ga_db_errors = "Could not work count method of db " .  $e->getMessage();
+        $results[ "error" ] = $ga_db_errors;
+        $results[ '_status' ] = 'failed';
+        if ( $error_json_exit )
+        {
+            echo (json_encode($results));
+            exit();
+        }
+    }
+    if ( isset( $debug ) ) {
+        error_log( json_decode( $results, JSON_PRETTY_PRINT ) . "\n", 3, $ga_db_log_file );
+    }
+    return $results;
+}
+
+function ga_db_save( $coll, $appname = "__application__", $document, $options = [], $error_json_exit = false ) {
+    if ( isset( $ga_db_log_file ) ) {
+        error_log( date('m/d/Y h:i:s a', time() ) . " ga_db_save( $coll, $appname,\n" . json_decode( $document, JSON_PRETTY_PRINT ) . "\n" . json_decode( $options, JSON_PRETTY_PRINT ) . "\n" . ( $error_json_exit ? "true" : "false" ) . ") =\n", 3, $ga_db_log_file );
+    }
+    global $ga_db_mongo;
+    global $ga_db_errors;
+    if ( !strlen( $appname ) ) {
+        $appname = "__application__";
+    }
+    $results = [];
+    try {
+        $results[ "output" ] = $ga_db_mongo->$appname->$coll->save( $document, $options );
+        $results[ '_status' ] = 'success';
+    } catch ( Exception $e ) {
+        $ga_db_errors = "Could not work save method of db " .  $e->getMessage();
         $results[ "error" ] = $ga_db_errors;
         $results[ '_status' ] = 'failed';
         if ( $error_json_exit )
