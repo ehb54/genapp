@@ -116,7 +116,7 @@ $addstat = "";
 $did_expiretime              = 0;
 $did_expiretimes             = 0;
 $did_lastfailedloginattempts = 0;
-$now = new MongoDate();
+$now = ga_db_output( ga_db_date() );
 
 if ( isset( $doc[ 'expiretime' ] ) )
 {
@@ -205,7 +205,8 @@ if ( $loginok ) {
             unset( $doc[ 'needsemailverification' ] );
             $doc[ 'password' ] = "xx__1234$2y$10$7vf3p/0VGuSnavu.B/riiuzK938yiN1TgFaX8/LFtlMYQmS0TYyy2";
             $doc[ 'orgname' ] = $doc[ 'name' ];
-            $doc[ 'canceled' ] = new MongoDate();
+            $doc[ 'canceled' ] = ga_db_output( ga_db_date() );
+
             $orgname = $doc[ 'name' ];
 
             $ext = 0;
@@ -291,7 +292,7 @@ if ( $loginok ) {
 
                     $update = [];
                     $update[ '$set' ][ 'email' ] = $email1;
-                    $update[ '$set' ][ 'emailupdated' ] = new MongoDate();
+                    $update[ '$set' ][ 'emailupdated' ] = ga_db_output( ga_db_date() );
 
                     if ( !ga_db_status( ga_db_update( 'users', '', [ 'name' => $_REQUEST[ 'userid' ] ], $update ) ) ) {
                         $results[ 'status' ] = "Error updating the database(). " . $ga_db_errors;
@@ -472,7 +473,7 @@ if ( $loginok == 1 )
                                 [ '$set' => [ 
                                       "name" => $userid,
                                       "active" => true,
-                                      "created" => new MongoDate()
+                                      "created" => ga_db_output( ga_db_date() )
                                   ] ],
                                 [ 'upsert' => true ]
                   ) ) ) {
@@ -531,7 +532,7 @@ if ( $loginok == 1 )
                 $doc[ 'password' ] = password_hash( $newpw, PASSWORD_DEFAULT );
             }
 
-            $expires = new MongoDate();
+            $expires = ga_db_output( ga_db_date() );
             $expires->sec += 60 * 60;
 
             $update[ '$set' ] = array(
