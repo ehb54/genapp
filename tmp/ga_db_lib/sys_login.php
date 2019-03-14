@@ -1,7 +1,7 @@
 <?php
 header('Content-type: application/json');
 
-date_default_timezone_set("UTC");
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
 
 session_start(); 
 session_regenerate_id(true); 
@@ -38,8 +38,6 @@ if ( !is_string( $_REQUEST[ 'userid' ] ) ||
 __~debug:basemylog{error_log( "request\n" . print_r( $_REQUEST, true ) . "\n", 3, "/tmp/mylog" );}
 
 $userid = $_REQUEST[ 'userid' ];
-
-require_once "../ga_db_lib.php"; 
 
 ga_db_open( true ); # can ignore return status, will exit properly
 
@@ -505,7 +503,6 @@ if ( $loginok == 1 )
             }
         }
     }
-    
 } else {
     if ( isset( $_REQUEST[ 'forgotpassword' ] ) &&
          $_REQUEST[ 'forgotpassword' ] == "on" )
