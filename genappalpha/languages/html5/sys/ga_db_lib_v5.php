@@ -332,21 +332,18 @@ function ga_db_distinct( $coll, $appname = "__application__", $key, $query, $err
     return $results;
 }
 
-function ga_db_date( $tstamp, $error_json_exit = false ) {
-// MongoDate class
+function ga_db_date( $tstamp = '', $error_json_exit = false ) {
     global $ga_db_mongo;
     global $ga_db_errors;
 
     $results = [];
-    if ( !is_bool($tstamp) ) {
-        if ( !strlen($tstamp) ) { 
-            $results[ "output" ]  = new MongoDate();
-            $results[ '_status' ] = 'success';
-        } else {
-            $results[ "output" ]  = new MongoDate($tstamp);
-            $results[ '_status' ] = 'success';
-        }
-    }  
+    if ( strlen($tstamp) ) { 
+        $results[ "output" ]  = new MongoDate($tstamp);
+        $results[ '_status' ] = 'success';
+    } else {
+        $results[ "output" ]  = new MongoDate();
+        $results[ '_status' ] = 'success';
+    }
     return $results;
 }
 
