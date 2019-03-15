@@ -20,7 +20,7 @@
 =================== Usage ===============================
 
 ga_db_open( $error_json_exit );
-$results = ga_db_findOne( $coll, $appname, $query, $projection, $error_json_exit );
+$results = ga_db_findOne( $coll, $appname, $query, $projection, $options, $error_json_exit );
 $results = ga_db_find( $coll, $appname, $query, $projection, $options, $error_json_exit );
 $results = ga_db_insert( $coll, $appname, $insert, $options, $error_json_exit );
 $results = ga_db_update( $coll, $appname, $criteria, $update, $options, $error_json_exit );
@@ -127,7 +127,7 @@ if ( isset( $ga_db_log_file ) ) {
     date_default_timezone_get();
 }
 
-function ga_db_findOne( $coll, $appname = "__application__", $query, $projection = [], $error_json_exit = false ) {
+function ga_db_findOne( $coll, $appname = "__application__", $query, $projection = [], $options = [], $error_json_exit = false ) {
     if ( isset( $ga_db_log_file ) ) {
         error_log( date('m/d/Y h:i:s a', time() ) . " ga_db_findOne( $coll, $appname,\n" . json_encode( $query, JSON_PRETTY_PRINT ) . "\n" . json_encode( $projection, JSON_PRETTY_PRINT ) . "\n" . ( $error_json_exit ? "true" : "false" ) . ") =\n", 3, $ga_db_log_file );
     }
