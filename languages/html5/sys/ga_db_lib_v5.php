@@ -51,6 +51,8 @@ date_default_timezone_set("UTC");
 
 global $ga_db_errors;
 
+# utility routines
+
 function ga_db_status( $results ) {
     return $results[ '_status' ] === 'success';
 }
@@ -58,6 +60,29 @@ function ga_db_status( $results ) {
 function ga_db_output( $results ) {
     return $results[ 'output' ];
 }
+
+function ga_db_date_add_secs( $mongodate, $seconds = 0 ) {
+# add seconds to date / only integer values allowed
+    if ( $seconds != intval( $seconds ) ) {
+        echo "Fractional seconds not allowed for ga_db_date_add_secs\n";
+        exit();
+    }        
+    $newdate = clone $mongodate;
+    $newdate->sec += floor( $seconds );
+    return $newdate;
+}
+
+function ga_db_date_secs_diff( $mongodate1, $mongodate2 ) {
+# return difference of dates in decimal seconds 
+    return ga_db_date_secs( $mongodate1 ) - ga_db_date_secs( $mongodate2 );
+}
+
+function ga_db_date_secs( $mongodate ) {
+# return date as decimal seconds
+    return $mongodate->sec + $mongodate->usec * 1.0e-6;
+}
+
+# ga_db main routines
 
 function ga_db_open( $error_json_exit = false ) {
     global $ga_db_mongo;
@@ -210,7 +235,7 @@ function ga_db_command( $appname = "__application__", $command, $options = [], $
     return $results;
 }
 
-function ga_db_find( $coll, $appname = "__application__", $query = [], $projection = [], $error_json_exit = false ) {
+function ga_db_find( $coll, $appname = "__application__", $query = [], $projection = [], $options = [], $error_json_exit = false ) {
     global $ga_db_mongo;
     global $ga_db_errors;
     if ( !strlen( $appname ) ) {
@@ -220,6 +245,9 @@ function ga_db_find( $coll, $appname = "__application__", $query = [], $projecti
     try {
         $results[ "output" ] = $ga_db_mongo->$appname->$coll->find( $query, $projection );
         $results[ '_status' ] = 'success';
+        if ( isset( $options[ 'sort' ] ) ) {
+            $results[ 'output' ]->sort( $options[ 'sort' ] );
+        }
     } catch ( MongoCursorException $e ) {
         $ga_db_errors = "Could not work with find method of db " .  $e->getMessage();
         $results[ 'error' ] = $ga_db_errors;
