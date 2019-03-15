@@ -86,9 +86,7 @@ function get_userinfo( $error_json_exit = false ) {
        }
    }
 
-   $users = ga_db_output( ga_db_find( 'users', '' ) );
-
-   $users->sort( array( "name" => 1 ) );
+   $users = ga_db_output( ga_db_find( 'users', '', [], [], [ 'sort' => [ 'name' => 1 ] ] ) );
 
    foreach ( $users as $v ) {
        $name = $v[ 'name' ];
@@ -100,8 +98,8 @@ function get_userinfo( $error_json_exit = false ) {
                    ,"email"              => "<a class='title' href='mailto:" . $v[ 'email' ] . "'>" . $v[ 'email' ] . "</a>"
                    ,"group"              => isset( $v[ 'group' ] ) ? $v[ 'group' ] : ""
                    ,"projects"           => count( $v[ 'project' ] )
-                   ,"last-login"         => isset( $v["lastlogin"] ) ? date( "Y M d H:i T",$v["lastlogin"]->sec ) : ""
-                   ,"registered"         => isset( $v["registered"] ) ? date( "Y M d H:i T",$v["registered"]->sec ) : ""
+                   ,"last-login"         => isset( $v["lastlogin"] ) ? date( "Y M d H:i T", ga_db_date_secs( $v["lastlogin"] ) ) : ""
+                   ,"registered"         => isset( $v["registered"] ) ? date( "Y M d H:i T", ga_db_date_secs( $v["registered"] ) ) : ""
                    ,"jobs-not-removed"   => $jobcount
                    ,"running"            => isset( $runcount[ $name ] ) ? $runcount[ $name ] : 0
                    ,"admin"              => in_array( $v[ 'name' ], $appconfig->restricted->admin ) ? "yes" : ""

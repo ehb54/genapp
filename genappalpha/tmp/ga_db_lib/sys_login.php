@@ -529,8 +529,7 @@ if ( $loginok == 1 )
                 $doc[ 'password' ] = password_hash( $newpw, PASSWORD_DEFAULT );
             }
 
-            $expires = ga_db_output( ga_db_date() );
-            $expires->sec += 60 * 60;
+            $expires = ga_db_add_secs( ga_db_output( ga_db_date() ), 60 * 60 );
 
             $update[ '$set' ] = array(
                 "lastforgotlogin" => $now,

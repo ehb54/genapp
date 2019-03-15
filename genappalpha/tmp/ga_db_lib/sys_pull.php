@@ -63,7 +63,7 @@ if ( $_REQUEST[ '_logon' ] != $_SESSION[ $window ][ 'logon' ] )
            'requestuser: ' . $insert[ 'requestuser' ] . "\n" .
            'sessionuser: ' . $insert[ 'sessionuser' ] . "\n" .
            'remoteip:    ' . $insert[ 'remoteip' ] . "\n" .
-           'when:        ' . date('Y-m-d H:i:s', $insert[ 'when' ]->sec) . " UTC\n" .
+           'when:        ' . date('Y-m-d H:i:s', ga_db_date_secs( $insert[ 'when' ] ) ) . " UTC\n" .
            '' );
 
    echo (json_encode($results));
