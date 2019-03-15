@@ -97,7 +97,7 @@ function logjobupdate( $status, $log_end = false, $error_json_exit = false, $uui
                $GLOBALS['wascancelled'] = true;
                return true;
            }
-           $update[ '$set' ][ 'duration' ] = $now->sec + $now->usec * 1.0e-6 - $doc[ 'start' ]->sec - $doc[ 'start' ]->usec * 1.0e-6;
+           $update[ '$set' ][ 'duration' ] = ga_db_date_secs_diff( $now, $doc[ 'start' ] );
        }
    }
    __~debug:cancel{error_log( "joblogupdate( $status,.. ) uuid: $uuid\n", 3, "/tmp/mylog" );}

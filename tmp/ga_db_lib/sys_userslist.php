@@ -90,11 +90,12 @@ function get_userinfo( $error_json_exit = false ) {
        ga_db_output( 
            ga_db_find(
                'users',
-               ''
+               '',
+               [],
+               [],
+               [ 'sort' => [ 'name' => 1 ] ]
            )
        );
-
-   $users->sort( array( "name" => 1 ) );
 
    foreach ( $users as $v ) {
        $name = $v[ 'name' ];
