@@ -21,7 +21,7 @@
 
 ga_db_open( $error_json_exit );
 $results = ga_db_findOne( $coll, $appname, $query, $projection, $error_json_exit );
-$results = ga_db_find( $coll, $appname, $query, $projection, $error_json_exit );
+$results = ga_db_find( $coll, $appname, $query, $projection, $options, $error_json_exit );
 $results = ga_db_insert( $coll, $appname, $insert, $options, $error_json_exit );
 $results = ga_db_update( $coll, $appname, $criteria, $update, $options, $error_json_exit );
 $results = ga_db_remove( $coll, $appname, $criteria, $options, $error_json_exit );
@@ -31,6 +31,14 @@ $results = ga_db_Id( $datastring, $error_json_exit );
 $results = ga_db_command( $appname, $command, $options, $error_json_exit );
 $results = ga_db_count( $coll, $appname, $query, $options, $error_json_exit );
 $results = ga_db_save( $coll, $appname, $document, $options, $error_json_exit );
+
+================ Usage utility routines ===========
+
+bool  = ga_db_status( $results );
+obj   = ga_db_output( $results );
+date  = ga_db_add_secs( $date, $seconds );
+float = ga_db_date_secs_diff( $date1, $date2 );
+float = ga_db_date_secs( $date );
 
 =================== Return ===============================
 
