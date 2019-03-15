@@ -104,8 +104,8 @@ foreach ($cursor_jobs as $obj_jobs) {
   $this_when_start = $obj_jobs[ 'when' ][0];
   $this_when_current = end( $obj_jobs[ 'when' ] );
        
-  $user_start = $this_when_start->sec + ($this_when_start->usec)*pow(10.0, -6.0 );
-  $user_current = $this_when_current->sec + ($this_when_start->usec)*pow(10.0, -6.0 );	
+  $user_start = ga_db_date_secs( $this_when_start );
+  $user_current = ga_db_date_secs( $this_when_current );
  
 // Status
 

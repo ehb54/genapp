@@ -65,8 +65,7 @@ if ( !is_string( $email ) ||
 }
 
 require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
-$mindate = ga_db_output( ga_db_date() );
-$mindate->sec -= 3 * 60;
+$mindate = ga_db_date_add_secs( ga_db_output( ga_db_date() ), -3 * 60 );
 
 ga_db_open( true );
 

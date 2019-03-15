@@ -63,7 +63,7 @@ if ( $_REQUEST[ '_logon' ] != $_SESSION[ $window ][ 'logon' ] )
            'requestuser: ' . $insert[ 'requestuser' ] . "\n" .
            'sessionuser: ' . $insert[ 'sessionuser' ] . "\n" .
            'remoteip:    ' . $insert[ 'remoteip' ] . "\n" .
-           'when:        ' . date('Y-m-d H:i:s', $insert[ 'when' ]->sec) . " UTC\n" .
+           'when:        ' . date('Y-m-d H:i:s', ga_db_date_secs( $insert[ 'when' ] ) ) . " UTC\n" .
            '' );
    echo (json_encode($results));
    exit();
@@ -258,7 +258,7 @@ if ( $doc =
 
          mymail( $doc[ 'email' ] , 'password change notice __application__', "Your password has been changed\n" .
                  'remoteip:    ' . $update[ '$set' ][ 'passwordchangeip' ] . "\n" .
-                 'when:        ' . date('Y-m-d H:i:s', $update[ '$set' ][ 'passwordchangewhen' ]->sec) . " UTC\n" .
+                 'when:        ' . date('Y-m-d H:i:s', ga_db_date_secs( $update[ '$set' ][ 'passwordchangewhen' ] ) ) . " UTC\n" .
                  "\n" . 'If you do not recognize this change please forward this email with a comment to ' . $appconfig->mail->admin . "\n" .
                  '' );
 
@@ -302,7 +302,7 @@ if ( $doc =
          mymail( $doc[ 'email' ] , 'email change notice __application__', "Your email address has been changed\n" .
                  'new email:   ' . $email1 . "\n" .
                  'remoteip:    ' . $update[ '$set' ][ 'emailchangeip' ] . "\n" .
-                 'when:        ' . date('Y-m-d H:i:s', $update[ '$set' ][ 'emailchangewhen' ]->sec) . " UTC\n" .
+                 'when:        ' . date('Y-m-d H:i:s', ga_db_date_secs( $update[ '$set' ][ 'emailchangewhen' ] ) ) . " UTC\n" .
                  "\n" . 'If you do not recognize this change please forward this email with a comment to ' . $appconfig->mail->admin . "\n" .
                  '' );
 
