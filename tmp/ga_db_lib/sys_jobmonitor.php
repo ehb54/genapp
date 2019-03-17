@@ -359,7 +359,7 @@ function get_runinfo( $error_json_exit = false ) {
 
        
        if ( isset( $job["start"] ) ) {
-           $duration = floatval( $nowsecs - $job["start"]->sec );
+           $duration = floatval( $nowsecs - ga_db_date_secs( $job["start"] ) );
            $duration_s = sprintf( $duration > 1 * 60 ? "%.0f" : "%.1f", $duration - 60 * intval( $duration / 60 ) );
            $duration_m = intval( $duration / 60 ) % 60;
            $duration_h = intval( $duration /(60 * 60 ) ) % 24;
@@ -381,7 +381,7 @@ function get_runinfo( $error_json_exit = false ) {
                "module"    => $job[ 'module' ]
                ,"user"      => $job[ 'user' ]
 #               "pids"      => $v  [ 'pid' ]
-               ,"started"   => isset( $job[ "start" ] ) ? date( "Y M d H:i:s T", $job["start"]->sec ) : "Unknown"
+               ,"started"   => isset( $job[ "start" ] ) ? date( "Y M d H:i:s T", ga_db_date_secs( $job["start"] ) ) : "Unknown"
                ,"duration"  => $duration
                ,"resources" => implode( ",", array_keys( $resources ) )
                ,"id"        => $uuid
