@@ -24,7 +24,7 @@ date_default_timezone_set("UTC");
 
 $GLOBALS[ 'logon' ] = $_SESSION[ $window ][ 'logon' ];
 $GLOBALS[ 'REMOTE_ADDR' ] = isset( $_SERVER[ 'REMOTE_ADDR' ] ) ? $_SERVER[ 'REMOTE_ADDR' ] : "not from an ip";
-require_once "../joblog.php";
+require_once "__docroot:html5__/__application__/ajax/joblog.php";
 
 function small_string( $s, $count = 1 )
 {
@@ -134,15 +134,15 @@ if ( !isset( $_REQUEST[ "_tree" ] ) &&
        $row[ "cells" ] = array();
        $row[ "cells" ][] = array( "value" => small_string( $job["menu"] . "/" . $job["module"] ) );
        $row[ "cells" ][] = array( "value" => small_string( $project ) );
-       $row[ "cells" ][] = array( "value" => small_string( isset( $job["start"] ) ? date( "Y M d H:i:s T",$job["start"]->sec ): "unknown", 2 ) );
-       $row[ "cells" ][] = array( "value" => intval( isset( $job["start"] ) ? $job["start"]->sec : 0 ) );
+       $row[ "cells" ][] = array( "value" => small_string( isset( $job["start"] ) ? date( "Y M d H:i:s T", ga_db_date_secs( $job["start"] ) ): "unknown", 2 ) );
+       $row[ "cells" ][] = array( "value" => intval( isset( $job["start"] ) ? ga_db_date_secs( $job["start"] ) : 0 ) );
        if ( $endasprogress )
        {
           $row[ "cells" ][] = array( "value" => small_string( $job["end"], 2 ) );
           $row[ "cells" ][] = array( "value" => intval( 100000 * $GLOBALS[ 'cached_progress' ] ) );
        } else {
-          $row[ "cells" ][] = array( "value" => small_string( isset( $job["end"] ) ? date( "Y M d H:i:s T",$job["end"]->sec ) : "", 2 ) );
-          $row[ "cells" ][] = array( "value" => intval( isset( $job["end"] ) ? $job["end"]->sec : 0 ) );
+          $row[ "cells" ][] = array( "value" => small_string( isset( $job["end"] ) ? date( "Y M d H:i:s T", ga_db_date_secs( $job["end"] ) ) : "", 2 ) );
+          $row[ "cells" ][] = array( "value" => intval( isset( $job["end"] ) ? ga_db_date_secs( $job["end"] ) : 0 ) );
        }
        $row[ "cells" ][] = array( "value" => small_string( $duration ) );
        $row[ "cells" ][] = array( "value" => $duration_o );
@@ -229,7 +229,7 @@ if ( isset( $_REQUEST[ "_tree" ] ) ) {
         
         if ( isset( $job[ "start" ] ) )
         {
-            $time = $job[ "start" ]->sec;
+            $time = ga_db_date_secs( $job[ "start" ] );
             $ym  = date( "Y-m",     $time );
             $d   = date( "d",       $time );
             $hr  = date( "H",       $time );
@@ -358,7 +358,7 @@ if ( isset( $_REQUEST[ "_asuser" ] ) ) {
         
         if ( isset( $job[ "start" ] ) )
         {
-            $time = $job[ "start" ]->sec;
+            $time = ga_db_date_secs( $job[ "start" ] );
             $date  = date( "Y-m-d H:i:s T",     $time );
         } else {
             $time = 0;

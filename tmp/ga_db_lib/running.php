@@ -24,7 +24,7 @@ function listrunning( $error_json_exit = false )
        $uuid = $v['_id'];
        $job = ga_db_output( ga_db_findOne( 'jobs', '', [ "_id" => $uuid ] ) );
        $pids = $v['pid'];
-       echo "id:" . $job['_id'] . " module: " . $job['module'] . " user: " . $job['user'] . " started: " . date( "Y M d H:i:s T",$job["start"]->sec ) . "\n";
+       echo "id:" . $job['_id'] . " module: " . $job['module'] . " user: " . $job['user'] . " started: " . date( "Y M d H:i:s T", ga_db_date_secs( $job["start"] ) ) . "\n";
        foreach ( $pids as $k2 => $v2 ) {
            echo "   where: " . $v2['where'] . " pid: " . $v2['pid'] . " what: " . $v2['what'] . "\n";
 

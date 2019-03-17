@@ -150,7 +150,7 @@ function notify( $type ) {
                     if ( $doc[ 'email' ] ) {
                         $app = json_decode( file_get_contents( "__appconfig__" ) );
                         require_once "__docroot:html5__/__application__/ajax/mail.php";
-                        $body = "Your job " . $GLOBALS[ 'menu' ] . " : " . $GLOBALS[ 'module' ] . " submitted on " . date( "Y M d H:i:s T", $GLOBALS[ 'jobstart' ]->sec ) . " is now $type.\n"
+                        $body = "Your job " . $GLOBALS[ 'menu' ] . " : " . $GLOBALS[ 'module' ] . " submitted on " . date( "Y M d H:i:s T", ga_db_date_secs( $GLOBALS[ 'jobstart' ] ) ) . " is now $type.\n"
                             . "Job ID: " . $_REQUEST[ '_uuid' ] . "\n"
                             ;
                         if ( $type == "finished" ) {
