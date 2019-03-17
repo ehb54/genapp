@@ -105,8 +105,8 @@ function get_userinfo( $error_json_exit = false ) {
                    "name"                => $name
                    ,"email"              => "<a class='title' href='mailto:" . $v[ 'email' ] . "'>" . $v[ 'email' ] . "</a>"
                    ,"projects"           => count( $v[ 'project' ] )
-                   ,"last-login"         => isset( $v["lastlogin"] ) ? date( "Y M d H:i T",$v["lastlogin"]->sec ) : ""
-                   ,"registered"         => isset( $v["registered"] ) ? date( "Y M d H:i T",$v["registered"]->sec ) : ""
+                   ,"last-login"         => isset( $v["lastlogin"] ) ? date( "Y M d H:i T", ga_db_date_secs( $v["lastlogin"] ) ) : ""
+                   ,"registered"         => isset( $v["registered"] ) ? date( "Y M d H:i T", ga_db_date_secs( $v["registered"] ) ) : ""
                    ,"jobs-not-removed"   => ga_db_output( ga_db_count( 'jobs', '', [ "user" => $name ] ) )
                    ,"running"            => isset( $runcount[ $name ] ) ? $runcount[ $name ] : 0
                    ,"admin"              => in_array( $v[ 'name' ], $appconfig->restricted->admin ) ? "yes" : ""
