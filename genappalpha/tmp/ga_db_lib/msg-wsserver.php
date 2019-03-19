@@ -280,10 +280,12 @@ __~debug:ws{   echo "mongo save() updated $postmsg\n";}
         }
 
         if ( !ga_db_status(
-                  ga_db_save(
+                  ga_db_update(
                       'cache',
                       'msgs',
-                      [ "_id" => $postData['_uuid'], "data" => $postmsg ]
+                      [ '_id' => $postData['_uuid'] ],
+                      [ '$set' => [ 'data' => $postmsg ] ],
+                      [ 'upsert' => true ]
                   )
              )
             ) {
