@@ -290,7 +290,9 @@ $hostname = $$json{ 'hostname' };
 
 
 my $wssport    = $https ? 443 : 80;
-my $wssport    = $publicport if $publicport;
+print "wssport:$wssport\n";
+$wssport    = $publicport if $publicport;
+print "wssport:$wssport after publicport $publicport\n";
 my $wsport     = 30777;
 my $zmqport    = 30778;
 my $zmqhostip  = "127.0.0.1";
@@ -309,6 +311,7 @@ if ( $$json{ "messaging" }{ "wssport" } ) {
         $$json{ 'messaging'}{'wssport' }         = $wssport;
     }
 } else {
+    print "setting wssport to $wssport\n";
     $$json{ 'messaging'}{'wssport' }         = $wssport;
 }
 
@@ -446,7 +449,7 @@ if ( $$json{ "mongo" }{ "url" } ) {
         $$json{'mongo'}{'url'} = $mongourl;
     }
 } else {
-    $$json{'mongo'}{'url'} = $mongourl;
+    delete $$json{'mongo'};
 }
 
 if ( $$json{ "mongo" }{ "cafile" } ) {
@@ -457,7 +460,7 @@ if ( $$json{ "mongo" }{ "cafile" } ) {
         $$json{'mongo'}{'cafile'} = $mongocafile;
     }
 } else {
-    $$json{'mongo'}{'cafile'} = $mongocafile;
+    delete $$json{'mongo'};
 }
 
 open my $fh, ">$f" || die "$0: can not open $f for writing, check permissions\n";

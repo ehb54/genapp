@@ -910,6 +910,14 @@ if ( $os eq 'ubuntu' && ( $os_release == 16.04 || $os_release == 18.04 ) ) {
     runcmd( "sudo add-apt-repository -y ppa:ondrej/php && sudo apt-get -y update" );
     runcmd( "sudo apt-get -y install mlocate build-essential apache2 php5.6-dev libapache2-mod-php5.6 php5.6-xml pkg-config re2c libzmq${zmqv}-dev uuid-dev abiword wget mongodb libmagickwand-6.q16-dev" );
 
+    # need zeromq from source :(
+
+    runcmd( "rm -fr /tmp/libzmq 2>/dev/null; cd /tmp && git clone git://github.com/zeromq/libzmq.git && cd libzmq && ./autogen.sh && ./configure && make -j$CPUS && make -j$CPUS check && sudo make -j$CPUS install && cat <<_EOF > /etc/ld.so.conf.d/zeromq.conf
+/usr/local/lib
+_EOF
+sudo ldconfig
+ " ) if !-e "/usr/local/lib/libzmq.so" || !-e "/etc/ld.so.conf.d/zeromq.conf";
+
 # php-pear php-imagick php-mail php-mail-mime php-mongodb mongodb" );
 
     runcmdsb( "pear install --alldeps Mail Mail_Mime Net_SMTP" );
