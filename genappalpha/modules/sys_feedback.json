@@ -86,7 +86,7 @@
                    "id"       : "job1",
                    "label"    : "Provide a reference job(s) if available",
                    "type"     : "job",
-                   "help"     : "This will give us more detailed information to better assist you"
+                   "help"     : "This will give us more detailed information to better assist you. Only available if you are logged in."
                    }
                   ,{
                    "role"     : "input",
