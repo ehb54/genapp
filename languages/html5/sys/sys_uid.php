@@ -73,4 +73,3 @@ foreach ($module as $currentmodule){
 //   }
 
 echo (json_encode($response));
-?>

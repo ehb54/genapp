@@ -1,47 +1,16 @@
 <?php
 
-date_default_timezone_set("UTC");
-
-function db_connect( $error_json_exit = false )
-{
-   global $use_db;
-   global $db_errors;
-
-   if ( !isset( $use_db ) )
-   {
-      try {
-         $use_db = new MongoClient(
-         __~mongo:url{"__mongo:url__"}
-         __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-         );
-      } catch ( Exception $e ) {
-         $db_errors = "Could not connect to the db " . $e->getMessage();
-         if ( $error_json_exit )
-         {
-            $results = array( "error" => $db_errors );
-            $results[ '_status' ] = 'complete';
-            echo (json_encode($results));
-            exit();
-         }
-         return false;
-      }
-   }
-
-   return true;
-}
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
 
 function logjobstart( $error_json_exit = false, $cache = "" )
 {
-   global $use_db;
-   global $db_errors;
+   global $ga_db_errors;
 
-   if ( !db_connect( $error_json_exit ) )
-   {
+   if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
        return false;
    }
-   $coll = $use_db->__application__->jobs;
 
-   $now = new MongoDate();
+   $now = ga_db_output( ga_db_date() );
 
    $insert[ '_id'          ] = $_REQUEST[ '_uuid'    ];
    $insert[ 'menu'         ] = $GLOBALS[ 'menu'      ];
@@ -72,14 +41,19 @@ function logjobstart( $error_json_exit = false, $cache = "" )
    if ( isset( $GLOBALS[ 'notify' ] ) && $GLOBALS[ 'notify' ] ) {
        $insert[ 'notify' ] = $GLOBALS[ 'notify' ];
    }
-
-   try {
-      $coll->insert( $insert__~mongojournal{, array("j" => true )} );
-   } catch(MongoCursorException $e) {
-      $db_error = "Error updating the database. " . $e->getMessage();
+   
+   if ( !ga_db_status(
+             ga_db_insert(
+                 'jobs', 
+                 '', 
+                 $insert, 
+                 [], 
+                 $error_json_exit ) 
+        )
+       ) {
       if ( $error_json_exit )
       {
-         $results[ 'error' ] .= $db_error;
+         $results[ 'error' ] = $ga_db_errors;
          $results[ '_status' ] = 'complete';
          echo (json_encode($results));
          exit();
@@ -91,18 +65,15 @@ function logjobstart( $error_json_exit = false, $cache = "" )
 
 function logjobupdate( $status, $log_end = false, $error_json_exit = false, $uuid = false )
 {
-   global $use_db;
-   global $db_errors;
+   global $ga_db_errors;
 
    $GLOBALS['wascancelled'] = false;
 
-   if ( !db_connect( $error_json_exit ) )
-   {
+   if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
        return false;
    }
-   $coll = $use_db->__application__->jobs;
 
-   $now = new MongoDate();
+   $now = ga_db_output( ga_db_date() );
    $uuid = $uuid ? $uuid : $_REQUEST[ '_uuid' ];
    __~debug:cancel{error_log( "joblogupdate( $status,.. ) uuid: $uuid\n", 3, "/tmp/mylog" );}
 
@@ -111,25 +82,40 @@ function logjobupdate( $status, $log_end = false, $error_json_exit = false, $uui
    if ( $log_end )
    {
        $update[ '$set' ][ 'end' ] = $now;
-       if ( $doc = $coll->findOne( array( "_id" => $uuid ) ) )
-       {
+       if ( $doc = ga_db_output(
+                ga_db_findOne( 
+                    'jobs',
+                    '',
+                    [ '_id' => $uuid ],
+                    [], 
+                    $error_json_exit 
+                ) 
+            ) 
+           ) {
            if ( in_array( "cancelled", $doc[ 'status' ] ) ) {
                __~debug:cancel{error_log( "joblogupdate( $status,.. ) skipping end since cancelled uuid: $uuid\n", 3, "/tmp/mylog" );}
                $GLOBALS['wascancelled'] = true;
                return true;
            }
-           $update[ '$set' ][ 'duration' ] = $now->sec + $now->usec * 1.0e-6 - $doc[ 'start' ]->sec - $doc[ 'start' ]->usec * 1.0e-6;
+           $update[ '$set' ][ 'duration' ] = ga_db_date_secs_diff( $now, $doc[ 'start' ] );
        }
    }
    __~debug:cancel{error_log( "joblogupdate( $status,.. ) uuid: $uuid\n", 3, "/tmp/mylog" );}
-   try {
-      $coll->update( array( "_id" => $uuid ), 
-                            $update__~mongojournal{, array("j" => true )} );
-   } catch(MongoCursorException $e) {
-      $db_errors = "Error updating the database in logjobupdate(). " . $e->getMessage();
+
+   if ( !ga_db_status( 
+             ga_db_update(
+                 'jobs', 
+                 '', 
+                 [ '_id' => $uuid ], 
+                 $update, 
+                 [], 
+                 $error_json_exit
+             ) 
+        ) 
+       ) {
       if ( $error_json_exit )
       {
-         $results[ 'error' ] = $db_errors;
+         $results[ 'error' ] = $ga_db_errors;
          $results[ '_status' ] = 'complete';
          echo (json_encode($results));
          exit();
@@ -141,23 +127,13 @@ function logjobupdate( $status, $log_end = false, $error_json_exit = false, $uui
 
 function logcache( $uuid, $error_json_exit = false ) {
     __~debug:cache{error_log( "joblog logcache " . $GLOBALS[ 'cache' ] . " module is " . $GLOBALS[ 'module' ] . " job id is " . $uuid .  "\n", 3, "/tmp/php_errors" );}
-    global $use_db;
-    global $db_errors;
+    global $ga_db_errors;
 
-    if ( !db_connect( $error_json_exit ) )
-    {
-        if ( $error_json_exit )
-        {
-            $results[ 'error' ] = $db_errors;
-            $results[ '_status' ] = 'complete';
-            echo (json_encode($results));
-            exit();
-        }
+    if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
         return false;
-    }
-    $coll = $use_db->__application__->cache;
+    }      
 
-    $now = new MongoDate();
+    $now = ga_db_output( ga_db_date() );
     
     $key = $GLOBALS[ 'module' ] . "/" . $GLOBALS[ "getmenumoduleproject" ] . "/" . ( $GLOBALS[ 'cache' ] == "public" ? "_public" : $GLOBALS[ 'logon' ] );
 
@@ -167,15 +143,20 @@ function logcache( $uuid, $error_json_exit = false ) {
     $update[ 'menu'         ] = $GLOBALS[ 'menu' ];
     $update[ 'project'      ] = $GLOBALS[ "getmenumoduleproject" ];
 
-    try {
-        $coll->update( array( "_id" => $key ), 
-                       $update,
-                       array( "upsert" => true__~mongojournal{, "j" => true} ) );
-    } catch(MongoCursorException $e) {
-      $db_errors = "Error updating the database in logcache(). " . $e->getMessage();
+    if ( !ga_db_status( 
+              ga_db_update( 
+                  'cache',
+                  '',
+                  [ '_id' => $key ],
+                  $update,
+                  [ "upsert" => true ],
+                  $error_json_exit 
+              ) 
+         ) 
+        ) {
       if ( $error_json_exit )
       {
-         $results[ 'error' ] = $db_errors;
+         $results[ 'error' ] = $ga_db_errors;
          $results[ '_status' ] = 'complete';
          echo (json_encode($results));
          exit();
@@ -187,28 +168,37 @@ function logcache( $uuid, $error_json_exit = false ) {
 
 function cache_check( $key, $error_json_exit = false ) {
     __~debug:cache{error_log( "joblog cache_check key $key\n", 3, "/tmp/php_errors" );}
-    global $use_db;
-    global $db_errors;
 
-    if ( !db_connect( $error_json_exit ) )
-    {
-        if ( $error_json_exit )
-        {
-            $results[ 'error' ] = $db_errors;
-            $results[ '_status' ] = 'complete';
-            echo (json_encode($results));
-            exit();
-        }
+    if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
         return false;
-    }
-    $coll = $use_db->__application__->cache;
+    }      
 
-    if ( $doc = $coll->findOne( array( "_id" => "$key/_public" ) ) ) {
+    if ( $doc = 
+         ga_db_output( 
+             ga_db_findOne(
+                 'cache',
+                 '',
+                 [ '_id' => "$key/_public" ],
+                 [],
+                 $error_json_exit
+             ) 
+         )
+        ) {
         __~debug:cache{error_log( "joblog cache_check found uuid " . $doc[ 'jobid' ] . "\n", 3, "/tmp/php_errors" );}
         $GLOBALS[ "cached_uuid" ] = $doc[ "jobid" ];
         return true;
     } 
-    if ( $doc = $coll->findOne( array( "_id" => "$key/" . $GLOBALS[ 'logon' ] ) ) ) {
+    if ( $doc = 
+         ga_db_output(
+             ga_db_findOne(
+                 'cache',
+                 '',
+                 [ "_id" => "$key/" . $GLOBALS[ 'logon' ] ],
+                 [],
+                 $error_json_exit
+             )
+         )
+        ) {
         __~debug:cache{error_log( "joblog cache_check found uuid " . $doc[ 'jobid' ] . "\n", 3, "/tmp/php_errors" );}
         $GLOBALS[ "cached_uuid" ] = $doc[ "jobid" ];
         return true;
@@ -218,18 +208,21 @@ function cache_check( $key, $error_json_exit = false ) {
 
 function jqgrid_jobs( $error_json_exit = false, $user = NULL )
 {
-   global $use_db;
-   global $db_errors;
-
-   if ( !db_connect( $error_json_exit ) )
-   {
+   if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
        return false;
-   }
+   }      
 
-   $coll = $use_db->__application__->jobs;
-
-   if ( $GLOBALS[ 'jqgrid_jobs' ] = $coll->find( array( "user" => is_null( $user ) ? $GLOBALS[ 'logon' ] : $user, "deleted" => array( '$exists' => false ) ) ) )
-   {
+   if ( $GLOBALS[ 'jqgrid_jobs' ] = 
+        ga_db_output( 
+            ga_db_find( 
+                'jobs',
+                '',
+                [ "user" => is_null( $user ) ? $GLOBALS[ 'logon' ] : $user, "deleted" => [ '$exists' => false ] ],
+                [],
+                $error_json_exit
+            ) 
+        ) 
+       ) {
        return true;
    }
    return false;
@@ -237,18 +230,20 @@ function jqgrid_jobs( $error_json_exit = false, $user = NULL )
 
 function isprojectlocked( $checkproject,  $error_json_exit = false )
 {
-   global $use_db;
-   global $db_errors;
-
-   if ( !db_connect( $error_json_exit ) )
-   {
+   if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
        return false;
-   }
+   }      
 
-   $coll = $use_db->__application__->joblock;
-
-   if ( $doc = $coll->findOne( array( "name" => $checkproject ) ) )
-   {
+   if ( $doc = ga_db_output(
+            ga_db_findOne(
+                'joblock',
+                '',
+                [ 'name' => $checkproject ],
+                [],
+                $error_json_exit
+            ) 
+        )
+       ) {
        return true;
    }
    return false;
@@ -256,18 +251,20 @@ function isprojectlocked( $checkproject,  $error_json_exit = false )
 
 function getprojectdir( $jobid,  $error_json_exit = false )
 {
-   global $use_db;
-   global $db_errors;
-
-   if ( !db_connect( $error_json_exit ) )
-   {
+   if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
        return false;
-   }
+   }      
 
-   $coll = $use_db->__application__->jobs;
-
-   if ( $doc = $coll->findOne( array( "_id" => $jobid, "user" => $GLOBALS[ 'logon' ] ) ) )
-   {
+   if ( $doc = ga_db_output( 
+            ga_db_findOne(
+                'jobs',
+                '',
+                [ "_id" => $jobid, "user" => $GLOBALS[ 'logon' ] ],
+                [],
+                $error_json_exit 
+            ) 
+        ) 
+       ) {
       if ( isset( $doc[ 'directory' ] ) )
       {
          $GLOBALS[ "getprojectdir" ] = $doc[ 'directory' ];
@@ -281,21 +278,23 @@ function getprojectdir( $jobid,  $error_json_exit = false )
 
 function getmenumodule( $jobid,  $error_json_exit = false )
 {
-   global $use_db;
-   global $db_errors;
-
-   if ( !db_connect( $error_json_exit ) )
-   {
+   if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
        return false;
-   }
-
-   $coll = $use_db->__application__->jobs;
+   }      
 
    // reset user to check if cached module & has permissions ?
 
-   // if ( $doc = $coll->findOne( array( "_id" => $jobid, "user" => $GLOBALS[ 'logon' ] ) ) )
-   if ( $doc = $coll->findOne( array( "_id" => $jobid ) ) )
-   {
+   // if ( $doc = ga_db_output( ga_db_findOne( 'jobs', '', [ "_id" => $jobid, "user" => $GLOBALS[ 'logon' ] ], [], $error_json_exit ) ) ) {
+   if ( $doc = ga_db_output(
+            ga_db_findOne(
+                'jobs',
+                '',
+                [ "_id" => $jobid ],
+                [],
+                $error_json_exit
+            )
+        )
+       ) {
       if ( isset( $doc[ 'menu' ] ) && isset( $doc[ 'module' ] ) )
       {
          $GLOBALS[ "getmenumodule"        ] = $doc[ 'menu' ] . "/" . $doc[ 'module' ];
@@ -332,8 +331,7 @@ function getmenumodule( $jobid,  $error_json_exit = false )
 
 function clearprojectlock( $projectdir,  $error_json_exit = false )
 {
-   global $use_db;
-   global $db_errors;
+   global $ga_db_errors;
 
    $GLOBALS[ 'lasterror' ] = "";
    $GLOBALS[ 'lastnotice' ] = "";
@@ -345,16 +343,21 @@ function clearprojectlock( $projectdir,  $error_json_exit = false )
       return false;
    }
 
-   $coll = $use_db->__application__->joblock;
-
-   try {
-       $coll->remove( array( "name" => $projectdir ), array( __~mongojournal{"j" => true, }"justOne" => true ));
-   } catch(MongoCursorException $e) {
+   if ( !ga_db_status(
+             ga_db_remove(
+                 'joblock',
+                 '',
+                 [ "name" => $projectdir ],
+                 [ 'justOne' => true ],
+                 $error_json_exit
+             ) 
+        )
+       ) {
        if ( isprojectlocked( $projectdir, $error_json_exit ) )
        {
-           $GLOBALS[ 'lasterror' ] = "Could not remove lock on project '$dk'. " . $e->getMessage();
+           $GLOBALS[ 'lasterror' ] = "Could not remove lock on project '$dk'. " . $ga_db_errors;
        } else {
-           $GLOBALS[ 'lastnotice' ] = "Project '$dk' is no longer locked. " . $e->getMessage();
+           $GLOBALS[ 'lastnotice' ] = "Project '$dk' is no longer locked. " . $ga_db_errors;
            return true;
        }
    }
@@ -363,30 +366,32 @@ function clearprojectlock( $projectdir,  $error_json_exit = false )
 
 function removejob( $jobid, $error_json_exit = false )
 {
-    global $use_db;
-    global $db_errors;
+    global $ga_db_errors;
 
     $GLOBALS[ 'lasterror' ] = "";
 
-    if ( !db_connect( $error_json_exit ) )
-    {
-        $GLOBALS[ 'lasterror' ] = $db_errors;
+    if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
+        $GLOBALS[ 'lasterror' ] = $ga_db_errors;
         return false;
     }
 
-    $coll = $use_db->__application__->jobs;
-
-    $now = new MongoDate();
+    $now = ga_db_output( ga_db_date() );
 
     $update[ '$set' ][ 'deleted'    ] = true;
-    try {
-        $coll->update( array( "_id" => $jobid ), 
-                       $update__~mongojournal{, array("j" => true )} );
-    } catch(MongoCursorException $e) {
-        $db_errors = "Error updating the database in removejob(). " . $e->getMessage();
+    if ( !ga_db_status(
+              ga_db_update(
+                  'jobs',
+                  '',
+                  [ '_id' => $jobid ],
+                  $update,
+                  [],
+                  $error_json_exit
+              )
+         )
+        ) {
         if ( $error_json_exit )
         {
-            $results[ 'error' ] = $db_errors;
+            $results[ 'error' ] = $ga_db_errors;
             $results[ '_status' ] = 'complete';
             echo (json_encode($results));
             exit();
@@ -394,16 +399,30 @@ function removejob( $jobid, $error_json_exit = false )
         return false;
     }
 
-    $coll = $use_db->__application__->cache;
-
-    if ( null !== $coll->findOne( array( "jobid" => $jobid ) ) ) {
-        try { 
-            $coll->remove( array( "jobid" => $jobid )__~mongojournal{, array("j" => true )} );
-        } catch(MongoCursorException $e) {
-            $db_errors = "Error updating the database in removejob(). " . $e->getMessage();
+    if ( null !== 
+         ga_db_output(
+             ga_db_findOne(
+                 'cache',
+                 '',
+                 [ 'jobid' => $jobid ],
+                 [],
+                 $error_json_exit
+             )
+         )
+        ) {
+        if ( !ga_db_status(
+                  ga_db_remove(
+                      'cache',
+                      '',
+                      [ "jobid" => $jobid ],
+                      [],
+                      $error_json_exit
+                  )
+             )
+            ) {
             if ( $error_json_exit )
             {
-                $results[ 'error' ] = $db_errors;
+                $results[ 'error' ] = $ga_db_errors;
                 $results[ '_status' ] = 'complete';
                 echo (json_encode($results));
                 exit();
@@ -411,59 +430,32 @@ function removejob( $jobid, $error_json_exit = false )
             return false;
         }
     }
-
     return true;
 }
 
-/*
-function removejob_old( $jobid,  $error_json_exit = false )
-{
-   global $use_db;
-   global $db_errors;
-
-   $GLOBALS[ 'lasterror' ] = "";
-
-   if ( !db_connect( $error_json_exit ) )
-   {
-      $GLOBALS[ 'lasterror' ] = $db_errors;
-      return false;
-   }
-
-   $coll = $use_db->__application__->jobs;
-
-   try {
-      $coll->remove( array( "_id" => $jobid, "user" => $GLOBALS[ 'logon' ] ) );
-   } catch(MongoCursorException $e) {
-      $GLOBALS[ 'lasterror' ] = "Could not remove job $v. " . $e->getMessage();
-      return false;
-   }
-
-   try {
-      $use_db->msgs->cache->remove( array( "_id" => $jobid ) );
-   } catch(MongoCursorException $e) {
-//      $GLOBALS[ 'lasterror' ] = "Could not remove job $v. " . $e->getMessage();
-//      return false;
-   }
-   return true;
-}
-*/
-
 function cached_msg( $jobid,  $error_json_exit = false )
 {
-   global $use_db;
-   global $db_errors;
+   global $ga_db_errors;
 
    $GLOBALS[ 'lasterror' ] = "";
    $GLOBALS[ 'cached_msg' ] = "";
 
-   if ( !db_connect( $error_json_exit ) )
-   {
-      $GLOBALS[ 'lasterror' ] = $db_errors;
+   if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
+      $GLOBALS[ 'lasterror' ] = $ga_db_errors;
       return false;
    }
 
-   if ( $doc = $use_db->msgs->cache->findOne( array( "_id" => $jobid ) ) )
-   {
+   if ( $doc = 
+        ga_db_output(
+            ga_db_findOne(
+                'cache',
+                'msgs',
+                [ '_id' => $jobid ],
+                [],
+                $error_json_exit
+            )
+        )
+       ) {
        $GLOBALS[ 'cached_msg' ] = $doc[ 'data' ];
        return true;
    } else {
@@ -473,20 +465,27 @@ function cached_msg( $jobid,  $error_json_exit = false )
 
 function cached_progress( $jobid,  $error_json_exit = false )
 {
-   global $use_db;
-   global $db_errors;
+   global $ga_db_errors;
 
    $GLOBALS[ 'lasterror' ] = "";
    $GLOBALS[ 'cached_progress' ] = "";
 
-   if ( !db_connect( $error_json_exit ) )
-   {
-      $GLOBALS[ 'lasterror' ] = $db_errors;
+   if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
+      $GLOBALS[ 'lasterror' ] = $ga_db_errors;
       return false;
    }
 
-   if ( $doc = $use_db->msgs->cache->findOne( array( "_id" => $jobid ) ) )
-   {
+   if ( $doc =
+        ga_db_output(
+            ga_db_findOne(
+                'cache',
+                'msgs',
+                [ '_id' => $jobid ],
+                [],
+                $error_json_exit
+            )
+        )
+       ) {
       $json = json_decode( $doc[ 'data' ], true );
       if ( isset( $json[ '_progress' ] ) )
       {
@@ -527,8 +526,7 @@ function get_projects_locked( $files, $error_json_exit = false )
 }
 
 function totalweight( $error_json_exit = false ) {
-    global $use_db;
-    global $db_errors;
+    global $ga_db_errors;
     __~debug:jobweight{error_log( "totalweight() called:\n", 3, "/tmp/mylog" );}
 
     if ( !isset( $GLOBALS[ 'logon' ] ) ) {
@@ -537,18 +535,25 @@ function totalweight( $error_json_exit = false ) {
 
     $GLOBALS[ 'lasterror' ] = "";
 
-    if ( !db_connect( $error_json_exit ) ) {
-        $GLOBALS[ 'lasterror' ] = $db_errors;
+    if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
+        $GLOBALS[ 'lasterror' ] = $ga_db_errors;
         return false;
     }
 
-    if ( $doc = $use_db->__application__->command( 
-             [
-              'aggregate' => 'joblock',
-              'pipeline' =>
-              [ [ '$match' =>  [ 'user' => $GLOBALS[ 'logon' ] ] ], [ '$group' => [ '_id' =>  '', 'totalweight' => [ '$sum' => '$jobweight' ] ] ], [ '$project' => [ '_id' => 0, 'totalweight' => '$totalweight' ] ] ]
-             ]
-         ) ) {
+    if ( $doc =
+         ga_db_output(
+             ga_db_command(
+                 '',
+                 [
+                  'aggregate' => 'joblock',
+                  'pipeline' =>
+                  [ [ '$match' =>  [ 'user' => $GLOBALS[ 'logon' ] ] ], [ '$group' => [ '_id' =>  '', 'totalweight' => [ '$sum' => '$jobweight' ] ] ], [ '$project' => [ '_id' => 0, 'totalweight' => '$totalweight' ] ] ]
+                 ],
+                 [], 
+                 $error_json_exit
+             )
+         )
+        ) {
         __~debug:jobweight{error_log( "totalweight() returns:\n" . json_encode( $doc, JSON_PRETTY_PRINT ), 3, "/tmp/mylog" );}
         if ( isset( $doc[ 'result' ] ) &&
              isset( $doc[ 'result' ][ 0 ] ) &&
@@ -561,24 +566,40 @@ function totalweight( $error_json_exit = false ) {
 }
 
 function logrunning( $error_json_exit = false ) {
-    global $use_db;
-    global $db_errors;
+    global $ga_db_errors;
 
     $GLOBALS[ 'lasterror' ] = "";
 
-    if ( !db_connect( $error_json_exit ) ) {
-        $GLOBALS[ 'lasterror' ] = $db_errors;
+    if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
+        $GLOBALS[ 'lasterror' ] = $ga_db_errors;
         return false;
     }
 
-    if ( !( $doc = $use_db->global->apps->findOne( array( "_id" => "__application__" ) ) ) ) {
-        try {
-            $use_db->global->apps->insert( array( "_id" => "__application__" )__~mongojournal{, array("j" => true )} );
-        } catch(MongoCursorException $e) {
-            $db_error = "Error updating the database. " . $e->getMessage();
+    if ( !( $doc = 
+            ga_db_output(
+                ga_db_findOne(
+                    'apps',
+                    'global',
+                    [ '_id' => "__application__" ],
+                    [],
+                    $error_json_exit 
+                ) 
+            )
+         )
+        ) {
+        if ( !ga_db_status(
+                  ga_db_insert(
+                      'apps',
+                      'global',
+                      [ '_id' => "__application__" ],
+                      [],
+                      $error_json_exit
+                  )
+             )
+            ) {
             if ( $error_json_exit )
             {
-                $results[ 'error' ] .= $db_error;
+                $results[ 'error' ] .= $ga_db_errors;
                 $results[ '_status' ] = 'complete';
                 echo (json_encode($results));
                 exit();
@@ -587,25 +608,34 @@ function logrunning( $error_json_exit = false ) {
         }
     }
 
-    $set_array = array( '$push' => array( "pid" => array( "where" => "local", "pid" => getmypid(), "what" => "parent" ) ) );
+    $set_array = [ '$push' => [ "pid" => [ "where" => "local", "pid" => getmypid(), "what" => "parent" ] ] ];
 
     if ( __~xsedeproject{1}0 && 
-         $doc = $use_db->__application__->jobs->findOne( 
-             array( "_id" => $_REQUEST[ '_uuid' ], "user" => $GLOBALS[ 'logon' ] ),
-             array( "xsedeproject" => 1 )
-         ) )
-    {
+         $doc = ga_db_output(
+             ga_db_findOne(
+                 'jobs',
+                 '',
+                 [ "_id" => $_REQUEST[ '_uuid' ], "user" => $GLOBALS[ 'logon' ] ],
+                 [ 'xsedeproject' => 1 ],
+                 $error_json_exit
+             )
+         )
+        ) {
         $set_array[ '$set' ] = array( "xsedeproject" =>  $doc[ 'xsedeproject' ] );
     }
 
-    try {
-        $use_db->__application__->running->update(
-            array( "_id" => $_REQUEST[ '_uuid' ], "user" => $GLOBALS[ 'logon' ] ),
-            $set_array,
-            array( "upsert" => true__~mongojournal{, "j" => true} )
-            );
-    } catch( MongoCursorException $e ) {
-        $GLOBALS[ 'lasterror' ]  = "Error updating. " . $e->getMessage();
+    if ( !ga_db_status(
+              ga_db_update(
+                  'running',
+                  '', 
+                  [ '_id' => $_REQUEST[ '_uuid' ], "user" => $GLOBALS[ 'logon' ] ],
+                  $set_array,
+                  [ "upsert" => true ],
+                  $error_json_exit
+              )
+         )
+        ) {
+        $GLOBALS[ 'lasterror' ]  = "Error updating. " . $ga_db_errors;
         return false;
     }
 
@@ -613,62 +643,78 @@ function logrunning( $error_json_exit = false ) {
 }
 
 function logrunningresource( $uuid, $resource, $nodes, $nodesppn, $error_json_exit = false ) {
-    global $use_db;
-    global $db_errors;
+    global $ga_db_errors;
 
     $GLOBALS[ 'lasterror' ] = "";
 
-    if ( !db_connect( $error_json_exit ) ) {
-        $GLOBALS[ 'lasterror' ] = $db_errors;
+    if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
+        $GLOBALS[ 'lasterror' ] = $ga_db_errors;
         return false;
     }
 
     if ( __~xsedeproject{1}0 && 
-         $doc = $use_db->__application__->jobs->findOne(
-             array( "_id" => $uuid ),
-             array( "xsedeproject" => 1 ) ) ) {
+         $doc = ga_db_output(
+             ga_db_findOne(
+                 'jobs',
+                 '',
+                 [ "_id" => $uuid ],
+                 [ 'xsedeproject' => 1 ],
+                 $error_json_exit
+             )
+         )
+        ) {
 
-        $update = [];
-        $update[ "_id" ] = "__application__:$resource:" . $doc[ 'xsedeproject' ];
+         $update = [];
+         $update[ "_id" ] = "__application__:$resource:" . $doc[ 'xsedeproject' ];
 
-        try {
-            $use_db->global->appresourceproject->update( 
-                $update,
-                $update,
-                array( "upsert" => true__~mongojournal{, "j" => true} ) );
-        } catch(MongoCursorException $e) {
-            $GLOBALS[ 'lasterror' ]  = "Error updating. " . $e->getMessage();
-            return false;
-        }
+         if ( !ga_db_status( 
+                   ga_db_update(
+                       'appresourceproject', 
+                       'global', 
+                       $update, 
+                       $update, 
+                       [ "upsert" => true ], 
+                       $error_json_exit
+                   ) 
+              )
+             ) {
+             $GLOBALS[ 'lasterror' ]  = "Error updating. " . $ga_db_errors;
+             return false;
+         }
     }
 
-    try {
-        $use_db->__application__->running->update(
-            array( "_id" => $uuid ),
-            array( 
-                '$set' => array( "resource" => $resource
-                                 ,"nodes"   => intval( $nodes )
-                                 ,"nodeppn" => intval( $nodesppn ) )
-            ),
-            array( "upsert" => true__~mongojournal{, "j" => true} ) 
-            );
-    } catch( MongoCursorException $e ) {
-        $GLOBALS[ 'lasterror' ]  = "Error updating. " . $e->getMessage();
+    if ( !ga_db_status( 
+              ga_db_update(
+                  'running', 
+                  '', 
+                  [ "_id" => $uuid ],
+                  [ '$set' => [ "resource" => $resource
+                                ,"nodes"   => intval( $nodes )
+                                ,"nodeppn" => intval( $nodesppn ) ] ],
+                  [ "upsert" => true ], 
+                  $error_json_exit
+                  
+              )
+         )
+        ) {
+        $GLOBALS[ 'lasterror' ]  = "Error updating. " . $ga_db_errors;
         return false;
     }
 
-    try {
-        $use_db->__application__->jobs->update(
-            array( "_id" => $uuid ),
-            array( 
-                '$set' => array( "numprocs" => intval( $nodes * $nodesppn )
-                                 ,"nodes"   => intval( $nodes )
-                                 ,"nodeppn" => intval( $nodesppn ) )
-            ),
-            array( "upsert" => true__~mongojournal{, "j" => true} ) 
-            );
-    } catch( MongoCursorException $e ) {
-        $GLOBALS[ 'lasterror' ]  = "Error updating. " . $e->getMessage();
+    if ( !ga_db_status( 
+              ga_db_update(
+                  'jobs', 
+                  '',
+                  [ "_id" => $uuid ],
+                  [ '$set' => [ "numprocs" => intval( $nodes * $nodesppn )
+                                ,"nodes"   => intval( $nodes )
+                                ,"nodeppn" => intval( $nodesppn ) ] ],
+                  [ "upsert" => true ], 
+                  $error_json_exit
+              )
+         )
+        ) {
+        $GLOBALS[ 'lasterror' ]  = "Error updating. " . $ga_db_errors;
         return false;
     }
 
@@ -676,37 +722,39 @@ function logrunningresource( $uuid, $resource, $nodes, $nodesppn, $error_json_ex
 }
 
 function logstoprunning( $error_json_exit = false, $uuid = false ) {
-    global $use_db;
-    global $db_errors;
+    global $ga_db_errors;
 
     $GLOBALS[ 'lasterror' ] = "";
 
-    if ( !db_connect( $error_json_exit ) ) {
-        $GLOBALS[ 'lasterror' ] = $db_errors;
+    if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
+        $GLOBALS[ 'lasterror' ] = $ga_db_errors;
         return false;
     }
 
-    try {
-        $use_db->__application__->running->remove(
-            array( "_id" => $uuid ? $uuid : $_REQUEST[ '_uuid' ] ),
-            array( "justOne" => true )
-            );
-    } catch( MongoCursorException $e ) {
-        $GLOBALS[ 'lasterror' ]  = "Error updating. " . $e->getMessage();
+   if ( !ga_db_status(
+             ga_db_remove(
+                 'running',
+                 '',
+                 [ "_id" => $uuid ? $uuid : $_REQUEST[ '_uuid' ] ],
+                 [ "justOne" => true  ],
+                 $error_json_exit 
+             )
+        )
+       ) {
+        $GLOBALS[ 'lasterror' ]  = "Error updating. " . $ga_db_errors;
         return false;
     }
 
     return true;
 }
 
-function jobcancel( $jobs,  $error_json_exit = false, $is_admin = false ) {
+function jobcancel( $jobs, $error_json_exit = false, $is_admin = false ) {
     __~debug:cancel{error_log( "jobcancel() called with jobs of " . print_r( $jobs, true ), 3, "/tmp/mylog" );}
 
     $GLOBALS[ 'lasterror' ] = "";
     $GLOBALS[ 'lastnotice' ] = "";
 
-    global $use_db;
-    global $db_errors;
+    global $ga_db_errors;
 
     $appconfig = "__appconfig__";
     $appjsona = json_decode( file_get_contents( $appconfig ), true );
@@ -717,9 +765,8 @@ function jobcancel( $jobs,  $error_json_exit = false, $is_admin = false ) {
         return false;
     }
         
-    if ( !db_connect( $error_json_exit ) )
-    {
-        $GLOBALS[ 'lasterror' ] = $db_errors;
+    if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
+        $GLOBALS[ 'lasterror' ] = $ga_db_errors;
         return false;
     }
 
@@ -729,7 +776,16 @@ function jobcancel( $jobs,  $error_json_exit = false, $is_admin = false ) {
 
     // $udp_socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
 
-    $runs = $use_db->__application__->running->find( array( "_id" => array( '$in' => $jobs ) ) );
+    $runs =
+        ga_db_output( 
+            ga_db_find( 
+                'running',
+                '',
+                [ "_id" => [ '$in' => $jobs ] ],
+                [],
+                $error_json_exit
+            )
+        );
 
     $fjobs = array_flip( $jobs );
     $projectdirs  = array();
@@ -739,7 +795,16 @@ function jobcancel( $jobs,  $error_json_exit = false, $is_admin = false ) {
 
     foreach ( $runs as $v ) {
        $uuid = $v['_id'];
-       $job = $use_db->__application__->jobs->findOne( array( "_id" => $uuid ) );
+       $job = 
+           ga_db_output( 
+               ga_db_findOne(
+                   'jobs',
+                   '',
+                   [ "_id" => $uuid ],
+                   [],
+                   $error_json_exit 
+               )
+           );
        $pids = $v['pid'];
        if ( isset( $v['xsedeproject'] ) ) {
            $xsedeproject = $v['xsedeproject'];
@@ -774,7 +839,7 @@ function jobcancel( $jobs,  $error_json_exit = false, $is_admin = false ) {
        // also manually clear job locks and push update to jobs as in jobrun.php
 
        if ( !logjobupdate( "cancelled", true, $error_json_exit, $uuid ) ) {
-           __~debug:cancel{error_log( "jobcancel() $uuid logjobupdate error $db_errors\n", 3, "/tmp/mylog" );}
+           __~debug:cancel{error_log( "jobcancel() $uuid logjobupdate error $ga_db_errors\n", 3, "/tmp/mylog" );}
        }
        logstoprunning( false, $uuid );
 
@@ -851,7 +916,7 @@ function jobcancel( $jobs,  $error_json_exit = false, $is_admin = false ) {
         $uuid = $k;
         __~debug:cancel{error_log( "jobcancel() try for $uuid\n", 3, "/tmp/mylog" );}
         if ( !logjobupdate( "cancelled", true, $error_json_exit, $uuid ) ) {
-            __~debug:cancel{error_log( "jobcancel() $uuid logjobupdate error $db_errors\n", 3, "/tmp/mylog" );}
+            __~debug:cancel{error_log( "jobcancel() $uuid logjobupdate error $ga_db_errors\n", 3, "/tmp/mylog" );}
         }
     }
 
@@ -865,4 +930,3 @@ function jobcancel( $jobs,  $error_json_exit = false, $is_admin = false ) {
     $GLOBALS[ 'lastnotice' ] = $msgs;
     return true;
 }
-?>

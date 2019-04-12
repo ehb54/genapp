@@ -142,4 +142,3 @@ if ( isset( $testing_example ) ) {
     }
 }
 
-?>

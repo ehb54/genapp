@@ -320,6 +320,3 @@ os_delete( $json->_clusternodecount, $uuid );
 sendudpmsg( "" );
 
 echo $results;
-
-
-?>

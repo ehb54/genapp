@@ -23,18 +23,16 @@ if ( !isset( $_SESSION[ $window ][ 'logon' ] ) ||
     exit();
 }
 
-try {
-    $m = new MongoClient(
-         __~mongo:url{"__mongo:url__"}
-         __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-         );
-} catch ( Exception $e ) {
-    $results[ 'error' ] .= "Could not connect to the db " . $e->getMessage();
-    echo (json_encode($results));
-    exit();
-}
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
 
-if ( $doc = $m->__application__->license->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) ) ) {
+ga_db_open( true );
+
+if ( $doc = 
+     ga_db_output(
+         ga_db_findOne( 'license', '', [ "name" => $_SESSION[ $window ][ 'logon' ] ] 
+         ) 
+     ) 
+    ) {
     $results[ 'license' ] = $doc;
 } else {
     $results[ 'license' ] = (object)array();
@@ -54,4 +52,4 @@ if ( strlen( $_REQUEST[ "_logon" ] ) ) {
 }
 
 echo (json_encode($results));
-?>
+

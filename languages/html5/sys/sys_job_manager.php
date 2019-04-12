@@ -162,5 +162,3 @@ if ( !$anydone )
 
 echo json_encode( $results );
 exit();
-
-?>

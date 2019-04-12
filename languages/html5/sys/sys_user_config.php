@@ -16,8 +16,8 @@ if ( !isset( $_SESSION[ $window ] ) )
    $_SESSION[ $window ] = array( "logon" => "", "project" => "" );
 }
 
-date_default_timezone_set( 'UTC' );
-$now = new MongoDate();
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
+$now =ga_db_output( ga_db_date() );
 
 if ( !isset( $_SESSION[ $window ][ 'logon' ] ) ||
      !isset( $_REQUEST[ '_logon' ] ) )
@@ -36,27 +36,24 @@ if ( $_REQUEST[ '_logon' ] != $_SESSION[ $window ][ 'logon' ] )
    unset( $_SESSION[ $window ][ 'logon' ] );
    $results[ '_logon' ] = "";
    $results[ 'error'  ] = 'Possible security violation user mismatch. ';
-   try {
-      $m = new MongoClient(
-         __~mongo:url{"__mongo:url__"}
-         __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-      );
-   } catch ( Exception $e ) {
-      $results[ 'error' ] .= "Could not connect to the db " . $e->getMessage();
-      exit();
-   }
 
-   $coll = $m->__application__->security;
+   ga_db_open( true );
+
    $insert[ 'requestuser' ] = $_REQUEST[ '_logon' ];
    $insert[ 'sessionuser' ] = $savelogon;
    $insert[ 'remoteip'    ] = isset( $_SERVER[ 'REMOTE_ADDR' ] ) ? $_SERVER[ 'REMOTE_ADDR' ] : "not from an ip";
    $insert[ 'when'        ] = $now;
 
-   try {
-      $coll->insert( $insert__~mongojournal{, array("j" => true )} );
-   } catch(MongoCursorException $e) {
-      $results[ 'error' ] .= "Error updating the database. " . $e->getMessage() ;
-      exit();
+   if ( !ga_db_status(
+             ga_db_insert(
+                 'security',
+                 '',
+                 $insert
+                 )
+        )
+       ) {
+       $results[ 'error' ] .= "Error updating the database. " . $ga_db_errors ;
+       exit();
    }
 
    require_once "../mail.php";
@@ -66,7 +63,7 @@ if ( $_REQUEST[ '_logon' ] != $_SESSION[ $window ][ 'logon' ] )
            'requestuser: ' . $insert[ 'requestuser' ] . "\n" .
            'sessionuser: ' . $insert[ 'sessionuser' ] . "\n" .
            'remoteip:    ' . $insert[ 'remoteip' ] . "\n" .
-           'when:        ' . date('Y-m-d H:i:s', $insert[ 'when' ]->sec) . " UTC\n" .
+           'when:        ' . date('Y-m-d H:i:s', ga_db_date_secs( $insert[ 'when' ] ) ) . " UTC\n" .
            '' );
    echo (json_encode($results));
    exit();
@@ -79,24 +76,21 @@ if ( !sizeof( $_REQUEST ) )
     exit();
 }
 
-try {
-     $m = new MongoClient(
-         __~mongo:url{"__mongo:url__"}
-         __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-         );
-} catch ( Exception $e ) {
-    $results[ 'error' ] = "Could not connect to the db " . $e->getMessage();
-    echo (json_encode($results));
-    exit();
-}
-
-$coll = $m->__application__->users;
+ga_db_open( true );
 
 $results[ 'status' ] = "";
 
 $do_update = 0;
-if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) ) )
-{
+
+if ( $doc =
+     ga_db_output(
+         ga_db_findOne( 
+             'users',
+             '',
+             [ "name" => $_SESSION[ $window ][ 'logon' ] ]
+         )
+     )
+    ) {
    if ( isset( $_REQUEST[ 'newproject' ] ) &&
         $_REQUEST[ 'newproject' ] == "on" )
    {
@@ -264,7 +258,7 @@ if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) )
 
          mymail( $doc[ 'email' ] , 'password change notice __application__', "Your password has been changed\n" .
                  'remoteip:    ' . $update[ '$set' ][ 'passwordchangeip' ] . "\n" .
-                 'when:        ' . date('Y-m-d H:i:s', $update[ '$set' ][ 'passwordchangewhen' ]->sec) . " UTC\n" .
+                 'when:        ' . date('Y-m-d H:i:s', ga_db_date_secs( $update[ '$set' ][ 'passwordchangewhen' ] ) ) . " UTC\n" .
                  "\n" . 'If you do not recognize this change please forward this email with a comment to ' . $appconfig->mail->admin . "\n" .
                  '' );
 
@@ -308,7 +302,7 @@ if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) )
          mymail( $doc[ 'email' ] , 'email change notice __application__', "Your email address has been changed\n" .
                  'new email:   ' . $email1 . "\n" .
                  'remoteip:    ' . $update[ '$set' ][ 'emailchangeip' ] . "\n" .
-                 'when:        ' . date('Y-m-d H:i:s', $update[ '$set' ][ 'emailchangewhen' ]->sec) . " UTC\n" .
+                 'when:        ' . date('Y-m-d H:i:s', ga_db_date_secs( $update[ '$set' ][ 'emailchangewhen' ] ) ) . " UTC\n" .
                  "\n" . 'If you do not recognize this change please forward this email with a comment to ' . $appconfig->mail->admin . "\n" .
                  '' );
 
@@ -390,11 +384,16 @@ if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) )
 
    if ( $do_update )
    {
-      try {
-        $coll->update( array( "name" => $_SESSION[ $window ][ 'logon' ] ), 
-                       $update__~mongojournal{, array("j" => true ) } );
-      } catch(MongoCursorException $e) {
-         $results[ 'error' ]  .= "Error updating the database. " . $e->getMessage();
+       if ( !ga_db_status( 
+                 ga_db_update(
+                     'users',
+                     '',
+                     [ "name" => $_SESSION[ $window ][ 'logon' ] ],
+                     $update
+                     )
+            )
+           ) {
+         $results[ 'error' ]  .= "Error updating the database. " . $ga_db_errors;
          $results[ 'status' ] .= "Unable to update user record. ";
          echo (json_encode($results));
          exit();
@@ -434,7 +433,16 @@ function update_colors() {
 }
 
 if ( isset( $xsedeadd ) ) {
-    if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ), array( "xsedeproject" => 1 ) ) ) {
+    if ( $doc =
+         ga_db_output( 
+             ga_db_findOne(
+                 'users',
+                 '',
+                 [ "name" => $_SESSION[ $window ][ 'logon' ] ],
+                 [ "xsedeproject" => 1 ]
+             )
+         )
+        ) {
         if ( isset( $doc[ 'xsedeproject' ] ) ) {
             $results[ '_xsedeproject' ] = [];
             foreach ( $doc[ 'xsedeproject' ] as $v ) {
@@ -453,4 +461,3 @@ if ( strlen( trim( $results[ 'error' ] ) ) == 0 )
 
 echo (json_encode($results));
 exit();
-?>

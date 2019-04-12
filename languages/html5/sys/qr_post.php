@@ -89,4 +89,3 @@ fwrite( $fp, json_encode( $forward ) );
 fclose( $fp );
 $results[ '_status' ] = 'complete';
 echo (json_encode($results));
-?>

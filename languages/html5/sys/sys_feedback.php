@@ -147,4 +147,3 @@ if ( mymail_attach(
 
 echo (json_encode($results));
 exit();
-?>

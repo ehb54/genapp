@@ -42,26 +42,28 @@ EOT;
     $error_msg = "<p>We encountered an internal error with this application.</p><p>The administrators have been notified of the details via email.</p><p>We apologize for any inconvenience.</p>";
     $url = "http://" . $app->hostname . "/__application__/ajax/__menu:id__/__menu:modules:id__.php?_r=$r";
 
+    require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
     // check mongo
-    try {
-        $m = new MongoClient(
-             __~mongo:url{"__mongo:url__"}
-             __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-             );
-    } catch ( Exception $e ) {
-        $db_error = "Error connecting to the database. " . $e->getMessage();
-        $msg = $db_error . "\n" . "url: $url\n";
+
+    if ( !ga_db_status( ga_db_open() ) ) {
+        $msg = $ga_db_errors . "\n" . "url: $url\n";
         error_mail( "[mongodb][__menu:modules:id__.php][r0] $msg" );
         $html .= "$error_msg</body></html>";
         echo $html;
         exit();
     }
 
-    // check userid
+    # check userid
         
-    $coll = $m->__application__->users;
-
-    if ( $doc = $coll->findOne( array( "_id" => new MongoId( $r ) ) ) ) {
+    if ( $doc =
+         ga_db_output( 
+             ga_db_findOne( 
+                 'users',
+                 '',
+                 [ "_id" => ga_db_output( ga_db_Id( $r ) ) ]
+             )
+         )
+        ) {
         // probably also verify time ? maybe provide a link to resend the email
         if ( !isset( $doc[ 'needsemailverification' ] ) ||
              $doc[ 'needsemailverification' ] != "pending" ) {
@@ -69,12 +71,17 @@ EOT;
         } else {
             $update = [];
             $update[ '$set' ][ 'needsemailverification' ] = "verified";
-            try {
-                $coll->update( array( "_id" => new MongoId( $r ) ), 
-                               $update__~mongojournal{, array("j" => true )} );
-            } catch(MongoCursorException $e) {
-                $db_error = "Error updating the database. " . $e->getMessage();
-                $msg = $db_error . "\n" . "url: $url\n";
+            
+            if ( !ga_db_status(
+                      ga_db_update(
+                          'users',
+                          '',
+                          [ "_id" => ga_db_output( ga_db_Id( $r ) ) ],
+                          $update
+                          )
+                      )
+                ) {
+                $msg = $ga_db_errors . "\n" . "url: $url\n";
                 error_mail( "[mongodb][__menu:modules:id__.php][r1] $msg" );
                 $html .= "$error_msg</body></html>";
                 echo $html;
@@ -110,4 +117,3 @@ EOT;
 $html = $notfoundhtml;
 echo $html;
 exit();
-?>   

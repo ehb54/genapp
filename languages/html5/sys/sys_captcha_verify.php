@@ -24,51 +24,27 @@ if (
     exit();
 }
 
-date_default_timezone_set("UTC");
-$now = new MongoDate();
-try {
-    $m = new MongoClient(
-         __~mongo:url{"__mongo:url__"}
-         __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-    );
-} catch ( Exception $e ) {
-    $results[ 'error' ] = "Could not connect to the db " . $e->getMessage();
-    exit();
-}
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
+$now = ga_db_output( ga_db_date() );
+
+ga_db_open( true );
 
 $id      = $_REQUEST[ "id" ];
 $captcha = $_REQUEST[ "captcha" ];
 
-$coll = $m->__application__->captcha;
-
-if ( $doc = $coll->findOne( array( "_id" => $id ) ) ) {
-    $expires = $doc[ 'time' ];
-    $expires->sec += 3 * 60;
+if ( $doc = ga_db_output( ga_db_findOne( 'captcha', '', [ "_id" => $id  ] ) ) ) {
+    $expires = ga_db_add_secs( $doc[ 'time' ], 3 * 60 );
 
     if ( $now < $expires &&
          $doc[ 'captcha' ] == $captcha &&
          $doc[ 'window' ] == $_REQUEST[ '_window' ] ) {
-        try {
-            $coll->update( array( "_id" => $id ),
-                           array( '$set' => array( 'success' => 1 ) )
-                           __~mongojournal{, array("j" => true )} );
-        } catch(MongoCursorException $e) {
-            $results[ 'error' ] = "Error updating the db " . $e->getMessage();
-            exit();
-        }
+        ga_db_update( 'captcha', '', [ "_id" => $id  ], [ '$set' => [ 'success' => 1 ] ], [], true );
         $results[ 'success' ] = 1;
     } else {
-        try {
-            $coll->remove( array( "_id" => $id ), 
-                           array( __~mongojournal{"j" => true, }"justOne" => true ) );
-        } catch(MongoCursorException $e) {
-            $results[ 'error' ] = "Error cleaning the db " . $e->getMessage();
-            exit();
-        }
+        ga_db_remove( 'captcha', '', [ "_id" => $id  ], [], true );
     }
 }
 
 echo json_encode( $results );
 exit();
 
-?>

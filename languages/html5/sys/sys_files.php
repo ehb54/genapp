@@ -646,4 +646,3 @@ if ( $is_spec_fc )
 ob_end_clean();
 
 echo json_encode( $result_dirs );
-?>

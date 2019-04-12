@@ -30,28 +30,41 @@ EOT;
     $url = "http://" . $app->hostname . "/__application__/ajax/__menu:id__/__menu:modules:id__.php?_r=$r";
 
     // check mongo
-    try {
-        $m = new MongoClient(
-            __~mongo:url{"__mongo:url__"}
-            __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-            );
-    } catch ( Exception $e ) {
-        $db_error = "Error connecting to the database. " . $e->getMessage();
-        $msg = $db_error . "\n" . "url: $url\n";
+    require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
+
+    if ( !ga_db_status( ga_db_open() ) ) {
+        $msg = $ga_db_errors . "\n" . "url: $url\n";
         error_mail( "[mongodb][__menu:modules:id__.php][r0] $msg" );
         $html .= "$error_msg</body></html>";
         echo $html;
         exit();
     }
 
-    if ( $doc = $m->__application__->{'licenserequests___menu:modules:id__'}->findOne( array( '$or' => array( array( "_id" => $r ), array( "no" => $r ) ) ) ) ) {
+    if ( $doc =
+         ga_db_output(
+             ga_db_findOne( 
+                 'licenserequests___menu:modules:id__',
+                 '',
+                 [ '$or' => [ [ "_id" => $r ], [ "no" => $r ] ] ]
+             )
+         )
+        ) {
         if ( isset( $doc[ 'msg' ] ) ) {
             $html .= $doc[ 'msg' ];
         }
+        
+        # update licenserequests___menu:modules:id__
+        $now = ga_db_output( ga_db_date() );
 
-        // update licenserequests___menu:modules:id__
-        $now = new MongoDate();
-        if ( $docuser = $m->__application__->license->findOne( array( 'name' => $doc[ 'user' ] ) ) )  {
+        if ( $docuser =
+             ga_db_output(
+                 ga_db_findOne( 
+                     'license',
+                     '',
+                     [ 'name' => $doc[ 'user' ] ]
+                 )
+             )
+            ) {
             if ( 
                 isset( $docuser[ "__menu:modules:id__" ] ) &&
                 isset( $docuser[ "__menu:modules:id__" ][ "status" ] ) &&
@@ -70,32 +83,53 @@ EOT;
             }
             $status = "denied";
         }
-
-        try {
-            $m->__application__->{'licenserequests___menu:modules:id__'}->update(
-                array( '_id' => $doc[ '_id' ] ),
-                array( '$push' => array( "events" => array( "what" => "$status from licensor", "when" => $now, "ip" => isset( $_SERVER[ 'REMOTE_ADDR' ] ) ? $_SERVER[ 'REMOTE_ADDR' ] : "not from an ip" ) ) )
-                __~mongojournal{, array("j" => true )} 
-                );
-        } catch( MongoCursorException $e ) {
-            $db_error = "Error updating. " . $e->getMessage();
-            error_mail( "[mongodb][__menu:modules:id__.php][r1] " . $db_error );
+        
+        if ( !ga_db_status(
+                  ga_db_update(
+                      'licenserequests___menu:modules:id__',
+                      '',
+                      [ '_id' => $doc[ '_id' ] ],
+                      [ '$push' => 
+                        [ "events" => 
+                          [ "what" => "$status from licensor",
+                            "when" => $now, 
+                            "ip" => isset( $_SERVER[ 'REMOTE_ADDR' ] ) ? 
+                            $_SERVER[ 'REMOTE_ADDR' ] : "not from an ip" 
+                          ] 
+                        ]
+                      ]
+                  )
+             )
+            ) {
+            error_mail( "[mongodb][__menu:modules:id__.php][r1] " . $ga_db_errors );
         }
 
         // update license collection
 
-        try {
-            $m->__application__->license->update(
-                array( "name"  => $doc[ 'user' ] ),
-                array( 
-                    '$set'  => array( "__menu:modules:id__" => array( "status" => $status, "request" => $doc[ 'request' ] ) ),
-                    '$push' => array( "__menu:modules:id___events" => array( "what" => "$status from licensor", "when" => $now ) )
-                ),
-                array( "upsert" => true__~mongojournal{, "j" => true} ) 
-                );
-        } catch( MongoCursorException $e ) {
-            $db_error = "Error updating. " . $e->getMessage();
-            error_mail( "[mongodb][__menu:modules:id__.php][r2] " . $db_error );
+        if ( !ga_db_status(
+                  ga_db_update(
+                      'license',
+                      '',
+                      [ "name"  => $doc[ 'user' ] ],
+                      [ 
+                        '$set'  => [
+                            "__menu:modules:id__" => [
+                                "status" => $status,
+                                "request" => $doc[ 'request' ] 
+                            ]
+                        ],
+                        '$push' => [
+                            "__menu:modules:id___events" => [
+                                "what" => "$status from licensor",
+                                "when" => $now 
+                                ]
+                        ]
+                      ],
+                      [ "upsert" => true ]
+                  )
+             )
+            ) {
+            error_mail( "[mongodb][__menu:modules:id__.php][r2] " . $ga_db_errors );
         }
         echo $html;
         exit();
@@ -172,15 +206,12 @@ if ( !isset( $_REQUEST[ '_uuid' ] ) )
 }
 
 require_once "../mail.php";
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
 
+# make sure we can store the record in the db
 
-// make sure we can store the record in the db
-
-try {
-    $m = new MongoClient();
-} catch ( Exception $e ) {
-    $db_error = "Error connecting to the database. " . $e->getMessage();
-    error_mail( "[mongodb][__menu:modules:id__.php][0] " . $db_error );
+if ( !ga_db_status( ga_db_open() ) ) {
+    error_mail( "[mongodb][__menu:modules:id__.php][0] " . $ga_db_errors );
     $results[ '_status' ]= 'failed';
     $results[ '_message' ] =
         array( 
@@ -193,28 +224,33 @@ try {
 
 // create the license request
 
-$coll = $m->__application__->{'licenserequests___menu:modules:id__'};
-
 $cstrong = true;
 $keyyes  = bin2hex( openssl_random_pseudo_bytes ( 20, $cstrong ) );
 $keyno   = bin2hex( openssl_random_pseudo_bytes ( 20, $cstrong ) );
 
-$now = new MongoDate();
+$now = ga_db_output( ga_db_date() );
 
-try {
-    $coll->insert( 
-        Array( 
-            '_id'      => $keyyes,
-            'no'       => $keyno,
-            'events'   => Array( Array( "what" => "request sent", "when" => $now ) ),
-            'user'     => $logon,
-            'request'  => $_REQUEST,
-            'remoteip' => isset( $_SERVER[ 'REMOTE_ADDR' ] ) ? $_SERVER[ 'REMOTE_ADDR' ] : "not from an ip"
-        )
-        __~mongojournal{, array("j" => true )} );
-} catch(MongoCursorException $e) {
-    $db_error = "Error inserting. " . $e->getMessage();
-    error_mail( "[mongodb][__menu:modules:id__.php][1] " . $db_error );
+if ( !ga_db_status(
+          ga_db_insert(
+              'licenserequests___menu:modules:id__',
+              '',
+              [
+               '_id'      => $keyyes,
+               'no'       => $keyno,
+               'events'   => [
+                   [
+                    "what" => "request sent", 
+                    "when" => $now 
+                   ] 
+               ],
+               'user'     => $logon,
+               'request'  => $_REQUEST,
+               'remoteip' => isset( $_SERVER[ 'REMOTE_ADDR' ] ) ? $_SERVER[ 'REMOTE_ADDR' ] : "not from an ip"
+              ]
+          )
+     )
+    ) {
+    error_mail( "[mongodb][__menu:modules:id__.php][1] " . $ga_db_errors );
     $results[ '_status' ]= 'failed';
     $results[ '_message' ] =
         array( 
@@ -312,32 +348,45 @@ if ( mymail( $to, $subject, $body ) ) {
 
     // store in mongodb 
 
-    try {
-        $coll->update( array( "_id" => $keyyes ), 
-                       array( '$set' => array( 'sent' => 'yes', "msg" => $summary_html ) )
-                       __~mongojournal{, array("j" => true )} );
-    } catch(MongoCursorException $e) {
-        $db_error = "Error updating. " . $e->getMessage();
-        error_mail( "[mongodb][__menu:modules:id__.php][2] " . $db_error );
+    if ( !ga_db_status(
+              ga_db_update(
+                  'licenserequests___menu:modules:id__',
+                  '',
+                  [ "_id" => $keyyes ],
+                  [ '$set' => [ 'sent' => 'yes', 
+                                "msg" => $summary_html ] ]
+              )
+         )
+        ) {
+        error_mail( "[mongodb][__menu:modules:id__.php][2] " . $ga_db_errors );
     }
 
     // store in license
-    $coll = $m->__application__->license;
 
-    try {
-        $coll->update(
-            array( "name"  => $logon ),
-            array( 
-                '$set'  => array( "__menu:modules:id__" => array( "status" => "pending" ) ),
-                '$push' => array( "__menu:modules:id___events" => array( "what" => "sent request", "when" => $now ) )
-            ),
-            array( "upsert" => true__~mongojournal{, "j" => true} ) 
-            );
-    } catch( MongoCursorException $e ) {
-        $db_error = "Error updating. " . $e->getMessage();
-        error_mail( "[mongodb][__menu:modules:id__.php][3] " . $db_error );
+    if ( !ga_db_status(
+              ga_db_update(
+                  'license',
+                  '',
+                  [ "name"  => $logon ],
+                  [
+                   '$set'  => [
+                       "__menu:modules:id__" => [
+                           "status" => "pending" 
+                       ]
+                   ],
+                   '$push' => [ 
+                       "__menu:modules:id___events" => [
+                           "what" => "sent request", 
+                           "when" => $now 
+                       ]
+                   ]
+                  ],
+                  [ 'upsert' => true ]
+              )
+         )
+        ) {
+        error_mail( "[mongodb][__menu:modules:id__.php][3] " . $ga_db_errors );
     }
 }
 
 echo json_encode($results);
-?>

@@ -100,19 +100,32 @@ if ( !isset( $uniquedir ) &&
 // connect
    if ( !isset( $nojobcontrol ) )
    {
-      db_connect( true );
-      $coll = $use_db->__application__->joblock;
-      if ( $doc = $coll->findOne( array( "name" => $checkrunning ) ) )
-      {
+      ga_db_open( true );
+      if ( $doc = 
+           ga_db_output(
+               ga_db_findOne(
+                   'joblock',
+                   '',
+                   [ 'name' => $checkrunning ]
+               )
+           )
+          ) {
           $results[ 'error' ] = "A job is already running in this project, please wait until it completes or change projects";
           $results[ '_status' ] = 'failed';
           echo (json_encode($results));
           exit();
       }
-      try {
-          $coll->insert( array( "name" => $checkrunning, "jobweight" => $GLOBALS[ 'jobweight' ], "user" => $GLOBALS[ 'logon' ] )__~mongojournal{, array("j" => true )});
-      } catch(MongoCursorException $e) {
-          $results[ 'error' ] = "A job is already running in this project, please wait until it completes or change projects. " . $e->getMessage();
+      if ( !ga_db_status(
+                ga_db_insert(
+                    'joblock',
+                    '',
+                    [ "name" => $checkrunning,
+                      "jobweight" => $GLOBALS[ 'jobweight' ],
+                      "user" => $GLOBALS[ 'logon' ] ]
+                )
+           )
+          ) {
+          $results[ 'error' ] = "A job is already running in this project, please wait until it completes or change projects. " . $ga_db_errors;
           $results[ '_status' ] = 'failed';
           echo (json_encode($results));
           exit();
@@ -138,11 +151,17 @@ if ( !file_exists( $dir ) )
       ob_end_clean();
       if ( isset( $checkrunning ) )
       {
-         try {
-             $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{ "j" => true,} "justOne" => true ));
-         } catch(MongoCursorException $e) {
-             $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
-         }
+          if ( !ga_db_status(
+                    ga_db_remove(
+                        'joblock',
+                        '',
+                        [ "name" => $checkrunning ],
+                        [ 'justOne' => true ]
+                    ) 
+               )
+              ) {
+              $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
+          }
       }
       $results[ "error" ] .= "Could not create directory " . $dir . " " . $cont;
       $results[ '_status' ] = 'failed';
@@ -164,11 +183,17 @@ if ( !file_exists( $logdir ) )
       ob_end_clean();
       if ( isset( $checkrunning ) )
       {
-         try {
-             $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{ "j" => true,} "justOne" => true ));
-         } catch(MongoCursorException $e) {
-             $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
-         }
+          if ( !ga_db_status(
+                    ga_db_remove(
+                        'joblock',
+                        '',
+                        [ "name" => $checkrunning ],
+                        [ 'justOne' => true ]
+                    ) 
+               )
+              ) {
+              $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
+          }
       }
       $results[ "error" ] .= "Could not create directory " . $logdir . " " . $cont;
       $results[ '_status' ] = 'failed';
@@ -188,10 +213,16 @@ $app_json = json_decode( file_get_contents( "__appconfig__" ) );
 if ( $app_json == NULL ) {
     if ( isset( $checkrunning ) )
     {
-        try {
-            $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{ "j" => true,} "justOne" => true ));
-        } catch(MongoCursorException $e) {
-            $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
+        if ( !ga_db_status(
+                  ga_db_remove(
+                      'joblock',
+                      '',
+                      [ "name" => $checkrunning ],
+                      [ 'justOne' => true ]
+                  ) 
+             )
+            ) {
+            $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
         }
     }
     $results[ "_message" ] = [ "icon" => "toast.png",
@@ -237,38 +268,50 @@ if ( !isset( $submitpolicy ) )
         ( !isset( $_SESSION[ $window ][ 'logon' ] ) ||
           strlen( $_SESSION[ $window ][ 'logon' ] ) == 0 ) )
    {
-         if ( isset( $checkrunning ) )
-         {
-            try {
-                $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{"j" => true,} "justOne" => true ));
-            } catch(MongoCursorException $e) {
-                $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
-            }
-         }
+       if ( isset( $checkrunning ) )
+       {
+           if ( !ga_db_status(
+                     ga_db_remove(
+                         'joblock',
+                         '',
+                         [ "name" => $checkrunning ],
+                         [ 'justOne' => true ]
+                     ) 
+                )
+               ) {
+               $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
+           }
+       }
 
-         $results[ "error" ] .= "You must be logged on to submit";
-         $results[ '_status' ] = 'failed';
-         echo (json_encode($results));
-         exit();
+       $results[ "error" ] .= "You must be logged on to submit";
+       $results[ '_status' ] = 'failed';
+       echo (json_encode($results));
+       exit();
    }
 } else {
    if ( $submitpolicy == "login" &&
         ( !isset( $_SESSION[ $window ][ 'logon' ] ) ||
           strlen( $_SESSION[ $window ][ 'logon' ] ) == 0 ) )
    {
-         if ( isset( $checkrunning ) )
-         {
-            try {
-                $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{"j" => true,} "justOne" => true ));
-            } catch(MongoCursorException $e) {
-                $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
-            }
-         }
-
-         $results[ "error" ] .= "You must be logged on to submit";
-         $results[ '_status' ] = 'failed';
-         echo (json_encode($results));
-         exit();
+       if ( isset( $checkrunning ) )
+       {
+           if ( !ga_db_status(
+                     ga_db_remove(
+                         'joblock',
+                         '',
+                         [ "name" => $checkrunning ],
+                         [ 'justOne' => true ]
+                     ) 
+                )
+               ) {
+               $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
+           }
+       }
+       
+       $results[ "error" ] .= "You must be logged on to submit";
+       $results[ '_status' ] = 'failed';
+       echo (json_encode($results));
+       exit();
    }
 }
 
@@ -277,53 +320,71 @@ $cmdprefix = "";
 if ( isset( $_SESSION[ $window ][ 'resourcedefault' ] ) &&
      $_SESSION[ $window ][ 'resourcedefault' ] == "disabled" )
 {
-      if ( isset( $checkrunning ) )
-      {
-         try {
-             $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{"j" => true,} "justOne" => true ));
-         } catch(MongoCursorException $e) {
-             $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
-         }
-      }
-      $results[ "error" ] .= "Job submission is currently disabled";
-      $results[ '_status' ] = 'failed';
-      echo (json_encode($results));
-      exit();
+    if ( isset( $checkrunning ) )
+    {
+        if ( !ga_db_status(
+                  ga_db_remove(
+                      'joblock',
+                      '',
+                      [ "name" => $checkrunning ],
+                      [ 'justOne' => true ]
+                  ) 
+             )
+            ) {
+            $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
+        }
+    }
+    $results[ "error" ] .= "Job submission is currently disabled";
+    $results[ '_status' ] = 'failed';
+    echo (json_encode($results));
+    exit();
 }
 
 if ( isset( $useresource ) &&
      !isset( $_SESSION[ $window ][ 'resources' ]->$useresource ) )
 {
-      if ( isset( $checkrunning ) )
-      {
-         try {
-             $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{"j" => true,} "justOne" => true ));
-         } catch(MongoCursorException $e) {
-             $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
-         }
-      }
+    if ( isset( $checkrunning ) )
+    {
+        if ( !ga_db_status(
+                  ga_db_remove(
+                      'joblock',
+                      '',
+                      [ "name" => $checkrunning ],
+                      [ 'justOne' => true ]
+                  ) 
+             )
+            ) {
+            $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
+        }
+    }
 
-      $results[ "error" ] .= "module specified resource " . $useresource . " is not defined in appconfig";
-      $results[ '_status' ] = 'failed';
-      echo (json_encode($results));
-      exit();
+    $results[ "error" ] .= "module specified resource " . $useresource . " is not defined in appconfig";
+    $results[ '_status' ] = 'failed';
+    echo (json_encode($results));
+    exit();
 }
 
 if ( !isset( $_SESSION[ $window ][ 'resources' ]->$_SESSION[ $window ][ 'resourcedefault' ] ) &&
      !isset( $useresource ) )
 {
-     if ( isset( $checkrunning ) )
-     {
-        try {
-            $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{"j" => true,} "justOne" => true ));
-        } catch(MongoCursorException $e) {
-            $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
+    if ( isset( $checkrunning ) )
+    {
+        if ( !ga_db_status(
+                  ga_db_remove(
+                      'joblock',
+                      '',
+                      [ "name" => $checkrunning ],
+                      [ 'justOne' => true ]
+                  ) 
+             )
+            ) {
+            $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
         }
-     }
-     $results[ "error" ] .= "No default resource specified in appconfig and no resource defined in module. This could be the result of an invalid appconfig.json";
-     $results[ '_status' ] = 'failed';
-     echo (json_encode($results));
-     exit();
+    }
+    $results[ "error" ] .= "No default resource specified in appconfig and no resource defined in module. This could be the result of an invalid appconfig.json";
+    $results[ '_status' ] = 'failed';
+    echo (json_encode($results));
+    exit();
 } else {
    if ( isset( $useresource ) )
    {
@@ -390,11 +451,19 @@ if ( isset( $app_json->submitblock ) ) {
     if ( $blocked ) {
         __~debug:submitblock{error_log( "base.php submit block blocked\n", 3, "/tmp/mylog" );}
         $results[ "_message" ] = $blocked_msg;
-        if ( isset( $checkrunning ) ) {
-            try {
-                $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{"j" => true,} "justOne" => true ));
-            } catch(MongoCursorException $e) {
-                $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
+
+        if ( isset( $checkrunning ) )
+        {
+            if ( !ga_db_status(
+                      ga_db_remove(
+                          'joblock',
+                          '',
+                          [ "name" => $checkrunning ],
+                          [ 'justOne' => true ]
+                      ) 
+                 )
+                ) {
+                $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
             }
         }
         $results[ '_status' ] = 'failed';
@@ -516,47 +585,59 @@ if ( sizeof( $_FILES ) ) {
          {
             if ( $v[ 'error' ][ $k1 ] )
             {
-               if ( isset( $checkrunning ) )
-               {
-                  try {
-                      $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{"j" => true,} "justOne" => true ));
-                  } catch(MongoCursorException $e) {
-                      $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
-                  }
-               }
-               if ( !isset( $results[ "error" ] ) )
-               {
-                   $results[ "error" ] = "";
-               }
-               if ( is_string( $v[ 'name' ][ $k1 ] ) && !strlen( $v[ 'name' ][ $k1 ] ) )
-               {
-                  $results[ "error" ] .= "Missing file input for identifier " . $k;
-               } else {
-                  $results[ "error" ] .= "Error uploading file " . $v[ 'name' ][ $k1 ] . " Error code:" . $v[ 'error' ][ $k1 ] . " " . fileerr_msg( $v[ 'error' ][ $k1 ] );
-               }
-               $results[ '_status' ] = 'failed';
-               echo (json_encode($results));
-               exit();
+                if ( isset( $checkrunning ) )
+                {
+                    if ( !ga_db_status(
+                              ga_db_remove(
+                                  'joblock',
+                                  '',
+                                  [ "name" => $checkrunning ],
+                                  [ 'justOne' => true ]
+                              ) 
+                         )
+                        ) {
+                        $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
+                    }
+                }
+                if ( !isset( $results[ "error" ] ) )
+                {
+                    $results[ "error" ] = "";
+                }
+                if ( is_string( $v[ 'name' ][ $k1 ] ) && !strlen( $v[ 'name' ][ $k1 ] ) )
+                {
+                    $results[ "error" ] .= "Missing file input for identifier " . $k;
+                } else {
+                    $results[ "error" ] .= "Error uploading file " . $v[ 'name' ][ $k1 ] . " Error code:" . $v[ 'error' ][ $k1 ] . " " . fileerr_msg( $v[ 'error' ][ $k1 ] );
+                }
+                $results[ '_status' ] = 'failed';
+                echo (json_encode($results));
+                exit();
             }
-//            error_log( "move_uploaded_file( " . $v[ 'tmp_name' ][ $k1 ] . ',' .  $dir . '/' . $v[ 'name' ][ $k1 ] . "\n", 3, "/var/tmp/my-errors.log");
+#            error_log( "move_uploaded_file( " . $v[ 'tmp_name' ][ $k1 ] . ',' .  $dir . '/' . $v[ 'name' ][ $k1 ] . "\n", 3, "/var/tmp/my-errors.log");
             if ( !move_uploaded_file( $v[ 'tmp_name' ][ $k1 ], $dir . '/' . $v[ 'name' ][ $k1 ] ) )
             {
-               if ( isset( $checkrunning ) )
-               {
-                  try {
-                      $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{"j" => true,} "justOne" => true ));
-                  } catch(MongoCursorException $e) {
-                      $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
-                  }
-               }
-               if ( !isset( $results[ "error" ] ) )
-               {
-                   $results[ "error" ] = "";
-               }
-               $results[ "error" ] .= "Could not move file " . $v[ 'name' ][ $k1 ];
-               $results[ '_status' ] = 'failed';
-               echo (json_encode($results));
-               exit();
+                if ( isset( $checkrunning ) )
+                {
+                    if ( !ga_db_status(
+                              ga_db_remove(
+                                  'joblock',
+                                  '',
+                                  [ "name" => $checkrunning ],
+                                  [ 'justOne' => true ]
+                              ) 
+                         )
+                        ) {
+                        $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
+                    }
+                }
+                if ( !isset( $results[ "error" ] ) )
+                {
+                    $results[ "error" ] = "";
+                }
+                $results[ "error" ] .= "Could not move file " . $v[ 'name' ][ $k1 ];
+                $results[ '_status' ] = 'failed';
+                echo (json_encode($results));
+                exit();
             }
             if ( !isset( $_REQUEST[ $k ] ) || !is_array( $_REQUEST[ $k ] ) )
             {
@@ -578,18 +659,24 @@ if ( sizeof( $_FILES ) ) {
             $f = $bdir . substr( base64_decode( $_REQUEST[ $_REQUEST[ '_selaltval_' . $k ] ][ 0 ] ), 2 );
             if ( !file_exists( $f ) )
             {
-               if ( isset( $checkrunning ) )
-               {
-                  try {
-                      $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{"j" => true,} "justOne" => true ));
-                  } catch(MongoCursorException $e) {
-                      $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
-                  }
-               }
-               $results[ "error" ] = "Missing file input for identifier " . $k;
-               $results[ '_status' ] = 'failed';
-               echo (json_encode($results));
-               exit();
+                if ( isset( $checkrunning ) )
+                {
+                    if ( !ga_db_status(
+                              ga_db_remove(
+                                  'joblock',
+                                  '',
+                                  [ "name" => $checkrunning ],
+                                  [ 'justOne' => true ]
+                              ) 
+                         )
+                        ) {
+                        $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
+                    }
+                }
+                $results[ "error" ] = "Missing file input for identifier " . $k;
+                $results[ '_status' ] = 'failed';
+                echo (json_encode($results));
+                exit();
             }
 
             if ( !isset( $_REQUEST[ $k ] ) || !is_array( $_REQUEST[ $k ] ) )
@@ -602,43 +689,55 @@ if ( sizeof( $_FILES ) ) {
          } else {
             if ( $v[ 'error' ] )
             {
-               if ( isset( $checkrunning ) )
-               {
-                  try {
-                      $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{"j" => true,} "justOne" => true ));
-                  } catch(MongoCursorException $e) {
-                      $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
-                  }
-               }
-               if ( !isset( $results[ "error" ] ) )
-               {
-                   $results[ "error" ] = "";
-               }
-               if ( is_string( $v[ 'name' ] ) && !strlen( $v[ 'name' ] ) )
-               {
-                  $results[ "error" ] .= "Missing file input for identifier " . $k;
-               } else {
-                  $results[ "error" ] .= "Error uploading file " . $v[ 'name' ] . " Error code:" . $v[ 'error' ] . " " . fileerr_msg( $v[ 'error' ] );
-               }
-               $results[ '_status' ] = 'failed';
-               echo (json_encode($results));
-               exit();
+                if ( isset( $checkrunning ) )
+                {
+                    if ( !ga_db_status(
+                              ga_db_remove(
+                                  'joblock',
+                                  '',
+                                  [ "name" => $checkrunning ],
+                                  [ 'justOne' => true ]
+                              ) 
+                         )
+                        ) {
+                        $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
+                    }
+                }
+                if ( !isset( $results[ "error" ] ) )
+                {
+                    $results[ "error" ] = "";
+                }
+                if ( is_string( $v[ 'name' ] ) && !strlen( $v[ 'name' ] ) )
+                {
+                    $results[ "error" ] .= "Missing file input for identifier " . $k;
+                } else {
+                    $results[ "error" ] .= "Error uploading file " . $v[ 'name' ] . " Error code:" . $v[ 'error' ] . " " . fileerr_msg( $v[ 'error' ] );
+                }
+                $results[ '_status' ] = 'failed';
+                echo (json_encode($results));
+                exit();
             }
 //         error_log( "move_uploaded_file( " . $v[ 'tmp_name' ] . ',' .  $dir . '/' . $v[ 'name' ] . "\n", 3, "/var/tmp/my-errors.log");
             if ( !move_uploaded_file( $v[ 'tmp_name' ], $dir . '/' . $v[ 'name' ] ) )
             {
-               if ( isset( $checkrunning ) )
-               {
-                  try {
-                      $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{"j" => true,} "justOne" => true ));
-                  } catch(MongoCursorException $e) {
-                      $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
-                  }
-               }
-               $results[ "error" ] .= "Could not move file " . $v[ 'name' ];
-               $results[ '_status' ] = 'failed';
-               echo (json_encode($results));
-               exit();
+                if ( isset( $checkrunning ) )
+                {
+                    if ( !ga_db_status(
+                              ga_db_remove(
+                                  'joblock',
+                                  '',
+                                  [ "name" => $checkrunning ],
+                                  [ 'justOne' => true ]
+                              ) 
+                         )
+                        ) {
+                        $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
+                    }
+                }
+                $results[ "error" ] .= "Could not move file " . $v[ 'name' ];
+                $results[ '_status' ] = 'failed';
+                echo (json_encode($results));
+                exit();
             }
             if ( !isset( $_REQUEST[ $k ] ) || !is_array( $_REQUEST[ $k ] ) )
             {
@@ -689,10 +788,16 @@ if ( sizeof( $_REQUEST ) )
         ob_end_clean();
         if ( isset( $checkrunning ) )
         {
-            try {
-                $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{"j" => true,} "justOne" => true ));
-            } catch(MongoCursorException $e) {
-                $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
+            if ( !ga_db_status(
+                      ga_db_remove(
+                          'joblock',
+                          '',
+                          [ "name" => $checkrunning ],
+                          [ 'justOne' => true ]
+                      ) 
+                 )
+                ) {
+                $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
             }
         }
         $results[ "error" ] .= "Could not write _input file data " . $cont;
@@ -812,11 +917,17 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
       ob_end_clean();
       if ( isset( $checkrunning ) )
       {
-         try {
-             $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{"j" => true,} "justOne" => true ));
-         } catch(MongoCursorException $e) {
-             $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
-         }
+          if ( !ga_db_status(
+                    ga_db_remove(
+                        'joblock',
+                        '',
+                        [ "name" => $checkrunning ],
+                        [ 'justOne' => true ]
+                    ) 
+               )
+              ) {
+              $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
+          }
       }
       $results[ "error" ] .= "Could not create directory " . $dir . " " . $cont;
       $results[ '_status' ] = 'failed';
@@ -837,11 +948,17 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
          ob_end_clean();
          if ( isset( $checkrunning ) )
          {
-            try {
-                $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{"j" => true,} "justOne" => true ));
-            } catch(MongoCursorException $e) {
-                $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
-            }
+             if ( !ga_db_status(
+                       ga_db_remove(
+                           'joblock',
+                           '',
+                           [ "name" => $checkrunning ],
+                           [ 'justOne' => true ]
+                       ) 
+                  )
+                 ) {
+                 $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
+             }
          }
          $results[ "error" ] .= "Could not write _args for remote submission " . $cont;
          $results[ '_status' ] = 'failed';
@@ -900,11 +1017,17 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
        ob_end_clean();
        if ( isset( $checkrunning ) )
        {
-          try {
-              $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{"j" => true,} "justOne" => true ));
-          } catch(MongoCursorException $e) {
-              $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
-          }
+           if ( !ga_db_status(
+                     ga_db_remove(
+                         'joblock',
+                         '',
+                         [ "name" => $checkrunning ],
+                         [ 'justOne' => true ]
+                     ) 
+                )
+               ) {
+               $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
+           }
        }
        $results[ "error" ] .= "Could not write _cmds_ for remote submission " . $cont;
        $results[ '_status' ] = 'failed';
@@ -972,11 +1095,17 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
 
         if ( isset( $checkrunning ) )
         {
-           try {
-               $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{"j" => true,} "justOne" => true ));
-           } catch(MongoCursorException $e) {
-               $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
-           }
+            if ( !ga_db_status(
+                      ga_db_remove(
+                          'joblock',
+                          '',
+                          [ "name" => $checkrunning ],
+                          [ 'justOne' => true ]
+                      ) 
+                 )
+                ) {
+                $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
+            }
         }
 
         if ( strlen( $results ) )
@@ -1009,21 +1138,34 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
     ob_end_clean();
     if ( isset( $checkrunning ) )
     {
-       try {
-           $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{"j" => true,} "justOne" => true ));
-       } catch(MongoCursorException $e) {
-           $test_json[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
-       }
-       $results = json_encode( $test_json );
+        if ( !ga_db_status(
+                  ga_db_remove(
+                      'joblock',
+                      '',
+                      [ "name" => $checkrunning ],
+                      [ 'justOne' => true ]
+                  ) 
+             )
+            ) {
+            $test_json[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
+        }
+        $results = json_encode( $test_json );
     }
 } else {
+
     if ( isset( $checkrunning ) )
     {
-       try {
-           $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{"j" => true,} "justOne" => true ));
-       } catch(MongoCursorException $e) {
-           $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
-       }
+        if ( !ga_db_status(
+                  ga_db_remove(
+                      'joblock',
+                      '',
+                      [ "name" => $checkrunning ],
+                      [ 'justOne' => true ]
+                  ) 
+             )
+            ) {
+            $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
+        }
     }
     $results[ "error" ] .= "PHP code received no \$_REQUEST?";
     echo (json_encode($results));
@@ -1045,4 +1187,4 @@ if ( sizeof( $_FILES ) )
 //   rmdir( $dir );
 }
 echo $results;
-?>
+

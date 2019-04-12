@@ -117,13 +117,8 @@ foreach ( $info as $k => $v ) {
 }
 
 # -------------- mongo running --------------
-# connect
-try {
-     $mongo = new MongoClient();
-} catch ( Exception $e ) {
-    echo "could not connect to mongodb\n";
-    exit();
-}
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
+ga_db_open( true );
 
 foreach ( $apps as $app => $v ) {
 
@@ -134,7 +129,14 @@ foreach ( $apps as $app => $v ) {
         #    print "checking $k\n";
         #    print_r( $phpmatch );
         #    print "count for $k " . count( $phpmatch ) . "\n";
-        $info[ $k ][ "mongorunning" ] += $mongocoll->findOne( array( "_id" => $k ) ) ? 1 : 0;
+        $info[ $k ][ "mongorunning" ] += 
+            ga_db_output( 
+                ga_db_find( 
+                    'running',
+                    '',
+                    [ "_id" => $k ]
+                )
+            ) ? 1 : 0;
     }
 }
 
@@ -158,5 +160,3 @@ if ( strlen( $dcmds ) ) {
 } else {
     print "All ok\n";
 }
-
-?>

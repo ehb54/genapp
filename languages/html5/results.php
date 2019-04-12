@@ -207,12 +207,19 @@ $test_json = json_decode( $wascancelled ? "{}" : $strresults, true );
 if ( !$wascancelled && $test_json == NULL ) {
     $cont = ob_get_contents();
     ob_end_clean();
-    if ( isset( $checkrunning ) ) {
-       try {
-           $coll->remove( array( "name" => $checkrunning ), array(__~mongojournal{"j" => true,} "justOne" => true ));
-       } catch(MongoCursorException $e) {
-           $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $e->getMessage();
-       }
+    if ( isset( $checkrunning ) )
+    {
+        if ( !ga_db_status(
+                  ga_db_remove(
+                      'joblock',
+                      '',
+                      [ "name" => $checkrunning ],
+                      [ 'justOne' => true ]
+                  ) 
+             )
+            ) {
+            $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
+        }
     }
 
     if ( strlen( $strresults ) ) {
@@ -268,4 +275,3 @@ if ( !$wascancelled && $test_json == NULL ) {
 }
 // never gets here
 echo (json_encode($results));
-?>

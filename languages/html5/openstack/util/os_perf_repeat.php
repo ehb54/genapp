@@ -71,5 +71,3 @@ while( 1 ) {
     print "sleeping ${minutes} minutes\n";
     sleep( 60 * $minutes );
 }
-
-?>

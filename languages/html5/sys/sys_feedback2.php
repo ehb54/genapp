@@ -38,4 +38,3 @@ $results[ '_status' ] = 'complete';
 $results[ 'request' ] = print_r( $_REQUEST, true );
 echo (json_encode($results));
 exit();
-?>

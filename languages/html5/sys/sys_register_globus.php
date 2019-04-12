@@ -33,24 +33,25 @@ if ( !is_string( $_REQUEST[ 'userid' ] ) ||
 $userid = $_REQUEST[ 'userid' ];
 
 
-if ( !isset( $_REQUEST[ "globusid" ] ) && !isset( $_REQUEST[ "googleid" ] ) ){   // FOR GLOBUS&GOOGLE /////
-if ( !is_string( $_REQUEST[ 'password1' ] ) || strlen( $_REQUEST[ 'password1' ] ) < 10 || strlen( $_REQUEST[ 'password1' ] ) > 100 )
-{
-    $results[ "error" ] = "empty or invalid password";
-    echo (json_encode($results));
-    exit();
-}
-}
-
-if ( !isset( $_REQUEST[ "globusid" ] ) && !isset( $_REQUEST[ "googleid" ] ) ){     // FOR GLOBUS&GOOGLE /////
-if( $_REQUEST[ 'password1' ] != $_REQUEST[ 'password2' ] )
-{
-    $results[ "error" ] = "Passwords do not match";
-    echo (json_encode($results));
-    exit();
-}
+#  // FOR GLOBUS&GOOGLE /////
+if ( !isset( $_REQUEST[ "globusid" ] ) && !isset( $_REQUEST[ "googleid" ] ) ){  
+    if ( !is_string( $_REQUEST[ 'password1' ] ) || strlen( $_REQUEST[ 'password1' ] ) < 10 || strlen( $_REQUEST[ 'password1' ] ) > 100 )
+    {
+        $results[ "error" ] = "empty or invalid password";
+        echo (json_encode($results));
+        exit();
+    }
 }
 
+#  // FOR GLOBUS&GOOGLE /////
+if ( !isset( $_REQUEST[ "globusid" ] ) && !isset( $_REQUEST[ "googleid" ] ) ){
+    if( $_REQUEST[ 'password1' ] != $_REQUEST[ 'password2' ] )
+    {
+        $results[ "error" ] = "Passwords do not match";
+        echo (json_encode($results));
+        exit();
+    }
+}
 
 $email = filter_var( $_REQUEST[ 'email' ], FILTER_SANITIZE_EMAIL );
 
@@ -63,80 +64,111 @@ if ( !is_string( $email ) ||
     exit();
 }
 
-date_default_timezone_set( 'UTC' );
-$mindate = new MongoDate();
-$mindate->sec -= 3 * 60;
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
+$mindate = ga_db_date_add_secs( ga_db_output( ga_db_date() ), -3 * 60 );
 
-// connect
-try {
-     $m = new MongoClient(
-        __~mongo:url{"__mongo:url__"}
-        __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-     );
-} catch ( Exception $e ) {
-    $results[ "error" ] = "Could not connect to the db " . $e->getMessage();
-    echo (json_encode($results));
-    exit();
-}
-  
+ga_db_open( true );
+
 if ( __~enablecaptcha{1}0 ) {
     // check for valid captcha
-    $coll = $m->__application__->captcha;
-    if ( !$doc = $coll->findOne(
-              array( 
-                  "window" => $window, 
-                  "success" => 1,
-                  "time" => array( '$gte' => $mindate 
-                  ) ) ) ) {
-        $coll->remove( array( "window" => $window ) );
+    if ( !( $doc =
+            ga_db_output( 
+                ga_db_findOne(
+                    'captcha',
+                    '',
+                    [
+                     "window" => $window, 
+                     "success" => 1,
+                     "time" => [
+                         '$gte' => $mindate 
+                     ]
+                    ]
+                )
+            )
+         )
+        ) {
+        ga_db_remove( 
+            'captcha',
+            '',
+            [ 
+              [ "window" => $window ]
+            ] );
         $results[ "error" ] = "Internal error 5401";
         echo (json_encode($results));
         exit();
     }
-    $coll->remove( array( "window" => $window ) );
+    ga_db_remove( 
+        'captcha',
+        '',
+        [ 
+          [ "window" => $window ]
+        ] );
 }
 
-$coll = $m->__application__->users;
-
-if ( $doc = $coll->findOne( array( "name" => $_REQUEST[ 'userid' ] ) ) )    // FOR GLOBUS ///
-{
-  if ( isset( $_REQUEST[ "globusid" ] ) && isset( $doc[ 'globusid' ] ) ) 
-  { 
-     $results[ 'status' ] = "Globus user id already registered, please try another";
-     echo (json_encode($results));
-     exit();
-  }
+# // FOR GLOBUS ///
+if ( $doc = 
+     ga_db_output( 
+         ga_db_findOne(
+             'users',
+             '',
+             [ "name" => $_REQUEST[ 'userid' ] ]
+         )
+     )
+    ) {
+    if ( isset( $_REQUEST[ "globusid" ] ) && isset( $doc[ 'globusid' ] ) ) 
+    { 
+        $results[ 'status' ] = "Globus user id already registered, please try another";
+        echo (json_encode($results));
+        exit();
+    }
 }
 
-if ( $doc = $coll->findOne( array( "name" => $_REQUEST[ 'userid' ] ) ) )    // FOR GOOGLE ///
-{
-  if ( isset( $_REQUEST[ "googleid" ] ) && isset( $doc[ 'googleid' ] ) ) 
-  { 
-     $results[ 'status' ] = "Google user id already registered, please try another";
-     echo (json_encode($results));
-     exit();
-  }
+# // FOR GOOGLE ///
+
+if ( $doc = 
+     ga_db_output( 
+         ga_db_findOne(
+             'users',
+             '',
+             [ "name" => $_REQUEST[ 'userid' ] ]
+         )
+     )
+    ) {
+    if ( isset( $_REQUEST[ "googleid" ] ) && isset( $doc[ 'googleid' ] ) ) 
+    { 
+        $results[ 'status' ] = "Google user id already registered, please try another";
+        echo (json_encode($results));
+        exit();
+    }
 }
 
-if ( $doc = $coll->findOne( array( "name" => $_REQUEST[ 'userid' ] ) ) && !isset( $_REQUEST[ "globusid" ]) && !isset( $_REQUEST["googleid"] ) )
-{
-  //if ( !isset( $doc['globusid'] ) ||  !isset( $doc['googleid'] )  )
-  //  { 	
-      $results[ 'status' ] = "User id already registered, please try another ";
-      echo (json_encode($results));
-      exit();
-  //  }
+if ( $doc = 
+     ga_db_output( 
+         ga_db_findOne(
+             'users',
+             '',
+             [ "name" => $_REQUEST[ 'userid' ] ]
+         )
+     )
+     && !isset( $_REQUEST[ "globusid" ] )
+     && !isset( $_REQUEST[ "googleid" ] ) 
+    ) {
+    # if ( !isset( $doc['globusid'] ) ||  !isset( $doc['googleid'] )  )
+    #  { 	
+    $results[ 'status' ] = "User id already registered, please try another ";
+    echo (json_encode($results));
+    exit();
+    #  }
 }
 
-
-
-if ( !isset( $_REQUEST[ "globusid" ] ) && !isset( $_REQUEST[ "googleid" ] ) ){      // FOR GLOBUS&GOOGLE ///// 
-if ( PHP_VERSION_ID < 50500 )
-{
-  $pw = crypt( $_REQUEST[ 'password1' ] );
-} else {
-  $pw = password_hash( $_REQUEST[ 'password1' ], PASSWORD_DEFAULT );
-}
+# // FOR GLOBUS&GOOGLE ///// 
+if ( !isset( $_REQUEST[ "globusid" ] ) && !isset( $_REQUEST[ "googleid" ] ) ) {
+    if ( PHP_VERSION_ID < 50500 )
+    {
+        $pw = crypt( $_REQUEST[ 'password1' ] );
+    } else {
+        $pw = password_hash( $_REQUEST[ 'password1' ], PASSWORD_DEFAULT );
+    }
 }
 
 $do_verifyemail     = __~register:verifyemail{1}0;
@@ -147,88 +179,94 @@ if ( $do_requireapproval ) {
     $did = bin2hex( openssl_random_pseudo_bytes ( 20, $cstrong ) );
 }
 
-
-if ( isset( $_REQUEST[ "globusid" ] ) ){   // FOR GLOBUS /////     
-try {
-    $coll->insert( 
-        array( 
-            "name" => $_REQUEST[ 'userid' ]
-            //,"password" => $pw		// FOR GLOBUS /////    
-	    ,"email" => $email  
-	    ,"globusid" => "yes"                     // FOR GLOBUS /////
-            ,"registered" => new MongoDate() 
-            ,"registerip" => $_SERVER[ 'REMOTE_ADDR' ]
-            __~register:verifyemail{,"needsemailverification" => "pending"}
-            __~register:requireapproval{,"needsapproval" => "pending"}
-            __~register:requireapproval{,"approvalid" => $aid}
-            __~register:requireapproval{,"denyid" => $did}
-        )
-        __~mongojournal{, array("j" => true )}
-        );
-} catch(MongoCursorException $e) {
-    $results[ 'status' ] = "User id already registered, please try another. " . $e->getMessage();
-    echo (json_encode($results));
-    exit();
+if ( isset( $_REQUEST[ "globusid" ] ) ) {
+#  // FOR GLOBUS ///// 
+    if ( !ga_db_status(
+              ga_db_insert(
+                  'users',
+                  '',
+                  [
+                   "name" => $_REQUEST[ 'userid' ]
+                   //,"password" => $pw		// FOR GLOBUS /////    
+                   ,"email" => $email  
+                   ,"globusid" => "yes"                     // FOR GLOBUS /////
+                   ,"registered" => ga_db_output( ga_db_date() )
+                   ,"registerip" => $_SERVER[ 'REMOTE_ADDR' ]
+                   __~register:verifyemail{,"needsemailverification" => "pending"}
+                   __~register:requireapproval{,"needsapproval" => "pending"}
+                   __~register:requireapproval{,"approvalid" => $aid}
+                   __~register:requireapproval{,"denyid" => $did}
+                  ]
+              )
+         )
+        ) {
+        $results[ 'status' ] = "User id already registered, please try another. " . $ga_db_errors;
+        echo (json_encode($results));
+        exit();
+    }
+} else {
+    # // FOR GOOGLE /////  
+    if ( isset( $_REQUEST[ "googleid" ] ) ){  
+        if ( !ga_db_status(
+                  ga_db_insert(
+                      'users',
+                      '',
+                      [ 
+                        "name" => $_REQUEST[ 'userid' ]
+                        //,"password" => $pw		// FOR GOOGLE /////    
+                        ,"email" => $email  
+                        ,"googleid" => "yes"                     // FOR GOOGLE /////
+                        ,"registered" => ga_db_output( ga_db_date() )
+                        ,"registerip" => $_SERVER[ 'REMOTE_ADDR' ]
+                        __~register:verifyemail{,"needsemailverification" => "pending"}
+                        __~register:requireapproval{,"needsapproval" => "pending"}
+                        __~register:requireapproval{,"approvalid" => $aid}
+                        __~register:requireapproval{,"denyid" => $did}
+                      ]
+                  )
+             )
+            ) {
+            $results[ 'status' ] = "User id already registered, please try another. " . $ga_db_errors;
+            echo (json_encode($results));
+            exit();
+        } 
+    } else {
+        if ( !ga_db_status(
+                  ga_db_insert(
+                      'users',
+                      '',
+                      [ 
+                        "name" => $_REQUEST[ 'userid' ]
+                        ,"password" => $pw, "email" => $email
+                        ,"registered" => ga_db_output( ga_db_date() )
+                        ,"registerip" => $_SERVER[ 'REMOTE_ADDR' ]
+                        __~register:verifyemail{,"needsemailverification" => "pending"}
+                        __~register:requireapproval{,"needsapproval" => "pending"}
+                        __~register:requireapproval{,"approvalid" => $aid}
+                        __~register:requireapproval{,"denyid" => $did}
+                      ]
+                  )
+             )
+            ) {
+            $results[ 'status' ] = "User id already registered, please try another. " . $ga_db_errors;
+            echo (json_encode($results));
+            exit();
+        }
+    }
 }
-}
-else
-{
-   if ( isset( $_REQUEST[ "googleid" ] ) ){   // FOR GOOGLE /////  
-  try {
-    $coll->insert( 
-        array( 
-            "name" => $_REQUEST[ 'userid' ]
-            //,"password" => $pw		// FOR GOOGLE /////    
-	    ,"email" => $email  
-	    ,"googleid" => "yes"                     // FOR GOOGLE /////
-            ,"registered" => new MongoDate() 
-            ,"registerip" => $_SERVER[ 'REMOTE_ADDR' ]
-            __~register:verifyemail{,"needsemailverification" => "pending"}
-            __~register:requireapproval{,"needsapproval" => "pending"}
-            __~register:requireapproval{,"approvalid" => $aid}
-            __~register:requireapproval{,"denyid" => $did}
-        )
-        __~mongojournal{, array("j" => true )}
-        );
-} catch(MongoCursorException $e) {
-    $results[ 'status' ] = "User id already registered, please try another. " . $e->getMessage();
-    echo (json_encode($results));
-    exit();
-} 
-}
-else 
-{
-try {
-    $coll->insert( 
-        array( 
-            "name" => $_REQUEST[ 'userid' ]
-            ,"password" => $pw, "email" => $email
-            ,"registered" => new MongoDate() 
-            ,"registerip" => $_SERVER[ 'REMOTE_ADDR' ]
-            __~register:verifyemail{,"needsemailverification" => "pending"}
-            __~register:requireapproval{,"needsapproval" => "pending"}
-            __~register:requireapproval{,"approvalid" => $aid}
-            __~register:requireapproval{,"denyid" => $did}
-        )
-        __~mongojournal{, array("j" => true )}
-        );
-} catch(MongoCursorException $e) {
-    $results[ 'status' ] = "User id already registered, please try another. " . $e->getMessage();
-    echo (json_encode($results));
-    exit();
-}
-}
-}
-
 
 $id = '';
-if ( $doc = $coll->findOne( array( "name" => $_REQUEST[ 'userid' ] ) ) ) {
+if ( $doc = 
+     ga_db_output( 
+         ga_db_findOne( 'users', '', [ "name" => $_REQUEST[ 'userid' ] ] 
+         ) 
+     ) 
+    ) {
     if ( isset( $doc[ '_id' ] ) ) {
         $id = $doc[ '_id' ];
     }
 }
 require_once "../mail.php";
-
 
 $results[ 'status' ] = "User successfully added, you can now login";
 
@@ -260,4 +298,3 @@ admin_mail( "[__application__][new user" . ( $do_verifyemail ? " verification re
 
 echo (json_encode($results));
 exit();
-?>

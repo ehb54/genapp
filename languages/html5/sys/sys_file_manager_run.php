@@ -401,4 +401,3 @@ $result[ 'outfiles' ] = array( str_replace( "__docroot:html5__/__application__/"
 
 // $result[ 'outfile_tag' ] = $result[ 'outfiles' ][ 0 ];
 echo json_encode( $result );
-?>

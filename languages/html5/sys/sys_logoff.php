@@ -8,26 +8,26 @@ if ( isset( $_REQUEST[ '_window' ] ) )
 }
 unset( $_SESSION[ $window ][ 'logon' ] );
 $_SESSION[ $window ] = array( "logon" => "", "project" => "" );
-// connect
-try {
-     $m = new MongoClient(
-         __~mongo:url{"__mongo:url__"}
-         __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-         );
+
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
+# // connect
+if ( ga_db_status( ga_db_open() ) ) {
      # status 
-     {
-         $msession = $m->__application__->session;
-         try {
-             $msession->remove( [ "_id" => session_id() ], [ __~mongojournal{"j" => true, }"justOne" => true ] );
-         } catch(MongoCursorException $e) {
+    if ( !ga_db_status(
+              ga_db_remove(
+                  'session',
+                  '',
+                  [ '_id' => session_id() ],
+                  [ 'justOne' => true ]
+              )
+         )
+        ) {
 # TODO log somehow (email?)
 #             $results[ 'status' ] .= "Unable to store session id. ";
-         }
-     }
-
-} catch ( Exception $e ) {
+    }
+} else {
 # TODO log somehow (email?)
-#    $results[ "error" ] = "Could not connect to the db " . $e->getMessage();
+#    $results[ "error" ] = "Could not connect to the db " . $ga_db_errors
 #    echo (json_encode($results));
 #    exit();
 }
@@ -40,4 +40,3 @@ $results[ '_status' ] = "complete";
 
 echo (json_encode($results));
 exit();
-?>

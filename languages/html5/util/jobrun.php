@@ -92,8 +92,6 @@ __~debug:runjob{error_log( "jobrun 11\n", 3, "/tmp/php_errors" );}
 logrunning();
 __~debug:runjob{error_log( "jobrun 12\n", 3, "/tmp/php_errors" );}
 
-// $GLOBALS[ 'jobstart' ] = new MongoDate();
-
 $results = exec( $cmd );
 
 __~debug:runjob{error_log( "jobrun 13\n", 3, "/tmp/php_errors" );}
@@ -136,18 +134,23 @@ if ( !$GLOBALS[ 'wascancelled' ] ) {
     }
 }
 
-
 function notify( $type ) {
-    global $use_db;
     if ( isset( $GLOBALS[ 'notify' ] ) ) {
         switch( $GLOBALS[ 'notify' ] ) {
             case "email" : {
-                $coll = $use_db->__application__->users;
-                if ( $doc = $coll->findOne( [ "name" => $GLOBALS[ 'logon' ] ] ) ) {
+                if ( $doc = 
+                     ga_db_output( 
+                         ga_db_findOne( 
+                             'users',
+                             '',
+                             [ "name" => $GLOBALS[ 'logon' ] ] 
+                         ) 
+                     )
+                    ) {
                     if ( $doc[ 'email' ] ) {
                         $app = json_decode( file_get_contents( "__appconfig__" ) );
                         require_once "__docroot:html5__/__application__/ajax/mail.php";
-                        $body = "Your job " . $GLOBALS[ 'menu' ] . " : " . $GLOBALS[ 'module' ] . " submitted on " . date( "Y M d H:i:s T", $GLOBALS[ 'jobstart' ]->sec ) . " is now $type.\n"
+                        $body = "Your job " . $GLOBALS[ 'menu' ] . " : " . $GLOBALS[ 'module' ] . " submitted on " . date( "Y M d H:i:s T", ga_db_date_secs( $GLOBALS[ 'jobstart' ] ) ) . " is now $type.\n"
                             . "Job ID: " . $_REQUEST[ '_uuid' ] . "\n"
                             ;
                         if ( $type == "finished" ) {

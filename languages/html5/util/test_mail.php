@@ -41,4 +41,3 @@ if ( mymail( $argv[ 1 ], "[$host][__application__][test message][$smtp]", "This 
 }
 
 exit;
-?>

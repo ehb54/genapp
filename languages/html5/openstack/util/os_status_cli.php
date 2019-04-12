@@ -15,5 +15,3 @@ foreach ( $projects as $project => $v ) {
         echo $results;
     }
 }
-
-?>

@@ -293,4 +293,3 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
     }
     return '{"clusterips":["' . implode( '","', $ip ) . '"]}';
 }
-?>

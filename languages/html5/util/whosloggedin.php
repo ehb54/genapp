@@ -105,5 +105,3 @@ echo "--------------------------------\n";
 foreach ($users as $index => $value){
   echo $users[$index] . "\t\t" . $apps[$index] . "\n";
 }
-
-?>

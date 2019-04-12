@@ -88,5 +88,3 @@ function all_projects() {
     }
     return $projects;
 }
-
-?>

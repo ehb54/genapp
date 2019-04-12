@@ -31,4 +31,3 @@ if ( !empty( $docmd ) ) {
 } else {
     echo "no run-OR instances in ERROR state\n";
 }
-?>

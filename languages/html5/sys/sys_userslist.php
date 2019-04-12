@@ -3,8 +3,6 @@
 
 $_REQUEST = json_decode( $argv[ 1 ], true );
 
-
-
 $results = [];
 
 if ( !sizeof( $_REQUEST ) ) {
@@ -45,44 +43,16 @@ if ( !in_array( $_REQUEST[ '_logon' ], $appconfig->restricted->admin ) ) {
     exit();
 }    
 
-date_default_timezone_set("UTC");
-
-function db_connect( $error_json_exit = false ) {
-   global $use_db;
-   global $db_errors;
-
-   if ( !isset( $use_db ) ) {
-      try {
-         $use_db = new MongoClient(
-         __~mongo:url{"__mongo:url__"}
-         __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-         );
-      } catch ( Exception $e ) {
-         $db_errors = "Could not connect to the db " . $e->getMessage();
-         if ( $error_json_exit )
-         {
-            $results = array( "error" => $db_errors );
-            $results[ '_status' ] = 'complete';
-            echo (json_encode($results));
-            exit();
-         }
-         return false;
-      }
-   }
-
-   return true;
-}
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
 
 function get_userinfo( $error_json_exit = false ) {
-   global $use_db;
-   global $db_errors;
    global $appconfig;
    global $userinfo;
    global $nowsecs;
 
    $userinfo = [];
 
-   if ( !db_connect( $error_json_exit ) )
+   if ( !ga_db_status( ga_db_open( $error_json_exit ) ) )
    {
        return false;
    }
@@ -91,10 +61,23 @@ function get_userinfo( $error_json_exit = false ) {
 
    $runcount = [];
 
-   $runs = $use_db->__application__->running->find();
+   $runs = ga_db_output(
+       ga_db_find( 
+           'running',
+           ''
+       )
+       );
    foreach ( $runs as $v ) {
        $uuid = $v['_id'];
-       $job = $use_db->__application__->jobs->findOne( array( "_id" => $uuid ), array( "user" => 1 ) );
+       $job = 
+           ga_db_output(
+               ga_db_findOne(
+                   'jobs',
+                   '',
+                   [ "_id" => $uuid ],
+                   [ "user" => 1 ]
+               )
+           );
        $name = $job[ 'user' ];
        if ( !isset( $runcount[ $name ] ) ) {
            $runcount[ $name ] = 1;
@@ -103,9 +86,16 @@ function get_userinfo( $error_json_exit = false ) {
        }
    }
 
-   $users = $use_db->__application__->users->find();
-
-   $users->sort( array( "name" => 1 ) );
+   $users = 
+       ga_db_output( 
+           ga_db_find(
+               'users',
+               '',
+               [],
+               [],
+               [ 'sort' => [ 'name' => 1 ] ]
+           )
+       );
 
    foreach ( $users as $v ) {
        $name = $v[ 'name' ];
@@ -115,9 +105,9 @@ function get_userinfo( $error_json_exit = false ) {
                    "name"                => $name
                    ,"email"              => "<a class='title' href='mailto:" . $v[ 'email' ] . "'>" . $v[ 'email' ] . "</a>"
                    ,"projects"           => count( $v[ 'project' ] )
-                   ,"last-login"         => isset( $v["lastlogin"] ) ? date( "Y M d H:i T",$v["lastlogin"]->sec ) : ""
-                   ,"registered"         => isset( $v["registered"] ) ? date( "Y M d H:i T",$v["registered"]->sec ) : ""
-                   ,"jobs-not-removed"   => $use_db->__application__->jobs->count( array( "user" => $name ) )
+                   ,"last-login"         => isset( $v["lastlogin"] ) ? date( "Y M d H:i T", ga_db_date_secs( $v["lastlogin"] ) ) : ""
+                   ,"registered"         => isset( $v["registered"] ) ? date( "Y M d H:i T", ga_db_date_secs( $v["registered"] ) ) : ""
+                   ,"jobs-not-removed"   => ga_db_output( ga_db_count( 'jobs', '', [ "user" => $name ] ) )
                    ,"running"            => isset( $runcount[ $name ] ) ? $runcount[ $name ] : 0
                    ,"admin"              => in_array( $v[ 'name' ], $appconfig->restricted->admin ) ? "yes" : ""
                );
@@ -156,4 +146,3 @@ get_html_userinfo( true );
 $results[ 'sysuserreport' ] = "<p>Server time " . date( "Y M d H:i:s T", $nowsecs ) . "</p>" . "<p>User count " . count( $userinfo ) . "</p>" . $html_userinfo;
 
 echo json_encode( $results );
-?>

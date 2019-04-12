@@ -40,22 +40,25 @@ EOT;
     $error_msg = "<p>We encountered an internal error with this application.</p><p>The administrators have been notified of the details via email.</p><p>We apologize for any inconvenience.</p>";
     $url = "http://" . $app->hostname . "/__application__/ajax/__menu:id__/__menu:modules:id__.php?_r=$r";
 
-    // check mongo
-    try {
-        $m = new MongoClient(
-             __~mongo:url{"__mongo:url__"}
-             __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-        );
-    } catch ( Exception $e ) {
-        $db_error = "Error connecting to the database. " . $e->getMessage();
-        $msg = $db_error . "\n" . "url: $url\n";
+    require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
+
+    if ( !ga_db_status( ga_db_open() ) ) {
+        $msg = $ga_db_errors . "\n" . "url: $url\n";
         error_mail( "[mongodb][__menu:modules:id__.php][r0] $msg" );
         $html .= "$error_msg</body></html>";
         echo $html;
         exit();
     }
-
-    if ( $doc = $m->__application__->users->findOne( [ "_id" => new MongoId( $r ) ] ) ) {
+    
+    if ( $doc =
+         ga_db_output(
+             ga_db_findOne( 
+                 'users', 
+                 '',
+                 [ "_id" => ga_db_output( ga_db_Id( $r ) ) ]
+             )
+         )
+        ) {
         if ( strlen( $aid ) && ( !isset( $doc[ 'approvalid' ] ) || $doc[ 'approvalid' ] != $aid ) ) {
             $msg = "invalid approve-deny registration request from ip " . $_REQUEST[ 'REMOTE_ADDR' ];
             error_mail( "[mongodb][__menu:modules:id__.php][r1a] $msg" );
@@ -77,12 +80,12 @@ EOT;
         $update = [];
         if ( strlen( $aid ) ) {
             $update[ '$unset' ] = [ "needsapproval" => "", "approvalid" => "", "denyid" => "" ];
-            $update[ '$set' ] = [ "approved" => new MongoDate() ];
+            $update[ '$set' ] = [ "approved" => ga_db_output( ga_db_date() ) ];
             $html .= "<strong>Approved</strong>";
             $mailmsg .= "Approved.  You can now logon.";
         } else {
             $update[ '$unset' ] = [ "approvalid" => "", "denyid" => "" ];
-            $update[ '$set' ] = [ "needsapproval" => "denied", "denied" => new MongoDate() ];
+            $update[ '$set' ] = [ "needsapproval" => "denied", "denied" => ga_db_output( ga_db_date() ) ];
             $html .= "<strong>Denied</strong>";
             $mailmsg .= "Denied";
         }
@@ -90,15 +93,15 @@ EOT;
 
         mymail( $doc[ 'email' ], "[__application__][account status update]", $mailmsg );
 
-        try {
-            $m->__application__->users->update(
-                [ '_id' => new MongoId( $r ) ]
-                ,$update
-                __~mongojournal{, array("j" => true )} 
-                );
-        } catch( MongoCursorException $e ) {
-            $db_error = "Error updating. " . $e->getMessage();
-            error_mail( "[mongodb][__menu:modules:id__.php][r2] " . $db_error );
+        if ( !ga_db_status(
+                  ga_db_update(
+                      'users',
+                      '',
+                      $update 
+                  )
+             )
+            ) {
+            error_mail( "[mongodb][__menu:modules:id__.php][r2] " . $ga_db_errors );
         }
 
         echo $html;
@@ -111,4 +114,3 @@ EOT;
     echo $html;
     exit();
 }   
-?>

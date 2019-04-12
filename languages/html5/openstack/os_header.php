@@ -79,4 +79,3 @@ if ( !isset( $appjson->resources->oscluster->properties->auth_url ) ) {
 }
 
 putenv( "OS_AUTH_URL=" . $appjson->resources->oscluster->properties->auth_url );
-?>

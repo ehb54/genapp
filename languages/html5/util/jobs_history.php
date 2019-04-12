@@ -11,14 +11,14 @@ if (preg_match ("/^([0-9]{4})-([0-9]{2})-([0-9]{2})$/", $argument, $split)){
 	//echo $argument . "\n";
 	return true;
      } else {
-        $split = array();
+        $split = [];
         echo "Date Format Incorrect! \n";
         fwrite(STDOUT, "Enter $Str_type Date (YYYY-MM-DD): ");
         $argument = trim(fgets(STDIN));
 	check_input_dates($argument, $split, $Str_type);
      }
    } else {
-      $split = array();
+      $split = [];
       echo "Date Format Incorrect! \n";
       fwrite(STDOUT, "Enter $Str_type Date (YYYY-MM-DD): ");
       $argument = trim(fgets(STDIN));
@@ -27,9 +27,10 @@ if (preg_match ("/^([0-9]{4})-([0-9]{2})-([0-9]{2})$/", $argument, $split)){
 }
 ////////////////////////////////////////////////////////////////////
 
-date_default_timezone_set("UTC");
-$split1 = array();
-$split2 = array();
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
+
+$split1 = [];
+$split2 = [];
 
 // input dates
 if ( isset( $argv[ 1 ] ) ) {
@@ -53,30 +54,45 @@ check_input_dates($arg2, $split2, "END");
 $start_date = new DateTime($arg1);
 $end_date = new DateTime($arg2);
 
-$date_1 = new MongoDate(strtotime($start_date->format("Y-m-d H:i:s")));
-$date_2 = new MongoDate(strtotime($end_date->format("Y-m-d H:i:s") . " +1 day"));
+$date_1 = ga_db_output( ga_db_date( strtotime( $start_date->format( "Y-m-d H:i:s" ) ) ) );
+$date_2 = ga_db_output( ga_db_date( strtotime( $end_date->format( "Y-m-d H:i:s" ) . " +1 day" ) ) );
 
 //echo $arg1. $arg2 . "\n";
 
-$m = new MongoClient(
-             __~mongo:url{"__mongo:url__"}
-             __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-             );
-$db = $m->selectDB("__application__");
-
-$collection_jobs = $db->jobs;
-$collection_users = $db->users;
+ga_db_open( true );
 		 
-$cursor_jobs = $collection_jobs->find( array( "when"  => array( '$gte' => $date_1, '$lte' => $date_2 ) , "user" => array( '$exists' => true, '$nin' => [""] ) ) );
-$cursor_users = $collection_users->find();
+$cursor_jobs = 
+    ga_db_output(
+        ga_db_find(
+            'jobs',
+            '',
+            [
+             "when"  => [
+                 '$gte' => $date_1,
+                 '$lte' => $date_2 
+             ], 
+             "user" => [
+                 '$exists' => true,
+                 '$nin' => [""]
+             ]
+            ]
+        )
+    );
+
+$cursor_users = 
+    ga_db_output(
+        ga_db_find(
+            'users'
+        )
+    );
 
 ///////////////////////////////////////////////////////////////
 
-$User_array = array();
-$possible_status = array();  
+$User_array = [];
+$possible_status = [];  
 
 foreach ($cursor_users as $obj_users){
-   $User_array[$obj_users['name']] = array();
+   $User_array[$obj_users['name']] = [];
  }
 
 foreach ($cursor_jobs as $obj_jobs) {
@@ -88,8 +104,8 @@ foreach ($cursor_jobs as $obj_jobs) {
   $this_when_start = $obj_jobs[ 'when' ][0];
   $this_when_current = end( $obj_jobs[ 'when' ] );
        
-  $user_start = $this_when_start->sec + ($this_when_start->usec)*pow(10.0, -6.0 );
-  $user_current = $this_when_current->sec + ($this_when_start->usec)*pow(10.0, -6.0 );	
+  $user_start = ga_db_date_secs( $this_when_start );
+  $user_current = ga_db_date_secs( $this_when_current );
  
 // Status
 
@@ -99,7 +115,15 @@ foreach ($cursor_jobs as $obj_jobs) {
        $this_status = 'unknown';
    }
    
-   if ( ($this_status == 'started' || $this_status == 'running') && !$db->running->find(array("_id" => $obj_jobs['_id']))  ){
+   if ( ($this_status == 'started' || $this_status == 'running') && 
+        !ga_db_output(
+            ga_db_find(
+                'running',
+                '',
+                [ "_id" => $obj_jobs['_id'] ]
+            )
+        )
+       ) {
        $this_status = 'failed';
    }
    
@@ -161,6 +185,3 @@ foreach ( $User_array as $user => $key ) {
     echo "\n"; 
 }
 
-$m->close();
-
-?>

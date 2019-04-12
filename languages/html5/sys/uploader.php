@@ -109,8 +109,6 @@ if ( !sizeof( $_FILES ) ) {
 
 require_once "../joblog.php";
 
-db_connect( true );
-
 if ( !getprojectdir( $_REQUEST[ '_uuid' ] ) ) {
    echo '{"error":"No db directory found for job:' . $_REQUEST[ '_uuid' ] . '"}';
    exit();
@@ -385,4 +383,3 @@ foreach ( $_FILES as $k=>$v ) {
 }
 
 echo (json_encode($results));
-?>

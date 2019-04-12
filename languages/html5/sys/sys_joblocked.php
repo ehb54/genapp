@@ -143,4 +143,3 @@ if ( $locked )
 }
 
 exit();
-?>

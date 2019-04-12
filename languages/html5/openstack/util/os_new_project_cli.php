@@ -38,5 +38,3 @@ $cmd = 'nova secgroup-create sshlocalall "ssh & icmp enabled, all local ports op
 ';
 print $cmd;
 print `$cmd`;
-
-?>

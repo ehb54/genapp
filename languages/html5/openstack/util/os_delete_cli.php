@@ -44,6 +44,3 @@ echo $docmd;
 
 echo `$docmd`;
 echo "instances removed\n"; 
-?>
-
-

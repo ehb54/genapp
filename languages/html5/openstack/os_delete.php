@@ -54,7 +54,3 @@ function os_delete( $nodes, $uuid, $project = NULL, $quiet = false ) {
         `$docmd`;
     }
 }
-    
-?>
-
-

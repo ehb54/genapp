@@ -138,6 +138,3 @@ function mymail_attach( $to, $subject, $body, $attach, $attachdata )
    $mail = $phpmail->send( $to, $headers, $body );
    return PEAR::isError( $mail );
 }
-
-
-?>

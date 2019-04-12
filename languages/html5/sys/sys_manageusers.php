@@ -49,35 +49,9 @@ if ( !in_array( $_REQUEST[ '_logon' ], $appconfig->restricted->admin ) ) {
     exit();
 }    
 
-function db_connect2( $error_json_exit = false ) {
-   global $use_db;
-   global $db_errors;
-
-   if ( !isset( $use_db ) ) {
-      try {
-         $use_db = new MongoClient(
-        __~mongo:url{"__mongo:url__"}
-        __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-        );
-      } catch ( Exception $e ) {
-         $db_errors = "Could not connect to the db " . $e->getMessage();
-         if ( $error_json_exit )
-         {
-            $results = array( "error" => $db_errors );
-            $results[ '_status' ] = 'complete';
-            echo (json_encode($results));
-            exit();
-         }
-         return false;
-      }
-   }
-
-   return true;
-}
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
 
 function get_userinfo( $error_json_exit = false ) {
-   global $use_db;
-   global $db_errors;
    global $appconfig;
    global $userinfo;
    global $nowsecs;
@@ -90,7 +64,7 @@ function get_userinfo( $error_json_exit = false ) {
    $userinfo[ 'script'        ] = [];
    $userinfo[ 'tagline'       ] = [];
 
-   if ( !db_connect2( $error_json_exit ) )
+   if ( !ga_db_status( ga_db_open( $error_json_exit ) ) )
    {
        return false;
    }
@@ -99,10 +73,11 @@ function get_userinfo( $error_json_exit = false ) {
 
    $runcount = [];
 
-   $runs = $use_db->__application__->running->find();
+   $runs = ga_db_output( ga_db_find( 'running', '' ) );
+
    foreach ( $runs as $v ) {
        $uuid = $v['_id'];
-       $job = $use_db->__application__->jobs->findOne( array( "_id" => $uuid ), array( "user" => 1 ) );
+       $job = ga_db_output( ga_db_findOne( 'jobs', '', [ "_id" => $uuid ], [ "user" => 1 ] ) );
        $name = $job[ 'user' ];
        if ( !isset( $runcount[ $name ] ) ) {
            $runcount[ $name ] = 1;
@@ -111,13 +86,11 @@ function get_userinfo( $error_json_exit = false ) {
        }
    }
 
-   $users = $use_db->__application__->users->find();
-
-   $users->sort( array( "name" => 1 ) );
+   $users = ga_db_output( ga_db_find( 'users', '', [], [], [ 'sort' => [ 'name' => 1 ] ] ) );
 
    foreach ( $users as $v ) {
        $name = $v[ 'name' ];
-       $jobcount = $use_db->__application__->jobs->count( array( "user" => $name ) );
+       $jobcount = ga_db_output( ga_db_count( 'jobs', '', [ "user" => $name ] ) );
        if ( substr( $name, 0, strlen( "_canceled" ) ) != "_canceled" ) {
            $userinfo['data'][] = 
                array( 
@@ -125,8 +98,8 @@ function get_userinfo( $error_json_exit = false ) {
                    ,"email"              => "<a class='title' href='mailto:" . $v[ 'email' ] . "'>" . $v[ 'email' ] . "</a>"
                    ,"group"              => isset( $v[ 'group' ] ) ? $v[ 'group' ] : ""
                    ,"projects"           => count( $v[ 'project' ] )
-                   ,"last-login"         => isset( $v["lastlogin"] ) ? date( "Y M d H:i T",$v["lastlogin"]->sec ) : ""
-                   ,"registered"         => isset( $v["registered"] ) ? date( "Y M d H:i T",$v["registered"]->sec ) : ""
+                   ,"last-login"         => isset( $v["lastlogin"] ) ? date( "Y M d H:i T", ga_db_date_secs( $v["lastlogin"] ) ) : ""
+                   ,"registered"         => isset( $v["registered"] ) ? date( "Y M d H:i T", ga_db_date_secs( $v["registered"] ) ) : ""
                    ,"jobs-not-removed"   => $jobcount
                    ,"running"            => isset( $runcount[ $name ] ) ? $runcount[ $name ] : 0
                    ,"admin"              => in_array( $v[ 'name' ], $appconfig->restricted->admin ) ? "yes" : ""
@@ -138,13 +111,17 @@ function get_userinfo( $error_json_exit = false ) {
                $update = [];
                $update[ '$set' ] = [];
                $update[ '$set' ][ 'manageid' ] = $manageid;
-               try {
-                   $use_db->__application__->users->update( array( "_id" => new MongoId( $v[ "_id" ] ) ), 
-                                  $update,
-                                  array( "upsert" => true__~mongojournal{, "j" => true} ) );
-               } catch(MongoCursorException $e) {
-                   $db_errors = "Error updating the database in logcache(). " . $e->getMessage();
-                   $results[ 'error' ] = $db_errors;
+               if ( !ga_db_status(
+                         ga_db_update(
+                             'users',
+                             '',
+                             [ "_id" => ga_db_output( ga_db_Id( $v[ "_id" ] ) ) ],
+                             $update,
+                             [ 'upsert' => true ]
+                         )
+                    )
+                   ) {
+                   $results[ 'error' ] = $ga_db_errors;
                    $results[ '_status' ] = 'failed';
                    echo (json_encode($results));
                    exit();
@@ -293,13 +270,11 @@ $results[ 'sysuserreport' ] = "<p>Server time " . date( "Y M d H:i:s T", $nowsec
 echo json_encode( $results );
 
 function handle_request() {
-    global $use_db;
-    global $db_errors;
-
     // stuff for request handling
     __~debug:admin{error_log( "sys_manageusers.php received ajax request\n" . json_encode( $_REQUEST, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/mylog" );}
 
     require_once "../mail.php";
+    require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
 
     $results = [];
 
@@ -382,18 +357,27 @@ function handle_request() {
         exit();
     }    
 
-    // validate doc
+    # validate doc
     
-    if ( !db_connect2() ) {
+    if ( !ga_db_status( ga_db_open() ) ) {
         $results[ 'success' ] = "false";
-        $results[ 'error' ] = "Database error: $db_errors";
+        $results[ 'error' ] = "Database error: $ga_db_errors";
         echo json_encode( $results );
         exit();
     }
 
     // does user exist?
 
-    if ( !$doc = $use_db->__application__->users->findOne( [ "_id" => new MongoId( $_REQUEST[ '_id' ] ) ] ) ) {
+    if ( !( $doc = 
+            ga_db_output( 
+                ga_db_findOne( 
+                    'users', 
+                    '', 
+                    [ "_id" => ga_db_output( ga_db_Id( $_REQUEST[ '_id' ] ) ) ] 
+                )
+            )
+         )
+    ) {
         $results[ 'success' ] = "false";
         $results[ 'error' ] = "User id not found";
         echo json_encode( $results );
@@ -430,7 +414,7 @@ function handle_request() {
         case "remove" : {
             $mailuser = "Your account on http://" . $app->hostname . "/__application__ has been Removed.";
             // remove history and data files or prevent if they exist ?
-            $remove = [ "_id" => new MongoId( $_REQUEST[ "_id" ] ) ];
+            $remove = [ "_id" => ga_db_output( ga_db_Id( $_REQUEST[ "_id" ] ) ) ];
             $removejobs = 1;
             $removedata = 1;
         }
@@ -450,7 +434,7 @@ function handle_request() {
                     ,"denyid" => "" 
                 ],
                 '$set'   => [
-                    "approved" => new MongoDate() 
+                    "approved" => ga_db_output( ga_db_date() )
                 ] 
                 ];
         }
@@ -465,7 +449,7 @@ function handle_request() {
                 ],
                 '$set' => [
                     "needsapproval" => "denied"
-                    ,"denied" => new MongoDate() 
+                    ,"denied" => ga_db_output( ga_db_date() )
                 ]
                 ];
         }
@@ -475,8 +459,8 @@ function handle_request() {
             $mailuser = "Your account on http://" . $app->hostname . "/__application__ has been Suspended";
             $update = [ 
                 '$set' => [
-                    'suspended' => new MongoDate(),
                     'manageid' => $newmanageid 
+                    ,'suspended' => ga_db_output( ga_db_date() )
                 ] 
                 ];
         }
@@ -552,38 +536,54 @@ function handle_request() {
             [
              "admin" => [
                  "event" => $_REQUEST[ '_cmd' ]
-                 ,"at"   => new MongoDate()
+                 ,"at"   => ga_db_output( ga_db_date() )
                  ,"by"   => $_REQUEST[ '_logon' ]
                  ,"ip"   => isset( $_SERVER['REMOTE_ADDR'] ) ?  $_SERVER['REMOTE_ADDR'] : "no server remote addr"
              ]
             ];
                           
-        try {
-            $use_db->__application__->users->update( [ "_id" => new MongoId( $_REQUEST[ '_id' ] ) ],
-                                                     $update__~mongojournal{, array("j" => true )} );
-        } catch(MongoCursorException $e) {
+        if ( !ga_db_status(
+                  ga_db_update(
+                      'users',
+                      '',
+                      [ "_id" => ga_db_output( ga_db_Id( $_REQUEST[ '_id' ] ) ) ],
+                      $update
+                  )
+             )
+            ) {
             $results[ 'success' ] = "false";
-            $results[ 'error' ] = "Database error: $db_errors";
+            $results[ 'error' ] = "Database error: $ga_db_errors";
             echo json_encode( $results );
             exit();
         }
     }
 
     if ( isset( $remove ) ) {
-        try {
-            $use_db->__application__->users->remove( $remove__~mongojournal{, array("j" => true )} );
-        } catch(MongoCursorException $e) {
+        if ( !ga_db_status(
+                  ga_db_remove(
+                      'users',
+                      '',
+                      $remove
+                  )
+             )
+            ) {
             $results[ 'success' ] = "false";
-            $results[ 'error' ] = "Database error: $db_errors";
+            $results[ 'error' ] = "Database error: $ga_db_errors";
             echo json_encode( $results );
             exit();
         }
         if ( isset( $removejobs ) ) {
-            try {
-                $use_db->__application__->jobs->remove( [ "user" => $doc[ 'name' ] ]__~mongojournal{, array("j" => true )} );
-            } catch(MongoCursorException $e) {
+
+            if ( !ga_db_status(
+                      ga_db_remove(
+                          'jobs',
+                          '',
+                          [ "user" => $doc[ 'name' ] ]
+                      )
+                 )
+                ) {
                 $results[ 'success' ] = "false";
-                $results[ 'error' ] = "Database error: $db_errors";
+                $results[ 'error' ] = "Database error: $ga_db_errors";
                 echo json_encode( $results );
                 exit();
             }
@@ -646,5 +646,3 @@ function handle_request() {
     echo json_encode( $results );
     exit();
 }
-
-?>

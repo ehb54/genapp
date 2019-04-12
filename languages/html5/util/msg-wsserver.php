@@ -91,31 +91,18 @@ use Ratchet\Wamp\WampServerInterface;
 
 // connect
 # connect
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
+
 $keeptrying = 0;
 do {
-    try {
-        $mongo = new MongoClient(
-             __~mongo:url{"__mongo:url__"}
-             __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-             );
-        $keeptrying = 0;
-    } catch ( Exception $e ) {
+    if ( !ga_db_status( ga_db_open() ) ) {
         echo "msg_wsserver: could not connect to mongodb, sleeping 15s\n";
         sleep( 15 );
         $keeptrying = 1;
     }
 } while ( $keeptrying );
 
-#try {
-#     $mongo = new MongoClient();
-#} catch ( Exception $e ) {
-#    echo "msg_wsserver: could not connect to mongodb\n";
-#    exit();
-#}
-
 __~debug:ws{       echo "msg-wsserver: mongo client open\n";}
-
-$mongocoll = $mongo->msgs->cache;
 
 class Pusher implements WampServerInterface {
     /**
@@ -143,10 +130,10 @@ __~debug:ws{        echo "msg-wsserver.php onPublish\n";}
 __~debug:ws{        echo "msg-wsserver.php onError\n";}
     }
 
-// here's where we start
+# // here's where we start
 
     public function onSubscribe(ConnectionInterface $conn, $topic) {
-        // When a visitor subscribes to a topic link the Topic object in a  lookup array
+        # // When a visitor subscribes to a topic link the Topic object in a  lookup array
 __~debug:ws{        echo "msg-wsserver.php received topic id:" . $topic->getId() . "\n";}
 __~debug:ws{        echo "onSubscribe: topic getId " . $topic->getId() . "\n";}
         if ( substr( $topic->getId(), 0, 6 ) == 'unsub:' )
@@ -155,15 +142,14 @@ __~debug:ws{        echo "onSubscribe: topic getId " . $topic->getId() . "\n";}
 __~debug:ws{           echo "as unsub $tmp\n";}
            unset( $this->subscribedTopics[ $tmp ] );
         } else {
-//           global $mongocoll;
-//           if ( $doc = $mongocoll->findOne( array( "_id" => $topic->getID() ) ) )
-//           {
-//__~debug:ws{    echo "found topic mongo doc\n";}
-//               $conn->send( $doc[ 'data' ] );
-//__~debug:ws{    echo "mongo json decode sent to connection\n";}
-//           } else {
-//__~debug:ws{    echo "NOT found topic mongo doc " . $topic->getId() . "\n";}
-//           }
+#//           if ( $doc = ga_db_output( ga_db_findOne( 'cache', 'msgs', [ "_id" => $topic->getID() ] ) ) )
+#//           {
+#//__~debug:ws{    echo "found topic mongo doc\n";}
+#//               $conn->send( $doc[ 'data' ] );
+#//__~debug:ws{    echo "mongo json decode sent to connection\n";}
+#//           } else {
+#//__~debug:ws{    echo "NOT found topic mongo doc " . $topic->getId() . "\n";}
+#//           }
 
            if (!array_key_exists($topic->getId(), $this->subscribedTopics)) {
               $this->subscribedTopics[$topic->getId()] = $topic;
@@ -187,8 +173,6 @@ __~debug:ws{        echo "\n---\n";}
      * @param string JSON'ified string we'll receive from ZeroMQ
      */
     public function onMsgPost($postmsg) {
-        global $mongocoll;
-        global $mongo;
         $postData = json_decode($postmsg, true);
 
         if ( !isset( $postData[ '_uuid'  ] ) ) {
@@ -209,37 +193,55 @@ __~debug:ws{        echo "postData[_uuid] = " . $postData[ '_uuid' ] . "\n";}
              isset( $postData[ '_where' ] ) &&
              isset( $postData[ '_what'  ] ) ) {
             __~debug:pid{echo "postData[_uuid] = " . $postData[ '_uuid' ] . " found _pid msg\n";}
-            try {
-                $mongo->{ $postData[ '_app' ] }->running->update( 
-                    array( "_id" => $postData[ '_uuid' ] ),
-                    array( 
-                        '$push' => array( "pid" => 
-                                          array( "where" => $postData[ '_where' ],
-                                                 "pid"   => $postData[ '_pid'   ],
-                                                 "what"  => $postData[ '_what'  ] ) )
-                    ),
-                    array( "upsert" => true__~mongojournal{, "j" => true} )  
-                    );
-                
-            } catch( MongoCursorException $e ) {
+           if ( !ga_db_status(
+                     ga_db_update(
+                         'running',
+                         $postData[ '_app' ],
+                         [ "_id" => $postData[ '_uuid' ] ],
+                         [ 
+                           '$push' => [
+                               "pid" => 
+                               [ 
+                                 "where" => $postData[ '_where' ],
+                                 "pid"   => $postData[ '_pid'   ],
+                                 "what"  => $postData[ '_what'  ]
+                               ]
+                           ]
+                         ],
+                         [ "upsert" => true ]
+                     )
+                )
+               ) {
                 __~debug:pid{echo "postData[_uuid] = " . $postData[ '_uuid' ] . " mongo failed\n";}
             }
             return;
         }
 
-        // ignore if cancelled
+        # // ignore if cancelled
 
-        if ( $mongo->msgs->cancel->findOne( array( "_id" => $postData[ '_uuid' ] ) ) ) {
+        if ( ga_db_output( 
+                 ga_db_findOne( 
+                     'cancel',
+                     'msgs',
+                     [ "_id" => $postData[ '_uuid' ] ]
+                 )
+             )
+            ) {
             __~debug:cancel{echo "new message skipped due to cancel " . $postData[ '_uuid' ] . "\n";}
             return;
         }
 
         if ( isset( $postData[ "_cancel" ] ) ) {
             __~debug:cancel{echo "cancel set for " . $postData[ '_uuid' ] . "\n";}
-            try {
-                $mongo->msgs->cancel->insert( array( "_id" => $postData[ '_uuid' ] )__~mongojournal{, array("j" => true )} );
-            } catch ( MongoException $e ) {
-                echo "Error: Could not insert to msgs->cancel for " . $postData[ '_uuid' ] . " " . $e->getMessage();
+            if ( !ga_db_status(
+                      ga_db_insert(
+                          'cancel',
+                          'msgs',
+                          [ "_id" => $postData[ '_uuid' ] ]
+                      )
+                 )
+                ) {
+                echo "Error: Could not insert to msgs->cancel for " . $postData[ '_uuid' ] . " " . $ga_db_errors;
             }
         }            
 
@@ -247,7 +249,15 @@ __~debug:ws{        echo "postData[_uuid] = " . $postData[ '_uuid' ] . "\n";}
 __~debug:ws{        echo "onMsgPost broadcast()\n";}
 __~debug:ws{        echo "mongo save() $postmsg\n";}
 
-        if ( $doc = $mongocoll->findOne( array( "_id" => $postData[ '_uuid' ] ) ) ) {
+        if ( $doc =
+             ga_db_output(
+                 ga_db_findOne(
+                     'cache',
+                     'msgs',
+                     [ "_id" => $postData[ '_uuid' ] ]
+                     )
+             )
+            ) {
             $textprepend = "";
             $textcurrent = isset( $postData[ '_textarea' ] ) ? $postData[ '_textarea' ] : "";
             if ( isset( $doc[ 'data' ] ) ) {
@@ -269,9 +279,16 @@ __~debug:ws{   echo "mongo save() updated $postmsg\n";}
             }
         }
 
-        try {
-            $mongocoll->save( array( "_id" => $postData['_uuid'], "data" => $postmsg ) );
-        } catch(MongoCursorException $e) {
+        if ( !ga_db_status(
+                  ga_db_update(
+                      'cache',
+                      'msgs',
+                      [ '_id' => $postData['_uuid'] ],
+                      [ '$set' => [ 'data' => $postmsg ] ],
+                      [ 'upsert' => true ]
+                  )
+             )
+            ) {
             echo "mongo save exception $e\n";
         }
         

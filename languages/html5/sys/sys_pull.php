@@ -35,6 +35,8 @@ if ( !isset( $_SESSION[ $window ][ 'logon' ] ) ||
     exit();
 }
 
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
+
 if ( $_REQUEST[ '_logon' ] != $_SESSION[ $window ][ 'logon' ] )
 {
    $savelogon = $_SESSION[ $window ][ 'logon' ];
@@ -42,42 +44,26 @@ if ( $_REQUEST[ '_logon' ] != $_SESSION[ $window ][ 'logon' ] )
    session_write_close();
    $results[ '_logon' ] = "";
    $results[ 'error'  ] = 'Possible security violation user mismatch. ';
-   try {
-      $m = new MongoClient(         
-         __~mongo:url{"__mongo:url__"}
-         __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-         );
-   } catch ( Exception $e ) {
-      $results[ 'error' ] .= "Could not connect to the db " . $e->getMessage();
-      echo (json_encode($results));
-      exit();
-   }
 
-   $now = new MongoDate();
+   ga_db_open( true );
 
-   $coll = $m->__application__->security;
+   $now = ga_db_output( ga_db_date() );
+
    $insert[ 'requestuser' ] = $_REQUEST[ '_logon' ];
    $insert[ 'sessionuser' ] = $savelogon;
    $insert[ 'remoteip'    ] = isset( $_SERVER[ 'REMOTE_ADDR' ] ) ? $_SERVER[ 'REMOTE_ADDR' ] : "not from an ip";
    $insert[ 'when'        ] = $now;
 
-   try {
-      $coll->insert( $insert__~mongojournal{, array("j" => true )} );
-   } catch(MongoCursorException $e) {
-      $results[ 'error' ] .= "Error updating the database " . $e->getMessage();
-      echo (json_encode($results));
-      exit();
-   }
+   ga_db_insert( 'security', '', $insert, [], true );
 
    require_once "../mail.php";
-   date_default_timezone_set( 'UTC' );
    $json = json_decode( file_get_contents( "__appconfig__" ) );
 
    mymail( $json->mail->admin, 'security alert __application__', "session timeout or possible security breach attempt on __application__\n" .
            'requestuser: ' . $insert[ 'requestuser' ] . "\n" .
            'sessionuser: ' . $insert[ 'sessionuser' ] . "\n" .
            'remoteip:    ' . $insert[ 'remoteip' ] . "\n" .
-           'when:        ' . date('Y-m-d H:i:s', $insert[ 'when' ]->sec) . " UTC\n" .
+           'when:        ' . date('Y-m-d H:i:s', ga_db_date_secs( $insert[ 'when' ] ) ) . " UTC\n" .
            '' );
 
    echo (json_encode($results));
@@ -92,21 +78,9 @@ if ( !sizeof( $_REQUEST ) )
     exit();
 }
 
-try {
-     $m = new MongoClient(
-         __~mongo:url{"__mongo:url__"}
-         __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-     );
-} catch ( Exception $e ) {
-    $results = "Could not connect to the db " . $e->getMessage();
-    echo (json_encode($results));
-    exit();
-}
+ga_db_open( true );
 
-$coll = $m->__application__->users;
-
-if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) ) )
-{
+if ( $doc = ga_db_output( ga_db_findOne( 'users', '', [ "name" => $_SESSION[ $window ][ 'logon' ] ] ) ) ) {
 // get all keys in request, look in db and join results
    $any_results = 0;
    foreach ( $_REQUEST as $k=>$v )
@@ -215,7 +189,7 @@ if ( isset( $_REQUEST[ '_users' ] ) )
 {
    $query[ 'visible' ][ '$in' ] = array( "on" );
    $query[ 'name'    ][ '$ne' ] = $_SESSION[ $window ][ 'logon' ];
-   $results[ '_users' ] = $coll->distinct( 'name', $query );
+   $results[ '_users' ] = ga_db_output( ga_db_distinct( 'users', '', 'name', $query ) );
 }
 
 if ( isset( $_REQUEST[ 'datetime' ] ) )
@@ -243,4 +217,4 @@ __~debug:basemylog{error_log( "syspull: request\n" . print_r( $_REQUEST, true ) 
 __~debug:basemylog{error_log( "syspull: results\n" . print_r( $results, true ) . "\n", 3, "/tmp/mylog.syspull" );}
 echo (json_encode($results));
 exit();
-?>
+

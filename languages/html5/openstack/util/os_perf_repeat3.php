@@ -274,4 +274,3 @@ while( 1 ) {
     sleep( 60 * $minutes );
 }
 
-?>

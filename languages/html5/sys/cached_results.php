@@ -38,33 +38,7 @@ if ( !file_exists( $mj ) ) {
     
 require_once $mj;
 
-date_default_timezone_set("UTC");
-
-function db_connect( $error_json_exit = false ) {
-   global $use_db;
-   global $db_errors;
-
-   if ( !isset( $use_db ) ) {
-      try {
-         $use_db = new MongoClient(
-         __~mongo:url{"__mongo:url__"}
-         __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-         );
-      } catch ( Exception $e ) {
-         $db_errors = "Could not connect to the db " . $e->getMessage();
-         if ( $error_json_exit )
-         {
-            $results = array( "error" => $db_errors );
-            $results[ '_status' ] = 'complete';
-            echo (json_encode($results));
-            exit();
-         }
-         return false;
-      }
-   }
-
-   return true;
-}
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
 
 global $parse_info;
 global $parse_regex;
@@ -159,8 +133,6 @@ function extract_all_parse_info( $tags, $vs ) {
 }
 
 function get_cached( $error_json_exit = false ) {
-   global $use_db;
-   global $db_errors;
    global $query;
    global $logon;
    global $parse_info;
@@ -168,7 +140,7 @@ function get_cached( $error_json_exit = false ) {
    build_parse_info();
 
    $out = "";
-   if ( !db_connect( $error_json_exit ) )
+   if ( !ga_db_status( ga_db_open( $error_json_exit ) ) )
    {
        return false;
    }
@@ -185,7 +157,7 @@ function get_cached( $error_json_exit = false ) {
            ) ;
    }
 
-   $cached = $use_db->__application__->cache->find( $query );
+   $cached = ga_db_output( ga_db_find( 'cache', '', $query ) );
 
    $html_out = "<table class='padcell'><tr>";
    foreach ( $parse_info as $v ) {
@@ -237,4 +209,3 @@ $results[ 'outhtml' ] = get_cached();
 // $results[ 'modjson' ] = json_encode( $GLOBALS[ 'modulejson' ][ $module ] );
 // $results[ 'modjsonfields' ] = json_encode( $GLOBALS[ 'modulejson' ][ $module ]->fields );
 echo json_encode( $results );
-?>

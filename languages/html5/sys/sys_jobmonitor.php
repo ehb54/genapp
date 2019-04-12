@@ -48,37 +48,11 @@ if ( !in_array( $_REQUEST[ '_logon' ], $appconfig->restricted->admin ) ) {
     exit();
 }    
 
-date_default_timezone_set("UTC");
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
 
 $context = new ZMQContext();
 $zmq_socket = $context->getSocket(ZMQ::SOCKET_PUSH, '__application__ udp pusher');
 $zmq_socket->connect("tcp://" . $appconfig->messaging->zmqhostip . ":" . $appconfig->messaging->zmqport );
-
-function db_connect( $error_json_exit = false ) {
-   global $use_db;
-   global $db_errors;
-
-   if ( !isset( $use_db ) ) {
-      try {
-         $use_db = new MongoClient(
-             __~mongo:url{"__mongo:url__"}
-             __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-             );
-      } catch ( Exception $e ) {
-         $db_errors = "Could not connect to the db " . $e->getMessage();
-         if ( $error_json_exit )
-         {
-            $results = array( "error" => $db_errors );
-            $results[ '_status' ] = 'complete';
-            echo (json_encode($results));
-            exit();
-         }
-         return false;
-      }
-   }
-
-   return true;
-}
 
 function ProcStats( $sys ) {
     global $appconfig;
@@ -346,8 +320,6 @@ function get_procstats( $init = false ) {
 // to get more data => add it to the runinfo
 
 function get_runinfo( $error_json_exit = false ) {
-   global $use_db;
-   global $db_errors;
    global $appconfig;
    global $runinfo;
    global $nowsecs;
@@ -359,12 +331,12 @@ function get_runinfo( $error_json_exit = false ) {
 
    $runinfo = [];
 
-   if ( !db_connect( $error_json_exit ) )
+   if ( !ga_db_status( ga_db_open( $error_json_exit ) ) )
    {
        return false;
    }
 
-   $runs = $use_db->__application__->running->find();
+   $runs = ga_db_output( ga_db_find( 'running', '' ) );
 
    $nowsecs = microtime( true );
 
@@ -372,7 +344,7 @@ function get_runinfo( $error_json_exit = false ) {
 
    foreach ( $runs as $v ) {
        $uuid = $v['_id'];
-       $job = $use_db->__application__->jobs->findOne( array( "_id" => $uuid ) );
+       $job = ga_db_output( ga_db_findOne( 'jobs', '', [ "_id" => $uuid ] ) );
        $pids = $v['pid'];
 
        $resources = [];
@@ -387,7 +359,7 @@ function get_runinfo( $error_json_exit = false ) {
 
        
        if ( isset( $job["start"] ) ) {
-           $duration = floatval( $nowsecs - $job["start"]->sec );
+           $duration = floatval( $nowsecs - ga_db_date_secs( $job["start"] ) );
            $duration_s = sprintf( $duration > 1 * 60 ? "%.0f" : "%.1f", $duration - 60 * intval( $duration / 60 ) );
            $duration_m = intval( $duration / 60 ) % 60;
            $duration_h = intval( $duration /(60 * 60 ) ) % 24;
@@ -409,7 +381,7 @@ function get_runinfo( $error_json_exit = false ) {
                "module"    => $job[ 'module' ]
                ,"user"      => $job[ 'user' ]
 #               "pids"      => $v  [ 'pid' ]
-               ,"started"   => isset( $job[ "start" ] ) ? date( "Y M d H:i:s T", $job["start"]->sec ) : "Unknown"
+               ,"started"   => isset( $job[ "start" ] ) ? date( "Y M d H:i:s T", ga_db_date_secs( $job["start"] ) ) : "Unknown"
                ,"duration"  => $duration
                ,"resources" => implode( ",", array_keys( $resources ) )
                ,"id"        => $uuid
@@ -553,4 +525,3 @@ do {
 
 echo '{"_none":"1"}';
 
-?>

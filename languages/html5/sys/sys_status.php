@@ -103,19 +103,23 @@ if ( isset( $_SESSION[ $window ][ 'logon' ] ) ) {
       } else {
           $results[ "_groups" ] = new stdClass();
       }
+      require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
       $mongook = 1;
-      try {
-          $m = new MongoClient(
-              __~mongo:url{"__mongo:url__"}
-              __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-          );
-      } catch ( Exception $e ) {
-          $results[ 'error' ] .= "Could not connect to the db " . $e->getMessage();
+      if ( !ga_db_status( ga_db_open() ) ) {
+          $results[ 'error' ] .= "Could not connect to the db " . $ga_db_errors;
           $mongook = 0;
       }
       if ( $mongook ) {
-          $coll = $m->__application__->users;
-          if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ), array( "groups" => 1 ) ) ) {
+          if ( $doc = 
+               ga_db_output(
+                   ga_db_findOne(
+                       'users',
+                       '',
+                       [ "name" => $_SESSION[ $window ][ 'logon' ] ], 
+                       [ "groups" => 1 ]
+                       )
+               )
+              ) {
               if ( isset( $doc[ "groups" ] ) ) {
                   $results[ "_usergroups" ] = $doc[ "groups" ];
               } else {
@@ -124,24 +128,40 @@ if ( isset( $_SESSION[ $window ][ 'logon' ] ) ) {
           } else {
               $results[ "_usergroups" ] = [];
           }
-          if ( __~usercolors{1}0 && $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ), array( "color" => 1 ) ) ) {
+          if ( __~usercolors{1}0 
+               && $doc = 
+               ga_db_output( 
+                   ga_db_findOne(
+                       'users',
+                       '',
+                       [ "name" => $_SESSION[ $window ][ 'logon' ] ],
+                       [ "color" => 1 ]
+                   ) 
+               ) 
+              ) {
               $results[ "_color" ] = isset( $doc[ "color" ] ) ? $doc[ "color" ] : "";
           }
       }
 
+      # is this correct? maybe down a couple levels?
+
       if ( __~xsedeproject{1}0 ) {
           $mongook = 1;
-          try {
-              $m = new MongoClient(
-                  __~mongo:url{"__mongo:url__"}
-                  __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-                  );
-          } catch ( Exception $e ) {
-              $results[ 'error' ] .= "Could not connect to the db " . $e->getMessage();
+          if ( !ga_db_status( ga_db_open() ) ) {
+              $results[ 'error' ] .= "Could not connect to the db " . $ga_db_errors;
               $mongook = 0;
           }
           if ( $mongook ) {
-              if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ), array( "xsedeproject" => 1 ) ) ) {
+              if ( $doc = 
+                   ga_db_output(
+                       ga_db_findOne(
+                           'users',
+                           '',
+                           [ "name" => $_SESSION[ $window ][ 'logon' ] ], 
+                           [ "xsedeproject" => 1 ]
+                       )
+                   )
+                  ) {
                   if ( isset( $doc[ 'xsedeproject' ] ) ) {
                       $results[ '_xsedeproject' ] = [];
                       foreach ( $doc[ 'xsedeproject' ] as $v ) {
@@ -155,9 +175,9 @@ if ( isset( $_SESSION[ $window ][ 'logon' ] ) ) {
       }
   }
 } else {
-  $results[ '_logon' ] = "";
-  $results[ '_project' ] = "";
-  __~xsedeproject{$results[ '_xsedeproject' ] = "";}
+    $results[ '_logon' ] = "";
+    $results[ '_project' ] = "";
+    __~xsedeproject{$results[ '_xsedeproject' ] = "";}
 }
 
 if ( isset( $appjson->resourcedefault ) ) {
@@ -174,4 +194,3 @@ if ( __~xsedeproject{1}0 && isset( $appjson->resources ) ) {
 
 echo (json_encode($results));
 exit();
-?>

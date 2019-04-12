@@ -25,22 +25,20 @@ foreach ( $ps as $v ) {
     $info[ $jid ][ "mongorunning" ] = 0;
 }
 
-# connect
-try {
-     $mongo = new MongoClient(
-             __~mongo:url{"__mongo:url__"}
-             __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-             );
-} catch ( Exception $e ) {
-    echo "could not connect to mongodb\n";
-    exit();
-}
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
+ga_db_open( true );
 
 # get all running jobs
 
 $mongocoll = $mongo->__application__->running;
 
-$running = $mongocoll->find();
+$running = 
+    ga_db_output(
+        ga_db_find(
+            'running',
+            '' 
+            )
+    );
 
 foreach ( $running as $v ) {
     $jid = $v[ '_id' ];
@@ -68,5 +66,3 @@ if ( strlen( $dcmds ) ) {
 } else {
     print "All ok\n";
 }
-
-?>

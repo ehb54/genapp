@@ -34,4 +34,3 @@ if ( !empty( $docmd ) ) {
 } else {
     echo "no run-OR instances found\n";
 }
-?>

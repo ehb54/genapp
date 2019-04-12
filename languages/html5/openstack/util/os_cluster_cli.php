@@ -256,5 +256,3 @@ if ( isset( $json->resources->oscluster->properties->postssh ) ) {
 foreach ( $image as $v ) {
     echo "$v $ip[$v]\n";
 }
-
-?>

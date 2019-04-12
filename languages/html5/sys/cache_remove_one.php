@@ -28,16 +28,8 @@ if ( !isset( $_REQUEST[ "_cachedelete" ] ) ||
     exit();
 }
     
-try {
-    $m = new MongoClient(
-        __~mongo:url{"__mongo:url__"}
-        __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-    );
-} catch ( Exception $e ) {
-    $results[ 'error' ] .= "Could not connect to the db " . $e->getMessage();
-    echo (json_encode($results));
-    exit();
-}
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
+ga_db_open( true );
 
 if ( strlen( $_REQUEST[ "_logon" ] ) ) {
     $appconfig = json_decode( file_get_contents( "__appconfig__" ) );
@@ -55,11 +47,15 @@ if ( strlen( $_REQUEST[ "_logon" ] ) ) {
         exit();
     }        
     
-    $coll = $m->__application__->cache;
-
-    try {
-        $coll->remove( array( "jobid" => $_REQUEST[ "_uuid" ] ), array( __~mongojournal{"j" => true, }"justOne" => true ) );
-    } catch(MongoCursorException $e) {
+    if ( !ga_db_status(
+              ga_db_remove( 
+                  'cache',
+                  '',
+                  [ "jobid" => $_REQUEST[ "_uuid" ] ],
+                  [ "justOne" => true ]
+              )
+         )
+        ) {
         $results[ 'error' ] .= "Could not remove request job from cache";
         echo (json_encode($results));
         exit();
@@ -71,4 +67,3 @@ if ( strlen( $_REQUEST[ "_logon" ] ) ) {
 }
 
 echo (json_encode($results));
-?>

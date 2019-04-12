@@ -1,7 +1,7 @@
 <?php
 header('Content-type: application/json');
 
-date_default_timezone_set("UTC");
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
 
 session_start(); 
 session_regenerate_id(true); 
@@ -18,17 +18,17 @@ if ( !sizeof( $_REQUEST ) )
 
 if ( isset( $_REQUEST[ '_window' ] ) )
 {
-   $window = $_REQUEST[ '_window' ];
+    $window = $_REQUEST[ '_window' ];
 }
 if ( !isset( $_SESSION[ $window ] ) )
 {
-   $_SESSION[ $window ] = array( "logon" => "", "project" => "" );
+    $_SESSION[ $window ] = array( "logon" => "", "project" => "" );
 }
 
 if ( !is_string( $_REQUEST[ 'userid' ] ) || 
-   strlen( $_REQUEST[ 'userid' ] ) < 3 ||
-   strlen( $_REQUEST[ 'userid' ] ) > 30 ||
-   !filter_var( $_REQUEST[ 'userid' ], FILTER_VALIDATE_REGEXP, array("options"=>array("regexp"=>'/^[A-Za-z][A-Za-z0-9_]+$/') ) ) )
+     strlen( $_REQUEST[ 'userid' ] ) < 3 ||
+     strlen( $_REQUEST[ 'userid' ] ) > 30 ||
+     !filter_var( $_REQUEST[ 'userid' ], FILTER_VALIDATE_REGEXP, array("options"=>array("regexp"=>'/^[A-Za-z][A-Za-z0-9_]+$/') ) ) )
 {
     $results[ "error" ] = "empty or invalid user name";
     echo (json_encode($results));
@@ -39,120 +39,105 @@ __~debug:basemylog{error_log( "request\n" . print_r( $_REQUEST, true ) . "\n", 3
 
 $userid = $_REQUEST[ 'userid' ];
 
+ga_db_open( true ); # can ignore return status, will exit properly
 
-// connect
-try {
-     $m = new MongoClient(
-         __~mongo:url{"__mongo:url__"}
-         __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-         );
-} catch ( Exception $e ) {
-    $results[ "error" ] = "Could not connect to the db " . $e->getMessage();
-    echo (json_encode($results));
-    exit();
-}
-  
 $loginok = 0;
 
-$coll = $m->__application__->users;
-$current_user = $coll->findOne( array( "name" => $userid ) );
+$current_user = ga_db_output( ga_db_findOne( 'users', '', [ 'name' => $userid ] ) );
 
-/// FOR GLOBUS ///////////////////////////////////////////////////////////////////////////
+# /// FOR GLOBUS ///////////////////////////////////////////////////////////////////////////
 
-if ( $current_user && isset( $current_user[ 'globusid' ] ) || isset( $current_user[ 'googleid' ] ) ) {              // FOR GLOBUS&GOOGLE ///
-$email = filter_var( $_REQUEST[ 'email' ], FILTER_SANITIZE_EMAIL );
+if ( $current_user && isset( $current_user[ 'globusid' ] ) || isset( $current_user[ 'googleid' ] ) ) { #  // FOR GLOBUS&GOOGLE ///
+    $email = filter_var( $_REQUEST[ 'email' ], FILTER_SANITIZE_EMAIL );
 
-if ( !is_string( $email ) || 
-   !strlen( $email ) ||
-   !filter_var( $email, FILTER_VALIDATE_EMAIL ) )
-{
-  if ( isset( $_REQUEST['globusidlog']) || isset( $_REQUEST['googleidlog'])  )
+    if ( !is_string( $email ) || 
+         !strlen( $email ) ||
+         !filter_var( $email, FILTER_VALIDATE_EMAIL ) )
     {
-     $results[ "error" ] = "PHP code received empty or invalid email";
-     echo (json_encode($results));
-     exit();
+        if ( isset( $_REQUEST['globusidlog']) || isset( $_REQUEST['googleidlog'])  )
+        {
+            $results[ "error" ] = "PHP code received empty or invalid email";
+            echo (json_encode($results));
+            exit();
+        }
     }
 }
-}
-//////////////////////////////////////////////////////////////////////////////////////////
+# //////////////////////////////////////////////////////////////////////////////////////////
 
-if ( $current_user && !isset( $current_user[ 'globusid' ] ) && !isset( $current_user[ 'googleid' ] ) ) {     // FOR GLOBUS&GOOGLE /// 
-if ( isset( $_REQUEST[ 'forgotpassword' ] ) &&
-     $_REQUEST[ 'forgotpassword' ] === "on" )
-{
-    unset( $_REQUEST[ 'password' ] );
-} else {
-    if ( !isset( $_REQUEST[ 'password' ] ) || 
-         !is_string( $_REQUEST[ 'password' ] ) || 
-         strlen( $_REQUEST[ 'password' ] ) < 10 || 
-         strlen( $_REQUEST[ 'password' ] ) > 100 )
-    {
-        $results[ "error" ] = "empty or invalid password";
-        echo (json_encode($results));
-        exit();
+if ( $current_user && !isset( $current_user[ 'globusid' ] ) && !isset( $current_user[ 'googleid' ] ) ) { #    // FOR GLOBUS&GOOGLE /// 
+    if ( isset( $_REQUEST[ 'forgotpassword' ] ) &&
+         $_REQUEST[ 'forgotpassword' ] === "on" ) {
+        unset( $_REQUEST[ 'password' ] );
+    } else {
+        if ( !isset( $_REQUEST[ 'password' ] ) || 
+             !is_string( $_REQUEST[ 'password' ] ) || 
+             strlen( $_REQUEST[ 'password' ] ) < 10 || 
+             strlen( $_REQUEST[ 'password' ] ) > 100 )
+        {
+            $results[ "error" ] = "empty or invalid password";
+            echo (json_encode($results));
+            exit();
+        }
+        $pw = $_REQUEST[ 'password' ];
     }
-    $pw = $_REQUEST[ 'password' ];
 }
-}
-
-
 
 $results[ 'status' ] = "User not found or incorrect password";
-if ( isset( $pw ) && $doc = $coll->findOne( array( "name" => $userid ) ) )
+if ( isset( $pw ) && $doc = ga_db_output( ga_db_findOne( 'users', '', [ 'name' => $userid ] ) ) ) 
 {
-   if ( PHP_VERSION_ID < 50500 )
-   {
-      if ( crypt( $pw, $doc[ 'password' ]) == $doc[ 'password' ] )
-      {
-         $loginok = 1;
-      }
-   } else {
-      if ( password_verify ( $pw , $doc[ 'password' ] ) )
-      {  
-         $loginok = 1;
-      }
-   }
+    if ( PHP_VERSION_ID < 50500 )
+    {
+        if ( crypt( $pw, $doc[ 'password' ]) == $doc[ 'password' ] )
+        {
+            $loginok = 1;
+        }
+    } else {
+        if ( password_verify ( $pw , $doc[ 'password' ] ) )
+        {  
+            $loginok = 1;
+        }
+    }
 }
 
-// FOR GLOBUS ////////////////////////////////////////////////////////////////////
-if ( isset( $email ) && $doc = $coll->findOne( array( "name" => $userid ) ) )
+# // FOR GLOBUS ////////////////////////////////////////////////////////////////////
+if ( isset( $email ) && $doc = ga_db_output( ga_db_findOne( 'users', '', [ 'name' => $userid ] ) ) ) 
 {
-  if ( $email == $doc[ 'email' ] )
-     {	
-      $loginok = 1;
-     }
+    if ( $email == $doc[ 'email' ] )
+    {	
+        $loginok = 1;
+    }
 }
-//////////////////////////////////////////////////////////////////////////////////
+# //////////////////////////////////////////////////////////////////////////////////
 
 
 $addstat = "";
 $did_expiretime              = 0;
 $did_expiretimes             = 0;
 $did_lastfailedloginattempts = 0;
-$now = new MongoDate();
+$now = ga_db_output( ga_db_date() );
 
 if ( isset( $doc[ 'expiretime' ] ) )
 {
-   if ( $now > $doc[ 'expiretime' ] )
-   {
-      $did_expiretime = 1;
-   }
+    if ( $now > $doc[ 'expiretime' ] )
+    {
+        $did_expiretime = 1;
+    }
 }
 
 if ( isset( $doc[ 'expiretimes' ] ) )
 {
-   if ( $doc[ 'expiretimes' ] <= 0 )
-   {
-      $did_expiretimes = 1;
-   }
+    if ( $doc[ 'expiretimes' ] <= 0 )
+    {
+        $did_expiretimes = 1;
+    }
 }
 
 if ( isset( $doc[ 'lastfailedloginattempts' ] ) )
 {
-   if ( $doc[ 'lastfailedloginattempts' ] > 4 )
-   {
-      $did_lastfailedloginattempts = 1;
-   }
+    if ( $doc[ 'lastfailedloginattempts' ] > 4 )
+    {
+        $did_lastfailedloginattempts = 1;
+    }
 }
 
 if ( $loginok == 1 && $did_expiretime )
@@ -177,7 +162,7 @@ if ( $did_lastfailedloginattempts )
 }
 
 if ( $loginok &&
-    isset( $doc[ 'suspended' ] ) ) {
+     isset( $doc[ 'suspended' ] ) ) {
     $results[ 'status' ] = "Your account has been suspended by the administrators. ";
     $results[ '_message' ] = [
         "icon" => "information.png",
@@ -193,10 +178,10 @@ if ( $loginok ) {
          $doc[ "needsemailverification" ] != "verified"
         ) {
         if ( isset( $_REQUEST[ "_cancel" ] ) ) {
-            // rename user entry and add cancelled flag and scramble password
-                $id = '';
+            # // rename user entry and add cancelled flag and scramble password
+            $id = '';
             $email = '';
-            if ( $doc = $coll->findOne( array( "name" => $_REQUEST[ 'userid' ] ) ) ) {
+            if ( $doc = ga_db_output( ga_db_findOne( 'users', '', [ 'name' => $_REQUEST[ 'userid' ] ] ) ) ) {
                 if ( isset( $doc[ '_id' ] ) ) {
                     $id = $doc[ '_id' ];
                 }
@@ -218,19 +203,18 @@ if ( $loginok ) {
             unset( $doc[ 'needsemailverification' ] );
             $doc[ 'password' ] = "xx__1234$2y$10$7vf3p/0VGuSnavu.B/riiuzK938yiN1TgFaX8/LFtlMYQmS0TYyy2";
             $doc[ 'orgname' ] = $doc[ 'name' ];
-            $doc[ 'canceled' ] = new MongoDate();
+            $doc[ 'canceled' ] = ga_db_output( ga_db_date() );
+
             $orgname = $doc[ 'name' ];
 
             $ext = 0;
             do {
                 $doc[ 'name' ] = "_canceled_" . ( $ext ? "${ext}_" : "" ) . $orgname;
                 $ext++;
-            } while ( $coll->findOne( array( "name" => $doc[ 'name' ] ) ) );
+            } while ( ga_db_status( ga_db_findOne( 'users', '', [ 'name' => $doc[ 'name' ] ] ) ) );
 
-            try {
-                $coll->insert( $doc__~mongojournal{, array("j" => true )});
-            } catch(MongoCursorException $e) {
-                $results[ 'status' ] = "Error canceling user id. " . $e->getMessage();
+            if ( !ga_db_status( ga_db_insert( 'users', '', $doc ) ) ) {
+                $results[ 'status' ] = "Error canceling user id. " . $ga_db_errors;
                 $results[ '_message' ] = [
                     "icon" => "toast.png",
                     "text" => $results[ 'status' ]
@@ -238,11 +222,9 @@ if ( $loginok ) {
                 echo json_encode( $results );
                 exit();
             }
-
-            try {
-                $coll->remove( [ "name" => $orgname ] );
-            } catch(MongoCursorException $e) {
-                $results[ 'status' ] = "Error canceling user id. " . $e->getMessage();
+            
+            if ( !ga_db_status( ga_db_remove( 'users', '', [ "name" => $orgname ] ) ) ) {
+                $results[ 'status' ] = "Error canceling user id. " . $ga_db_errors;
                 $results[ '_message' ] = [
                     "icon" => "toast.png",
                     "text" => $results[ 'status' ]
@@ -262,7 +244,7 @@ if ( $loginok ) {
         if ( isset( $_REQUEST[ "_resendverify" ] ) ) {
             $id = '';
             $email = '';
-            if ( $doc = $coll->findOne( array( "name" => $_REQUEST[ 'userid' ] ) ) ) {
+            if ( $doc = ga_db_output( ga_db_findOne( 'users', '', [ 'name' => $_REQUEST[ 'userid' ] ] ) ) ) {
                 if ( isset( $doc[ '_id' ] ) ) {
                     $id = $doc[ '_id' ];
                 }
@@ -308,14 +290,10 @@ if ( $loginok ) {
 
                     $update = [];
                     $update[ '$set' ][ 'email' ] = $email1;
-                    $update[ '$set' ][ 'emailupdated' ] = new MongoDate();
+                    $update[ '$set' ][ 'emailupdated' ] = ga_db_output( ga_db_date() );
 
-                    try {
-                        $coll->update( array( "name" => $_REQUEST[ 'userid' ] ),
-                                       $update__~mongojournal{, array("j" => true )} );
-                    } catch(MongoCursorException $e) {
-                        $db_errors = "Error updating the database(). " . $e->getMessage();
-                        $results[ 'status' ] = $db_errors;
+                    if ( !ga_db_status( ga_db_update( 'users', '', [ 'name' => $_REQUEST[ 'userid' ] ], $update ) ) ) {
+                        $results[ 'status' ] = "Error updating the database(). " . $ga_db_errors;
                         $results[ '_message' ] = [
                             "icon" => "toast.png",
                             "text" => $results[ 'status' ]
@@ -374,11 +352,11 @@ if ( $loginok ) {
             ], 
             "text" => "Your must verify your email address." 
             ];
-        //    $results[ "_message" ] = 
-        //       array( 
-        //           "icon"  => "information.png"
-        //           ,"text" => $results[ 'status' ]
-        //       );
+        # //    $results[ "_message" ] = 
+        # //       array( 
+        # //           "icon"  => "information.png"
+        # //           ,"text" => $results[ 'status' ]
+        # //       );
         echo json_encode( $results );
         exit();
     } else {
@@ -410,7 +388,7 @@ if ( $loginok ) {
                     $app = json_decode( file_get_contents( "__appconfig__" ) );
                     $aid = $doc[ 'approvalid' ];
                     $did = $doc[ 'denyid' ];
-                $body = "New user requests approval again
+                    $body = "New user requests approval again
                 User     : " . $doc[ 'name' ] . "
                 Email    : " . $doc[ 'email' ] . "
                 Remote IP: " . $_SERVER['REMOTE_ADDR'] . "
@@ -452,170 +430,157 @@ if ( $loginok ) {
 
 if ( $loginok == 1 )
 {
-   if ( isset( $doc[ 'expiretime' ] ) || isset( $doc[ 'expiretimes' ] ) )
-   {
-      $addstat = 'This password will expire.  Please change the password (click the top right configuration icon). ';
-   } else {
-      $results[ '-close' ] = 1;
-   }
+    if ( isset( $doc[ 'expiretime' ] ) || isset( $doc[ 'expiretimes' ] ) )
+    {
+        $addstat = 'This password will expire.  Please change the password (click the top right configuration icon). ';
+    } else {
+        $results[ '-close' ] = 1;
+    }
 
-   $update[ '$set' ] = array(
-                              "lastlogin" => $now,
-                              "lastloginip" => $_SERVER[ 'REMOTE_ADDR' ]
-                             );
-   $update[ '$unset' ] = array(
-                                "lastfailedloginattempts" => 0
-                              );
-   if ( isset( $doc[ 'expiretimes' ] ) )
-   {
-       $update[ '$inc' ] = array( "expiretimes" => -1 );
-   }
+    $update[ '$set' ] = array(
+        "lastlogin" => $now,
+        "lastloginip" => $_SERVER[ 'REMOTE_ADDR' ]
+        );
+    $update[ '$unset' ] = array(
+        "lastfailedloginattempts" => 0
+        );
+    if ( isset( $doc[ 'expiretimes' ] ) )
+    {
+        $update[ '$inc' ] = array( "expiretimes" => -1 );
+    }
 
-   try {
-     $coll->update( array( "name" => $userid ), 
-                    $update__~mongojournal{, array("j" => true )} );
-   } catch(MongoCursorException $e) {
-      $results[ 'error' ]  = "Error updating the database. " . $e->getMessage();
-      $results[ 'status' ] = $addstat . "Unable to update user record";
-      unset( $results[ '-close' ] );
-      echo (json_encode($results));
-      exit();
-   }
+    if ( !ga_db_status( ga_db_update( 'users', '', [ 'name' => $_REQUEST[ 'userid' ] ], $update ) ) ) {
+        $results[ 'error' ]  = "Error updating the database. " . $ga_db_errors;
+        $results[ 'status' ] = $addstat . "Unable to update user record";
+        unset( $results[ '-close' ] );
+        echo (json_encode($results));
+        exit();
+    }
 
-   $results[ 'status' ] = $addstat . "Login successful. ";
-   $results[ '_logon' ] = $userid;
-   $_SESSION[ $window ][ 'logon' ] = $userid;
-   $_SESSION[ $window ][ 'app'   ] = "__application__";
-   session_commit();
+    $results[ 'status' ] = $addstat . "Login successful. ";
+    $results[ '_logon' ] = $userid;
+    $_SESSION[ $window ][ 'logon' ] = $userid;
+    $_SESSION[ $window ][ 'app'   ] = "__application__";
+    session_commit();
 
-   # store session id
-   {
-       $msession = $m->__application__->session;
-       try {
-           $msession->update( [ "_id"  => session_id() ],
-                              [ '$set' => [ 
-                                    "name" => $userid,
-                                    "active" => true,
-                                    "created" => new MongoDate()
-                                ] ],
-                              [ 'upsert' => true
-                              __~mongojournal{, writeConcern => [ "j" => true ]}
-                              ] );
-       } catch(MongoCursorException $e) {
-           $results[ 'status' ] .= "Unable to store session id. ";
-       }
-   }
+    # store session id
+    {
+        if ( !ga_db_status(
+                  ga_db_update( 'session', '', 
+                                [ "_id"  => session_id() ],
+                                [ '$set' => [ 
+                                      "name" => $userid,
+                                      "active" => true,
+                                      "created" => ga_db_output( ga_db_date() )
+                                  ] ],
+                                [ 'upsert' => true ]
+                  ) ) ) {
+            $results[ 'status' ] .= "Unable to store session id. ";
+        }
+    }
 
-   if ( isset( $doc[ "groups" ] ) ) {
-       $results[ "_usergroups" ] = $doc[ "groups" ];
-   } else {
-       $results[ "_usergroups" ] = [];
-   }
-   if ( __~usercolors{1}0 && isset( $doc[ "color" ] ) ) {
-       $results[ "_color" ] = $doc[ "color" ];
-   }
-   if ( isset( $_REQUEST[ "_switch" ] ) ) {
-       $results[ "_switch" ] = $_REQUEST[ "_switch" ];
-   }
+    if ( isset( $doc[ "groups" ] ) ) {
+        $results[ "_usergroups" ] = $doc[ "groups" ];
+    } else {
+        $results[ "_usergroups" ] = [];
+    }
+    if ( __~usercolors{1}0 && isset( $doc[ "color" ] ) ) {
+        $results[ "_color" ] = $doc[ "color" ];
+    }
+    if ( isset( $_REQUEST[ "_switch" ] ) ) {
+        $results[ "_switch" ] = $_REQUEST[ "_switch" ];
+    }
 
-   if ( __~xsedeproject{1}0 ) {
-       if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ), array( "xsedeproject" => 1 ) ) ) {
-           if ( isset( $doc[ 'xsedeproject' ] ) ) {
-               $results[ '_xsedeproject' ] = [];
-               foreach ( $doc[ 'xsedeproject' ] as $v ) {
-                   foreach ( $v as $k2 => $v2 ) {
-                       $results[ '_xsedeproject' ][] = $k2;
-                   }
-               }
-           }
-       }
-   }
-
+    if ( __~xsedeproject{1}0 ) {
+        if ( $doc = ga_db_output( ga_db_findOne( 'users', '', [ "name" => $_SESSION[ $window ][ 'logon' ] ], [ 'xsedeproject' => 1 ] ) ) ) {
+            if ( isset( $doc[ 'xsedeproject' ] ) ) {
+                $results[ '_xsedeproject' ] = [];
+                foreach ( $doc[ 'xsedeproject' ] as $v ) {
+                    foreach ( $v as $k2 => $v2 ) {
+                        $results[ '_xsedeproject' ][] = $k2;
+                    }
+                }
+            }
+        }
+    }
 } else {
-   if ( isset( $_REQUEST[ 'forgotpassword' ] ) &&
-        $_REQUEST[ 'forgotpassword' ] == "on" )
-   {
-      $doc = $coll->findOne( array( "name" => $userid ) );
+    if ( isset( $_REQUEST[ 'forgotpassword' ] ) &&
+         $_REQUEST[ 'forgotpassword' ] == "on" )
+    {
+        $doc = ga_db_output( ga_db_findOne( 'users', '', [ 'name' => $userid ] ) );
 
-      if ( isset( $doc[ 'email' ] ) ) {
-          $email = filter_var( $doc[ 'email' ], FILTER_SANITIZE_EMAIL );
-      }
+        if ( isset( $doc[ 'email' ] ) ) {
+            $email = filter_var( $doc[ 'email' ], FILTER_SANITIZE_EMAIL );
+        }
 
-      if ( !is_string( $email ) || 
-           !strlen( $email ) ||
-           !filter_var( $email, FILTER_VALIDATE_EMAIL ) )
-      {
-         $results[ 'status' ] = $addstat . 'Could not find valid email address associated with this user';
-      } else {
-// update password
-         $newpw = base_convert(rand(783641640, 28211099074), 10, 36) . base_convert(rand(78364164096, 2821109907455), 10, 36);
+        if ( !is_string( $email ) || 
+             !strlen( $email ) ||
+             !filter_var( $email, FILTER_VALIDATE_EMAIL ) )
+        {
+            $results[ 'status' ] = $addstat . 'Could not find valid email address associated with this user';
+        } else {
+# // update password
+            $newpw = base_convert(rand(783641640, 28211099074), 10, 36) . base_convert(rand(78364164096, 2821109907455), 10, 36);
 
-         if ( PHP_VERSION_ID < 50500 )
-         {
-           $doc[ 'password' ] = crypt( $newpw );
-         } else {
-           $doc[ 'password' ] = password_hash( $newpw, PASSWORD_DEFAULT );
-         }
+            if ( PHP_VERSION_ID < 50500 )
+            {
+                $doc[ 'password' ] = crypt( $newpw );
+            } else {
+                $doc[ 'password' ] = password_hash( $newpw, PASSWORD_DEFAULT );
+            }
 
-         $expires = new MongoDate();
-         $expires->sec += 60 * 60;
+            $expires = ga_db_add_secs( ga_db_output( ga_db_date() ), 60 * 60 );
 
-         $update[ '$set' ] = array(
-                                  "lastforgotlogin" => $now,
-                                  "lastforgotloginip" => isset( $_SERVER[ 'REMOTE_ADDR' ] ) ? $_SERVER[ 'REMOTE_ADDR' ] : "not from an ip",
-                                  "password" => $doc[ 'password' ], 
-                                  "expiretimes" => 1, 
-                                  "expiretime" => $expires
-                                  );
+            $update[ '$set' ] = array(
+                "lastforgotlogin" => $now,
+                "lastforgotloginip" => isset( $_SERVER[ 'REMOTE_ADDR' ] ) ? $_SERVER[ 'REMOTE_ADDR' ] : "not from an ip",
+                "password" => $doc[ 'password' ], 
+                "expiretimes" => 1, 
+                "expiretime" => $expires
+                );
 
-         $update[ '$unset' ] = array(
-                                    "lastfailedloginattempts" => 0
-                                    );
-         try {
-            $coll->update( array( "name" => $userid ),
-                           $update__~mongojournal{, array("j" => true )} );
-         } catch(MongoCursorException $e) {
-            $results[ 'error' ]  = "Error updating the database." . $e->getMessage();
-            $results[ 'status' ] = $addstat . "Unable to reset password";
+            $update[ '$unset' ] = array(
+                "lastfailedloginattempts" => 0
+                );
+
+            if ( !ga_db_status( ga_db_update( 'users', '', [ 'name' => $userid ], $update ) ) ) {
+                $results[ 'error' ]  = "Error updating the database." . $ga_db_errors;
+                $results[ 'status' ] = $addstat . "Unable to reset password";
+                echo (json_encode($results));
+                unset( $results[ '-close' ] );
+                exit();
+            }
+            
+            require_once "../mail.php";
+            $body = "Now: " . $newpw . "\nExpires in one hour or one use\nPlease change after login";
+
+            if ( mymail( $email, 'reminder', $body ) )
+            {
+                $results[ 'error' ]  = "Could not send email, mail server is down or not accepting requests";
+                $results[ 'status' ] = $addstat . "Unable to login or send password email";
+            } else {
+                $results[ 'status' ] = $addstat . "Check your registered email address";
+            }
+        }
+    } else {
+        $update[ '$set' ] = array(
+            "lastfailedlogin" => $now,
+            "lastfailedloginip" => $_SERVER[ 'REMOTE_ADDR' ]
+            );
+        if ( isset( $doc[ 'lastfailedloginattempts' ] ) )
+        {
+            $update[ '$inc' ][ 'lastfailedloginattempts' ] = 1;
+        } else {
+            $update[ '$set' ][ 'lastfailedloginattempts' ] = 1;
+        }
+        if ( !ga_db_status( ga_db_update( 'users', '', [ 'name' => $userid ], $update ) ) ) {
+            $results[ 'error' ]  = "Error updating the database. " . $ga_db_errors;
             echo (json_encode($results));
-            unset( $results[ '-close' ] );
             exit();
-         }
- 
-         require_once "../mail.php";
-         $body = "Now: " . $newpw . "\nExpires in one hour or one use\nPlease change after login";
-
-         if ( mymail( $email, 'reminder', $body ) )
-         {
-            $results[ 'error' ]  = "Could not send email, mail server is down or not accepting requests";
-            $results[ 'status' ] = $addstat . "Unable to login or send password email";
-         } else {
-            $results[ 'status' ] = $addstat . "Check your registered email address";
-         }
-      }
-   } else {
-      $update[ '$set' ] = array(
-                                "lastfailedlogin" => $now,
-                                "lastfailedloginip" => $_SERVER[ 'REMOTE_ADDR' ]
-                                );
-      if ( isset( $doc[ 'lastfailedloginattempts' ] ) )
-      {
-         $update[ '$inc' ][ 'lastfailedloginattempts' ] = 1;
-      } else {
-         $update[ '$set' ][ 'lastfailedloginattempts' ] = 1;
-      }
-      try {
-         $coll->update( array( "name" => $userid ),
-                        $update__~mongojournal{, array("j" => true )} );
-      } catch(MongoCursorException $e) {
-         $results[ 'error' ]  = "Error updating the database. " . $e->getMessage();
-         echo (json_encode($results));
-         exit();
-      }
-   }
+        }
+    }
 }
 
 # $results[ 'sessionid' ] = session_id();
 echo (json_encode($results));
 exit();
-?>

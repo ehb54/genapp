@@ -101,29 +101,17 @@ $results[ 'id' ] = $id;
 $ImagickDraw->destroy();
 $image->destroy();
 
-date_default_timezone_set("UTC");
-$now = new MongoDate();
+require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
+$now = ga_db_output( ga_db_date() );
 
-try {
-    $m = new MongoClient(
-        __~mongo:url{"__mongo:url__"}
-        __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-        );
-} catch ( Exception $e ) {
-    $results[ 'error' ] = "Could not connect to the db " . $e->getMessage();
-    exit();
-}
+ga_db_open( true );
 
-try {
-    $m->__application__->captcha->insert( array( "_id"     => $id,
-                                                 "captcha" => $captcha,
-                                                 "time"    => $now,
-                                                 "window"  => $_REQUEST[ '_window' ] ) );
-} catch ( MongoException $e ) {
-    $results[ 'error' ] = "Internal error: could not insert into db";
-    echo json_encode( $results );
-    exit();
-}
+ga_db_insert( 'captcha', '', [
+                  "_id"     => $id,
+                  "captcha" => $captcha,
+                  "time"    => $now,
+                  "window"  => $_REQUEST[ '_window' ] 
+              ], [], true );
 
 echo json_encode( $results );
 exit();
@@ -133,4 +121,4 @@ function make_seed()
   list($usec, $sec) = explode(' ', microtime());
   return (float) $sec + ((float) $usec * 100000);
 }
-?>
+

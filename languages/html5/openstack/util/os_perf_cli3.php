@@ -319,6 +319,3 @@ os_delete( $json->_clusternodecount, $uuid, $xsedeproject );
 sendudpmsg( "" );
 
 echo $results;
-
-
-?>
