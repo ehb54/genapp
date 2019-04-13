@@ -2,6 +2,7 @@
 
 # to install required modules:
 # perl -MCPAN -e 'install "JSON";install "Try::Tiny";install "LWP::UserAgent";install "MIME::Lite";install "MIME::Base64";install "LWP::Protocol::https"';
+# $debug++;
 
 use Try::Tiny;
 use File::Basename;
@@ -19,7 +20,7 @@ $cf = "$mb/config.json";
 
 die "$0: configuration file $cf does not exist\n" if !-e $cf;
 
-$version = "Web monitor 0.7";
+$version = "Web monitor 0.9";
 
 sub read_params {
     print "read_params\n";
@@ -291,8 +292,35 @@ This service is currently experimental.
 $badleft = $debug_testdown     if $debug_testdown;
 $badskip = $debug_testdownskip if $debug_testdownskip;
 
+sub checkwss {
+    print "checking wss $_[0]\n" if $debug;
+    `websocat -q -uU $_[0] 2> /dev/null`;
+    my $response = $?;
+    print "checking wss $_[0] response '$response'\n" if $debug;
+    
+    undef $lasterror;
+    undef $lastresult;
+    undef $lastresultbytes;
+
+    if ($response == 0 )
+    {
+        $lastresultbytes = 1;
+        $lastresult      = "websocket ok";
+        print "checking $_[0] ok $lastresultbytes received\n" if $debug;
+        return 1;
+    } else {
+        $lasterror = "websocket error";
+        print "checking $_[0] error $lasterror\n" if $debug;
+        return 0;
+    }
+}
+
 sub checkurl {
 # should be ok
+    if ( $_[0] =~ /^ws/ ) {
+        return checkwss( $_[0] );
+    }
+
     if ( $debug_testdown )
     {
         if ( $debug_testdownskip && $badskip-- > 0 ) {
