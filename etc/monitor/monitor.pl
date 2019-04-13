@@ -2,9 +2,6 @@
 
 # to install required modules:
 # perl -MCPAN -e 'install "JSON";install "Try::Tiny";install "LWP::UserAgent";install "MIME::Lite";install "MIME::Base64";install "LWP::Protocol::https"';
-
-# also websocat required for wss or ws checking, available at https://github.com/vi/websocat
-
 # $debug++;
 
 use Try::Tiny;
@@ -23,7 +20,7 @@ $cf = "$mb/config.json";
 
 die "$0: configuration file $cf does not exist\n" if !-e $cf;
 
-$version = "Web monitor 0.8";
+$version = "Web monitor 0.9";
 
 sub read_params {
     print "read_params\n";
@@ -297,15 +294,15 @@ $badskip = $debug_testdownskip if $debug_testdownskip;
 
 sub checkwss {
     print "checking wss $_[0]\n" if $debug;
-    my $response = `websocat -q -uU $_[0] 2> /dev/null; echo $?`;
-    chomp $response;
+    `websocat -q -uU $_[0] 2> /dev/null`;
+    my $response = $?;
     print "checking wss $_[0] response '$response'\n" if $debug;
     
     undef $lasterror;
     undef $lastresult;
     undef $lastresultbytes;
 
-    if ($response eq '0' )
+    if ($response == 0 )
     {
         $lastresultbytes = 1;
         $lastresult      = "websocket ok";
