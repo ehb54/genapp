@@ -538,6 +538,29 @@
                         ,{ "add/js/ga.min.js"                       : "once" }
                     ]
                    }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "scss/ga-bootstrap.scss",
+                    "inputs"     : [ 
+                                     { "scss/ga-bootstrap.scss" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "scss/package.json",
+                    "inputs"     : [ 
+                                     { "scss/package.json" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "util/scss-build.sh",
+                    "setexecutable" :"true",
+                    "execute"    : "atend",
+                    "inputs"     : [ 
+                                     { "util/scss-build.sh" : "once" }
+                                   ]
+                   }    
                   ]
 }
 

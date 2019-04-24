@@ -13,7 +13,7 @@ if ( !__~modal{1}0 ) {
 }
 __~nofcrefresh{ga.data.nofcrefresh[ "__moduleid__" ] = true;}
 input_eval = "";
-input_html = "<table>";
+input_html = "";
 input_repeats = "";
 input_trees = [];
 skipped_row = 0;

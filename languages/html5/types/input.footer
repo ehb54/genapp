@@ -1,5 +1,3 @@
-if( skipped_row == 1 ){ input_html += "</tr>"; }
-input_html += '</table>';
 $( '#__moduleid___input_area' ).html( input_html );
 eval( input_eval );
 </script>

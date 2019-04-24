@@ -13,10 +13,8 @@ ga.value.extra_resets.clear();
 
 <span id="__moduleid___output_airavata"></span>
 
-<table>
-<tr>
-<td colspan="4"__~textarea:verticalalign{ style="vertical-align:__textarea:verticalalign__"}><label hidden id="__moduleid___output_textarea_label" for="__moduleid___output_textarea" class="__~textarea:default{__textarea:default__ }__~textarea:fontclass{__textarea:fontclass__ }">__~textarea:label{__textarea:label__}</label>
-<textarea readonly hidden id="__moduleid___output_textarea"__~textarea:rows{ rows="__textarea:rows__"}__~textarea:cols{ cols="__textarea:cols__"}__~textarea:help{ class="help_link"}></textarea>
+<div class="ga-output-field-group">
+<label hidden id="__moduleid___output_textarea_label" for="__moduleid___output_textarea" class="__~textarea:default{__textarea:default__ }__~textarea:fontclass{__textarea:fontclass__ }">__~textarea:label{__textarea:label__}</label>
+<textarea readonly hidden id="__moduleid___output_textarea"__~textarea:rows{ rows="__textarea:rows__"}__~textarea:cols{ cols="__textarea:cols__"} class="ga-output-field__~textarea:help{ help_link}"></textarea>
 __~textarea:help{<span class="help">__textarea:help__</span>}
-</td>
-</tr>
+</div>

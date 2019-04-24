@@ -1,0 +1,28 @@
+// Following instructions here: https://getbootstrap.com/docs/4.3/getting-started/theming/#importing
+
+// Custom.scss
+// Option B: Include parts of Bootstrap
+
+// Required
+@import "./node_modules/bootstrap/scss/functions";
+@import "./node_modules/bootstrap/scss/variables";
+@import "./node_modules/bootstrap/scss/mixins";
+
+// Optional
+@import "./node_modules/bootstrap/scss/reboot";
+@import "./node_modules/bootstrap/scss/forms";
+@import "./node_modules/bootstrap/scss/grid";
+@import "./node_modules/bootstrap/scss/buttons";
+
+.ga-input-field-group, .ga-output-field-group {
+  @extend .form-group;
+}
+.ga-input-field, .ga-output-field {
+  @extend .form-control;
+}
+.ga-module-panel {
+  @extend .container-fluid;
+}
+.ga-module-panel button {
+    @extend .btn;
+}
