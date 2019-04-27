@@ -55,6 +55,14 @@ while ( $ARGV[ 0 ] =~ /^-(\w{1,2})/ )
             next;
         }
     }
+    if ( $arg =~ /^k(\w?)/ )
+    {
+        if ( $1 eq 'l' )
+        {
+            $keep_layout++;
+            next;
+        }
+    }
     if ( $arg =~ /^g(\w?)/ )
     {
         if ( $1 eq 'd' )
@@ -1032,6 +1040,26 @@ foreach my $l ( keys %langs )
                     print `$cmd`;
                 }
             }
+        }
+    }
+    # optionally create layout files
+    if ( $keep_layout ) {
+        print '='x80 . "\n";
+        print "Saving layouts\n";
+        # print Dumper( %module_layouts );
+        for my $k ( keys %{$module_layouts{ $l }} ) {
+            # TODO add comparison of file and only write if diff
+            my $fo = "output/$l/layout/$k.json";
+            mkdir_for_file( $fo );
+            my $fh;
+            if ( !open $fh, ">$fo" )
+            {
+                $error .= "language $l: writing layout for $k: error opening output file $fo\n";
+                next;
+            }
+            print $fh $module_layouts{ $l }{ $k };
+            close $fh;
+            $created .= "$fo\n";
         }
     }
     # run any scripts in output

@@ -13,7 +13,7 @@ use JSON;
 #use JSON::PP;
 
 # use Switch;
-# use Data::Dumper;
+use Data::Dumper::Simple;
 use Hash::Merge qw( merge );
 Hash::Merge::set_behavior( 'RIGHT_PRECEDENT' );
 
@@ -981,6 +981,7 @@ sub check_files {
     undef %rpls;
     undef %module_to_file;
     undef %reserved_words;
+    undef %module_layouts;
 
     $notice .= load_reserved_words();
 
@@ -1219,7 +1220,7 @@ sub check_files {
     my %graphviz_repeaters;
 
     foreach my $l ( keys %{\%module_files} ) {
-#        print "lang $l\n";
+        print "lang $l\n";
         foreach my $f ( keys %{$module_files{ $l }} )
         {
             my $json = get_file_json_lang_specific( $f, $l, 1 );
@@ -1422,9 +1423,103 @@ sub check_files {
                 }
                 print "-"x30 . "\n" if keys %repeater && $show_repeaters;
             }
+            # extract layout
+            {
+                my %layout;
+
+                my $js = JSON->new;
+
+                # check for panels
+                {
+
+                    if ( $$json{ 'panels' } ) {
+                        print "$f has panels\n" if $debuglayout;
+                        # leverage json to deep copy (i know, could use dclone or CPAN:clone), but we already have CPAN::JSON
+                        $layout{ 'panels' } = decode_json( encode_json( $$json{ 'panels' } ) );
+
+                    } else {
+                        $layout{ 'panels' } = decode_json( "{}" );
+                    }
+
+                    # setup panel defaults (overrides in directives or somewhere else?)
+
+                    if ( !exists $layout{ 'panels' }{ 'root' } ) {
+                        $layout{ 'panels' }{ 'root' } = decode_json( "{}" );
+                    }
+                    if ( !exists $layout{ 'panels' }{ 'subpanel' } ) {
+                        $layout{ 'panels' }{ 'subpanel' } = decode_json( "{}" );
+                    }
+                    if ( !exists $layout{ 'panels' }{ 'root' }{ 'columns' } ) {
+                        $layout{ 'panels' }{ 'root' }{ 'columns' } = "auto";
+                    }
+                    if ( !exists $layout{ 'panels' }{ 'root' }{ 'rows' } ) {
+                        $layout{ 'panels' }{ 'root' }{ 'rows' } = "auto";
+                    }
+                    if ( !exists $layout{ 'panels' }{ 'root' }{ 'align' } ) {
+                        $layout{ 'panels' }{ 'root' }{ 'align' } = "left";
+                    }
+                    if ( !exists $layout{ 'panels' }{ 'root' }{ 'gap' } ) {
+                        $layout{ 'panels' }{ 'root' }{ 'gap' } = "5px";
+                    }
+                }
+
+                # extract field info & layout info
+                
+                if ( 0 ) {
+                    # get it all
+                    $layout{ 'fields' } = decode_json( encode_json( $$json{ 'fields' } ) );
+                } else {
+                    # extract specific fields:tags
+
+                    my %keepids;
+                    {
+                        my @ids = ( "id",
+                                    "role",
+                                    "layout" );
+                        @keepids{ @ids } = (1) x @ids;
+                    }
+
+                    $layout{ 'fields' } = [];
+                    
+                    for my $k ( @{$$json{ 'fields' }} ) {
+                        my %pushfield;
+
+                        print "dump of k\n" . Dumper( $k ) if $debuglayout;
+
+                        foreach my $fk ( keys $k ) {
+                            if ( $keepids{ $fk } ) {
+                                $pushfield{ $fk } = $k->{$fk};
+                            }
+                        }
+                        
+                        print "dump of \%pushfield\n" . Dumper( %pushfield ) if $debuglayout;
+
+                        push $layout{ 'fields' }, \%pushfield;
+                    }
+                        
+                }
+
+                print "$f panel json:\n" . $js->pretty->encode( \%layout ) . "\n" if $debuglayout;
+
+                my $mname = $f;
+                $mname =~ s/^.*\/([^\/]*)\.json$/\1/;
+
+                if ( $l ) { 
+                    # language specific json overrides
+                    $module_layouts{ $l }{ $mname } = $js->pretty->encode( \%layout );
+                } else {
+                    # propagate to all defined languages that are not already defined for this module
+                    for my $leach ( keys %langs ) {
+                        if ( !$module_layouts{ $leach }{ $mname } ) {
+                            $module_layouts{ $leach }{ $mname } = $js->pretty->encode( \%layout );
+                        }
+                    }
+                }
+
+                print Dumper( %module_layouts ) if $debuglayout;
+            }            
         }
     } # end module_files (per language)
-
     
     foreach my $l ( keys %langs ) {
         # print "checking module to file for language $l\n";
