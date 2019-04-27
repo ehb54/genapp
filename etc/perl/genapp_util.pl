@@ -13,7 +13,7 @@ use JSON;
 #use JSON::PP;
 
 # use Switch;
-use Data::Dumper::Simple;
+# use Data::Dumper;
 use Hash::Merge qw( merge );
 Hash::Merge::set_behavior( 'RIGHT_PRECEDENT' );
 
@@ -1220,7 +1220,7 @@ sub check_files {
     my %graphviz_repeaters;
 
     foreach my $l ( keys %{\%module_files} ) {
-        print "lang $l\n";
+        # print "lang $l\n";
         foreach my $f ( keys %{$module_files{ $l }} )
         {
             my $json = get_file_json_lang_specific( $f, $l, 1 );
