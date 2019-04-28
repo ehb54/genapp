@@ -1446,9 +1446,6 @@ sub check_files {
                     if ( !exists $layout{ 'panels' }{ 'root' } ) {
                         $layout{ 'panels' }{ 'root' } = decode_json( "{}" );
                     }
-                    if ( !exists $layout{ 'panels' }{ 'subpanel' } ) {
-                        $layout{ 'panels' }{ 'subpanel' } = decode_json( "{}" );
-                    }
                     if ( !exists $layout{ 'panels' }{ 'root' }{ 'columns' } ) {
                         $layout{ 'panels' }{ 'root' }{ 'columns' } = "auto";
                     }
