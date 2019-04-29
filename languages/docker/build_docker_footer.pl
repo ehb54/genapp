@@ -89,6 +89,19 @@ foreach my $mod ( keys %dependencies ) {
                 next;
             }
 
+            if ( $k eq 'run' ) {
+                my $cmd = $val;
+                $out .= "RUN $cmd\n";
+                next;
+            }
+
+            if ( $k eq 'env' ) {
+                my $env = $val;
+                $env =~ s/\=/ /;
+                $out .= "ENV $env\n";
+                next;
+            }
+
             $error .= "Module '$mod' : dependencies entry " . ( $i + 1 ) . " '" . encode_json( $entry ) . "' unknown tag '$k'\n";
             $has_error++;
             last;
