@@ -1,12 +1,24 @@
 // Following instructions here: https://getbootstrap.com/docs/4.3/getting-started/theming/#importing
 
-// Custom.scss
-// Option B: Include parts of Bootstrap
+// Include SCSS of Bootstrap
 
 // Required
 @import "./node_modules/bootstrap/scss/functions";
 @import "./node_modules/bootstrap/scss/variables";
 @import "./node_modules/bootstrap/scss/mixins";
+
+// Directive and other variables
+// TODO: maybe put these replacements into separate file?
+$text-color-rgb: rgb(__text_color_rgb__);
+$background-color-rgb: rgb(__background_color_rgb__);
+$button-color-rgb: rgb(__button_color_rgb__);
+
+// Bootstrap variable overrides
+$body-color: $text-color-rgb;
+$body-bg: $background-color-rgb;
+$theme-colors: (
+  "button-color": $button-color-rgb
+);
 
 // Optional
 @import "./node_modules/bootstrap/scss/reboot";
@@ -25,4 +37,5 @@
 }
 .ga-module-panel button {
     @extend .btn;
+    @extend .btn-button-color;
 }
