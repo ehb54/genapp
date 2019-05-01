@@ -1,10 +1,10 @@
 ga.tmp.html = '';
 __~fields:repeater{ga.tmp.html = '<tr><td></td><td colspan="4"><table id="__fields:id__-repeater"></table></td></tr>';}
 __~fields:hidden{ga.tmp.html = ga.tmp.html.replace( '<td></td>', '' );}
-this_html = '<tr__~fields:hidden{ class="hidden"}>' +
-'<td__~fields:hidden{ class="hidden"}><label for="__fields:id__">__fields:label__ </label></td>' + 
-'<td__~fields:hidden{ class="hidden"}><input type="number" name="__fields:id__" id="__fields:id__"__~fields:repeater{ data-repeater="integer"}__~fields:default{ value="__fields:default__"} data-type="integer"__~fields:min{ min="__fields:min__"}__~fields:max{ max="__fields:max__"}__~fields:required{ required}__~fields:step{ step="__fields:step__"}' +
-'__~fields:help{ class="help_link"><span class="help">__fields:help__</span}><span id="__fields:id___msg" class="warning field_msg" > </span></td></tr>'
+this_html = '<div class="ga-input-field-group__~fields:hidden{ hidden}">' +
+'<label for="__fields:id__">__fields:label__ </label>' + 
+'<input type="number" name="__fields:id__" id="__fields:id__"__~fields:repeater{ data-repeater="integer"}__~fields:default{ value="__fields:default__"} data-type="integer"__~fields:min{ min="__fields:min__"}__~fields:max{ max="__fields:max__"}__~fields:required{ required}__~fields:step{ step="__fields:step__"}' +
+' class="ga-input-field__~fields:help{ help_link"><span class="help">__fields:help__</span}"><span id="__fields:id___msg" class="warning field_msg" > </span></div>'
 __~fields:repeater{+ ga.tmp.html}
 ;
 
