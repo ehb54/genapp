@@ -741,6 +741,14 @@ sub get_file_json {
         delete $extra_subs{ '__dependencies__' };
     }
         
+    if ( $$json{ 'panels' } ) {
+        my $js = JSON->new;
+        $extra_subs{ '__panels__' } = $js->encode( $$json{ 'panels' } );
+        delete $$json{ 'panels' };
+    } else {
+        delete $extra_subs{ '__panels__' };
+    }
+        
     $json;
 }
 
@@ -1429,36 +1437,63 @@ sub check_files {
 
                 my $js = JSON->new;
 
+                my $mname = $f;
+                $mname =~ s/^.*\/([^\/]*)\.json$/\1/;
+
                 # check for panels
                 {
-
-                    if ( $$json{ 'panels' } ) {
+                    if ( $extra_subs{ '__panels__' } ) {
+                        $layout{ 'panels' } = decode_json( $extra_subs{ '__panels__' } );
                         print "$f has panels\n" if $debuglayout;
-                        # leverage json to deep copy (i know, could use dclone or CPAN:clone), but we already have CPAN::JSON
-                        $layout{ 'panels' } = decode_json( encode_json( $$json{ 'panels' } ) );
-
                     } else {
-                        $layout{ 'panels' } = decode_json( "{}" );
+                        $layout{ 'panels' } = decode_json( "[]" );
                     }
 
                     # setup panel defaults (overrides in directives or somewhere else?)
 
-                    if ( !exists $layout{ 'panels' }{ 'root' } ) {
-                        $layout{ 'panels' }{ 'root' } = decode_json( "{}" );
+                    my %panel_apos;
+                    {
+                        my %used_panel_name;
+                        for ( my $i = 0; $i <  @{$layout{'panels'} }; ++$i ) {
+                            my $panel_name = ( keys $layout{'panels'}[$i] )[0];
+                            if ( $used_panel_name{ $panel_name }++ ) {
+                                $error .= "module: $mname : panel $panel_name duplicated\n";
+                                last;
+                            }
+                            $panel_apos{ $panel_name } = $i;
+                        }
                     }
-                    if ( !exists $layout{ 'panels' }{ 'root' }{ 'columns' } ) {
-                        $layout{ 'panels' }{ 'root' }{ 'columns' } = "auto";
+
+                    for my $k ( keys %panel_apos ) {
+                        print "key $k pos $panel_apos{$k}\n";
                     }
-                    if ( !exists $layout{ 'panels' }{ 'root' }{ 'rows' } ) {
-                        $layout{ 'panels' }{ 'root' }{ 'rows' } = "auto";
+
+                    if ( exists $panel_apos{ 'root' } &&
+                         $panel_apos{ 'root' } != 0 ) {
+                        $warn .= "module: $mname : root panel defined and not the first panel, moving to first position\n";
+                        my $tmp = $layout{'panels'}[$panel_apos{ 'root' }];
+                        splice( @{$layout{ 'panels' }}, $panel_apos{ 'root' }, 1 );
+                        unshift @{$layout{ 'panels' }}, $tmp;
                     }
-                    if ( !exists $layout{ 'panels' }{ 'root' }{ 'align' } ) {
-                        $layout{ 'panels' }{ 'root' }{ 'align' } = "left";
+
+                    if ( !exists $panel_apos{ 'root' } ) {
+                        unshift @{$layout{ 'panels' }}, decode_json( '{"root":{}}' );
                     }
-                    if ( !exists $layout{ 'panels' }{ 'root' }{ 'gap' } ) {
-                        $layout{ 'panels' }{ 'root' }{ 'gap' } = "5px";
+
+                    if ( !exists $layout{ 'panels' }[0]{ 'root' }{ 'columns' } ) {
+                        $layout{ 'panels' }[0]{ 'root' }{ 'columns' } = "auto";
+                    }
+                    if ( !exists $layout{ 'panels' }[0]{ 'root' }{ 'rows' } ) {
+                        $layout{ 'panels' }[0]{ 'root' }{ 'rows' } = "auto";
+                    }
+                    if ( !exists $layout{ 'panels' }[0]{ 'root' }{ 'align' } ) {
+                        $layout{ 'panels' }[0]{ 'root' }{ 'align' } = "left";
+                    }
+                    if ( !exists $layout{ 'panels' }[0]{ 'root' }{ 'gap' } ) {
+                        $layout{ 'panels' }[0]{ 'root' }{ 'gap' } = "5px";
                     }
                 }
+
 
                 # extract field info & layout info
                 
@@ -1498,8 +1533,6 @@ sub check_files {
 
                 print "$f panel json:\n" . $js->pretty->encode( \%layout ) . "\n" if $debuglayout;
 
-                my $mname = $f;
-                $mname =~ s/^.*\/([^\/]*)\.json$/\1/;
 
                 if ( $l ) { 
                     # language specific json overrides
