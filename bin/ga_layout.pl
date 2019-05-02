@@ -136,7 +136,7 @@ sub layout_expand {
                 }
             } elsif ( $type eq 'ARRAYref' ) {
                 for my $a ( @{$$json{'panels'}[$panelpos{$k}]{ $k }{ 'rows' } } ) {
-                    print "arrayref value $a\n";
+                    # print "arrayref value $a\n";
                     $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gtr' } .= "${a}fr ";
                 }
             } else {
@@ -155,7 +155,7 @@ sub layout_expand {
                 }
             } elsif ( $type eq 'ARRAYref' ) {
                 for my $a ( @{$$json{'panels'}[$panelpos{$k}]{ $k }{ 'columns' } } ) {
-                    print "arrayref value $a\n";
+                    # print "arrayref value $a\n";
                     $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gtc' } .= "${a}fr ";
                 }
             } else {
