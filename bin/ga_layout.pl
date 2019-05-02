@@ -50,7 +50,7 @@ sub increment_cursor_column {
     my $parentcols = shift;
     my $samerow    = shift;
 
-    print "increment cursor column parentcols $parentcols samerow $samerow\n";
+    print STDERR "increment cursor column parentcols $parentcols samerow $samerow\n" if $debug;
 
     $$cursor_c++;
     if ( $parentcols && $$cursor_c > $parentcols ) {
@@ -369,6 +369,6 @@ my $js = JSON->new;
 
 print $js->pretty->encode( $json ) . "\n";
 
-print '-'x60 . "\nNotices:\n$notice" . '-'x60 . "\n"  if $notice;
-print '-'x60 . "\nWarnings:\n$warn" . '-'x60 . "\n"   if $warn;
-print '-'x60 . "\nErrors:\n$error" . '-'x60 . "\n"    if $error;
+print STDERR '-'x60 . "\nNotices:\n$notice" . '-'x60 . "\n"  if $notice;
+print STDERR '-'x60 . "\nWarnings:\n$warn" . '-'x60 . "\n"   if $warn;
+print STDERR '-'x60 . "\nErrors:\n$error" . '-'x60 . "\n"    if $error;
