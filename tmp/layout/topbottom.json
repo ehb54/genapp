@@ -1,0 +1,35 @@
+{
+    "panels" : [
+        {
+            "root" : {
+                "columns" : 1,
+                "align"   : "left",
+                "gap"     : "10px",
+                "rows"    : "auto"
+            }
+        }
+        ,{
+            "toppanel" : {
+                "rows"    : "auto",
+                "row"     : 1,
+                "columns" : 4
+            }
+        }
+        ,{
+            "separator" : {
+                "rows"    : "auto",
+                "row"     : 2,
+                "columns" : 4
+            }
+        }
+        ,{
+            "bottompanel" : {
+                "rows"    : "auto",
+                "row"     : 3,
+                "align"   : "right",
+                "gap"     : "7px",
+                "columns" : 4
+            }
+        }
+    ]
+}
