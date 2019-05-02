@@ -12,14 +12,16 @@
             "leftpanel" : {
                 "rows"    : "auto",
                 "columns" : 4,
-                "column"  : 1
+                "column"  : 1,
+                "row"     : 1
             }
         },
         {
             "separator" : {
                 "rows"    : "auto",
                 "column"  : 2,
-                "columns" : 4
+                "columns" : 4,
+                "row"     : 1
             }
         },
         {
@@ -28,7 +30,8 @@
                 "column"  : 3,
                 "align"   : "right",
                 "gap"     : "7px",
-                "columns" : 4
+                "columns" : 4,
+                "row"     : 1
             }
         }
     ]

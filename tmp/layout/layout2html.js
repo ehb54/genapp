@@ -33,15 +33,16 @@ try {
     process.exit(-201);
 }
 
-// convert json into CSS & output
+// convert json into html & output
 
 if ( !json.panels ) {
     console.error( "error JSON contains no panels" );
     process.exit(-202);
 }
     
-// next -> hierarchy
-var parents = {};
+// build parent->child arrays & panel name->position in panel: array object
+// var parents = {};
+
 var children = {};
 var panelpos = {};
 for ( var i = 0; i < json.panels.length; ++i ) {
@@ -49,11 +50,13 @@ for ( var i = 0; i < json.panels.length; ++i ) {
     var parent = json.panels[ i ][ panel ].parent;
     panelpos[ panel ] = i;
     if ( parent ) {
-        parents[ panel ] = parent;
+        // parents[ panel ] = parent;
         children[ parent ] = children[ parent ] || [];
         children[ parent ].push( panel );
     }
 }
+
+// recursively expand the panels
 
 ga.grid.thishtml = function( panel ) {
     var html = "";
