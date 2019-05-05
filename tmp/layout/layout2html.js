@@ -56,6 +56,13 @@ for ( var i = 0; i < json.panels.length; ++i ) {
     }
 }
 
+var panelfields = {};
+for ( var i = 0; i < json.fields.length; ++i ) {
+    var panel = json.fields[ i ].layout.parent;
+    panelfields[ panel ] = panelfields[ panel ] || [];
+    panelfields[ panel ].push( json.fields[ i ] );
+}
+
 // recursively expand the panels
 
 ga.grid.thishtml = function( panel ) {
@@ -76,12 +83,41 @@ ga.grid.thishtml = function( panel ) {
     if ( json.panels[ panelpos[ panel ] ][ panel ].align ) {
         style += ";text-align:" + json.panels[ panelpos[ panel ] ][ panel ].align;
     }
-    html += `<div id=ga-panel-${panel} style="${style}"> Panel ${panel}`;
+    html += `<div id=ga-panel-${panel} style="${style}">`; // Panel ${panel}`;
     if ( children[ panel ] ) {
         for ( var i = 0; i < children[ panel ].length; ++i ) {
             html += ga.grid.thishtml( children[ panel ][ i ] );
         }
     }
+    if ( panelfields[ panel ] ) {
+        for ( var i = 0; i < panelfields[ panel ].length; ++i ) {
+            var lfstyle = "";
+            var dfstyle = "";
+            var id = panelfields[ panel ][ i ].id;
+            if ( panelfields[ panel ][ i ].lgr ) {
+                lfstyle += "grid-row:" + panelfields[ panel ][ i ].lgr + ";";
+            }
+            if ( panelfields[ panel ][ i ].lgc ) {
+                lfstyle += "grid-column:" + panelfields[ panel ][ i ].lgc + ";";
+            }
+            if ( panelfields[ panel ][ i ].layout.align ) {
+                lfstyle += "text-align" + panelfields[ panel ][ i ].layout.align + ";";
+            }
+            if ( panelfields[ panel ][ i ].dgr ) {
+                dfstyle += "grid-row:" + panelfields[ panel ][ i ].dgr + ";";
+            }
+            if ( panelfields[ panel ][ i ].dgc ) {
+                dfstyle += "grid-column:" + panelfields[ panel ][ i ].dgc + ";";
+            }
+            if ( panelfields[ panel ][ i ].layout.align ) {
+                dfstyle += "text-align" + panelfields[ panel ][ i ].layout.align + ";";
+            }
+            html += `<div id=ga-label-${id} style="${lfstyle}">label-${id}</div>
+<div id=ga-data-${id} style="${dfstyle}">data-${id}</div>
+`;
+        }
+    }
+
     html += '</div>\n';
     return html;
 }

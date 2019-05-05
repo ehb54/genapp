@@ -850,14 +850,14 @@ sub layout_expand {
 
         my $has_overflow;
 
-        if ( $cursor_row{ $parent } < $max_row ) { # row overflows, reset row & col
+        if ( $cursor_row{ $parent } <= $max_row ) { # row overflows, reset row & col
             $cursor_row{ $parent } = $max_row;
             $cursor_col{ $parent } = $max_col;
             $has_overflow++;
-        } elsif ( $cursor_row{ $parent } == $max_row &&
-                  $cursor_col{ $parent } < $max_col ) { # row is the same but col overflows
-            $cursor_col{ $parent } = $max_col;
-            $has_overflow++;
+#        } elsif ( $cursor_row{ $parent } == $max_row &&
+#                  $cursor_col{ $parent } < $max_col ) { # row is the same but col overflows
+#            $cursor_col{ $parent } = $max_col;
+#            $has_overflow++;
         } # if row is less than max row and column overflows, ignore
 
         my $drow = $$layout{'data'}[0];
@@ -1037,18 +1037,21 @@ sub layout_expand {
 
         # adjust parent cursor in case of overflow
 
-        if ( $cursor_row{ $parent } < $max_row ) { # row overflows, reset row & col
+        # print STDERR "field $fieldid: data max_row,col $max_row,$max_col cursor_row,col $cursor_row{$parent},$cursor_col{$parent}\n";
+
+        if ( $cursor_row{ $parent } <= $max_row ) { # row overflows, reset row & col
             $cursor_row{ $parent } = $max_row;
             $cursor_col{ $parent } = $max_col;
             $has_overflow++;
-        } elsif ( $cursor_row{ $parent } == $max_row &&
-                  $cursor_col{ $parent } < $max_col ) { # row is the same but col overflows
-            $cursor_col{ $parent } = $max_col;
-            $has_overflow++;
+#        } elsif ( $cursor_row{ $parent } == $max_row &&
+#                  $cursor_col{ $parent } < $max_col ) { # row is the same but col overflows
+#            $cursor_col{ $parent } = $max_col;
+#            $has_overflow++;
         } # if row is less than max row and column overflows, ignore
 
         # increment cursor if overflow
         if ( $has_overflow ) {
+            # print STDERR "field $fieldid: has overflow\n";
             increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, $rowt eq 'same' );
         }
 
