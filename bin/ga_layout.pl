@@ -216,6 +216,8 @@ sub layout_expand {
             if ( $location ) {
                 $row = $$location[0];
                 $col = $$location[1];
+            }
+            if ( $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'size' } ) {
                 $parentcols = $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'size' }[0];
                 $parentrows = $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'size' }[1];
             }
@@ -402,7 +404,7 @@ sub layout_expand {
         my $field  = $$json{'fields'}[$i];
         my $id     = $$field{'id'};
         my $layout = $$field{'layout'};
-        print "field id $id\n";
+        # print "field id $id\n";
         if ( !$layout ) {
             $$field{'layout'} = decode_json( '{"parent":"root"}' );
         } elsif ( !$$layout{'parent'} ) {
@@ -411,7 +413,7 @@ sub layout_expand {
             $error .= "field $id layout:parent $$layout{'parent'} is missing from panels\n";
             return;
         } else {
-            print "field id $id has layout with parent\n";
+            # print "field id $id has layout with parent\n";
         }
     }
         
@@ -419,30 +421,29 @@ sub layout_expand {
 ### do we need to do this?
 ### parent panels (div's in DOM) will hold "align", so only need if override
 ### possibly other properties?
-### skip for now
     
-    if ( 0 ) {
-        my %inherit;
-        {
-            # keys to progagate
-            my @ikeys = ( 
-                "align"
-                );
-            @inherit{ @ikeys } = (1) x @ikeys;
-        }
+    my %inherit;
+    {
+        # keys to progagate
+        my @ikeys = ( 
+            "label"
+            ,"data"
+            );
+        @inherit{ @ikeys } = (1) x @ikeys;
+    }
 
-        for ( my $i = 0; $i <  @{$$json{'fields'} }; ++$i ) {
-            my $field  = $$json{'fields'}[$i];
-            my $layout = $$field{'layout'};
-            
-            for my $inh ( keys %inherit ) {
-                print "for key $inh, layout:$$layout{'parent'}:\n";
-                if ( !$$layout{$inh} ) {
-                    $$layout{$inh} = get_inherited_value( $json, \%panelpos, $$layout{'parent'}, $inh );
-                }
+    for ( my $i = 0; $i <  @{$$json{'fields'} }; ++$i ) {
+        my $field  = $$json{'fields'}[$i];
+        my $layout = $$field{'layout'};
+        
+        for my $inh ( keys %inherit ) {
+            # print "for key $inh, layout:$$layout{'parent'}:\n";
+            if ( !$$layout{$inh} ) {
+                $$layout{$inh} = get_inherited_value( $json, \%panelpos, $$layout{'parent'}, $inh );
             }
         }
     }
+
 
 ## step 3 assign CSS grid info (row column, spans etc in parent div)
     # re-initialize cursors for fields
@@ -463,14 +464,597 @@ sub layout_expand {
 ###  if above or below: 
 ###   row increment will be 2
 
+### plan:
+###  we have now location, label & data info
+###  location determines the cursor position (as in panels)
+###  label & data are relative to the location
+###  next cursor position is an increment from the max of greatest label & data
 
+    for ( my $i = 0; $i <  @{$$json{'fields'} }; ++$i ) {
+        # setup some local variables for convenience
 
+        my $field    = $$json{'fields'}[$i];
+        my $fieldid  = $$field{'id'};
+        my $layout   = $$field{'layout'};
+        my $parent   = $$layout{'parent'};
+        my $location = $$layout{'location'};
 
-# label & data : r_start, r_end, c_start, c_end
+        if ( $location ) {
+            if ( typeof( $location ) ne 'ARRAYref' ) {
+                $error .= "field $fieldid layout:location not an array\n";
+                return;
+            }
 
+            if ( @$location != 2 ) {
+                $error .= "field $fieldid layout:location is an array but does not contain exactly 2 elements\n";
+                return;
+            }
+        }
+
+        my $row;
+        my $col;
+        my $parentcols;
+        my $parentrows;
+        if ( $location ) {
+            $row = $$location[0];
+            $col = $$location[1];
+        }
+        if ( $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'size' } ) {
+            $parentcols = $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'size' }[0];
+            $parentrows = $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'size' }[1];
+        }
+
+        undef $parentcols if $parentcols eq 'auto';
+        undef $parentrows if $parentrows eq 'auto';
+
+        # _s _e start end for spans
+        my $row_s;
+        my $row_e;
+        my $col_s;
+        my $col_e;
+
+        my $rtype = typeof( $row );
+        my $ctype = typeof( $col );
+
+        # row and column types
+
+        my $rowt;
+        my $colt;
+
+        $rowt      = 'next' if !$row || $row eq 'next';
+        $colt      = 'next' if !$col || $col eq 'next';
+        $rowt      = 'full' if $row eq 'full';
+        $colt      = 'full' if $col eq 'full';
+        $rowt      = '#'    if looks_like_number( $row );
+        $colt      = '#'    if looks_like_number( $col );
+        $rowt      = 'same' if $row eq 'same';
+        
+        if ( $rtype eq 'ARRAYref' ) {
+            $rowt  = 'span';
+            if ( scalar @$row != 2 ) {
+                $error .= "field $fieldid row definition is a range, but does not have exactly 2 elements\n";
+            } else {
+                $row_s = $$row[ 0 ];
+                $row_e = $$row[ 1 ];
+                $error .= "field $fieldid row number less than 1\n" if $row_s < 1;
+                $error .= "field $fieldid row range end less than start\n" if $row_e < $row_s;
+                $error .= "field $fieldid row range contains non-numbers\n" if !looks_like_number( $row_s ) || !looks_like_number( $row_e );
+            }
+        }
+
+        if ( $ctype eq 'ARRAYref' ) {
+            $colt  = 'span';
+            if ( scalar @$col != 2 ) {
+                $error .= "field $fieldid column definition is a range, but does not have exactly 2 elements\n";
+            } else {
+                $col_s = $$col[ 0 ];
+                $col_e = $$col[ 1 ];
+                $error .= "field $fieldid column number less than 1\n" if $col_s < 1;
+                $error .= "field $fieldid column range end less than start\n" if $col_e < $col_s;
+                $error .= "field $fieldid column range contains non-numbers\n" if !looks_like_number( $col_s ) || !looks_like_number( $col_e );
+            }
+        }
+
+        $error .= "field $fieldid unrecognized row type\n"    if !$rowt;
+        $error .= "field $fieldid unrecognized column type\n" if !$colt;
+
+        # print "field $fieldid: rowt $rowt $row_s $row_e colt $colt $col_s $col_e\n";
+            
+        # determine base position & extents
+
+        my $loc_row = $cursor_row{ $parent };
+        my $loc_col = $cursor_col{ $parent };
+
+        if ( $rowt eq '#' ) {
+            $loc_row = $row;
+            $cursor_row{ $parent } = $row;
+            if ( $colt eq '#' ) {
+                $loc_col = $col;
+                $cursor_col{ $parent } = $col;
+                increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
+            } elsif ( $colt eq 'span' ) {
+                $loc_col = $col_s;
+                $cursor_col{ $parent } = $col_e;
+                increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
+            } elsif ( $colt eq 'next' ) {
+                $loc_col = $cursor_col{ $parent };
+                increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
+            } elsif ( $colt eq 'full' ) {
+                $loc_col = 1;
+                $cursor_row{ $parent }++;
+                $cursor_col{ $parent } = 1;
+            } else {
+                $error .= "field $fieldid: unexpected error in updating row/column case row '#'\n";
+            }
+        }  elsif ( $rowt eq 'span' ) {
+            $loc_row = $row_s;
+            $cursor_row{ $parent } = $row_e;
+            if ( $colt eq '#' ) {
+                $loc_col = $col;
+                $cursor_col{ $parent } = $col;
+                increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
+            } elsif ( $colt eq 'span' ) {
+                $loc_col = $col_s;
+                $cursor_col{ $parent } = $col_e;
+                increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
+            } elsif ( $colt eq 'next' ) {
+                $loc_col = $cursor_col{ $parent };
+                increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
+            } elsif ( $colt eq 'full' ) {
+                $loc_col = 1;
+                $cursor_row{ $parent }++;
+                $cursor_col{ $parent } = 1;
+            } else {
+                $error .= "field $fieldid: unexpected error in updating row/column case row 'span'\n";
+            }
+        }  elsif ( $rowt eq 'next' ) {
+            $loc_row = $cursor_row{ $parent };
+            $cursor_row{ $parent }++;
+            if ( $colt eq '#' ) {
+                $loc_col = $col;
+                $cursor_col{ $parent } = 1;
+            } elsif ( $colt eq 'span' ) {
+                $loc_col = $col_s;
+                $cursor_col{ $parent } = 1;
+            } elsif ( $colt eq 'next' ) {
+                $loc_col = $cursor_col{ $parent };
+                $cursor_col{ $parent } = 1;
+            } elsif ( $colt eq 'full' ) {
+                $loc_col = 1;
+                $cursor_col{ $parent } = 1;
+            } else {
+                $error .= "field $fieldid: unexpected error in updating row/column case row 'next'\n";
+            }
+        }  elsif ( $rowt eq 'same' ) {
+            $loc_row = $cursor_row{ $parent };
+            if ( $colt eq '#' ) {
+                $loc_col = $col;
+                $cursor_col{ $parent } = $col;
+                increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
+            } elsif ( $colt eq 'span' ) {
+                $loc_col = $col_s;
+                $cursor_col{ $parent } = $col_e;
+                increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
+            } elsif ( $colt eq 'next' ) {
+                $loc_col = $cursor_col{ $parent };
+                increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
+            } elsif ( $colt eq 'full' ) {
+                $error .= "field $fieldid: row can not be 'same' and column 'full'\n";
+            } else {
+                $error .= "field $fieldid: unexpected error in updating row/column case row 'next'\n";
+            }
+        }  elsif ( $rowt eq 'full' ) {
+            $loc_row = 1;
+            if ( $colt eq '#' ) {
+                $loc_col = $col;
+                $cursor_col{ $parent } = $col;
+                increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
+            } elsif ( $colt eq 'span' ) {
+                $loc_col = $col_s;
+                $cursor_col{ $parent } = $col_e;
+                increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
+            } elsif ( $colt eq 'next' ) {
+                $loc_col = $cursor_col{ $parent };
+                increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
+            } elsif ( $colt eq 'full' ) {
+                $error .= "field $fieldid: row can not be 'full' and column 'full'\n";
+            } else {
+                $error .= "field $fieldid: unexpected error in updating row/column case row 'next'\n";
+            }
+        } else {                
+            $error .= "field $fieldid: unexpected error in updating row/column case unknown\n";
+        }                
+        
+        # now we have our base location and cursor is updated to the next position
+        # determine lgc, lgr, dgc, dgr from data, label info
+
+        my $lrow = $$layout{'label'}[0];
+        my $lcol = $$layout{'label'}[1];
+
+        # _s _e start end for spans
+        my $lrow_s;
+        my $lrow_e;
+        my $lcol_s;
+        my $lcol_e;
+
+        my $lrtype = typeof( $lrow );
+        my $lctype = typeof( $lcol );
+
+        # row and column types
+
+        my $lrowt;
+        my $lcolt;
+
+        # disabled for now, we are just supporting #'s and spans
+        # $lrowt      = 'next' if !$lrow || $lrow eq 'next';
+        # $lcolt      = 'next' if !$lcol || $lcol eq 'next';
+        # $lrowt      = 'full' if $lrow eq 'full';
+        # $lcolt      = 'full' if $lcol eq 'full';
+        # $lrowt      = 'same' if $lrow eq 'same';
+        if ( looks_like_number( $lrow ) ) {
+            $lrowt = '#';
+            $lrow  += $loc_row - 1;
+        }
+        if ( looks_like_number( $lcol ) ) {
+            $lcolt = '#';
+            $lcol  += $loc_col - 1;
+        }
+        
+        if ( $lrtype eq 'ARRAYref' ) {
+            $lrowt  = 'span';
+            if ( scalar @$lrow != 2 ) {
+                $error .= "field $fieldid label row definition is a range, but does not have exactly 2 elements\n";
+            } else {
+                $lrow_s = $$lrow[ 0 ];
+                $lrow_e = $$lrow[ 1 ];
+                $error .= "field $fieldid label row number less than 1\n" if $lrow_s < 1;
+                $error .= "field $fieldid label row range end less than start\n" if $lrow_e < $lrow_s;
+                $error .= "field $fieldid label row range contains non-numbers\n" if !looks_like_number( $lrow_s ) || !looks_like_number( $lrow_e );
+                $lrow_s += $loc_row - 1;
+                $lrow_e += $loc_col - 1;
+            }
+        }
+
+        if ( $lctype eq 'ARRAYref' ) {
+            $lcolt  = 'span';
+            if ( scalar @$lcol != 2 ) {
+                $error .= "field $fieldid label column definition is a range, but does not have exactly 2 elements\n";
+            } else {
+                $lcol_s = $$lcol[ 0 ];
+                $lcol_e = $$lcol[ 1 ];
+                $error .= "field $fieldid label column number less than 1\n" if $lcol_s < 1;
+                $error .= "field $fieldid label column range end less than start\n" if $lcol_e < $lcol_s;
+                $error .= "field $fieldid label column range contains non-numbers\n" if !looks_like_number( $lcol_s ) || !looks_like_number( $lcol_e );
+            }
+        }
+
+        $error .= "field $fieldid unrecognized label row type\n"    if !$lrowt;
+        $error .= "field $fieldid unrecognized label column type\n" if !$lcolt;
+
+        my $max_row;
+        my $max_col;
+
+        if ( $lrowt eq '#' ) {
+            $$field{ 'lgr' } = $lrow;
+            $max_row = $lrow;
+            if ( $lcolt eq '#' ) {
+                $$field{ 'lgc' } = $lcol;
+                $max_col = $lcol;
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
+            } elsif ( $lcolt eq 'span' ) {
+                $$field{ 'lgc' } = "$lcol_s/$lcol_e";
+                $max_col = $lcol_e;
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
+            } elsif ( $lcolt eq 'next' ) {
+                $error .= "field $fieldid: unsupported case label column 'next'\n";
+                $$field{ 'lgc' } = $cursor_col{ $parent };
+                $max_col = $cursor_col{ $parent };
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
+            } elsif ( $lcolt eq 'full' ) {
+                $error .= "field $fieldid: unsupported case label column 'full'\n";
+                $$field{ 'lgc' } = "1/-1";
+                $max_row++;
+                $max_col = 1;
+            } else {
+                $error .= "field $fieldid: unexpected error in updating label row/column case row '#'\n";
+            }
+        }  elsif ( $lrowt eq 'span' ) {
+            $$field{ 'lgr' } = "$lrow_s/$lrow_e";
+            $max_row = $lrow_e;
+            if ( $lcolt eq '#' ) {
+                $$field{ 'lgc' } = $lcol;
+                $max_col = $lcol;
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
+            } elsif ( $lcolt eq 'span' ) {
+                $$field{ 'lgc' } = "$lcol_s/$lcol_e";
+                $max_col = $lcol_e;
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
+            } elsif ( $lcolt eq 'next' ) {
+                $error .= "field $fieldid: unsupported case label column 'next'\n";
+                $$field{ 'lgc' } = $cursor_col{ $parent };
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
+            } elsif ( $lcolt eq 'full' ) {
+                $error .= "field $fieldid: unsupported case label column 'full'\n";
+                $$field{ 'lgc' } = "1/-1";
+                $max_row++;
+                $max_col = 1;
+            } else {
+                $error .= "field $fieldid: unexpected error in updating label row/column case row 'span'\n";
+            }
+        }  elsif ( $lrowt eq 'next' ) {
+            $error .= "field $fieldid: unsupported case label row 'next'\n";
+            $$field{ 'lgr' } = $cursor_row{ $parent };
+            $max_row = $cursor_row{ $parent };
+            if ( $lcolt eq '#' ) {
+                $$field{ 'lgc' } = $lcol;
+                $max_col = 1;
+            } elsif ( $lcolt eq 'span' ) {
+                $$field{ 'lgc' } = "$lcol_s/$lcol_e";
+                $max_col = 1;
+            } elsif ( $lcolt eq 'next' ) {
+                $error .= "field $fieldid: unsupported case label column 'next'\n";
+                $$field{ 'lgc' } = $cursor_col{ $parent };
+                $max_col = 1;
+            } elsif ( $lcolt eq 'full' ) {
+                $error .= "field $fieldid: unsupported case label column 'full'\n";
+                $$field{ 'lgc' } = "1/-1";
+                $max_col = 1;
+            } else {
+                $error .= "field $fieldid: unexpected error in updating label row/column case row 'next'\n";
+            }
+        }  elsif ( $lrowt eq 'same' ) {
+            $error .= "field $fieldid: unsupported case label row 'same'\n";
+            $$field{ 'lgr' } = $cursor_row{ $parent };
+            if ( $lcolt eq '#' ) {
+                $$field{ 'lgc' } = $lcol;
+                $max_col = $lcol;
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
+            } elsif ( $lcolt eq 'span' ) {
+                $$field{ 'lgc' } = "$lcol_s/$lcol_e";
+                $max_col = $lcol_e;
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
+            } elsif ( $lcolt eq 'next' ) {
+                $error .= "field $fieldid: unsupported case label column 'next'\n";
+                $$field{ 'lgc' } = $cursor_col{ $parent };
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
+            } elsif ( $lcolt eq 'full' ) {
+                $error .= "field $fieldid: label row can not be 'same' and column 'full'\n";
+            } else {
+                $error .= "field $fieldid: unexpected error in updating label row/column case row 'next'\n";
+            }
+        }  elsif ( $lrowt eq 'full' ) {
+            $error .= "field $fieldid: unsupported case label row 'full'\n";
+            $$field{ 'lgr' } = "1/-1";
+            if ( $lcolt eq '#' ) {
+                $$field{ 'lgc' } = $lcol;
+                $max_col = $lcol;
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
+            } elsif ( $lcolt eq 'span' ) {
+                $$field{ 'lgc' } = "$lcol_s/$lcol_e";
+                $max_col = $lcol_e;
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
+            } elsif ( $lcolt eq 'next' ) {
+                $error .= "field $fieldid: unsupported case label column 'next'\n";
+                $$field{ 'lgc' } = $cursor_col{ $parent };
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
+            } elsif ( $lcolt eq 'full' ) {
+                $error .= "field $fieldid: label row can not be 'full' and column 'full'\n";
+            } else {
+                $error .= "field $fieldid: unexpected error in updating label row/column case row 'next'\n";
+            }
+        } else {                
+            $error .= "field $fieldid: unexpected error in updating row/column case unknown\n";
+        }
+
+        # adjust cursor in case of overflow
+
+        my $has_overflow;
+
+        if ( $cursor_row{ $parent } < $max_row ) { # row overflows, reset row & col
+            $cursor_row{ $parent } = $max_row;
+            $cursor_col{ $parent } = $max_col;
+            $has_overflow++;
+        } elsif ( $cursor_row{ $parent } == $max_row &&
+                  $cursor_col{ $parent } < $max_col ) { # row is the same but col overflows
+            $cursor_col{ $parent } = $max_col;
+            $has_overflow++;
+        } # if row is less than max row and column overflows, ignore
+
+        my $drow = $$layout{'data'}[0];
+        my $dcol = $$layout{'data'}[1];
+
+        # _s _e start end for spans
+        my $drow_s;
+        my $drow_e;
+        my $dcol_s;
+        my $dcol_e;
+
+        my $lrtype = typeof( $drow );
+        my $lctype = typeof( $dcol );
+
+        # row and column types
+
+        my $drowt;
+        my $dcolt;
+
+        # disabled for now, we are just supporting #'s and spans
+        # $drowt      = 'next' if !$drow || $drow eq 'next';
+        # $dcolt      = 'next' if !$dcol || $dcol eq 'next';
+        # $drowt      = 'full' if $drow eq 'full';
+        # $dcolt      = 'full' if $dcol eq 'full';
+        # $drowt      = 'same' if $drow eq 'same';
+        if ( looks_like_number( $drow ) ) {
+            $drowt = '#';
+            $drow  += $loc_row - 1;
+        }
+        if ( looks_like_number( $dcol ) ) {
+            $dcolt = '#';
+            $dcol  += $loc_col - 1;
+        }
+        
+        if ( $drtype eq 'ARRAYref' ) {
+            $drowt  = 'span';
+            if ( scalar @$drow != 2 ) {
+                $error .= "field $fieldid data row definition is a range, but does not have exactly 2 elements\n";
+            } else {
+                $drow_s = $$drow[ 0 ];
+                $drow_e = $$drow[ 1 ];
+                $error .= "field $fieldid data row number less than 1\n" if $drow_s < 1;
+                $error .= "field $fieldid data row range end less than start\n" if $drow_e < $drow_s;
+                $error .= "field $fieldid data row range contains non-numbers\n" if !looks_like_number( $drow_s ) || !looks_like_number( $drow_e );
+                $drow_s += $loc_row - 1;
+                $drow_e += $loc_col - 1;
+            }
+        }
+
+        if ( $dctype eq 'ARRAYref' ) {
+            $dcolt  = 'span';
+            if ( scalar @$dcol != 2 ) {
+                $error .= "field $fieldid data column definition is a range, but does not have exactly 2 elements\n";
+            } else {
+                $dcol_s = $$dcol[ 0 ];
+                $dcol_e = $$dcol[ 1 ];
+                $error .= "field $fieldid data column number less than 1\n" if $dcol_s < 1;
+                $error .= "field $fieldid data column range end less than start\n" if $dcol_e < $dcol_s;
+                $error .= "field $fieldid data column range contains non-numbers\n" if !looks_like_number( $dcol_s ) || !looks_like_number( $dcol_e );
+            }
+        }
+
+        $error .= "field $fieldid unrecognized data row type\n"    if !$drowt;
+        $error .= "field $fieldid unrecognized data column type\n" if !$dcolt;
+
+        if ( $drowt eq '#' ) {
+            $$field{ 'dgr' } = $drow;
+            $max_row = $drow;
+            if ( $dcolt eq '#' ) {
+                $$field{ 'dgc' } = $dcol;
+                $max_col = $dcol;
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
+            } elsif ( $dcolt eq 'span' ) {
+                $$field{ 'dgc' } = "$dcol_s/$dcol_e";
+                $max_col = $dcol_e;
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
+            } elsif ( $dcolt eq 'next' ) {
+                $error .= "field $fieldid: unsupported case data column 'next'\n";
+                $$field{ 'dgc' } = $cursor_col{ $parent };
+                $max_col = $cursor_col{ $parent };
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
+            } elsif ( $dcolt eq 'full' ) {
+                $error .= "field $fieldid: unsupported case data column 'full'\n";
+                $$field{ 'dgc' } = "1/-1";
+                $max_row++;
+                $max_col = 1;
+            } else {
+                $error .= "field $fieldid: unexpected error in updating data row/column case row '#'\n";
+            }
+        }  elsif ( $drowt eq 'span' ) {
+            $$field{ 'dgr' } = "$drow_s/$drow_e";
+            $max_row = $drow_e;
+            if ( $dcolt eq '#' ) {
+                $$field{ 'dgc' } = $dcol;
+                $max_col = $dcol if $dcol;
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
+            } elsif ( $dcolt eq 'span' ) {
+                $$field{ 'dgc' } = "$dcol_s/$dcol_e";
+                $max_col = $dcol_e if $dcol_e;
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
+            } elsif ( $dcolt eq 'next' ) {
+                $error .= "field $fieldid: unsupported case data column 'next'\n";
+                $$field{ 'dgc' } = $cursor_col{ $parent };
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
+            } elsif ( $dcolt eq 'full' ) {
+                $error .= "field $fieldid: unsupported case data column 'full'\n";
+                $$field{ 'dgc' } = "1/-1";
+                $max_row++;
+                $max_col = 1;
+            } else {
+                $error .= "field $fieldid: unexpected error in updating data row/column case row 'span'\n";
+            }
+        }  elsif ( $drowt eq 'next' ) {
+            $error .= "field $fieldid: unsupported case data row 'next'\n";
+            $$field{ 'dgr' } = $cursor_row{ $parent };
+            $max_row = $cursor_row{ $parent };
+            if ( $dcolt eq '#' ) {
+                $$field{ 'dgc' } = $dcol;
+                $max_col = 1;
+            } elsif ( $dcolt eq 'span' ) {
+                $$field{ 'dgc' } = "$dcol_s/$dcol_e";
+                $max_col = 1;
+            } elsif ( $dcolt eq 'next' ) {
+                $error .= "field $fieldid: unsupported case data column 'next'\n";
+                $$field{ 'dgc' } = $cursor_col{ $parent };
+                $max_col = 1;
+            } elsif ( $dcolt eq 'full' ) {
+                $error .= "field $fieldid: unsupported case data column 'full'\n";
+                $$field{ 'dgc' } = "1/-1";
+                $max_col = 1;
+            } else {
+                $error .= "field $fieldid: unexpected error in updating data row/column case row 'next'\n";
+            }
+        }  elsif ( $drowt eq 'same' ) {
+            $error .= "field $fieldid: unsupported case data row 'same'\n";
+            $$field{ 'dgr' } = $cursor_row{ $parent };
+            if ( $dcolt eq '#' ) {
+                $$field{ 'dgc' } = $dcol;
+                $max_col = $dcol;
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
+            } elsif ( $dcolt eq 'span' ) {
+                $$field{ 'dgc' } = "$dcol_s/$dcol_e";
+                $max_col = $dcol_e;
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
+            } elsif ( $dcolt eq 'next' ) {
+                $error .= "field $fieldid: unsupported case data column 'next'\n";
+                $$field{ 'dgc' } = $cursor_col{ $parent };
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
+            } elsif ( $dcolt eq 'full' ) {
+                $error .= "field $fieldid: data row can not be 'same' and column 'full'\n";
+            } else {
+                $error .= "field $fieldid: unexpected error in updating data row/column case row 'next'\n";
+            }
+        }  elsif ( $drowt eq 'full' ) {
+            $error .= "field $fieldid: unsupported case data row 'full'\n";
+            $$field{ 'dgr' } = "1/-1";
+            if ( $dcolt eq '#' ) {
+                $$field{ 'dgc' } = $dcol;
+                $max_col = $dcol;
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
+            } elsif ( $dcolt eq 'span' ) {
+                $$field{ 'dgc' } = "$dcol_s/$dcol_e";
+                $max_col = $dcol_e;
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
+            } elsif ( $dcolt eq 'next' ) {
+                $error .= "field $fieldid: unsupported case data column 'next'\n";
+                $$field{ 'dgc' } = $cursor_col{ $parent };
+                # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
+            } elsif ( $dcolt eq 'full' ) {
+                $error .= "field $fieldid: data row can not be 'full' and column 'full'\n";
+            } else {
+                $error .= "field $fieldid: unexpected error in updating data row/column case row 'next'\n";
+            }
+        } else {                
+            $error .= "field $fieldid: unexpected error in updating row/column case unknown\n";
+        }
+
+        # adjust parent cursor in case of overflow
+
+        if ( $cursor_row{ $parent } < $max_row ) { # row overflows, reset row & col
+            $cursor_row{ $parent } = $max_row;
+            $cursor_col{ $parent } = $max_col;
+            $has_overflow++;
+        } elsif ( $cursor_row{ $parent } == $max_row &&
+                  $cursor_col{ $parent } < $max_col ) { # row is the same but col overflows
+            $cursor_col{ $parent } = $max_col;
+            $has_overflow++;
+        } # if row is less than max row and column overflows, ignore
+
+        # increment cursor if overflow
+        if ( $has_overflow ) {
+            increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, $rowt eq 'same' );
+        }
 
 ## step 3 check for clobbering (possibly included with previous step)
 
+    } # fields
 }
 
 layout_expand( $json );
