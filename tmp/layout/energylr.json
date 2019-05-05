@@ -1,0 +1,75 @@
+{
+    "panels" : [
+        {
+            "root" : {
+                "size"    : [ 1, "auto" ],
+                "label"   : [ 1, 1 ],
+                "data"    : [ 1, 2 ],
+                "align"   : "left",
+                "gap"     : "10px"
+            }
+        },
+        {
+            "header" : {
+                "size"     : [ "auto", "auto" ],
+                "location" : [ "next", "full" ]
+            }
+        },
+        {
+            "body" : {
+                "size"     : [ "auto", "auto" ],
+                "location" : [ "next", "full" ]
+            }
+        },
+        {
+            "footer" : {
+                "size"     : [ "auto", "auto" ],
+                "location" : [ "next", "full" ]
+            }
+        },
+        {
+            "leftpanel" : {
+                "parent"   : "body",
+                "size"     : [ "auto", 4 ],
+                "location" : [ 1, 1 ]
+            }
+        },
+        {
+            "rightpanel" : {
+                "parent"   : "body",
+                "size"     : [ "auto", 4 ],
+                "location" : [ 1, 2 ]
+            }
+        }
+    ]
+    ,"fields" : [
+      {
+         "id" : "module_header",
+         "role" : "input",
+          "layout" : {
+              "parent" : "header"
+          }
+      },
+      {
+         "role" : "input",
+         "id" : "m",
+          "layout" : {
+              "parent" : "leftpanel"
+          }
+      },
+      {
+         "id" : "c",
+         "role" : "input",
+          "layout" : {
+              "parent" : "leftpanel"
+          }
+      },
+      {
+         "role" : "output",
+         "id" : "e",
+          "layout" : {
+              "parent" : "rightpanel"
+          }
+      }
+   ]
+}
