@@ -12,7 +12,10 @@
         {
             "header" : {
                 "size"     : [ "auto", "auto" ],
-                "location" : [ "next", "full" ]
+                "location" : [ "next", "full" ],
+                "label"    : [ 1, 1 ],
+                "data"     : [ 2, 1 ],
+                "align"    : "center"
             }
         },
         {
@@ -24,21 +27,27 @@
         {
             "footer" : {
                 "size"     : [ "auto", "auto" ],
-                "location" : [ "next", "full" ]
+                "location" : [ "next", "full" ],
+                "label"    : [ 1, 1 ],
+                "data"     : [ 2, 1 ],
+                "align"    : "center"
             }
         },
         {
             "leftpanel" : {
                 "parent"   : "body",
-                "size"     : [ "auto", 4 ],
+                "size"     : [ "auto", 2 ],
                 "location" : [ 1, 1 ]
             }
         },
         {
             "rightpanel" : {
                 "parent"   : "body",
-                "size"     : [ "auto", 4 ],
-                "location" : [ 1, 2 ]
+                "size"     : [ "auto", 2 ],
+                "location" : [ 1, 2 ],
+                "label"    : [ 1, 2 ],
+                "data"     : [ 1, 1 ],
+                "align"    : "right"
             }
         }
     ]
