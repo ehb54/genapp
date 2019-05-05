@@ -73,6 +73,9 @@ ga.grid.thishtml = function( panel ) {
     if ( json.panels[ panelpos[ panel ] ][ panel ].gc ) {
         style += ";grid-column:" + json.panels[ panelpos[ panel ] ][ panel ].gc;
     }
+    if ( json.panels[ panelpos[ panel ] ][ panel ].align ) {
+        style += ";text-align:" + json.panels[ panelpos[ panel ] ][ panel ].align;
+    }
     html += `<div id=ga-panel-${panel} style="${style}"> Panel ${panel}`;
     if ( children[ panel ] ) {
         for ( var i = 0; i < children[ panel ].length; ++i ) {

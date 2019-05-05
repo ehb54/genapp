@@ -2,33 +2,29 @@
     "panels" : [
         {
             "root" : {
-                "columns" : 1,
+                "size"    : [ "auto", 1 ],
+                "label"   : [ 1, 1 ],
+                "data"    : [ 1, 2 ],
                 "align"   : "left",
-                "gap"     : "10px",
-                "rows"    : "auto"
+                "gap"     : "10px"
             }
         }
         ,{
             "toppanel" : {
-                "rows"    : "auto",
-                "row"     : 1,
-                "columns" : 4
+                "size"     : [ "auto", 4 ],
+                "location" : [ "next", 1 ]
             }
         }
         ,{
             "separator" : {
-                "rows"    : "auto",
-                "row"     : 2,
-                "columns" : 4
+                "size"     : [ "auto", "auto" ],
+                "location" : [ "next", 1 ]
             }
         }
         ,{
             "bottompanel" : {
-                "rows"    : "auto",
-                "row"     : 3,
-                "align"   : "right",
-                "gap"     : "7px",
-                "columns" : 4
+                "size"     : [ "auto", 4 ],
+                "location" : [ "next", 1 ]
             }
         }
     ]

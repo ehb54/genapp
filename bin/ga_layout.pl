@@ -101,7 +101,9 @@ sub layout_expand {
         # keys to progagate
         my @ikeys = ( 
             "gap",
-            "align"
+            "align",
+            "label",
+            "data"
             );
         @inherit{ @ikeys } = (1) x @ikeys;
     }
@@ -123,61 +125,100 @@ sub layout_expand {
     @cursor_row{ keys %panelpos } = (1) x keys %panelpos;
     @cursor_col{ keys %panelpos } = (1) x keys %panelpos;
         
-    for my $k ( keys %panelpos ) {
+    for ( my $i = 0; $i <  @{$$json{'panels'} }; ++$i ) {
+        my $k = ( keys $$json{'panels'}[$i] )[0];
 
-        if ( $$json{'panels'}[$panelpos{$k}]{ $k }{ 'rows' } ) {
-            my $type = typeof( $$json{'panels'}[$panelpos{$k}]{ $k }{ 'rows' } );
+        my $size     = $$json{'panels'}[$panelpos{$k}]{ $k }{ 'size' };
+
+        if ( typeof( $size ) ne 'ARRAYref' ) {
+            $error .= "panel $k 'size' not an array\n";
+            return;
+        }
+
+        if ( @$size != 2 ) {
+            $error .= "panel $k 'size' is an array but does not contain exactly 2 elements\n";
+            return;
+        }
+
+        my $rows = $$size[0];
+        my $cols = $$size[1];
+
+        {
+            my $type = typeof( $rows );
             # print "typeof of rows is $type\n";
             if ( $type eq 'SCALAR' ) {
-                if ( looks_like_number( $$json{'panels'}[$panelpos{$k}]{ $k }{ 'rows' } ) ) {
-                    $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gtr' } = "repeat($$json{'panels'}[$panelpos{$k}]{$k}{'rows'},auto)";
+                if ( looks_like_number( $rows ) ) {
+                    $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gtr' } = "repeat($rows,auto)";
                 } else {
-                    $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gtr' } = $$json{'panels'}[$panelpos{$k}]{ $k }{ 'rows' };
+                    $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gtr' } = $rows;
                 }
             } elsif ( $type eq 'ARRAYref' ) {
-                for my $a ( @{$$json{'panels'}[$panelpos{$k}]{ $k }{ 'rows' } } ) {
+                for my $a ( @$rows ) {
                     # print "arrayref value $a\n";
                     $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gtr' } .= "${a}fr ";
                 }
             } else {
-                $error .= "unknown argument type for panel $k rows\n";
+                $error .= "unknown argument type for panel $k size element 1 rows\n";
             }
         }
 
-        if ( $$json{'panels'}[$panelpos{$k}]{ $k }{ 'columns' } ) {
-            my $type = typeof( $$json{'panels'}[$panelpos{$k}]{ $k }{ 'columns' } );
-            # print "typeof of columns is $type\n";
+        {
+            my $type = typeof( $cols );
+            # print "typeof of cols is $type\n";
             if ( $type eq 'SCALAR' ) {
-                if ( looks_like_number( $$json{'panels'}[$panelpos{$k}]{ $k }{ 'columns' } ) ) {
-                    $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gtc' } = "repeat($$json{'panels'}[$panelpos{$k}]{$k}{'columns'},auto)";
+                if ( looks_like_number( $cols ) ) {
+                    $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gtc' } = "repeat($cols,auto)";
                 } else {
-                    $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gtc' } = $$json{'panels'}[$panelpos{$k}]{ $k }{ 'columns' };
+                    $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gtc' } = $cols;
                 }
             } elsif ( $type eq 'ARRAYref' ) {
-                for my $a ( @{$$json{'panels'}[$panelpos{$k}]{ $k }{ 'columns' } } ) {
+                for my $a ( @$cols ) {
                     # print "arrayref value $a\n";
                     $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gtc' } .= "${a}fr ";
                 }
             } else {
-                $error .= "unknown argument type for panel $k columns\n";
+                $error .= "unknown argument type for panel $k size element 1 rows\n";
             }
         }
 
+        if ( 0 ) {
+            my $js = JSON->new;
+            print "panel $k: " . $js->pretty->encode( $$json{'panels'}[$panelpos{$k}]{ $k } ) . "\n";
+        }
+
         if ( $k eq 'root' ) {
-            if ( $$json{'panels'}[$panelpos{$k}]{ $k }{ 'row' } ) {
-                $warn .= "root panel defines row, meaningless, ignored\n";
-            }
-            if ( $$json{'panels'}[$panelpos{$k}]{ $k }{ 'column' } ) {
-                $warn .= "root panel defines column, meaningless, ignored\n";
+            if ( $$json{'panels'}[$panelpos{$k}]{ $k }{ 'location' } ) {
+                $warn .= "root panel defines location, meaningless, ignored\n";
             }
         } else {
             # setup some local variables for convenience
 
+            my $location = $$json{'panels'}[$panelpos{$k}]{ $k }{ 'location' };
+
+            if ( $location ) {
+                if ( typeof( $location ) ne 'ARRAYref' ) {
+                    $error .= "panel $k 'location' not an array\n";
+                    return;
+                }
+
+                if ( @$location != 2 ) {
+                    $error .= "panel $k 'location' is an array but does not contain exactly 2 elements\n";
+                    return;
+                }
+            }
+
             my $parent = $$json{'panels'}[$panelpos{$k}]{ $k }{ 'parent' };
-            my $row = $$json{'panels'}[$panelpos{$k}]{ $k }{ 'row' };
-            my $col = $$json{'panels'}[$panelpos{$k}]{ $k }{ 'column' };
-            my $parentcols = $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'columns' };
-            my $parentrows = $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'rows' };
+
+            my $row;
+            my $col;
+            my $parentcols;
+            my $parentrows;
+            if ( $location ) {
+                $row = $$location[0];
+                $col = $$location[1];
+                $parentcols = $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'size' }[0];
+                $parentrows = $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'size' }[1];
+            }
 
             undef $parentcols if $parentcols eq 'auto';
             undef $parentrows if $parentrows eq 'auto';
@@ -352,14 +393,83 @@ sub layout_expand {
 
 ## step 1 check for missing parent panels & assign parent panels
 
+    if ( !$$json{'fields'} ) {
+        $error .= "no fields defined\n";
+        return;
+    } 
+
+    for ( my $i = 0; $i <  @{$$json{'fields'} }; ++$i ) {
+        my $field  = $$json{'fields'}[$i];
+        my $id     = $$field{'id'};
+        my $layout = $$field{'layout'};
+        print "field id $id\n";
+        if ( !$layout ) {
+            $$field{'layout'} = decode_json( '{"parent":"root"}' );
+        } elsif ( !$$layout{'parent'} ) {
+            $$field{'layout'}{'parent'} = "root";
+        } elsif ( !$panelpos{ $$layout{'parent'} } ) {
+            $error .= "field $id layout:parent $$layout{'parent'} is missing from panels\n";
+            return;
+        } else {
+            print "field id $id has layout with parent\n";
+        }
+    }
+        
 ## step 2 propagate parent keys
+### do we need to do this?
+### parent panels (div's in DOM) will hold "align", so only need if override
+### possibly other properties?
+### skip for now
+    
+    if ( 0 ) {
+        my %inherit;
+        {
+            # keys to progagate
+            my @ikeys = ( 
+                "align"
+                );
+            @inherit{ @ikeys } = (1) x @ikeys;
+        }
+
+        for ( my $i = 0; $i <  @{$$json{'fields'} }; ++$i ) {
+            my $field  = $$json{'fields'}[$i];
+            my $layout = $$field{'layout'};
+            
+            for my $inh ( keys %inherit ) {
+                print "for key $inh, layout:$$layout{'parent'}:\n";
+                if ( !$$layout{$inh} ) {
+                    $$layout{$inh} = get_inherited_value( $json, \%panelpos, $$layout{'parent'}, $inh );
+                }
+            }
+        }
+    }
 
 ## step 3 assign CSS grid info (row column, spans etc in parent div)
+    # re-initialize cursors for fields
+    @cursor_row{ keys %panelpos } = (1) x keys %panelpos;
+    @cursor_col{ keys %panelpos } = (1) x keys %panelpos;
+
+
+    # label & data
+### currently we have row, column, label & data
+### how do we generalize?
+### what about multi-element data fields? (e.g. lrfile) 
+### what about field input error messages
+### possibilities:
+### simple:
+###  define labeldata: above|below|left|right (could be in panel)
+###  if left or right: 
+###   column increment will be 2
+###  if above or below: 
+###   row increment will be 2
+
+
+
 
 # label & data : r_start, r_end, c_start, c_end
 
 
-## step 4 check for clobbering (possibly included with previous step)
+## step 3 check for clobbering (possibly included with previous step)
 
 }
 

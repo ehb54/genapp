@@ -1480,17 +1480,20 @@ sub check_files {
                         unshift @{$layout{ 'panels' }}, decode_json( '{"root":{}}' );
                     }
 
-                    if ( !exists $layout{ 'panels' }[0]{ 'root' }{ 'columns' } ) {
-                        $layout{ 'panels' }[0]{ 'root' }{ 'columns' } = "auto";
-                    }
-                    if ( !exists $layout{ 'panels' }[0]{ 'root' }{ 'rows' } ) {
-                        $layout{ 'panels' }[0]{ 'root' }{ 'rows' } = "auto";
+                    if ( !exists $layout{ 'panels' }[0]{ 'root' }{ 'size' } ) {
+                        $layout{ 'panels' }[0]{ 'root' }{ 'size' } = [ "auto", "auto" ];
                     }
                     if ( !exists $layout{ 'panels' }[0]{ 'root' }{ 'align' } ) {
                         $layout{ 'panels' }[0]{ 'root' }{ 'align' } = "left";
                     }
                     if ( !exists $layout{ 'panels' }[0]{ 'root' }{ 'gap' } ) {
                         $layout{ 'panels' }[0]{ 'root' }{ 'gap' } = "5px";
+                    }
+                    if ( !exists $layout{ 'panels' }[0]{ 'root' }{ 'label' } ) {
+                        $layout{ 'panels' }[0]{ 'root' }{ 'label' } = [ 1, 1 ];
+                    }
+                    if ( !exists $layout{ 'panels' }[0]{ 'root' }{ 'data' } ) {
+                        $layout{ 'panels' }[0]{ 'root' }{ 'data' } = [ 1, 2 ];
                     }
                 }
 
