@@ -79,6 +79,13 @@
           "layout" : {
               "parent" : "rightpanel"
           }
+      },
+      {
+         "role" : "output",
+         "id" : "module_footer",
+          "layout" : {
+              "parent" : "footer"
+          }
       }
    ]
 }

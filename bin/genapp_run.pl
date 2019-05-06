@@ -81,6 +81,7 @@ while ( $ARGV[ 0 ] =~ /^-(\w{1,2})/ )
 }
 
 require "$gap/etc/perl/genapp_util.pl";
+require "$gap/etc/perl/ga_layout.pm";
 
 check_files() || die "Errors found\n";
 

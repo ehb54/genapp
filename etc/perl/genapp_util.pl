@@ -1433,118 +1433,25 @@ sub check_files {
             }
             # extract layout
             {
-                my %layout;
-
-                my $js = JSON->new;
+                my $layout = {};
 
                 my $mname = $f;
                 $mname =~ s/^.*\/([^\/]*)\.json$/\1/;
 
-                # check for panels
-                {
-                    if ( $extra_subs{ '__panels__' } ) {
-                        $layout{ 'panels' } = decode_json( $extra_subs{ '__panels__' } );
-                        print "$f has panels\n" if $debuglayout;
-                    } else {
-                        $layout{ 'panels' } = decode_json( "[]" );
-                    }
+                layout_expand( $layout, $json );
 
-                    # setup panel defaults (overrides in directives or somewhere else?)
+                my $js = JSON->new;
 
-                    my %panel_apos;
-                    {
-                        my %used_panel_name;
-                        for ( my $i = 0; $i <  @{$layout{'panels'} }; ++$i ) {
-                            my $panel_name = ( keys $layout{'panels'}[$i] )[0];
-                            if ( $used_panel_name{ $panel_name }++ ) {
-                                $error .= "module: $mname : panel $panel_name duplicated\n";
-                                last;
-                            }
-                            $panel_apos{ $panel_name } = $i;
-                        }
-                    }
-
-                    for my $k ( keys %panel_apos ) {
-                        print "key $k pos $panel_apos{$k}\n";
-                    }
-
-                    if ( exists $panel_apos{ 'root' } &&
-                         $panel_apos{ 'root' } != 0 ) {
-                        $warn .= "module: $mname : root panel defined and not the first panel, moving to first position\n";
-                        my $tmp = $layout{'panels'}[$panel_apos{ 'root' }];
-                        splice( @{$layout{ 'panels' }}, $panel_apos{ 'root' }, 1 );
-                        unshift @{$layout{ 'panels' }}, $tmp;
-                    }
-
-                    if ( !exists $panel_apos{ 'root' } ) {
-                        unshift @{$layout{ 'panels' }}, decode_json( '{"root":{}}' );
-                    }
-
-                    if ( !exists $layout{ 'panels' }[0]{ 'root' }{ 'size' } ) {
-                        $layout{ 'panels' }[0]{ 'root' }{ 'size' } = [ "auto", "auto" ];
-                    }
-                    if ( !exists $layout{ 'panels' }[0]{ 'root' }{ 'align' } ) {
-                        $layout{ 'panels' }[0]{ 'root' }{ 'align' } = "left";
-                    }
-                    if ( !exists $layout{ 'panels' }[0]{ 'root' }{ 'gap' } ) {
-                        $layout{ 'panels' }[0]{ 'root' }{ 'gap' } = "5px";
-                    }
-                    if ( !exists $layout{ 'panels' }[0]{ 'root' }{ 'label' } ) {
-                        $layout{ 'panels' }[0]{ 'root' }{ 'label' } = [ 1, 1 ];
-                    }
-                    if ( !exists $layout{ 'panels' }[0]{ 'root' }{ 'data' } ) {
-                        $layout{ 'panels' }[0]{ 'root' }{ 'data' } = [ 1, 2 ];
-                    }
-                }
-
-
-                # extract field info & layout info
-                
-                if ( 0 ) {
-                    # get it all
-                    $layout{ 'fields' } = decode_json( encode_json( $$json{ 'fields' } ) );
-                } else {
-                    # extract specific fields:tags
-
-                    my %keepids;
-                    {
-                        my @ids = ( "id",
-                                    "role",
-                                    "layout" );
-                        @keepids{ @ids } = (1) x @ids;
-                    }
-
-                    $layout{ 'fields' } = [];
-                    
-                    for my $k ( @{$$json{ 'fields' }} ) {
-                        my %pushfield;
-
-                        print "dump of k\n" . Dumper( $k ) if $debuglayout;
-
-                        foreach my $fk ( keys $k ) {
-                            if ( $keepids{ $fk } ) {
-                                $pushfield{ $fk } = $k->{$fk};
-                            }
-                        }
-                        
-                        print "dump of \%pushfield\n" . Dumper( %pushfield ) if $debuglayout;
-
-                        push $layout{ 'fields' }, \%pushfield;
-                    }
-                        
-                }
-
-                print "$f panel json:\n" . $js->pretty->encode( \%layout ) . "\n" if $debuglayout;
-
+                print "$f panel json:\n" . $js->pretty->encode( $layout ) . "\n" if $debuglayout;
 
                 if ( $l ) { 
                     # language specific json overrides
-                    $module_layouts{ $l }{ $mname } = $js->pretty->encode( \%layout );
+                    $module_layouts{ $l }{ $mname } = $js->pretty->encode( $layout );
                 } else {
                     # propagate to all defined languages that are not already defined for this module
                     for my $leach ( keys %langs ) {
                         if ( !$module_layouts{ $leach }{ $mname } ) {
-                            $module_layouts{ $leach }{ $mname } = $js->pretty->encode( \%layout );
+                            $module_layouts{ $leach }{ $mname } = $js->pretty->encode( $layout );
                         }
                     }
                 }
