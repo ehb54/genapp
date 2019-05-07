@@ -749,6 +749,12 @@ sub get_file_json {
         delete $extra_subs{ '__panels__' };
     }
         
+    {
+        my $layout = {};
+        layout_expand( $layout, $json );
+        $extra_subs{ '__layout__' } = encode_json( $layout );
+    }
+
     $json;
 }
 

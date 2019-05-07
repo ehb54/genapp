@@ -2,6 +2,10 @@ if( skipped_row == 1 ){ input_html += "</tr>"; }
 input_html += '</table>';
 $( '#__moduleid___input_area' ).html( input_html );
 eval( input_eval );
+ga.layout.buttonhtml[ 'submit' ] = '<button id="__moduleid___submit" class="help_link"><span class="buttontext">Submit</span></button>__~help:submit{<span class="help">__help:submit__</span>}';
+__~help:submit{ga.layout.buttonhtml[ 'submit' ] += '<span class="help">__help:submit__</span>';}
+ga.layout.buttonhtml[ 'reset' ] = '<button id="__moduleid___reset" class="help_link"><span class="buttontext">Reset to default values</span></button>';
+__~help:reset{ga.layout.buttonhtml[ 'reset' ] += '<span class="help">__help:reset__</span>';}
 </script>
 <p><button id="__moduleid___submit" class="help_link"><span class="buttontext">Submit</span></button>
 __~help:submit{<span class="help">__help:submit__</span>}

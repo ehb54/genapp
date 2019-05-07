@@ -67,7 +67,7 @@ sub layout_prep {
         }
 
         for my $k ( keys %panel_apos ) {
-            print "key $k pos $panel_apos{$k}\n";
+            print "key $k pos $panel_apos{$k}\n" if $debug;
         }
 
         if ( exists $panel_apos{ 'root' } &&
