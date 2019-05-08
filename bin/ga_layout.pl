@@ -13,19 +13,19 @@ require "$gap/etc/perl/genapp_util.pl";
 
 $f = shift || die $notes;
 
-my $json = get_file_json( $f );
- 
 my $error;
 my $warn;
 my $notice;
 
 require "$gap/etc/perl/ga_layout.pm";
 
-layout_expand( $json, $json );
+my $json = get_file_json( $f );
+
+$layout = decode_json( $extra_subs{ '__layout__' } );
 
 my $js = JSON->new;
 
-print $js->pretty->encode( $json ) . "\n";
+print $js->pretty->encode( $layout ) . "\n";
 
 print STDERR '-'x60 . "\nNotices:\n$notice" . '-'x60 . "\n"  if $notice;
 print STDERR '-'x60 . "\nWarnings:\n$warn" . '-'x60 . "\n"   if $warn;

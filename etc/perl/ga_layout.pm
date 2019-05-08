@@ -39,6 +39,7 @@ sub increment_cursor_column {
 }
 
 sub layout_prep {
+    my $mname  = shift;
     my $layout = shift; 
     my $json   = shift; 
 
@@ -99,12 +100,57 @@ sub layout_prep {
         }
     }
 
+# insert buttons if not specified
+    {
+        my %fieldnames;
+
+        for my $k ( @{$$json{ 'fields' }} ) {
+            if ( !exists $k{ 'id' } ) {
+                my $js = JSON->new;
+                $error .= "module: $mname : field missing id : " . $js->pretty->encode( $k ) . "\n";
+            } else {
+                $fieldnames{ $k{ 'id' } }++;
+            }
+        }
+
+        my @insert = (
+            'b_submit'
+            ,'b_reset'
+            );
+
+        my @toinsert;
+
+        for my $k ( @insert ) {
+            if ( !exists $fieldnames{ $k } ) {
+                push @toinsert, $k;
+            }
+        }
+
+        my %insertjson;
+        $insertjson{ 'b_submit' } =
+            decode_json(
+                '{
+                    "role"        : "input"
+                    ,"id"         : "b_submit"
+                    ,"type"       : "button"
+                    ,"buttontext" : "Submit"
+                 }
+                '
+            );
+        
+        $insertjson{ 'b_reset' } =
+            decode_json(
+                '{
+                    "role"        : "input"
+                    ,"id"         : "b_reset"
+                    ,"type"       : "button"
+                    ,"buttontext" : "Reset to default values"
+                 }
+                '
+            );
+
 # extract field info & layout info
 
-    if ( 0 ) {
-        # get it all
-        $$layout{ 'fields' } = decode_json( encode_json( $$json{ 'fields' } ) );
-    } else {
         # extract specific fields:tags
 
         my %keepids;
@@ -118,10 +164,20 @@ sub layout_prep {
 
         $$layout{ 'fields' } = [];
         
+        my $doneinsertbuttons = 1 || !@toinsert;
+
         for my $k ( @{$$json{ 'fields' }} ) {
             my %pushfield;
 
             print "dump of k\n" . Dumper( $k ) if $debuglayout;
+
+            if ( !$doneinsertbuttons &&
+                 $k{ 'role' } eq 'output' ) {
+                for my $ik ( @toinsert ) {
+                    push $$layout{ 'fields' }, $insertjson{ $ik };
+                }
+                $doneinsertbuttons++;
+            }
 
             foreach my $fk ( keys $k ) {
                 if ( $keepids{ $fk } ) {
@@ -133,15 +189,23 @@ sub layout_prep {
 
             push $$layout{ 'fields' }, \%pushfield;
         }
+
+        if ( !$doneinsertbuttons ) {
+            for my $ik ( @toinsert ) {
+                push $$layout{ 'fields' }, $insertjson{ $ik };
+            }
+        }
     }
 }
 
 sub layout_expand {
+    my $mname    = shift;
     my $json     = shift;
     my $jsonfull = shift;
+
     $jsonfull    = $json if !$jsonfull;
 
-    layout_prep( $json, $jsonfull );
+    layout_prep( $mname, $json, $jsonfull );
 
 # phase 1 panels
 
@@ -156,7 +220,7 @@ sub layout_expand {
         my %used_panel_name;
         for ( my $i = 0; $i <  @{$$json{'panels'} }; ++$i ) {
             my $panel_name = ( keys $$json{'panels'}[$i] )[0];
-            $error .= "panel name $panel_name duplicated\n" if $used_panel_name{ $panel_name }++;
+            $error .= "module: $mname : panel name $panel_name duplicated\n" if $used_panel_name{ $panel_name }++;
             $panelpos{ $panel_name } = $i;
             # print "panel $panel_name found at pos $i\n";
         }
@@ -169,7 +233,7 @@ sub layout_expand {
             my $pname = $$json{'panels'}[$panelpos{$k}]{$k}{'parent'};
             # print "found parent $pname of panel $k\n";
             # print "panel $k has parent $$json{'panels'}[$panelpos{$k}]{$k}{'parent'}\n";
-            $error .= "$f panel $k parent '$$json{'panels'}[$panelpos{$k}]{$k}{'parent'}' not defined\n" if !exists $panelpos{$$json{'panels'}[$panelpos{$k}]{$k}{'parent'}};
+            $error .= "module: $mname : $f panel $k parent '$$json{'panels'}[$panelpos{$k}]{$k}{'parent'}' not defined\n" if !exists $panelpos{$$json{'panels'}[$panelpos{$k}]{$k}{'parent'}};
         } else {
             $$json{'panels'}[$panelpos{$k}]{$k}{'parent'} = 'root' if $k ne 'root';
         }
@@ -212,12 +276,12 @@ sub layout_expand {
         my $size     = $$json{'panels'}[$panelpos{$k}]{ $k }{ 'size' };
 
         if ( typeof( $size ) ne 'ARRAYref' ) {
-            $error .= "panel $k 'size' not an array\n";
+            $error .= "module: $mname : panel $k 'size' not an array\n";
             return;
         }
 
         if ( @$size != 2 ) {
-            $error .= "panel $k 'size' is an array but does not contain exactly 2 elements\n";
+            $error .= "module: $mname : panel $k 'size' is an array but does not contain exactly 2 elements\n";
             return;
         }
 
@@ -239,7 +303,7 @@ sub layout_expand {
                     $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gtr' } .= "${a}fr ";
                 }
             } else {
-                $error .= "unknown argument type for panel $k size element 1 rows\n";
+                $error .= "module: $mname : unknown argument type for panel $k size element 1 rows\n";
             }
         }
 
@@ -258,7 +322,7 @@ sub layout_expand {
                     $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gtc' } .= "${a}fr ";
                 }
             } else {
-                $error .= "unknown argument type for panel $k size element 1 rows\n";
+                $error .= "module: $mname : unknown argument type for panel $k size element 1 rows\n";
             }
         }
 
@@ -269,7 +333,7 @@ sub layout_expand {
 
         if ( $k eq 'root' ) {
             if ( $$json{'panels'}[$panelpos{$k}]{ $k }{ 'location' } ) {
-                $warn .= "root panel defines location, meaningless, ignored\n";
+                $warn .= "module: $mname : root panel defines location, meaningless, ignored\n";
             }
         } else {
             # setup some local variables for convenience
@@ -278,12 +342,12 @@ sub layout_expand {
 
             if ( $location ) {
                 if ( typeof( $location ) ne 'ARRAYref' ) {
-                    $error .= "panel $k 'location' not an array\n";
+                    $error .= "module: $mname : panel $k 'location' not an array\n";
                     return;
                 }
 
                 if ( @$location != 2 ) {
-                    $error .= "panel $k 'location' is an array but does not contain exactly 2 elements\n";
+                    $error .= "module: $mname : panel $k 'location' is an array but does not contain exactly 2 elements\n";
                     return;
                 }
             }
@@ -333,31 +397,31 @@ sub layout_expand {
             if ( $rtype eq 'ARRAYref' ) {
                 $rowt  = 'span';
                 if ( scalar @$row != 2 ) {
-                    $error .= "panel $k row definition is a range, but does not have exactly 2 elements\n";
+                    $error .= "module: $mname : panel $k row definition is a range, but does not have exactly 2 elements\n";
                 } else {
                     $row_s = $$row[ 0 ];
                     $row_e = $$row[ 1 ];
-                    $error .= "panel $k row number less than 1\n" if $row_s < 1;
-                    $error .= "panel $k row range end less than start\n" if $row_e < $row_s;
-                    $error .= "panel $k row range contains non-numbers\n" if !looks_like_number( $row_s ) || !looks_like_number( $row_e );
+                    $error .= "module: $mname : panel $k row number less than 1\n" if $row_s < 1;
+                    $error .= "module: $mname : panel $k row range end less than start\n" if $row_e < $row_s;
+                    $error .= "module: $mname : panel $k row range contains non-numbers\n" if !looks_like_number( $row_s ) || !looks_like_number( $row_e );
                 }
             }
 
             if ( $ctype eq 'ARRAYref' ) {
                 $colt  = 'span';
                 if ( scalar @$col != 2 ) {
-                    $error .= "panel $k column definition is a range, but does not have exactly 2 elements\n";
+                    $error .= "module: $mname : panel $k column definition is a range, but does not have exactly 2 elements\n";
                 } else {
                     $col_s = $$col[ 0 ];
                     $col_e = $$col[ 1 ];
-                    $error .= "panel $k column number less than 1\n" if $col_s < 1;
-                    $error .= "panel $k column range end less than start\n" if $col_e < $col_s;
-                    $error .= "panel $k column range contains non-numbers\n" if !looks_like_number( $col_s ) || !looks_like_number( $col_e );
+                    $error .= "module: $mname : panel $k column number less than 1\n" if $col_s < 1;
+                    $error .= "module: $mname : panel $k column range end less than start\n" if $col_e < $col_s;
+                    $error .= "module: $mname : panel $k column range contains non-numbers\n" if !looks_like_number( $col_s ) || !looks_like_number( $col_e );
                 }
             }
 
-            $error .= "panel $k unrecognized row type\n"    if !$rowt;
-            $error .= "panel $k unrecognized column type\n" if !$colt;
+            $error .= "module: $mname : panel $k unrecognized row type\n"    if !$rowt;
+            $error .= "module: $mname : panel $k unrecognized column type\n" if !$colt;
 
             # print "panel $k: rowt $rowt $row_s $row_e colt $colt $col_s $col_e\n";
 
@@ -387,7 +451,7 @@ sub layout_expand {
                     $cursor_row{ $parent }++;
                     $cursor_col{ $parent } = 1;
                 } else {
-                    $error .= "panel $k: unexpected error in updating row/column case row '#'\n";
+                    $error .= "module: $mname : panel $k: unexpected error in updating row/column case row '#'\n";
                 }
             }  elsif ( $rowt eq 'span' ) {
                 $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gr' } = "$row_s/$row_e";
@@ -408,7 +472,7 @@ sub layout_expand {
                     $cursor_row{ $parent }++;
                     $cursor_col{ $parent } = 1;
                 } else {
-                    $error .= "panel $k: unexpected error in updating row/column case row 'span'\n";
+                    $error .= "module: $mname : panel $k: unexpected error in updating row/column case row 'span'\n";
                 }
             }  elsif ( $rowt eq 'next' ) {
                 $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gr' } = $cursor_row{ $parent };
@@ -426,7 +490,7 @@ sub layout_expand {
                     $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gc' } = "1/-1";
                     $cursor_col{ $parent } = 1;
                 } else {
-                    $error .= "panel $k: unexpected error in updating row/column case row 'next'\n";
+                    $error .= "module: $mname : panel $k: unexpected error in updating row/column case row 'next'\n";
                 }
             }  elsif ( $rowt eq 'same' ) {
                 $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gr' } = $cursor_row{ $parent };
@@ -442,9 +506,9 @@ sub layout_expand {
                     $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gc' } = $cursor_col{ $parent };
                     increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
                 } elsif ( $colt eq 'full' ) {
-                    $error .= "panel $k: row can not be 'same' and column 'full'\n";
+                    $error .= "module: $mname : panel $k: row can not be 'same' and column 'full'\n";
                 } else {
-                    $error .= "panel $k: unexpected error in updating row/column case row 'next'\n";
+                    $error .= "module: $mname : panel $k: unexpected error in updating row/column case row 'next'\n";
                 }
             }  elsif ( $rowt eq 'full' ) {
                 $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gr' } = "1/-1";
@@ -460,12 +524,12 @@ sub layout_expand {
                     $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gc' } = $cursor_col{ $parent };
                     increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
                 } elsif ( $colt eq 'full' ) {
-                    $error .= "panel $k: row can not be 'full' and column 'full'\n";
+                    $error .= "module: $mname : panel $k: row can not be 'full' and column 'full'\n";
                 } else {
-                    $error .= "panel $k: unexpected error in updating row/column case row 'next'\n";
+                    $error .= "module: $mname : panel $k: unexpected error in updating row/column case row 'next'\n";
                 }
             } else {                
-                $error .= "panel $k: unexpected error in updating row/column case unknown\n";
+                $error .= "module: $mname : panel $k: unexpected error in updating row/column case unknown\n";
             }                
         }
     }
@@ -477,7 +541,7 @@ sub layout_expand {
 ## step 1 check for missing parent panels & assign parent panels
 
     if ( !$$json{'fields'} ) {
-        $error .= "no fields defined\n";
+        $error .= "module: $mname : no fields defined\n";
         return;
     } 
 
@@ -491,7 +555,7 @@ sub layout_expand {
         } elsif ( !$$layout{'parent'} ) {
             $$field{'layout'}{'parent'} = "root";
         } elsif ( !$panelpos{ $$layout{'parent'} } ) {
-            $error .= "field $id layout:parent $$layout{'parent'} is missing from panels\n";
+            $error .= "module: $mname : field $id layout:parent $$layout{'parent'} is missing from panels\n";
             return;
         } else {
             # print "field id $id has layout with parent\n";
@@ -562,12 +626,12 @@ sub layout_expand {
 
         if ( $location ) {
             if ( typeof( $location ) ne 'ARRAYref' ) {
-                $error .= "field $fieldid layout:location not an array\n";
+                $error .= "module: $mname : field $fieldid layout:location not an array\n";
                 return;
             }
 
             if ( @$location != 2 ) {
-                $error .= "field $fieldid layout:location is an array but does not contain exactly 2 elements\n";
+                $error .= "module: $mname : field $fieldid layout:location is an array but does not contain exactly 2 elements\n";
                 return;
             }
         }
@@ -613,31 +677,31 @@ sub layout_expand {
         if ( $rtype eq 'ARRAYref' ) {
             $rowt  = 'span';
             if ( scalar @$row != 2 ) {
-                $error .= "field $fieldid row definition is a range, but does not have exactly 2 elements\n";
+                $error .= "module: $mname : field $fieldid row definition is a range, but does not have exactly 2 elements\n";
             } else {
                 $row_s = $$row[ 0 ];
                 $row_e = $$row[ 1 ];
-                $error .= "field $fieldid row number less than 1\n" if $row_s < 1;
-                $error .= "field $fieldid row range end less than start\n" if $row_e < $row_s;
-                $error .= "field $fieldid row range contains non-numbers\n" if !looks_like_number( $row_s ) || !looks_like_number( $row_e );
+                $error .= "module: $mname : field $fieldid row number less than 1\n" if $row_s < 1;
+                $error .= "module: $mname : field $fieldid row range end less than start\n" if $row_e < $row_s;
+                $error .= "module: $mname : field $fieldid row range contains non-numbers\n" if !looks_like_number( $row_s ) || !looks_like_number( $row_e );
             }
         }
 
         if ( $ctype eq 'ARRAYref' ) {
             $colt  = 'span';
             if ( scalar @$col != 2 ) {
-                $error .= "field $fieldid column definition is a range, but does not have exactly 2 elements\n";
+                $error .= "module: $mname : field $fieldid column definition is a range, but does not have exactly 2 elements\n";
             } else {
                 $col_s = $$col[ 0 ];
                 $col_e = $$col[ 1 ];
-                $error .= "field $fieldid column number less than 1\n" if $col_s < 1;
-                $error .= "field $fieldid column range end less than start\n" if $col_e < $col_s;
-                $error .= "field $fieldid column range contains non-numbers\n" if !looks_like_number( $col_s ) || !looks_like_number( $col_e );
+                $error .= "module: $mname : field $fieldid column number less than 1\n" if $col_s < 1;
+                $error .= "module: $mname : field $fieldid column range end less than start\n" if $col_e < $col_s;
+                $error .= "module: $mname : field $fieldid column range contains non-numbers\n" if !looks_like_number( $col_s ) || !looks_like_number( $col_e );
             }
         }
 
-        $error .= "field $fieldid unrecognized row type\n"    if !$rowt;
-        $error .= "field $fieldid unrecognized column type\n" if !$colt;
+        $error .= "module: $mname : field $fieldid unrecognized row type\n"    if !$rowt;
+        $error .= "module: $mname : field $fieldid unrecognized column type\n" if !$colt;
 
         # print "field $fieldid: rowt $rowt $row_s $row_e colt $colt $col_s $col_e\n";
             
@@ -665,7 +729,7 @@ sub layout_expand {
                 $cursor_row{ $parent }++;
                 $cursor_col{ $parent } = 1;
             } else {
-                $error .= "field $fieldid: unexpected error in updating row/column case row '#'\n";
+                $error .= "module: $mname : field $fieldid: unexpected error in updating row/column case row '#'\n";
             }
         }  elsif ( $rowt eq 'span' ) {
             $loc_row = $row_s;
@@ -686,7 +750,7 @@ sub layout_expand {
                 $cursor_row{ $parent }++;
                 $cursor_col{ $parent } = 1;
             } else {
-                $error .= "field $fieldid: unexpected error in updating row/column case row 'span'\n";
+                $error .= "module: $mname : field $fieldid: unexpected error in updating row/column case row 'span'\n";
             }
         }  elsif ( $rowt eq 'next' ) {
             $loc_row = $cursor_row{ $parent };
@@ -704,7 +768,7 @@ sub layout_expand {
                 $loc_col = 1;
                 $cursor_col{ $parent } = 1;
             } else {
-                $error .= "field $fieldid: unexpected error in updating row/column case row 'next'\n";
+                $error .= "module: $mname : field $fieldid: unexpected error in updating row/column case row 'next'\n";
             }
         }  elsif ( $rowt eq 'same' ) {
             $loc_row = $cursor_row{ $parent };
@@ -720,9 +784,9 @@ sub layout_expand {
                 $loc_col = $cursor_col{ $parent };
                 increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
             } elsif ( $colt eq 'full' ) {
-                $error .= "field $fieldid: row can not be 'same' and column 'full'\n";
+                $error .= "module: $mname : field $fieldid: row can not be 'same' and column 'full'\n";
             } else {
-                $error .= "field $fieldid: unexpected error in updating row/column case row 'next'\n";
+                $error .= "module: $mname : field $fieldid: unexpected error in updating row/column case row 'next'\n";
             }
         }  elsif ( $rowt eq 'full' ) {
             $loc_row = 1;
@@ -738,12 +802,12 @@ sub layout_expand {
                 $loc_col = $cursor_col{ $parent };
                 increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
             } elsif ( $colt eq 'full' ) {
-                $error .= "field $fieldid: row can not be 'full' and column 'full'\n";
+                $error .= "module: $mname : field $fieldid: row can not be 'full' and column 'full'\n";
             } else {
-                $error .= "field $fieldid: unexpected error in updating row/column case row 'next'\n";
+                $error .= "module: $mname : field $fieldid: unexpected error in updating row/column case row 'next'\n";
             }
         } else {                
-            $error .= "field $fieldid: unexpected error in updating row/column case unknown\n";
+            $error .= "module: $mname : field $fieldid: unexpected error in updating row/column case unknown\n";
         }                
         
         # now we have our base location and cursor is updated to the next position
@@ -784,13 +848,13 @@ sub layout_expand {
         if ( $lrtype eq 'ARRAYref' ) {
             $lrowt  = 'span';
             if ( scalar @$lrow != 2 ) {
-                $error .= "field $fieldid label row definition is a range, but does not have exactly 2 elements\n";
+                $error .= "module: $mname : field $fieldid label row definition is a range, but does not have exactly 2 elements\n";
             } else {
                 $lrow_s = $$lrow[ 0 ];
                 $lrow_e = $$lrow[ 1 ];
-                $error .= "field $fieldid label row number less than 1\n" if $lrow_s < 1;
-                $error .= "field $fieldid label row range end less than start\n" if $lrow_e < $lrow_s;
-                $error .= "field $fieldid label row range contains non-numbers\n" if !looks_like_number( $lrow_s ) || !looks_like_number( $lrow_e );
+                $error .= "module: $mname : field $fieldid label row number less than 1\n" if $lrow_s < 1;
+                $error .= "module: $mname : field $fieldid label row range end less than start\n" if $lrow_e < $lrow_s;
+                $error .= "module: $mname : field $fieldid label row range contains non-numbers\n" if !looks_like_number( $lrow_s ) || !looks_like_number( $lrow_e );
                 $lrow_s += $loc_row - 1;
                 $lrow_e += $loc_col - 1;
             }
@@ -799,18 +863,18 @@ sub layout_expand {
         if ( $lctype eq 'ARRAYref' ) {
             $lcolt  = 'span';
             if ( scalar @$lcol != 2 ) {
-                $error .= "field $fieldid label column definition is a range, but does not have exactly 2 elements\n";
+                $error .= "module: $mname : field $fieldid label column definition is a range, but does not have exactly 2 elements\n";
             } else {
                 $lcol_s = $$lcol[ 0 ];
                 $lcol_e = $$lcol[ 1 ];
-                $error .= "field $fieldid label column number less than 1\n" if $lcol_s < 1;
-                $error .= "field $fieldid label column range end less than start\n" if $lcol_e < $lcol_s;
-                $error .= "field $fieldid label column range contains non-numbers\n" if !looks_like_number( $lcol_s ) || !looks_like_number( $lcol_e );
+                $error .= "module: $mname : field $fieldid label column number less than 1\n" if $lcol_s < 1;
+                $error .= "module: $mname : field $fieldid label column range end less than start\n" if $lcol_e < $lcol_s;
+                $error .= "module: $mname : field $fieldid label column range contains non-numbers\n" if !looks_like_number( $lcol_s ) || !looks_like_number( $lcol_e );
             }
         }
 
-        $error .= "field $fieldid unrecognized label row type\n"    if !$lrowt;
-        $error .= "field $fieldid unrecognized label column type\n" if !$lcolt;
+        $error .= "module: $mname : field $fieldid unrecognized label row type\n"    if !$lrowt;
+        $error .= "module: $mname : field $fieldid unrecognized label column type\n" if !$lcolt;
 
         my $max_row;
         my $max_col;
@@ -827,17 +891,17 @@ sub layout_expand {
                 $max_col = $lcol_e;
                 # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
             } elsif ( $lcolt eq 'next' ) {
-                $error .= "field $fieldid: unsupported case label column 'next'\n";
+                $error .= "module: $mname : field $fieldid: unsupported case label column 'next'\n";
                 $$field{ 'lgc' } = $cursor_col{ $parent };
                 $max_col = $cursor_col{ $parent };
                 # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
             } elsif ( $lcolt eq 'full' ) {
-                $error .= "field $fieldid: unsupported case label column 'full'\n";
+                $error .= "module: $mname : field $fieldid: unsupported case label column 'full'\n";
                 $$field{ 'lgc' } = "1/-1";
                 $max_row++;
                 $max_col = 1;
             } else {
-                $error .= "field $fieldid: unexpected error in updating label row/column case row '#'\n";
+                $error .= "module: $mname : field $fieldid: unexpected error in updating label row/column case row '#'\n";
             }
         }  elsif ( $lrowt eq 'span' ) {
             $$field{ 'lgr' } = "$lrow_s/$lrow_e";
@@ -851,19 +915,19 @@ sub layout_expand {
                 $max_col = $lcol_e;
                 # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
             } elsif ( $lcolt eq 'next' ) {
-                $error .= "field $fieldid: unsupported case label column 'next'\n";
+                $error .= "module: $mname : field $fieldid: unsupported case label column 'next'\n";
                 $$field{ 'lgc' } = $cursor_col{ $parent };
                 # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
             } elsif ( $lcolt eq 'full' ) {
-                $error .= "field $fieldid: unsupported case label column 'full'\n";
+                $error .= "module: $mname : field $fieldid: unsupported case label column 'full'\n";
                 $$field{ 'lgc' } = "1/-1";
                 $max_row++;
                 $max_col = 1;
             } else {
-                $error .= "field $fieldid: unexpected error in updating label row/column case row 'span'\n";
+                $error .= "module: $mname : field $fieldid: unexpected error in updating label row/column case row 'span'\n";
             }
         }  elsif ( $lrowt eq 'next' ) {
-            $error .= "field $fieldid: unsupported case label row 'next'\n";
+            $error .= "module: $mname : field $fieldid: unsupported case label row 'next'\n";
             $$field{ 'lgr' } = $cursor_row{ $parent };
             $max_row = $cursor_row{ $parent };
             if ( $lcolt eq '#' ) {
@@ -873,18 +937,18 @@ sub layout_expand {
                 $$field{ 'lgc' } = "$lcol_s/$lcol_e";
                 $max_col = 1;
             } elsif ( $lcolt eq 'next' ) {
-                $error .= "field $fieldid: unsupported case label column 'next'\n";
+                $error .= "module: $mname : field $fieldid: unsupported case label column 'next'\n";
                 $$field{ 'lgc' } = $cursor_col{ $parent };
                 $max_col = 1;
             } elsif ( $lcolt eq 'full' ) {
-                $error .= "field $fieldid: unsupported case label column 'full'\n";
+                $error .= "module: $mname : field $fieldid: unsupported case label column 'full'\n";
                 $$field{ 'lgc' } = "1/-1";
                 $max_col = 1;
             } else {
-                $error .= "field $fieldid: unexpected error in updating label row/column case row 'next'\n";
+                $error .= "module: $mname : field $fieldid: unexpected error in updating label row/column case row 'next'\n";
             }
         }  elsif ( $lrowt eq 'same' ) {
-            $error .= "field $fieldid: unsupported case label row 'same'\n";
+            $error .= "module: $mname : field $fieldid: unsupported case label row 'same'\n";
             $$field{ 'lgr' } = $cursor_row{ $parent };
             if ( $lcolt eq '#' ) {
                 $$field{ 'lgc' } = $lcol;
@@ -895,16 +959,16 @@ sub layout_expand {
                 $max_col = $lcol_e;
                 # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
             } elsif ( $lcolt eq 'next' ) {
-                $error .= "field $fieldid: unsupported case label column 'next'\n";
+                $error .= "module: $mname : field $fieldid: unsupported case label column 'next'\n";
                 $$field{ 'lgc' } = $cursor_col{ $parent };
                 # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
             } elsif ( $lcolt eq 'full' ) {
-                $error .= "field $fieldid: label row can not be 'same' and column 'full'\n";
+                $error .= "module: $mname : field $fieldid: label row can not be 'same' and column 'full'\n";
             } else {
-                $error .= "field $fieldid: unexpected error in updating label row/column case row 'next'\n";
+                $error .= "module: $mname : field $fieldid: unexpected error in updating label row/column case row 'next'\n";
             }
         }  elsif ( $lrowt eq 'full' ) {
-            $error .= "field $fieldid: unsupported case label row 'full'\n";
+            $error .= "module: $mname : field $fieldid: unsupported case label row 'full'\n";
             $$field{ 'lgr' } = "1/-1";
             if ( $lcolt eq '#' ) {
                 $$field{ 'lgc' } = $lcol;
@@ -915,16 +979,16 @@ sub layout_expand {
                 $max_col = $lcol_e;
                 # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
             } elsif ( $lcolt eq 'next' ) {
-                $error .= "field $fieldid: unsupported case label column 'next'\n";
+                $error .= "module: $mname : field $fieldid: unsupported case label column 'next'\n";
                 $$field{ 'lgc' } = $cursor_col{ $parent };
                 # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
             } elsif ( $lcolt eq 'full' ) {
-                $error .= "field $fieldid: label row can not be 'full' and column 'full'\n";
+                $error .= "module: $mname : field $fieldid: label row can not be 'full' and column 'full'\n";
             } else {
-                $error .= "field $fieldid: unexpected error in updating label row/column case row 'next'\n";
+                $error .= "module: $mname : field $fieldid: unexpected error in updating label row/column case row 'next'\n";
             }
         } else {                
-            $error .= "field $fieldid: unexpected error in updating row/column case unknown\n";
+            $error .= "module: $mname : field $fieldid: unexpected error in updating row/column case unknown\n";
         }
 
         # adjust cursor in case of overflow
@@ -976,13 +1040,13 @@ sub layout_expand {
         if ( $drtype eq 'ARRAYref' ) {
             $drowt  = 'span';
             if ( scalar @$drow != 2 ) {
-                $error .= "field $fieldid data row definition is a range, but does not have exactly 2 elements\n";
+                $error .= "module: $mname : field $fieldid data row definition is a range, but does not have exactly 2 elements\n";
             } else {
                 $drow_s = $$drow[ 0 ];
                 $drow_e = $$drow[ 1 ];
-                $error .= "field $fieldid data row number less than 1\n" if $drow_s < 1;
-                $error .= "field $fieldid data row range end less than start\n" if $drow_e < $drow_s;
-                $error .= "field $fieldid data row range contains non-numbers\n" if !looks_like_number( $drow_s ) || !looks_like_number( $drow_e );
+                $error .= "module: $mname : field $fieldid data row number less than 1\n" if $drow_s < 1;
+                $error .= "module: $mname : field $fieldid data row range end less than start\n" if $drow_e < $drow_s;
+                $error .= "module: $mname : field $fieldid data row range contains non-numbers\n" if !looks_like_number( $drow_s ) || !looks_like_number( $drow_e );
                 $drow_s += $loc_row - 1;
                 $drow_e += $loc_col - 1;
             }
@@ -991,18 +1055,18 @@ sub layout_expand {
         if ( $dctype eq 'ARRAYref' ) {
             $dcolt  = 'span';
             if ( scalar @$dcol != 2 ) {
-                $error .= "field $fieldid data column definition is a range, but does not have exactly 2 elements\n";
+                $error .= "module: $mname : field $fieldid data column definition is a range, but does not have exactly 2 elements\n";
             } else {
                 $dcol_s = $$dcol[ 0 ];
                 $dcol_e = $$dcol[ 1 ];
-                $error .= "field $fieldid data column number less than 1\n" if $dcol_s < 1;
-                $error .= "field $fieldid data column range end less than start\n" if $dcol_e < $dcol_s;
-                $error .= "field $fieldid data column range contains non-numbers\n" if !looks_like_number( $dcol_s ) || !looks_like_number( $dcol_e );
+                $error .= "module: $mname : field $fieldid data column number less than 1\n" if $dcol_s < 1;
+                $error .= "module: $mname : field $fieldid data column range end less than start\n" if $dcol_e < $dcol_s;
+                $error .= "module: $mname : field $fieldid data column range contains non-numbers\n" if !looks_like_number( $dcol_s ) || !looks_like_number( $dcol_e );
             }
         }
 
-        $error .= "field $fieldid unrecognized data row type\n"    if !$drowt;
-        $error .= "field $fieldid unrecognized data column type\n" if !$dcolt;
+        $error .= "module: $mname : field $fieldid unrecognized data row type\n"    if !$drowt;
+        $error .= "module: $mname : field $fieldid unrecognized data column type\n" if !$dcolt;
 
         if ( $drowt eq '#' ) {
             $$field{ 'dgr' } = $drow;
@@ -1016,17 +1080,17 @@ sub layout_expand {
                 $max_col = $dcol_e;
                 # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
             } elsif ( $dcolt eq 'next' ) {
-                $error .= "field $fieldid: unsupported case data column 'next'\n";
+                $error .= "module: $mname : field $fieldid: unsupported case data column 'next'\n";
                 $$field{ 'dgc' } = $cursor_col{ $parent };
                 $max_col = $cursor_col{ $parent };
                 # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
             } elsif ( $dcolt eq 'full' ) {
-                $error .= "field $fieldid: unsupported case data column 'full'\n";
+                $error .= "module: $mname : field $fieldid: unsupported case data column 'full'\n";
                 $$field{ 'dgc' } = "1/-1";
                 $max_row++;
                 $max_col = 1;
             } else {
-                $error .= "field $fieldid: unexpected error in updating data row/column case row '#'\n";
+                $error .= "module: $mname : field $fieldid: unexpected error in updating data row/column case row '#'\n";
             }
         }  elsif ( $drowt eq 'span' ) {
             $$field{ 'dgr' } = "$drow_s/$drow_e";
@@ -1040,19 +1104,19 @@ sub layout_expand {
                 $max_col = $dcol_e if $dcol_e;
                 # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
             } elsif ( $dcolt eq 'next' ) {
-                $error .= "field $fieldid: unsupported case data column 'next'\n";
+                $error .= "module: $mname : field $fieldid: unsupported case data column 'next'\n";
                 $$field{ 'dgc' } = $cursor_col{ $parent };
                 # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
             } elsif ( $dcolt eq 'full' ) {
-                $error .= "field $fieldid: unsupported case data column 'full'\n";
+                $error .= "module: $mname : field $fieldid: unsupported case data column 'full'\n";
                 $$field{ 'dgc' } = "1/-1";
                 $max_row++;
                 $max_col = 1;
             } else {
-                $error .= "field $fieldid: unexpected error in updating data row/column case row 'span'\n";
+                $error .= "module: $mname : field $fieldid: unexpected error in updating data row/column case row 'span'\n";
             }
         }  elsif ( $drowt eq 'next' ) {
-            $error .= "field $fieldid: unsupported case data row 'next'\n";
+            $error .= "module: $mname : field $fieldid: unsupported case data row 'next'\n";
             $$field{ 'dgr' } = $cursor_row{ $parent };
             $max_row = $cursor_row{ $parent };
             if ( $dcolt eq '#' ) {
@@ -1062,18 +1126,18 @@ sub layout_expand {
                 $$field{ 'dgc' } = "$dcol_s/$dcol_e";
                 $max_col = 1;
             } elsif ( $dcolt eq 'next' ) {
-                $error .= "field $fieldid: unsupported case data column 'next'\n";
+                $error .= "module: $mname : field $fieldid: unsupported case data column 'next'\n";
                 $$field{ 'dgc' } = $cursor_col{ $parent };
                 $max_col = 1;
             } elsif ( $dcolt eq 'full' ) {
-                $error .= "field $fieldid: unsupported case data column 'full'\n";
+                $error .= "module: $mname : field $fieldid: unsupported case data column 'full'\n";
                 $$field{ 'dgc' } = "1/-1";
                 $max_col = 1;
             } else {
-                $error .= "field $fieldid: unexpected error in updating data row/column case row 'next'\n";
+                $error .= "module: $mname : field $fieldid: unexpected error in updating data row/column case row 'next'\n";
             }
         }  elsif ( $drowt eq 'same' ) {
-            $error .= "field $fieldid: unsupported case data row 'same'\n";
+            $error .= "module: $mname : field $fieldid: unsupported case data row 'same'\n";
             $$field{ 'dgr' } = $cursor_row{ $parent };
             if ( $dcolt eq '#' ) {
                 $$field{ 'dgc' } = $dcol;
@@ -1084,16 +1148,16 @@ sub layout_expand {
                 $max_col = $dcol_e;
                 # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
             } elsif ( $dcolt eq 'next' ) {
-                $error .= "field $fieldid: unsupported case data column 'next'\n";
+                $error .= "module: $mname : field $fieldid: unsupported case data column 'next'\n";
                 $$field{ 'dgc' } = $cursor_col{ $parent };
                 # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
             } elsif ( $dcolt eq 'full' ) {
-                $error .= "field $fieldid: data row can not be 'same' and column 'full'\n";
+                $error .= "module: $mname : field $fieldid: data row can not be 'same' and column 'full'\n";
             } else {
-                $error .= "field $fieldid: unexpected error in updating data row/column case row 'next'\n";
+                $error .= "module: $mname : field $fieldid: unexpected error in updating data row/column case row 'next'\n";
             }
         }  elsif ( $drowt eq 'full' ) {
-            $error .= "field $fieldid: unsupported case data row 'full'\n";
+            $error .= "module: $mname : field $fieldid: unsupported case data row 'full'\n";
             $$field{ 'dgr' } = "1/-1";
             if ( $dcolt eq '#' ) {
                 $$field{ 'dgc' } = $dcol;
@@ -1104,16 +1168,16 @@ sub layout_expand {
                 $max_col = $dcol_e;
                 # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
             } elsif ( $dcolt eq 'next' ) {
-                $error .= "field $fieldid: unsupported case data column 'next'\n";
+                $error .= "module: $mname : field $fieldid: unsupported case data column 'next'\n";
                 $$field{ 'dgc' } = $cursor_col{ $parent };
                 # increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, true );
             } elsif ( $dcolt eq 'full' ) {
-                $error .= "field $fieldid: data row can not be 'full' and column 'full'\n";
+                $error .= "module: $mname : field $fieldid: data row can not be 'full' and column 'full'\n";
             } else {
-                $error .= "field $fieldid: unexpected error in updating data row/column case row 'next'\n";
+                $error .= "module: $mname : field $fieldid: unexpected error in updating data row/column case row 'next'\n";
             }
         } else {                
-            $error .= "field $fieldid: unexpected error in updating row/column case unknown\n";
+            $error .= "module: $mname : field $fieldid: unexpected error in updating row/column case unknown\n";
         }
 
         # adjust parent cursor in case of overflow

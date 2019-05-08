@@ -751,7 +751,9 @@ sub get_file_json {
         
     {
         my $layout = {};
-        layout_expand( $layout, $json );
+        my $mname  = $f;
+        $mname =~ s/^.*\/([^\/]*)\.json$/\1/;
+        layout_expand( $mname, $layout, $json );
         $extra_subs{ '__layout__' } = encode_json( $layout );
     }
 
@@ -1444,7 +1446,7 @@ sub check_files {
                 my $mname = $f;
                 $mname =~ s/^.*\/([^\/]*)\.json$/\1/;
 
-                layout_expand( $layout, $json );
+                layout_expand( $mname, $layout, $json );
 
                 my $js = JSON->new;
 
