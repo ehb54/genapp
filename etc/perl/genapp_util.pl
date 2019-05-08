@@ -1441,25 +1441,14 @@ sub check_files {
             }
             # extract layout
             {
-                my $layout = {};
-
-                my $mname = $f;
-                $mname =~ s/^.*\/([^\/]*)\.json$/\1/;
-
-                layout_expand( $mname, $layout, $json );
-
-                my $js = JSON->new;
-
-                print "$f panel json:\n" . $js->pretty->encode( $layout ) . "\n" if $debuglayout;
-
                 if ( $l ) { 
                     # language specific json overrides
-                    $module_layouts{ $l }{ $mname } = $js->pretty->encode( $layout );
+                    $module_layouts{ $l }{ $mname } = $extra_subs{ '__layout__' };
                 } else {
                     # propagate to all defined languages that are not already defined for this module
                     for my $leach ( keys %langs ) {
                         if ( !$module_layouts{ $leach }{ $mname } ) {
-                            $module_layouts{ $leach }{ $mname } = $js->pretty->encode( $layout );
+                            $module_layouts{ $leach }{ $mname } = $extra_subs{ '__layout__' };
                         }
                     }
                 }

@@ -29,7 +29,7 @@ sub increment_cursor_column {
     my $parentcols = shift;
     my $samerow    = shift;
 
-    print STDERR "increment cursor column parentcols $parentcols samerow $samerow\n" if $debug;
+    print STDERR "increment cursor column parentcols $parentcols samerow $samerow\n" if $debuglayout;
 
     $$cursor_c++;
     if ( $parentcols && $$cursor_c > $parentcols ) {
@@ -68,7 +68,7 @@ sub layout_prep {
         }
 
         for my $k ( keys %panel_apos ) {
-            print "key $k pos $panel_apos{$k}\n" if $debug;
+            print "key $k pos $panel_apos{$k}\n" if $debuglayout;
         }
 
         if ( exists $panel_apos{ 'root' } &&
@@ -105,11 +105,11 @@ sub layout_prep {
         my %fieldnames;
 
         for my $k ( @{$$json{ 'fields' }} ) {
-            if ( !exists $k{ 'id' } ) {
+            if ( !exists $$k{ 'id' } ) {
                 my $js = JSON->new;
                 $error .= "module: $mname : field missing id : " . $js->pretty->encode( $k ) . "\n";
             } else {
-                $fieldnames{ $k{ 'id' } }++;
+                $fieldnames{ $$k{ 'id' } }++;
             }
         }
 
@@ -134,6 +134,9 @@ sub layout_prep {
                     ,"id"         : "b_submit"
                     ,"type"       : "button"
                     ,"buttontext" : "Submit"
+                    ,"layout"     : {
+                        "data"     : [ 1, 1 ]
+                    }
                  }
                 '
             );
@@ -145,6 +148,9 @@ sub layout_prep {
                     ,"id"         : "b_reset"
                     ,"type"       : "button"
                     ,"buttontext" : "Reset to default values"
+                    ,"layout"     : {
+                        "data"     : [ 0, 2 ]
+                    }
                  }
                 '
             );
@@ -164,7 +170,7 @@ sub layout_prep {
 
         $$layout{ 'fields' } = [];
         
-        my $doneinsertbuttons = 1 || !@toinsert;
+        my $doneinsertbuttons = !@toinsert;
 
         for my $k ( @{$$json{ 'fields' }} ) {
             my %pushfield;
@@ -172,7 +178,7 @@ sub layout_prep {
             print "dump of k\n" . Dumper( $k ) if $debuglayout;
 
             if ( !$doneinsertbuttons &&
-                 $k{ 'role' } eq 'output' ) {
+                 $$k{ 'role' } eq 'output' ) {
                 for my $ik ( @toinsert ) {
                     push $$layout{ 'fields' }, $insertjson{ $ik };
                 }
