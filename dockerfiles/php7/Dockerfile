@@ -207,7 +207,11 @@ RUN service mongodb start
 RUN php --version && \
     mongod --version && \
     php --ri mongodb | grep version 
-#Install php mongodb library: composer require mongodb/mongodb in GENAPP 
+    
+#Install Composer
+#TODO: pakage should be installed by "composer require package" at the local directory within GENAPP 
+RUN curl -s https://getcomposer.org/installer | php && \
+    mv composer.phar /usr/local/bin/composer
 
 #CMD service /etc/init.d/mongodb.org start && \
 #    /etc/init.d/rc.genapp start && \
