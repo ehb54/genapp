@@ -13,28 +13,28 @@ $appname         = "__application__";
 
 Requests::register_autoloader();
 
-$results = [];
+$results = (object) [];
 
 if ( $secrets == NULL ) {
-    $results[ "_message" ] = [ "icon" => "toast.png",
+    $results->_message = [ "icon" => "toast.png",
                                "text" => "<p>Could not load configuration information to setup ABACO execution.</p>"
                                . "<p>This is a configuration error which should be forwarded to the site administrator.</p>" 
                                . "<p>ABACO submission will not work this is fixed.</p>" 
         ];
-    $results[ "error" ] = "ABACO configuration failed";
-    $results[ '_status' ] = 'failed';
+    $results->error = "ABACO configuration failed";
+    $results->_status = 'failed';
     echo json_encode( $results );
     exit();
 }
 
 if ( !isset( $secrets->abaco ) ) {
-    $results[ "_message" ] = [ "icon" => "toast.png",
+    $results->_message = [ "icon" => "toast.png",
                                "text" => "<p>Configuration information missing 'abaco' definition.</p>"
                                . "<p>This is a configuration error which should be forwarded to the site administrator.</p>" 
                                . "<p>ABACO submission will not work this is fixed.</p>" 
         ];
-    $results[ "error" ] = "Configuration missing 'abaco' section";
-    $results[ '_status' ] = 'failed';
+    $results->error = "Configuration missing 'abaco' section";
+    $results->_status = 'failed';
     echo json_encode( $results );
     exit();
 }
@@ -45,13 +45,13 @@ if ( !isset( $secrets->abaco->host ) ||
      !isset( $secrets->abaco->api_key ) ||
      !isset( $secrets->abaco->api_secret )
     ) {
-    $results[ "_message" ] = [ "icon" => "toast.png",
+    $results->_message = [ "icon" => "toast.png",
                                "text" => "<p>Configuration information incomplete 'abaco' definition.</p>"
                                . "<p>This is a configuration error which should be forwarded to the site administrator.</p>" 
                                . "<p>ABACO submission will not work this is fixed.</p>" 
         ];
-    $results[ "error" ] = "Configuration incomplete 'abaco' section";
-    $results[ '_status' ] = 'failed';
+    $results->error = "Configuration incomplete 'abaco' section";
+    $results->_status = 'failed';
     echo json_encode( $results );
     exit();
 }
@@ -62,11 +62,11 @@ function container_name( $menu, $mod ) {
 
     # name needs to match in docker/build_docker_footer.pl
 
-    $results = [];
+    $results = (object) [];
 
     if ( !strlen( $dockerhub->user ) ) {
-        $results[ "error" ] = "directives:dockerhub:user not defined";
-        $results[ '_status' ] = 'failed';
+        $results->error = "directives:dockerhub:user not defined";
+        $results->_status = 'failed';
         return json_encode( $results );
     }
 
@@ -104,7 +104,7 @@ function container_name( $menu, $mod ) {
 function gettoken() {
     global $secrets;
 
-    $results = [];
+    $results = (object) [];
 
     try {
         $response = Requests::post( $secrets->abaco->host . "/token"
@@ -132,12 +132,12 @@ function gettoken() {
         $results->_status = "success";
     } else {
         if ( isset( $error ) ) {
-            $results[ "error" ] = $error->getMessage();
-            $results[ '_status' ] = 'failed';
+            $results->error = $error->getMessage();
+            $results->_status = 'failed';
         } else {
             echo "error in response:" . 
-            $results[ "error" ] = "Response error $response->status_code\n";
-            $results[ '_status' ] = 'failed';
+            $results->error = "Response error $response->status_code\n";
+            $results->_status = 'failed';
         }
     }
     return json_encode( $results );
@@ -146,7 +146,7 @@ function gettoken() {
 function registoractor( $token, $cname, $id ) {
     global $secrets;
 
-    $results = [];
+    $results = (object) [];
 
     try {
         $response = Requests::post( $secrets->abaco->host . "/actors/v2"
@@ -171,12 +171,12 @@ function registoractor( $token, $cname, $id ) {
         $results->_status = "success";
     } else {
         if ( isset( $error ) ) {
-            $results[ "error" ] = $error->getMessage();
-            $results[ '_status' ] = 'failed';
+            $results->error = $error->getMessage();
+            $results->_status = 'failed';
         } else {
             echo "error in response:" . 
-            $results[ "error" ] = "Response error $response->status_code\n";
-            $results[ '_status' ] = 'failed';
+            $results->error = "Response error $response->status_code\n";
+            $results->_status = 'failed';
         }
     }
     return json_encode( $results );
@@ -185,7 +185,7 @@ function registoractor( $token, $cname, $id ) {
 function getactors( $token ) {
     global $secrets;
 
-    $results = [];
+    $results = (object) [];
 
     try {
         $response = Requests::get( $secrets->abaco->host . "/actors/v2"
@@ -204,12 +204,12 @@ function getactors( $token ) {
         $results->_status = "success";
     } else {
         if ( isset( $error ) ) {
-            $results[ "error" ] = $error->getMessage();
-            $results[ '_status' ] = 'failed';
+            $results->error = $error->getMessage();
+            $results->_status = 'failed';
         } else {
             echo "error in response:" . 
-            $results[ "error" ] = "Response error $response->status_code\n";
-            $results[ '_status' ] = 'failed';
+            $results->error = "Response error $response->status_code\n";
+            $results->_status = 'failed';
         }
     }
     return json_encode( $results );
@@ -218,7 +218,7 @@ function getactors( $token ) {
 function getactor( $token, $actorid ) {
     global $secrets;
 
-    $results = [];
+    $results = (object) [];
 
     try {
         $response = Requests::get( $secrets->abaco->host . "/actors/v2/$actorid"
@@ -237,12 +237,12 @@ function getactor( $token, $actorid ) {
         $results->_status = "success";
     } else {
         if ( isset( $error ) ) {
-            $results[ "error" ] = $error->getMessage();
-            $results[ '_status' ] = 'failed';
+            $results->error = $error->getMessage();
+            $results->_status = 'failed';
         } else {
             echo "error in response:" . 
-            $results[ "error" ] = "Response error $response->status_code\n";
-            $results[ '_status' ] = 'failed';
+            $results->error = "Response error $response->status_code\n";
+            $results->_status = 'failed';
         }
     }
     return json_encode( $results );
@@ -251,7 +251,7 @@ function getactor( $token, $actorid ) {
 function deleteactor( $token, $actorid ) {
     global $secrets;
 
-    $results = [];
+    $results = (object) [];
 
     try {
         $response = Requests::delete( $secrets->abaco->host . "/actors/v2/$actorid"
@@ -270,12 +270,12 @@ function deleteactor( $token, $actorid ) {
         $results->_status = "success";
     } else {
         if ( isset( $error ) ) {
-            $results[ "error" ] = $error->getMessage();
-            $results[ '_status' ] = 'failed';
+            $results->error = $error->getMessage();
+            $results->_status = 'failed';
         } else {
             echo "error in response:" . 
-            $results[ "error" ] = "Response error $response->status_code\n";
-            $results[ '_status' ] = 'failed';
+            $results->error = "Response error $response->status_code\n";
+            $results->_status = 'failed';
         }
     }
     return json_encode( $results );
@@ -284,7 +284,7 @@ function deleteactor( $token, $actorid ) {
 function startexecution( $token, $actorid, $msg ) {
     global $secrets;
 
-    $results = [];
+    $results = (object) [];
 
     try {
         $response = Requests::post( $secrets->abaco->host . "/actors/v2/$actorid/messages"
@@ -307,12 +307,12 @@ function startexecution( $token, $actorid, $msg ) {
         $results->_status = "success";
     } else {
         if ( isset( $error ) ) {
-            $results[ "error" ] = $error->getMessage();
-            $results[ '_status' ] = 'failed';
+            $results->error = $error->getMessage();
+            $results->_status = 'failed';
         } else {
             echo "error in response:" . 
-            $results[ "error" ] = "Response error $response->status_code\n";
-            $results[ '_status' ] = 'failed';
+            $results->error = "Response error $response->status_code\n";
+            $results->_status = 'failed';
         }
     }
     return json_encode( $results );
@@ -339,12 +339,12 @@ function getexecution( $token, $actorid, $execid ) {
         $results->_status = "success";
     } else {
         if ( isset( $error ) ) {
-            $results[ "error" ] = $error->getMessage();
-            $results[ '_status' ] = 'failed';
+            $results->error = $error->getMessage();
+            $results->_status = 'failed';
         } else {
             echo "error in response:" . 
-            $results[ "error" ] = "Response error $response->status_code\n";
-            $results[ '_status' ] = 'failed';
+            $results->error = "Response error $response->status_code\n";
+            $results->_status = 'failed';
         }
     }
     return json_encode( $results );
@@ -371,12 +371,12 @@ function getlog( $token, $actorid, $execid ) {
         $results->_status = "success";
     } else {
         if ( isset( $error ) ) {
-            $results[ "error" ] = $error->getMessage();
-            $results[ '_status' ] = 'failed';
+            $results->error = $error->getMessage();
+            $results->_status = 'failed';
         } else {
             echo "error in response:" . 
-            $results[ "error" ] = "Response error $response->status_code\n";
-            $results[ '_status' ] = 'failed';
+            $results->error = "Response error $response->status_code\n";
+            $results->_status = 'failed';
         }
     }
     return json_encode( $results );
@@ -385,7 +385,7 @@ function getlog( $token, $actorid, $execid ) {
 function getexecutions( $token, $actorid ) {
     global $secrets;
 
-    $results = [];
+    $results = (object) [];
 
     try {
         $response = Requests::get( $secrets->abaco->host . "/actors/v2/$actorid/executions"
@@ -405,12 +405,12 @@ function getexecutions( $token, $actorid ) {
         $results->_status = "success";
     } else {
         if ( isset( $error ) ) {
-            $results[ "error" ] = $error->getMessage();
-            $results[ '_status' ] = 'failed';
+            $results->error = $error->getMessage();
+            $results->_status = 'failed';
         } else {
             echo "error in response:" . 
-            $results[ "error" ] = "Response error $response->status_code\n";
-            $results[ '_status' ] = 'failed';
+            $results->error = "Response error $response->status_code\n";
+            $results->_status = 'failed';
         }
     }
     return json_encode( $results );
@@ -419,7 +419,7 @@ function getexecutions( $token, $actorid ) {
 function getmessages( $token, $actorid ) {
     global $secrets;
 
-    $results = [];
+    $results = (object) [];
 
     try {
         $response = Requests::get( $secrets->abaco->host . "/actors/v2/$actorid/messages"
@@ -439,12 +439,12 @@ function getmessages( $token, $actorid ) {
         $results->_status = "success";
     } else {
         if ( isset( $error ) ) {
-            $results[ "error" ] = $error->getMessage();
-            $results[ '_status' ] = 'failed';
+            $results->error = $error->getMessage();
+            $results->_status = 'failed';
         } else {
             echo "error in response:" . 
-            $results[ "error" ] = "Response error $response->status_code\n";
-            $results[ '_status' ] = 'failed';
+            $results->error = "Response error $response->status_code\n";
+            $results->_status = 'failed';
         }
     }
     return json_encode( $results );
