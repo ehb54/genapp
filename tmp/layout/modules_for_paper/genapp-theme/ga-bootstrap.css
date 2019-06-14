@@ -260,7 +260,7 @@ template {
 [hidden] {
   display: none !important; }
 
-.form-control, .ga-input-field, .ga-output-field {
+.form-control, .ga-field-input-control, .ga-field-output-control {
   display: block;
   width: 100%;
   height: calc(1.5em + 0.75rem + 2px);
@@ -275,25 +275,25 @@ template {
   border-radius: 0.25rem;
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; }
   @media (prefers-reduced-motion: reduce) {
-    .form-control, .ga-input-field, .ga-output-field {
+    .form-control, .ga-field-input-control, .ga-field-output-control {
       transition: none; } }
-  .form-control::-ms-expand, .ga-input-field::-ms-expand, .ga-output-field::-ms-expand {
+  .form-control::-ms-expand, .ga-field-input-control::-ms-expand, .ga-field-output-control::-ms-expand {
     background-color: transparent;
     border: 0; }
-  .form-control:focus, .ga-input-field:focus, .ga-output-field:focus {
+  .form-control:focus, .ga-field-input-control:focus, .ga-field-output-control:focus {
     color: #495057;
     background-color: #fff;
     border-color: white;
     outline: 0;
     box-shadow: 0 0 0 0.2rem rgba(228, 255, 250, 0.25); }
-  .form-control::placeholder, .ga-input-field::placeholder, .ga-output-field::placeholder {
+  .form-control::placeholder, .ga-field-input-control::placeholder, .ga-field-output-control::placeholder {
     color: #6c757d;
     opacity: 1; }
-  .form-control:disabled, .ga-input-field:disabled, .ga-output-field:disabled, .form-control[readonly], .ga-input-field[readonly], .ga-output-field[readonly] {
+  .form-control:disabled, .ga-field-input-control:disabled, .ga-field-output-control:disabled, .form-control[readonly], .ga-field-input-control[readonly], .ga-field-output-control[readonly] {
     background-color: #e9ecef;
     opacity: 1; }
 
-select.form-control:focus::-ms-value, select.ga-input-field:focus::-ms-value, select.ga-output-field:focus::-ms-value {
+select.form-control:focus::-ms-value, select.ga-field-input-control:focus::-ms-value, select.ga-field-output-control:focus::-ms-value {
   color: #495057;
   background-color: #fff; }
 
@@ -350,13 +350,13 @@ select.form-control:focus::-ms-value, select.ga-input-field:focus::-ms-value, se
   line-height: 1.5;
   border-radius: 0.3rem; }
 
-select.form-control[size], select.ga-input-field[size], select.ga-output-field[size], select.form-control[multiple], select.ga-input-field[multiple], select.ga-output-field[multiple] {
+select.form-control[size], select.ga-field-input-control[size], select.ga-field-output-control[size], select.form-control[multiple], select.ga-field-input-control[multiple], select.ga-field-output-control[multiple] {
   height: auto; }
 
-textarea.form-control, textarea.ga-input-field, textarea.ga-output-field {
+textarea.form-control, textarea.ga-field-input-control, textarea.ga-field-output-control {
   height: auto; }
 
-.form-group, .ga-input-field-group, .ga-output-field-group {
+.form-group {
   margin-bottom: 1rem; }
 
 .form-text {
@@ -420,26 +420,26 @@ textarea.form-control, textarea.ga-input-field, textarea.ga-output-field {
   background-color: rgba(40, 167, 69, 0.9);
   border-radius: 0.25rem; }
 
-.was-validated .form-control:valid, .was-validated .ga-input-field:valid, .was-validated .ga-output-field:valid, .form-control.is-valid, .is-valid.ga-input-field, .is-valid.ga-output-field {
+.was-validated .form-control:valid, .was-validated .ga-field-input-control:valid, .was-validated .ga-field-output-control:valid, .form-control.is-valid, .is-valid.ga-field-input-control, .is-valid.ga-field-output-control {
   border-color: #28a745;
   padding-right: calc(1.5em + 0.75rem);
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2328a745' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
   background-repeat: no-repeat;
   background-position: center right calc(0.375em + 0.1875rem);
   background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem); }
-  .was-validated .form-control:valid:focus, .was-validated .ga-input-field:valid:focus, .was-validated .ga-output-field:valid:focus, .form-control.is-valid:focus, .is-valid.ga-input-field:focus, .is-valid.ga-output-field:focus {
+  .was-validated .form-control:valid:focus, .was-validated .ga-field-input-control:valid:focus, .was-validated .ga-field-output-control:valid:focus, .form-control.is-valid:focus, .is-valid.ga-field-input-control:focus, .is-valid.ga-field-output-control:focus {
     border-color: #28a745;
     box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25); }
-  .was-validated .form-control:valid ~ .valid-feedback, .was-validated .ga-input-field:valid ~ .valid-feedback, .was-validated .ga-output-field:valid ~ .valid-feedback,
+  .was-validated .form-control:valid ~ .valid-feedback, .was-validated .ga-field-input-control:valid ~ .valid-feedback, .was-validated .ga-field-output-control:valid ~ .valid-feedback,
   .was-validated .form-control:valid ~ .valid-tooltip,
-  .was-validated .ga-input-field:valid ~ .valid-tooltip,
-  .was-validated .ga-output-field:valid ~ .valid-tooltip, .form-control.is-valid ~ .valid-feedback, .is-valid.ga-input-field ~ .valid-feedback, .is-valid.ga-output-field ~ .valid-feedback,
+  .was-validated .ga-field-input-control:valid ~ .valid-tooltip,
+  .was-validated .ga-field-output-control:valid ~ .valid-tooltip, .form-control.is-valid ~ .valid-feedback, .is-valid.ga-field-input-control ~ .valid-feedback, .is-valid.ga-field-output-control ~ .valid-feedback,
   .form-control.is-valid ~ .valid-tooltip,
-  .is-valid.ga-input-field ~ .valid-tooltip,
-  .is-valid.ga-output-field ~ .valid-tooltip {
+  .is-valid.ga-field-input-control ~ .valid-tooltip,
+  .is-valid.ga-field-output-control ~ .valid-tooltip {
     display: block; }
 
-.was-validated textarea.form-control:valid, .was-validated textarea.ga-input-field:valid, .was-validated textarea.ga-output-field:valid, textarea.form-control.is-valid, textarea.is-valid.ga-input-field, textarea.is-valid.ga-output-field {
+.was-validated textarea.form-control:valid, .was-validated textarea.ga-field-input-control:valid, .was-validated textarea.ga-field-output-control:valid, textarea.form-control.is-valid, textarea.is-valid.ga-field-input-control, textarea.is-valid.ga-field-output-control {
   padding-right: calc(1.5em + 0.75rem);
   background-position: top calc(0.375em + 0.1875rem) right calc(0.375em + 0.1875rem); }
 
@@ -521,26 +521,26 @@ textarea.form-control, textarea.ga-input-field, textarea.ga-output-field {
   background-color: rgba(220, 53, 69, 0.9);
   border-radius: 0.25rem; }
 
-.was-validated .form-control:invalid, .was-validated .ga-input-field:invalid, .was-validated .ga-output-field:invalid, .form-control.is-invalid, .is-invalid.ga-input-field, .is-invalid.ga-output-field {
+.was-validated .form-control:invalid, .was-validated .ga-field-input-control:invalid, .was-validated .ga-field-output-control:invalid, .form-control.is-invalid, .is-invalid.ga-field-input-control, .is-invalid.ga-field-output-control {
   border-color: #dc3545;
   padding-right: calc(1.5em + 0.75rem);
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='%23dc3545' viewBox='-2 -2 7 7'%3e%3cpath stroke='%23dc3545' d='M0 0l3 3m0-3L0 3'/%3e%3ccircle r='.5'/%3e%3ccircle cx='3' r='.5'/%3e%3ccircle cy='3' r='.5'/%3e%3ccircle cx='3' cy='3' r='.5'/%3e%3c/svg%3E");
   background-repeat: no-repeat;
   background-position: center right calc(0.375em + 0.1875rem);
   background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem); }
-  .was-validated .form-control:invalid:focus, .was-validated .ga-input-field:invalid:focus, .was-validated .ga-output-field:invalid:focus, .form-control.is-invalid:focus, .is-invalid.ga-input-field:focus, .is-invalid.ga-output-field:focus {
+  .was-validated .form-control:invalid:focus, .was-validated .ga-field-input-control:invalid:focus, .was-validated .ga-field-output-control:invalid:focus, .form-control.is-invalid:focus, .is-invalid.ga-field-input-control:focus, .is-invalid.ga-field-output-control:focus {
     border-color: #dc3545;
     box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25); }
-  .was-validated .form-control:invalid ~ .invalid-feedback, .was-validated .ga-input-field:invalid ~ .invalid-feedback, .was-validated .ga-output-field:invalid ~ .invalid-feedback,
+  .was-validated .form-control:invalid ~ .invalid-feedback, .was-validated .ga-field-input-control:invalid ~ .invalid-feedback, .was-validated .ga-field-output-control:invalid ~ .invalid-feedback,
   .was-validated .form-control:invalid ~ .invalid-tooltip,
-  .was-validated .ga-input-field:invalid ~ .invalid-tooltip,
-  .was-validated .ga-output-field:invalid ~ .invalid-tooltip, .form-control.is-invalid ~ .invalid-feedback, .is-invalid.ga-input-field ~ .invalid-feedback, .is-invalid.ga-output-field ~ .invalid-feedback,
+  .was-validated .ga-field-input-control:invalid ~ .invalid-tooltip,
+  .was-validated .ga-field-output-control:invalid ~ .invalid-tooltip, .form-control.is-invalid ~ .invalid-feedback, .is-invalid.ga-field-input-control ~ .invalid-feedback, .is-invalid.ga-field-output-control ~ .invalid-feedback,
   .form-control.is-invalid ~ .invalid-tooltip,
-  .is-invalid.ga-input-field ~ .invalid-tooltip,
-  .is-invalid.ga-output-field ~ .invalid-tooltip {
+  .is-invalid.ga-field-input-control ~ .invalid-tooltip,
+  .is-invalid.ga-field-output-control ~ .invalid-tooltip {
     display: block; }
 
-.was-validated textarea.form-control:invalid, .was-validated textarea.ga-input-field:invalid, .was-validated textarea.ga-output-field:invalid, textarea.form-control.is-invalid, textarea.is-invalid.ga-input-field, textarea.is-invalid.ga-output-field {
+.was-validated textarea.form-control:invalid, .was-validated textarea.ga-field-input-control:invalid, .was-validated textarea.ga-field-output-control:invalid, textarea.form-control.is-invalid, textarea.is-invalid.ga-field-input-control, textarea.is-invalid.ga-field-output-control {
   padding-right: calc(1.5em + 0.75rem);
   background-position: top calc(0.375em + 0.1875rem) right calc(0.375em + 0.1875rem); }
 
@@ -613,13 +613,13 @@ textarea.form-control, textarea.ga-input-field, textarea.ga-output-field {
       align-items: center;
       justify-content: center;
       margin-bottom: 0; }
-    .form-inline .form-group, .form-inline .ga-input-field-group, .form-inline .ga-output-field-group {
+    .form-inline .form-group {
       display: flex;
       flex: 0 0 auto;
       flex-flow: row wrap;
       align-items: center;
       margin-bottom: 0; }
-    .form-inline .form-control, .form-inline .ga-input-field, .form-inline .ga-output-field {
+    .form-inline .form-control, .form-inline .ga-field-input-control, .form-inline .ga-field-output-control {
       display: inline-block;
       width: auto;
       vertical-align: middle; }
@@ -665,7 +665,7 @@ textarea.form-control, textarea.ga-input-field, textarea.ga-output-field {
     .container {
       max-width: 1140px; } }
 
-.container-fluid, .ga-module-panel {
+.container-fluid, .ga-module {
   width: 100%;
   padding-right: 15px;
   padding-left: 15px;
@@ -1659,21 +1659,24 @@ input[type="button"].btn-block {
   width: 100%; }
 
 h1, h2, h3, h4, h5, h6,
-.h1, .h2, .h3, .h4, .header4, .h5, .h6 {
+.h1,
+.ga-field-input-header1, .h2, .ga-field-input-header2, .h3, .ga-field-input-header3, .h4, .ga-field-input-header4, .h5, .h6 {
   margin-bottom: 0.5rem;
   font-weight: 500;
   line-height: 1.2; }
 
-h1, .h1 {
+h1,
+.h1,
+.ga-field-input-header1 {
   font-size: 2.5rem; }
 
-h2, .h2 {
+h2, .h2, .ga-field-input-header2 {
   font-size: 2rem; }
 
-h3, .h3 {
+h3, .h3, .ga-field-input-header3 {
   font-size: 1.75rem; }
 
-h4, .h4, .header4 {
+h4, .h4, .ga-field-input-header4 {
   font-size: 1.5rem; }
 
 h5, .h5 {
