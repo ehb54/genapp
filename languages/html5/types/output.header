@@ -1,3 +1,4 @@
+<!-- output.header -->
 <script>
 ga.tmp.html = "<hr>";
 __~nooutputhr{ga.tmp.html = "";}
@@ -20,3 +21,4 @@ ga.value.extra_resets.clear();
 __~textarea:help{<span class="help">__textarea:help__</span>}
 </td>
 </tr>
+<!-- end output.header -->

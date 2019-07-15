@@ -55,9 +55,9 @@
                     "inputs"     : [ 
                                     { "types/input.header"           : "once"     },
                                     { "types/__fields:type__.input"  : "fields:id" },
+                                    { "types/__fields:type__.output" : "fields:id" },
                                     { "types/input.footer"           : "once"     },
                                     { "types/output.header"          : "once"     },
-                                    { "types/__fields:type__.output" : "fields:id" },
                                     { "types/output.footer"          : "once"     }
                                    ]
                    }
@@ -506,6 +506,7 @@
                                     ,{ "js/qr.js"               : "once" }
                                     ,{ "js/msg.js"              : "once" }
                                     ,{ "js/ws.js"               : "once" }
+                                    ,{ "js/layout.js"           : "once" }
                                    ]
                    }
                    ,{

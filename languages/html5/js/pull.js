@@ -81,7 +81,6 @@ __~debug:pull{    console.log( "ga.pull.doPull(): in tu[k]:" + k2 + " => " + v2 
                              ga.color.spectrum.val( k2, v );
                          }
                         case "email" : 
-                        case "text" : 
                         case "integer" : 
                         case "float" : 
                          t.val( v ); break;
@@ -143,7 +142,6 @@ __~debug:pull{    console.log( "ga.pull.doPull(): in tu[k]:" + k2 + " => " + v2 
                              ga.color.spectrum.val( k2, v );
                          }
                         case "email" : 
-                        case "text" : 
                         case "integer" : 
                         case "float" : 
                          t.val( v ); break;

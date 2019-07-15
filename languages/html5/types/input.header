@@ -1,3 +1,4 @@
+<!-- input.header -->
 __~height{<div style="height:__height__; overflow:auto">}
 __~center{<center>}
 <form id="__moduleid__" __~nowrap{style="white-space:nowrap"}>
@@ -30,4 +31,4 @@ _jmol_info = {};
 ga.pull.clearPull();
 ga.specproj.clear();
 $('#__moduleid__').on("keyup keypress", function(e) { var code = e.keyCode || e.which;  if (code  == 13) { e.preventDefault(); return false; }});
-
+// -- end input.header --
