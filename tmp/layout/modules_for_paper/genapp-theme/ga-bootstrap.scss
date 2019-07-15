@@ -28,13 +28,16 @@ $theme-colors: (
 @import "./node_modules/bootstrap/scss/buttons";
 @import "./node_modules/bootstrap/scss/type";
 
-.ga-input-field-group, .ga-output-field-group {
-  @extend .form-group;
-}
-.ga-input-field, .ga-output-field {
+// TODO: probably don't need this since it only controls margin-bottom but we're
+// using GenApp for layout. The label and input aren't grouped together and are
+// in different grid cells.
+// .ga-input-field-group, .ga-output-field-group {
+//   @extend .form-group;
+// }
+.ga-field-input-control, .ga-field-output-control {
   @extend .form-control;
 }
-.ga-module-panel {
+.ga-module {
   @extend .container-fluid;
 }
 .ga-button-submit {
@@ -45,9 +48,15 @@ $theme-colors: (
   @extend .btn;
   @extend .btn-secondary;
 }
-// .ga-module-panel button {
-//     @extend .btn;
-// }
-.header4 {
+.ga-field-input-header1 {
+  @extend .h1;
+}
+.ga-field-input-header2 {
+  @extend .h2;
+}
+.ga-field-input-header3 {
+  @extend .h3;
+}
+.ga-field-input-header4 {
   @extend .h4;
 }

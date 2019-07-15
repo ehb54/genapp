@@ -22,14 +22,14 @@
 <link rel="stylesheet" href="./ga-bootstrap.css">
 </head>
 <body>
-<div id=ga-panel-root style="display:grid;grid-template-rows:repeat(1,auto);grid-template-columns:auto;grid-gap:5px;text-align:left" class="ga-module-panel"><div id=ga-panel-header style="display:grid;grid-template-rows:auto;grid-template-columns:auto;grid-row:1;grid-column:1/-1;grid-gap:5px;text-align:center">
-<div id=ga-label-module_header style="grid-row:1;grid-column:1;" class="ga-field-input ga-type-label "><label id="module_header_label" class="header4 ">Energy Example</label><div id="module_header"></div></div>
+<div id=ga-panel-root style="display:grid;grid-template-rows:repeat(1,auto);grid-template-columns:auto;grid-gap:5px;text-align:left" class="ga-module"><div id=ga-panel-header style="display:grid;grid-template-rows:auto;grid-template-columns:auto;grid-row:1;grid-column:1/-1;grid-gap:5px;text-align:center">
+<div id=ga-label-module_header style="grid-row:1;grid-column:1;" class="ga-field-input ga-type-label "><label id="module_header_label" class="ga-field-input-header4 ">Energy Example</label><div id="module_header"></div></div>
 </div>
 <div id=ga-panel-body style="display:grid;grid-template-rows:auto;grid-template-columns:auto;grid-row:2;grid-column:1/-1;grid-gap:5px;text-align:left"><div id=ga-panel-leftpanel style="display:grid;grid-template-rows:auto;grid-template-columns:repeat(2,auto);grid-row:1;grid-column:1;grid-gap:5px;text-align:left">
 <div id=ga-label-m style="grid-row:1;grid-column:1;" class="ga-field-input ga-type-float "><label for="m">mass [kg] </label></div>
-<div id=ga-data-m style="grid-row:1;grid-column:2;" class="ga-field-input ga-type-float "><input type="number" name="m" id="m" data-type="float" required class="help_link ga-input-field"><span class="help">Enter the mass in kilograms</span><span id="m_msg" class="warning field_msg" > </span></div>
+<div id=ga-data-m style="grid-row:1;grid-column:2;" class="ga-field-input ga-type-float "><input type="number" name="m" id="m" data-type="float" required class="help_link ga-field-input-control"><span class="help">Enter the mass in kilograms</span><span id="m_msg" class="warning field_msg" > </span></div>
 <div id=ga-label-c style="grid-row:2;grid-column:1;" class="ga-field-input ga-type-float "><label for="c">Speed of light [m/s] </label></div>
-<div id=ga-data-c style="grid-row:2;grid-column:2;" class="ga-field-input ga-type-float "><input type="number" name="c" id="c" value="299792458" data-type="float" required class="help_link ga-input-field"><span class="help">Enter the speed of light in meters/second</span><span id="c_msg" class="warning field_msg" > </span></div>
+<div id=ga-data-c style="grid-row:2;grid-column:2;" class="ga-field-input ga-type-float "><input type="number" name="c" id="c" value="299792458" data-type="float" required class="help_link ga-field-input-control"><span class="help">Enter the speed of light in meters/second</span><span id="c_msg" class="warning field_msg" > </span></div>
 <div id=ga-label-b_submit style="grid-row:3;grid-column:1;" class="ga-field-input ga-type-button "><label class=""></label></div>
 <div id=ga-data-b_submit style="grid-row:3;grid-column:1;" class="ga-field-input ga-type-button "><button id="b_submit_button" class="ga-button-submit"><span class="buttontext">Submit</span></button><div id="b_submit_buttonval"></div></div>
 <div id=ga-label-b_reset style="grid-row:4;grid-column:1;" class="ga-field-input ga-type-button "><label class=""></label></div>
@@ -37,7 +37,7 @@
 </div>
 <div id=ga-panel-rightpanel style="display:grid;grid-template-rows:auto;grid-template-columns:repeat(2,auto);grid-row:1;grid-column:2;grid-gap:5px;text-align:right">
 <div id=ga-label-e style="grid-row:1;grid-column:2;" class="ga-field-output ga-type-text "><label for="e">Energy [J] </label></div>
-<div id=ga-data-e style="grid-row:1;grid-column:1;" class="ga-field-output ga-type-text "><input type="text" name="e" id="e" readonly class="ga-input-field"></div>
+<div id=ga-data-e style="grid-row:1;grid-column:1;" class="ga-field-output ga-type-text "><input type="text" name="e" id="e" readonly class="ga-field-input-control"></div>
 </div>
 </div>
 <div id=ga-panel-footer style="display:grid;grid-template-rows:auto;grid-template-columns:auto;grid-row:3;grid-column:1/-1;grid-gap:5px;text-align:center">
