@@ -84,7 +84,7 @@ ga.data.update = function( mod, data, msging_f, msg_id ) {
         hmod_out2           = "#" + mod_out2,
         jqmod_out2           = $( hmod_out2 ),
         retobj              = {},
-        hmod_out_msgs       = hmod_out + "_" + "msgs",
+        hmod_out_msgs       = hmod_out2 + "_" + "msgs",
         jqhmod_out_msgs     = $( hmod_out_msgs ),
         htag,
         jqhtag,

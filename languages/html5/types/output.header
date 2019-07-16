@@ -7,7 +7,7 @@ $("#__moduleid__").append( ga.tmp.html );
 </script>
 __~centeroutput{<center>}
 <form id="__moduleid___output">
-<div id="__moduleid___output_msgs" class="warning" type="msgs"></div>
+<!-- moved to layout.js <div id="__moduleid___output_msgs" class="warning" type="msgs"></div> -->
 <script>
 ga.value.setLastValueOutput( "__moduleid___output" );
 ga.value.extra_resets.clear();
