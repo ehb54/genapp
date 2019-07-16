@@ -45,6 +45,8 @@ sub layout_prep {
 
     $json = decode_json( encode_json( $json ) );
 
+    my $moduleid = $$json{ "moduleid" };
+
     # check for panels
     if ( $extra_subs{ '__panels__' } ) {
         $$layout{ 'panels' } = decode_json( $extra_subs{ '__panels__' } );
@@ -153,6 +155,52 @@ sub layout_prep {
                     }
                  }
                 '
+            );
+
+# special inserts
+        my @specinserts = ( 
+            "${moduleid}_progress",
+            "${moduleid}_output_airavata",
+            "${moduleid}_output_msgs",
+            "${moduleid}_output_textarea"
+            );
+
+        push @toinsert, @specinserts;
+
+        $insertjson{ "${moduleid}_progress" } =
+            decode_json(
+                "{
+                   \"role\"        : \"output\"
+                    ,\"id\"         : \"${moduleid}_progress\"
+                    ,\"type\"       : \"span\"
+                 }"
+            );
+
+        $insertjson{ "${moduleid}_output_airavata" } =
+            decode_json(
+                "{
+                   \"role\"        : \"output\"
+                    ,\"id\"         : \"${moduleid}_output_airavata\"
+                    ,\"type\"       : \"span\"
+                 }"
+            );
+
+        $insertjson{ "${moduleid}_output_msgs" } =
+            decode_json(
+                "{
+                   \"role\"        : \"output\"
+                    ,\"id\"         : \"${moduleid}_output_msgs\"
+                    ,\"type\"       : \"warnings\"
+                 }"
+            );
+
+        $insertjson{ "${moduleid}_output_textarea" } =
+            decode_json(
+                "{
+                   \"role\"        : \"output\"
+                    ,\"id\"         : \"${moduleid}_output_textarea\"
+                    ,\"type\"       : \"textarea\"
+                 }"
             );
 
 # extract field info & layout info

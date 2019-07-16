@@ -77,9 +77,12 @@ ga.data.update = function( mod, data, msging_f, msg_id ) {
         state_changed       = 0,
         do_close            = 0,
         do_close2           = 0,
-        mod_out             = mod + "_output",
+        mod_out             = mod,
         hmod_out            = "#" + mod_out,
         jqmod_out           = $( hmod_out ),
+        mod_out2            = mod + "_output",
+        hmod_out2           = "#" + mod_out2,
+        jqmod_out2           = $( hmod_out2 ),
         retobj              = {},
         hmod_out_msgs       = hmod_out + "_" + "msgs",
         jqhmod_out_msgs     = $( hmod_out_msgs ),
@@ -433,12 +436,12 @@ __~debug:values{        console.log( "ga.data.update() atomic structure jmol scr
                         if ( k == "_textarea" )
                         { 
                             __~debug:textarea{console.log( "ga.data.update() textarea msg in msging " + v );}
-                            ga.data.textarea( hmod_out, v );
+                            ga.data.textarea( hmod_out2, v );
                         }
                         if ( k == "_airavata" )
                         { 
                             __~debug:airavata{console.log( "ga.data.update() airavata msg in msging " + v );}
-                            ga.data.airavata( hmod_out, v );
+                            ga.data.airavata( hmod_out2, v );
                         }
                         if ( k == "_status" )
                         { 
@@ -477,12 +480,12 @@ __~debug:values{        console.log( "ga.data.update() atomic structure jmol scr
                         if ( k == "_textarea" )
                         { 
                             __~debug:textarea{console.log( "ga.data.update() textarea msg " + v );}
-                            ga.data.textarea( hmod_out, v );
+                            ga.data.textarea( hmod_out2, v );
                         }
                         if ( k == "_airavata" )
                         { 
                             __~debug:airavata{console.log( "ga.data.update() airavata msg in msging " + v );}
-                            ga.data.airavata( hmod_out, v );
+                            ga.data.airavata( hmod_out2, v );
                         }
                         if ( k == "_loginverify" )
                         { 
@@ -537,9 +540,13 @@ __~debug:values{        console.log( "ga.data.update() atomic structure jmol scr
 };
 
 ga.data.textarea = function( hmod_out, v ) {
-    var hmod_out_textarea   = hmod_out + "_textarea",
-        jqhmod_out_textarea = $( hmod_out_textarea );
-        isatend = ( jqhmod_out_textarea[0].scrollHeight - jqhmod_out_textarea[0].scrollTop === jqhmod_out_textarea[0].clientHeight );
+    console.log( `ga.data.textarea hmod_out = ${hmod_out}` );
+    
+    var hmod_out_textarea   = hmod_out + "_textarea";
+    console.log( `ga.data.textarea hmod_out_textarea = ${hmod_out_textarea}` );
+
+    var jqhmod_out_textarea = $( hmod_out_textarea );
+    var isatend = ( jqhmod_out_textarea[0].scrollHeight - jqhmod_out_textarea[0].scrollTop === jqhmod_out_textarea[0].clientHeight );
 
     __~debug:textareascroll{console.log( "current scrolltop " + jqhmod_out_textarea.scrollTop() + " scrollheight " + jqhmod_out_textarea[0].scrollHeight );}
     __~debug:textareascroll{console.log( "isatend " + ( isatend ? "true" : "false" ) );}
