@@ -546,6 +546,37 @@
                         ,{ "add/js/ga.min.js"                       : "once" }
                     ]
                    }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "scss/ga-bootstrap-genapp.scss",
+                    "inputs"     : [ 
+                                     { "scss/theme/genapp.scss" : "once" }
+                                     ,{ "scss/ga-bootstrap-footer.scss" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "scss/ga-bootstrap-material-design.scss",
+                    "inputs"     : [ 
+                                     { "scss/theme/material-design.scss" : "once" }
+                                     ,{ "scss/ga-bootstrap-footer.scss" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "scss/package.json",
+                    "inputs"     : [ 
+                                     { "scss/package.json" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "scss/scss-build.sh",
+                    "setexecutable" :"true",
+                    "execute"    : "atend",
+                    "inputs"     : [ 
+                                     { "scss/scss-build.sh" : "once" }
+                                   ]
+                   }
                   ]
 }
-

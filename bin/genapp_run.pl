@@ -1066,8 +1066,7 @@ foreach my $l ( keys %langs )
     # run any scripts in output
     if ( @post_cmds ) {
         print '='x80 . "\n";
-        foreach my $k ( @post_cmds ) {
-            my $cmd = $post_cmds[ $k ];
+        foreach my $cmd ( @post_cmds ) {
             print "executing: $cmd\n";
             print `$cmd`;
         }

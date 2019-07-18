@@ -2,7 +2,7 @@
 __~height{<div style="height:__height__; overflow:auto">}
 __~center{<center>}
 <form id="__moduleid__" __~nowrap{style="white-space:nowrap"}>
-<span id="__moduleid___input_area"></span>
+<div id="__moduleid___input_area" class="ga-module"></div>
 <script>
 
 ga.layout = ga.layout || {};

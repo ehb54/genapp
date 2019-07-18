@@ -1,0 +1,32 @@
+// TODO: probably don't need this since it only controls margin-bottom but we're
+// using GenApp for layout. The label and input aren't grouped together and are
+// in different grid cells.
+// .ga-input-field-group, .ga-output-field-group {
+//   @extend .form-group;
+// }
+.ga-field-input-control, .ga-field-output-control {
+  @extend .form-control;
+}
+.ga-module {
+  @extend .container-fluid;
+}
+.ga-button-submit {
+  @extend .btn;
+  @extend .btn-primary;
+}
+.ga-button-reset {
+  @extend .btn;
+  @extend .btn-secondary;
+}
+.ga-field-input-header1 {
+  @extend .h1;
+}
+.ga-field-input-header2 {
+  @extend .h2;
+}
+.ga-field-input-header3 {
+  @extend .h3;
+}
+.ga-field-input-header4 {
+  @extend .h4;
+}

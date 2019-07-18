@@ -169,38 +169,54 @@ sub layout_prep {
 
         $insertjson{ "${moduleid}_progress" } =
             decode_json(
-                "{
-                   \"role\"        : \"output\"
-                    ,\"id\"         : \"${moduleid}_progress\"
-                    ,\"type\"       : \"span\"
-                 }"
+                qq/{
+                   "role"        : "output"
+                    ,"id"         : "${moduleid}_progress"
+                    ,"type"       : "span"
+                    ,"layout"     : {
+                        "label"    : [ "next", "full" ]
+                        ,"data"     : [ "next", "full" ]
+                    }
+                }/
             );
 
         $insertjson{ "${moduleid}_output_airavata" } =
             decode_json(
-                "{
-                   \"role\"        : \"output\"
-                    ,\"id\"         : \"${moduleid}_output_airavata\"
-                    ,\"type\"       : \"span\"
-                 }"
+                qq/{
+                   "role"        : "output"
+                    ,"id"         : "${moduleid}_output_airavata"
+                    ,"type"       : "span"
+                    ,"layout"     : {
+                        "label"    : [ "next", "full" ]
+                        ,"data"     : [ "next", "full" ]
+                    }
+                }/
             );
 
         $insertjson{ "${moduleid}_output_msgs" } =
             decode_json(
-                "{
-                   \"role\"        : \"output\"
-                    ,\"id\"         : \"${moduleid}_output_msgs\"
-                    ,\"type\"       : \"warnings\"
-                 }"
+                qq/{
+                   "role"        : "output"
+                    ,"id"         : "${moduleid}_output_msgs"
+                    ,"type"       : "span"
+                    ,"layout"     : {
+                        "label"    : [ "next", "full" ]
+                        ,"data"     : [ "next", "full" ]
+                    }
+                }/
             );
 
         $insertjson{ "${moduleid}_output_textarea" } =
             decode_json(
-                "{
-                   \"role\"        : \"output\"
-                    ,\"id\"         : \"${moduleid}_output_textarea\"
-                    ,\"type\"       : \"textarea\"
-                 }"
+                qq/{
+                   "role"        : "output"
+                    ,"id"         : "${moduleid}_output_textarea"
+                    ,"type"       : "span"
+                    ,"layout"     : {
+                        "label"    : [ "next", "full" ]
+                        ,"data"     : [ "next", "full" ]
+                    }
+                }/
             );
 
 # extract field info & layout info
