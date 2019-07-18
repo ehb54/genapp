@@ -5,12 +5,14 @@
   "main": "index.js",
   "dependencies": {
     "bootstrap": "^4.3.1",
-    "node-sass": "^4.11.0"
+    "bootstrap-material-design": "^4.1.1",
+    "node-sass": "^4.11.0",
+    "node-sass-tilde-importer": "^1.0.2"
   },
   "devDependencies": {},
   "scripts": {
     "css-genapp": "node-sass ga-bootstrap-genapp.scss > ga-bootstrap-genapp.css",
-    "css-material-design": "node-sass ga-bootstrap-material-design.scss > ga-bootstrap-material-design.css",
+    "css-material-design": "node-sass --importer=node_modules/node-sass-tilde-importer ga-bootstrap-material-design.scss > ga-bootstrap-material-design.css",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
