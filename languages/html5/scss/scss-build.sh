@@ -1,4 +1,3 @@
 #!/bin/bash
 
-cd scss && npm install && npm run css-genapp
-# && npm run css-material-design
+__~bootstrap{cd scss && npm install && npm run css-__bootstrap__}
