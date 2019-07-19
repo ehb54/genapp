@@ -112,7 +112,7 @@ __~footersize{footer { position: fixed; left: 0; bottom: 0; height: __footersize
 
 #tab_feedback {
      position: fixed;
-     right: 0;
+     left: calc(100% - 25px);
      top: 200px;
      display: block;
      width: 25px;
@@ -134,7 +134,7 @@ __~footersize{footer { position: fixed; left: 0; bottom: 0; height: __footersize
 
 #tab_feedback2 {
      position: fixed;
-     right: 0;
+     left: calc(100% - 25px);
      top: 200px;
      display: block;
      width: 25px;
@@ -147,7 +147,7 @@ __~footersize{footer { position: fixed; left: 0; bottom: 0; height: __footersize
 
 #tab_docs {
      position: fixed;
-     right: 0;
+     left: calc(100% - 25px);
      top: 295px;
      z-index: 4;
 }

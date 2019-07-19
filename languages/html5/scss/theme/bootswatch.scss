@@ -28,4 +28,7 @@
 // @import "./node_modules/bootstrap-material-design/scss/buttons";
 // @import "./node_modules/bootstrap-material-design/scss/type";
 
-@import "./node_modules/bootstrap-material-design/scss/bootstrap-material-design";
+@import "./node_modules/bootswatch/dist/__bootstrap:theme__/variables";
+@import "./node_modules/bootstrap/scss/bootstrap";
+@import "./node_modules/bootswatch/dist/__bootstrap:theme__/bootswatch";
+

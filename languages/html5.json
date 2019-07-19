@@ -556,6 +556,13 @@
                    }
                    ,{
                     "frequency"  : "once",
+                    "output"     : "scss/genapp-package.json",
+                    "inputs"     : [ 
+                                     { "scss/theme/genapp-package.json" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
                     "output"     : "scss/ga-bootstrap-material-design.scss",
                     "inputs"     : [ 
                                      { "scss/theme/material-design.scss" : "once" }
@@ -564,9 +571,24 @@
                    }
                    ,{
                     "frequency"  : "once",
-                    "output"     : "scss/package.json",
+                    "output"     : "scss/material-design-package.json",
                     "inputs"     : [ 
-                                     { "scss/package.json" : "once" }
+                                     { "scss/theme/material-design-package.json" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "scss/ga-bootstrap-bootswatch.scss",
+                    "inputs"     : [ 
+                                     { "scss/theme/bootswatch.scss" : "once" }
+                                     ,{ "scss/ga-bootstrap-footer.scss" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "scss/bootswatch-package.json",
+                    "inputs"     : [ 
+                                     { "scss/theme/bootswatch-package.json" : "once" }
                                    ]
                    }
                    ,{

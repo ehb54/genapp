@@ -445,7 +445,7 @@ transform: translateY(97px);
 </style>
 <link rel="stylesheet" href="css/ga.css">
 __~css{<link rel="stylesheet" href="__css__">}
-__~bootstrap{<link rel="stylesheet" href="scss/ga-bootstrap-__bootstrap__.css">}
+__~bootstrap:package{<link rel="stylesheet" href="scss/ga-bootstrap-__bootstrap:package__.css">}
 </head>
 <header>
 <span class="pagetitle"><a href="" class="title help_link" target="_blank" ><h2>__title__ __version__</h2></a>__~help:apptitle{<span class="help">__help:apptitle__</span>}</span>
@@ -572,7 +572,7 @@ if ( 10 != __~enablecaptcha{1}0 ) {
 
 __~xsedeproject{ga.directives( "xsedeproject", "__xsedeproject__" );}
 
-ga.colors.usethemecolors = "x__~bootstrap{__bootstrap__}".match( /^xmaterial-design$/ );
+ga.colors.usethemecolors = "x__~bootstrap:package{__bootstrap:package__}".match( /^x(material-design|bootswatch)$/ );
 console.log( `ga.colors.usethemecolors ${ga.colors.usethemecolors}` );
 
 if ( !ga.colors.usethemecolors ) {
