@@ -569,24 +569,51 @@ if ( 10 != __~enablecaptcha{1}0 ) {
    ga.captcha = function( cb, form ) { return cb( form ); }
 }
 
-ga.colors({
-  background : "__background_color_rgb__"
-  ,text       : "__text_color_rgb__" 
-});
 
-__~usercolors{ga.directives( "usercolors", "__usercolors__" );}
 __~xsedeproject{ga.directives( "xsedeproject", "__xsedeproject__" );}
 
-ga.color.defaults( {
- "body"   : { "background" : "rgb( __background_color_rgb__ )", "color": "rgb( __text_color_rgb__ )", "text": "rgb( __text_color_rgb__ )" }
-,"footer" : { "background" : "rgb( __background_color_rgb__ )" }
-,".help"  : { "background" : "rgba(__help_background_color_rgb__, 0.95 )", "color" :  "rgb(__help_text_color_rgb__)" }
-,"hovercolor" : { "color" : "rgb( __select_color_rgb__ )" }
- __~header1_color{,".header1" : { "color" : "rgb( __header1_color__ )" }}
- __~header2_color{,".header2" : { "color" : "rgb( __header2_color__ )" }}
- __~header3_color{,".header3" : { "color" : "rgb( __header3_color__ )" }}
- __~header4_color{,".header4" : { "color" : "rgb( __header4_color__ )" }}
-} );
+ga.colors.usethemecolors = "x__~bootstrap{__bootstrap__}".match( /^xmaterial-design$/ );
+console.log( `ga.colors.usethemecolors ${ga.colors.usethemecolors}` );
+
+if ( !ga.colors.usethemecolors ) {
+  console.log( "!ga.colors.usethemecolors" );
+  ga.colors({
+    background : "__background_color_rgb__"
+    ,text       : "__text_color_rgb__" 
+  });
+
+  __~usercolors{ga.directives( "usercolors", "__usercolors__" );}
+
+  ga.color.defaults( {
+   "body"   : { "background" : "rgb( __background_color_rgb__ )", "color": "rgb( __text_color_rgb__ )", "text": "rgb( __text_color_rgb__ )" }
+  ,"footer" : { "background" : "rgb( __background_color_rgb__ )" }
+  ,".help"  : { "background" : "rgba(__help_background_color_rgb__, 0.95 )", "color" :  "rgb(__help_text_color_rgb__)" }
+  ,"hovercolor" : { "color" : "rgb( __select_color_rgb__ )" }
+   __~header1_color{,".header1" : { "color" : "rgb( __header1_color__ )" }}
+   __~header2_color{,".header2" : { "color" : "rgb( __header2_color__ )" }}
+   __~header3_color{,".header3" : { "color" : "rgb( __header3_color__ )" }}
+   __~header4_color{,".header4" : { "color" : "rgb( __header4_color__ )" }}
+  } );
+} else {
+  console.log( "ga.colors.usethemecolors" );
+  ga.colors({
+    background : document.body.style.backgroundColor
+    ,text       : document.body.style.color
+  });
+
+  ga.color.defaults( {
+   "body"   : { "background" : document.body.style.backgroundColor, "color": document.body.style.color, "text": document.body.style.color }
+  ,"footer" : { "background" : document.body.style.backgroundColor }
+  ,".help"  : { "background" : "rgba(0,0,75, 0.95 )", "color" :  "rgb(240,240,210)" }
+  ,"hovercolor" : { "color" : "rgb( 200,128,0 )" }
+//   ,".header1" : { "color" : "rgb( 228,255,250 )" }
+//   ,".header2" : { "color" : "rgb( 228,255,250 )" }
+//   ,".header3" : { "color" : "rgb( 228,255,250 )" }
+//   ,".header4" : { "color" : "rgb( 228,255,250 )" }
+  } );
+  $( ".footer" ).css( { background : document.body.style.backgroundColor } );
+}
+
 
 __~textarea:rows{ga.set("textarea:rows",__textarea:rows__);}
 ga.set("plot2d:precision",6);

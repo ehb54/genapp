@@ -98,7 +98,10 @@ table {
    text-align : center;
 }
 
-__~footersize{footer { position: fixed; left: 0; bottom: 0; height: __footersize__; width: 100%; background: rgb( __background_color_rgb__ ); z-index:50;}}
+__~footersize{footer { position: fixed; left: 0; bottom: 0; height: __footersize__; width: 100%; z-index:50;}}
+
+#footertext { position: fixed; bottom: 0; width: 100%; text-align: center; }
+
 .logo { position: fixed; bottom: 0px; right: 0; z-index:51;}
 .wsstatus { position: fixed; right: 30px; color:red; z-index:51 }
 .helpwsstatus {
