@@ -317,8 +317,10 @@ __~docrootexecutable{$( this ).append( $("<input>").attr("type", "hidden").attr(
 
 __~debug:ajax{    console.log( "calling ajax" );}
 
-    $('#__moduleid___progress').html( "Uploading:<progress></progress>" );
-
+    $('#__moduleid___progress').html( 
+__!bootstrap:package{"Uploading:<progress></progress>"} 
+__~bootstrap:package{'Uploading:<div class="progress"><div id="__moduleid___upload_progressbar" class="progress-bar" role="progressbar" style="width:0%"></div></div>'}
+                                     );
     var job_status = "";
 
     ga.event( "", "__moduleid__", "submit: passed submit checks, submitting" );
@@ -339,7 +341,8 @@ __~debug:ajax{    console.log( "calling ajax" );}
                      myXhr.upload.addEventListener('progress',
                          function(e) {
                          if(e.lengthComputable){
-                           $('#__moduleid___progress progress').attr({value:e.loaded,max:e.total});
+                           __!bootstrap:package{$('#__moduleid___progress progress').attr({value:e.loaded,max:e.total});}
+                           __~bootstrap:package{document.getElementById( '__moduleid___upload_progressbar').style.width = (100*e.loaded/e.total).toString() + "%";}
                          } }
 //                     progressHandlingFunction
                     , false);

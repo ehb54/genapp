@@ -83,7 +83,7 @@ ga.grid.thishtml = function( panel ) {
     if ( json.panels[ panelpos[ panel ] ][ panel ].align ) {
         style += ";text-align:" + json.panels[ panelpos[ panel ] ][ panel ].align;
     }
-    html += `<div id=ga-panel-${panel} style="${style}">`; // Panel ${panel}`;
+    html += `<div id=ga-panel-${panel} style="${style}">\n`; // Panel ${panel}`;
     if ( children[ panel ] ) {
         for ( var i = 0; i < children[ panel ].length; ++i ) {
             html += ga.grid.thishtml( children[ panel ][ i ] );
@@ -93,7 +93,11 @@ ga.grid.thishtml = function( panel ) {
         for ( var i = 0; i < panelfields[ panel ].length; ++i ) {
             var lfstyle = "";
             var dfstyle = "";
+            var haslabel = 0;
+            var hasdata  = 0;
             var id = panelfields[ panel ][ i ].id;
+            haslabel = ( panelfields[ panel ][ i ].lgr || panelfields[ panel ][ i ].lgc );
+            hasdata  = ( panelfields[ panel ][ i ].dgr || panelfields[ panel ][ i ].dgc );
             if ( panelfields[ panel ][ i ].lgr ) {
                 lfstyle += "grid-row:" + panelfields[ panel ][ i ].lgr + ";";
             }
@@ -112,9 +116,12 @@ ga.grid.thishtml = function( panel ) {
             if ( panelfields[ panel ][ i ].layout.align ) {
                 dfstyle += "text-align" + panelfields[ panel ][ i ].layout.align + ";";
             }
-            html += `<div id=ga-label-${id} style="${lfstyle}">label-${id}</div>
-<div id=ga-data-${id} style="${dfstyle}">data-${id}</div>
-`;
+            if ( haslabel ) {
+                html += `<div id=ga-label-${id} style="${lfstyle}">label-${id}</div>\n`;
+            }
+            if ( hasdata ) {
+                html += `<div id=ga-data-${id} style="${dfstyle}">data-${id}</div>\n`;
+            }
         }
     }
 

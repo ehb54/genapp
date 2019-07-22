@@ -18,6 +18,10 @@
   @extend .btn;
   @extend .btn-secondary;
 }
+.ga-button-menu {
+  @extend .btn;
+  @extend .btn-link;
+}
 .ga-field-input-header1 {
   @extend .h1;
 }

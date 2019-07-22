@@ -1,0 +1,74 @@
+button {
+  outline: none;
+/*  cursor: none; */
+  border: 0px;
+  text-decoration: none;
+  text-shadow: 0 1px 1px rgba(0,0,0,.3);
+  border-radius: .2em;
+  -webkit-border-radius: .2em; 
+  -moz-border-radius: .2em;
+  background-color: rgb( __button_color_rgb__ );
+  background: -webkit-gradient(linear, left top, left bottom, from( rgb( __button_color_rgb__ ) ), to( rgb( __button_g_color_rgb__ ) ));
+  background: -moz-linear-gradient(top, rgb( __button_color_rgb__ ),  rgb( __button_g_color_rgb__ ) );
+  filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr=rgb( __button_g_color_rgb__ ), endColorstr=rgb( __button_g_color_rgb__ ));
+  padding: 0;
+  padding-left: 2px; 
+  padding-right: 2px; 
+}
+
+
+button:hover {
+/*   opacity: .5; */
+   background-color: rgb( __button_hover_color_rgb__ );
+   background: -webkit-gradient(linear, left top, left bottom, from( rgb( __button_hover_color_rgb__ ) ), to( rgb( __button_hover_g_color_rgb__ ) ));
+    background: -moz-linear-gradient(top, rgb( __button_hover_color_rgb__ ),  rgb( __button_hover_g_color_rgb__ ) );
+    filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr=rgb( __button_hover_g_color_rgb__ ), endColorstr=rgb( __button_hover_g_color_rgb__ ));
+/*   color: rgb( 255, 128, 0 );   */
+}
+
+button:active {
+position: relative;
+top: 1px;
+left: 1px;
+}
+
+.title:link {
+  color: rgb( __text_color_rgb__ );
+}
+
+.title:visited {
+  color: rgb( __text_color_rgb__ );
+}
+
+
+.title:active {
+  color: rgb( __text_color_rgb__ );
+}
+
+.header1 {
+font-size: 2em;
+__~header1_color{color: rgb( __header1_color__ );}
+}
+.header2 {
+font-size: 1.75em;
+__~header2_color{color: rgb( __header2_color__ );}
+}
+.header3 {
+font-size: 1.5em;
+__~header3_color{color: rgb( __header3_color__ );}
+}
+.header4 {
+font-size: 1.25em;
+__~header4_color{color: rgb( __header4_color__ );}
+}
+
+.sidebar ul li {
+   color: rgb( __text_color_rgb__ );
+}
+
+body {
+background: rgb( __background_color_rgb__ );
+color: rgb( __text_color_rgb__ );
+}
+__~link_unvisited_color_rgb{a:link   {color: rgb( __link_unvisited_color_rgb__ );}}
+a:visited {color: rgb( __text_color_rgb__ );}

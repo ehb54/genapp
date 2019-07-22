@@ -550,23 +550,23 @@ sub get_cond_replacements {
 # works for arbitrary sets:    my @array = $k =~ /\{ ( (?: [^{}]* | (?0) )* ) \}/x;
 
         if ( 1 ) {
-            while ( ( $tok1 ) = $k =~ /__\~([a-z0-9:_]+)\s*\{/ )
+            while ( my ( $type, $tok1 ) = $k =~ /__(~|!)([a-z0-9:_]+)\s*\{/ )
             {
-                print "--- tok1 is $tok1\n" if $debug_rplc;
+                print "--- tok1 is $tok1 type is $type\n" if $debug_rplc;
                 if ( $used{ $tok1 }++ )
                 {
                     die "Error: multiple condition replacements for $tok1 in $k\n";
                 }
                 my $k1 = $k;
-                $k1 =~ s/^.*__~${tok1}\s*\{/\{/;
+                $k1 =~ s/^.*__${type}${tok1}\s*\{/\{/;
                 print "--- k1 is  $k1\n" if $debug_rplc;
                 ( $tok2 ) = $k1 =~  /\{ ( (?: [^{}]* | (?0) )* ) \}/x;
                 print "--- tok1 $tok1 : $tok2\n" if $debug_rplc;
                 die "Error: empty tok2 in condition replacement of $tok1\n" if !length( $tok2 );
-                $ret{ $tok1 } = $tok2;
+                $ret{ ( $type eq '!' ? '!' : '' ) . $tok1 } = $tok2;
                 my $tok2r = fix_up_sub_tok( $tok2 );
                 print "tok2r is $tok2r\n" if $debug_rplc;
-                $k =~ s/__~${tok1}\s*\{$tok2r\}//g;
+                $k =~ s/__${type}${tok1}\s*\{$tok2r\}//g;
                 print "k after removal of __~${tok1}\s*\{$tok2\} is '$k'\n" if $debug_rplc;
             }
         } else {
@@ -755,6 +755,11 @@ sub get_file_json {
         $mname =~ s/^.*\/([^\/]*)\.json$/\1/;
         layout_expand( $mname, $layout, $json );
         $extra_subs{ '__layout__' } = encode_json( $layout );
+#        if ( $mname eq 'energy' ) {
+#            my $js = JSON->new;
+#            print "layout for $mname:*****\n" . $js->pretty->encode( $$layout{'fields'} ) . "\n";
+#            print "extrasubs version:*****\n" . $extra_subs{ '__layout__' } . "\n";
+#        }
     }
 
     $json;

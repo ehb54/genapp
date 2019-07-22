@@ -38,6 +38,7 @@ ga.layout.process = function ( defaults ) {
 
     var module = ga.layout.module.name;
     if ( !ga.layout.fields[ 'b_submit' ] ) {
+        console.error( "layout.js: ga.layout.fields[b_submit] should already be defined" );
         ga.layout.fields[ "b_submit" ] = {};
         ga.layout.fields[ "b_submit" ].lhtml = '<label class=""></label>';
         ga.layout.fields[ "b_submit" ].dhtml = `<button id="${module}_b_submit_button" class="ga-button-submit"><span class="buttontext">Submit</span></button><div id="b_submit_buttonval"></div>`;
@@ -77,6 +78,7 @@ $( "#${module}_b_submit_button" ).click( function( e ) {
 // -- end submit eval
 
     if ( !ga.layout.fields[ 'b_reset' ] ) {
+        console.error( "layout.js: ga.layout.fields[b_reset] should already be defined" );
         ga.layout.fields[ "b_reset" ] = {};
         ga.layout.fields[ "b_reset" ].lhtml = '<label class=""></label>';
         ga.layout.fields[ "b_reset" ].lhtml += '';
@@ -118,7 +120,7 @@ $("#${module}_b_reset_button" ).click(function(){
     if ( !ga.layout.fields[ `${module}_output_textarea` ] ) {
         ga.layout.fields[ `${module}_output_textarea` ] = {};
         ga.layout.fields[ `${module}_output_textarea` ].lhtml = '';
-        ga.layout.fields[ `${module}_output_textarea` ].dhtml = `<textarea readonly hidden id="${module}_output_textarea"></textarea>`;
+        ga.layout.fields[ `${module}_output_textarea` ].dhtml = `<textarea class="ga-field-output-control" readonly hidden id="${module}_output_textarea"></textarea>`;
         ga.layout.fields[ `${module}_output_textarea` ].eval = '';
     }
 

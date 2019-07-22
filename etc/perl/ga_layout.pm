@@ -102,9 +102,28 @@ sub layout_prep {
         }
     }
 
+    %panel_apos = ();
+
+    {
+        my %used_panel_name;
+        for ( my $i = 0; $i <  @{$$layout{'panels'} }; ++$i ) {
+            my $panel_name = ( keys $$layout{'panels'}[$i] )[0];
+            if ( $used_panel_name{ $panel_name }++ ) {
+                $error .= "module: $mname : panel $panel_name duplicated\n";
+                last;
+            }
+            $panel_apos{ $panel_name } = $i;
+        }
+    }
+
+    for my $k ( keys %panel_apos ) {
+        print "after panel fixup: key $k pos $panel_apos{$k}\n" if $debuglayout;
+    }
+    
 # insert buttons if not specified
     {
         my %fieldnames;
+        my %fieldpanel;
 
         for my $k ( @{$$json{ 'fields' }} ) {
             if ( !exists $$k{ 'id' } ) {
@@ -112,7 +131,56 @@ sub layout_prep {
                 $error .= "module: $mname : field missing id : " . $js->pretty->encode( $k ) . "\n";
             } else {
                 $fieldnames{ $$k{ 'id' } }++;
+                if ( exists $$k{ 'layout' } &&
+                     exists $$k{ 'layout' }{ 'parent' } ) {
+                    $fieldpanel{ $$k{ 'id' } } = $$k{ 'layout' }{ 'parent' };
+                } else {
+                    $fieldpanel{ $$k{ 'id' } } = 'root';
+                }
             }
+        }
+
+# determine "case" for added controls
+
+        my $control_case;
+        my $use_control_panel  = 0;
+        my $add_control_panel  = 0;
+        my $inserts_at_end     = 0;
+        my $inserts_at         = "output";
+        my $inserts_type       = "role";
+        my $inserts_before     = 1;
+
+        if ( keys %panel_apos == 1 ) {
+            $control_case = "only_root";
+            if ( (keys %panel_apos)[0] ne 'root' ) {
+                $error .= "module: $mname : only one panel defined and it is not named 'root'\n";
+            }
+        } elsif ( exists $panel_apos{ 'controls' } ) {
+            $control_case       = "control_panel_exists";
+            $use_control_panel  = 1;
+            $inserts_at_end     = 1;
+        } else {
+            $control_case       = "create_control_panel";
+            $add_control_panel  = 1;
+            $use_control_panel  = 1;
+            $inserts_at_end     = 1;
+        }
+
+        print "control case $control_case\n" if $debuglayout;
+
+# add control panel if needed
+        if ( $add_control_panel ) {
+            push $$layout{ 'panels' }, decode_json(
+                '{
+                    "controls" : {
+                        "size"     : [ "auto", "auto" ],
+                        "location" : [ "next", "full" ],
+                        "label"    : [ 1, 1 ],
+                        "data"     : [ 2, 1 ],
+                        "align"    : "center"
+                    }
+                }' 
+                );
         }
 
         my @insert = (
@@ -174,11 +242,12 @@ sub layout_prep {
                     ,"id"         : "${moduleid}_progress"
                     ,"type"       : "span"
                     ,"layout"     : {
-                        "label"    : [ "next", "full" ]
-                        ,"data"     : [ "next", "full" ]
+                        "label"    : "none",
+                        "data"     : [ 1, [ 1, 3 ] ]
                     }
                 }/
             );
+
 
         $insertjson{ "${moduleid}_output_airavata" } =
             decode_json(
@@ -187,8 +256,7 @@ sub layout_prep {
                     ,"id"         : "${moduleid}_output_airavata"
                     ,"type"       : "span"
                     ,"layout"     : {
-                        "label"    : [ "next", "full" ]
-                        ,"data"     : [ "next", "full" ]
+                        "data"     : [ 1, [ 1, 3 ] ]
                     }
                 }/
             );
@@ -200,8 +268,7 @@ sub layout_prep {
                     ,"id"         : "${moduleid}_output_msgs"
                     ,"type"       : "span"
                     ,"layout"     : {
-                        "label"    : [ "next", "full" ]
-                        ,"data"     : [ "next", "full" ]
+                        "data"     : [ 1, [ 1, 3 ] ]
                     }
                 }/
             );
@@ -213,11 +280,19 @@ sub layout_prep {
                     ,"id"         : "${moduleid}_output_textarea"
                     ,"type"       : "span"
                     ,"layout"     : {
-                        "label"    : [ "next", "full" ]
-                        ,"data"     : [ "next", "full" ]
+                        "data"     : [ 1, [ 1, 3 ] ]
                     }
                 }/
             );
+
+# fixup %insertjson if needed
+
+        if ( $use_control_panel ) {
+            print "using control panel\n" if $debuglayout;
+            for my $k ( keys %insertjson ) {
+                $insertjson{ $k }{ 'layout' }{ 'parent' } = 'controls';
+            }
+        }
 
 # extract field info & layout info
 
@@ -241,12 +316,19 @@ sub layout_prep {
 
             print "dump of k\n" . Dumper( $k ) if $debuglayout;
 
-            if ( !$doneinsertbuttons &&
-                 $$k{ 'role' } eq 'output' ) {
-                for my $ik ( @toinsert ) {
-                    push $$layout{ 'fields' }, $insertjson{ $ik };
+            my $do_insert_after = 0;
+
+            if ( !$inserts_at_end &&
+                 !$doneinsertbuttons &&
+                 $$k{ $inserts_type } eq $inserts_at ) {
+                if ( $inserts_before ) {
+                    for my $ik ( @toinsert ) {
+                        push $$layout{ 'fields' }, $insertjson{ $ik };
+                    }
+                    $doneinsertbuttons++;
+                } else {
+                    $do_insert_after = 1;
                 }
-                $doneinsertbuttons++;
             }
 
             foreach my $fk ( keys $k ) {
@@ -258,6 +340,13 @@ sub layout_prep {
             print "dump of \%pushfield\n" . Dumper( %pushfield ) if $debuglayout;
 
             push $$layout{ 'fields' }, \%pushfield;
+
+            if ( $do_insert_after ) {
+                for my $ik ( @toinsert ) {
+                    push $$layout{ 'fields' }, $insertjson{ $ik };
+                }
+                $doneinsertbuttons++;
+            }
         }
 
         if ( !$doneinsertbuttons ) {
@@ -275,7 +364,17 @@ sub layout_expand {
 
     $jsonfull    = $json if !$jsonfull;
 
+    if ( $debuglayout ) {
+        my $js = JSON->new;
+        print "JSON before prep" . '-'x40 . "\n" . $js->pretty->encode( $json ) . "\n" . '-'x40 . "\n";
+    }
+
     layout_prep( $mname, $json, $jsonfull );
+
+    if ( $debuglayout ) {
+        my $js = JSON->new;
+        print "JSON after prep" . '-'x40 . "\n" . $js->pretty->encode( $json ) . "\n" . '-'x40 . "\n";
+    }
 
 # phase 1 panels
 
@@ -608,6 +707,11 @@ sub layout_expand {
 
 # phase 2 fields
 
+    if ( $debuglayout ) {
+        my $js = JSON->new;
+        print "JSON prep after phase 1" . '-'x40 . "\n" . $js->pretty->encode( $json ) . "\n" . '-'x40 . "\n";
+    }
+
 ## step 1 check for missing parent panels & assign parent panels
 
     if ( !$$json{'fields'} ) {
@@ -619,7 +723,8 @@ sub layout_expand {
         my $field  = $$json{'fields'}[$i];
         my $id     = $$field{'id'};
         my $layout = $$field{'layout'};
-        # print "field id $id\n";
+        # print "field id $id\n" if $debuglayout;
+
         if ( !$layout ) {
             $$field{'layout'} = decode_json( '{"parent":"root"}' );
         } elsif ( !$$layout{'parent'} ) {
@@ -693,6 +798,8 @@ sub layout_expand {
         my $layout   = $$field{'layout'};
         my $parent   = $$layout{'parent'};
         my $location = $$layout{'location'};
+
+        print "processing field $fieldid\n" if $debuglayout;
 
         if ( $location ) {
             if ( typeof( $location ) ne 'ARRAYref' ) {
@@ -906,7 +1013,10 @@ sub layout_expand {
         # $lrowt      = 'full' if $lrow eq 'full';
         # $lcolt      = 'full' if $lcol eq 'full';
         # $lrowt      = 'same' if $lrow eq 'same';
+
+        print "lrow is $lrow\n" if $debuglayout;
         if ( looks_like_number( $lrow ) ) {
+            print "lrow looks like a number\n" if $debuglayout;
             $lrowt = '#';
             $lrow  += $loc_row - 1;
         }
@@ -945,6 +1055,8 @@ sub layout_expand {
 
         $error .= "module: $mname : field $fieldid unrecognized label row type\n"    if !$lrowt;
         $error .= "module: $mname : field $fieldid unrecognized label column type\n" if !$lcolt;
+
+        print "processing field $fieldid : lrowt $lrowt lcolt $lcolt\n" if $debuglayout;
 
         my $max_row;
         my $max_col;
@@ -1084,8 +1196,8 @@ sub layout_expand {
         my $dcol_s;
         my $dcol_e;
 
-        my $lrtype = typeof( $drow );
-        my $lctype = typeof( $dcol );
+        my $drtype = typeof( $drow );
+        my $dctype = typeof( $dcol );
 
         # row and column types
 
@@ -1137,6 +1249,8 @@ sub layout_expand {
 
         $error .= "module: $mname : field $fieldid unrecognized data row type\n"    if !$drowt;
         $error .= "module: $mname : field $fieldid unrecognized data column type\n" if !$dcolt;
+
+        print "processing field $fieldid : drowt $lrowt dcolt $lcolt\n" if $debuglayout;
 
         if ( $drowt eq '#' ) {
             $$field{ 'dgr' } = $drow;

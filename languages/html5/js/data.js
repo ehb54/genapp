@@ -543,6 +543,9 @@ ga.data.textarea = function( hmod_out, v ) {
     console.log( `ga.data.textarea hmod_out = ${hmod_out}` );
     
     var hmod_out_textarea   = hmod_out + "_textarea";
+    var mod_out = hmod_out.replace( /^#/, '' );
+    var mod_out_textarea = mod_out + "_textarea"; 
+
     console.log( `ga.data.textarea hmod_out_textarea = ${hmod_out_textarea}` );
 
     var jqhmod_out_textarea = $( hmod_out_textarea );
@@ -558,8 +561,15 @@ ga.data.textarea = function( hmod_out, v ) {
 __~debug:textarea{    console.log( "ga.data.textarea( " + hmod_out + " , " + v + " )" );}
     if ( jqhmod_out_textarea.is( ":hidden" ) ) {
 __~debug:textarea{    console.log( "ga.data.textarea( " + hmod_out + " , " + v + " ) show" );}
-        jqhmod_out_textarea.show();
-        $( hmod_out_textarea + "_label" ).show(); 
+        document.getElementById( mod_out_textarea ).removeAttribute("hidden")
+        document.getElementById( mod_out_textarea ).removeAttribute("style")
+//        jqhmod_out_textarea.show();
+//        $( hmod_out_textarea + "_label" ).show(); 
+        var mod_lbl = document.getElementById( mod_out_textarea + "_label" );
+        if ( mod_lbl ) {
+            mod_lbl.removeAttribute( "hidden" );
+            mod_lbl.removeAttribute( "style" );
+        }
     }
 
     if ( v.substr( 0, 10 ) == "__reset__\n" ) {

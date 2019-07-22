@@ -25,6 +25,13 @@
                     },
                    {
                     "frequency"  : "once",
+                    "output"     : "css/ga-std.css",
+                    "inputs"     : [ 
+                                    { "css/ga-std.css" : "once"        }
+                                   ]
+                    },
+                   {
+                    "frequency"  : "once",
                     "output"     : "ajax/sys_uid.php",
                     "inputs"     : [ 
                                     { "sys/sys_uid.php" : "once"        }

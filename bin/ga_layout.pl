@@ -13,6 +13,14 @@ require "$gap/etc/perl/genapp_util.pl";
 
 $f = shift || die $notes;
 
+if ( $f =~ /^-d$/ ) {
+    $debuglayout++;
+    if ( $debuglayout ) {
+        use Data::Dumper;
+    }
+    $f = shift || die $notes;
+}
+
 my $error;
 my $warn;
 my $notice;
