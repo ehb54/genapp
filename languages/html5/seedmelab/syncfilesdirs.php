@@ -2,6 +2,7 @@
     ;
 
 $debug = 0;
+$debug2file = "/tmp/seedmelabsync.log";
 
 $notes = <<<__EOD
   usage: php $argv[0] {-r} --user username --project project_name
@@ -29,7 +30,7 @@ if ( !isset( $options[ "user" ] ) || !strlen( $options[ "user" ] ) ) {
 $results = (object) [];
 
 $user     = $options[ "user" ];
-$project  = $options[ "project" ];
+$project  = isset( $options[ "project" ] ) ? $options[ "project" ] : "";
 
 # setup variables
 
@@ -130,8 +131,13 @@ $g_info    =
 
 function debugecho ( $str, $level = 1 ) {
     global $debug;
+    global $debug2file;
     if ( $debug >= $level ) {
-        echo $str . "\n";
+        if ( isset( $debug2file ) ) {
+            error_log( "$str\n", 3, $debug2file );
+        } else {
+            echo $str . "\n";
+        }
     }
 }
     
