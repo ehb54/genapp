@@ -19,6 +19,8 @@ Hash::Merge::set_behavior( 'RIGHT_PRECEDENT' );
 
 my $gap_version = '0.01';
 
+$gap = $ENV{ "GENAPP" } || die "$0: error env variable GENAPP must be defined\n";
+
 %__json_scratch = {};
 
 sub load_reserved_words {
@@ -753,6 +755,7 @@ sub get_file_json {
         my $layout = {};
         my $mname  = $f;
         $mname =~ s/^.*\/([^\/]*)\.json$/\1/;
+        require "$gap/etc/perl/ga_layout.pm";
         layout_expand( $mname, $layout, $json );
         $extra_subs{ '__layout__' } = encode_json( $layout );
 #        if ( $mname eq 'energy' ) {
