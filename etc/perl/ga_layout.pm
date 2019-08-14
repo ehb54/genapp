@@ -61,7 +61,8 @@ sub layout_prep {
     {
         my %used_panel_name;
         for ( my $i = 0; $i <  @{$$layout{'panels'} }; ++$i ) {
-            my $panel_name = ( keys $$layout{'panels'}[$i] )[0];
+#            my $panel_name = ( keys $$layout{'panels'}[$i] )[0];
+            my $panel_name = ( keys %{$$layout{'panels'}[$i]} )[0];
             if ( $used_panel_name{ $panel_name }++ ) {
                 $error .= "module: $mname : panel $panel_name duplicated\n";
                 last;
@@ -107,7 +108,8 @@ sub layout_prep {
     {
         my %used_panel_name;
         for ( my $i = 0; $i <  @{$$layout{'panels'} }; ++$i ) {
-            my $panel_name = ( keys $$layout{'panels'}[$i] )[0];
+#            my $panel_name = ( keys $$layout{'panels'}[$i] )[0];
+            my $panel_name = ( keys %{$$layout{'panels'}[$i]} )[0];
             if ( $used_panel_name{ $panel_name }++ ) {
                 $error .= "module: $mname : panel $panel_name duplicated\n";
                 last;
@@ -170,7 +172,8 @@ sub layout_prep {
 
 # add control panel if needed
         if ( $add_control_panel ) {
-            push $$layout{ 'panels' }, decode_json(
+#            push $$layout{ 'panels' }, decode_json(
+            push @{$$layout{ 'panels' }}, decode_json(
                 '{
                     "controls" : {
                         "size"     : [ "auto", "auto" ],
@@ -323,7 +326,8 @@ sub layout_prep {
                  $$k{ $inserts_type } eq $inserts_at ) {
                 if ( $inserts_before ) {
                     for my $ik ( @toinsert ) {
-                        push $$layout{ 'fields' }, $insertjson{ $ik };
+#                       push $$layout{ 'fields' }, $insertjson{ $ik };
+                        push @{$$layout{ 'fields' }}, $insertjson{ $ik };
                     }
                     $doneinsertbuttons++;
                 } else {
@@ -331,7 +335,8 @@ sub layout_prep {
                 }
             }
 
-            foreach my $fk ( keys $k ) {
+#            foreach my $fk ( keys $k ) {
+            foreach my $fk ( keys %{$k} ) {
                 if ( $keepids{ $fk } ) {
                     $pushfield{ $fk } = $k->{$fk};
                 }
@@ -339,11 +344,13 @@ sub layout_prep {
             
             print "dump of \%pushfield\n" . Dumper( %pushfield ) if $debuglayout;
 
-            push $$layout{ 'fields' }, \%pushfield;
+#            push $$layout{ 'fields' }, \%pushfield;
+            push @{$$layout{ 'fields' }}, \%pushfield;
 
             if ( $do_insert_after ) {
                 for my $ik ( @toinsert ) {
-                    push $$layout{ 'fields' }, $insertjson{ $ik };
+#                    push $$layout{ 'fields' }, $insertjson{ $ik };
+                    push @{$$layout{ 'fields' }}, $insertjson{ $ik };
                 }
                 $doneinsertbuttons++;
             }
@@ -351,7 +358,8 @@ sub layout_prep {
 
         if ( !$doneinsertbuttons ) {
             for my $ik ( @toinsert ) {
-                push $$layout{ 'fields' }, $insertjson{ $ik };
+#                push $$layout{ 'fields' }, $insertjson{ $ik };
+                push @{$$layout{ 'fields' }}, $insertjson{ $ik };
             }
         }
     }
@@ -388,7 +396,8 @@ sub layout_expand {
     {
         my %used_panel_name;
         for ( my $i = 0; $i <  @{$$json{'panels'} }; ++$i ) {
-            my $panel_name = ( keys $$json{'panels'}[$i] )[0];
+#            my $panel_name = ( keys $$json{'panels'}[$i] )[0];
+            my $panel_name = ( keys %{$$json{'panels'}[$i]} )[0];
             $error .= "module: $mname : panel name $panel_name duplicated\n" if $used_panel_name{ $panel_name }++;
             $panelpos{ $panel_name } = $i;
             # print "panel $panel_name found at pos $i\n";
@@ -440,7 +449,8 @@ sub layout_expand {
     @cursor_col{ keys %panelpos } = (1) x keys %panelpos;
         
     for ( my $i = 0; $i <  @{$$json{'panels'} }; ++$i ) {
-        my $k = ( keys $$json{'panels'}[$i] )[0];
+#        my $k = ( keys $$json{'panels'}[$i] )[0];
+        my $k = ( keys %{$$json{'panels'}[$i]} )[0];
 
         my $size     = $$json{'panels'}[$panelpos{$k}]{ $k }{ 'size' };
 
