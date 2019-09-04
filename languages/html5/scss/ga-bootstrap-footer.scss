@@ -34,3 +34,52 @@
 .ga-field-input-header4 {
   @extend .h4;
 }
+
+.ga-vertical-buttons-container {
+  position: fixed;
+  right: 0px;
+  display: inline-block;
+  top: 50%;
+}
+
+$ga-vertical-buttons-translatex: 16px;
+
+.ga-vertical-buttons {
+  animation: 1s ease-out 0s 1 ga-anim-hide-after-load;
+  transform: translateX($ga-vertical-buttons-translatex) rotate(-90deg);
+  transform-origin: left bottom;
+  right: -100%;
+  position: relative;
+  transition: transform 1s ease-out;
+  
+  &:hover {
+    
+    transition: transform 0.15s ease-in;
+    transform: translateX(0px) rotate(-90deg);
+  }
+  & > .ga-vertical-button {
+    @extend .btn;
+    @extend .btn-primary;
+    border-top-left-radius: .25rem;
+    border-top-right-radius: .25rem;
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 0px;
+    text-transform: uppercase;
+  }
+  & > .help {
+    // Use 'left' to position vertically next to the button
+    transform: translatey(-75px) rotate(90deg);
+    top: -100%;
+    width: 150px;
+    transform-origin: top left;
+  }
+}
+
+@keyframes ga-anim-hide-after-load {
+  0% {
+    transform: translateX(0px) rotate(-90deg);
+  }
+  100% {
+    transform: translateX($ga-vertical-buttons-translatex) rotate(-90deg);
+  }
+}
