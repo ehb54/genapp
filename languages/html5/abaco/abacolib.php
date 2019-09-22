@@ -56,6 +56,18 @@ if ( !isset( $secrets->abaco->host ) ||
     exit();
 }
 
+if ( "__dockerhub:user__" == "__" . "dockerhub:user__" ) {
+    $results->_message = [ "icon" => "toast.png",
+                               "text" => "<p>Configuration information 'directives:dockerhub:user' not defined.</p>"
+                               . "<p>This is a configuration error which should be forwarded to the site administrator.</p>" 
+                               . "<p>ABACO submission will not work this is fixed.</p>" 
+        ];
+    $results->error = "Configuration missing 'directives:dockerhub:user'.";
+    $results->_status = 'failed';
+    echo json_encode( $results );
+    exit();
+}
+
 function container_name( $menu, $mod ) {
     global $dockerhub;
     global $appname;
