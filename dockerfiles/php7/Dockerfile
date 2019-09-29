@@ -59,8 +59,9 @@ RUN apt-get update && \
 #RUN apt-get install -y mongodb && \
 
 # For php7.2
-RUN apt-get install -y mlocate php-pear libcurl3-openssl-dev
-RUN apt-get install -y php7.2-curl php7.2-dev php7.2-gd php7.2-mbstring php7.2-zip php7.2-xml
+RUN apt-get update && \
+    apt-get install -y mlocate php-pear libcurl3-openssl-dev libapache2-mod-php && \
+    apt-get install -y php7.2-curl php7.2-dev php7.2-gd php7.2-mbstring php7.2-zip php7.2-xml
 
 # Mongodb bionic from mongodb.org & suppress upgrade by apt-get
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9DA31620334BD75D9DCB49F368818C72E52529D4 && \
@@ -72,10 +73,6 @@ RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9DA31620334BD75
     echo "mongodb-org-shell hold" | dpkg --set-selections && \
     echo "mongodb-org-mongos hold" | dpkg --set-selections && \
     echo "mongodb-org-tools hold" | dpkg --set-selections
-
-#RUN cd $SRCBASE && svn co svn://svn.genapp.rocks/svn/base/genappalpha genapp
-
-#RUN touch $GENAPPETC/no_sudo
 
 # cpan minus for modules
 
@@ -124,9 +121,7 @@ RUN apt-get install -y php-zmq
 #RUN phpenmod zmq mongo imagick
 RUN phpenmod zmq imagick
 
-#RUN sed -i.org "s/^disable_functions = pcntl/;disable_functions = pcntl/" /etc/php/7.2/apache2/php.ini
-# ==> Neet it?
-#RUN sed -i.org "s/^disable_functions = pcntl/;disable_functions = pcntl/" /etc/php/7.2/cli/php.ini
+RUN sed -i.org "s/^disable_functions = pcntl/;disable_functions = pcntl/" /etc/php/7.2/apache2/php.ini
 
 RUN echo "# ws proxy pass\n\
 # priority=20\n\
@@ -149,22 +144,26 @@ RUN a2enmod proxy proxy_wstunnel wsproxy
 RUN ln -s /usr/bin/php /usr/local/bin/php
 
 #GENAPP specifics
-#RUN groupadd genapp && \
-#    useradd genapp -r -s /usr/sbin/nologin -d $APPBASE -g genapp && \
-#    chmod g+rwx $APPBASE && \
-#    chown genapp:genapp $APPBASE && \
-#    chmod g+s $APPBASE && \
-#    mkdir -p $LOCKDIR && \
-#    chown genapp:genapp $LOCKDIR && \
-#    chmod g+rwx $LOCKDIR && \
-#    usermod -g users -G genapp genapp && \
-#    usermod -G genapp www-data && \
-#    chgrp -R genapp $GENAPP && \
-#    chmod g+w $GENAPP/etc
-#Uncomment once GENAPP installed
-#RUN echo "export GENAPP=$GENAPP\n\
-#export PATH=\$GENAPP/bin:$PATH\n"\
-#> /etc/profile.d/genapp.sh
+
+RUN cd $SRCBASE && git clone https://github.com/ehb54/genapp.git && cd $GENAPP && git checkout php56
+RUN touch $GENAPPETC/no_sudo
+
+RUN groupadd genapp && \
+    useradd genapp -r -s /usr/sbin/nologin -d $APPBASE -g genapp && \
+    chmod g+rwx $APPBASE && \
+    chown genapp:genapp $APPBASE && \
+    chmod g+s $APPBASE && \
+    mkdir -p $LOCKDIR && \
+    chown genapp:genapp $LOCKDIR && \
+    chmod g+rwx $LOCKDIR && \
+    usermod -g users -G genapp genapp && \
+    usermod -G genapp www-data && \
+    chgrp -R genapp $GENAPP && \
+    chmod g+w $GENAPP/etc
+
+RUN echo "export GENAPP=$GENAPP\n\
+export PATH=\$GENAPP/bin:$PATH\n"\
+> /etc/profile.d/genapp.sh
 
 RUN echo "<?php\n\
 phpinfo();\n\
@@ -173,25 +172,25 @@ phpinfo();\n\
 
 # setup genapptest instance
 # Uncomment once GENAPP installed
-#RUN $GENAPP/sbin/setconfig.pl -pj
+RUN $GENAPP/sbin/setconfig.pl -pj
 
-#RUN cd $APPBASE && $GENAPP/sbin/getapp.pl -force -gen svn genapptest
+RUN cd $APPBASE && $GENAPP/sbin/getapp.pl -force -gen svn genapptest
 
-#RUN cp $APPBASE/genapptest/output/html5/util/rc.genapp /etc/init.d
+RUN cp $APPBASE/genapptest/output/html5/util/rc.genapp /etc/init.d
 
-#RUN echo "# add Alias /genapptest $WEBROOT/genapptest\n\
-#<Directory $WEBROOT/genapptest>\n\
-# Options FollowSymLinks\n\
-# AllowOverride None\n\
-# Order Allow,Deny\n\
-# Allow from all\n\
-#</Directory>\n\
-#<Directory /var/www/>\n\
-#	Options FollowSymLinks\n\
-#	AllowOverride None\n\
-#	Require all granted\n\
-#</Directory>\n"\
-#> /etc/apache2/conf-enabled/security.conf
+RUN echo "# add Alias /genapptest $WEBROOT/genapptest\n\
+<Directory $WEBROOT/genapptest>\n\
+ Options FollowSymLinks\n\
+ AllowOverride None\n\
+ Order Allow,Deny\n\
+ Allow from all\n\
+</Directory>\n\
+<Directory /var/www/>\n\
+	Options FollowSymLinks\n\
+	AllowOverride None\n\
+	Require all granted\n\
+</Directory>\n"\
+> /etc/apache2/conf-enabled/security.conf
 
 RUN /etc/init.d/apache2 stop && \
     rm -fr /var/run/apache2/apache2.pid ; exit 0
@@ -213,7 +212,7 @@ RUN php --version && \
 RUN curl -s https://getcomposer.org/installer | php && \
     mv composer.phar /usr/local/bin/composer
 
-#CMD service /etc/init.d/mongodb.org start && \
-#    /etc/init.d/rc.genapp start && \
-CMD /etc/init.d/apache2 start && \
+CMD service mongodb start && \
+    /etc/init.d/rc.genapp start && \
+    /etc/init.d/apache2 start && \
     while true; do sleep 600; done
