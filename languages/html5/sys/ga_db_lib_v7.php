@@ -67,7 +67,7 @@ $results = array (
 */
 
 // Emre: set path for vendor 
-require '../../vendor/autoload.php'; // include Composer's autoloader
+require '../vendor/autoload.php'; // include Composer's autoloader
 
 date_default_timezone_set("UTC");
 
