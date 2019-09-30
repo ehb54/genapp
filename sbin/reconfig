@@ -129,7 +129,7 @@ for my $k ( keys %$appsjson ) {
         runcmdsb( "chown -R $user:genapp ." );
         runcmdsb( "chmod -R g+rw ." );
         print "running genapp in $path\n";
-        runcmd( "genapp" );
+        runcmd( "$gb/bin/genapp" );
         if ( $? ) {
             $errors .=  "Error in trying to run genapp for application $app in directory $path\n";
         }
