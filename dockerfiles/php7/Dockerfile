@@ -144,9 +144,13 @@ RUN a2enmod proxy proxy_wstunnel wsproxy
 RUN ln -s /usr/bin/php /usr/local/bin/php
 
 #GENAPP specifics
+RUN ls
 
 RUN cd $SRCBASE && git clone https://github.com/ehb54/genapp.git && cd $GENAPP && git checkout php56
 RUN touch $GENAPPETC/no_sudo
+
+# TODO Temporary override for ga_db_lib_v7.php
+RUN cd $GENAPP/languages && sed -i.org "s/ga_db_lib_v5.php/ga_db_lib_v7.php/" html5.json
 
 RUN groupadd genapp && \
     useradd genapp -r -s /usr/sbin/nologin -d $APPBASE -g genapp && \
