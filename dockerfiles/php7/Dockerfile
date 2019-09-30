@@ -144,8 +144,9 @@ RUN a2enmod proxy proxy_wstunnel wsproxy
 RUN ln -s /usr/bin/php /usr/local/bin/php
 
 #GENAPP specifics
-RUN ls
+RUN apt-get install -y zip unzip
 
+RUN ls
 RUN cd $SRCBASE && git clone https://github.com/ehb54/genapp.git && cd $GENAPP && git checkout php56
 RUN touch $GENAPPETC/no_sudo
 
@@ -212,7 +213,7 @@ RUN php --version && \
     php --ri mongodb | grep version 
     
 #Install Composer
-#TODO: pakage should be installed by "composer require package" at the local directory within GENAPP 
+#TODO: package should be installed by "composer require package" at the local directory within GENAPP 
 RUN curl -s https://getcomposer.org/installer | php && \
     mv composer.phar /usr/local/bin/composer
 
