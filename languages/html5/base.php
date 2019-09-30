@@ -341,7 +341,7 @@ if ( isset( $_SESSION[ $window ][ 'resourcedefault' ] ) &&
 }
 
 if ( isset( $useresource ) &&
-     !isset( $_SESSION[ $window ][ 'resources' ]->$useresource ) )
+     !isset( $_SESSION[ $window ][ 'resources' ]->{ $useresource } ) )
 {
     if ( isset( $checkrunning ) )
     {
@@ -364,7 +364,7 @@ if ( isset( $useresource ) &&
     exit();
 }
 
-if ( !isset( $_SESSION[ $window ][ 'resources' ]->$_SESSION[ $window ][ 'resourcedefault' ] ) &&
+if ( !isset( $_SESSION[ $window ][ 'resources' ]->{ $_SESSION[ $window ][ 'resourcedefault' ] } ) &&
      !isset( $useresource ) )
 {
     if ( isset( $checkrunning ) )
@@ -388,10 +388,10 @@ if ( !isset( $_SESSION[ $window ][ 'resources' ]->$_SESSION[ $window ][ 'resourc
 } else {
    if ( isset( $useresource ) )
    {
-      $cmdprefix = $_SESSION[ $window ][ 'resources' ]->$useresource;
+      $cmdprefix = $_SESSION[ $window ][ 'resources' ]->{ $useresource };
       $GLOBALS[ 'resource' ] = $useresource;
    } else {
-      $cmdprefix = $_SESSION[ $window ][ 'resources' ]->$_SESSION[ $window ][ 'resourcedefault' ];
+      $cmdprefix = $_SESSION[ $window ][ 'resources' ]->{ $_SESSION[ $window ][ 'resourcedefault' ] };
       $GLOBALS[ 'resource' ] = $_SESSION[ $window ][ 'resourcedefault' ];
    }
    if(isset($cmdprefix->run)){

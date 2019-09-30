@@ -113,7 +113,7 @@ require_once "os_cluster.php";
 $json->_uuid = $uuid;
 foreach( $modify_json as $k => $v ) {
     sendudptext( "modify json $k => $v" );
-    $json->$k = $v;
+    $json->{ $k } = $v;
 }
 
 # recompute nodes
@@ -157,12 +157,12 @@ if ( isset( $json->os_flavor ) ) {
 }
 
 if ( !isset( $appjson->resources->oscluster->properties->flavors ) ||
-     !isset( $appjson->resources->oscluster->properties->flavors->$use_flavor ) ) {
+     !isset( $appjson->resources->oscluster->properties->flavors->{ $use_flavor } ) ) {
     echo '{"error":"selected flavor ' . $use_flavor . ' not in appconfig flavors list"}';
     exit;
 }
 
-$flavor_ppn = $appjson->resources->oscluster->properties->flavors->$use_flavor;
+$flavor_ppn = $appjson->resources->oscluster->properties->flavors->{ $use_flavor };
 
 sendudptext( "ppn is $ppn" );
 sendudptext( "flavor_ppn is $flavor_ppn" );
