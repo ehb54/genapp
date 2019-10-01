@@ -472,10 +472,10 @@ function ga_db_insert( $coll, $appname = "__application__", $insert, $options = 
     try {
 	if ($insertMany_flag) {
 	    $results[ 'output' ] = $ga_db_mongo->$appname->$coll->insertMany( $insert, $options )->getInsertedIds();
-            echo ( "called insertMany \n" );
+//            echo ( "called insertMany \n" );
 	} else {
             $results[ 'output' ] = $ga_db_mongo->$appname->$coll->insertOne( $insert, $options )->getInsertedId();
-            echo ( "called insertOne \n" );
+//            echo ( "called insertOne \n" );
 	}	
         $results[ '_status' ] = 'success';
     } catch ( Exception  $e ) {
