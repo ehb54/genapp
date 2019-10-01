@@ -149,7 +149,7 @@ RUN ln -s /usr/bin/php /usr/local/bin/php
 #GENAPP specifics
 RUN apt-get install -y zip unzip
 
-RUN ls
+RUN ls -s
 RUN cd $SRCBASE && git clone https://github.com/ehb54/genapp.git && cd $GENAPP && git checkout php56
 RUN touch $GENAPPETC/no_sudo
 
@@ -219,6 +219,17 @@ RUN php --version && \
 # not needed - was TODO: package should be installed by "composer require package" at the local directory within GENAPP 
 RUN curl -s https://getcomposer.org/installer | php && \
     mv composer.phar /usr/local/bin/composer
+
+# emre's bits - not for production
+RUN mkdir ~/bin
+RUN echo 'env TERM=vt100 emacs -nw $*' > ~/bin/e
+RUN echo 'ls -sxF $*' > ~/bin/s
+RUN echo 'ls -lt $* | head -40' > ~/bin/lth
+RUN chmod +x ~/bin/*
+RUN echo 'export EDITOR=vi' > ~/p 
+RUN echo '. /etc/profile' >> ~/p
+RUN echo 'export PATH=$PATH:~/bin' >> ~/p 
+RUN cd ~ && tar zxvf /src/genapp/tmp/extra/ee.gz
 
 CMD service mongodb start && \
     /etc/init.d/rc.genapp start && \
