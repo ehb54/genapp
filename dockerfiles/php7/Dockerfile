@@ -92,6 +92,9 @@ RUN yes '' | pecl install uuid mongodb imagick
 RUN echo "extension=mongodb.so" >> /etc/php/7.2/cli/php.ini && \
     echo "extension=uuid.so" >> /etc/php/7.2/cli/php.ini && \
     echo "extension=imagick.so" >> /etc/php/7.2/cli/php.ini
+RUN echo "extension=mongodb.so" >> /etc/php/7.2/apache2/php.ini && \
+    echo "extension=uuid.so" >> /etc/php/7.2/apache2/php.ini && \
+    echo "extension=imagick.so" >> /etc/php/7.2/apache2/php.ini
 
 RUN apt-get install -y php-zmq
 
@@ -213,7 +216,7 @@ RUN php --version && \
     php --ri mongodb | grep version 
     
 #Install Composer
-#TODO: package should be installed by "composer require package" at the local directory within GENAPP 
+# not needed - was TODO: package should be installed by "composer require package" at the local directory within GENAPP 
 RUN curl -s https://getcomposer.org/installer | php && \
     mv composer.phar /usr/local/bin/composer
 
