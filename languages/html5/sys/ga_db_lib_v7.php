@@ -71,6 +71,13 @@ require '__docroot:html5__/__application__/vendor/autoload.php'; // include Comp
 date_default_timezone_set("UTC");
 
 global $ga_db_errors;
+# uncomment below to log
+# $ga_db_log_file = "/tmp/ga_db_lib_log"; # or whereever
+
+if ( isset( $ga_db_log_file ) ) {
+    date_default_timezone_get();
+    error_log( date('m/d/Y h:i:s a', time() ) . " : ga_db_lib logging started\n", 3, $ga_db_log_file );
+}
 
 function ga_db_status( $results ) {
     return $results[ '_status' ] === 'success';
@@ -108,7 +115,13 @@ function ga_db_date_secs( $mongodate ) {
 function ga_db_open( $error_json_exit = false ) {
     global $ga_db_mongo;
     global $ga_db_errors;
+    global $ga_db_log_file;
 
+    if ( isset( $ga_db_log_file ) ) {
+            error_log( date('m/d/Y h:i:s a', time() ) . "\n" . "ga_db_open( \$error_json_exit = ".( $error_json_exit ? "true" : "false" ) . ") =\n", 3, $ga_db_log_file );
+
+    }
+    
     $results = [];
     $results[ '_status' ] = 'success';
 
@@ -134,9 +147,10 @@ function ga_db_open( $error_json_exit = false ) {
 }
 
 function ga_db_findOne( $coll, $appname = "__application__", $query, $projection = [], $options = [], $error_json_exit = false ) {
+    global $ga_db_log_file;
     if ( isset( $ga_db_log_file ) ) {
         error_log( date('m/d/Y h:i:s a', time() ) . "\n" . "ga_db_findOne( $coll, $appname,\n" . "\$query = " . json_encode( $query, JSON_PRETTY_PRINT )  . "\n" . "\$projection = " . json_encode( $projection ) . "\n" . "\$error_json_exit = ".( $error_json_exit ? "true" : "false" ) . ") =\n", 3, $ga_db_log_file );
-   }
+    }
 
     global $ga_db_mongo;
     global $ga_db_errors;
@@ -189,13 +203,14 @@ function ga_db_findOne( $coll, $appname = "__application__", $query, $projection
             exit();
          }
     }
-    if ( isset( $debug ) ) {
+    if ( isset( $ga_db_log_file ) ) {
         error_log( json_encode( $results ) . "\n", 3, $ga_db_log_file );
     }
     return $results;
 }
 
 function ga_db_count( $coll, $appname = "__application__", $query, $options = [], $error_json_exit = false ) {
+    global $ga_db_log_file;
     if ( isset( $ga_db_log_file ) ) {
         error_log( date('m/d/Y h:i:s a', time() ) . " ga_db_count( $coll, $appname,\n" . json_encode( $query, JSON_PRETTY_PRINT ) . "\n" . json_encode( $options, JSON_PRETTY_PRINT ) . "\n" . ( $error_json_exit ? "true" : "false" ) . ") =\n", 3, $ga_db_log_file );
     }
@@ -219,7 +234,7 @@ function ga_db_count( $coll, $appname = "__application__", $query, $options = []
             exit();
         }
     }
-    if ( isset( $debug ) ) {
+    if ( isset( $ga_db_log_file ) ) {
         error_log( json_decode( $results, JSON_PRETTY_PRINT ) . "\n", 3, $ga_db_log_file );
     }
     return $results;
@@ -230,6 +245,8 @@ function ga_db_save( $coll, $appname = "__application__", $document, $options = 
 // if $document exists use insertOne() else replaceOne()
 // note this method is slow 
   
+    global $ga_db_log_file;
+
     if ( isset( $ga_db_log_file ) ) {
         error_log( date('m/d/Y h:i:s a', time() ) . " ga_db_save( $coll, $appname,\n" . json_encode( $document, JSON_PRETTY_PRINT ) . "\n" . json_encode( $options, JSON_PRETTY_PRINT ) . "\n" . ( $error_json_exit ? "true" : "false" ) . ") =\n", 3, $ga_db_log_file );
     }
@@ -325,13 +342,14 @@ function ga_db_save( $coll, $appname = "__application__", $document, $options = 
          }
     }
 
-    if ( isset( $debug ) ) {
+    if ( isset( $ga_db_log_file ) ) {
         error_log( json_encode( $results, JSON_PRETTY_PRINT ) . "\n", 3, $ga_db_log_file );
     }
     return $results;
 }
 
 function ga_db_command( $appname = "__application__", $command, $options = [], $error_json_exit = false ) {
+    global $ga_db_log_file;
     if ( isset( $ga_db_log_file ) ) {
         error_log( date('m/d/Y h:i:s a', time() ) . " ga_db_command( $appname,\n" . json_encode( $command, JSON_PRETTY_PRINT ) . "\n" . json_encode( $options, JSON_PRETTY_PRINT ) . "\n" . ( $error_json_exit ? "true" : "false" ) . ") =\n", 3, $ga_db_log_file );
     }
@@ -376,16 +394,17 @@ function ga_db_command( $appname = "__application__", $command, $options = [], $
     }
 
 
-    if ( isset( $debug ) ) {
+    if ( isset( $ga_db_log_file ) ) {
         error_log( json_decode( $results, JSON_PRETTY_PRINT ) . "\n", 3, $ga_db_log_file );
     }
     return $results;
 }
 
 function ga_db_find( $coll, $appname = "__application__", $query = [], $projection = [], $options = [],  $error_json_exit = false ) {
+    global $ga_db_log_file;
     if ( isset( $ga_db_log_file ) ) {
         error_log( date('m/d/Y h:i:s a', time() ) . "\n" . "ga_db_find( $coll, $appname,\n" . "\$query = " . json_encode( $query, JSON_PRETTY_PRINT )  . "\n" . "\$projection = " . json_encode( $projection ) . "\n" . "\$error_json_exit = ".( $error_json_exit ? "true" : "false" ) . ") =\n", 3, $ga_db_log_file );
-   }
+    }
 
     global $ga_db_mongo;
     global $ga_db_errors;
@@ -437,7 +456,7 @@ function ga_db_find( $coll, $appname = "__application__", $query = [], $projecti
          }
     }
 
-    if ( isset( $debug ) ) {
+    if ( isset( $ga_db_log_file ) ) {
         error_log( json_encode( $results ) . "\n", 3, $ga_db_log_file );
     }
     return $results;
@@ -445,10 +464,10 @@ function ga_db_find( $coll, $appname = "__application__", $query = [], $projecti
 
 function ga_db_insert( $coll, $appname = "__application__", $insert, $options = [], $error_json_exit = false ) {
 //  return inserted Id(s) as $results[ "output" ]
-
+    global $ga_db_log_file;
     if ( isset( $ga_db_log_file ) ) {
         error_log( date('m/d/Y h:i:s a', time() ) . "\n" . "ga_db_insert( $coll, $appname,\n" . "\$insert = " . json_encode( $insert, JSON_PRETTY_PRINT )  . "\n" . "\$options = " . json_encode( $options ) . "\n" . "\$error_json_exit = ".( $error_json_exit ? "true" : "false" ) . ") =\n", 3, $ga_db_log_file );
-   }
+    }
 
     global $ga_db_mongo;
     global $ga_db_errors;
@@ -516,7 +535,7 @@ function ga_db_insert( $coll, $appname = "__application__", $insert, $options = 
          }
     }
 
-    if ( isset( $debug ) ) {
+    if ( isset( $ga_db_log_file ) ) {
         error_log( json_encode( $results ) . "\n", 3, $ga_db_log_file );
     }
 
@@ -525,6 +544,7 @@ function ga_db_insert( $coll, $appname = "__application__", $insert, $options = 
 
 function ga_db_update( $coll, $appname = "__application__", $criteria, $update, $options = [], $error_json_exit = false ) { 
 // use updateOne()
+    global $ga_db_log_file;
 
     if ( isset( $ga_db_log_file ) ) {
         error_log( date('m/d/Y h:i:s a', time() ) . "\n" . "ga_db_updateOne( $coll, $appname,\n" . "\$criteria = " . json_encode( $criteria, JSON_PRETTY_PRINT )  . "\n" ."\$update = " . json_encode( $update, JSON_PRETTY_PRINT )  . "\n" . "\$options = " . json_encode( $options ) . "\n" . "\$error_json_exit = ".( $error_json_exit ? "true" : "false" ) . ") =\n", 3, $ga_db_log_file );
@@ -582,7 +602,7 @@ function ga_db_update( $coll, $appname = "__application__", $criteria, $update, 
          }
     }
 
-    if ( isset( $debug ) ) {
+    if ( isset( $ga_db_log_file ) ) {
         error_log( json_encode( $results ) . "\n", 3, $ga_db_log_file );
     }
 
@@ -591,10 +611,11 @@ function ga_db_update( $coll, $appname = "__application__", $criteria, $update, 
 
 function ga_db_remove( $coll, $appname = "__application__", $criteria, $options = [], $error_json_exit = false ) {
 // if $options[ "justOne" ] === true use deleteOne(), otherwise deleteMany()
+    global $ga_db_log_file;
 
     if ( isset( $ga_db_log_file ) ) {
         error_log( date('m/d/Y h:i:s a', time() ) . "\n" . "ga_db_remove( $coll, $appname,\n" . "\$criteria = " . json_encode( $criteria, JSON_PRETTY_PRINT )  . "\n" . "\$options = " . json_encode( $options ) . "\n" . "\$error_json_exit = ".( $error_json_exit ? "true" : "false" ) . ") =\n", 3, $ga_db_log_file );
-   }
+    }
 
     global $ga_db_mongo;
     global $db_errors;
@@ -660,7 +681,7 @@ function ga_db_remove( $coll, $appname = "__application__", $criteria, $options 
          }
     }
 
-    if ( isset( $debug ) ) {
+    if ( isset( $ga_db_log_file ) ) {
         error_log( json_encode( $results ) . "\n", 3, $ga_db_log_file );
     }
 
@@ -668,10 +689,11 @@ function ga_db_remove( $coll, $appname = "__application__", $criteria, $options 
 }
 
 function ga_db_distinct( $coll, $appname = "__application__", $key, $query, $options = [], $error_json_exit = false ) {
+    global $ga_db_log_file;
 
     if ( isset( $ga_db_log_file ) ) {
         error_log( date('m/d/Y h:i:s a', time() ) . "\n" . "ga_db_distinct( $coll, $appname,\n" . "\$key = " . json_encode( $key, JSON_PRETTY_PRINT )  . "\n" . "\$query = " . json_encode( $query, JSON_PRETTY_PRINT )  . "\n" ."\$options = " . json_encode( $options ) . "\n" . "\$error_json_exit = ".( $error_json_exit ? "true" : "false" ) . ") =\n", 3, $ga_db_log_file );
-   }
+    }
 
     global $ga_db_mongo;
     global $ga_db_errors;
@@ -720,7 +742,7 @@ function ga_db_distinct( $coll, $appname = "__application__", $key, $query, $opt
          }
     }
 
-    if ( isset( $debug ) ) {
+    if ( isset( $ga_db_log_file ) ) {
         error_log( json_encode( $results ) . "\n", 3, $ga_db_log_file );
     }
 
