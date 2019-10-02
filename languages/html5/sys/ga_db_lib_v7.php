@@ -496,7 +496,7 @@ function ga_db_insert( $coll, $appname = "__application__", $insert, $options = 
 //	} else {
         $results[ 'output' ] = $ga_db_mongo->$appname->$coll->insertOne( $insert, $options )->getInsertedId();
 //            echo ( "called insertOne \n" );
-	}	
+//	}	
         $results[ '_status' ] = 'success';
     } catch ( Exception  $e ) {
         $db_errors = "Error inserting " .  $e->getMessage();
