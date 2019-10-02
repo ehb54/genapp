@@ -479,11 +479,12 @@ function ga_db_insert( $coll, $appname = "__application__", $insert, $options = 
     __~mongojournal{$options[ 'j' ] = true;}
     __~mongojournal{$options[ 'WriteConcern' ] = [ "j" => true ];}
 
-    $insertMany_flag = false;
+
+    $insertMany_flag = true;
  
     foreach ( $insert as $key => $val ) {
-        if ( is_array($val) ) {
-            $insertMany_flag = true;            
+        if ( !is_array($val) ) {
+            $insertMany_flag = false;
         }
     }
 
