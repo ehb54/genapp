@@ -479,7 +479,7 @@ function ga_db_insert( $coll, $appname = "__application__", $insert, $options = 
     __~mongojournal{$options[ 'j' ] = true;}
     __~mongojournal{$options[ 'WriteConcern' ] = [ "j" => true ];}
 
-
+/*
     $insertMany_flag = true;
  
     foreach ( $insert as $key => $val ) {
@@ -487,14 +487,14 @@ function ga_db_insert( $coll, $appname = "__application__", $insert, $options = 
             $insertMany_flag = false;
         }
     }
-
+*/
     $results = []; 
     try {
-	if ($insertMany_flag) {
-	    $results[ 'output' ] = $ga_db_mongo->$appname->$coll->insertMany( $insert, $options )->getInsertedIds();
+//	if ($insertMany_flag) {
+//	    $results[ 'output' ] = $ga_db_mongo->$appname->$coll->insertMany( $insert, $options )->getInsertedIds();
 //            echo ( "called insertMany \n" );
-	} else {
-            $results[ 'output' ] = $ga_db_mongo->$appname->$coll->insertOne( $insert, $options )->getInsertedId();
+//	} else {
+        $results[ 'output' ] = $ga_db_mongo->$appname->$coll->insertOne( $insert, $options )->getInsertedId();
 //            echo ( "called insertOne \n" );
 	}	
         $results[ '_status' ] = 'success';
