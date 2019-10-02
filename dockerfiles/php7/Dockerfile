@@ -38,8 +38,6 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends apt-utils && \
     apt-get install -y build-essential && \
     apt-get install -y software-properties-common && \
-#    add-apt-repository -y ppa:ondrej/php && \
-#    apt-get update && \
     apt-get install -y bind9-host && \
     apt-get install -y subversion git libssl-dev bc apache2 curl wget && \
     apt-get install -y zlib1g-dev && \
@@ -54,11 +52,6 @@ RUN apt-get update && \
     apt-get install -y vim && \
     apt-get install -y emacs-nox
 
-# For php5.6 
-#RUN apt-get install -y mlocate php5.6-dev libapache2-mod-php5.6 php5.6-xml && \
-#RUN apt-get install -y mongodb && \
-
-# For php7.2
 RUN apt-get update && \
     apt-get install -y mlocate php-pear libcurl3-openssl-dev libapache2-mod-php && \
     apt-get install -y php7.2-curl php7.2-dev php7.2-gd php7.2-mbstring php7.2-zip php7.2-xml
@@ -124,6 +117,7 @@ RUN apt-get install -y php-zmq
 #RUN phpenmod zmq mongo imagick
 RUN phpenmod zmq imagick
 
+# TODO ... probably should get version of PHP and use that as a variable, otherwise we will have to change path on PHP upgrades
 RUN sed -i.org "s/^disable_functions = pcntl/;disable_functions = pcntl/" /etc/php/7.2/apache2/php.ini
 
 RUN echo "# ws proxy pass\n\
@@ -149,11 +143,28 @@ RUN ln -s /usr/bin/php /usr/local/bin/php
 #GENAPP specifics
 RUN apt-get install -y zip unzip
 
-RUN ls -s
+# Careful here, if the genapp.git changes, you should force docker to not use a cache'd image for this
+# options:
+# 1. $ docker builder prune
+#   ^^^ this removes all build cache images according to https://forums.docker.com/t/how-to-delete-cache/5753/4
+#   ^^^ N.B. needs docker API version 1.39 or greater
+#
+# 2. $ docker system prune
+#   ^^^ this will remove a bunch of other things too
+#
+# 3. add a unique RUN command here e.g. RUN echo something-unique
+#   ^^^ this RUN method would require changing to something else unique every time the genapp.git changed
+#
+# 4. docker build --no-cache ...
+#
+# note 1., 2. & 4. will force the compile to take longer (all steps will have to RUN)
+# 3. seems most efficient in terms of build-time - but you have to make sure you put something unique on the RUN line
+
 RUN cd $SRCBASE && git clone https://github.com/ehb54/genapp.git && cd $GENAPP && git checkout php56
 RUN touch $GENAPPETC/no_sudo
 
 # TODO Temporary override for ga_db_lib_v7.php
+# the long term idea is to force this in a new git branch (php7?)
 RUN cd $GENAPP/languages && sed -i.org "s/ga_db_lib_v5.php/ga_db_lib_v7.php/" html5.json
 
 RUN groupadd genapp && \
@@ -179,9 +190,10 @@ phpinfo();\n\
 > $WEBROOT/php_info.php
 
 # setup genapptest instance
-# Uncomment once GENAPP installed
+
 RUN $GENAPP/sbin/setconfig.pl -pj
 
+# TODO: later update getapp.pl to use GIT ... likely own repos
 RUN cd $APPBASE && $GENAPP/sbin/getapp.pl -force -gen svn genapptest
 
 RUN cp $APPBASE/genapptest/output/html5/util/rc.genapp /etc/init.d
@@ -220,7 +232,8 @@ RUN php --version && \
 RUN curl -s https://getcomposer.org/installer | php && \
     mv composer.phar /usr/local/bin/composer
 
-# emre's bits - not for production
+# emre's bits - not for production ... they don't hurt so you can leave them or comment them out
+# TODO: put under --build-arg conditional https://stackoverflow.com/questions/43654656/dockerfile-if-else-condition-with-external-arguments
 RUN mkdir ~/bin
 RUN echo 'env TERM=vt100 emacs -nw $*' > ~/bin/e
 RUN echo 'ls -sxF $*' > ~/bin/s
