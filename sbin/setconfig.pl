@@ -158,6 +158,7 @@ if ( -e $f ) {
 my $tos = `uname -v`;
 my $os;
 my $os_release;
+$tos .= `lsb_release -d 2> /dev/null`;
 
 $os = 'ubuntu' if $tos =~ /Ubuntu/;
 
@@ -199,7 +200,8 @@ if ( !$os  && -e "/etc/slackware-version" ) {
     ( $os_release ) = $check =~ /^Slackware (\S+)/;
 }
 
-if ( !os ) {
+
+if ( !$os ) {
     warn "$0: operating system not recognized\n";
 }
 
@@ -422,7 +424,7 @@ if ( $$json{ "https" } ) {
     $$json{'https'}         = int($https);
 }
 
-if ( !$webroot ) {
+if ( !$webroot || !length($webroot) ) {
     $webroot = "/var/www/html" if $os =~ /^(ubuntu|centos|redhat|scientific)$/;
     $webroot = "/var/www/htdocs" if $os =~ /^slackware$/;
 }
