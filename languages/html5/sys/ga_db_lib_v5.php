@@ -36,7 +36,7 @@ $results = ga_db_save( $coll, $appname, $document, $options, $error_json_exit );
 
 bool  = ga_db_status( $results );
 obj   = ga_db_output( $results );
-date  = ga_db_add_secs( $date, $seconds );
+date  = ga_db_date_add_secs( $date, $seconds );
 float = ga_db_date_secs_diff( $date1, $date2 );
 float = ga_db_date_secs( $date );
 

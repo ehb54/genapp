@@ -33,7 +33,7 @@ $id      = $_REQUEST[ "id" ];
 $captcha = $_REQUEST[ "captcha" ];
 
 if ( $doc = ga_db_output( ga_db_findOne( 'captcha', '', [ "_id" => $id  ] ) ) ) {
-    $expires = ga_db_add_secs( $doc[ 'time' ], 3 * 60 );
+    $expires = ga_db_date_add_secs( $doc[ 'time' ], 3 * 60 );
 
     if ( $now < $expires &&
          $doc[ 'captcha' ] == $captcha &&
