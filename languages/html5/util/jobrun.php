@@ -103,7 +103,7 @@ __~debug:runjob{error_log( "jobrun 14\n", 3, "/tmp/php_errors" );}
 logstoprunning();
 __~debug:runjob{error_log( "jobrun 15\n", 3, "/tmp/php_errors" );}
 
-
+__~seedmelab:url{$seedmecmd="php __docroot:html5__/__application__/seedmelab/syncfilesdirs.php --user " . $GLOBALS['logon']; exec("$seedmecmd >> /tmp/php_errors 2>&1 & echo $!; " );}
 
 if ( !$GLOBALS[ 'wascancelled' ] ) {
     $results = str_replace( "__docroot:html5__/__application__/", "", $results );
