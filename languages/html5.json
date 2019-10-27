@@ -545,6 +545,21 @@
                         ,{ "add/js/ga.min.js"                       : "once" }
                     ]
                    }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "seedmelab/syncfilesdirs.php",
+                    "inputs"     : [ 
+                                    { "seedmelab/syncfilesdirs.php" : "once"        }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "seedmelab/foldershare",
+                    "setexecutable" : "true",
+                    "inputs"     : [ 
+                                    { "seedmelab/foldershare" : "once"        }
+                                   ]
+                   }
                   ]
 }
 

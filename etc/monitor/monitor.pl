@@ -2,6 +2,9 @@
 
 # to install required modules:
 # perl -MCPAN -e 'install "JSON";install "Try::Tiny";install "LWP::UserAgent";install "MIME::Lite";install "MIME::Base64";install "LWP::Protocol::https"';
+
+# also websocat required for wss or ws checking, available at https://github.com/vi/websocat
+
 # $debug++;
 
 use Try::Tiny;

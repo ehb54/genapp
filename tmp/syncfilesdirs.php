@@ -4,10 +4,11 @@
 $debug = 0;
 
 $notes = <<<__EOD
-  usage: php $argv[0] {-r} --cred seedme2_credentials_file --fs fs_base_directory
+  usage: php $argv[0] {-r} --cred seedme2_credentials_file --fs fs_base_directory --user username
     copies data from fs to seedme2 
   option:
     -r     remove files and directories present on seedme2 but not present on fs
+
 __EOD;
 
 $options = getopt(
@@ -15,6 +16,7 @@ $options = getopt(
     ,[
      "cred:"
      ,"fs:"
+     ,"user:"
     ]
     );
 
@@ -30,12 +32,20 @@ if ( !isset( $options[ "fs" ] ) || !strlen( $options[ "fs" ] ) ) {
     exit( 1 );
 }
 
+if ( !isset( $options[ "user" ] ) || !strlen( $options[ "user" ] ) ) {
+    echo $notes;
+    exit( 1 );
+}
+
 $credfile = $options[ "cred" ];
 $fs       = $options[ "fs" ];
+$user     = $options[ "user" ];
 
 # setup foldershare process
 
-$process = proc_open(". $credfile && foldershare --host \$host --username \$username --password \$password",
+echo ". $credfile && foldershare --host \$host --masquerade $user --apikey \$apikey\n";
+
+$process = proc_open(". $credfile && foldershare --host \$host --masquerade $user --apikey \$apikey",
                   [
                    [ "pipe","r" ],
                    [ "pipe","w" ],
