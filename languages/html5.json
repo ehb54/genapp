@@ -123,7 +123,7 @@
                     "frequency"  : "once",
                     "output"     : "ajax/ga_db_lib.php",
                     "inputs"     : [ 
-                                    { "sys/ga_db_lib_v5.php" : "once" }
+                                    { "sys/ga_db_lib_v7.php" : "once" }
                                    ]
                    }
                    ,{
