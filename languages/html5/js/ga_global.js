@@ -303,6 +303,12 @@ ga.browser = function() {
     ga.browser.prefix   = "";
     ga.browser.gradient = false;
     ga.browser.clrpkr   = false;
+    ga.browser.version  = "unknown";
+
+    if(sUsrAg.indexOf("Version") > -1) {
+        ga.browser.version    = /Version\/([^ ]*)/.exec( sUsrAg )[1];
+        ga.browser.majversion = /Version\/([\d]*)/.exec( sUsrAg )[1];
+    }
 
     if(sUsrAg.indexOf("Chrome") > -1) {
         ga.browser.type     = "chrome";
