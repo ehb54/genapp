@@ -144,6 +144,8 @@ RUN ln -s /usr/bin/php /usr/local/bin/php
 RUN apt-get install -y zip unzip
 # for google closure minifier
 RUN apt-get install -y openjdk-11-jre-headless
+RUN apt-get install -y nodejs-dev node-gyp libssl1.0-dev
+RUN apt-get install -y npm
 
 # Careful here, if the genapp.git changes, you should force docker to not use a cache'd image for this
 # options:
