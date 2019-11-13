@@ -2,50 +2,96 @@
     ;
 
 $debug = 0;
+$debug2file = "/tmp/seedmelabsync.log";
 
 $notes = <<<__EOD
-  usage: php $argv[0] {-r} --cred seedme2_credentials_file --fs fs_base_directory --user username
-    copies data from fs to seedme2 
+  usage: php $argv[0] {-r} --user username --project project_name
+    copies data from fs to seedmelab 
   option:
-    -r     remove files and directories present on seedme2 but not present on fs
+    -r     remove files and directories present on seedmelab but not present on fs
 
 __EOD;
 
 $options = getopt(
     "r"
     ,[
-     "cred:"
-     ,"fs:"
-     ,"user:"
+        "user:"
+        ,"project:"
     ]
     );
 
-debugecho( json_encode( $options, JSON_PRETTY_PRINT ), 0 );
-
-if ( !isset( $options[ "cred" ] ) || !strlen( $options[ "cred" ] ) ) {
-    echo $notes;
-    exit( 1 );
-}
-
-if ( !isset( $options[ "fs" ] ) || !strlen( $options[ "fs" ] ) ) {
-    echo $notes;
-    exit( 1 );
-}
+# debugecho( json_encode( $options, JSON_PRETTY_PRINT ), 0 );
 
 if ( !isset( $options[ "user" ] ) || !strlen( $options[ "user" ] ) ) {
     echo $notes;
     exit( 1 );
 }
 
-$credfile = $options[ "cred" ];
-$fs       = $options[ "fs" ];
+$results = (object) [];
+
 $user     = $options[ "user" ];
+$project  = isset( $options[ "project" ] ) ? $options[ "project" ] : "";
+
+# setup variables
+
+$secrets = json_decode( file_get_contents( "__secrets__" ) );
+
+if ( $secrets == NULL ) {
+    $results->_message = [ "icon" => "toast.png",
+                               "text" => "<p>Could not load configuration information to setup seedmelab execution.</p>"
+                               . "<p>This is a configuration error which should be forwarded to the site administrator.</p>" 
+                               . "<p>seedmelab synchronization will not work this is fixed.</p>" 
+        ];
+    $results->error = "seedmelab configuration failed";
+    $results->_status = 'failed';
+    echo json_encode( $results );
+    exit();
+}
+
+if ( !isset( $secrets->seedmelab ) ) {
+    $results->_message = [ "icon" => "toast.png",
+                               "text" => "<p>Configuration information missing 'seedmelab' definition.</p>"
+                               . "<p>This is a configuration error which should be forwarded to the site administrator.</p>" 
+                               . "<p>seedmelab synchronization will not work this is fixed.</p>" 
+        ];
+    $results->error = "Configuration missing 'seedmelab' section";
+    $results->_status = 'failed';
+    echo json_encode( $results );
+    exit();
+}
+
+if ( !isset( $secrets->seedmelab->apikey ) ) {
+    $results->_message = [ "icon" => "toast.png",
+                               "text" => "<p>Configuration information missing 'seedmelab:apikey' definition.</p>"
+                               . "<p>This is a configuration error which should be forwarded to the site administrator.</p>" 
+                               . "<p>seedmelab synchronization will not work this is fixed.</p>" 
+        ];
+    $results->error = "Configuration missing 'seedmelab:apikey' definition";
+    $results->_status = 'failed';
+    echo json_encode( $results );
+    exit();
+}
+
+if ( !isset( $secrets->seedmelab->host ) ) {
+    $results->_message = [ "icon" => "toast.png",
+                               "text" => "<p>Configuration information missing 'seedmelab:host' definition.</p>"
+                               . "<p>This is a configuration error which should be forwarded to the site administrator.</p>" 
+                               . "<p>seedmelab synchronization will not work this is fixed.</p>" 
+        ];
+    $results->error = "Configuration missing 'seedmelab:host' definition";
+    $results->_status = 'failed';
+    echo json_encode( $results );
+    exit();
+}
+
+$apikey = $secrets->seedmelab->apikey;
+$host = $secrets->seedmelab->host;
+
+$fs = "__docroot:html5__/__application__/results/users/$user";
 
 # setup foldershare process
 
-echo ". $credfile && foldershare --host \$host --masquerade $user --apikey \$apikey\n";
-
-$process = proc_open(". $credfile && foldershare --host \$host --masquerade $user --apikey \$apikey",
+$process = proc_open("__docroot:html5__/__application__/seedmelab/foldershare --host $host --masquerade $user --apikey $apikey",
                   [
                    [ "pipe","r" ],
                    [ "pipe","w" ],
@@ -63,7 +109,7 @@ stream_set_blocking( $pipes[0], false );
 stream_set_blocking( $pipes[1], false );
 stream_set_blocking( $pipes[2], false );
 
-# setup command stack to extract seedme2 file listing
+# setup command stack to extract seedmelab file listing
 
 $towrite   = [];
 $waitfor   = [];
@@ -72,7 +118,7 @@ $lastcmd   = "";
 $waitone   = 0;
 $g_info    = 
     [
-     "seedme2" => [
+     "seedmelab" => [
          "files" => []
          ,"dirs" => []
      ]
@@ -85,8 +131,13 @@ $g_info    =
 
 function debugecho ( $str, $level = 1 ) {
     global $debug;
+    global $debug2file;
     if ( $debug >= $level ) {
-        echo $str . "\n";
+        if ( isset( $debug2file ) ) {
+            error_log( "$str\n", 3, $debug2file );
+        } else {
+            echo $str . "\n";
+        }
     }
 }
     
@@ -160,12 +211,12 @@ function nextcmd() {
                             $cmds[] = [ "runcmd" => "ls -l '$basedir'" ];
                             $cmds[] = [ "waitfor" => "foldershare> " ];
                             $info[ "depth" ] = count( explode( "/", $basedir ) ) - 2;
-                            array_push( $g_info[ "seedme2" ][ "dirs" ], [ $basedir => $info ] );
+                            array_push( $g_info[ "seedmelab" ][ "dirs" ], [ $basedir => $info ] );
                         }
                         break;
 
                         case "Regular" : {
-                            array_push( $g_info[ "seedme2" ][ "files" ], [ $basedir => $info ] );
+                            array_push( $g_info[ "seedmelab" ][ "files" ], [ $basedir => $info ] );
                         }
                         break;
                         
@@ -353,18 +404,18 @@ function info_array( $source, $type ) {
     return $result;
 }
     
-function remove_from_seedme2_nonexistent() {
+function remove_from_seedmelab_nonexistent() {
     global $cmds;
 
-    debugecho( "remove_from_seedme2_nonexistent", 0 );
+    debugecho( "remove_from_seedmelab_nonexistent", 0 );
 
-    $seedme2files = info_array( "seedme2", "files" );
-    $seedme2dirs  = info_array( "seedme2", "dirs" );
+    $seedmelabfiles = info_array( "seedmelab", "files" );
+    $seedmelabdirs  = info_array( "seedmelab", "dirs" );
     $fsfiles      = info_array( "fs", "files" );
     $fsdirs       = info_array( "fs", "dirs" );
 
-    $removefiles  = array_diff( $seedme2files, $fsfiles );
-    $removedirs   = array_reverse( array_diff( $seedme2dirs, $fsdirs ) );
+    $removefiles  = array_diff( $seedmelabfiles, $fsfiles );
+    $removedirs   = array_reverse( array_diff( $seedmelabdirs, $fsdirs ) );
 
     debugecho( "remove files:\n" . implode( "\n", $removefiles ), 0 );
     debugecho( "remove dirs:\n" . implode( "\n", $removedirs ), 0 );
@@ -382,15 +433,15 @@ function remove_from_seedme2_nonexistent() {
     debugecho( "remove commands:\n" . json_encode( $cmds, JSON_PRETTY_PRINT ), 0 );
 }
 
-function create_directories_on_seedme2() {
+function create_directories_on_seedmelab() {
     global $cmds;
 
-    debugecho( "create_directories_on_seedme2", 0 );
+    debugecho( "create_directories_on_seedmelab", 0 );
 
-    $seedme2dirs  = info_array( "seedme2", "dirs" );
+    $seedmelabdirs  = info_array( "seedmelab", "dirs" );
     $fsdirs       = info_array( "fs", "dirs" );
 
-    $createdirs   = array_diff( $fsdirs, $seedme2dirs );
+    $createdirs   = array_diff( $fsdirs, $seedmelabdirs );
 
     debugecho( "createdirs dirs:\n" . implode( "\n", $createdirs ), 0 );
 
@@ -402,16 +453,16 @@ function create_directories_on_seedme2() {
     debugecho( "create directories commands:\n" . json_encode( $cmds, JSON_PRETTY_PRINT ), 0 );
 }
     
-function upload_files_to_seedme2() {
+function upload_files_to_seedmelab() {
     global $cmds;
     global $fs;
 
-    debugecho( "upload_files_to_seedme2", 0 );
+    debugecho( "upload_files_to_seedmelab", 0 );
 
-    $seedme2files  = info_array( "seedme2", "files" );
+    $seedmelabfiles  = info_array( "seedmelab", "files" );
     $fsfiles       = info_array( "fs", "files" );
 
-    $uploadfiles   = array_diff( $fsfiles, $seedme2files );
+    $uploadfiles   = array_diff( $fsfiles, $seedmelabfiles );
 
     debugecho( "upload files:\n" . implode( "\n", $uploadfiles ), 0 );
 
@@ -426,11 +477,11 @@ function upload_files_to_seedme2() {
     
 # work thru the stages
 # stages are
-#  1: get seedme2 fs info
+#  1: get seedmelab fs info
 #  2: get local fs info
-#  3: optionally remove nonexistent on fs from seedme2
-#  4: create directories not present on seedme2
-#  5: upload files not present on seedme2 or differeing in size
+#  3: optionally remove nonexistent on fs from seedmelab
+#  4: create directories not present on seedmelab
+#  5: upload files not present on seedmelab or differeing in size
 
 $startatstage  = 1;
 $finishatstage = 5;
@@ -446,7 +497,7 @@ function stage_loop() {
         debugecho( "stage $stage", 0 );
 
         switch ( $stage ) {
-            case 1 : { # getseedme2 fs info
+            case 1 : { # getseedmelab fs info
                 $cmds = [
                     [ "waitfor" => "foldershare> " ]
                     ,[ "runcmd" => "ls -l" ]
@@ -461,9 +512,9 @@ function stage_loop() {
             }
             break;
 
-            case 3 : { # optionally remove nonexistent on fs from seedme2
+            case 3 : { # optionally remove nonexistent on fs from seedmelab
                 if ( isset( $options[ "r" ] ) ) {
-                    remove_from_seedme2_nonexistent();
+                    remove_from_seedmelab_nonexistent();
                     if ( count( $cmds ) ) {
                         process_cmds();
                     }
@@ -473,16 +524,16 @@ function stage_loop() {
             }
             break;
 
-            case 4 : { # create directories on seedme2
-                create_directories_on_seedme2();
+            case 4 : { # create directories on seedmelab
+                create_directories_on_seedmelab();
                 if ( count( $cmds ) ) {
                     process_cmds();
                 }
             }
             break;
 
-            case 5 : { # upload files to seedme2
-                upload_files_to_seedme2();
+            case 5 : { # upload files to seedmelab
+                upload_files_to_seedmelab();
                 if ( count( $cmds ) ) {
                     process_cmds();
                 }
