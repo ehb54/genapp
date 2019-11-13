@@ -1,8 +1,16 @@
+<!-- input.header -->
 __~height{<div style="height:__height__; overflow:auto">}
 __~center{<center>}
 <form id="__moduleid__" __~nowrap{style="white-space:nowrap"}>
-<span id="__moduleid___input_area"></span>
+<div id="__moduleid___input_area" class="ga-module"></div>
 <script>
+
+ga.layout = ga.layout || {};
+ga.layout.module = {};
+ga.layout.module.name = "__moduleid__";
+ga.layout.buttonhtml = {};
+ga.layout.fields = {};
+ga.layout.panel = JSON.parse( '__layout__' );
 
 ga.tmp.bgi = ga.color.data.body.background;
 __~style:backgroundimage{ga.tmp.bgi = "url(__style:backgroundimage__)";}
@@ -23,4 +31,4 @@ _jmol_info = {};
 ga.pull.clearPull();
 ga.specproj.clear();
 $('#__moduleid__').on("keyup keypress", function(e) { var code = e.keyCode || e.which;  if (code  == 13) { e.preventDefault(); return false; }});
-
+// -- end input.header --

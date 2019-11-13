@@ -25,6 +25,13 @@
                     },
                    {
                     "frequency"  : "once",
+                    "output"     : "css/ga-std.css",
+                    "inputs"     : [ 
+                                    { "css/ga-std.css" : "once"        }
+                                   ]
+                    },
+                   {
+                    "frequency"  : "once",
                     "output"     : "ajax/sys_uid.php",
                     "inputs"     : [ 
                                     { "sys/sys_uid.php" : "once"        }
@@ -55,9 +62,9 @@
                     "inputs"     : [ 
                                     { "types/input.header"           : "once"     },
                                     { "types/__fields:type__.input"  : "fields:id" },
+                                    { "types/__fields:type__.output" : "fields:id" },
                                     { "types/input.footer"           : "once"     },
                                     { "types/output.header"          : "once"     },
-                                    { "types/__fields:type__.output" : "fields:id" },
                                     { "types/output.footer"          : "once"     }
                                    ]
                    }
@@ -83,9 +90,9 @@
                     "inputs"     : [ 
                                     { "types/input.header"           : "once"     },
                                     { "types/__fields:type__.input"  : "fields:id" },
+                                    { "types/__fields:type__.output" : "fields:id" },
                                     { "types/input.footer"           : "once"     },
                                     { "types/output.header"          : "once"     },
-                                    { "types/__fields:type__.output" : "fields:id" },
                                     { "types/output.footer"          : "once"     }
                                    ]
                    }
@@ -506,6 +513,7 @@
                                     ,{ "js/qr.js"               : "once" }
                                     ,{ "js/msg.js"              : "once" }
                                     ,{ "js/ws.js"               : "once" }
+                                    ,{ "js/layout.js"           : "once" }
                                    ]
                    }
                    ,{
@@ -558,6 +566,60 @@
                     "setexecutable" : "true",
                     "inputs"     : [ 
                                     { "seedmelab/foldershare" : "once"        }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "scss/ga-bootstrap-genapp.scss",
+                    "inputs"     : [ 
+                                     { "scss/theme/genapp.scss" : "once" }
+                                     ,{ "scss/ga-bootstrap-footer.scss" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "scss/genapp-package.json",
+                    "inputs"     : [ 
+                                     { "scss/theme/genapp-package.json" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "scss/ga-bootstrap-material-design.scss",
+                    "inputs"     : [ 
+                                     { "scss/theme/material-design.scss" : "once" }
+                                     ,{ "scss/ga-bootstrap-footer.scss" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "scss/material-design-package.json",
+                    "inputs"     : [ 
+                                     { "scss/theme/material-design-package.json" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "scss/ga-bootstrap-bootswatch.scss",
+                    "inputs"     : [ 
+                                     { "scss/theme/bootswatch.scss" : "once" }
+                                     ,{ "scss/ga-bootstrap-footer.scss" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "scss/bootswatch-package.json",
+                    "inputs"     : [ 
+                                     { "scss/theme/bootswatch-package.json" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "scss/scss-build.sh",
+                    "setexecutable" :"true",
+                    "execute"    : "atend",
+                    "inputs"     : [ 
+                                     { "scss/scss-build.sh" : "once" }
                                    ]
                    }
                   ]

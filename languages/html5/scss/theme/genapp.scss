@@ -1,0 +1,30 @@
+// Following instructions here: https://getbootstrap.com/docs/4.3/getting-started/theming/#importing
+
+// Include SCSS of Bootstrap
+
+
+// Directive and other variables
+// TODO: maybe put these replacements into separate file?
+$text-color-rgb: rgb(__text_color_rgb__);
+$background-color-rgb: rgb(__background_color_rgb__);
+$button-color-rgb: rgb(__button_color_rgb__);
+
+// Bootstrap variable overrides
+$body-color: $text-color-rgb;
+$body-bg: $background-color-rgb;
+$theme-colors: (
+  "button-color": $button-color-rgb
+);
+
+// Required
+@import "./node_modules/bootstrap/scss/functions";
+@import "./node_modules/bootstrap/scss/variables";
+@import "./node_modules/bootstrap/scss/mixins";
+
+// Optional
+@import "./node_modules/bootstrap/scss/reboot";
+@import "./node_modules/bootstrap/scss/forms";
+@import "./node_modules/bootstrap/scss/grid";
+@import "./node_modules/bootstrap/scss/buttons";
+@import "./node_modules/bootstrap/scss/type";
+

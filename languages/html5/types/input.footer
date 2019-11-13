@@ -1,15 +1,37 @@
-if( skipped_row == 1 ){ input_html += "</tr>"; }
-input_html += '</table>';
-$( '#__moduleid___input_area' ).html( input_html );
-eval( input_eval );
+// -- input.footer --
+// if( skipped_row == 1 ){ input_html += "</tr>"; }
+// input_html += '</table>';
+// $( '#__moduleid___input_area' ).html( input_html );
+// eval( input_eval );
+// TODO: replace with ga.layout functions for input & eval
+// ga.layout.buttonhtml[ 'submit' ] = '<button id="__moduleid___submit" class="help_link"><span class="buttontext">Submit</span></button>__~help:submit{<span class="help">__help:submit__</span>}';
+//__~help:submit{ga.layout.buttonhtml[ 'submit' ] += '<span class="help">__help:submit__</span>';}
+// ga.layout.buttonhtml[ 'reset' ] = '<button id="__moduleid___reset" class="help_link"><span class="buttontext">Reset to default values</span></button>';
+// __~help:reset{ga.layout.buttonhtml[ 'reset' ] += '<span class="help">__help:reset__</span>';}
+// new layout setup?
+ga.layout.process( {
+    captcha : __~captcha{1}0
+    ,resource : "__resource__"
+    ,help : {
+        submit : __~help:submit{1}0 ? 0 : "__help:submit__"
+        ,reset  : __~help:reset{1}0  ? 0 : "__help:reset__"
+    }
+});
+console.log( ga.layout.html() );
+$( '#__moduleid___input_area' ).html( ga.layout.html() );
+// ${ga.layout.buttons()}
+console.log( ga.layout.eval() );
+eval( ga.layout.eval() );
 </script>
+<!-- no buttons
 <p><button id="__moduleid___submit" class="help_link"><span class="buttontext">Submit</span></button>
 __~help:submit{<span class="help">__help:submit__</span>}
 <button id="__moduleid___reset" class="help_link"><span class="buttontext">Reset to default values</span></button>
 __~help:reset{<span class="help">__help:reset__</span>}
 __~newsession{<button id="__moduleid___newsession"><span class="buttontext">Start new session</span></button>}
+-->
 </p>
-<span id="__moduleid___progress"></span>
+<!-- <span id="__moduleid___progress"></span> -->
 <script>
 __~noreset{$( "#__moduleid___reset" ).remove();}
 __~submit_label{$( "#__moduleid___submit .buttontext" ).html( "__submit_label__" );}
@@ -295,8 +317,10 @@ __~docrootexecutable{$( this ).append( $("<input>").attr("type", "hidden").attr(
 
 __~debug:ajax{    console.log( "calling ajax" );}
 
-    $('#__moduleid___progress').html( "Uploading:<progress></progress>" );
-
+    $('#__moduleid___progress').html( 
+__!bootstrap:package{"Uploading:<progress></progress>"} 
+__~bootstrap:package{'Uploading:<div class="progress"><div id="__moduleid___upload_progressbar" class="progress-bar" role="progressbar" style="width:0%"></div></div>'}
+                                     );
     var job_status = "";
 
     ga.event( "", "__moduleid__", "submit: passed submit checks, submitting" );
@@ -329,7 +353,8 @@ __~debug:ajax{    console.log( "calling ajax" );}
                      myXhr.upload.addEventListener('progress',
                          function(e) {
                          if(e.lengthComputable){
-                           $('#__moduleid___progress progress').attr({value:e.loaded,max:e.total});
+                           __!bootstrap:package{$('#__moduleid___progress progress').attr({value:e.loaded,max:e.total});}
+                           __~bootstrap:package{document.getElementById( '__moduleid___upload_progressbar').style.width = (100*e.loaded/e.total).toString() + "%";}
                          } }
 //                     progressHandlingFunction
                     , false);
@@ -451,3 +476,5 @@ ga.pull.doPull();
 </script>
 </form>
 <div id="__moduleid___results"></div>
+<!-- end input.footer -->
+

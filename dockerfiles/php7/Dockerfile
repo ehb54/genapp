@@ -162,7 +162,7 @@ RUN apt-get install -y openjdk-11-jre-headless
 # note 1., 2. & 4. will force the compile to take longer (all steps will have to RUN)
 # 3. seems most efficient in terms of build-time - but you have to make sure you put something unique on the RUN line
 
-RUN cd $SRCBASE && git clone https://github.com/ehb54/genapp.git && cd $GENAPP && git checkout php7
+RUN cd $SRCBASE && git clone https://github.com/ehb54/genapp.git && cd $GENAPP && git checkout php7ui
 RUN touch $GENAPPETC/no_sudo
 
 RUN groupadd genapp && \

@@ -19,6 +19,8 @@ Hash::Merge::set_behavior( 'RIGHT_PRECEDENT' );
 
 my $gap_version = '0.01';
 
+$gap = $ENV{ "GENAPP" } || die "$0: error env variable GENAPP must be defined\n";
+
 %__json_scratch = {};
 
 sub load_reserved_words {
@@ -550,23 +552,23 @@ sub get_cond_replacements {
 # works for arbitrary sets:    my @array = $k =~ /\{ ( (?: [^{}]* | (?0) )* ) \}/x;
 
         if ( 1 ) {
-            while ( ( $tok1 ) = $k =~ /__\~([a-z0-9:_]+)\s*\{/ )
+            while ( my ( $type, $tok1 ) = $k =~ /__(~|!)([a-z0-9:_]+)\s*\{/ )
             {
-                print "--- tok1 is $tok1\n" if $debug_rplc;
+                print "--- tok1 is $tok1 type is $type\n" if $debug_rplc;
                 if ( $used{ $tok1 }++ )
                 {
                     die "Error: multiple condition replacements for $tok1 in $k\n";
                 }
                 my $k1 = $k;
-                $k1 =~ s/^.*__~${tok1}\s*\{/\{/;
+                $k1 =~ s/^.*__${type}${tok1}\s*\{/\{/;
                 print "--- k1 is  $k1\n" if $debug_rplc;
                 ( $tok2 ) = $k1 =~  /\{ ( (?: [^{}]* | (?0) )* ) \}/x;
                 print "--- tok1 $tok1 : $tok2\n" if $debug_rplc;
                 die "Error: empty tok2 in condition replacement of $tok1\n" if !length( $tok2 );
-                $ret{ $tok1 } = $tok2;
+                $ret{ ( $type eq '!' ? '!' : '' ) . $tok1 } = $tok2;
                 my $tok2r = fix_up_sub_tok( $tok2 );
                 print "tok2r is $tok2r\n" if $debug_rplc;
-                $k =~ s/__~${tok1}\s*\{$tok2r\}//g;
+                $k =~ s/__${type}${tok1}\s*\{$tok2r\}//g;
                 print "k after removal of __~${tok1}\s*\{$tok2\} is '$k'\n" if $debug_rplc;
             }
         } else {
@@ -741,6 +743,28 @@ sub get_file_json {
         delete $extra_subs{ '__dependencies__' };
     }
         
+    if ( $$json{ 'panels' } ) {
+        my $js = JSON->new;
+        $extra_subs{ '__panels__' } = $js->encode( $$json{ 'panels' } );
+        delete $$json{ 'panels' };
+    } else {
+        delete $extra_subs{ '__panels__' };
+    }
+        
+    {
+        my $layout = {};
+        my $mname  = $f;
+        $mname =~ s/^.*\/([^\/]*)\.json$/\1/;
+        require "$gap/etc/perl/ga_layout.pm";
+        layout_expand( $mname, $layout, $json );
+        $extra_subs{ '__layout__' } = encode_json( $layout );
+#        if ( $mname eq 'energy' ) {
+#            my $js = JSON->new;
+#            print "layout for $mname:*****\n" . $js->pretty->encode( $$layout{'fields'} ) . "\n";
+#            print "extrasubs version:*****\n" . $extra_subs{ '__layout__' } . "\n";
+#        }
+    }
+
     $json;
 }
 
@@ -981,6 +1005,7 @@ sub check_files {
     undef %rpls;
     undef %module_to_file;
     undef %reserved_words;
+    undef %module_layouts;
 
     $notice .= load_reserved_words();
 
@@ -1422,9 +1447,24 @@ sub check_files {
                 }
                 print "-"x30 . "\n" if keys %repeater && $show_repeaters;
             }
+            # extract layout
+            {
+                if ( $l ) { 
+                    # language specific json overrides
+                    $module_layouts{ $l }{ $mname } = $extra_subs{ '__layout__' };
+                } else {
+                    # propagate to all defined languages that are not already defined for this module
+                    for my $leach ( keys %langs ) {
+                        if ( !$module_layouts{ $leach }{ $mname } ) {
+                            $module_layouts{ $leach }{ $mname } = $extra_subs{ '__layout__' };
+                        }
+                    }
+                }
+
+                print Dumper( %module_layouts ) if $debuglayout;
+            }            
         }
     } # end module_files (per language)
-
     
     foreach my $l ( keys %langs ) {
         # print "checking module to file for language $l\n";

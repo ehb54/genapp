@@ -11,6 +11,7 @@ options:
  -do special for once:field:id messages
  -sr print detailed repeater info and exit after that point
  -gd generate graphviz .dot files for the application and exit after that point
+ -kl keep layout saves in output/language/layout
 -h prints this message
 " ;
 
@@ -55,6 +56,14 @@ while ( $ARGV[ 0 ] =~ /^-(\w{1,2})/ )
             next;
         }
     }
+    if ( $arg =~ /^k(\w?)/ )
+    {
+        if ( $1 eq 'l' )
+        {
+            $keep_layout++;
+            next;
+        }
+    }
     if ( $arg =~ /^g(\w?)/ )
     {
         if ( $1 eq 'd' )
@@ -73,6 +82,7 @@ while ( $ARGV[ 0 ] =~ /^-(\w{1,2})/ )
 }
 
 require "$gap/etc/perl/genapp_util.pl";
+require "$gap/etc/perl/ga_layout.pm";
 
 check_files() || die "Errors found\n";
 
@@ -351,16 +361,29 @@ foreach my $l ( keys %langs )
                                         my $cond_r = get_cond_replacements( \ @lu );
                                         while ( my ( $k, $v ) = each %$cond_r )
                                         {
+                                            my $negate;
+                                            my $dorplc;
+                                            my $type = '~';
+                                            if ( $k =~ /^!/ ) {
+                                                $k =~ s/^!//;
+                                                $negate = 1;
+                                                $type = '!';
+                                            }
                                             if ( defined $$rplc_mod{ $k } &&
                                                  lc( $$rplc_mod{ $k } ) ne 'false' )
                                             {
+                                                $dorplc = !$negate;
+                                            } else {
+                                                $dorplc = $negate;
+                                            }
+                                            if ( $dorplc ) {
                                                 print "1: $k => $v\n" if $debug_crplc;
                                                 my $vr = fix_up_sub_tok( $v );
-                                                grep s/__~${k}\s*\{$vr\}/$v/, @lu;
+                                                grep s/__${type}${k}\s*\{$vr\}/$v/, @lu;
                                             } else {
                                                 print "1: $k => $v blanked\n" if $debug_crplc;
                                                 my $vr = fix_up_sub_tok( $v );
-                                                grep s/__~${k}\s*\{$vr\}//, @lu;
+                                                grep s/__${type}${k}\s*\{$vr\}//, @lu;
                                             }
                                         }
                                         print "adding to outdata------------------------------\n" if $debug_srplc || $debug_oncefield;
@@ -443,6 +466,15 @@ foreach my $l ( keys %langs )
                                 my $cond_r = get_cond_replacements( \ @lu );
                                 while ( my ( $k, $v ) = each %$cond_r )
                                 {
+                                    my $negate;
+                                    my $dorplc;
+                                    my $type = '~';
+                                    if ( $k =~ /^!/ ) {
+                                        $k =~ s/^!//;
+                                        $negate = 1;
+                                        $type = '!';
+                                    }
+
                                     if (
                                         ( defined $$rplc_directives{ $k } &&
                                           lc( $$rplc_directives{ $k } ) ne 'false' ) ||
@@ -452,9 +484,15 @@ foreach my $l ( keys %langs )
                                           lc( $$rplc_menu{ $k } ) ne 'false' )
                                         )
                                     {
+                                        $dorplc = !$negate;
+                                    } else {
+                                        $dorplc = $negate;
+                                    }
+
+                                    if ( $dorplc ) {
                                         print "1r1: $k => $v\n" if $debug_crplc;
                                         my $vr = fix_up_sub_tok( $v );
-                                        grep s/__~${k}\s*\{$vr\}/$v/, @lu;
+                                        grep s/__${type}${k}\s*\{$vr\}/$v/, @lu;
                                     } else {
                                         if ( $k =~ /^addstyleinfo$/ && $check_style_name ) {
                                             print "1r2: ready to insert style $k => $v\n" if $debug_crplc;
@@ -462,11 +500,11 @@ foreach my $l ( keys %langs )
                                             $v2 =~ s/__addstyleinfo__/$global_file_replace_cache_style{ $check_style_name }/;
                                             print "1r2b: ready to insert style $k => $v2\n" if $debug_crplc;
                                             my $vr = fix_up_sub_tok( $v );
-                                            grep s/__~${k}\s*\{$vr\}/$v2/, @lu;
+                                            grep s/__${type}${k}\s*\{$vr\}/$v2/, @lu;
                                         } else {
                                             print "1b: $k => $v blanked\n" if $debug_crplc;
                                             my $vr = fix_up_sub_tok( $v );
-                                            grep s/__~${k}\s*\{$vr\}//, @lu;
+                                            grep s/__${type}${k}\s*\{$vr\}//, @lu;
                                         }
                                     }
                                 }
@@ -482,16 +520,31 @@ foreach my $l ( keys %langs )
                             my $cond_r = get_cond_replacements( \ @lu );
                             while ( my ( $k, $v ) = each %$cond_r )
                             {
+                                my $negate;
+                                my $dorplc;
+                                my $type = '~';
+                                if ( $k =~ /^!/ ) {
+                                    $k =~ s/^!//;
+                                    $negate = 1;
+                                    $type = '!';
+                                }
+
                                 if ( ( defined $$rplc_directives{ $k } &&
                                        lc( $$rplc_directives{ $k } ) ne 'false' ) )
                                 {
+                                    $dorplc = !$negate;
+                                } else {
+                                    $dorplc = $negate;
+                                }
+
+                                if ( $dorplc ) {
                                     print "1: $k => $v\n" if $debug_crplc;
                                     my $vr = fix_up_sub_tok( $v );
-                                    grep s/__~${k}\s*\{$vr\}/$v/, @lu;
+                                    grep s/__${type}${k}\s*\{$vr\}/$v/, @lu;
                                 } else {
                                     print "1: $k => $v blanked\n" if $debug_crplc;
                                     my $vr = fix_up_sub_tok( $v );
-                                    grep s/__~${k}\s*\{$vr\}//, @lu;
+                                    grep s/__${type}${k}\s*\{$vr\}//, @lu;
                                 }
                             }
                             $l[ $sp ] = $lu[ 0 ];
@@ -540,16 +593,32 @@ foreach my $l ( keys %langs )
                                 my $cond_r = get_cond_replacements( \ @lu );
                                 while ( my ( $k, $v ) = each %$cond_r )
                                 {
+                                    my $negate;
+                                    my $dorplc;
+                                    my $type = '~';
+
+                                    if ( $k =~ /^!/ ) {
+                                        $k =~ s/^!//;
+                                        $negate = 1;
+                                        $type = '!';
+                                    }
+
                                     if ( ( defined $$rplc_menu2{ $k } &&
                                            lc( $$rplc_menu2{ $k } ) ne 'false' ) )
                                     {
+                                        $dorplc = !$negate;
+                                    } else {
+                                        $dorplc = $negate;
+                                    }
+
+                                    if ( $dorplc ) {
                                         print "1: $k => $v\n" if $debug_crplc;
                                         my $vr = fix_up_sub_tok( $v );
-                                        grep s/__~${k}\s*\{$vr\}/$v/, @lu;
+                                        grep s/__${type}${k}\s*\{$vr\}/$v/, @lu;
                                     } else {
                                         print "1: $k => $v blanked\n" if $debug_crplc;
                                         my $vr = fix_up_sub_tok( $v );
-                                        grep s/__~${k}\s*\{$vr\}//, @lu;
+                                        grep s/__${type}${k}\s*\{$vr\}//, @lu;
                                     }
                                 }
                                 $l[ $sp ] = $lu[ 0 ];
@@ -619,18 +688,34 @@ foreach my $l ( keys %langs )
                                     my $cond_r = get_cond_replacements( \ @lu );
                                     while ( my ( $k, $v ) = each %$cond_r )
                                     {
+                                        my $negate;
+                                        my $dorplc;
+                                        my $type = '~';
+
+                                        if ( $k =~ /^!/ ) {
+                                            $k =~ s/^!//;
+                                            $negate = 1;
+                                            $type = '!';
+                                        }
+
                                         if ( ( defined $$rplc_mod{ $k } &&
                                                lc( $$rplc_mod{ $k } ) ne 'false' ) ||
                                              ( defined $$rplc_menu2{ $k } &&
                                                lc( $$rplc_menu2{ $k } ) ne 'false' ) )
                                         {
+                                            $dorplc = !$negate;
+                                        } else {
+                                            $dorplc = $negate;
+                                        }
+
+                                        if ( $dorplc ) {
                                             print "1mx: $k => $v\n" if $debug_crplc;
                                             my $vr = fix_up_sub_tok( $v );
-                                            grep s/__~${k}\s*\{$vr\}/$v/, @lu;
+                                            grep s/__${type}${k}\s*\{$vr\}/$v/, @lu;
                                         } else {
                                             print "1mb: $k => $v blanked\n" if $debug_crplc;
                                             my $vr = fix_up_sub_tok( $v );
-                                            grep s/__~${k}\s*\{$vr\}//, @lu;
+                                            grep s/__${type}${k}\s*\{$vr\}//, @lu;
                                         }
                                     }
                                     $l[ $sp ] = $lu[ 0 ];
@@ -724,10 +809,28 @@ foreach my $l ( keys %langs )
                                             my $cond_r = get_cond_replacements( \ @lu );
                                             while ( my ( $k, $v ) = each %$cond_r )
                                             {
+                                                my $negate;
+                                                my $dorplc;
+                                                my $type = '~';
+
+                                                if ( $k =~ /^!/ ) {
+                                                    $k =~ s/^!//;
+                                                    $negate = 1;
+                                                    $type = '!';
+                                                }
+
                                                 if ( defined $$rplc_mod{ $k } &&
                                                      lc( $$rplc_mod{ $k } ) ne 'false' )
                                                 {
                                                     print "2: $k => $v\n" if $debug_crplc;
+                                                    $dorplc = !$negate;
+                                                } else {
+                                                    $dorplc = $negate;
+                                                }
+
+                                                if ( $dorplc ) {
+                                                    print "2: $k => $v\n" if $debug_crplc;
+
                                                     my $vr = fix_up_sub_tok( $v );
                                                     if ( $$rplc_mod{ $k } =~ /~/ )
                                                     {
@@ -747,11 +850,11 @@ foreach my $l ( keys %langs )
                                                         $v = $v_new;
                                                         print "2b: $k => $v\n" if $debug_crplc;
                                                     }
-                                                    grep s/__~${k}\s*\{$vr\}/$v/, @lu;
+                                                    grep s/__${type}${k}\s*\{$vr\}/$v/, @lu;
                                                 } else {
                                                     print "2: $k => $v blanked\n" if $debug_crplc;
                                                     my $vr = fix_up_sub_tok( $v );
-                                                    grep s/__~${k}\s*\{$vr\}//, @lu;
+                                                    grep s/__${type}${k}\s*\{$vr\}//, @lu;
                                                 }
                                             }
                                             print "adding to outdata------------------------------\n" if $debug_srplc;
@@ -1032,6 +1135,26 @@ foreach my $l ( keys %langs )
                     print `$cmd`;
                 }
             }
+        }
+    }
+    # optionally create layout files
+    if ( $keep_layout ) {
+        print '='x80 . "\n";
+        print "Saving layouts\n";
+        # print Dumper( %module_layouts );
+        for my $k ( keys %{$module_layouts{ $l }} ) {
+            # TODO add comparison of file and only write if diff
+            my $fo = "output/$l/layout/$k.json";
+            mkdir_for_file( $fo );
+            my $fh;
+            if ( !open $fh, ">$fo" )
+            {
+                $error .= "language $l: writing layout for $k: error opening output file $fo\n";
+                next;
+            }
+            print $fh $module_layouts{ $l }{ $k };
+            close $fh;
+            $created .= "$fo\n";
         }
     }
     # run any scripts in output

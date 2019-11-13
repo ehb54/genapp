@@ -1,0 +1,32 @@
+{
+    "panels" : [
+        {
+            "root" : {
+                "size"    : [ 1, "auto" ],
+                "label"   : [ 1, 1 ],
+                "data"    : [ 1, 2 ],
+                "align"   : "left",
+                "gap"     : "10px"
+            }
+        },
+        {
+            "leftpanel" : {
+                "size"     : [ "auto", 4 ],
+                "location" : [ 1, 1 ]
+            }
+        },
+        {
+            "separator" : {
+                "size"     : [ "auto", "auto" ],
+                "location" : [ 1, 2 ]
+            }
+        },
+        {
+            "rightpanel" : {
+                "size"     : [ "auto", 4 ],
+                "location" : [ 1, 3 ],
+                "align"   : "right"
+            }
+        }
+    ]
+}

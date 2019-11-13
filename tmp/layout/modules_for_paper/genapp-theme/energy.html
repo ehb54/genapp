@@ -1,0 +1,45 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<style>
+
+.help {
+    background-color: rgba(__help_background_color_rgb__, 0.95 );
+    color: rgb(__help_text_color_rgb__);
+    border-radius: .5em;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
+    opacity: 0; /* Make it transparent */
+    padding: .5em;
+    position: absolute;
+    text-decoration: none;
+    visibility: hidden; /* and hidden */
+    z-index: 10;
+}
+
+</style>
+<link rel="stylesheet" href="./ga-bootstrap.css">
+</head>
+<body>
+<div id=ga-panel-root style="display:grid;grid-template-rows:auto;grid-template-columns:auto;grid-gap:5px;text-align:left" class="ga-module">
+<div id=ga-label-module_header style="grid-row:1;grid-column:1;" class="ga-field-input ga-type-label "><label id="module_header_label" class="ga-field-input-header4">Energy Example</label><div id="module_header"></div></div>
+<div id=ga-label-m style="grid-row:2;grid-column:1;" class="ga-field-input ga-type-float "><label for="m">mass [kg] </label></div>
+<div id=ga-data-m style="grid-row:2;grid-column:2;" class="ga-field-input ga-type-float "><input type="number" name="m" id="m" data-type="float" required class="help_link ga-field-input-control"><span class="help">Enter the mass in kilograms</span><span id="m_msg" class="warning field_msg" > </span></div>
+<div id=ga-label-c style="grid-row:3;grid-column:1;" class="ga-field-input ga-type-float "><label for="c">Speed of light [m/s] </label></div>
+<div id=ga-data-c style="grid-row:3;grid-column:2;" class="ga-field-input ga-type-float "><input type="number" name="c" id="c" value="299792458" data-type="float" required class="help_link ga-field-input-control"><span class="help">Enter the speed of light in meters/second</span><span id="c_msg" class="warning field_msg" > </span></div>
+<div id=ga-label-b_submit style="grid-row:4;grid-column:1;" class="ga-field-input ga-type-button "><label class=""></label></div>
+<div id=ga-data-b_submit style="grid-row:4;grid-column:1;" class="ga-field-input ga-type-button "><button id="b_submit_button" class="ga-button-submit"><span class="buttontext">Submit</span></button><div id="b_submit_buttonval"></div></div>
+<div id=ga-label-b_reset style="grid-row:5;grid-column:1;" class="ga-field-input ga-type-button "><label class=""></label></div>
+<div id=ga-data-b_reset style="grid-row:4;grid-column:2;" class="ga-field-input ga-type-button "><button id="b_reset_button" class="ga-button-reset"><span class="buttontext">Reset</span></button><div id="b_reset_buttonval"></div></div>
+<div id=ga-label-e style="grid-row:6;grid-column:1;" class="ga-field-output ga-type-text "><label for="e">Energy [J] </label></div>
+<div id=ga-data-e style="grid-row:6;grid-column:2;" class="ga-field-output ga-type-text "><input type="text" name="e" id="e" readonly class="ga-field-output-control"></div>
+</div>
+
+
+<script>
+
+</script>
+</body>
+</html>
+

@@ -1,0 +1,60 @@
+{
+   "panels" : [
+      {
+         "root" : {
+            "data" : [
+               1,
+               2
+            ],
+            "size" : [
+               "auto",
+               2
+            ],
+            "align" : "left",
+            "gap" : "10px",
+            "label" : [
+               1,
+               1
+            ]
+         }
+      },
+      {
+         "rightpanel" : {
+            "gap" : "5px",
+            "align" : "left",
+            "size" : [
+               "auto",
+               4
+            ]
+         }
+      },
+      {
+         "leftpanel" : {
+            "align" : "left",
+            "gap" : "5px",
+            "size" : [
+               "auto",
+               4
+            ]
+         }
+      }
+   ],
+   "fields" : [
+      {
+         "id" : "module_header",
+         "role" : "input"
+      },
+      {
+         "role" : "input",
+         "id" : "m"
+      },
+      {
+         "id" : "c",
+         "role" : "input"
+      },
+      {
+         "role" : "output",
+         "id" : "e"
+      }
+   ]
+}

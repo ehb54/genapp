@@ -1,16 +1,19 @@
+<!-- output.header -->
 <script>
-ga.tmp.html = "<hr>";
+// ga.tmp.html = "<hr>";
+ga.tmp.html = "";
 __~nooutputhr{ga.tmp.html = "";}
 $("#__moduleid__").append( ga.tmp.html );
 </script>
 __~centeroutput{<center>}
 <form id="__moduleid___output">
-<div id="__moduleid___output_msgs" class="warning" type="msgs"></div>
+<!-- moved to layout.js <div id="__moduleid___output_msgs" class="warning" type="msgs"></div> -->
 <script>
 ga.value.setLastValueOutput( "__moduleid___output" );
 ga.value.extra_resets.clear();
 </script>
 
+<!-- output_airavata, textarea moved to layout.js
 <span id="__moduleid___output_airavata"></span>
 
 <table>
@@ -20,3 +23,5 @@ ga.value.extra_resets.clear();
 __~textarea:help{<span class="help">__textarea:help__</span>}
 </td>
 </tr>
+-->
+<!-- end output.header -->

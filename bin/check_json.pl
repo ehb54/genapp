@@ -28,6 +28,7 @@ there is a script $gb/sbin/install-perl-stable to do this";
 }
 
 require "$gap/etc/perl/genapp_util.pl";
+require "$gap/etc/perl/ga_layout.pm";
 
 while ( $f = shift )
 {

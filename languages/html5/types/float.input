@@ -1,15 +1,22 @@
-this_html = '<tr><td><label for="__fields:id__">__fields:label__ </label></td><td><input type="number" name="__fields:id__" id="__fields:id__"__~fields:default{ value="__fields:default__"}__~fields:min{ min="__fields:min__"}__~fields:readonly{ readonly} data-type="float"__~fields:max{ max="__fields:max__"}__~fields:required{ required}__~fields:step{ step="__fields:step__"}__~fields:help{ class="help_link"><span class="help">__fields:help__</span}><span id="__fields:id___msg" class="warning field_msg" > </span></td></tr>';
-this_eval = __~fields:pull{'ga.pull.toPull( "__moduleid__", "#__fields:id__", "float", "__fields:pull__", "#__fields:repeat__" );' + }
-__~fields:calc{'ga.calc.register( "__moduleid__", "__fields:id__", "__fields:calc__" );' + }
-'ga.value.setLastValue( "__moduleid__", "__fields:id__" );'
-__~fields:specifiedproject{ + 'ga.specproj( "__fields:specifiedproject__", "#__fields:id__" );'}
- + 'ga.value.registerid("__moduleid__","__fields:id__","__fields:label__"__~fields:required{,"float"});'
- + '$( "#__fields:id__" ).blur( function() { ga.valid.checkFloat( "#__fields:id__" ); });'
- + '$( "#__fields:id__" ).keypress( function() { $( "#__fields:id___msg" ).html( "" ); });';
-if ( skipped_row == 1 ){ this_html = this_html.replace(/^<tr>/, "" ); skipped_row=0;};
-__~fields:norow{skipped_row=1;this_html = this_html.replace(/<\/tr>$/, "" );}
-__~fields:repeat{this_html = ga.repeat.repeat( "__moduleid__", "__fields:id__", this_html, this_eval );}
-__~fields:repeat{this_eval = 'ga.repeat.repeatOn("__moduleid__", "__fields:id__", "__fields:repeat__" );';}
+// -- float.input --
+ga.layout.fields[ "__fields:id__" ] = {};
+ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id__">__fields:label__ </label>';
+ga.layout.fields[ "__fields:id__" ].dhtml = '<input type="number" name="__fields:id__" id="__fields:id__"__~fields:default{ value="__fields:default__"}__~fields:min{ min="__fields:min__"}__~fields:readonly{ readonly} data-type="float"__~fields:max{ max="__fields:max__"}__~fields:required{ required}__~fields:step{ step="__fields:step__"} class="ga-field-input-control__~fields:help{ help_link}"><span class="help">__fields:help__</span><span id="__fields:id___msg" class="warning field_msg" > </span>';
+ga.layout.fields[ "__fields:id__" ].eval  = '';
 
-input_html += this_html;
-input_eval += this_eval;
+// this_html = '<tr><td><label for="__fields:id__">__fields:label__ </label></td><td><input type="number" name="__fields:id__" id="__fields:id__"__~fields:default{ value="__fields:default__"}__~fields:min{ min="__fields:min__"}__~fields:readonly{ readonly} data-type="float"__~fields:max{ max="__fields:max__"}__~fields:required{ required}__~fields:step{ step="__fields:step__"}__~fields:help{ class="help_link"><span class="help">__fields:help__</span}><span id="__fields:id___msg" class="warning field_msg" > </span></td></tr>';
+// this_eval = __~fields:pull{'ga.pull.toPull( "__moduleid__", "#__fields:id__", "float", "__fields:pull__", "#__fields:repeat__" );' + }
+// __~fields:calc{'ga.calc.register( "__moduleid__", "__fields:id__", "__fields:calc__" );' + }
+// 'ga.value.setLastValue( "__moduleid__", "__fields:id__" );'
+// __~fields:specifiedproject{ + 'ga.specproj( "__fields:specifiedproject__", "#__fields:id__" );'}
+//  + 'ga.value.registerid("__moduleid__","__fields:id__","__fields:label__"__~fields:required{,"float"});'
+//  + '$( "#__fields:id__" ).blur( function() { ga.valid.checkFloat( "#__fields:id__" ); });'
+//  + '$( "#__fields:id__" ).keypress( function() { $( "#__fields:id___msg" ).html( "" ); });';
+// if ( skipped_row == 1 ){ this_html = this_html.replace(/^<tr>/, "" ); skipped_row=0;};
+// __~fields:norow{skipped_row=1;this_html = this_html.replace(/<\/tr>$/, "" );}
+// __~fields:repeat{this_html = ga.repeat.repeat( "__moduleid__", "__fields:id__", this_html, this_eval );}
+// __~fields:repeat{this_eval = 'ga.repeat.repeatOn("__moduleid__", "__fields:id__", "__fields:repeat__" );';}
+
+// input_html += this_html;
+// input_eval += this_eval;
+// -- end float.input --

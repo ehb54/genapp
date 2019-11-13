@@ -1,0 +1,138 @@
+{
+    "moduleid"    : "energy"
+    ,"label"      : "Energy"
+    ,"help"       : "help for Energy"
+    ,"executable" : "energy.py"
+    ,"panels"     : 
+    [
+        {
+            "root" : {
+                "size"    : [ 1, "auto" ],
+                "label"   : [ 1, 1 ],
+                "data"    : [ 1, 2 ],
+                "align"   : "left",
+                "gap"     : "5px"
+            }
+        },
+        {
+            "header" : {
+                "size"     : [ "auto", "auto" ],
+                "location" : [ "next", "full" ],
+                "label"    : [ 1, 1 ],
+                "data"     : [ 2, 1 ],
+                "align"    : "center"
+            }
+        },
+        {
+            "body" : {
+                "size"     : [ "auto", "auto" ],
+                "location" : [ "next", "full" ]
+            }
+        },
+        {
+            "footer" : {
+                "size"     : [ "auto", "auto" ],
+                "location" : [ "next", "full" ],
+                "label"    : [ 1, 1 ],
+                "data"     : [ 2, 1 ],
+                "align"    : "center"
+            }
+        },
+        {
+            "leftpanel" : {
+                "parent"   : "body",
+                "size"     : [ "auto", 2 ],
+                "location" : [ 1, 1 ]
+            }
+        },
+        {
+            "rightpanel" : {
+                "parent"   : "body",
+                "size"     : [ "auto", 2 ],
+                "location" : [ 1, 2 ],
+                "label"    : [ 1, 2 ],
+                "data"     : [ 1, 1 ],
+                "align"    : "right"
+            }
+        }
+    ]
+    ,"fields"   : [
+        {
+            "role"       : "input"
+            ,"id"        : "module_header"
+            ,"label"     : "Energy Example"
+            ,"type"      : "label"
+            ,"default"   : "header4"
+            ,"prehline"  : "true"
+            ,"posthline" : "true"
+            ,"layout" : {
+                "parent" : "header"
+            }
+        }
+        ,{
+            "role"        : "input"
+            ,"id"         : "m"
+            ,"label"      : "mass [kg]"
+            ,"type"       : "float"
+            ,"required"   : "true"
+            ,"help"       : "Enter the mass in kilograms"
+            ,"layout" : {
+                "parent" : "leftpanel"
+            }
+        }
+        ,{
+            "role"        : "input"
+            ,"id"         : "c"
+            ,"label"      : "Speed of light [m/s]"
+            ,"type"       : "float"
+            ,"default"    : 299792458
+            ,"required"   : "true"
+            ,"help"       : "Enter the speed of light in meters/second"
+            ,"layout" : {
+                "parent" : "leftpanel"
+            }
+        }
+        ,{
+            "role"        : "output"
+            ,"id"         : "e"
+            ,"label"      : "Energy [J]"
+            ,"type"       : "text"
+            ,"layout" : {
+                "parent" : "rightpanel"
+            }
+        }
+        ,{
+            "role"        : "input"
+            ,"id"         : "module_footer"
+            ,"type"       : "label"
+            ,"label"      : "Example module footer"
+            ,"layout" : {
+                "parent" : "footer"
+            }
+        }
+        ,{
+            "role"        : "input"
+            ,"id"         : "b_submit"
+            ,"type"       : "button"
+            ,"buttontext" : "Submit"
+            ,"layout"    : {
+                "parent"    : "leftpanel"
+                ,"data"     : [ 1, 1 ]
+#                ,"location" : [ "next", 1 ]
+#                ,"align"    : "center"
+            }
+        }
+        ,{
+            "role"        : "input"
+            ,"id"         : "b_reset"
+            ,"type"       : "button"
+            ,"buttontext" : "Reset"
+            ,"layout"    : {
+                "parent"    : "leftpanel"
+                ,"data"     : [ 0, 2 ]
+#                ,"location" : [ "next", 1 ]
+#                ,"align"    : "center"
+            }
+        }
+    ]
+}

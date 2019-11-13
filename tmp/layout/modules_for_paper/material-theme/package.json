@@ -1,0 +1,19 @@
+{
+  "name": "genapp-sass",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "bootstrap": "^4.2.1",
+    "bootstrap-material-design": "^4.1.1",
+    "node-sass": "^4.11.0",
+    "node-sass-tilde-importer": "^1.0.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "css": "node-sass --importer=node_modules/node-sass-tilde-importer ga-bootstrap.scss > ga-bootstrap.css",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

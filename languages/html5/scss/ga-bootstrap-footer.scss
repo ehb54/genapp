@@ -1,0 +1,86 @@
+// TODO: probably don't need this since it only controls margin-bottom but we're
+// using GenApp for layout. The label and input aren't grouped together and are
+// in different grid cells.
+// .ga-input-field-group, .ga-output-field-group {
+//   @extend .form-group;
+// }
+.ga-field-input-control, .ga-field-output-control {
+  @extend .form-control;
+}
+.ga-module {
+  @extend .container-fluid;
+}
+.ga-button-submit {
+  @extend .btn;
+  @extend .btn-primary;
+}
+.ga-button-reset {
+  @extend .btn;
+  @extend .btn-secondary;
+}
+.ga-button-menu {
+  @extend .btn;
+  @extend .btn-link;
+}
+.ga-field-input-header1 {
+  @extend .h1;
+}
+.ga-field-input-header2 {
+  @extend .h2;
+}
+.ga-field-input-header3 {
+  @extend .h3;
+}
+.ga-field-input-header4 {
+  @extend .h4;
+}
+
+.ga-vertical-buttons-container {
+  position: fixed;
+  right: 0px;
+  display: inline-block;
+  top: 50%;
+  z-index: 1;
+}
+
+$ga-vertical-buttons-translatex: 16px;
+
+.ga-vertical-buttons {
+  animation: 1s ease-out 0s 1 ga-anim-hide-after-load;
+  transform: translateX($ga-vertical-buttons-translatex) rotate(-90deg);
+  transform-origin: left bottom;
+  right: -100%;
+  position: relative;
+  transition: transform 1s ease-out;
+  
+  &:hover {
+    
+    transition: transform 0.15s ease-in;
+    transform: translateX(0px) rotate(-90deg);
+  }
+  & > .ga-vertical-button {
+    @extend .btn;
+    @extend .btn-primary;
+    border-top-left-radius: .25rem;
+    border-top-right-radius: .25rem;
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 0px;
+    text-transform: uppercase;
+  }
+  & > .help {
+    // Use 'left' to position vertically next to the button
+    transform: translatey(-75px) rotate(90deg);
+    top: -100%;
+    width: 150px;
+    transform-origin: top left;
+  }
+}
+
+@keyframes ga-anim-hide-after-load {
+  0% {
+    transform: translateX(0px) rotate(-90deg);
+  }
+  100% {
+    transform: translateX($ga-vertical-buttons-translatex) rotate(-90deg);
+  }
+}

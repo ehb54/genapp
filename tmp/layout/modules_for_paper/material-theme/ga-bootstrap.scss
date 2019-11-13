@@ -1,0 +1,55 @@
+// Following instructions here: https://getbootstrap.com/docs/4.3/getting-started/theming/#importing
+
+// Include SCSS of Bootstrap
+
+
+// Directive and other variables
+// TODO: maybe put these replacements into separate file?
+// $text-color-rgb: rgb(220,210,210);
+// $background-color-rgb: rgb(0,0,95);
+// $button-color-rgb: rgb(228,255,250);
+
+// // Bootstrap variable overrides
+// $body-color: $text-color-rgb;
+// $body-bg: $background-color-rgb;
+// $theme-colors: (
+//   "primary": $button-color-rgb
+// );
+
+// Required
+// @import "./node_modules/bootstrap-material-design/scss/functions";
+// @import "./node_modules/bootstrap-material-design/scss/variables";
+// @import "./node_modules/bootstrap-material-design/scss/mixins";
+
+// Optional
+// @import "./node_modules/bootstrap-material-design/scss/reboot";
+// @import "./node_modules/bootstrap-material-design/scss/forms";
+// @import "./node_modules/bootstrap-material-design/scss/grid";
+// @import "./node_modules/bootstrap-material-design/scss/buttons";
+// @import "./node_modules/bootstrap-material-design/scss/type";
+
+@import "./node_modules/bootstrap-material-design/scss/bootstrap-material-design";
+
+.ga-input-field-group, .ga-output-field-group {
+  @extend .form-group;
+}
+.ga-input-field, .ga-output-field {
+  @extend .form-control;
+}
+.ga-module-panel {
+  @extend .container-fluid;
+}
+.ga-button-submit {
+  @extend .btn;
+  @extend .btn-primary;
+}
+.ga-button-reset {
+  @extend .btn;
+  @extend .btn-secondary;
+}
+// .ga-module-panel button {
+//     @extend .btn;
+// }
+.header4 {
+  @extend .h4;
+}
