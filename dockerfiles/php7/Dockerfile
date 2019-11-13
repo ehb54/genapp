@@ -142,6 +142,8 @@ RUN ln -s /usr/bin/php /usr/local/bin/php
 
 #GENAPP specifics
 RUN apt-get install -y zip unzip
+# for google closure minifier
+RUN apt-get install -y openjdk-11-jre-headless
 
 # Careful here, if the genapp.git changes, you should force docker to not use a cache'd image for this
 # options:
