@@ -304,6 +304,18 @@ __~debug:ajax{    console.log( "calling ajax" );}
 
     // var url - coditional based on module's .json setting, and use it in ajax call
 
+// for Safari 11 bug
+    if ( ga.browser.type == "safari" &&
+         ga.browser.majversion == 11 ) {
+        formData.forEach((value, key) => {
+	    if ( value instanceof File &&
+	         value.name == "" ) {
+	        // console.log( "setting key " + key + " to empty string" );
+	        formData.set( key, "" );
+	    }
+        });
+    }
+
     $.ajax( {
              dataType: "json",
              cache:false,

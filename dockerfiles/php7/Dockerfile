@@ -142,6 +142,8 @@ RUN ln -s /usr/bin/php /usr/local/bin/php
 
 #GENAPP specifics
 RUN apt-get install -y zip unzip
+# for google closure minifier
+RUN apt-get install -y openjdk-11-jre-headless
 
 # Careful here, if the genapp.git changes, you should force docker to not use a cache'd image for this
 # options:
@@ -160,12 +162,8 @@ RUN apt-get install -y zip unzip
 # note 1., 2. & 4. will force the compile to take longer (all steps will have to RUN)
 # 3. seems most efficient in terms of build-time - but you have to make sure you put something unique on the RUN line
 
-RUN cd $SRCBASE && git clone https://github.com/ehb54/genapp.git && cd $GENAPP && git checkout php56
+RUN cd $SRCBASE && git clone https://github.com/ehb54/genapp.git && cd $GENAPP && git checkout php7
 RUN touch $GENAPPETC/no_sudo
-
-# TODO Temporary override for ga_db_lib_v7.php
-# the long term idea is to force this in a new git branch (php7?)
-RUN cd $GENAPP/languages && sed -i.org "s/ga_db_lib_v5.php/ga_db_lib_v7.php/" html5.json
 
 RUN groupadd genapp && \
     useradd genapp -r -s /usr/sbin/nologin -d $APPBASE -g genapp && \
