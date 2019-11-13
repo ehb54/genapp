@@ -214,7 +214,10 @@ function syncState() {
 
    if ( ( !ll && l ) || (!l && ll ) || ( l && ll && l != ll ) ) {
       welcome = 1;
-   }                      
+    }
+    
+   __!seedmelab:url{$( "#seedmelab" ).hide();}
+
    if ( !ll || l != ll ) {
       if ( l && l.length ) {
           if ( $( "#files" ).is(":hidden") ) {
