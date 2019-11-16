@@ -1,42 +1,60 @@
+// -- integer.input --
+
 ga.layout.fields[ "__fields:id__" ] = {};
 ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id__">__fields:label__ </label>';
 ga.layout.fields[ "__fields:id__" ].dhtml = '<input type="number" name="__fields:id__" id="__fields:id__"__~fields:default{ value="__fields:default__"}__~fields:min{ min="__fields:min__"}__~fields:readonly{ readonly} data-type="float"__~fields:max{ max="__fields:max__"}__~fields:required{ required}__~fields:step{ step="__fields:step__"} class="ga-field-input-control__~fields:help{ help_link}"><span class="help">__fields:help__</span><span id="__fields:id___msg" class="warning field_msg" > </span>';
-ga.layout.fields[ "__fields:id__" ].eval  = '';
+ga.layout.fields[ "__fields:id__" ].eval  =
+  __~fields:pull{'ga.pull.toPull( "__moduleid__", "#__fields:id__", "integer", "__fields:pull__", "#__fields:repeat__" );' + }
+  'ga.value.setLastValue( "__moduleid__", "#__fields:id__" );'
+  __~fields:repeater{+ 'ga.repeat.repeater( "__moduleid__", "__fields:id__", "integer", "__fields:tableize__" );'}
+  __~fields:specifiedproject{ + 'ga.specproj( "__fields:specifiedproject__", "#__fields:id__" );'}
+  + 'ga.value.registerid("__moduleid__","__fields:id__","__fields:label__"__~fields:required{,"integer"});'
+  + '$( "#__fields:id__" ).on("change blur", function() { ga.valid.checkInt( "#__fields:id__" );'
+  __~fields:repeater{+ 'ga.repeat.change( "__moduleid__", "__fields:id__" );'}
+  __~fields:sync{+ 'ga.sync.change("__moduleid__","__fields:id__","__fields:sync__");'}
+  + '});'
+  + '$( "#__fields:id__" ).keypress( function() { $( "#__fields:id___msg" ).html( "" ); });'
+  __~fields:sync{ + 'ga.sync( "__moduleid__", "__fields:id__","__fields:sync__");'}
+  ;
 
-// ga.tmp.html = '';
-// __~fields:repeater{ga.tmp.html = '<tr><td></td><td colspan="4"><table id="__fields:id__-repeater"></table></td></tr>';}
-// __~fields:hidden{ga.tmp.html = ga.tmp.html.replace( '<td></td>', '' );}
-// this_html = '<tr__~fields:hidden{ class="hidden"}>' +
-// '<td__~fields:hidden{ class="hidden"}><label for="__fields:id__">__fields:label__ </label></td>' + 
-// '<td__~fields:hidden{ class="hidden"}><input type="number" name="__fields:id__" id="__fields:id__"__~fields:repeater{ data-repeater="integer"}__~fields:default{ value="__fields:default__"} data-type="integer"__~fields:min{ min="__fields:min__"}__~fields:max{ max="__fields:max__"}__~fields:required{ required}__~fields:step{ step="__fields:step__"}' +
-// '__~fields:help{ class="help_link"><span class="help">__fields:help__</span}><span id="__fields:id___msg" class="warning field_msg" > </span></td></tr>'
-// __~fields:repeater{+ ga.tmp.html}
-// ;
-// 
-// this_eval = __~fields:pull{'ga.pull.toPull( "__moduleid__", "#__fields:id__", "integer", "__fields:pull__", "#__fields:repeat__" );' + }
-// 'ga.value.setLastValue( "__moduleid__", "#__fields:id__" );'
-// __~fields:repeater{+ 'ga.repeat.repeater( "__moduleid__", "__fields:id__", "integer", "__fields:tableize__" );'}
-// __~fields:specifiedproject{ + 'ga.specproj( "__fields:specifiedproject__", "#__fields:id__" );'}
-// + 'ga.value.registerid("__moduleid__","__fields:id__","__fields:label__"__~fields:required{,"integer"});'
-// + '$( "#__fields:id__" ).on("change blur", function() { ga.valid.checkInt( "#__fields:id__" );'
-// __~fields:repeater{+ 'ga.repeat.change( "__moduleid__", "__fields:id__" );'}
-// __~fields:sync{+ 'ga.sync.change("__moduleid__","__fields:id__","__fields:sync__");'}
-// + '});'
-// 
-// + '$( "#__fields:id__" ).keypress( function() { $( "#__fields:id___msg" ).html( "" ); });'
-// 
-// __~fields:sync{ + 'ga.sync( "__moduleid__", "__fields:id__","__fields:sync__");'}
-// 
-// ;
+/* old way
+ga.tmp.html = '';
+__~fields:repeater{ga.tmp.html = '<tr><td></td><td colspan="4"><table id="__fields:id__-repeater"></table></td></tr>';}
+__~fields:hidden{ga.tmp.html = ga.tmp.html.replace( '<td></td>', '' );}
+this_html = '<tr__~fields:hidden{ class="hidden"}>' +
+'<td__~fields:hidden{ class="hidden"}><label for="__fields:id__">__fields:label__ </label></td>' + 
+'<td__~fields:hidden{ class="hidden"}><input type="number" name="__fields:id__" id="__fields:id__"__~fields:repeater{ data-repeater="integer"}__~fields:default{ value="__fields:default__"} data-type="integer"__~fields:min{ min="__fields:min__"}__~fields:max{ max="__fields:max__"}__~fields:required{ required}__~fields:step{ step="__fields:step__"}' +
+'__~fields:help{ class="help_link"><span class="help">__fields:help__</span}><span id="__fields:id___msg" class="warning field_msg" > </span></td></tr>'
+__~fields:repeater{+ ga.tmp.html}
+;
 
-// __~fields:repeater{ input_repeats += 'ga.repeat.change( "__moduleid__", "__fields:id__", 1 );'};
-// 
-// if ( skipped_row == 1 ){ this_html = this_html.replace(/^<tr>/, "" ); skipped_row=0;};
-// 
-// __~fields:norow{skipped_row=1;this_html = this_html.replace(/<\/tr>$/, "" );}
-// 
-// __~fields:repeat{this_html = ga.repeat.repeat( "__moduleid__", "__fields:id__", this_html, this_eval );}
-// __~fields:repeat{this_eval = 'ga.repeat.repeatOn("__moduleid__", "__fields:id__", "__fields:repeat__" );';}
-// 
-// input_html += this_html;
-// input_eval += this_eval;
+this_eval = __~fields:pull{'ga.pull.toPull( "__moduleid__", "#__fields:id__", "integer", "__fields:pull__", "#__fields:repeat__" );' + }
+'ga.value.setLastValue( "__moduleid__", "#__fields:id__" );'
+__~fields:repeater{+ 'ga.repeat.repeater( "__moduleid__", "__fields:id__", "integer", "__fields:tableize__" );'}
+__~fields:specifiedproject{ + 'ga.specproj( "__fields:specifiedproject__", "#__fields:id__" );'}
++ 'ga.value.registerid("__moduleid__","__fields:id__","__fields:label__"__~fields:required{,"integer"});'
++ '$( "#__fields:id__" ).on("change blur", function() { ga.valid.checkInt( "#__fields:id__" );'
+__~fields:repeater{+ 'ga.repeat.change( "__moduleid__", "__fields:id__" );'}
+__~fields:sync{+ 'ga.sync.change("__moduleid__","__fields:id__","__fields:sync__");'}
++ '});'
+
++ '$( "#__fields:id__" ).keypress( function() { $( "#__fields:id___msg" ).html( "" ); });'
+
+__~fields:sync{ + 'ga.sync( "__moduleid__", "__fields:id__","__fields:sync__");'}
+
+;
+
+__~fields:repeater{ input_repeats += 'ga.repeat.change( "__moduleid__", "__fields:id__", 1 );'};
+
+if ( skipped_row == 1 ){ this_html = this_html.replace(/^<tr>/, "" ); skipped_row=0;};
+
+__~fields:norow{skipped_row=1;this_html = this_html.replace(/<\/tr>$/, "" );}
+
+__~fields:repeat{this_html = ga.repeat.repeat( "__moduleid__", "__fields:id__", this_html, this_eval );}
+__~fields:repeat{this_eval = 'ga.repeat.repeatOn("__moduleid__", "__fields:id__", "__fields:repeat__" );';}
+
+input_html += this_html;
+input_eval += this_eval;
+*/
+
+// -- end integer.input --

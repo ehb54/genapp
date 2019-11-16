@@ -1,3 +1,16 @@
+// -- info.input --
+
+ga.layout.fields[ "__fields:id__" ] = {};
+ga.layout.fields[ "__fields:id__" ].lhtml = '';
+ga.layout.fields[ "__fields:id__" ].dhtml = '';
+ga.layout.fields[ "__fields:id__" ].eval  = 'ga.value.sethiddenfields( ga.multistage, "__moduleid__" );';
+
+/* old way
+
 this_eval = 'ga.value.sethiddenfields( ga.multistage, "__moduleid__" );'
 
 input_eval += this_eval;
+
+*/
+
+// -- end info.input --

@@ -1,2 +1,15 @@
+// -- html.input --
+
+ga.layout.fields[ "__fields:id__" ] = {};
+ga.layout.fields[ "__fields:id__" ].lhtml = '<span id="__fields:id__">__~fields:value{__fields:value__}</span>';
+ga.layout.fields[ "__fields:id__" ].dhtml = '';
+ga.layout.fields[ "__fields:id__" ].eval  = '';
+
+/* old way
+
 this_html = '<tr><td colspan=5 id="__fields:id__">__~fields:value{__fields:value__}</td></tr>';
 input_html += this_html;
+
+*/
+
+// -- end html.input --

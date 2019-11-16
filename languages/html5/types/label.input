@@ -1,9 +1,13 @@
 // -- label.input --
+
 ga.layout.fields[ "__fields:id__" ] = {};
 ga.layout.fields[ "__fields:id__" ].lhtml = '<label id="__fields:id___label" class="ga-field-input-__~fields:default{__fields:default__ }__~fields:fontclass{__fields:fontclass__ }__~fields:help{help_link}">__fields:label__</label>' +
  '<div id="__fields:id__"__~fields:help{ class="help_link"}></div>'; // ga.layout (for testing needs comment)
 ga.layout.fields[ "__fields:id__" ].dhtml = '';
-ga.layout.fields[ "__fields:id__" ].eval  = '';
+ga.layout.fields[ "__fields:id__" ].eval  =
+  ''
+  __~fields:pull{+ 'ga.pull.toPull("__moduleid__","#__fields:id__","label","__fields:pull__","#__fields:repeat__" );'}
+  ;
 
 // this_html = '<tr>__~fields:prehline{<td><hr></td></tr><tr>}<td__~fields:colspan{ colspan="__fields:colspan__"}><label id="__fields:id___label" class="__~fields:default{__fields:default__ }__~fields:fontclass{__fields:fontclass__ }__~fields:help{help_link}">__fields:label__</label>' + 
 // '__~fields:help{<span class="help">__fields:help__</span>}</td>' +
@@ -17,4 +21,5 @@ ga.layout.fields[ "__fields:id__" ].eval  = '';
 
 // input_html += this_html;
 // input_eval += this_eval;
+
 // -- end label.input --

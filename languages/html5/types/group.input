@@ -1,2 +1,14 @@
+// -- group.input --
+
+ga.layout.fields[ "__fields:id__" ] = {};
+ga.layout.fields[ "__fields:id__" ].lhtml = '';
+ga.layout.fields[ "__fields:id__" ].dhtml = ga.group.inputhtml( "__fields:id__" );
+ga.layout.fields[ "__fields:id__" ].eval  = '';
+
+/* old way
+
 this_html = ga.group.inputhtml( "__fields:id__" );
 input_html += this_html;
+*/
+
+// -- end group.input --

@@ -1,3 +1,19 @@
+// -- file.input --
+
+ga.layout.fields[ "__fields:id__" ] = {};
+ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id__">__fields:label__ </label>';
+ga.layout.fields[ "__fields:id__" ].dhtml = '<input type="file" name="__fields:id____~fields:array{[]}"__~fields:multiple{ multiple} id="__fields:id__"__~fields:default{ value="__fields:default__"}__~fields:accept{ accept="__fields:accept__"}__~fields:required{ required}__~fields:maxlength{ maxlength="__fields:maxlength__"} class="ga-field-input-control__~fields:help{ help_link}"><span class="help">__fields:help__</span}><span id="__fields:id___msg" class="warning field_msg" > </span>';
+ga.layout.fields[ "__fields:id__" ].eval  =
+  'ga.value.setLastValue( "__moduleid__", "#__fields:id__" );' +
+  __~fields:setaltval{'ga.altfile("__moduleid__","__fields:id__","__fields:setaltval__");' +}
+  'ga.value.registerid("__moduleid__","__fields:id__","__fields:label__"__~fields:required{,"file"});'
+  + __~fields:cleartree{'$( "#__fields:id__" ).change( function(){$("#__fields:cleartree__").jstree( "deselect_all" );});' +}
+  __~fields:report{'$( "#__fields:id__" ).change( function(){$("#__fields:report__").html( "<i>Local</i>: " + $("#__fields:id__").val() ) });' +}
+  __~fields:setinputfromfile{'ga.value.setInputfromFile("#__fields:id__", "__fields:setinputfromfile__", "__fields:setinputfromfileids__");' +}
+  '$( "#__fields:id__" ).change( function() { $( "#__fields:id___msg" ).html( "" ); });'
+  ;
+
+/* old way
 this_html = '<tr><td><label for="__fields:id__"__~fields:fontclass{ class="__fields:fontclass__"} >__fields:label__ </label></td><td><input type="file" name="__fields:id____~fields:array{[]}"__~fields:multiple{ multiple} id="__fields:id__"__~fields:default{ value="__fields:default__"}__~fields:accept{ accept="__fields:accept__"}__~fields:required{ required}__~fields:maxlength{ maxlength="__fields:maxlength__"}__~fields:help{ class="help_link"><span class="help">__fields:help__</span}><span id="__fields:id___msg" class="warning field_msg" > </span></td></tr>';
 this_eval = 'ga.value.setLastValue( "__moduleid__", "#__fields:id__" );' +
 __~fields:setaltval{'ga.altfile("__moduleid__","__fields:id__","__fields:setaltval__");' +}
@@ -14,3 +30,6 @@ __~fields:repeat{this_eval = 'ga.repeat.repeatOn("__moduleid__", "__fields:id__"
 
 input_html += this_html;
 input_eval += this_eval;
+*/
+
+// -- end file.input --

@@ -1,3 +1,12 @@
+// -- radio.input --
+
+ga.layout.fields[ "__fields:id__" ] = {};
+ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id__"__~fields:fontclass{ class="__fields:fontclass__"}>__fields:label__ </label>';
+ga.layout.fields[ "__fields:id__" ].dhtml = '<input type="radio" name="__fields:name__" id="__fields:id__" value="__fields:id__"__~fields:required{ required}__~fields:checked{ checked} class="ga-field-input-control__~fields:help{ help_link}"><span class="help">__fields:help__</span}>';
+ga.layout.fields[ "__fields:id__" ].eval  = 'ga.value.setLastValue( "__moduleid__", "#__fields:id__" );';
+
+/* old way
+
 this_html = '<tr><td><label for="__fields:id__" class="highlight">__fields:label__ </label></td><td><input type="radio" name="__fields:name__" id="__fields:id__" value="__fields:id__"__~fields:required{ required}__~fields:checked{ checked}__~fields:help{ class="help_link"><span class="help">__fields:help__</span}></td></tr>';
 this_eval = 'ga.value.setLastValue( "__moduleid__", "#__fields:id__" );';
 if ( skipped_row == 1 ){ this_html = this_html.replace(/^<tr>/, "" ); skipped_row=0;};
@@ -8,3 +17,6 @@ __~fields:repeat{this_eval = 'ga.repeat.repeatOn("__moduleid__", "__fields:id__"
 
 input_html += this_html;
 input_eval += this_eval;
+*/
+
+// -- end radio.input --

@@ -3,3 +3,6 @@
 etc/apps.json
 etc/config.json
 etc/no_sudo
+#*
+*#
+.#*

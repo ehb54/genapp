@@ -1,29 +1,40 @@
+// -- checkbox.input --
+
 ga.layout.fields[ "__fields:id__" ] = {};
 ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id__">__fields:label__ </label>';
-ga.layout.fields[ "__fields:id__" ].dhtml = '<input type="checkbox" name="__fields:id__" id="__fields:id__"__~fields:repeater{ data-repeater="checkbox"}__~fields:required{ required}__~fields:checked{ checked}__~fields:help{ class="help_link"><span class="help">__fields:help__</span}>';
-ga.layout.fields[ "__fields:id__" ].eval  = '';
+ga.layout.fields[ "__fields:id__" ].dhtml = '<input type="checkbox" name="__fields:id__" id="__fields:id__"__~fields:repeater{ data-repeater="checkbox"}__~fields:required{ required}__~fields:checked{ checked} class="ga-field-input-control__~fields:help{ help_link}"><span class="help">__fields:help__</span}>';
+ga.layout.fields[ "__fields:id__" ].eval  = __~fields:pull{'ga.pull.toPull( "__moduleid__", "#__fields:id__", "checkbox", "__fields:pull__", "#__fields:repeat__" );' +}
+  'ga.value.setLastValue( "__moduleid__", "#__fields:id__" );'
+  __~fields:hideifnot{+ 'ga.hideifnot( "#__fields:id___tr", "__fields:hideifnot__" );'}
+  __~fields:hider{ + 'ga.hide( "__moduleid__", "#__fields:id__" );$( "#__fields:id__" ).change( function() { ga.hide.update( "__moduleid__", "#__fields:id__" ); } );'}
+  __~fields:repeater{ + 'ga.repeat.repeater( "__moduleid__", "__fields:id__", "checkbox" );$( "#__fields:id__" ).change( function() { ga.repeat.change( "__moduleid__", "__fields:id__" ); } );'}
+  ;
 
-// this_html = '<tr id="__fields:id___tr">__~fields:prehline{<td colspan="__fields:colspan__"><hr></td></tr><tr>}<td><label for="__fields:id__" class="highlight__~fields:fontclass{ __fields:fontclass__}">__fields:label__ </label></td><td><input type="checkbox" name="__fields:id__" id="__fields:id__"__~fields:repeater{ data-repeater="checkbox"}__~fields:required{ required}__~fields:checked{ checked}__~fields:help{ class="help_link"><span class="help">__fields:help__</span}></td>__~fields:posthline{</tr><tr><td colspan="__fields:colspan__"><hr></td>}</tr>'
-// __~fields:repeater{+ '<tr><td></td><td colspan="4"><table id="__fields:id__-repeater"></table></td></tr>'}
-// ;
-// this_eval = __~fields:pull{'ga.pull.toPull( "__moduleid__", "#__fields:id__", "checkbox", "__fields:pull__", "#__fields:repeat__" );' + }
-// 'ga.value.setLastValue( "__moduleid__", "#__fields:id__" );'
-// 
-// __~fields:hideifnot{+ 'ga.hideifnot( "#__fields:id___tr", "__fields:hideifnot__" );'}
-// 
-// __~fields:hider{ + 'ga.hide( "__moduleid__", "#__fields:id__" );$( "#__fields:id__" ).change( function() { ga.hide.update( "__moduleid__", "#__fields:id__" ); } );'}
-// 
-// __~fields:repeater{ + 'ga.repeat.repeater( "__moduleid__", "__fields:id__", "checkbox" );$( "#__fields:id__" ).change( function() { ga.repeat.change( "__moduleid__", "__fields:id__" ); } );'}
-// 
-// __~fields:hider{ input_repeats += 'ga.hide.update( "__moduleid__", "#__fields:id__" );';}
-// 
-// __~fields:repeater{ input_repeats += 'ga.repeat.change( "__moduleid__", "__fields:id__", 1 );'};
-// 
-// if ( skipped_row == 1 ){ this_html = this_html.replace(/^<tr id="__fields:id___tr">/, "" ); skipped_row=0;};
-// __~fields:norow{skipped_row=1;this_html = this_html.replace(/<\/tr>$/, "" );}
-// 
-// __~fields:repeat{this_html = ga.repeat.repeat( "__moduleid__", "__fields:id__", this_html, this_eval );}
-// __~fields:repeat{this_eval = 'ga.repeat.repeatOn("__moduleid__", "__fields:id__", "__fields:repeat__" );';}
-// 
-// input_html += this_html;
-// input_eval += this_eval;
+/* old way
+this_html = '<tr id="__fields:id___tr">__~fields:prehline{<td colspan="__fields:colspan__"><hr></td></tr><tr>}<td><label for="__fields:id__" class="highlight__~fields:fontclass{ __fields:fontclass__}">__fields:label__ </label></td><td><input type="checkbox" name="__fields:id__" id="__fields:id__"__~fields:repeater{ data-repeater="checkbox"}__~fields:required{ required}__~fields:checked{ checked}__~fields:help{ class="help_link"><span class="help">__fields:help__</span}></td>__~fields:posthline{</tr><tr><td colspan="__fields:colspan__"><hr></td>}</tr>'
+__~fields:repeater{+ '<tr><td></td><td colspan="4"><table id="__fields:id__-repeater"></table></td></tr>'} old way
+;
+this_eval = __~fields:pull{'ga.pull.toPull( "__moduleid__", "#__fields:id__", "checkbox", "__fields:pull__", "#__fields:repeat__" );' + }
+'ga.value.setLastValue( "__moduleid__", "#__fields:id__" );'
+
+__~fields:hideifnot{+ 'ga.hideifnot( "#__fields:id___tr", "__fields:hideifnot__" );'}
+
+__~fields:hider{ + 'ga.hide( "__moduleid__", "#__fields:id__" );$( "#__fields:id__" ).change( function() { ga.hide.update( "__moduleid__", "#__fields:id__" ); } );'}
+
+__~fields:repeater{ + 'ga.repeat.repeater( "__moduleid__", "__fields:id__", "checkbox" );$( "#__fields:id__" ).change( function() { ga.repeat.change( "__moduleid__", "__fields:id__" ); } );'}
+
+__~fields:hider{ input_repeats += 'ga.hide.update( "__moduleid__", "#__fields:id__" );';}
+
+__~fields:repeater{ input_repeats += 'ga.repeat.change( "__moduleid__", "__fields:id__", 1 );'};
+
+if ( skipped_row == 1 ){ this_html = this_html.replace(/^<tr id="__fields:id___tr">/, "" ); skipped_row=0;};
+__~fields:norow{skipped_row=1;this_html = this_html.replace(/<\/tr>$/, "" );}
+
+__~fields:repeat{this_html = ga.repeat.repeat( "__moduleid__", "__fields:id__", this_html, this_eval );}
+__~fields:repeat{this_eval = 'ga.repeat.repeatOn("__moduleid__", "__fields:id__", "__fields:repeat__" );';}
+
+input_html += this_html;
+input_eval += this_eval;
+*/
+
+// -- end checkbox.input --

@@ -1,9 +1,19 @@
+// -- video.input --
+
+ga.layout.fields[ "__fields:id__" ] = {};
+ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id__">__fields:label__ </label>';
+ga.layout.fields[ "__fields:id__" ].dhtml = '<video __~fields:width{width="__fields:width__"}  __~fields:height{height="__fields:height__"} controls><source src="__fields:name__.mp4" type="video/mp4"><source src="__fields:name__.webm" type="video/webm"></video>';
+ga.layout.fields[ "__fields:id__" ].eval  = '';
+
+/* old way
 this_eval = '';
 this_html = '<tr><td __~fields:colspan{colspan="__fields:colspan__"}><label for="__fields:id__">__fields:label__ </label><video __~fields:width{width="__fields:width__"}  __~fields:height{height="__fields:height__"} controls><source src="__fields:name__.mp4" type="video/mp4"><source src="__fields:name__.webm" type="video/webm"></video></td></tr>'
 
 __~fields:repeat{this_html = ga.repeat.repeat( "__moduleid__", "__fields:id__", this_html, this_eval );}
 __~fields:repeat{this_eval = 'ga.repeat.repeatOn("__moduleid__", "__fields:id__", "__fields:repeat__" );';}
 
-
 input_html += this_html;
 input_eval += this_eval;
+*/
+
+// -- end video.input --
