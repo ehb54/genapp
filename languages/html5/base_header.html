@@ -604,16 +604,19 @@ if ( !ga.colors.usethemecolors ) {
   });
 
   ga.color.defaults( {
-   "body"   : { "background" : document.body.style.backgroundColor, "color": document.body.style.color, "text": document.body.style.color }
-  ,"footer" : { "background" : document.body.style.backgroundColor }
-  ,".help"  : { "background" : "rgba(0,0,75, 0.95 )", "color" :  "rgb(240,240,210)" }
+__~nope{"body"   : { "background" : document.body.style.backgroundColor, "color": document.body.style.color, "text": document.body.style.color }}
+__~nope{,"footer" : { "background" : document.body.style.backgroundColor }}
+   "body"   : { background : $( "body" ).css( "background-color" ), color : $( "body" ).css( "color" ), text: $( "body" ).css( "color" ) }
+  ,"footer" : { background : $( "body" ).css( "background-color" ) }
+  ,".help"  : { background : "rgba(0,0,75, 0.95 )", color :  "rgb(240,240,210)" }
   ,"hovercolor" : { "color" : "rgb( 200,128,0 )" }
-//   ,".header1" : { "color" : "rgb( 228,255,250 )" }
-//   ,".header2" : { "color" : "rgb( 228,255,250 )" }
-//   ,".header3" : { "color" : "rgb( 228,255,250 )" }
-//   ,".header4" : { "color" : "rgb( 228,255,250 )" }
+__~nope{,".header1" : { "color" : "rgb( 228,255,250 )" }}
+__~nope{,".header2" : { "color" : "rgb( 228,255,250 )" }}
+__~nope{,".header3" : { "color" : "rgb( 228,255,250 )" }}
+__~nope{,".header4" : { "color" : "rgb( 228,255,250 )" }}
   } );
-  $( ".footer" ).css( { background : document.body.style.backgroundColor } );
+__~nope{$( ".footer" ).css( { background : document.body.style.backgroundColor } );}
+  $( ".footer" ).css( { background : $( "body" ).css( "background-color" ) } );
 }
 
 
