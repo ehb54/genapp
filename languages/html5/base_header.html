@@ -599,16 +599,19 @@ if ( !ga.colors.usethemecolors ) {
 } else {
   console.log( "ga.colors.usethemecolors" );
   ga.colors({
-    background : document.body.style.backgroundColor
-    ,text       : document.body.style.color
+    background : $( "body" ).css( "background-color" )
+    ,text       : $( "body" ).css( "color" )
   });
+
+  ga.tmp.c_bg = ga.colors.makeRGBstr( ga.colors.background );
+  ga.tmp.c_txt = ga.colors.makeRGBstr( ga.colors.text );
 
   ga.color.defaults( {
 __~nope{"body"   : { "background" : document.body.style.backgroundColor, "color": document.body.style.color, "text": document.body.style.color }}
 __~nope{,"footer" : { "background" : document.body.style.backgroundColor }}
-   "body"   : { background : $( "body" ).css( "background-color" ), color : $( "body" ).css( "color" ), text: $( "body" ).css( "color" ) }
-  ,"footer" : { background : $( "body" ).css( "background-color" ) }
-  ,".help"  : { background : "rgba(0,0,75, 0.95 )", color :  "rgb(240,240,210)" }
+   "body"   : { background : ga.tmp.c_bg, color : ga.tmp.c_txt, text: ga.tmp.c_txt }
+  ,"footer" : { background : ga.tmp.c_bg }
+  ,".help"  : { background : "rgba(" + ga.colors.background + ",0.95)", color: ga.tmp.c_txt }
   ,"hovercolor" : { "color" : "rgb( 200,128,0 )" }
 __~nope{,".header1" : { "color" : "rgb( 228,255,250 )" }}
 __~nope{,".header2" : { "color" : "rgb( 228,255,250 )" }}
@@ -616,9 +619,14 @@ __~nope{,".header3" : { "color" : "rgb( 228,255,250 )" }}
 __~nope{,".header4" : { "color" : "rgb( 228,255,250 )" }}
   } );
 __~nope{$( ".footer" ).css( { background : document.body.style.backgroundColor } );}
-  $( ".footer" ).css( { background : $( "body" ).css( "background-color" ) } );
+  $( ".footer" ).css( { background : ga.tmp.c_bg } );
+  $( ".modalDialog > div" ).css( { background : ga.tmp.c_bg } );
+  $( ".modalDialog2 > div" ).css( { background : ga.tmp.c_bg } );
+  $( ".modalDialog3 > div" ).css( { background : ga.tmp.c_bg } );
+  $( ".modalDialog4 > div" ).css( { background : ga.tmp.c_bg } );
+  delete ga.tmp.c_bg;
+  delete ga.tmp.c_txt;
 }
-
 
 __~textarea:rows{ga.set("textarea:rows",__textarea:rows__);}
 ga.set("plot2d:precision",6);

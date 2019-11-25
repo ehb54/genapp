@@ -219,8 +219,8 @@ font-size: 2em;
 }
 
 .help {
-    background-color: rgba(__help_background_color_rgb__, 0.95 );
-    color: rgb(__help_text_color_rgb__);
+    __!bootstrap:package{background-color: rgba(__help_background_color_rgb__, 0.95 );}
+    __!bootstrap:package{color: rgb(__help_text_color_rgb__);}
     border-radius: .5em;
     box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
     opacity: 0; /* Make it transparent */
@@ -258,8 +258,8 @@ font-size: 2em;
 }
 
 .coord {
-    background-color: rgba(__help_background_color_rgb__, 0.95 );
-    color: rgb(__help_text_color_rgb__);
+    __!bootstrap:package{background-color: rgba(__help_background_color_rgb__, 0.95 );}
+    __!bootstrap:package{color: rgb(__help_text_color_rgb__);}
     border-radius: .5em;
     box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
     opacity: 0; /* Make it transparent */

@@ -7,6 +7,10 @@ ga.colors = function( colors ) {
     ga.colors.text       = ga.colors.makeRGB( colors.text );
 };
 
+ga.colors.makeRGBstr = function( color ) {
+    return "rgb(" + ga.colors.makeRGB( color ) + ")";
+}
+
 ga.colors.makeRGB = function( color ) {
     __~debug:color{console.log( "ga.colors.makeRGB( " + color + " )" );}
     var res;
