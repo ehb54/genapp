@@ -917,6 +917,7 @@ ga.hhelp.reset = function() {
        $( ".help_link" ).removeClass( "help_link_on" );
        $( ".help_link" ).addClass( "help_link_on" );
    }
+   $( ".help" ).css( { 'background-color' : ga.colors.makeRGBstr( ga.colors.background ) } );
 }
 
 ga.hhelp.set = function() {

@@ -8,7 +8,7 @@
 
         if ( ga.valuen.lastload != "__menu:modules:id__" || !$( "#" + ga.valuen.lastload ).is( ":visible" ) ) {
             ga.loader.show();
-            $( "#panel___menu:id__" ).load( "ajax/__menu:id__/__menu:modules:id__.html", function() { ga.valuen.save( "__menu:modules:id__", true ); ga.valuen.restore( "__menu:modules:id__" ); ga.valuen.lastload = "__menu:modules:id__"; ga.loader.hide(); });
+            $( "#panel___menu:id__" ).load( "ajax/__menu:id__/__menu:modules:id__.html", function() { ga.valuen.save( "__menu:modules:id__", true ); ga.valuen.restore( "__menu:modules:id__" ); ga.valuen.lastload = "__menu:modules:id__"; ga.loader.hide(); ga.hhelp.reset(); });
         }
     });
 __~menu:autorun{$( "#__menu:id_____menu:autorun__" ).trigger( "click" );}
