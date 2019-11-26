@@ -97,19 +97,6 @@ __~footersize{footer { position: fixed; left: 0; bottom: 0; height: __footersize
     min-width: 20em;
 }
 
-#tab_feedback2 {
-     position: fixed;
-     left: calc(100% - 25px);
-     top: 200px;
-     display: block;
-     width: 25px;
-     height: 102px;
-     text-indent: -10000px;
-     background-image: url(pngs/tabfeedback.png);
-     overflow: hidden;
-     z-index: 5;
-}
-
 .warning {
 color: rgb( __error_color_rgb__ );
 }
