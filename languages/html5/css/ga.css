@@ -296,7 +296,7 @@ font-size: 2em;
    background: -o-linear-gradient(rgb( __background_color_rgb__ ), #222);
 }
 
-.close {
+.modalClose {
    background: #606061;
    color: #FFFFFF;
    line-height: 25px;
@@ -315,7 +315,7 @@ font-size: 2em;
    box-shadow: 1px 1px 3px #000;
 }
 
-.close:hover { background: #00d9ff; }
+.modalClose:hover { background: #00d9ff; }
 
 .modalDialog2 {
    position: fixed;
@@ -350,26 +350,6 @@ font-size: 2em;
    background: -o-linear-gradient(rgb( __background_color_rgb__ ), #222);
 }
 
-.close2 {
-   background: #606061;
-   color: #FFFFFF;
-   line-height: 25px;
-   position: absolute;
-   right: -12px;
-   text-align: center;
-   top: -10px;
-   width: 24px;
-   text-decoration: none;
-   font-weight: bold;
-   -webkit-border-radius: 12px;
-   -moz-border-radius: 12px;
-   border-radius: 12px;
-   -moz-box-shadow: 1px 1px 3px #000;
-   -webkit-box-shadow: 1px 1px 3px #000;
-   box-shadow: 1px 1px 3px #000;
-}
-
-.close2:hover { background: #00d9ff; }
 
 .modalDialog3 {
    position: fixed;
@@ -411,27 +391,6 @@ font-size: 2em;
    background: -o-linear-gradient(rgb( __background_color_rgb__ ), #222);
 }
 
-.close3 {
-   background: #606061;
-   color: #FFFFFF;
-   line-height: 25px;
-   position: absolute;
-   right: -12px;
-   text-align: center;
-   top: -10px;
-   width: 24px;
-   text-decoration: none;
-   font-weight: bold;
-   -webkit-border-radius: 12px;
-   -moz-border-radius: 12px;
-   border-radius: 12px;
-   -moz-box-shadow: 1px 1px 3px #000;
-   -webkit-box-shadow: 1px 1px 3px #000;
-   box-shadow: 1px 1px 3px #000;
-}
-
-.close3:hover { background: #00d9ff; }
-
 .modalDialog4 {
    position: fixed;
 /*             font-family: Arial, Helvetica, sans-serif; */
@@ -465,27 +424,6 @@ font-size: 2em;
    background: -webkit-linear-gradient(rgb( __background_color_rgb__ ), #222);
    background: -o-linear-gradient(rgb( __background_color_rgb__ ), #222);
 }
-
-.close4 {
-   background: #606061;
-   color: #FFFFFF;
-   line-height: 25px;
-   position: absolute;
-   right: -12px;
-   text-align: center;
-   top: -10px;
-   width: 24px;
-   text-decoration: none;
-   font-weight: bold;
-   -webkit-border-radius: 12px;
-   -moz-border-radius: 12px;
-   border-radius: 12px;
-   -moz-box-shadow: 1px 1px 3px #000;
-   -webkit-box-shadow: 1px 1px 3px #000;
-   box-shadow: 1px 1px 3px #000;
-}
-
-.close4:hover { background: #00d9ff; }
 
 .legendLabel {
    color: rgb( __text_color_rgb__ );

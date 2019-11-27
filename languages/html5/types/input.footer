@@ -468,10 +468,11 @@ $( "#__moduleid___reset" ).click( function() {
    return __moduleid___reset();
 });
 
-ga.hhelp.set();
 __~resetonload{ga.value.resetDefaultValues( "__moduleid__" );ga.value.resetDefaultValues( "__moduleid___output" ); ga.value.resetDefaultValue( "__moduleid___output", "__moduleid___output_msgs" );}
 __~resetoutonload{ga.value.resetDefaultValues( "__moduleid___output" ); ga.value.resetDefaultValue( "__moduleid___output", "#__moduleid___output_msgs" );}
 eval( input_repeats );
+ga.hhelp.set();
+ga.hhelp.reset();
 ga.pull.doPull();
 </script>
 </form>

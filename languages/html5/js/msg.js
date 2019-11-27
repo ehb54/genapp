@@ -29,13 +29,13 @@ ga.msg.box = function( m, force, mnum ) {
    }
 
    if ( m.noclose ) {
-       if ( $( "#closeModal" + mnum ).hasClass( "close" + mnum ) ) {
-           $( "#closeModal" + mnum ).removeClass( "close" + mnum ).empty();
+       if ( $( "#closeModal" + mnum ).hasClass( "modalClose" ) ) {
+           $( "#closeModal" + mnum ).removeClass( "modalClose" ).empty();
        }
    } else {
        if ( mnum < 4 &&
-            !$( "#closeModal" + mnum ).hasClass( "close" + mnum ) ) {
-           $( "#closeModal" + mnum ).addClass( "close" + mnum ).html( "X" );
+            !$( "#closeModal" + mnum ).hasClass( "modalClose" ) ) {
+           $( "#closeModal" + mnum ).addClass( "modalClose" ).html( "X" );
        }
    }
 

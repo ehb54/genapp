@@ -16,9 +16,7 @@ ga.tmp.bgi = ga.color.data.body.background;
 __~style:backgroundimage{ga.tmp.bgi = "url(__style:backgroundimage__)";}
 __~menu:backgroundimage{ga.tmp.bgi = "url(__menu:backgroundimage__)";}
 __~backgroundimage{ga.tmp.bgi = "url(__backgroundimage__)";}
-if ( !__~modal{1}0 ) {
-    $("body").css( { "background": ga.tmp.bgi + " no-repeat center center fixed", "-webkit-background-size" : "cover", "-moz-background-size" : "cover", "-o-background-size" : "cover" , "background-size": "cover"} );
-}
+__~modal{$("body").css( { "background": ga.tmp.bgi + " no-repeat center center fixed", "-webkit-background-size" : "cover", "-moz-background-size" : "cover", "-o-background-size" : "cover" , "background-size": "cover"} );}
 __~nofcrefresh{ga.data.nofcrefresh[ "__moduleid__" ] = true;}
 input_eval = "";
 input_html = "<table>";
