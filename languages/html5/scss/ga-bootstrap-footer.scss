@@ -18,6 +18,11 @@
   @extend .btn;
   @extend .btn-secondary;
 }
+.ga-button-select {
+  @extend .btn;
+  @extend .btn-sm;
+  @extend .btn-outline-primary;
+}
 .ga-button-menu {
   @extend .btn;
   @extend .btn-link;

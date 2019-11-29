@@ -1,12 +1,12 @@
 // -- rpath.input --
 
 ga.layout.fields[ "__fields:id__" ] = {};
-ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id__"__~fields:fontclass{ class="__fields:fontclass__"}>__fields:label__ </label>';
+ga.layout.fields[ "__fields:id__" ].lhtml = '<label id="__fields:id__-div" for="__fields:id__"__~fields:fontclass{ class="__fields:fontclass__"}>__fields:label__ </label>';
 ga.layout.fields[ "__fields:id__" ].dhtml =
-  '<button id="__fields:id__"  name="__fields:id__" data-type="rpath" data-add="__fields:id___altval"__~fields:help{ class="help_link"}><span class="buttontext">Browse server for a path</span></button>' +
+  '<div id="__fields:id__-div-itd"><button id="__fields:id__"  name="__fields:id__" data-type="rpath" data-add="__fields:id___altval" class="ga-button-select__~fields:help{ help_link}"><span class="buttontext">Browse server for a path</span></button>' +
   __~fields:help{'<span class="help">__fields:help__</span>' +}
   '<span id="__fields:id___altval"></span>' +
-  '<span id="__fields:id___msg" class="warning field_msg" > </span></td>'
+  '<span id="__fields:id___msg" class="warning field_msg" ></span></div>'
   ;
 
 ga.layout.fields[ "__fields:id__" ].eval  =
@@ -14,6 +14,7 @@ ga.layout.fields[ "__fields:id__" ].eval  =
   'ga.altfile("__moduleid__","__fields:id__","__fields:id___altval");' +
   'ga.altfile.button("__moduleid__","__fields:id__","__fields:label__","rpath",function(v){ga.altfile.button.rpath(v,"__moduleid__","__fields:id__");}__~fields:required{,"rpath"});' +
   '$("#__fields:id__").on("click",function(){return ga.altfile.button.call("__moduleid__","__fields:id__");});'
+  __~fields:hide{+ 'ga.hide.add("__moduleid__", "#__fields:id__-div", "#__fields:hide__" );'}
   ;
 
 /* old way

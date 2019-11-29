@@ -5,7 +5,7 @@ ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id__">__fields
 ga.layout.fields[ "__fields:id__" ].dhtml =
   '<textarea name="__fields:id__" id="__fields:id__"__~fields:required{ required}__~fields:maxlength{ maxlength="__fields:maxlength__"}__~fields:rows{ rows="__fields:rows__"}__~fields:cols{ cols="__fields:cols__"} class="ga-field-input-control__~fields:help{ help_link}"></textarea>'
   __~fields:help{+ '<span class="help">__fields:help__</span>'}
-  + '<span id="__fields:id___msg" class="warning field_msg" > </span></td></tr>'
+  + '<span id="__fields:id___msg" class="warning field_msg" > </span>'
   ;
 
 ga.layout.fields[ "__fields:id__" ].eval  =
