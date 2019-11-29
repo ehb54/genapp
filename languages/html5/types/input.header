@@ -1,7 +1,8 @@
 <!-- input.header -->
 __~height{<div style="height:__height__; overflow:auto">}
 __~center{<center>}
-<form id="__moduleid__" __~nowrap{style="white-space:nowrap"}>
+<form id="__moduleid__" __~nowrap{style="white-space:nowrap"}
+__~modal{ style="height:65vh;ooverflow:auto"}>
 <div id="__moduleid___input_area" class="ga-module"></div>
 <script>
 
