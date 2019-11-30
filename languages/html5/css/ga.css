@@ -432,3 +432,13 @@ font-size: 2em;
    overflow-x : auto;
    overflow-y : auto;
 }
+
+.zeromargin {
+    margin : 0;
+}
+
+.offscreen {
+    position : fixed;
+    right    : 100%;
+    bottom   : 100%;
+}

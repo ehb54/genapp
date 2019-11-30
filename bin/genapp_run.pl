@@ -369,8 +369,14 @@ foreach my $l ( keys %langs )
                                                 $negate = 1;
                                                 $type = '!';
                                             }
-                                            if ( defined $$rplc_mod{ $k } &&
-                                                 lc( $$rplc_mod{ $k } ) ne 'false' )
+                                            if (
+                                                ( defined $$rplc_directives{ $k } &&
+                                                  lc( $$rplc_directives{ $k } ) ne 'false' ) ||
+                                                ( defined $$rplc_mod{ $k } &&
+                                                  lc( $$rplc_mod{ $k } ) ne 'false' ) ||
+                                                ( defined $$rplc_menu{ $k } &&
+                                                  lc( $$rplc_menu{ $k } ) ne 'false' )
+                                                )
                                             {
                                                 $dorplc = !$negate;
                                             } else {
@@ -818,11 +824,15 @@ foreach my $l ( keys %langs )
                                                     $negate = 1;
                                                     $type = '!';
                                                 }
-
-                                                if ( defined $$rplc_mod{ $k } &&
-                                                     lc( $$rplc_mod{ $k } ) ne 'false' )
+                                                if (
+                                                    ( defined $$rplc_directives{ $k } &&
+                                                      lc( $$rplc_directives{ $k } ) ne 'false' ) ||
+                                                    ( defined $$rplc_mod{ $k } &&
+                                                      lc( $$rplc_mod{ $k } ) ne 'false' ) ||
+                                                    ( defined $$rplc_menu{ $k } &&
+                                                      lc( $$rplc_menu{ $k } ) ne 'false' )
+                                                    )
                                                 {
-                                                    print "2: $k => $v\n" if $debug_crplc;
                                                     $dorplc = !$negate;
                                                 } else {
                                                     $dorplc = $negate;

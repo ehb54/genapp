@@ -1,14 +1,34 @@
 // -- lrfile.input --
 
 ga.layout.fields[ "__fields:id__" ] = {};
-ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id__"__~fields:fontclass{ class="__fields:fontclass__"}>__fields:label__ </label>';
-ga.layout.fields[ "__fields:id__" ].dhtml =
-  '<input type="file" name="__fields:id____~fields:array{[]}"__~fields:multiple{ multiple} id="__fields:id__" data-add="__fields:id___altval"__~fields:default{ value="__fields:default__"}__~fields:accept{ accept="__fields:accept__"}__~fields:maxlength{ maxlength="__fields:maxlength__"}__~fields:help{ class="help_link"><span class="help">__fields:help__</span}>' +
-  ' or <button id="__fields:id___button" name="__fields:id___button" data-type="lrfile"__~fields:help{ class="help_link"}><span class="buttontext">Browse server</span></button>' +
-  __~fields:help{'<span class="help">__fields:help__</span>' +}
-  ' <span id="__fields:id___altval"></span>' +
-  '<span id="__fields:id___msg" class="warning field_msg" > </span></td><input type="hidden" name="_selaltval___fields:id__" value="__fields:id___altval"</input></tr>'
+ga.layout.fields[ "__fields:id__" ].lhtml =
+  '<label for="__fields:id__" class="help_link__~fields:fontclass{ __fields:fontclass__}">__fields:label__ </label>'
+  __~bootstrap:package{+ '<span class="help">__fields:help__</span>'}
   ;
+ga.tmp.dhtml = {};
+ga.tmp.dhtml.org =
+  '<input type="file" name="__fields:id____~fields:array{[]}"__~fields:multiple{ multiple} id="__fields:id__" data-add="__fields:id___altval"__~fields:default{ value="__fields:default__"}__~fields:accept{ accept="__fields:accept__"}__~fields:maxlength{ maxlength="__fields:maxlength__"} class="ga-file-input ga-field-input-control__~fields:help{ help_link}"><span class="help">__fields:help__</span>'
+  + ' or <button id="__fields:id___button" name="__fields:id___button" data-type="lrfile" class="ga-button-select__~fields:help{ help_link}"><span class="buttontext">Browse server</span></button>'
+  __~fields:help{+ '<span class="help">__fields:help__</span>'}
+  + '<span id="__fields:id___altval"></span>'
+  + '<span id="__fields:id___msg" class="warning field_msg" > </span><input type="hidden" name="_selaltval___fields:id__" value="__fields:id___altval">'
+  ;
+
+ga.tmp.dhtml.bootstrap =
+  '<label for="__fields:id__" class="ga-button-select zeromargin help_link">'
+  + 'Browse local files'
+  + '</label>'
+  + '<span class="help">__fields:help__</span>'
+  + ' or <button id="__fields:id___button" name="__fields:id___button" data-type="lrfile" class="ga-button-select__~fields:help{ help_link}"><span class="buttontext">Browse server</span></button>'
+  __~fields:help{+ '<span class="help">__fields:help__</span>'}
+  + '<span id="__fields:id___altval"></span>'
+  + '<span id="__fields:id___msg" class="warning field_msg" > </span><input type="hidden" name="_selaltval___fields:id__" value="__fields:id___altval">'
+  + '<input type="file" name="__fields:id____~fields:array{[]}"__~fields:multiple{ multiple} id="__fields:id__" data-add="__fields:id___altval"__~fields:default{ value="__fields:default__"}__~fields:accept{ accept="__fields:accept__"}__~fields:maxlength{ maxlength="__fields:maxlength__"} class="offscreen"><span class="help">__fields:help__</span>'
+  ;
+
+__!bootstrap:package{ga.layout.fields[ "__fields:id__" ].dhtml = ga.tmp.dhtml.org;}
+__~bootstrap:package{ga.layout.fields[ "__fields:id__" ].dhtml = ga.tmp.dhtml.bootstrap;}
+delete ga.tmp.dhtml;
 
 ga.layout.fields[ "__fields:id__" ].eval  =
   'ga.value.setLastValue( "__moduleid__", "#__fields:id__" );' +
@@ -16,8 +36,8 @@ ga.layout.fields[ "__fields:id__" ].eval  =
   __~fields:setinputfromfile{'ga.value.setInputForRFile("__moduleid__","#__fields:id__","__fields:id__","__fields:setinputfromfile__", "__fields:setinputfromfileids__");' + }
   '$( "#__fields:id__" ).change( function(){$("#__fields:id___altval").html( "<i>Local</i>: " + $("#__fields:id__").val().replace(/^C:.fakepath./,""));$("#__fields:id___msg").html("");});' +
   'ga.altfile.button("__moduleid__","__fields:id__","__fields:label__","rfile",function(v){ga.altfile.button.lrfile(v,"__moduleid__","__fields:id__");}__~fields:required{,"lrfile"});' +
-  '$("#__fields:id___button").on("click",function(){return ga.altfile.button.call("__moduleid__","__fields:id__");});' +
-  __~fields:setinputfromfile{'ga.value.setInputfromFile("#__fields:id__", "__fields:setinputfromfile__", "__fields:setinputfromfileids__", "__moduleid__");'}
+  '$("#__fields:id___button").on("click",function(){return ga.altfile.button.call("__moduleid__","__fields:id__");});'
+  __~fields:setinputfromfile{+ 'ga.value.setInputfromFile("#__fields:id__", "__fields:setinputfromfile__", "__fields:setinputfromfileids__", "__moduleid__");'}
  ;
 
 /* old way

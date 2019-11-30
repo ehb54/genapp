@@ -23,6 +23,15 @@
   @extend .btn-sm;
   @extend .btn-outline-primary;
 }
+.ga-file {
+ @extend .custom-file;
+}
+.ga-file-input {
+ @extend .custom-file-input;
+}
+.ga-file-label {
+ @extend .custom-file-label;
+}
 .ga-button-menu {
   @extend .btn;
   @extend .btn-link;
