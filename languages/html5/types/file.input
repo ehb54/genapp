@@ -2,7 +2,7 @@
 
 ga.layout.fields[ "__fields:id__" ] = {};
 ga.layout.fields[ "__fields:id__" ].lhtml =
-  '<label for="__fields:id__">__fields:label__ </label>';
+  '<label for="__fields:id__" class="help_link__~fields:fontclass{ __fields:fontclass__}">__fields:label__ </label>'
   __~bootstrap:package{+ '<span class="help">__fields:help__</span>'}
   ;
 

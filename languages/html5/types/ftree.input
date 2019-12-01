@@ -1,7 +1,11 @@
 // -- ftree.input --
 
 ga.layout.fields[ "__fields:id__" ] = {};
-ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id__"__~fields:fontclass{ class="__fields:fontclass__"}>__fields:label__ </label>';
+ga.layout.fields[ "__fields:id__" ].lhtml =
+  '<label for="__fields:id__" class="help_link__~fields:fontclass{ __fields:fontclass__}">__fields:label__ </label>'
+  __~bootstrap:package{+ '<span class="help">__fields:help__</span>'}
+  ;
+
 ga.layout.fields[ "__fields:id__" ].dhtml = '<div name="__fields:id__" id="__fields:id__"></div>';
 ga.layout.fields[ "__fields:id__" ].eval  =
 '$("#__fields:id__")' + 
@@ -13,6 +17,8 @@ ga.layout.fields[ "__fields:id__" ].eval  =
   '.jstree({plugins:[__~fields:single{"singleselect",}__~fields:singlepath{"singleselectpath",}"checkbox","contextmenu"],' +
   'core:{__~fields:single{"multiple":false,}__~fields:singlepath{"multiple":false,}data:function(e,c){ga.fc(e.id,c)},check_callback:function(){return 0;}},contextmenu:{items:function(e){return{Refresh:{label:"Refresh",separator_after:!0,action:function(){ga.fc.clear(e.parent)}},Remove:{label:"Remove",action:function(e){var c=$.jstree.reference(e.reference),t=c.get_node(e.reference);console.log("remove");ga.fc.delete_warn_delete(c.is_selected(t)?c.get_selected():[t.id])}}}}}}),$("#__fields:id__").attr("type","div"),ga.fc.trees["#__fields:id__"]="file";'
 ;
+
+input_trees.push( "__fields:id__" );
 
 /* old way
 
