@@ -1,3 +1,38 @@
+// -- atomicstructure.output --
+
+ga.layout.fields[ "__fields:id__" ] = {};
+ga.layout.fields[ "__fields:id__" ].lhtml =
+  '<label for="__fields:id__"__~fields:help{ class="help_link"}>__fields:label__ </label>'
+  __~fields:help{+ '<span class="help">__fields:help__</span>'}
+  ;
+ga.layout.fields[ "__fields:id__" ].dhtml =
+  '<div id="__fields:id__" type="atomicstructure" __~fields:help{ class="help_link"}></div>'
+  __~fields:help{+ '<span class="help">__fields:help__</span>'}
+  + '<div id="_jmol_panel___fields:id__"></div>'
+  ;
+
+ga.layout.fields[ "__fields:id__" ].eval  =
+    ''
+  __~fields:jsmoladd{+ 'ga.set( "__moduleid__:jsmoladd" , "__fields:jsmoladd__;" );'}
+  + '_jmol_info[ "__fields:id__" ] = {\
+        __~fields:width{width: __fields:width__,}\
+        __~fields:height{height: __fields:height__,}\
+        disableJ2SLoadMonitor: true,\
+        disableInitialConsole: true,\
+	use: "HTML5",\
+	j2sPath: "j2s",\
+	isSigned: false,\
+	addSelectionOptions: false,\
+	readyFunction: null,\
+	defaultModel: null,\
+	debug: false\
+     };'
+  + 'ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );'
+  + 'ga.value.extra_resets( "__fields:id__" );'
+  ;
+
+/* old way
+
 </table>
 <p><label for="__fields:id__">__fields:label__ <div id="__fields:id__" type="atomicstructure" __~fields:help{ class="help_link"}></div>
 __~fields:help{<span class="help">__fields:help__</span>}</label></p>
@@ -19,5 +54,8 @@ __~fields:height{   height: __fields:height__,}
 };
 ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );
 ga.value.extra_resets( "__fields:id__" );
-</script>
+end script>
 <table>
+*/
+
+// -- end atomicstructure.output --

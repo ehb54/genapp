@@ -1,3 +1,23 @@
+// -- plotly.output --
+
+ga.layout.fields[ "__fields:id__" ] = {};
+ga.layout.fields[ "__fields:id__" ].lhtml =
+  '<label for="__fields:id__"__~fields:help{ class="help_link"}>__fields:label__ </label>'
+  __~fields:help{+ '<span class="help">__fields:help__</span>'}
+  ;
+ga.layout.fields[ "__fields:id__" ].dhtml =
+  '<div name="__fields:id__" id="__fields:id__" type="plotly"></div>'
+  __~fields:showcollapse{+ '<table cellpadding="10"><tr><td><button id="__fields:id___showcollapse" type="button" class="hidden">Show 3D plot</button></td><td><span id="__fields:id___showcollapse_message" style="color:green;"></span></td></tr></table>'}
+  ;
+
+ga.layout.fields[ "__fields:id__" ].eval  =
+  'ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );'
+  + 'ga.value.extra_resets( "__fields:id__" );'
+  __~fields:showcollapse{+ 'ga.showcollapse3d["__moduleid__"]=1; $( "#__fields:id___showcollapse" ).click( function() {console.log("Inside Click: ");  if(!ga.plotted3d["__moduleid__"]){ $("#__fields:id__").show();$("#__fields:id___showcollapse").html("Hide 3D plot");console.log("show!"); ga.plotted3d["__moduleid__"]=1;}else{$("#__fields:id__").hide();ga.plotted3d["__moduleid__"]=0;$("#__fields:id___showcollapse").html("Show 3D plot");console.log("hide!");} });}
+  ;
+
+/* old way
+
 </table>
 
 
@@ -13,9 +33,12 @@
 <script>
 ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );
 ga.value.extra_resets( "__fields:id__" );
-</script>
+end script>
 
 
-__~fields:showcollapse{ <table cellpadding="10"><tr><td><button id="__fields:id___showcollapse" type="button" class="hidden">Show 3D plot</button></td><td><span id="__fields:id___showcollapse_message" style="color:green;"></span></td></tr> </table><script> ga.showcollapse3d["__moduleid__"]=1; $( "#__fields:id___showcollapse" ).click( function() {console.log("Inside Click: ");  if(!ga.plotted3d["__moduleid__"]){ $("#__fields:id__").show();$("#__fields:id___showcollapse").html("Hide 3D plot");console.log("show!"); ga.plotted3d["__moduleid__"]=1;}else{$("#__fields:id__").hide();ga.plotted3d["__moduleid__"]=0;$("#__fields:id___showcollapse").html("Show 3D plot");console.log("hide!");} });  </script>} 
+__~fields:showcollapse{ <table cellpadding="10"><tr><td><button id="__fields:id___showcollapse" type="button" class="hidden">Show 3D plot</button></td><td><span id="__fields:id___showcollapse_message" style="color:green;"></span></td></tr> </table><script> ga.showcollapse3d["__moduleid__"]=1; $( "#__fields:id___showcollapse" ).click( function() {console.log("Inside Click: ");  if(!ga.plotted3d["__moduleid__"]){ $("#__fields:id__").show();$("#__fields:id___showcollapse").html("Hide 3D plot");console.log("show!"); ga.plotted3d["__moduleid__"]=1;}else{$("#__fields:id__").hide();ga.plotted3d["__moduleid__"]=0;$("#__fields:id___showcollapse").html("Show 3D plot");console.log("hide!");} });  end script>} 
 
 <table>
+*/
+
+// -- end plotly.output --
