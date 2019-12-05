@@ -100,11 +100,12 @@ __~debug:data{    console.log( "ga.data.update( " + mod + " , " + data + " )" );
 __~debug:data{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_msgs );} 
 __~debug:getinput{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_msgs );} 
 
-    if ( msging_f ) {
-__~debug:data{    console.log( "ga.data.update() msging_f defined" );}
-        $( "#" + mod + "_progress" ).empty();
-        jqhmod_out_msgs.text( "" );
-    }
+//    if ( !msging_f ) {
+//      __~debug:data{console.log( "ga.data.update() msging_f defined" );}
+//      // clear when not messaged (i.e. job is complete)
+//      ga.progress.clear( mod, 'data.js 1' );
+//      jqhmod_out_msgs.text( "" );
+//    }
 
     $.each(data, function(k, v) {
         __~debug:data{console.log( "ga.data.update() k " + k + " v " + v );}
@@ -449,10 +450,14 @@ __~debug:values{        console.log( "ga.data.update() atomic structure jmol scr
                         }
                         if ( k == "_status" )
                         { 
-                            __~debug:job{console.log( "ga.data.update() msg status is now " + v );}
                             if ( v == "complete" ) {
                                 msging_f( msg_id, 0, 0 );
                             }
+                        }
+                        if ( k == "_progress" )
+                        { 
+                            __~debug:progress{console.log( "ga.data.update() _progress is now " + v );}
+                            ga.progress( mod, v );
                         }
                     }
                 } else {
@@ -501,6 +506,11 @@ __~debug:values{        console.log( "ga.data.update() atomic structure jmol scr
                             __~debug:loginapprove{console.log( "ga.data.update() approve options found " + v );}
                             ga.login.approve( v );
                         }
+                        if ( k == "_progress" )
+                        { 
+                            __~debug:progress{console.log( "ga.data.update() _progress is now " + v );}
+                            ga.progress( mod, v );
+                        }
                     }
                 } else {
                     if ( k == "-close" )
@@ -527,7 +537,7 @@ __~debug:values{        console.log( "ga.data.update() atomic structure jmol scr
     });
     ga.value.saveLastValues( mod_out );
     ga.value.saveLastValue( mod_out, hmod_out_msgs );
-    $( hmod_out + '_progress' ).empty();
+//    ga.progress.clear( mod, 'data.js 2' );
     if ( state_changed )
     {
         syncState();

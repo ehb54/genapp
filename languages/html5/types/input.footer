@@ -83,6 +83,7 @@ __~nojobcontrol{           do_refresh = 0;}
               }
               ga.ws.unsub( id, "__moduleid__" );
               eval( __moduleid___done_eval );
+              ga.progress.clear(  "__moduleid__", "input.footer 4" );
            } else {
                if ( !last_timeout || last_timeout < 2000 )
                { 
@@ -103,7 +104,7 @@ __~debug:job{               console.log( "another set timeout " + last_timeout )
     .fail( function( xhr, status, errorThrown ) {
 __~debug:job{        console.log( "get results fail" );}
            $( "#__moduleid___results" ).html( "<span class=\"warning\"> Failed: " + status + " : '" + xhr.status + ":" + errorThrown + "' on URL ajax/tools/center.php </span>" );
-           $('#__moduleid___progress').html( "" );
+           ga.progress.clear( '__moduleid__', 'input.footer 1' );
            if ( __moduleid___timeout_handler != "unset" )
            {
                clearTimeout( __moduleid___timeout_handler );
@@ -317,10 +318,8 @@ __~docrootexecutable{$( this ).append( $("<input>").attr("type", "hidden").attr(
 
 __~debug:ajax{    console.log( "calling ajax" );}
 
-    $('#__moduleid___progress').html( 
-__!bootstrap:package{"Uploading:<progress></progress>"} 
-__~bootstrap:package{'Uploading:<div class="progress"><div id="__moduleid___upload_progressbar" class="progress-bar" role="progressbar" style="width:0%"></div></div>'}
-                                     );
+    ga.progress.set( '__moduleid__', 'Uploading' );
+
     var job_status = "";
 
     ga.event( "", "__moduleid__", "submit: passed submit checks, submitting" );
@@ -377,7 +376,7 @@ __~debug:ajax{           console.log( data );}
 __~debug:ajax{           console.log( status );}
 __~debug:ajax{           console.log( xhr );}
 // refresh cache for this project
-           $('#__moduleid___progress').html( "" );
+           ga.progress.clear( '__moduleid__', 'input.footer 2' );
    
            var do_refresh = 1;
 __~nojobcontrol{           do_refresh = 0;}
@@ -413,7 +412,7 @@ __~debug:ajax{           console.log( xhr );}
 __~debug:ajax{           console.log( status );}
 __~debug:ajax{           console.log( errorThrown );}
            $( "#__moduleid___results" ).html( "<span class=\"warning\"> Failed: " + status + " : '" + xhr.status + ":" + errorThrown + "' on URL ajax/__menu:id__/__moduleid__.php </span>" );
-           $('#__moduleid___progress').html( "" );
+           ga.progress.clear( '__moduleid__', 'input.footer 3' );
            if ( __moduleid___timeout_handler != "unset" )
            {
                clearTimeout( __moduleid___timeout_handler );

@@ -935,3 +935,41 @@ ga.hhelp.set = function() {
        $( "#hoverhelp" ).html( "Help on" );
    }
 }
+
+ga.progress = function( mod, val, valmax ) {
+  __~debug:progress{console.log( `ga.progress( ${mod}, ${val}, ${valmax} )` );}
+  if ( !$(`#${mod}_progress`).html().length ) {
+     ga.progress.set( mod );
+  }
+  __~debug:progress{console.log( 'ga.progress() html is now: ' +  $(`#${mod}_progress`).html() );}
+
+  if ( valmax ) {
+    val = val / valmax;
+  }
+
+  if ( ga.bootstrap ) {
+     __~debug:progress{console.log( 'ga.progress(): ga.bootstrap set' );}
+     document.getElementById(`${mod}_upload_progressbar`).style.width = (100*val).toString() + "%";
+  } else {
+     __~debug:progress{console.log( 'ga.progress(): ga.bootstrap not set' );}
+     $(`#${mod}_progress progress`).attr({value:val,max:1});
+  }
+}
+
+ga.progress.set = function( mod, prefix ) {
+  __~debug:progress{console.log( `ga.progress.set( ${mod}, ${prefix} )` );}
+  prefix = prefix ? `${prefix}:` : '';
+  $(`#${mod}_progress`).html( prefix +
+    ga.bootstrap ? `<div class="progress"><div id="${mod}_upload_progressbar" class="progress-bar" role="progressbar" style="width:0%"></div></div>` : '<progress></progress>'
+  );
+  __~debug:progress{console.log( 'ga.progress.set() html is now: ' +  $(`#${mod}_progress`).html() );}
+}
+
+ga.progress.clear = function( mod, msg ) {
+  __~debug:progress{console.log( `ga.progress.clear( ${mod} ) ${msg}` );}
+  $(`#${mod}_progress`).empty();
+}  
+
+
+
+
