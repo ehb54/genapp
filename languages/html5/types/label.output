@@ -1,4 +1,17 @@
+// -- label.output --
+
+ga.layout.fields[ "__fields:id__" ] = {};
+ga.layout.fields[ "__fields:id__" ].lhtml =
+  '<label for="__fields:id__" class="help_link __fields:default__">__fields:label__ </label>'
+  __~fields:help{+ '<span class="help">__fields:help__</span>'}
+  ;
+
+ga.layout.fields[ "__fields:id__" ].dhtml = '';
+ga.layout.fields[ "__fields:id__" ].eval  = '';
+
+/* old way
+
 <tr>__~fields:prehline{<td><hr></td></tr><tr>}<td__~fields:colspan{ colspan="__fields:colspan__"}><label__~fields:default{ class="__fields:default__"}>__fields:label__</label></td>__~fields:posthline{</tr><tr><td><hr></td>}</tr>
+*/
 
-
-
+// -- end label.output --

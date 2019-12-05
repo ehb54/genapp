@@ -1,3 +1,57 @@
+// -- plot2d.output --
+
+ga.layout.fields[ "__fields:id__" ] = {};
+ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id__">__fields:label__ </label>';
+ga.layout.fields[ "__fields:id__" ].dhtml =
+  '<div id="__fields:id___div" style="__~fields:width{width:__fields:width__;}">\
+  <p>\
+  <table class="help_link">\
+  <tr>\
+    <td></td>\
+    <td id="__fields:id___title" style="text-align:center"__~fields:titlefontclass{ class="__fields:titlefontclass__"}></td>\
+    <td id="__fields:id___xy" class="coord"></td>\
+  </tr>\
+  <tr>\
+    <td id="__fields:id___ylabel" style="text-align:center" __~fields:rotatedylabel{class="verticaltext"}></td>\
+    <td id="__fields:id__" type="plot2d" class="plot2ddef" style="__~fields:width{width:__fields:width__;}__~fields:height{height:__fields:height__}"></td>\
+    <td id="__fields:id___legend"></td>\
+  </tr>\
+  <tr>\
+    <td></td>\
+    <td id="__fields:id___xlabel" style="text-align:center"></td>\
+    <td></td>\
+  </tr>\
+  </table>\
+  __~fields:help{<span class="help">__fields:help__</span>}\
+  </p>\
+  </div>'
+  __~fields:help{+ '<span class="help">__fields:help__</span>'}
+  __~fields:savetofile{+ '<table cellpadding="10" style="margin-bottom:5px"><tr><td><button id="__fields:id___savetofile" type="button" class="hidden">Download .png file:</button></td><td><span id="__fields:id___savetofile_link" style="color:black;"></span></td></tr></table>'}
+  __~fields:changescalex{+ '<table cellpadding="10"><tr><td><button id="__fields:id___changescalex" type="button" class="hidden">Change X-axis Scale: Log/Lin</button></td><td><span id="__fields:id___changescalex_message" style="color:green;"></span></td></tr> </table>'} 
+  __~fields:changescaley{+ '<table cellpadding="10"><tr><td><button id="__fields:id___changescaley" type="button" class="hidden">Change Y-axis Scale: Log/Lin</button></td><td><span id="__fields:id___changescaley_message" style="color:green;"></span></td></tr> </table>'} 
+  __~fields:showcollapse{+ '<table cellpadding="10"><tr><td><button id="__fields:id___showcollapse" type="button" class="hidden">Show 2D plot</button></td><td><span id="__fields:id___showcollapse_message" style="color:green;"></span></td></tr> </table>'} 
+  ;
+
+ga.layout.fields[ "__fields:id__" ].eval  =
+// don't see how this does anything 'var tmp = $.plot( $( "#__fields:id__" ), [[]], gd.data( "_plot_options" ) );', replaced with line below
+  '$.plot( $( "#__fields:id__" ), [[]], gd.data( "_plot_options" ) );'
+  + 'ga.value.set.plot2d.pan( "#__fields:id__", __~fields:pan{1}0 );'
+  + 'ga.value.set.plot2d.zoom( "#__fields:id__", __~fields:zoom{1}0 );'
+  + 'ga.value.set.plot2d.hover( "#__fields:id__", __~fields:hover{1}0 );'
+  + 'ga.value.set.plot2d.selzoom( "#__fields:id__", __~fields:selzoom{1}0 );'
+  __~fields:backgroundcolor{+ 'ga.value.set.plot2d.backgroundcolor( "#__fields:id__"," __fields:backgroundcolor__" );'}
+  + 'ga.value.set.plot2d.pkg( "__moduleid___output", "#__fields:id__" );'
+  __~fields:hover{+ '$("#__fields:id__").bind("plothover",function(e,p,i){var r=ga.set("plot2d:precision");$("#__fields:id___xy").addClass("coordvisible").text("( "+p.x.toPrecision(r)+" , "+p.y.toPrecision(r)+" )");}).on("mouseout", function(){setTimeout(function(){$("#__fields:id___xy").removeClass( "coordvisible" );}, 1500 )});'}
+  + 'ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );'
+  + 'ga.value.extra_resets( "__fields:id__" );'
+  __~fields:savetofile{+ '$( "#__fields:id___savetofile" ).click( function() {ga.data.create_image_htmltocanvas("__fields:id__"); });'}
+  __~fields:changescalex{+ '$( "#__fields:id___changescalex" ).click( function() {console.log("Inside Click: ");  if(ga.plotglobal.xscale=="log"){ga.plotglobal.xscale=""; $("#__fields:id___changescalex_message").html("X-Lin");}else{ga.plotglobal.xscale="log";$("#__fields:id___changescalex_message").html("X-Log");} console.dir(ga.plotglobal); var plot=$.plot( "#__fields:id__", ga.dataplotglobal, ga.value.get.plot2d.plot_options("#__fields:id__", ga.plotglobal ) ); });'} 
+  __~fields:changescaley{+ '$( "#__fields:id___changescaley" ).click( function() {console.log("Inside Click: ");  if(ga.plotglobal.yscale=="log"){ga.plotglobal.yscale=""; $("#__fields:id___changescaley_message").html("Y-Lin");}else{ga.plotglobal.yscale="log";$("#__fields:id___changescaley_message").html("Y-Log");} console.dir(ga.plotglobal); var plot=$.plot( "#__fields:id__", ga.dataplotglobal, ga.value.get.plot2d.plot_options("#__fields:id__", ga.plotglobal ) ); });'} 
+  __~fields:customtooltips{+ 'ga.customtooltips["__moduleid__"] = 1;'}
+  __~fields:showcollapse{+ 'ga.showcollapse2d["__moduleid__"]=1; $("#__fields:id__").hide(); $( "#__fields:id___showcollapse" ).click( function() {console.log("Inside Click: "); if(!ga.plotted2d["__moduleid__"]){ $("#__fields:id___div").show(); if($("#__fields:id___savetofile").length ){$("#__fields:id___savetofile").show();$("#__fields:id___savetofile_link").show();} if($("#__fields:id___changescalex").length ){$("#__fields:id___changescalex").show();$("#__fields:id___changescalex_message").show();} if($("#__fields:id___changescaley").length ){$("#__fields:id___changescaley").show();$("#__fields:id___changescaley_message").show();} $("#__fields:id___showcollapse").html("Hide 2D plot");console.log("show!"); ga.plotted2d["__moduleid__"]=1;var plot=$.plot( "#__fields:id__", ga.dataplotglobal, ga.value.get.plot2d.plot_options("#__fields:id__", ga.plotglobal ) );}else{$("#__fields:id___div").hide(); if($("#__fields:id___savetofile").length ){$("#__fields:id___savetofile").hide();$("#__fields:id___savetofile_link").hide();} if($("#__fields:id___changescalex").length ){$("#__fields:id___changescalex").hide();$("#__fields:id___changescalex_message").hide();} if($("#__fields:id___changescaley").length ){$("#__fields:id___changescaley").hide();$("#__fields:id___changescaley_message").hide();} ga.plotted2d["__moduleid__"]=0;$("#__fields:id___showcollapse").html("Show 2D plot");console.log("hide!");} });'}
+  ;
+
+/* old way
 </table>
 
 
@@ -43,20 +97,14 @@ ga.value.set.plot2d.pkg( "__moduleid___output", "#__fields:id__" );
 __~fields:hover{$("#__fields:id__").bind("plothover",function(e,p,i){var r=ga.set("plot2d:precision");$("#__fields:id___xy").addClass("coordvisible").text("( "+p.x.toPrecision(r)+" , "+p.y.toPrecision(r)+" )");}).on("mouseout", function(){setTimeout(function(){$("#__fields:id___xy").removeClass( "coordvisible" );}, 1500 )});}
 ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );
 ga.value.extra_resets( "__fields:id__" );
-</script>
-
-
-__~fields:savetofile{ <table cellpadding="10" style="margin-bottom:5px"><tr><td><button id="__fields:id___savetofile" type="button" class="hidden">Download .png file:</button></td><td><span id="__fields:id___savetofile_link" style="color:black;"></span></td></tr></table> <script> $( "#__fields:id___savetofile" ).click( function() {ga.data.create_image_htmltocanvas("__fields:id__"); });</script>}
-
-__~fields:changescalex{ <table cellpadding="10"><tr><td><button id="__fields:id___changescalex" type="button" class="hidden">Change X-axis Scale: Log/Lin</button></td><td><span id="__fields:id___changescalex_message" style="color:green;"></span></td></tr> </table><script> $( "#__fields:id___changescalex" ).click( function() {console.log("Inside Click: ");  if(ga.plotglobal.xscale=="log"){ga.plotglobal.xscale=""; $("#__fields:id___changescalex_message").html("X-Lin");}else{ga.plotglobal.xscale="log";$("#__fields:id___changescalex_message").html("X-Log");} console.dir(ga.plotglobal); var plot=$.plot( "#__fields:id__", ga.dataplotglobal, ga.value.get.plot2d.plot_options("#__fields:id__", ga.plotglobal ) ); });  </script>} 
-
-
-__~fields:changescaley{ <table cellpadding="10"><tr><td><button id="__fields:id___changescaley" type="button" class="hidden">Change Y-axis Scale: Log/Lin</button></td><td><span id="__fields:id___changescaley_message" style="color:green;"></span></td></tr> </table><script> $( "#__fields:id___changescaley" ).click( function() {console.log("Inside Click: ");  if(ga.plotglobal.yscale=="log"){ga.plotglobal.yscale=""; $("#__fields:id___changescaley_message").html("Y-Lin");}else{ga.plotglobal.yscale="log";$("#__fields:id___changescaley_message").html("Y-Log");} console.dir(ga.plotglobal); var plot=$.plot( "#__fields:id__", ga.dataplotglobal, ga.value.get.plot2d.plot_options("#__fields:id__", ga.plotglobal ) ); });  </script>} 
-
-__~fields:customtooltips{ <script> ga.customtooltips["__moduleid__"] = 1; </script>}
-
-
-__~fields:showcollapse{ <table cellpadding="10"><tr><td><button id="__fields:id___showcollapse" type="button" class="hidden">Show 2D plot</button></td><td><span id="__fields:id___showcollapse_message" style="color:green;"></span></td></tr> </table><script> ga.showcollapse2d["__moduleid__"]=1; $("#__fields:id__").hide(); $( "#__fields:id___showcollapse" ).click( function() {console.log("Inside Click: "); if(!ga.plotted2d["__moduleid__"]){ $("#__fields:id___div").show(); if($("#__fields:id___savetofile").length ){$("#__fields:id___savetofile").show();$("#__fields:id___savetofile_link").show();} if($("#__fields:id___changescalex").length ){$("#__fields:id___changescalex").show();$("#__fields:id___changescalex_message").show();} if($("#__fields:id___changescaley").length ){$("#__fields:id___changescaley").show();$("#__fields:id___changescaley_message").show();} $("#__fields:id___showcollapse").html("Hide 2D plot");console.log("show!"); ga.plotted2d["__moduleid__"]=1;var plot=$.plot( "#__fields:id__", ga.dataplotglobal, ga.value.get.plot2d.plot_options("#__fields:id__", ga.plotglobal ) );}else{$("#__fields:id___div").hide(); if($("#__fields:id___savetofile").length ){$("#__fields:id___savetofile").hide();$("#__fields:id___savetofile_link").hide();} if($("#__fields:id___changescalex").length ){$("#__fields:id___changescalex").hide();$("#__fields:id___changescalex_message").hide();} if($("#__fields:id___changescaley").length ){$("#__fields:id___changescaley").hide();$("#__fields:id___changescaley_message").hide();} ga.plotted2d["__moduleid__"]=0;$("#__fields:id___showcollapse").html("Show 2D plot");console.log("hide!");} });  </script>} 
-
-
+end script>
+__~fields:savetofile{ <table cellpadding="10" style="margin-bottom:5px"><tr><td><button id="__fields:id___savetofile" type="button" class="hidden">Download .png file:</button></td><td><span id="__fields:id___savetofile_link" style="color:black;"></span></td></tr></table> <script> $( "#__fields:id___savetofile" ).click( function() {ga.data.create_image_htmltocanvas("__fields:id__"); });end script>}
+__~fields:changescalex{ <table cellpadding="10"><tr><td><button id="__fields:id___changescalex" type="button" class="hidden">Change X-axis Scale: Log/Lin</button></td><td><span id="__fields:id___changescalex_message" style="color:green;"></span></td></tr> </table><script> $( "#__fields:id___changescalex" ).click( function() {console.log("Inside Click: ");  if(ga.plotglobal.xscale=="log"){ga.plotglobal.xscale=""; $("#__fields:id___changescalex_message").html("X-Lin");}else{ga.plotglobal.xscale="log";$("#__fields:id___changescalex_message").html("X-Log");} console.dir(ga.plotglobal); var plot=$.plot( "#__fields:id__", ga.dataplotglobal, ga.value.get.plot2d.plot_options("#__fields:id__", ga.plotglobal ) ); });  end script>} 
+__~fields:changescaley{ <table cellpadding="10"><tr><td><button id="__fields:id___changescaley" type="button" class="hidden">Change Y-axis Scale: Log/Lin</button></td><td><span id="__fields:id___changescaley_message" style="color:green;"></span></td></tr> </table><script> $( "#__fields:id___changescaley" ).click( function() {console.log("Inside Click: ");  if(ga.plotglobal.yscale=="log"){ga.plotglobal.yscale=""; $("#__fields:id___changescaley_message").html("Y-Lin");}else{ga.plotglobal.yscale="log";$("#__fields:id___changescaley_message").html("Y-Log");} console.dir(ga.plotglobal); var plot=$.plot( "#__fields:id__", ga.dataplotglobal, ga.value.get.plot2d.plot_options("#__fields:id__", ga.plotglobal ) ); });  end script>} 
+__~fields:customtooltips{ <script> ga.customtooltips["__moduleid__"] = 1; end script>}
+__~fields:showcollapse{ <table cellpadding="10"><tr><td><button id="__fields:id___showcollapse" type="button" class="hidden">Show 2D plot</button></td><td><span id="__fields:id___showcollapse_message" style="color:green;"></span></td></tr> </table><script> ga.showcollapse2d["__moduleid__"]=1; $("#__fields:id__").hide(); $( "#__fields:id___showcollapse" ).click( function() {console.log("Inside Click: "); if(!ga.plotted2d["__moduleid__"]){ $("#__fields:id___div").show(); if($("#__fields:id___savetofile").length ){$("#__fields:id___savetofile").show();$("#__fields:id___savetofile_link").show();} if($("#__fields:id___changescalex").length ){$("#__fields:id___changescalex").show();$("#__fields:id___changescalex_message").show();} if($("#__fields:id___changescaley").length ){$("#__fields:id___changescaley").show();$("#__fields:id___changescaley_message").show();} $("#__fields:id___showcollapse").html("Hide 2D plot");console.log("show!"); ga.plotted2d["__moduleid__"]=1;var plot=$.plot( "#__fields:id__", ga.dataplotglobal, ga.value.get.plot2d.plot_options("#__fields:id__", ga.plotglobal ) );}else{$("#__fields:id___div").hide(); if($("#__fields:id___savetofile").length ){$("#__fields:id___savetofile").hide();$("#__fields:id___savetofile_link").hide();} if($("#__fields:id___changescalex").length ){$("#__fields:id___changescalex").hide();$("#__fields:id___changescalex_message").hide();} if($("#__fields:id___changescaley").length ){$("#__fields:id___changescaley").hide();$("#__fields:id___changescaley_message").hide();} ga.plotted2d["__moduleid__"]=0;$("#__fields:id___showcollapse").html("Show 2D plot");console.log("hide!");} });  end script>} 
+end script>
 <table>
+*/
+
+// -- end plot2d.output --

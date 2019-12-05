@@ -118,6 +118,10 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
                 jqhmod_out_msgs.text( "" );
                 output_msgs_cleared = 1;
             }
+            if ( ga.layout.fields[ k ] &&
+                 ga.layout.fields[ k ].setval ) {
+                ga.layout.fields[ k ].setval( v );
+            }
             switch ( match.attr( "type" ) )
             {
 	    case "plot3d" :

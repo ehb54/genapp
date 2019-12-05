@@ -1,3 +1,21 @@
+// -- ngl.output --
+
+ga.layout.fields[ "__fields:id__" ] = {};
+ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id__">__fields:label__ </label>';
+ga.layout.fields[ "__fields:id__" ].dhtml =
+  '<div id="__fields:id__" type="ngl" __~fields:help{ class="help_link"}></div>'
+  __~fields:help{+ '<span class="help">__fields:help__</span>'}
+  + '<div id="__fields:id___plot" style="__~fields:width{width:__fields:width__;}__~fields:height{height:__fields:height__;}"></div>'
+  + '<div id="__fields:id___buttons"></div>'
+  ;
+
+ga.layout.fields[ "__fields:id__" ].eval  =
+  'ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );'
+  + 'ga.value.extra_resets( "__fields:id__" );'
+  ;
+
+/* old way
+
 </table>
 <p><label for="__fields:id__">__fields:label__ <div id="__fields:id__" type="ngl" __~fields:help{ class="help_link"}></div>
 __~fields:help{<span class="help">__fields:help__</span>}</label></p>
@@ -6,5 +24,9 @@ __~fields:help{<span class="help">__fields:help__</span>}</label></p>
 <script>
 ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );
 ga.value.extra_resets( "__fields:id__" );
-</script>
+end script>
 <table>
+*/
+
+// -- end ngl.output --
+

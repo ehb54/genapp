@@ -44,6 +44,7 @@ __~debug:hide{    console.log( "ga.hide.update( " + module + " , " + id + " ) sh
     }
 // fix up help
     ga.hhelp.set();
+    ga.hhelp.reset();
 __~debug:hide{    console.log( "ga.hide.update( " + module + " , " + id + " ) returns" );}
 }
 
