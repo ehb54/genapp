@@ -22,7 +22,8 @@ ga.layout.fields[ "__fields:id__" ].eval  =
   'ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );'
   ;
 
-__~bootstrap:package{ga.layout.fields[ "__fields:id__" ].setval = function(val){document.getElementById( '__fields:id__').style.width = (100*val).toString() + "%";}}
+__~bootstrap:package{ga.layout.handler['__moduleid__' ]['__fields:id__'] = {};}
+__~bootstrap:package{ga.layout.handler['__moduleid__' ]['__fields:id__'].setval = function(val){document.getElementById( '__fields:id__').style.width = (100*val).toString() + "%";}}
 
 /* old way
 

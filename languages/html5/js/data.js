@@ -107,6 +107,8 @@ __~debug:getinput{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_
 //      jqhmod_out_msgs.text( "" );
 //    }
 
+    var has_handler = ga.layout.handler && ga.layout.handler[ mod ];
+
     $.each(data, function(k, v) {
         __~debug:data{console.log( "ga.data.update() k " + k + " v " + v );}
         __~debug:getinput{if ( /^_getinput/.test( k ) ) {console.log( "ga.data.update, found _getinput" );}}
@@ -119,9 +121,10 @@ __~debug:getinput{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_
                 jqhmod_out_msgs.text( "" );
                 output_msgs_cleared = 1;
             }
-            if ( ga.layout.fields[ k ] &&
-                 ga.layout.fields[ k ].setval ) {
-                ga.layout.fields[ k ].setval( v );
+            if ( has_handler &&
+                 ga.layout.handler[ mod ][ k ] &&
+                 ga.layout.handler[ mod ][ k ].setval ) {
+                ga.layout.handler[ mod ][ k ].setval( v );
             }
             switch ( match.attr( "type" ) )
             {
