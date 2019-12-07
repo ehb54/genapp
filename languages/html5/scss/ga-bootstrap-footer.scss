@@ -10,9 +10,17 @@
 .ga-field-output-control {
     @extend .form-control;
     // see theme/_variables.scss 
-    @if "__bootstrap:theme__" == "solar" {
-        @debug "bootswatch:solar setting color:black";
+    @if "__bootstrap:theme__" == "flatly" {
         color : black;
+    }
+    @if "__bootstrap:theme__" == "slate" {
+        color : black;
+    }
+    @if "__bootstrap:theme__" == "solar" {
+        color : white;
+    }
+    @if "__bootstrap:theme__" == "superhero" {
+        color : white;
     }
 }
 

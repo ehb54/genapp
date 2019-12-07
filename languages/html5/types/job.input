@@ -3,7 +3,7 @@
 ga.layout.fields[ "__fields:id__" ] = {};
 ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id____~fields:fontclass{ class="__fields:fontclass__"}">__fields:label__ </label>';
 ga.layout.fields[ "__fields:id__" ].dhtml =
-  '<button id="__fields:id__" __~fields:help{ class="help_link"}><span class="buttontext">Select a job or jobs</span></button>' +
+  '<button id="__fields:id__" class="ga-button-select__~fields:help{ help_link}"><span class="buttontext">Select a job or jobs</span></button>' +
   __~fields:help{'<span class="help">__fields:help__</span>' +}
   '<span id="__fields:id___altval"></span>' +
   '<span id="__fields:id___msg" class="warning field_msg" > </span>'
