@@ -7,7 +7,7 @@ ga.layout.fields[ "__fields:id__" ].lhtml =
   ;
 
 ga.layout.fields[ "__fields:id__" ].dhtml =
-  '<div id="__fields:id__" type="filelink__~fields:multiple{m}" readonly class="ga-field-input-control__~fields:help{ help_link}"}><span id="__fields:id___filelink"></span></div>'
+  '<div id="__fields:id__" type="filelink__~fields:multiple{m}" readonly class="ga-field-output-control__~fields:help{ help_link}"}><span id="__fields:id___filelink"></span></div>'
   __~fields:help{+ '<span class="help">__fields:help__</span>'}
   ;
 

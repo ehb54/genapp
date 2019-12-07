@@ -3,7 +3,7 @@
 ga.layout.fields[ "__fields:id__" ] = {};
 ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id__">__fields:label__ </label>';
 ga.layout.fields[ "__fields:id__" ].dhtml =
-  '<input type="number" name="__fields:id__" id="__fields:id__" readonly__~fields:size{ size="__fields:size__"} class="ga-field-input-control__~fields:help{ help_link}">'
+  '<input type="number" name="__fields:id__" id="__fields:id__" readonly__~fields:size{ size="__fields:size__"} class="ga-field-output-control__~fields:help{ help_link}">'
   __~fields:help{+ '<span class="help">__fields:help__</span>'}
   ;
 

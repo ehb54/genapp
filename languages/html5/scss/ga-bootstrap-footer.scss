@@ -4,9 +4,18 @@
 // .ga-input-field-group, .ga-output-field-group {
 //   @extend .form-group;
 // }
-.ga-field-input-control, .ga-field-output-control {
+.ga-field-input-control {
   @extend .form-control;
 }
+.ga-field-output-control {
+    @extend .form-control;
+    // see theme/_variables.scss 
+    @if "__bootstrap:theme__" == "solar" {
+        @debug "bootswatch:solar setting color:black";
+        color : black;
+    }
+}
+
 .ga-module {
   @extend .container-fluid;
 }
