@@ -1,11 +1,27 @@
 // -- checkbox.input --
 
 ga.layout.fields[ "__fields:id__" ] = {};
-ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id__">__fields:label__ </label>';
-ga.layout.fields[ "__fields:id__" ].dhtml =
-  '<input type="checkbox" name="__fields:id__" id="__fields:id__"__~fields:repeater{ data-repeater="checkbox"}__~fields:required{ required}__~fields:checked{ checked} class="ga-field-input-control-off__~fields:help{ help_link}">'
-  __~fields:help{+ '<span class="help">__fields:help__</span>'}
+ga.layout.fields[ "__fields:id__" ].lhtml =
+  '<label for="__fields:id__">__fields:label__ </label>'
+//  __~fields:help{+ '<span class="help">__fields:help__</span>'}
   ;
+
+ga.tmp.dhtml = {};
+ga.tmp.dhtml.checkbox =
+  '<input type="checkbox" name="__fields:id__" id="__fields:id__"__~fields:repeater{ data-repeater="checkbox"}__~fields:required{ required}__~fields:checked{ checked} class="ga-field-input-control-off__~fields:help{ help_link}">'
+  ;
+ga.tmp.dhtml.switch =
+  '<div class="custom-control custom-switch"><input type="checkbox" name="__fields:id__" id="__fields:id__"__~fields:repeater{ data-repeater="checkbox"}__~fields:required{ required}__~fields:checked{ checked} class="custom-control-input__~fields:help{ help_link}">'
+  __~fields:help{+ '<span class="help">__fields:help__</span>'}
+  + '<label class="custom-control-label" for="__fields:id__"></label></div>'
+  ;
+
+
+if ( '__fields:style__' === "switch" ) {
+    ga.layout.fields[ "__fields:id__" ].dhtml = ga.tmp.dhtml.switch;
+} else {
+    ga.layout.fields[ "__fields:id__" ].dhtml = ga.tmp.dhtml.checkbox;
+}
 
 ga.layout.fields[ "__fields:id__" ].eval  = __~fields:pull{'ga.pull.toPull( "__moduleid__", "#__fields:id__", "checkbox", "__fields:pull__", "#__fields:repeat__" );' +}
   'ga.value.setLastValue( "__moduleid__", "#__fields:id__" );'
