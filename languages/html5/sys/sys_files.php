@@ -481,6 +481,18 @@ if ( $is_spec_fc )
           error_log( "cmd = " . $cmd . "\n", 3, "/tmp/mylog" );
 
           // now actually do it
+          
+          $debug_on = 0;
+          __~debug:deletefiles{$debug_on = 1; // set from directives:debug:deletefiles}
+          if ( $debug_on ) {
+              $results[ "error" ] = "Debugging on, nothing removed, email sent";
+              error_mail( "sys_files.php\n" .
+                          "Debugging information\n" .
+                          print_r( $results, true ) . "\n" . print_r( error_get_last(), true ));
+              echo (json_encode($results));
+              exit();
+          }
+
           $do_it = 1;
           if ( $do_it )
           {
@@ -533,12 +545,21 @@ if ( $is_spec_fc )
                   {
                      $cont = ob_get_contents();
                      ob_end_clean();
-                     $results[ "error" ] = "Could not rename $file to $deldir/$file " . $cont;
-                     error_mail( "sys_files.php\n" .
-                         "during delete move directories\n" .
-                             print_r( $results, true ) . "\n" . print_r( error_get_last(), true ));
-                     echo (json_encode($results));
-                     exit();
+                     $error_last = error_get_last();
+                     if ( preg_match( "/Invalid cross-device link/", $error_last[ 'message' ] ) ) {
+                         # special handling for symlinked drives where we can not move a directory
+                         $spec_cmd = "( rsync -a $file/* $deldir/$file/ && rm -fr $file ) >> /tmp/mylog 2>&1";
+                         __~deletefilesnorsync{$spec_cmd = "( rm -fr $file ) >> /tmp/mylog 2>&1";}
+                         error_log( "spec_cmd = " . $spec_cmd . "\n", 3, "/tmp/mylog" );
+                         `$spec_cmd`; 
+                     } else {
+                         $results[ "error" ] = "Could not rename $file to $deldir/$file " . $cont;
+                         error_mail( "sys_files.php\n" .
+                                     "during delete move directories\n" .
+                                     print_r( $results, true ) . "\n" . print_r( error_get_last(), true ));
+                         echo (json_encode($results));
+                         exit();
+                     }
                   }
               }
 
@@ -555,7 +576,7 @@ if ( $is_spec_fc )
                          ob_end_clean();
                          $results[ "error" ] = "Could not create directory " . $makedir . " " . $cont;
                          error_mail( "sys_files.php\n" .
-                             "since it was moved and we need to recreated it\n" .
+                             "since it was moved and we need to recreate it\n" .
                                  print_r( $results, true ) . "\n" . print_r( error_get_last(), true ));
                          echo (json_encode($results));
                          exit();
@@ -646,4 +667,3 @@ if ( $is_spec_fc )
 ob_end_clean();
 
 echo json_encode( $result_dirs );
-?>
