@@ -13,6 +13,31 @@
                    "type"     : "label",
                    "default"  : "header3",
                    "posthline"   : "true"
+                   },
+		   {
+                   "role"     : "input",
+                   "id"       : "project",
+                   "type"     : "integer"
+		   },
+                   {
+                   "role"     : "input",
+                   "id"       : "xsedeproject",
+                   "type"     : "integer"
+                   },
+		   {
+                   "role"     : "input",
+                   "id"       : "datetime",
+                   "type"     : "integer"
+                   },
+		   {
+                   "role"     : "input",
+                   "id"       : "email",
+                   "type"     : "integer"
+                   },
+		   {
+                   "role"     : "input",
+                   "id"       : "visible",
+                   "type"     : "integer"
                    }
                   ],
 # the executable will take inputs in json and produce output in json

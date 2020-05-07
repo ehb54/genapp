@@ -103,7 +103,7 @@ __~debug:job{               console.log( "another set timeout " + last_timeout )
           } )
     .fail( function( xhr, status, errorThrown ) {
 __~debug:job{        console.log( "get results fail" );}
-           $( "#__moduleid___results" ).html( "<span class=\"warning\"> Failed: " + status + " : '" + xhr.status + ":" + errorThrown + "' on URL ajax/tools/center.php </span>" );
+           $( "#__moduleid___results" ).html( "<span class=\"warning\"> Failed: " + status + " : '" + xhr.status + ":" + errorThrown + "' on URL ajax/__menu:id__/__moduleid__.php </span>" );
            ga.progress.clear( '__moduleid__', 'input.footer 1' );
            if ( __moduleid___timeout_handler != "unset" )
            {

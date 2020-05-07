@@ -11,6 +11,19 @@ if ( !sizeof( $_REQUEST ) ) {
     exit();
 }
 
+require_once "__docroot:html5__/__application__/ajax/ga_filter.php";
+
+$modjson = [];
+$inputs_req = $_REQUEST;
+$validation_inputs = ga_sanitize_validate( $modjson, $inputs_req, 'cached_results' );
+
+if ( $validation_inputs[ "output" ] == "failed" ) {
+    $results = array( "error" => $validation_inputs[ "error" ] );
+#    $results[ '_status' ] = 'failed';
+#    echo ( json_encode( $results ) );
+#    exit();
+};
+
 if ( !isset( $_REQUEST[ '_uuid' ] ) ) {
     $results[ "error" ] = "No _uuid specified in the request";
     echo (json_encode($results));

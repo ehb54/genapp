@@ -622,6 +622,20 @@
                                      { "scss/scss-build.sh" : "once" }
                                    ]
                    }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "ajax/ga_filter.php",
+                    "inputs"     : [
+                                    { "sys/ga_filter.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "ajax/ga_filter_type.json",
+                    "inputs"     : [
+                                    { "sys/ga_filter_type.json" : "once" }
+                                   ]
+                   }		   
                   ]
 }
 

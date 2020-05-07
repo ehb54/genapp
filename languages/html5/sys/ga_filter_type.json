@@ -1,0 +1,284 @@
+{
+    "filterconstant" : [
+                        {
+                         "id"      : "float",
+                         "type"    : "float"
+                        },
+	                {
+                         "id"      : "integer",
+                         "type"    : "integer"
+                        },
+                        {
+                         "id"      : "password",
+                         "type"    : "string",
+			 "pattern" : ".{10,}"
+			},
+                        {
+                         "id"      : "textarea",
+                         "type"    : "string",
+                         "pattern" : ".{1,}"
+                        },
+		        {
+                         "id"      : "text",
+                         "type"    : "string",
+                         "pattern" : ".{1,}"
+                        },
+		        {
+                         "id"      : "email",
+                         "type"    : "email"
+                        },
+                        {
+                         "id"      : "checkbox",
+                         "type"    : "string",
+			 "pattern" : "^on$"
+                        },
+                        {
+                         "id"      : "radio",
+                         "type"    : "string",
+                         "pattern" : ".{1,}"
+                        },
+		        {
+                         "id"      : "listbox",
+                         "type"    : "string",
+                         "pattern" : ".{1,}"
+                        },
+                        {
+                         "id"      : "ftree",
+                         "type"    : "string_array",
+                         "pattern" : "^[-A-Za-z0-9+=]{1,50}|=[^=]|={3,}$"
+                        },
+                        {
+                         "id"      : "lrfile",
+                         "type"    : "string_array",
+                         "pattern" : "^[-A-Za-z0-9+=]{1,50}|=[^=]|={3,}$"
+                        },
+			{
+                         "id"      : "file",
+                         "type"    : "string_array",
+                         "pattern" : "^[-A-Za-z0-9+=]{1,50}|=[^=]|={3,}$"
+                        },
+			{
+                         "id"      : "rfile",
+                         "type"    : "string_array",
+                         "pattern" : "^[-A-Za-z0-9+=]{1,50}|=[^=]|={3,}$"
+                        },
+                        {
+                         "id"      : "rpath",
+                         "type"    : "string_array",
+                         "pattern" : "^[-A-Za-z0-9+=]{1,50}|=[^=]|={3,}$"
+                        },
+                        {
+                         "id"      : "boolean",
+                         "type"    : "boolean"
+                        },
+                        {
+                         "id"      : "job",
+                         "type"    : "string_array",
+                         "pattern" : "^[-A-Za-z0-9+=]{1,50}|=[^=]|={3,}$"
+                        },
+			{
+                         "id"      : "host",
+                         "type"    : "ip"
+                        },
+                        {
+                         "id"      : "date",
+                         "type"    : "string",
+			 "pattern" : "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+                        },
+			{
+                         "id"      : "color",
+                         "type"    : "string",
+                         "pattern" : "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
+                        }
+                       ],
+    "fields" :        [
+                        {
+                         "id"      : "_logon",
+                         "type"    : "text",
+                         "pattern" : "^[A-Za-z0-9_]+$"
+                        },
+                        {
+                         "id"      : "_project",
+                         "type"    : "text",
+                         "pattern" : "^[a-zA-Z0-9_]+$"
+                        },
+                        {
+                         "id"      : "_window",
+                         "type"    : "text",
+                         "pattern" : "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                        },
+                        {
+                         "id"      : "_uuid",
+                         "type"    : "text",
+                         "pattern" : "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+                        },
+		        {
+                         "id"      : "_navigator",
+                         "type"    : "text",
+                         "pattern" : ".{1,}"
+                        },
+                        {
+                        "id"      : "_eventlog",
+                         "type"    : "text",
+                         "pattern" : ".{1,}"
+                        },
+			{
+                        "id"      : "_xsedeproject",
+                         "type"    : "listbox"
+                        },
+                        {
+                        "id"      : "_docrootexecutable",
+                         "type"    : "text"
+                        },
+                        {
+                        "id"      : "_spec",
+                         "type"    : "text"
+                        },
+			{
+                        "id"      : "_spec_dir",
+                         "type"    : "text",
+			 "pattern" : "^[-A-Za-z0-9+=]{1,50}|=[^=]|={3,}$"
+                        },
+			{
+                        "id"      : "_groups",
+                         "type"    : "integer"
+                        },
+                        {  
+                        "id"      : "_getlastmsg",
+                         "type"    : "integer"
+                        },
+			{
+                        "id"      : "_getinput",
+                         "type"    : "boolean"
+                        },
+			{
+                        "id"      : "_selaltval",
+                         "type"    : "text"
+                        },
+			{
+                        "id"      : "_html",
+                         "type"    : "text"
+                        },
+			{
+                        "id"      : "_altval",
+                         "type"    : "ftree"
+                        },
+                        {   
+                        "id"      : "_decodepath",
+                         "type"    : "text"
+                        },
+			{
+                        "id"      : "_asuser",
+                         "type"    : "text",
+			 "pattern" : "^[A-Za-z0-9_]+$" 
+                        },
+			{
+                        "id"      : "_id",
+                         "type"    : "text",
+                         "pattern" : "^[a-f0-9]{24}$"
+                        },
+			{
+                        "id"      : "_jid",
+                         "type"    : "text",
+                         "pattern" : "^[a-f0-9]{24}$"
+                        },
+			{
+                        "id"      : "_manageid",
+                         "type"    : "text",
+                         "pattern" : "^[0-9a-f]{40}$"
+                        },
+			{
+                        "id"      : "_submitpolicy",
+                         "type"    : "text"
+                        },
+			{
+                        "id"      : "_tree",
+                         "type"    : "text"
+                        },
+			{
+                        "id"      : "_jobweight",
+                         "type"    : "float"
+                        },
+			{
+                        "id"      : "_cache_module",
+                         "type"    : "boolean"
+                        },
+			{
+                        "id"      : "_base_directory",
+                         "type"    : "text"
+                        },
+			{
+                        "id"      : "_log_directory",
+                         "type"    : "text"
+                        },
+			{
+                        "id"      : "_application",
+                         "type"    : "text"
+                        },
+			{
+                        "id"      : "_webroot",
+                         "type"    : "text"
+                        },
+			{
+                        "id"      : "_tcphost",
+                         "type"    : "host"
+                        },
+			{
+                        "id"      : "_udphost",
+                         "type"    : "host"
+                        },
+                        {
+                        "id"      : "_tcpport",
+                         "type"    : "integer"
+                        },
+			{
+                        "id"      : "_udpport",
+                         "type"    : "integer"
+                        },
+			{
+                        "id"      : "_menu",
+                         "type"    : "text"
+                        },
+			{
+                        "id"      : "_module",
+                         "type"    : "text"
+                        },
+			{
+                        "id"      : "_switch",
+                         "type"    : "text"
+                        },
+			{
+                        "id"      : "_users",
+                         "type"    : "integer"
+                        },
+			{
+                        "id"      : "tags",
+                         "type"    : "text"
+                        },
+			{
+                        "id"      : "tagmode",
+                         "type"    : "text"
+                        },
+			{
+                        "id"      : "format",
+                         "type"    : "text"
+                        },
+			{                        
+                        "id"      : "numproc",
+                         "type"    : "integer"
+                        },
+			{
+                        "id"      : "id",
+                         "type"    : "text"
+                        },
+			{
+                        "id"      : "captcha",
+                         "type"    : "text",
+			 "pattern" : "^[-A-Za-z0-9+=]{1,50}|=[^=]|={3,}$"
+                        },
+			{
+                        "id"      : "resourcedefault",
+                         "type"    : "text"
+                        }
+                       ]
+}

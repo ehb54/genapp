@@ -1,6 +1,19 @@
 <?php
 header('Content-type: application/json');
 session_start(); 
+
+require_once "__docroot:html5__/__application__/ajax/ga_filter.php";
+$modjson = json_decode( '__modulejson__' );
+$inputs_req = $_REQUEST;
+$validation_inputs = ga_sanitize_validate( $modjson, $inputs_req, '__menu:modules:id__' );
+
+if ( $validation_inputs[ "output" ] == "failed" ) {
+    $results = array( "error" => $validation_inputs[ "error" ] );
+#    $results[ '_status' ] = 'failed';
+#    echo ( json_encode( $results ) );
+#    exit();
+};
+
 $window = "";
 if ( isset( $_REQUEST[ '_window' ] ) )
 {

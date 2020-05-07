@@ -11,6 +11,20 @@ if ( !sizeof( $_REQUEST ) )
     exit();
 }
 
+require_once "__docroot:html5__/__application__/ajax/ga_filter.php";
+
+$modjson = json_decode( '__modulejson__' );
+#$modjson = [];
+$inputs_req = $_REQUEST;
+$validation_inputs = ga_sanitize_validate( $modjson, $inputs_req, '__menu:modules:id__' );
+
+if ( $validation_inputs[ "output" ] == "failed" ) {
+    $results = array( "error" => $validation_inputs[ "error" ] );
+#    $results[ '_status' ] = 'failed';
+#    echo ( json_encode( $results ) );
+#    exit();
+};
+
 if ( isset( $_REQUEST[ '_window' ] ) )
 {
    $window = $_REQUEST[ '_window' ];
@@ -99,7 +113,7 @@ if ( $doc = ga_db_output( ga_db_findOne( 'users', '', [ "name" => $_SESSION[ $wi
             $any_results = 1;
             if ( isset( $doc[ $k ] ) &&
                  $v == 0 &&
-                 is_array( $doc[ $k ] ) )
+                 is_object( $doc[ $k ] ) )
             
             {
                foreach ( $doc[ $k ] as $k2=>$v2 )

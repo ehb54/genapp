@@ -20,6 +20,18 @@ if ( !sizeof( $_REQUEST ) ) {
     exit();
 }
 
+require_once "__docroot:html5__/__application__/ajax/ga_filter.php";
+$modjson = array();
+$inputs_req = $_REQUEST;
+$validation_inputs = ga_sanitize_validate( $modjson, $inputs_req, 'uploader' );
+
+if ( $validation_inputs[ "output" ] == "failed" ) {
+    $results = array( "error" => $validation_inputs[ "error" ] );
+#    $results[ '_status' ] = 'failed';
+#    echo ( json_encode( $results ) );
+#    exit();
+};
+
 $do_logoff = 0;
 
 $window = "";
