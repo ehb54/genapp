@@ -2,7 +2,10 @@
 
 ga.layout.fields[ "__fields:id__" ] = {};
 ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id__">__fields:label__ </label>';
-ga.layout.fields[ "__fields:id__" ].dhtml = '<input type="number" name="__fields:id__" id="__fields:id__"__~fields:default{ value="__fields:default__"}__~fields:min{ min="__fields:min__"}__~fields:readonly{ readonly} data-type="float"__~fields:max{ max="__fields:max__"}__~fields:required{ required}__~fields:step{ step="__fields:step__"} class="ga-field-input-control__~fields:help{ help_link}"><span class="help">__fields:help__</span><span id="__fields:id___msg" class="warning field_msg" > </span>';
+ga.layout.fields[ "__fields:id__" ].dhtml =
+  '<input type="number" name="__fields:id__" id="__fields:id__"__~fields:default{ value="__fields:default__"}__~fields:min{ min="__fields:min__"}__~fields:readonly{ readonly} data-type="float"__~fields:max{ max="__fields:max__"}__~fields:required{ required}__~fields:step{ step="__fields:step__"} class="ga-field-input-control__~fields:help{ help_link}"><span class="help">__fields:help__</span><span id="__fields:id___msg" class="warning field_msg" > </span>'
+  __~fields:repeater{+ '<span id="__fields:id__-repeater"></span>'}
+  ;
 ga.layout.fields[ "__fields:id__" ].eval  =
   __~fields:pull{'ga.pull.toPull( "__moduleid__", "#__fields:id__", "integer", "__fields:pull__", "#__fields:repeat__" );' + }
   'ga.value.setLastValue( "__moduleid__", "#__fields:id__" );'
@@ -16,6 +19,11 @@ ga.layout.fields[ "__fields:id__" ].eval  =
   + '$( "#__fields:id__" ).keypress( function() { $( "#__fields:id___msg" ).html( "" ); });'
   __~fields:sync{ + 'ga.sync( "__moduleid__", "__fields:id__","__fields:sync__");'}
   ;
+
+
+__~fields:repeat{[ ga.layout.fields[ "__fields:id__" ].lhtml, ga.layout.fields[ "__fields:id__" ].dhtml ] = ga.repeat.repeat( "__moduleid__", "__fields:id__" );}
+__~fields:repeat{ga.layout.fields[ "__fields:id__" ].eval = 'ga.repeat.repeatOn("__moduleid__", "__fields:id__", "__fields:repeat__" );';}
+__~fields:repeater{ input_repeats += 'ga.repeat.change( "__moduleid__", "__fields:id__", 1 );'};
 
 /* old way
 ga.tmp.html = '';
