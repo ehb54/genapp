@@ -15,6 +15,22 @@ sub get_inherited_value {
     return get_inherited_value( $json, $panelpos, $$json{'panels'}[$$panelpos{$panel}]{$panel}{'parent'}, $inh );
 }
 
+sub get_inherited_subvalue {
+    my $json     = shift;
+    my $panelpos = shift;
+    my $panel    = shift;
+    my $key      = shift;
+    my $inh      = shift;
+
+    return $$json{'panels'}[$$panelpos{$panel}]{$panel}{$key}{$inh} if $$json{'panels'}[$$panelpos{$panel}]{$panel}{$key}{$inh};
+
+    die "root panel missing essential key $inh\n" if $panel eq 'root';
+
+    die "unexpected missing parent panel $panel\n" if !$$json{'panels'}[$$panelpos{$panel}]{$panel}{'parent'};
+
+    return get_inherited_subvalue( $json, $panelpos, $$json{'panels'}[$$panelpos{$panel}]{$panel}{'parent'}, $key, $inh );
+}
+
 sub typeof {
     my $expr = shift;
     if ( ref( $expr ) ) {
@@ -100,6 +116,17 @@ sub layout_prep {
         }
         if ( !exists $$layout{ 'panels' }[0]{ 'root' }{ 'data' } ) {
             $$layout{ 'panels' }[0]{ 'root' }{ 'data' } = [ 1, 2 ];
+        }
+        # repeats section
+        if ( !exists $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' } ) {
+            $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' } = decode_json( '{"location":["next","full"],"indent":"5px"}' );
+        } else {
+            if ( !exists $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' }{ 'location' } ) {
+                $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' }{ 'location' } = ["next","full"];
+            }
+            if ( !exists $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' }{ 'indent' } ) {
+                $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' }{ 'indent' } = "5px";
+            }
         }
     }
 
@@ -306,7 +333,8 @@ sub layout_prep {
             my @ids = ( "id",
                         "role",
                         "type",
-                        "layout" );
+                        "layout",
+                        "repeater" );
             @keepids{ @ids } = (1) x @ids;
         }
 
@@ -419,24 +447,49 @@ sub layout_expand {
 
 ## step 2 propagate parent keys
 
-    my %inherit;
     {
-        # keys to progagate
-        my @ikeys = ( 
-            "gap",
-            "align",
-            "label",
-            "data"
-            );
-        @inherit{ @ikeys } = (1) x @ikeys;
-    }
+        my %inherit;
+        {
+            # keys to progagate
+            my @ikeys = ( 
+                "gap",
+                "align",
+                "label",
+                "data"
+                );
+            @inherit{ @ikeys } = (1) x @ikeys;
+        }
 
-    for my $k ( keys %panelpos ) {
-        for my $inh ( keys %inherit ) {
-            $$json{'panels'}[$panelpos{$k}]{$k}{$inh} = get_inherited_value( $json, \%panelpos, $k, $inh );
+        for my $k ( keys %panelpos ) {
+            for my $inh ( keys %inherit ) {
+                $$json{'panels'}[$panelpos{$k}]{$k}{$inh} = get_inherited_value( $json, \%panelpos, $k, $inh );
+            }
         }
     }
+    
+    # subvalue inherits
+    # repeats section
+    {
+        my %inherit_subvalue;
+        {
+            # keys to progagate
+            my @ikeys = ( 
+                "location",
+                "indent"
+                );
+            @inherit_subvalue{ @ikeys } = (1) x @ikeys;
+        }
 
+        for my $k ( keys %panelpos ) {
+            if ( !exists $$json{'panels'}[$panelpos{$k}]{$k}{"repeats"} ) {
+                $$json{'panels'}[$panelpos{$k}]{$k}{"repeats"} = {};
+            }
+            for my $inh ( keys %inherit_subvalue ) {
+                $$json{'panels'}[$panelpos{$k}]{$k}{"repeats"}{$inh} = get_inherited_subvalue( $json, \%panelpos, $k, "repeats", $inh );
+            }
+        }
+    }
+        
 
 ## step 3 assign CSS grid info (row column, spans etc in parent div)
 
@@ -770,6 +823,35 @@ sub layout_expand {
             # print "for key $inh, layout:$$layout{'parent'}:\n";
             if ( !$$layout{$inh} ) {
                 $$layout{$inh} = get_inherited_value( $json, \%panelpos, $$layout{'parent'}, $inh );
+            }
+        }
+    }
+
+    # subvalue inherits
+    # repeats section
+    {
+        my %inherit_subvalue;
+        {
+            # keys to progagate
+            my @ikeys = ( 
+                "location",
+                "indent"
+                );
+            @inherit_subvalue{ @ikeys } = (1) x @ikeys;
+        }
+
+        for ( my $i = 0; $i <  @{$$json{'fields'} }; ++$i ) {
+            my $field  = $$json{'fields'}[$i];
+            my $layout = $$field{'layout'};
+            if ( exists $$field{"repeater"} ) {
+                if ( !exists $$layout{"repeats"} ) {
+                    $$layout{"repeats"} = {};
+                }
+                for my $inh ( keys %inherit_subvalue ) {
+                    if ( !exists $$layout{"repeats"}{$inh} ) {
+                        $$layout{"repeats"}{$inh} = get_inherited_subvalue( $json, \%panelpos, $$layout{'parent'}, "repeats", $inh );
+                    }
+                }
             }
         }
     }
