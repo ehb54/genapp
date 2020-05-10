@@ -24,7 +24,8 @@ ga.repeat.map           = {};
 // ga.repeat.data[ mod ].repeat[ id ].lhtmls      : repeat id's lhtml structure and label only for table header
 // ga.repeat.data[ mod ].repeat[ id ].dhtml       : repeat id's dhtml
 // ga.repeat.data[ mod ].repeat[ id ].dhtmlr      : repeat id's dhtml modified to ease replacement
-// ga.repeat.data[ mod ].repeat[ id ].dhtmls      : repeat id's dhtml structure and label only for table header
+// ga.repeat.data[ mod ].repeat[ id ].rhtml       : repeat id's rhtml
+// ga.repeat.data[ mod ].repeat[ id ].rhtmlr      : repeat id's rhtml modified to ease replacement
 // ga.repeat.data[ mod ].repeat[ id ].eval        : repeat id's eval
 // ga.repeat.data[ mod ].repeat[ id ].evalr       : repeat id's eval modified to ease replacement
 // ga.repeat.data[ mod ].repeat[ id ].refid       : repeat's repeater (as registered in repeatOn)
@@ -84,6 +85,16 @@ ga.repeat.repeat = function( mod, id ) {
     ga.repeat.data[ mod ].repeat[ id ].dhtml = ga.layout.fields[ id ].dhtml;
     ga.repeat.data[ mod ].repeat[ id ].eval  = ga.layout.fields[ id ].eval;
 
+    // setup div for repeats
+
+    if ( ga.layout.fields[ id ].rhtml ) {
+        ga.repeat.data[ mod ].repeat[ id ].rhtml = ga.layout.fields[ id ].rhtml;
+        ga.repeat.data[ mod ].repeat[ id ].rhtmlr = 
+            ga.repeat.data[ mod ].repeat[ id ].rhtml
+            .replace( RegExp( `id=ga-repeater-${id}` ), `id=ga-repeater-%%id%%` )
+        ;
+    }
+        
     ga.repeat.map[ id ] = id;
 
     // fix up html & eval for easy unconfused replacement
@@ -128,18 +139,6 @@ ga.repeat.repeat = function( mod, id ) {
         .replace( RegExp( 'id="' + id + '-repeater"' ), 'id="%%id%%-repeater"' )
     ;    
 
-    ga.repeat.data[ mod ].repeat[ id ].dhtmls = // grab just relevant table structure and label text
-        ga.repeat.data[ mod ].repeat[ id ].dhtml
-        .replace( /<td><label.*?>(.*?)<\/label>\s*<\/td>/, "%%td%%$1%%etd%%" )
-        .replace( /(<td[^>]*>).*?<\/td>/g, "$1</td>" )
-        .replace( /<input[^>]*>/g, "" )
-        .replace( /<span[^>]*>.*?<\/span>/g, "" )
-        .replace( /\s*id=".*?"\s*/g, "" )
-        .replace( "%%td%%", "<td>" )
-        .replace( "%%etd%%", "</td>" )
-        .replace( "<td></td>", "" )
-    ;
-            
     __~debug:repeathtmls{console.log( "ga.repeat.repeat( " + mod + " , " + id + " )" );}
     __~debug:repeathtmls{console.log( "--------------------" );}
     __~debug:repeathtmls{console.log( "ga.repeat.repeat() lhtml=" + ga.repeat.data[ mod ].repeat[ id ].lhtml );}
@@ -147,8 +146,6 @@ ga.repeat.repeat = function( mod, id ) {
     __~debug:repeathtmls{console.log( "ga.repeat.repeat() lhtmls=" + ga.repeat.data[ mod ].repeat[ id ].lhtmls );}
     __~debug:repeathtmls{console.log( "--------------------" );}
     __~debug:repeathtmls{console.log( "ga.repeat.repeat() dhtml=" + ga.repeat.data[ mod ].repeat[ id ].dhtml );}
-    __~debug:repeathtmls{console.log( "--------------------" );}
-    __~debug:repeathtmls{console.log( "ga.repeat.repeat() dhtmls=" + ga.repeat.data[ mod ].repeat[ id ].dhtmls );}
     __~debug:repeathtmls{console.log( "====================" );}
 
     ga.repeat.data[ mod ].repeat[ id ].evalr = 
@@ -330,6 +327,9 @@ ga.repeat.change = function( mod, id, init ) {
                 __~debug:repeat{console.log( " i " + i + " evalr " + ga.repeat.data[ mod ].repeat[ i ].evalr );}
                 add_html += ga.repeat.data[ mod ].repeat[ i ].lhtmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "" );
                 add_html += ga.repeat.data[ mod ].repeat[ i ].dhtmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "" );
+                if ( ga.repeat.data[ mod ].repeat[ i ].rhtmlr ) {
+                    add_html += ga.repeat.data[ mod ].repeat[ i ].rhtmlr.replace( /%%id%%/g, k );
+                }
                 add_eval += ga.repeat.data[ mod ].repeat[ i ].evalr.replace( /%%id%%/g, k );
                 if ( ga.repeat.data[ mod ].repeater[ i ] ) {
                     __~debug:repeat{console.log( "child repeater " + k );}
@@ -350,7 +350,6 @@ ga.repeat.change = function( mod, id, init ) {
         if ( ga.repeat.data[ mod ].repeater[ id ].tableize && val > 0 ) {
             for ( i in children ) {
                 add_html += ga.repeat.data[ mod ].repeat[ i ].lhtmls;
-                add_html += ga.repeat.data[ mod ].repeat[ i ].dhtmls;
             }
         }
 
@@ -363,6 +362,9 @@ ga.repeat.change = function( mod, id, init ) {
                 __~debug:repeat{console.log( " j " + j + " i " + i + " evalr " + ga.repeat.data[ mod ].repeat[ i ].evalr );}
                 add_html += ga.repeat.data[ mod ].repeat[ i ].lhtmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "[" + j + "]" ).replace( ga.repeat.data[ mod ].repeater[ id ].tableize ? /<td.*?><label.*?>.*?<\/label><\/td>/ : "", "" );
                 add_html += ga.repeat.data[ mod ].repeat[ i ].dhtmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "[" + j + "]" ).replace( ga.repeat.data[ mod ].repeater[ id ].tableize ? /<td.*?><label.*?>.*?<\/label><\/td>/ : "", "" );
+                if ( ga.repeat.data[ mod ].repeat[ i ].rhtmlr ) {
+                    add_html += ga.repeat.data[ mod ].repeat[ i ].rhtmlr.replace( /%%id%%/g, k );
+                }
                 add_eval += ga.repeat.data[ mod ].repeat[ i ].evalr.replace( /%%id%%/g, k );
                 if ( ga.repeat.data[ mod ].repeater[ i ] ) {
                     __~debug:repeat{console.log( "child repeater " + k );}
@@ -396,6 +398,9 @@ ga.repeat.change = function( mod, id, init ) {
             __~debug:repeat{console.log( " i " + i + " evalr " + ga.repeat.data[ mod ].repeat[ i ].evalr );}
             add_html += ga.repeat.data[ mod ].repeat[ i ].lhtmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "" );
             add_html += ga.repeat.data[ mod ].repeat[ i ].dhtmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "" );
+            if ( ga.repeat.data[ mod ].repeat[ i ].rhtmlr ) {
+                add_html += ga.repeat.data[ mod ].repeat[ i ].rhtmlr.replace( /%%id%%/g, k );
+            }
             add_eval += ga.repeat.data[ mod ].repeat[ i ].evalr.replace( /%%id%%/g, k );
             if ( ga.repeat.data[ mod ].repeater[ i ] ) {
                 __~debug:repeat{console.log( "child repeater " + k );}
@@ -420,7 +425,8 @@ ga.repeat.change = function( mod, id, init ) {
     __~debug:repeat{console.log( "ga.repeat.change( " + mod + " , " + id + " ) add_eval " + add_eval );}
     __~debug:repeat{console.log( "ga.repeat.change( " + mod + " , " + id + " ) target tag " + hid + "-repeater" );}
 
-    $( hid + "-repeater" ).html( add_html );
+    // $( hid + "-repeater" ).html( add_html );
+    $( `#ga-repeater-${id}` ).html( add_html );
     eval( add_eval );
 
     ga.repeat.data[ mod ].repeater[ id ].value = val;

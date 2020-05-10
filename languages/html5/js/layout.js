@@ -237,6 +237,10 @@ ga.layout.thishtml = function( panel ) {
                 html += ga.layout.fields[ id ].dhtml;
                 html += `</div>\n`;
             }
+            if ( ga.layout.fields[ id ].rhtml ) {
+                // likely markup with style
+                html += ga.layout.fields[ id ].rhtml + '<!-- from layout.js -->';
+            }
         }
     }
 
