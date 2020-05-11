@@ -12,9 +12,9 @@ ga.layout.module.name = "__moduleid__";
 ga.layout.buttonhtml = {};
 ga.layout.fields = {};
 ga.layout.panel = JSON.parse( '__layout__' );
-
 ga.layout.handler = ga.layout.handler || {};
 ga.layout.handler[ '__moduleid__' ] = {};
+ga.layout.init();
 
 ga.tmp.bgi = ga.color.data.body.background;
 __~style:backgroundimage{ga.tmp.bgi = "url(__style:backgroundimage__)";}

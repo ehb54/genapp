@@ -36,6 +36,7 @@ ga.repeat.map           = {};
 // ga.repeat.data[ mod ].repeater[ id ].child     : repeater's children (as registered in repeatOn)
 // ga.repeat.data[ mod ].repeater[ id ].choice    : repeater's listbox choice
 // ga.repeat.data[ mod ].repeater[ id ].value     : repeater's last value
+// ga.repeat.data[ mod ].repeater[ id ].layoutr   : repeater's layout.repeats
 //
 // ga.repeat.map                                  : map of original id's to DOM id's of repeats
 // ----------------------------------------------------------------------------------------------------------
@@ -81,10 +82,15 @@ ga.repeat.repeat = function( mod, id ) {
         return ret_val;
     }
 
-    ga.repeat.data[ mod ].repeat[ id ].lhtml = ga.layout.fields[ id ].lhtml;
-    ga.repeat.data[ mod ].repeat[ id ].dhtml = ga.layout.fields[ id ].dhtml;
-    ga.repeat.data[ mod ].repeat[ id ].eval  = ga.layout.fields[ id ].eval;
+    ga.repeat.data[ mod ].repeat[ id ].lhtml   = ga.layout.fields[ id ].lhtml;
+    ga.repeat.data[ mod ].repeat[ id ].dhtml   = ga.layout.fields[ id ].dhtml;
+    ga.repeat.data[ mod ].repeat[ id ].eval    = ga.layout.fields[ id ].eval;
 
+    ga.repeat.data[ mod ].repeater = ga.repeat.data[ mod ].repeater || {};
+    ga.repeat.data[ mod ].repeater[ id ] = ga.repeat.data[ mod ].repeater[ id ] || {};
+    ga.repeat.data[ mod ].repeater[ id ].layoutr = ga.layout.modules[ mod ].fields[ id ].repeats || null;
+    __~debug:layoutloc{console.log( `ga.repeat.repeat() usage of style : setting layout for repeat on "${mod}" field "${id}" to ` + JSON.stringify( ga.repeat.data[ mod ].repeater[ id ].layoutr ) );}
+    
     // setup div for repeats
 
     if ( ga.layout.fields[ id ].rhtml ) {
@@ -218,6 +224,15 @@ ga.repeat.repeater = function( mod, id, type, tableize ) {
         __~debug:repeattableize{console.log( "ga.repeat.repeater( " + mod + " , " + id + " , " + type + " , " + tableize + " ) tabelize on" );}
     }
     __~debug:repeattableize{else {console.log( "ga.repeat.repeater( " + mod + " , " + id + " , " + type + " , " + tableize + " ) tabelize off" );}}
+
+    var uid = id.replace( /\-\d*$/, '' );
+    
+    if ( !ga.layout.modules[ mod ].fields[ uid ] ) {
+        console.warn( `in ga.repeat.repeater(), missing ga.layout.modules[ ${mod} ].fields[ ${uid} ]` );
+    } else {
+        ga.repeat.data[ mod ].repeater[ id ].layoutr = ga.layout.modules[ mod ].fields[ uid ].repeats || null;
+        __~debug:layoutloc{console.log( `ga.repeat.repeater() usage of style : setting layout for repeater "${mod}" field "${uid}" to ` + JSON.stringify( ga.repeat.data[ mod ].repeater[ uid ].layoutr ) );}
+    }
 }
 
 // return all children
@@ -423,10 +438,13 @@ ga.repeat.change = function( mod, id, init ) {
 
     __~debug:repeat{console.log( "ga.repeat.change( " + mod + " , " + id + " ) add_html " + add_html );}
     __~debug:repeat{console.log( "ga.repeat.change( " + mod + " , " + id + " ) add_eval " + add_eval );}
-    __~debug:repeat{console.log( "ga.repeat.change( " + mod + " , " + id + " ) target tag " + hid + "-repeater" );}
+    __~debug:repeat{console.log( `ga.repeat.change( ${mod} , ${id} ) target tag ga-repeater-${id}` );}
 
     // $( hid + "-repeater" ).html( add_html );
     $( `#ga-repeater-${id}` ).html( add_html );
+    var uid = id.replace( /\-\d*$/, '' ).replace( /^.*-/, '' );
+    __~debug:layoutloc{console.log( `ga.repeat.change() usage of style : set for "ga-repeater-${id}" from ga.repeat.data["${mod}"].repeater["${uid}"].layoutr if it exists` );}
+    
     eval( add_eval );
 
     ga.repeat.data[ mod ].repeater[ id ].value = val;

@@ -10,11 +10,12 @@ ga.layout = {};
 // ----------------------------------------------------------------------------------------------------------
 // summary of data structures
 // ----------------------------------------------------------------------------------------------------------
-// ga.layout.module.name                          : the module name
-// ga.layout.fields[ fieldname ]                  : field data
-// ga.layout.fields[ fieldname ].lhtml            : label html
-// ga.layout.fields[ fieldname ].dhtml            : data html
-// ga.layout.fields[ fieldname ].eval             : eval
+// ga.layout.module.name                             : the module name
+// ga.layout.fields[ fieldname ]                     : field data
+// ga.layout.fields[ fieldname ].lhtml               : label html
+// ga.layout.fields[ fieldname ].dhtml               : data html
+// ga.layout.fields[ fieldname ].eval                : eval
+// ga.layout.modules[ module ].fields[ fieldname ]   : layout structure by field name
 // ----------------------------------------------------------------------------------------------------------
 // summary of operations
 // ----------------------------------------------------------------------------------------------------------
@@ -22,7 +23,30 @@ ga.layout = {};
 // ga.layout.html                                 : return complete html
 // ga.layout.buttons                              : return buttons
 // ga.layout.eval                                 : return eval bits
+// ga.layout.init                                 : initial parsing of layout for repeat.js which is called early
 // ----------------------------------------------------------------------------------------------------------
+
+ga.layout.init = function () {
+    if ( !ga.layout.module ||
+         !ga.layout.module.name ) {
+        console.error( "ga.layout.init() error: ga.layout.module.name not defined" );
+        return;
+    }
+    if ( !ga.layout.panel ||
+         !ga.layout.panel.fields ) {
+        console.error( "ga.layout.init() error: ga.layout.panel.fields not defined" );
+        return;
+    }
+
+    ga.layout.modules = ga.layout.modules || {};
+    ga.layout.modules[ ga.layout.module.name ] = ga.layout.modules[ ga.layout.module.name ] || {};
+    ga.layout.modules[ ga.layout.module.name ].fields = {};
+    
+    for ( var i = 0; i < ga.layout.panel.fields.length; ++i ) {
+        ga.layout.modules[ ga.layout.module.name ].fields[ ga.layout.panel.fields[ i ].id ] = ga.layout.panel.fields[ i ].layout;
+        __~debug:layoutloc{console.log( `in layout.js:setting layout for ${ga.layout.module.name} field ${ga.layout.panel.fields[i].id} to ` + JSON.stringify( ga.layout.panel.fields[i].layout ) );}
+    }
+}
 
 ga.layout.process = function ( defaults ) {
     if ( !defaults ||
@@ -32,7 +56,7 @@ ga.layout.process = function ( defaults ) {
     }
     if ( !ga.layout.module ||
          !ga.layout.module.name ) {
-        console.error( "ga.layout.process() required ga.layout.module.name set" );
+        console.error( "ga.layout.process() error: ga.layout.module.name not defined" );
         return;
     }
 
@@ -148,6 +172,7 @@ ga.layout.setup = function() {
             ga.layout.children[ parent ].push( panel );
         }
     }
+
     ga.layout.panelfields = {};
     for ( var i = 0; i < ga.layout.panel.fields.length; ++i ) {
         var panel = ga.layout.panel.fields[ i ].layout.parent;
