@@ -86,10 +86,12 @@ ga.repeat.repeat = function( mod, id ) {
     ga.repeat.data[ mod ].repeat[ id ].dhtml   = ga.layout.fields[ id ].dhtml;
     ga.repeat.data[ mod ].repeat[ id ].eval    = ga.layout.fields[ id ].eval;
 
-    ga.repeat.data[ mod ].repeater = ga.repeat.data[ mod ].repeater || {};
-    ga.repeat.data[ mod ].repeater[ id ] = ga.repeat.data[ mod ].repeater[ id ] || {};
-    ga.repeat.data[ mod ].repeater[ id ].layoutr = ga.layout.modules[ mod ].fields[ id ].repeats || null;
-    __~debug:layoutloc{console.log( `ga.repeat.repeat() usage of style : setting layout for repeat on "${mod}" field "${id}" to ` + JSON.stringify( ga.repeat.data[ mod ].repeater[ id ].layoutr ) );}
+    if ( ga.layout.modules[ mod ].fields[ id ].repeats ) {
+        ga.repeat.data[ mod ].repeater = ga.repeat.data[ mod ].repeater || {};
+        ga.repeat.data[ mod ].repeater[ id ] = ga.repeat.data[ mod ].repeater[ id ] || {};
+        ga.repeat.data[ mod ].repeater[ id ].layoutr = ga.layout.modules[ mod ].fields[ id ].repeats;
+        __~debug:layoutloc{console.log( `ga.repeat.repeat() usage of style : setting layout for repeat on "${mod}" field "${id}" to ` + JSON.stringify( ga.repeat.data[ mod ].repeater[ id ].layoutr ) );}
+    }
     
     // setup div for repeats
 
@@ -225,7 +227,7 @@ ga.repeat.repeater = function( mod, id, type, tableize ) {
     }
     __~debug:repeattableize{else {console.log( "ga.repeat.repeater( " + mod + " , " + id + " , " + type + " , " + tableize + " ) tabelize off" );}}
 
-    var uid = id.replace( /\-\d*$/, '' );
+    var uid = id.replace( /\-\d*$/, '' ).replace( /^.*-/, '' );
     
     if ( !ga.layout.modules[ mod ].fields[ uid ] ) {
         console.warn( `in ga.repeat.repeater(), missing ga.layout.modules[ ${mod} ].fields[ ${uid} ]` );
@@ -443,7 +445,7 @@ ga.repeat.change = function( mod, id, init ) {
     // $( hid + "-repeater" ).html( add_html );
     $( `#ga-repeater-${id}` ).html( add_html );
     var uid = id.replace( /\-\d*$/, '' ).replace( /^.*-/, '' );
-    __~debug:layoutloc{console.log( `ga.repeat.change() usage of style : set for "ga-repeater-${id}" from ga.repeat.data["${mod}"].repeater["${uid}"].layoutr if it exists` );}
+    __~debug:layoutloc{console.log( `ga.repeat.change() usage of style : set for "ga-repeater-${id}" from ga.repeat.data["${mod}"].repeater["${uid}"].layoutr with value ` + JSON.stringify(ga.repeat.data[mod].repeater[uid].layoutr) );}
     
     eval( add_eval );
 
