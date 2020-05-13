@@ -22,6 +22,7 @@ if ( '__fields:style__' === "switch" ) {
 } else {
     ga.layout.fields[ "__fields:id__" ].dhtml = ga.tmp.dhtml.checkbox;
 }
+__~fields:repeater{ga.layout.fields[ "__fields:id__" ].rhtml = '<div id=ga-repeater-__fields:id__></div>';}
 
 ga.layout.fields[ "__fields:id__" ].eval  = __~fields:pull{'ga.pull.toPull( "__moduleid__", "#__fields:id__", "checkbox", "__fields:pull__", "#__fields:repeat__" );' +}
   'ga.value.setLastValue( "__moduleid__", "#__fields:id__" );'
@@ -31,6 +32,10 @@ ga.layout.fields[ "__fields:id__" ].eval  = __~fields:pull{'ga.pull.toPull( "__m
   ;
 
 __~fields:hider{input_repeats += 'ga.hide.update( "__moduleid__", "#__fields:id__" );';}
+
+__~fields:repeat{[ ga.layout.fields[ "__fields:id__" ].lhtml, ga.layout.fields[ "__fields:id__" ].dhtml ] = ga.repeat.repeat( "__moduleid__", "__fields:id__" );}
+__~fields:repeat{ga.layout.fields[ "__fields:id__" ].eval = 'ga.repeat.repeatOn("__moduleid__", "__fields:id__", "__fields:repeat__" );';}
+__~fields:repeater{ input_repeats += 'ga.repeat.change( "__moduleid__", "__fields:id__", 1 );'};
 
 /* old way
 this_html = '<tr id="__fields:id___tr">__~fields:prehline{<td colspan="__fields:colspan__"><hr></td></tr><tr>}<td><label for="__fields:id__" class="highlight__~fields:fontclass{ __fields:fontclass__}">__fields:label__ </label></td><td><input type="checkbox" name="__fields:id__" id="__fields:id__"__~fields:repeater{ data-repeater="checkbox"}__~fields:required{ required}__~fields:checked{ checked}__~fields:help{ class="help_link"><span class="help">__fields:help__</span}></td>__~fields:posthline{</tr><tr><td colspan="__fields:colspan__"><hr></td>}</tr>'
