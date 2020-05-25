@@ -119,13 +119,13 @@ sub layout_prep {
         }
         # repeats section
         if ( !exists $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' } ) {
-            $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' } = decode_json( '{"location":["next","full"],"indent":"5px"}' );
+            $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' } = decode_json( '{"location":["next","full"],"size":["auto","auto"]}' );
         } else {
+            if ( !exists $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' }{ 'size' } ) {
+                $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' }{ 'size' } = [ "auto", "auto" ];
+            }
             if ( !exists $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' }{ 'location' } ) {
                 $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' }{ 'location' } = ["next","full"];
-            }
-            if ( !exists $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' }{ 'indent' } ) {
-                $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' }{ 'indent' } = "5px";
             }
         }
     }
@@ -334,7 +334,8 @@ sub layout_prep {
                         "role",
                         "type",
                         "layout",
-                        "repeater" );
+                        "repeater",
+                        "repeat" );
             @keepids{ @ids } = (1) x @ids;
         }
 
@@ -474,8 +475,8 @@ sub layout_expand {
         {
             # keys to progagate
             my @ikeys = ( 
-                "location",
-                "indent"
+                "size",
+                "location"
                 );
             @inherit_subvalue{ @ikeys } = (1) x @ikeys;
         }
@@ -834,8 +835,8 @@ sub layout_expand {
         {
             # keys to progagate
             my @ikeys = ( 
-                "location",
-                "indent"
+                "size",
+                "location"
                 );
             @inherit_subvalue{ @ikeys } = (1) x @ikeys;
         }
