@@ -221,6 +221,7 @@ ga.layout.thishtml = function( panel ) {
         for ( var i = 0; i < ga.layout.panelfields[ panel ].length; ++i ) {
             var lfstyle = "";
             var dfstyle = "";
+            var rfstyle = "";
             var fclass  = "";
             var id = ga.layout.panelfields[ panel ][ i ].id;
             if ( ga.layout.panelfields[ panel ][ i ].role ) {
@@ -251,6 +252,27 @@ ga.layout.thishtml = function( panel ) {
             if ( ga.layout.panelfields[ panel ][ i ].layout.align ) {
                 dfstyle += "text-align:" + ga.layout.panelfields[ panel ][ i ].layout.align + ";";
             }
+            if ( ga.layout.panelfields[ panel ][ i ].rgtr ||
+                 ga.layout.panelfields[ panel ][ i ].rgtc ||
+                 ga.layout.panelfields[ panel ][ i ].rgr ||
+                 ga.layout.panelfields[ panel ][ i ].rgc ) {
+                rfstyle += "display:grid;";
+            }
+            if ( ga.layout.panelfields[ panel ][ i ].rgtr ) {
+                rfstyle += "grid-template-rows:" + ga.layout.panelfields[ panel ][ i ].rgtr + ";";
+            }
+            if ( ga.layout.panelfields[ panel ][ i ].rgtc ) {
+                rfstyle += "grid-template-columns:" + ga.layout.panelfields[ panel ][ i ].rgtc + ";";
+            }
+            if ( ga.layout.panelfields[ panel ][ i ].rgr ) {
+                rfstyle += "grid-row:" + ga.layout.panelfields[ panel ][ i ].rgr + ";";
+            }
+            if ( ga.layout.panelfields[ panel ][ i ].rgc ) {
+                rfstyle += "grid-column:" + ga.layout.panelfields[ panel ][ i ].rgc + ";";
+            }
+            if ( ga.layout.panelfields[ panel ][ i ].layout.align ) {
+                rfstyle += "text-align:" + ga.layout.panelfields[ panel ][ i ].layout.align + ";";
+            }
             __~debug:layout{console.error( `id is ${id}` );}
             if ( ga.layout.fields[ id ].lhtml && ga.layout.fields[ id ].lhtml.length ) {
                 html += `<div id=ga-label-${id} style="${lfstyle}" class="${fclass}">`;
@@ -263,8 +285,9 @@ ga.layout.thishtml = function( panel ) {
                 html += `</div>\n`;
             }
             if ( ga.layout.fields[ id ].rhtml ) {
-                // likely markup with style
-                html += ga.layout.fields[ id ].rhtml + '<!-- from layout.js -->';
+                html += `<div id=ga-repeats-container-${id} style="${rfstyle}">`;
+                html += ga.layout.fields[ id ].rhtml;
+                html += `</div>\n`;
             }
         }
     }
