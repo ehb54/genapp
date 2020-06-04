@@ -1,10 +1,13 @@
 #!/usr/bin/perl
 
 $notes = 
-"usage: $0 file
+"usage: $0 {options} file
 file is layout json
 this test program \"fully populates\" layout fields in prep for layout testing
-
+options: 
+-d           debug layout
+-dc          debug cursor implies debug layout
+-df panels   debug fields for specified panels (comma separated, no spaces) or 'all' for all panels
 ";
 
 $gap = $ENV{ "GENAPP" } || die "$0: error env variable GENAPP must be defined\n";
@@ -15,9 +18,19 @@ $f = shift || die $notes;
 
 if ( $f =~ /^-d$/ ) {
     $debuglayout++;
-    if ( $debuglayout ) {
-        use Data::Dumper;
-    }
+    use Data::Dumper;
+    $f = shift || die $notes;
+}
+
+if ( $f =~ /^-dc$/ ) {
+    $debuglayout++;
+    $debugcursor++;
+    use Data::Dumper;
+    $f = shift || die $notes;
+}
+
+if ( $f =~ /^-df$/ ) {
+    $debugfields = shift || die $notes;
     $f = shift || die $notes;
 }
 
