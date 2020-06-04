@@ -24,6 +24,7 @@ ga.layout = {};
 // ga.layout.buttons                              : return buttons
 // ga.layout.eval                                 : return eval bits
 // ga.layout.init                                 : initial parsing of layout for repeat.js which is called early
+// ga.layout.rhtml                                : return rhtml for field
 // ----------------------------------------------------------------------------------------------------------
 
 ga.layout.init = function () {
@@ -48,6 +49,41 @@ ga.layout.init = function () {
     }
 }
 
+ga.layout.rhtml = function ( field ) {
+    __~debug:layoutloc{console.log( `ga.layout.rhtml( ${field} )`);}
+    var found = false;
+    var pos;
+    for ( pos = 0; pos < ga.layout.panel.fields.length; ++pos ) {
+        if ( ga.layout.panel.fields[ pos ].id && ga.layout.panel.fields[ pos ].id == field ) {
+            found = true;
+            break;
+        }
+    }
+
+    var htmlopen = `<div id=ga-repeater-${field}`;
+    if ( !found ) {
+        console.error( `ga.layout.rhtml( ${field} ) : field does not exist` );
+        return `${htmlopen}></div>`;
+    }
+
+    if ( !ga.layout.panel.fields[ pos ].rgtr ||
+         !ga.layout.panel.fields[ pos ].rgtc ||
+         !ga.layout.panel.fields[ pos ].rgr ||
+         !ga.layout.panel.fields[ pos ].rgc ) {
+        console.error( `ga.layout.rhtml( ${field} ) : field does not have a complete set of tags` );
+        return `${htmlopen}></div>`;
+    }
+
+    htmlopen += ` style="display:grid;grid-template-rows:${ga.layout.panel.fields[pos].rgtr};grid-template-columns:${ga.layout.panel.fields[pos].rgtc};grid-row:${ga.layout.panel.fields[pos].rgr};grid-column:${ga.layout.panel.fields[pos].rgc}`;
+    if ( ga.layout.panel.fields[ pos ].ralign ) {
+        htmlopen += `;text-align:${ga.layout.panel[pos].ralign}`;
+    }
+    htmlopen += "></div>";
+    
+    __~debug:layoutloc{console.log( `ga.layout.rhtml( ${field} ) returns "${htmlopen}"`);}
+    return htmlopen;
+}
+    
 ga.layout.process = function ( defaults ) {
     if ( !defaults ||
          !defaults.resource ) {

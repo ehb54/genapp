@@ -202,8 +202,6 @@ sub fields_in_panel {
 
 }
     
-
-
 sub layout_prep {
     my $mname  = shift;
     my $layout = shift; 
@@ -280,6 +278,36 @@ sub layout_prep {
         }
     }
 
+    # add repeat fields as panels
+
+    {
+        for my $k ( @{$$json{ 'fields' }} ) {
+            if ( !exists $$k{ 'id' } ) {
+                my $js = JSON->new;
+                $error .= "module: $mname : field missing id : " . $js->pretty->encode( $k ) . "\n";
+            } else {
+                if ( exists $$k{ 'repeater' } ) {
+
+                    my $pname = "r-$$k{'id'}";
+                    push @{$$layout{ 'panels' }}, decode_json( "{\"$pname\":{}}" );
+                    if ( exists $$k{'layout'} ) {
+                        if ( exists $$k{'layout'}{'repeats'} && exists $$k{'layout'}{'repeats'}{'size'} ) {
+                            $$layout{ 'panels' }[-1]{ $pname }{'size'} = decode_json( encode_json( $$k{'layout'}{'repeats'}{'size'} ) );
+                        }
+                        if ( exists $$k{'layout'}{'parent'} ) {
+                            $$layout{ 'panels' }[-1]{ $pname }{'parent'} = $$k{'layout'}{'parent'};
+                        } else {
+                            $$layout{ 'panels' }[-1]{ $pname }{'parent'} = "root";
+                        }
+                    } else {
+                        $$layout{ 'panels' }[-1]{ $pname }{'parent'} = "root";
+                        $$layout{ 'panels' }[-1]{ $pname }{'size'} = decode_json( encode_json( $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' }{ 'size' } ) );
+                    }
+                }
+            }
+        }
+    }
+
     %panel_apos = ();
 
     {
@@ -318,6 +346,7 @@ sub layout_prep {
                 }
             }
         }
+
 
 # determine "case" for added controls
 
@@ -637,10 +666,20 @@ sub layout_expand {
             }
             for my $inh ( keys %inherit_subvalue ) {
                 $$json{'panels'}[$panelpos{$k}]{$k}{"repeats"}{$inh} = get_inherited_subvalue( $json, \%panelpos, $k, "repeats", $inh );
+                if ( $k =~ /^r-/ ) {
+                    # propagate up if repeater
+                    $$json{'panels'}[$panelpos{$k}]{$k}{$inh} = $$json{'panels'}[$panelpos{$k}]{$k}{"repeats"}{$inh};
+                }
             }
         }
     }
-        
+    
+    if ( 0 ) {
+        my $js = JSON->new;
+        print "panel json subvalue propogation:\n" . $js->pretty->encode( $$json{'panels'} ) . "\n";
+        die;
+    }
+
 
 ## step 3 assign CSS grid info (row column, spans etc in parent div)
 
@@ -660,11 +699,13 @@ sub layout_expand {
 
         if ( typeof( $size ) ne 'ARRAYref' ) {
             $error .= "module: $mname : panel $k 'size' not an array\n";
+            die $error;
             return;
         }
 
         if ( @$size != 2 ) {
             $error .= "module: $mname : panel $k 'size' is an array but does not contain exactly 2 elements\n";
+            die $error;
             return;
         }
 
@@ -726,11 +767,13 @@ sub layout_expand {
             if ( $location ) {
                 if ( typeof( $location ) ne 'ARRAYref' ) {
                     $error .= "module: $mname : panel $k 'location' not an array\n";
+                    die $error;
                     return;
                 }
 
                 if ( @$location != 2 ) {
                     $error .= "module: $mname : panel $k 'location' is an array but does not contain exactly 2 elements\n";
+                    die $error;
                     return;
                 }
             }
@@ -930,6 +973,7 @@ sub layout_expand {
 
     if ( !$$json{'fields'} ) {
         $error .= "module: $mname : no fields defined\n";
+        die $error;
         return;
     } 
 
@@ -945,6 +989,7 @@ sub layout_expand {
             $$field{'layout'}{'parent'} = "root";
         } elsif ( !$panelpos{ $$layout{'parent'} } ) {
             $error .= "module: $mname : field $id layout:parent $$layout{'parent'} is missing from panels\n";
+            die $error;
             return;
         } else {
             # print "field id $id has layout with parent\n";
@@ -1051,11 +1096,13 @@ sub layout_expand {
         if ( $location ) {
             if ( typeof( $location ) ne 'ARRAYref' ) {
                 $error .= "module: $mname : field $fieldid layout:location not an array\n";
+                die $error;
                 return;
             }
 
             if ( @$location != 2 ) {
                 $error .= "module: $mname : field $fieldid layout:location is an array but does not contain exactly 2 elements\n";
+                die $error;
                 return;
             }
         }
@@ -1255,6 +1302,13 @@ sub layout_expand {
                 die "repeater without layout:repeats:location";
             }
             add_field( 'repeats', $mname, $field, $$layout{'repeats'}{'location'}[0], $$layout{'repeats'}{'location'}[1], \$loc_row, \$loc_col, \$max_row, \$max_col, \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols );
+            my $rparent = "r-$fieldid";
+            if ( $$json{'panels'}[$panelpos{ $rparent }]{ $rparent }{ 'gtr' } ) {
+                $$field{'rgtr'} = $$json{'panels'}[$panelpos{ $rparent }]{ $rparent }{ 'gtr' };
+            }
+            if ( $$json{'panels'}[$panelpos{ $rparent }]{ $rparent }{ 'gtc' } ) {
+                $$field{'rgtc'} = $$json{'panels'}[$panelpos{ $rparent }]{ $rparent }{ 'gtc' };
+            }
             fields_in_panel( "after repeats '$fieldid'", $parent, $json, $cursor_row{$parent}, $cursor_col{$parent}, $loc_row, $loc_col, "nd", "nd", $debugfields ) if $debugfields;
         }            
 
@@ -1282,6 +1336,27 @@ sub layout_expand {
 ## step 3 check for clobbering (possibly included with previous step)
 
     } # fields
+
+    # remove r- panels
+
+    {
+        my @deletepanels;
+        
+        for ( my $i = 0; $i <  @{$$json{'panels'} }; ++$i ) {
+            my $panel_name = ( keys %{$$json{'panels'}[$i]} )[0];
+            if ( $panel_name =~ /^r-/ ) {
+                push @deletepanels, $panel_name;
+                splice @{ $$json{'panels'} }, $i, 1;
+                $i--;
+            }
+        }
+        if ( 0 ) {
+            print "---xxx---"x10 . "\npanels to delete:\n";
+            print join ' ', @deletepanels;
+            print "\n";
+            print "---xxx---"x10 . "\n";
+        }
+    }
 
     if ( length( $error ) ) {
         die $error;
@@ -1492,6 +1567,4 @@ sub add_field {
     }
 }
     
-
 return 1;
-

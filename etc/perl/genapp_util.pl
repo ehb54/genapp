@@ -219,7 +219,9 @@ sub replace_file_json_walk {
         } else {
             if ( ref( $v ) eq 'ARRAY' ) {
                 for ( my $i = 0; $i < @$v; ++$i ) {
-                    replace_file_json_walk( @$v[$i], $lang, $file );
+                    if ( ref( @$v[$i] ) eq 'HASH' ) {
+                        replace_file_json_walk( @$v[$i], $lang, $file );
+                    }
                 }
             } else {
                 # at leaf node ... load file if needed
@@ -757,6 +759,7 @@ sub get_file_json {
         $mname =~ s/^.*\/([^\/]*)\.json$/\1/;
         require "$gap/etc/perl/ga_layout.pm";
         layout_expand( $mname, $layout, $json );
+#        print "after layout_expand: layout ref " . ref($layout) . " json ref " . ref($json ) . "\n";
         $extra_subs{ '__layout__' } = encode_json( $layout );
 #        if ( $mname eq 'energy' ) {
 #            my $js = JSON->new;
@@ -791,7 +794,7 @@ sub get_file_json_lang_specific {
     my $l = $_[ 1 ];
     my $r = $_[ 2 ];
 
-#    print "get_file_json_lang_specific f='$f' l='$l' r='$r'\n";
+    # print "get_file_json_lang_specific f='$f' l='$l' r='$r'\n";
 
     if ( $l && -e "$l/$f" ) {
         $get_file_json_lang_specific_used++;
