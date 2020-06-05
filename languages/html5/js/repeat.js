@@ -86,6 +86,13 @@ ga.repeat.repeat = function( mod, id ) {
     ga.repeat.data[ mod ].repeat[ id ].dhtml   = ga.layout.fields[ id ].dhtml;
     ga.repeat.data[ mod ].repeat[ id ].eval    = ga.layout.fields[ id ].eval;
 
+    if ( ga.layout.fields[ id ].lgc ) {
+        ga.repeat.data[ mod ].repeat[ id ].lhtml  = `<div style="grid-column:${ga.layout.fields[id].lgc}">${ga.repeat.data[ mod ].repeat[ id ].lhtml}</div>`;
+    }
+    if ( ga.layout.fields[ id ].dgc ) {
+        ga.repeat.data[ mod ].repeat[ id ].dhtml  = `<div style="grid-column:${ga.layout.fields[id].dgc}">${ga.repeat.data[ mod ].repeat[ id ].dhtml}</div>`;
+    }
+
     if ( ga.layout.modules[ mod ].fields[ id ].repeats ) {
         ga.repeat.data[ mod ].repeater = ga.repeat.data[ mod ].repeater || {};
         ga.repeat.data[ mod ].repeater[ id ] = ga.repeat.data[ mod ].repeater[ id ] || {};

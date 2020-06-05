@@ -267,10 +267,10 @@ sub layout_prep {
         }
         # repeats section
         if ( !exists $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' } ) {
-            $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' } = decode_json( '{"location":["next","full"],"size":["auto","auto"]}' );
+            $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' } = decode_json( '{"location":["next","full"],"size":["auto",[1,1]]}' );
         } else {
             if ( !exists $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' }{ 'size' } ) {
-                $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' }{ 'size' } = [ "auto", "auto" ];
+                $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' }{ 'size' } = [ "auto", [ 1, 1 ] ];
             }
             if ( !exists $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' }{ 'location' } ) {
                 $$layout{ 'panels' }[0]{ 'root' }{ 'repeats' }{ 'location' } = ["next","full"];
@@ -983,7 +983,15 @@ sub layout_expand {
         my $layout = $$field{'layout'};
         # print "field id $id\n" if $debuglayout;
 
-        if ( !$layout ) {
+        # set parent for repeat: to repeat value
+
+        if ( $$field{'repeat'} ) {
+            if ( !$layout ) {
+                $$field{'layout'} = decode_json( "{\"parent\":\"r-$$field{'repeat'}\"}" );
+            } else {
+                $$field{'layout'}{'parent'} = "r-$$field{'repeat'}";
+            }
+        } elsif ( !$layout ) {
             $$field{'layout'} = decode_json( '{"parent":"root"}' );
         } elsif ( !$$layout{'parent'} ) {
             $$field{'layout'}{'parent'} = "root";

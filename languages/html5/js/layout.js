@@ -15,6 +15,7 @@ ga.layout = {};
 // ga.layout.fields[ fieldname ].lhtml               : label html
 // ga.layout.fields[ fieldname ].dhtml               : data html
 // ga.layout.fields[ fieldname ].eval                : eval
+// ga.layout.fields[ fieldname ].{lgr,lgc,dgr,dgc}   : css grid values - stored in ga.layout.slayout
 // ga.layout.modules[ module ].fields[ fieldname ]   : layout structure by field name
 // ----------------------------------------------------------------------------------------------------------
 // summary of operations
@@ -25,6 +26,7 @@ ga.layout = {};
 // ga.layout.eval                                 : return eval bits
 // ga.layout.init                                 : initial parsing of layout for repeat.js which is called early
 // ga.layout.rhtml                                : return rhtml for field
+// ga.layout.slayout                              : store css grid values for field ... only for repeat entries
 // ----------------------------------------------------------------------------------------------------------
 
 ga.layout.init = function () {
@@ -46,6 +48,36 @@ ga.layout.init = function () {
     for ( var i = 0; i < ga.layout.panel.fields.length; ++i ) {
         ga.layout.modules[ ga.layout.module.name ].fields[ ga.layout.panel.fields[ i ].id ] = ga.layout.panel.fields[ i ].layout;
         __~debug:layoutloc{console.log( `in layout.js:setting layout for ${ga.layout.module.name} field ${ga.layout.panel.fields[i].id} to ` + JSON.stringify( ga.layout.panel.fields[i].layout ) );}
+    }
+}
+
+ga.layout.slayout = function ( field ) {
+    __~debug:layoutloc{console.log( `ga.layout.slayout( ${field} )`);}
+    var found = false;
+    var pos;
+    for ( pos = 0; pos < ga.layout.panel.fields.length; ++pos ) {
+        if ( ga.layout.panel.fields[ pos ].id && ga.layout.panel.fields[ pos ].id == field ) {
+            found = true;
+            break;
+        }
+    }
+
+    if ( !found ) {
+        console.error( `ga.layout.slayout( ${field} ) : field does not exist` );
+        return;
+    }
+    
+    if ( ga.layout.panel.fields[ pos ].lgc ) {
+        ga.layout.fields[ field ].lgc = ga.layout.panel.fields[ pos ].lgc;
+    }
+    if ( ga.layout.panel.fields[ pos ].lgr ) {
+        ga.layout.fields[ field ].lgr = ga.layout.panel.fields[ pos ].lgr;
+    }
+    if ( ga.layout.panel.fields[ pos ].dgc ) {
+        ga.layout.fields[ field ].dgc = ga.layout.panel.fields[ pos ].dgc;
+    }
+    if ( ga.layout.panel.fields[ pos ].dgr ) {
+        ga.layout.fields[ field ].dgr = ga.layout.panel.fields[ pos ].dgr;
     }
 }
 
@@ -74,11 +106,15 @@ ga.layout.rhtml = function ( field ) {
         return `${htmlopen}></div>`;
     }
 
-    htmlopen += ` style="display:grid;grid-template-rows:${ga.layout.panel.fields[pos].rgtr};grid-template-columns:${ga.layout.panel.fields[pos].rgtc};grid-row:${ga.layout.panel.fields[pos].rgr};grid-column:${ga.layout.panel.fields[pos].rgc}`;
+    if ( ga.layout.panel.fields[ pos ].repeat ) {
+        htmlopen += ` style="display:grid;grid-template-rows:${ga.layout.panel.fields[pos].rgtr};grid-template-columns:${ga.layout.panel.fields[pos].rgtc};grid-column:${ga.layout.panel.fields[pos].rgc}`;
+    } else {
+        htmlopen += ` style="display:grid;grid-template-rows:${ga.layout.panel.fields[pos].rgtr};grid-template-columns:${ga.layout.panel.fields[pos].rgtc};grid-row:${ga.layout.panel.fields[pos].rgr};grid-column:${ga.layout.panel.fields[pos].rgc}`;
+    }
     if ( ga.layout.panel.fields[ pos ].ralign ) {
         htmlopen += `;text-align:${ga.layout.panel[pos].ralign}`;
     }
-    htmlopen += "></div>";
+    htmlopen += '"></div>';
     
     __~debug:layoutloc{console.log( `ga.layout.rhtml( ${field} ) returns "${htmlopen}"`);}
     return htmlopen;
@@ -212,8 +248,11 @@ ga.layout.setup = function() {
     ga.layout.panelfields = {};
     for ( var i = 0; i < ga.layout.panel.fields.length; ++i ) {
         var panel = ga.layout.panel.fields[ i ].layout.parent;
-        ga.layout.panelfields[ panel ] = ga.layout.panelfields[ panel ] || [];
-        ga.layout.panelfields[ panel ].push( ga.layout.panel.fields[ i ] );
+        // skip repeats
+        if ( !/^r-/.test( panel ) ) {
+            ga.layout.panelfields[ panel ] = ga.layout.panelfields[ panel ] || [];
+            ga.layout.panelfields[ panel ].push( ga.layout.panel.fields[ i ] );
+        }
     }
 }
 
@@ -294,18 +333,18 @@ ga.layout.thishtml = function( panel ) {
                  ga.layout.panelfields[ panel ][ i ].rgc ) {
                 rfstyle += "display:grid;";
             }
-            if ( ga.layout.panelfields[ panel ][ i ].rgtr ) {
-                rfstyle += "grid-template-rows:" + ga.layout.panelfields[ panel ][ i ].rgtr + ";";
-            }
-            if ( ga.layout.panelfields[ panel ][ i ].rgtc ) {
-                rfstyle += "grid-template-columns:" + ga.layout.panelfields[ panel ][ i ].rgtc + ";";
-            }
-            if ( ga.layout.panelfields[ panel ][ i ].rgr ) {
-                rfstyle += "grid-row:" + ga.layout.panelfields[ panel ][ i ].rgr + ";";
-            }
-            if ( ga.layout.panelfields[ panel ][ i ].rgc ) {
-                rfstyle += "grid-column:" + ga.layout.panelfields[ panel ][ i ].rgc + ";";
-            }
+//            if ( ga.layout.panelfields[ panel ][ i ].rgtr ) {
+//                rfstyle += "grid-template-rows:" + ga.layout.panelfields[ panel ][ i ].rgtr + ";";
+//            }
+//            if ( ga.layout.panelfields[ panel ][ i ].rgtc ) {
+//                rfstyle += "grid-template-columns:" + ga.layout.panelfields[ panel ][ i ].rgtc + ";";
+//            }
+//            if ( ga.layout.panelfields[ panel ][ i ].rgr ) {
+//                rfstyle += "grid-row:" + ga.layout.panelfields[ panel ][ i ].rgr + ";";
+//            }
+//            if ( ga.layout.panelfields[ panel ][ i ].rgc ) {
+//                rfstyle += "grid-column:" + ga.layout.panelfields[ panel ][ i ].rgc + ";";
+//            }
             if ( ga.layout.panelfields[ panel ][ i ].layout.align ) {
                 rfstyle += "text-align:" + ga.layout.panelfields[ panel ][ i ].layout.align + ";";
             }
@@ -321,9 +360,9 @@ ga.layout.thishtml = function( panel ) {
                 html += `</div>\n`;
             }
             if ( ga.layout.fields[ id ].rhtml ) {
-                html += `<div id=ga-repeats-container-${id} style="${rfstyle}">`;
+//                html += `<div id=ga-repeats-container-${id} style="${rfstyle}">`;
                 html += ga.layout.fields[ id ].rhtml;
-                html += `</div>\n`;
+//                html += `</div>\n`;
             }
         }
     }

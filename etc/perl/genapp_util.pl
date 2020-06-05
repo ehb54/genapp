@@ -214,10 +214,10 @@ undef %include_additional_files;
 sub replace_file_json_walk {
     my ( $hash, $lang, $file ) = @_;
     while (my ($k, $v) = each %$hash) {
-        if (ref($v) eq 'HASH') {
+        if (ref($v) eq 'HASH' && $k !~ /^panels$/ ) {
             replace_file_json_walk( $v, $lang, $file );
         } else {
-            if ( ref( $v ) eq 'ARRAY' ) {
+            if ( ref( $v ) eq 'ARRAY' && $k !~ /^panels$/ ) {
                 for ( my $i = 0; $i < @$v; ++$i ) {
                     if ( ref( @$v[$i] ) eq 'HASH' ) {
                         replace_file_json_walk( @$v[$i], $lang, $file );
