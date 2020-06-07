@@ -251,7 +251,7 @@ sub layout_prep {
         }
 
         if ( !exists $$layout{ 'panels' }[0]{ 'root' }{ 'size' } ) {
-            $$layout{ 'panels' }[0]{ 'root' }{ 'size' } = [ "auto", "auto" ];
+            $$layout{ 'panels' }[0]{ 'root' }{ 'size' } = [ "auto", [ 1, 1 ] ];
         }
         if ( !exists $$layout{ 'panels' }[0]{ 'root' }{ 'align' } ) {
             $$layout{ 'panels' }[0]{ 'root' }{ 'align' } = "left";
@@ -357,11 +357,26 @@ sub layout_prep {
         my $inserts_at         = "output";
         my $inserts_type       = "role";
         my $inserts_before     = 1;
+        my $r_panels           = 0;
 
-        if ( keys %panel_apos == 1 ) {
+## check for r- panels (repeater panels)
+
+        my $non_r_panel_name   = "";
+
+        for ( my $i = 0; $i <  @{$$layout{'panels'} }; ++$i ) {
+            my $panel_name = ( keys %{$$layout{'panels'}[$i]} )[0];
+            if ( $panel_name =~ /^r-/ ) {
+                $r_panels++;
+            } else {
+                $non_r_panel_name = $panel_name;
+            }
+        }
+
+        if ( ( keys %panel_apos ) - $r_panels == 1 ) {
             $control_case = "only_root";
-            if ( (keys %panel_apos)[0] ne 'root' ) {
-                $error .= "module: $mname : only one panel defined and it is not named 'root'\n";
+#            if ( (keys %panel_apos)[0] ne 'root' ) {
+            if ( $non_r_panel_name  ne 'root' ) {
+                $error .= "module: $mname : only one non repeater panel defined and it is not named 'root'\n";
             }
         } elsif ( exists $panel_apos{ 'controls' } ) {
             $control_case       = "control_panel_exists";
