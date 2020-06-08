@@ -17,7 +17,7 @@ ga.tmp.dhtml.switch =
   ;
 
 
-if ( '__fields:style__' === "switch" ) {
+if ( '__fields:style__' !== "classic" ) {
     ga.layout.fields[ "__fields:id__" ].dhtml = ga.tmp.dhtml.switch;
 } else {
     ga.layout.fields[ "__fields:id__" ].dhtml = ga.tmp.dhtml.checkbox;

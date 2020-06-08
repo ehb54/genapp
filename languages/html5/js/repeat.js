@@ -93,6 +93,10 @@ ga.repeat.repeat = function( mod, id ) {
         ga.repeat.data[ mod ].repeat[ id ].dhtml  = `<div style="grid-column:${ga.layout.fields[id].dgc}">${ga.repeat.data[ mod ].repeat[ id ].dhtml}</div>`;
     }
 
+    if ( !ga.layout.fields[ id ].lgc && !ga.layout.fields[ id ].dgc ) {
+        console.warn( `ga.repeat.repeat( ${mod} , ${id} ) : no grid defined` );
+    }
+
     if ( ga.layout.modules[ mod ].fields[ id ].repeats ) {
         ga.repeat.data[ mod ].repeater = ga.repeat.data[ mod ].repeater || {};
         ga.repeat.data[ mod ].repeater[ id ] = ga.repeat.data[ mod ].repeater[ id ] || {};
