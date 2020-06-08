@@ -3,10 +3,16 @@
 ga.layout.fields[ "__fields:id__" ] = {};
 ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id__">__fields:label__ </label>';
 ga.layout.fields[ "__fields:id__" ].dhtml = '<input type="color" data-type="color" name="__fields:id__" id="__fields:id__"__~fields:default{ value="__fields:default__"}__~fields:required{ required}__~fields:readonly{ readonly} class="ga-field-input-control__~fields:help{ help_link}"><span class="help">__fields:help__</span}><span id="__fields:id___msg" class="warning field_msg" > </span>';
+
+__~fields:repeat{ga.layout.slayout( '__fields:id__' );}
+
 ga.layout.fields[ "__fields:id__" ].eval  =
   __~fields:pull{'ga.pull.toPull( "__moduleid__", "#__fields:id__", "text", "__fields:pull__", "#__fields:repeat__" );' +}
   'ga.color.spectrum( "#__fields:id__" ); ga.value.setLastValue( "__moduleid__", "#__fields:id__" );$( "#__fields:id__" ).keypress( function() { $( "#__fields:id___msg" ).html( "" ); });'
   ;
+
+__~fields:repeat{[ ga.layout.fields[ "__fields:id__" ].lhtml, ga.layout.fields[ "__fields:id__" ].dhtml ] = ga.repeat.repeat( "__moduleid__", "__fields:id__" );}
+__~fields:repeat{ga.layout.fields[ "__fields:id__" ].eval = 'ga.repeat.repeatOn("__moduleid__", "__fields:id__", "__fields:repeat__" );';}
 
 /* old way
 

@@ -1006,6 +1006,7 @@ sub layout_expand {
             } else {
                 $$field{'layout'}{'parent'} = "r-$$field{'repeat'}";
             }
+            $$field{'layout'}{'parent'} =~ s/:.*//;
         } elsif ( !$layout ) {
             $$field{'layout'} = decode_json( '{"parent":"root"}' );
         } elsif ( !$$layout{'parent'} ) {
