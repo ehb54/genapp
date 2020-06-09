@@ -1,13 +1,14 @@
 // -- text.output --
-// <script>
+
 ga.layout.fields[ "__fields:id__" ] = {};
 ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id__">__fields:label__ </label>';
-ga.layout.fields[ "__fields:id__" ].dhtml = '<input  type="text" name="__fields:id__" id="__fields:id__" readonly__~fields:size{ size="__fields:size__"} class="ga-field-output-control__~fields:help{ help_link}"><span class="help">__fields:help__</span>';
-ga.layout.fields[ "__fields:id__" ].eval  = 'ga.value.setLastValue( "__moduleid___output", "#__fields:id__" )';
-// /script>
+ga.layout.fields[ "__fields:id__" ].dhtml = '<input type="text" name="__fields:id__" id="__fields:id__" readonly__~fields:size{ size="__fields:size__"} class="ga-field-output-control__~fields:help{ help_link}"><span class="help">__fields:help__</span>';
+ga.layout.fields[ "__fields:id__" ].eval  = 'ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );';
 
-// <tr><td><label for="__fields:id__">__fields:label__ </label></td><td><input type="text" name="__fields:id__" id="__fields:id__" readonly__~fields:size{ size="__fields:size__"}__~fields:help{ class="help_link"><span class="help">__fields:help__</span}></td></tr>
-// <script>
-// ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );
-// /script>
+/* old way
+<tr><td><label for="__fields:id__">__fields:label__ </label></td><td><input type="text" name="__fields:id__" id="__fields:id__" readonly__~fields:size{ size="__fields:size__"}__~fields:help{ class="help_link"><span class="help">__fields:help__</span}></td></tr>
+<script>
+ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );
+end script>
+*/
 // -- end text.output --

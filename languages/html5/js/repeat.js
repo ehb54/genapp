@@ -66,15 +66,15 @@ ga.repeat.repeat = function( mod, id ) {
         console.error( `repeat.js: mod ${mod} id ${id} missing` );
         return ret_val;
     }
-    if ( !ga.layout.fields[ id ].lhtml ) {
+    if ( !("lhtml" in ga.layout.fields[ id ] ) ) {
         console.error( `repeat.js: mod ${mod} id ${id} lhtml missing` );
         has_errors = true;
     }
-    if ( !ga.layout.fields[ id ].dhtml ) {
+    if ( !( "dhtml" in ga.layout.fields[ id ] ) ) {
         console.error( `repeat.js: mod ${mod} id ${id} dhtml missing` );
         has_errors = true;
     }
-    if ( !ga.layout.fields[ id ].eval ) {
+    if ( !( "eval" in ga.layout.fields[ id ] ) ) {
         console.error( `repeat.js: mod ${mod} id ${id} eval missing` );
         has_errors = true;
     }

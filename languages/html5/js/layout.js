@@ -349,20 +349,24 @@ ga.layout.thishtml = function( panel ) {
                 rfstyle += "text-align:" + ga.layout.panelfields[ panel ][ i ].layout.align + ";";
             }
             __~debug:layout{console.error( `id is ${id}` );}
-            if ( ga.layout.fields[ id ].lhtml && ga.layout.fields[ id ].lhtml.length ) {
-                html += `<div id=ga-label-${id} style="${lfstyle}" class="${fclass}">`;
-                html +=  ga.layout.fields[ id ].lhtml;
-                html += `</div>\n`;
-            }
-            if ( ga.layout.fields[ id ].dhtml ) {
-                html += `<div id=ga-data-${id} style="${dfstyle}" class="${fclass}">`;
-                html += ga.layout.fields[ id ].dhtml;
-                html += `</div>\n`;
-            }
-            if ( ga.layout.fields[ id ].rhtml ) {
-//                html += `<div id=ga-repeats-container-${id} style="${rfstyle}">`;
-                html += ga.layout.fields[ id ].rhtml;
-//                html += `</div>\n`;
+            if ( ga.layout.fields[ id ] ) {
+                if ( ga.layout.fields[ id ].lhtml && ga.layout.fields[ id ].lhtml.length ) {
+                    html += `<div id=ga-label-${id} style="${lfstyle}" class="${fclass}">`;
+                    html +=  ga.layout.fields[ id ].lhtml;
+                    html += `</div>\n`;
+                }
+                if ( ga.layout.fields[ id ].dhtml ) {
+                    html += `<div id=ga-data-${id} style="${dfstyle}" class="${fclass}">`;
+                    html += ga.layout.fields[ id ].dhtml;
+                    html += `</div>\n`;
+                }
+                if ( ga.layout.fields[ id ].rhtml ) {
+                    //                html += `<div id=ga-repeats-container-${id} style="${rfstyle}">`;
+                    html += ga.layout.fields[ id ].rhtml;
+                    //                html += `</div>\n`;
+                }
+            } else {
+                console.warn( `ga.layout.thishtml(): ga.layout.fields['${id}'] not defined.` );
             }
         }
     }
@@ -377,7 +381,7 @@ ga.layout.eval = function() {
 
     for ( var i = 0; i < ga.layout.panel.fields.length; ++i ) {
         var id = ga.layout.panel.fields[ i ].id;
-        if ( ga.layout.fields[ id ].eval ) {
+        if ( ga.layout.fields[ id ] && ga.layout.fields[ id ].eval ) {
             myeval += ga.layout.fields[ id ].eval;
         }
     }
