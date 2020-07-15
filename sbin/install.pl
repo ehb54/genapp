@@ -200,7 +200,7 @@ my $os = $$cfgjson{ 'os' } || die "$0: $cfgjsonf does not contain an 'os' tag. $
 my $os_release = $$cfgjson{ 'os_release' } || die "$0: $cfgjsonf does not contain an 'os_release' tag. $cfgjsonnotes";
 
 if ( $os eq 'ubuntu' ) {
-    die "only ubuntu 14.04, 16.04 and 18.04 are currently supported and this appears to be version $os_release\n$sorry" if $os_release != 14.04 && $os_release != 16.04 && $os_release != 18.04;
+    die "only ubuntu 14.04, 16.04, 18.04 and 20.04 are currently supported and this appears to be version $os_release\n$sorry" if $os_release != 14.04 && $os_release != 16.04 && $os_release != 18.04 && $os_release != 20.04;
 }
 
 if ( $os eq 'centos' ) {
@@ -901,11 +901,11 @@ service iptables save" );
     exit();
 }
 
-# ------ ubuntu 16.04 & 18.04 ------
-if ( $os eq 'ubuntu' && ( $os_release == 16.04 || $os_release == 18.04 ) ) {
+# ------ ubuntu 16.04 & 18.04 & 20.04 ------
+if ( $os eq 'ubuntu' && ( $os_release == 16.04 || $os_release == 18.04 || $os_release == 20.04 ) ) {
     # install required modules
 
-    my $zmqv = "3" if $os_release == 18.04;
+    my $zmqv = "3" if $os_release == 18.04 || $os_release == 20.04;
 
     runcmd( "sudo add-apt-repository -y ppa:ondrej/php && sudo apt-get -y update" );
     runcmd( "sudo apt-get -y install mlocate build-essential apache2 php5.6-dev libapache2-mod-php5.6 php5.6-xml pkg-config re2c libzmq${zmqv}-dev uuid-dev abiword wget mongodb libmagickwand-6.q16-dev" );
