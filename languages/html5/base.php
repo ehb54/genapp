@@ -920,6 +920,7 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
 
     __~debug:basemylog{error_log( "request ready to jsonize\n" . print_r( $_REQUEST, true ) . "\n", 3, "/tmp/mylog" );}
     __~debug:basemylog{error_log( "request in json" . json_encode( $_REQUEST, JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/mylog" );}
+    __~sendmodulejson{ $_REQUEST[ "_json" ] = '__modulejson__';}
     $json = json_encode( $_REQUEST );
     $json = str_replace( "'", "_", $json );
     ob_start();
