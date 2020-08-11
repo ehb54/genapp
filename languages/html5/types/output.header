@@ -10,7 +10,7 @@ __~centeroutput{<center>}
 <!-- moved to layout.js <div id="__moduleid___output_msgs" class="warning" type="msgs"></div> -->
 <script>
 ga.value.setLastValueOutput( "__moduleid___output" );
-ga.value.extra_resets.clear();
+// ga.value.extra_resets.clear();
 </script>
 
 <!-- output_airavata, textarea moved to layout.js
