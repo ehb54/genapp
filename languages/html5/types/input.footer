@@ -339,6 +339,23 @@ __~debug:ajax{    console.log( "calling ajax" );}
         });
     }
 
+    ga.tmp.elements = document.forms["__moduleid__"].elements;
+    for (i=0; i<ga.tmp.elements.length; i++){
+      if ( ga.tmp.elements[i].type == "file" &&
+           ga.tmp.elements[i].webkitdirectory ) {
+        ga.tmp.files = ga.tmp.elements[i].files;
+        for (j in ga.tmp.files){
+          if( ga.tmp.files[j].size){
+              formData.append( ga.tmp.elements[i].id + "[]", ga.tmp.files[j]);
+              __~debug:directoryupload{console.log( "upload " + ga.tmp.files[j].name );}
+          }
+        };
+      }
+    }
+    delete ga.tmp.elements;
+    delete ga.tmp.files;
+              
+
     $.ajax( {
              dataType: "json",
              cache:false,

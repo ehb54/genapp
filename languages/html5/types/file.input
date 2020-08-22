@@ -8,7 +8,7 @@ ga.layout.fields[ "__fields:id__" ].lhtml =
 
 ga.tmp.dhtml = {};
 ga.tmp.dhtml.org =
-    '<input type="file" name="__fields:id____~fields:array{[]}"__~fields:multiple{ multiple} id="__fields:id__"__~fields:default{ value="__fields:default__"}__~fields:accept{ accept="__fields:accept__"}__~fields:required{ required}__~fields:maxlength{ maxlength="__fields:maxlength__"} class="ga-file-input ga-field-input-control__~fields:help{ help_link}"><span class="help">__fields:help__</span}><span id="__fields:id___msg" class="warning field_msg" > </span>'
+    '<input type="file" name="__fields:id____~fields:array{[]}"__~fields:multiple{ multiple}__~fields:directory{ webkitdirectory directory multiple} id="__fields:id__"__~fields:default{ value="__fields:default__"}__~fields:accept{ accept="__fields:accept__"}__~fields:required{ required}__~fields:maxlength{ maxlength="__fields:maxlength__"} class="ga-file-input ga-field-input-control__~fields:help{ help_link}"><span class="help">__fields:help__</span}><span id="__fields:id___msg" class="warning field_msg" > </span>'
     ;
 
 ga.tmp.dhtml.bootstrap =
@@ -19,7 +19,7 @@ ga.tmp.dhtml.bootstrap =
   __~fields:help{+ '<span class="help">__fields:help__</span>'}
   + '<span id="__fields:id___altval"></span>'
   + '<span id="__fields:id___msg" class="warning field_msg" > </span><input type="hidden" name="_selaltval___fields:id__" value="__fields:id___altval">'
-  + '<input type="file" name="__fields:id____~fields:array{[]}"__~fields:multiple{ multiple} id="__fields:id__" data-add="__fields:id___altval"__~fields:default{ value="__fields:default__"}__~fields:accept{ accept="__fields:accept__"}__~fields:maxlength{ maxlength="__fields:maxlength__"} class="offscreen"><span class="help">__fields:help__</span>'
+  + '<input type="file" name="__fields:id____~fields:array{[]}"__~fields:multiple{ multiple}__~fields:directory{ webkitdirectory directory multiple} id="__fields:id__" data-add="__fields:id___altval"__~fields:default{ value="__fields:default__"}__~fields:accept{ accept="__fields:accept__"}__~fields:maxlength{ maxlength="__fields:maxlength__"} class="offscreen"><span class="help">__fields:help__</span>'
   ;
 
 __!bootstrap:package{ga.layout.fields[ "__fields:id__" ].dhtml = ga.tmp.dhtml.org;}
