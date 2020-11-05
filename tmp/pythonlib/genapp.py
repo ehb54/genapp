@@ -123,7 +123,7 @@ class genapp(object):
             try:
                 msg['_message'] = json.loads(message)
             except ValueError:
-                return {'error':'tcpmessage:json message decoding error'}
+                return {'error':'udpmessage:json message decoding error'}
         elif isinstance( message, dict ):
             msg['_message'] = message
         else:
