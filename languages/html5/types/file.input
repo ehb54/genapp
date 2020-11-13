@@ -13,7 +13,8 @@ ga.tmp.dhtml.org =
 
 ga.tmp.dhtml.bootstrap =
   '<label for="__fields:id__" class="ga-button-select zeromargin help_link">'
-  + 'Browse local files'
+  __~fields:directory{+ 'Browse local directory'}
+  __!fields:directory{+ 'Browse local files'}
   + '</label>'
   + '<span class="help">__fields:help__</span>'
   __~fields:help{+ '<span class="help">__fields:help__</span>'}

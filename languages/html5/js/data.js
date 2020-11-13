@@ -148,7 +148,7 @@ __~debug:getinput{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_
 		
 		//if(!ga.showcollapse3d)
 		//{
-		Plotly.plot(k, v.data, v.layout);
+		Plotly.newPlot(k, v.data, v.layout);
 		//}
 		if ( ga.showcollapse3d[ mod ] )
 		{
