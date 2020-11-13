@@ -137,7 +137,7 @@ __~debug:data{    console.log( "ga.data.update() msging_f defined" );}
 		
 		//if(!ga.showcollapse3d)
 		//{
-		Plotly.plot(k, v.data, v.layout);
+		Plotly.newPlot(k, v.data, v.layout);
 		//}
 		if ( ga.showcollapse3d[ mod ] )
 		{
