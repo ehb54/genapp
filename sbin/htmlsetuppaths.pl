@@ -23,6 +23,8 @@ there is a script $gb/sbin/install-perl-stable to do this";
     }
 }
 
+$sudo = "sudo" if !-e "$gb/etc/no_sudo";
+
 my $gap = $gb;
 
 require "$gap/etc/perl/genapp_util.pl";
@@ -149,7 +151,7 @@ sub runcmd {
 sub runcmdsb {
     my $cmd = $_[0];
     $cmd =~ s/"/\\\"/g;
-    $cmd = "sudo bash -c \"$cmd\"";
+    $cmd = "$sudo bash -c \"$cmd\"";
     print "sd cmd is <$cmd>\n" if $debug;
     runcmd( $cmd );
 }
