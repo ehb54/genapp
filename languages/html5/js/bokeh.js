@@ -52,10 +52,27 @@ ga.bokeh.render = function( mod, tag, v ) {
 ga.bokeh.renderdata = function( mod, tag ) {
     __~debug:bokeh{console.log( "ga.bokeh.renderdata( " + mod + " , " + tag + " )" );}
     var i, len, str = "";
+    var use_id;
     if ( ga.bokeh.data[ mod ] && ga.bokeh.data[ mod ][ tag ] && ga.bokeh.data[ mod ][ tag ].docs_json && ga.bokeh.data[ mod ][ tag ].render_items ) {
         len = ga.bokeh.data[ mod ][ tag ].render_items.length;
         for ( i = 0; i < len; ++i ) {
-            str += '<div class="bk-root"><div class="bk-plotdiv" id="' + ga.bokeh.data[ mod ][ tag ].render_items[ i ].elementid + '"></div></div>';
+            use_id = ga.bokeh.data[ mod ][ tag ].render_items[ i ].elementid;
+            if ( !use_id ) {
+                c = 0;
+                for ( k in ga.bokeh.data[ mod ][ tag ].render_items[ i ].roots ) {
+                    if ( ga.bokeh.data[ mod ][ tag ].render_items[ i ].roots.hasOwnProperty( k ) ) {
+                        use_id = ga.bokeh.data[ mod ][ tag ].render_items[ i ].roots[ k ];
+                    }
+                    ++c;
+                }
+                if ( c > 1 ) {
+                    console.error( `ga.bokeh.renderdata( ${mod}, ${tag} ) - no bokeh more than one doc id` )
+                }
+            }
+            if ( !use_id ) {
+                console.error( `ga.bokeh.renderdata( ${mod}, ${tag} ) - no bokeh doc id found` )
+            }
+            str += '<div class="bk-root"><div class="bk-plotdiv" id="' + use_id + '"></div></div>';
         }
         $( "#" + tag ).html( str );
         Bokeh.embed.embed_items( ga.bokeh.data[ mod ][ tag ].docs_json, ga.bokeh.data[ mod ][ tag ].render_items );
