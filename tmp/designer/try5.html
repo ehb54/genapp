@@ -40,9 +40,11 @@
 
     console.log( `element id from ${from_id} to ${to_id}` );
 
+    var from_label_node       = document.getElementById( `ga-label-${from_id}` );
+    var from_data_node        = document.getElementById( `ga-data-${from_id}` );
 
-    var from_label_node_style = document.getElementById( `ga-label-${from_id}` ).style;
-    var from_data_node_style  = document.getElementById( `ga-data-${from_id}` ).style;
+    var from_label_node_style = from_label_node.style;
+    var from_data_node_style  = from_data_node.style;
     var to_label_node_style = document.getElementById( `ga-label-${to_id}` ).style;
     var to_data_node_style  = document.getElementById( `ga-data-${to_id}` ).style;
     
@@ -74,6 +76,36 @@
     
     } else {
     console.log( "different panels... to do" );
+    // step 1 - increment all parent panel elements past to (ugh rows & columns, assume row logic for now)
+    // could probably be in its own function
+    // simple assumption of numeric rows, could get uglier
+
+    console.log( ev.target.parentNode.id );
+    console.dir( ev.target.parentNode.children );
+    
+    var to_row_int = parseInt( to_label_row );
+
+    for ( i in ev.target.parentNode.children )
+    {
+    if ( ev.target.parentNode.children.hasOwnProperty(i) ) {
+    var this_row_int = parseInt( ev.target.parentNode.children[ i ].style.gridRow );
+    console.log( `to_row ${to_row_int} this row ${this_row_int} ${ev.target.parentNode.children[i].id}` );
+    
+    if ( this_row_int >= to_row_int ) {
+    console.log( `adding 1 to gridRow of ${ev.target.parentNode.children[i].id}` );
+     ev.target.parentNode.children[ i ].style.gridRow = this_row_int + 1;
+    }
+    }
+    // step 2 - assign new row cols to source
+    from_label_node_style.gridRow    = to_label_row;
+    from_label_node_style.gridColumn = to_label_col;
+    from_data_node_style.gridRow     = to_data_row;
+    from_data_node_style.gridColumn  = to_data_col;
+
+    // step 3 - move to parent panel
+    ev.target.parentNode.appendChild( from_label_node );
+    ev.target.parentNode.appendChild( from_data_node );
+    }
     }
     }
 
