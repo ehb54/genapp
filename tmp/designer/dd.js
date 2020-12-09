@@ -209,3 +209,10 @@ ga.dd.rclick = function( ev ) {
     }
 }
 
+ga.dd.setup = function() {
+}
+
+ga.dd.menu = function( choice ) {
+    console.log( `ga.dd.menu( "${choice}" )` );
+    document.getElementById( "ga-dd-menu" ).style.display="none";
+}
