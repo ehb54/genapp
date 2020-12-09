@@ -1,0 +1,127 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset="utf-8">
+  </head>
+  <script>
+    function allowDrop(ev) {
+    ev.preventDefault();
+    }
+
+    function drag(ev) {
+    ev.dataTransfer.setData("text", ev.target.id);
+    }
+
+    function drop(ev) {
+    ev.preventDefault();
+    var data = ev.dataTransfer.getData("text");
+    console.log( `drop() from:${data} to:${ev.target}` );
+    // ev.target.appendChild(document.getElementById(data));
+    // ev.target.insertAdjacentHTML("beforebegin",document.getElementById(data).outerHTML);
+    // get source parent and pos in panel
+
+
+    // panels
+    var fromNode = document.getElementById(data);
+    var fromparentpanel = fromNode.parentNode.id;
+    var toparentpanel = ev.target.parentNode.id;
+    console.log( `from panel ${fromparentpanel} -> to panel ${toparentpanel}` );
+    var samepanel = fromparentpanel == toparentpanel;
+    if ( samepanel ) {
+       console.log( "same parent panel, simple renumbering" );
+    } else {
+       console.log( "different parent panels, insertion & dual renumbering" );
+    }
+
+    // get from & to label & data coordinates
+
+    var from_id = data.replace( /^ga-[a-z]*-/, '' );
+    var to_id = ev.target.id.replace( /^ga-[a-z]*-/, '' );
+
+    console.log( `element id from ${from_id} to ${to_id}` );
+
+
+    var from_label_node_style = document.getElementById( `ga-label-${from_id}` ).style;
+    var from_data_node_style  = document.getElementById( `ga-data-${from_id}` ).style;
+    var to_label_node_style = document.getElementById( `ga-label-${to_id}` ).style;
+    var to_data_node_style  = document.getElementById( `ga-data-${to_id}` ).style;
+    
+
+    var from_label_row = from_label_node_style.gridRow;
+    var from_label_col = from_label_node_style.gridColumn;
+    var from_data_row = from_data_node_style.gridRow;
+    var from_data_col = from_data_node_style.gridColumn;
+
+    var to_label_row = to_label_node_style.gridRow;
+    var to_label_col = to_label_node_style.gridColumn;
+    var to_data_row = to_data_node_style.gridRow;
+    var to_data_col = to_data_node_style.gridColumn;
+
+    console.log( `from label at ${from_label_row},${from_label_col} data at ${from_data_row},${from_data_col}` );
+    console.log( `to label at ${to_label_row},${to_label_col} data at ${to_data_row},${to_data_col}` );
+
+    if ( samepanel ) {
+    // swap coordinates
+    console.log( "same panel coordinate swap" );
+    to_label_node_style.gridRow    = from_label_row;
+    to_label_node_style.gridColumn = from_label_col;
+    to_data_node_style.gridRow     = from_data_row;
+    to_data_node_style.gridColumn  = from_data_col;
+    from_label_node_style.gridRow    = to_label_row;
+    from_label_node_style.gridColumn = to_label_col;
+    from_data_node_style.gridRow     = to_data_row;
+    from_data_node_style.gridColumn  = to_data_col;
+    
+    } else {
+    console.log( "different panels... to do" );
+    }
+    }
+
+    
+  </script>
+  <body>  
+    <div id="ga-panel-root" style="display:grid;grid-template-rows:repeat(1,auto);grid-template-columns:auto;grid-gap:5px;text-align:left">
+      <div id="ga-panel-header" style="display:grid;grid-template-rows:auto;grid-template-columns:auto;grid-row:1;grid-column:1/-1;grid-gap:5px;text-align:center">
+        <div id="ga-label-module_header" style="grid-row:1;grid-column:1;" class="ga-type-label ">
+          <label id="module_header_label" class="ga-field-input-header2 ">header_label
+          </label>
+        </div>
+
+      </div>
+
+      <div id="ga-panel-body" style="display:grid;grid-template-rows:auto;grid-template-columns:1fr 1fr ;grid-row:2;grid-column:1/-1;grid-gap:5px;text-align:left">
+        <div id="ga-panel-leftpanel" style="display:grid;grid-template-rows:auto;grid-template-columns:2;grid-row:1;grid-column:1;grid-gap:5px;text-align:left">
+                <div id="ga-label-m" style="grid-row:1;grid-column:1;" class="ga-type-float " ondrop="drop(event)" ondragover="allowDrop(event)" draggable=true ondragstart="drag(event)">
+                  label-m
+                </div>
+                <div id="ga-data-m" style="grid-row:1;grid-column:2;" class="ga-type-float " ondrop="drop(event)" ondragover="allowDrop(event)" draggable=true ondragstart="drag(event)">
+                  data-m
+                </div>
+
+
+                <div id="ga-label-c" style="grid-row:2;grid-column:1;" class="ga-type-float " ondrop="drop(event)" ondragover="allowDrop(event)" draggable=true ondragstart="drag(event)">
+                  label-c
+                </div>
+
+                <div id="ga-data-c" style="grid-row:2;grid-column:2;" class="ga-type-float " ondrop="drop(event)" ondragover="allowDrop(event)" draggable=true ondragstart="drag(event)">
+                  data-c
+                </div>
+
+        </div>
+
+        <div id="ga-panel-rightpanel" style="display:grid;grid-template-rows:auto;grid-template-columns:2;grid-row:1;grid-column:2;grid-gap:5px;text-align:right">
+
+                <div id="ga-label-e" style="grid-row:1;grid-column:2;" class="ga-type-text " ondrop="drop(event)" ondragover="allowDrop(event)" draggable=true ondragstart="drag(event)">
+                  label-e
+                </div>
+
+                <div id="ga-data-e" style="grid-row:1;grid-column:1;" class="ga-type-text " ondrop="drop(event)" ondragover="allowDrop(event)" draggable=true ondragstart="drag(event)">
+                  data-e
+                </div>
+
+        </div>
+
+      </div>
+    </div>
+  </body>
+</html>

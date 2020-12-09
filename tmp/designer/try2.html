@@ -1,0 +1,53 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      #div1, #div2 {
+      float: left;
+      width: 200px;
+      height: 200px;
+      margin: 10px;
+      padding: 10px;
+      border: 1px solid black;
+      }
+    </style>
+    <script>
+      function allowDrop(ev) {
+      ev.preventDefault();
+      }
+
+      function drag(ev) {
+      ev.dataTransfer.setData("text", ev.target.id);
+      }
+
+      function drop(ev) {
+      ev.preventDefault();
+      var data = ev.dataTransfer.getData("text");
+      console.log( `drop() from:${data} to:${ev.target}` );
+      console.dir( ev.target );
+      console.log( document.getElementById(data).outerHTML );
+      ev.target.appendChild(document.getElementById(data));
+      }
+    </script>
+  </head>
+  <body>
+
+    <div id="div1" ondrop="drop(event)" ondragover="allowDrop(event)">
+      <div id="dragbox" draggable=true ondragstart="drag(event)">
+        <img id="drag1" draggable=false src="admin.png" width="69" height="69">
+        <div draggable=false>
+          <p> how about this?</p>
+          <p> hi there </p>
+          <div>
+            <p> more stuff </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="div2" ondrop="drop(event)" ondragover="allowDrop(event)">
+    </div>
+
+  </body>
+</html>
