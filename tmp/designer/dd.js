@@ -194,10 +194,15 @@ ga.dd.reset = function () {
 }    
 
 ga.dd.rclick = function( ev ) {
+    var ddmenustyle = document.getElementById( "ga-dd-menu" ).style;
+    ddmenustyle.display="none";
     console.log( "ga.dd.rclick()" );
     console.dir( ev );
     if ( ev.which == 3 ) {
         console.log( "ga.dd.rclick() got a right click" );
+        ddmenustyle.left = ev.clientX + "px";
+        ddmenustyle.top  = ev.clientY + "px";
+        ddmenustyle.display="block";
         ev.preventDefault();
     } else {
         console.log( `ga.dd.rclick() got a click - NOT  right click ev.which ${ev.which}` );
