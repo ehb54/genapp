@@ -14,6 +14,10 @@ ga.dd = {};
 // ----------------------------------------------------------------------------------------------------------
 // ga.dd.on                                 true if drag & drop is active (editing is active)
 // ga.dd.intra                              true if intra field movements enabled
+// ga.dd.dragid
+// ga.dd.dragnode
+// ga.dd.draggid
+// ga.dd.dragpanelid
 // ----------------------------------------------------------------------------------------------------------
 // summary of operations
 // ----------------------------------------------------------------------------------------------------------
@@ -31,17 +35,19 @@ ga.dd = {};
 ga.dd.dragover = function (ev) {
     console.log( `ga.dd.dragover() ev.target.id ${ev.target.id}` );
     ev.preventDefault();
-    var from_id = ev.target.id;
+    var to_id = ev.target.id;
     ga.dd.seloff();
     if ( ga.dd.intra ) {
         // get panel and only add if same panel as source
-        if ( ga.dd.samepanel( ev ) ) {
+        if ( ga.dd.samepanel( ev ) && ga.dd.dragid != to_id ) {
             ev.target.classList.add( "ga-dd-sel" );
         }
     } else {
-        from_id = from_id.replace( /^ga-[a-z]*-/, '' );
-        document.getElementById( `ga-label-${from_id}` ).classList.add( "ga-dd-sel" );
-        document.getElementById( `ga-data-${from_id}` ).classList.add( "ga-dd-sel" );
+        to_id = to_id.replace( /^ga-[a-z]*-/, '' );
+        if ( ga.dd.draggid != to_id ) {
+            document.getElementById( `ga-label-${to_id}` ).classList.add( "ga-dd-sel" );
+            document.getElementById( `ga-data-${to_id}` ).classList.add( "ga-dd-sel" );
+        }
     }
 }
 
@@ -51,24 +57,28 @@ ga.dd.dragleave = function (ev) {
 }
 
 ga.dd.drag = function (ev) {
-    console.log( "ga.dd.drag()" );
+    console.log( `ga.dd.drag() ev.target.id ${ev.target.id}` );
+    ga.dd.dragid      = ev.target.id;
+    ga.dd.dragnode    = ev.target;
+    ga.dd.dragpanelid = ev.target.parentNode.id;
+    ga.dd.draggid     = ev.target.id.replace( /^ga-[a-z]*-/, '' );
     ga.dd.menuoff();
-    ev.dataTransfer.setData("text", ev.target.id);
+    // in case we want to store in the event
+    // ev.dataTransfer.setData("text", ev.target.id);
 }
 
 ga.dd.samepanel = function(ev) {
-    var fromparentid = document.getElementById(ev.dataTransfer.getData("text")).parentNode.id;
-    console.log( `ga.dd.samepanel() source parent id ${fromparentid} target parent id ${ev.target.parentNode.id}` );
-    return document.getElementById(ev.dataTransfer.getData("text")).parentNode.id === ev.target.parentNode.id;
+    console.log( `ga.dd.samepanel() source parent id ${ga.dd.dragpanelid} target parent id ${ev.target.parentNode.id}` );
+    return ga.dd.dragpanelid == ev.target.parentNode.id;
 }
 
 ga.dd.drop_intra = function (ev) {
-    var from_id                = ev.dataTransfer.getData("text");
+    var from_id                = ga.dd.dragid;
     var to_id                  = ev.target.id;
 
     console.log( `ga.dd.drop_intra() from_id ${from_id} to_id ${to_id}` );
 
-    var from_node_style        = document.getElementById( from_id ).style;
+    var from_node_style        = ga.dd.dragnode.style;
     var to_node_style          = ev.target.style;
 
     var from_row               = from_node_style.gridRow;
@@ -89,8 +99,7 @@ ga.dd.drop = function (ev) {
     ev.preventDefault();
     console.log( ev );
     ga.dd.seloff();
-    var data = ev.dataTransfer.getData("text");
-    console.log( `drop() from:${data} to:${ev.target}` );
+    console.log( `drop() from:${ga.dd.dragid} to:${ev.target}` );
 
     var samepanel = ga.dd.samepanel( ev );
 
@@ -104,7 +113,7 @@ ga.dd.drop = function (ev) {
 
     // get from & to label & data coordinates
 
-    var from_id = data.replace( /^ga-[a-z]*-/, '' );
+    var from_id = ga.dd.draggid;
     var to_id = ev.target.id.replace( /^ga-[a-z]*-/, '' );
 
     console.log( `element id from ${from_id} to ${to_id}` );
