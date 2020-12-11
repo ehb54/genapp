@@ -17,23 +17,50 @@ ga.dd = {};
 // ----------------------------------------------------------------------------------------------------------
 // summary of operations
 // ----------------------------------------------------------------------------------------------------------
-// ga.dd.allowDrag                          helper to preventDefault
+// ga.dd.dragover                           on dragover event
 // ga.dd.drag                               on drag event
+// ga.dd.dragleave                          on dragleave event
 // ga.dd.drop                               on drop event - main processing
 // ga.dd.drop_intra                         drop for intra processing, called by ga.dd.drop
+// ga.dd.menu                               receives "choice" from menu
+// ga.dd.menuoff                            turns off menu
 // ga.dd.reset                              turn on/off dd based upon checkboxes
 // ga.dd.seloff                             turn off ga-dd-sel highlighting (remove class)
 // ----------------------------------------------------------------------------------------------------------
 
-ga.dd.allowDrop = function (ev) {
-    console.log( "ga.dd.allowDrop()" );
+ga.dd.dragover = function (ev) {
+    console.log( `ga.dd.dragover() ev.target.id ${ev.target.id}` );
     ev.preventDefault();
+    var from_id = ev.target.id;
+    ga.dd.seloff();
+    if ( ga.dd.intra ) {
+        // get panel and only add if same panel as source
+        if ( ga.dd.samepanel( ev ) ) {
+            ev.target.classList.add( "ga-dd-sel" );
+        }
+    } else {
+        from_id = from_id.replace( /^ga-[a-z]*-/, '' );
+        document.getElementById( `ga-label-${from_id}` ).classList.add( "ga-dd-sel" );
+        document.getElementById( `ga-data-${from_id}` ).classList.add( "ga-dd-sel" );
+    }
+}
+
+ga.dd.dragleave = function (ev) {
+    console.log( "ga.dd.dragLeave()" );
+    ga.dd.seloff();
 }
 
 ga.dd.drag = function (ev) {
     console.log( "ga.dd.drag()" );
-    ev.dataTransfer.setData("text", ev.target.id);}
+    ga.dd.menuoff();
+    ev.dataTransfer.setData("text", ev.target.id);
+}
 
+ga.dd.samepanel = function(ev) {
+    var fromparentid = document.getElementById(ev.dataTransfer.getData("text")).parentNode.id;
+    console.log( `ga.dd.samepanel() source parent id ${fromparentid} target parent id ${ev.target.parentNode.id}` );
+    return document.getElementById(ev.dataTransfer.getData("text")).parentNode.id === ev.target.parentNode.id;
+}
 
 ga.dd.drop_intra = function (ev) {
     var from_id                = ev.dataTransfer.getData("text");
@@ -60,24 +87,12 @@ ga.dd.drop_intra = function (ev) {
 ga.dd.drop = function (ev) {
     console.log( "ga.dd.drop()" );
     ev.preventDefault();
+    console.log( ev );
+    ga.dd.seloff();
     var data = ev.dataTransfer.getData("text");
     console.log( `drop() from:${data} to:${ev.target}` );
-    // ev.target.appendChild(document.getElementById(data));
-    // ev.target.insertAdjacentHTML("beforebegin",document.getElementById(data).outerHTML);
-    // get source parent and pos in panel
 
-
-    // panels
-    var fromNode = document.getElementById(data);
-    var fromparentpanel = fromNode.parentNode.id;
-    var toparentpanel = ev.target.parentNode.id;
-    console.log( `from panel ${fromparentpanel} -> to panel ${toparentpanel}` );
-    var samepanel = fromparentpanel == toparentpanel;
-    if ( samepanel ) {
-        console.log( "same parent panel, simple renumbering" );
-    } else {
-        console.log( "different parent panels, insertion & dual renumbering" );
-    }
+    var samepanel = ga.dd.samepanel( ev );
 
     if ( ga.dd.intra ) {
         if ( !samepanel ) {
@@ -175,7 +190,8 @@ ga.dd.reset = function () {
                 console.log( `${dds[i].id} turning on drag` );
                 dds[i].draggable     = true;
                 dds[i].ondrop        = function(ev){ga.dd.drop(ev)};
-                dds[i].ondragover    = function(ev){ga.dd.allowDrop(ev)};
+                dds[i].ondragover    = function(ev){ga.dd.dragover(ev)};
+                dds[i].ondragleave   = function(ev){ga.dd.dragleave(ev)};
                 dds[i].ondragstart   = function(ev){ga.dd.drag(ev)};
                 dds[i].oncontextmenu = function(ev){ga.dd.rclick(ev)};
                 dds[i].classList.add( "ga-dd-on" );
@@ -190,6 +206,7 @@ ga.dd.reset = function () {
                 dds[i].ondragover    = null;
                 dds[i].ondragstart   = null;
                 dds[i].oncontextmenu = null;
+                dds[i].ondragleave   = null;
                 dds[i].classList.remove( "ga-dd-on" );
             }
         }
@@ -239,6 +256,11 @@ ga.dd.seloff = function() {
 }
 ga.dd.menu = function( choice ) {
     console.log( `ga.dd.menu( "${choice}" )` );
+    ga.dd.menuoff();
+}
+
+ga.dd.menuoff = function() {
+    console.log( 'ga.dd.menuoff()' );
     window.onclick = null;
     document.getElementById( "ga-dd-menu" ).style.display="none";
     ga.dd.seloff();
