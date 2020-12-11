@@ -1,5 +1,4 @@
 /*jslint white: true, plusplus: true*/
-/* assumes: jquery > 1.11.0, jqtree >= 3.0.9, jquery-base64 */
 
 
 var ga = {};
@@ -263,14 +262,35 @@ ga.dd.seloff = function() {
         }
     }
 }
-ga.dd.menu = function( choice ) {
-    console.log( `ga.dd.menu( "${choice}" )` );
-    ga.dd.menuoff();
-}
 
 ga.dd.menuoff = function() {
     console.log( 'ga.dd.menuoff()' );
     window.onclick = null;
     document.getElementById( "ga-dd-menu" ).style.display="none";
     ga.dd.seloff();
+}
+
+ga.dd.menu = function( choice ) {
+    var msg = `ga.dd.menu( "${choice}" )`;
+    console.log( msg );
+    ga.dd.menuoff();
+
+    var msg_ok = `${msg} command code`;
+    switch( choice ) {
+    case "irowu" :
+        console.log( msg_ok );
+        break;
+    case "irowd" :
+        console.log( msg_ok );
+        break;
+    case "icoll" :
+        console.log( msg_ok );
+        break;
+    case "icolr" :
+        console.log( msg_ok );
+        break;
+    default:
+        console.warn( `ga.dd.menu(): unknown command ${choice}` );
+        break;
+    }
 }
