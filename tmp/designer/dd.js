@@ -12,6 +12,8 @@ ga.dd = {};
 // ----------------------------------------------------------------------------------------------------------
 // summary of data structures
 // ----------------------------------------------------------------------------------------------------------
+// ga.dd.on                                 true if drag & drop is active (editing is active)
+// ga.dd.intra                              true if intra field movements enabled
 // ----------------------------------------------------------------------------------------------------------
 // summary of operations
 // ----------------------------------------------------------------------------------------------------------
@@ -20,6 +22,7 @@ ga.dd = {};
 // ga.dd.drop                               on drop event - main processing
 // ga.dd.drop_intra                         drop for intra processing, called by ga.dd.drop
 // ga.dd.reset                              turn on/off dd based upon checkboxes
+// ga.dd.seloff                             turn off ga-dd-sel highlighting (remove class)
 // ----------------------------------------------------------------------------------------------------------
 
 ga.dd.allowDrop = function (ev) {
@@ -196,14 +199,27 @@ ga.dd.reset = function () {
 ga.dd.rclick = function( ev ) {
     var ddmenustyle = document.getElementById( "ga-dd-menu" ).style;
     ddmenustyle.display="none";
-    console.log( "ga.dd.rclick()" );
-    console.dir( ev );
+    console.log( `ga.dd.rclick() ${ev.target.id}` );
+    // console.dir( ev );
     if ( ev.which == 3 ) {
+        window.onclick = function() {
+            ddmenustyle.display="none";
+            ga.dd.seloff();
+        }
+        ga.dd.seloff();
         console.log( "ga.dd.rclick() got a right click" );
         ddmenustyle.left = ev.clientX + "px";
         ddmenustyle.top  = ev.clientY + "px";
         ddmenustyle.display="block";
         ev.preventDefault();
+        var from_id = ev.target.id;
+        if ( ga.dd.intra ) {
+            document.getElementById( from_id ).classList.add( "ga-dd-sel" );
+        } else {
+            from_id = from_id.replace( /^ga-[a-z]*-/, '' );
+            document.getElementById( `ga-label-${from_id}` ).classList.add( "ga-dd-sel" );
+            document.getElementById( `ga-data-${from_id}` ).classList.add( "ga-dd-sel" );
+        }
     } else {
         console.log( `ga.dd.rclick() got a click - NOT  right click ev.which ${ev.which}` );
     }
@@ -212,7 +228,18 @@ ga.dd.rclick = function( ev ) {
 ga.dd.setup = function() {
 }
 
+ga.dd.seloff = function() {
+    console.log( "ga.dd.seloff()" );
+    var sel = document.querySelectorAll(".ga-dd-sel");
+    for ( var i in sel ) {
+        if ( sel.hasOwnProperty( i ) ) {
+            sel[i].classList.remove( "ga-dd-sel" );
+        }
+    }
+}
 ga.dd.menu = function( choice ) {
     console.log( `ga.dd.menu( "${choice}" )` );
+    window.onclick = null;
     document.getElementById( "ga-dd-menu" ).style.display="none";
+    ga.dd.seloff();
 }

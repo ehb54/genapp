@@ -14,16 +14,24 @@
     position: absolute;
     z-index: 100;
     background-color: white;
-    border: 1px solid gray;
+    border: 1px solid gainsboro;
     margin: 12px;
     padding: 5px;
-    box-shadow: 10px;
+    box-shadow: 3px 4px gainsboro;
+    border-radius: 7px;
+    }
+    .ga-dd-menu-e:hover {
+    background-color : azure;
+    }
+    .ga-dd-sel {
+    border: 2px solid lawngreen;
+    background-color : azure;
     }
   </style>
   <body>  
     <div id="ga-dd-menu" class="ga-dd-menu" role="menu" style="display:none;list-style-type:none" >
-      <div id="ga-dd-menu-insertrowabove" onclick="ga.dd.menu('insertrowabove')" >Insert row above</div>
-      <div id="ga-dd-menu-insertrowbelow" onclick="ga.dd.menu('insertrowbelow')" >Insert row below</div>
+      <div id="ga-dd-menu-insertrowabove" class="ga-dd-menu-e" onclick="ga.dd.menu('insertrowabove')" >Insert row above</div>
+      <div id="ga-dd-menu-insertrowbelow" class="ga-dd-menu-e" onclick="ga.dd.menu('insertrowbelow')" >Insert row below</div>
     </div>
     
     <div id="ga-panel-root" style="display:grid;grid-template-rows:repeat(1,auto);grid-template-columns:auto;grid-gap:5px;text-align:left">
