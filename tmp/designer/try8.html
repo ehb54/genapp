@@ -11,13 +11,16 @@
     }
     .ga-dd-grid {
     display: grid;
-    grid-template-columns: 1fr 8px 1fr;
+    grid-template-columns: 1fr 10px 1fr;
     grid-template-rows: 1;
     overflow-x:hidden;
+    cursor: grab;
     }
     .ga-dd-vertical-gutter {
     grid-area: 1 / 2 / 4 / 2;
     background: rgba(0,0,0,0.2);
+    margin: 2px;
+    cursor: col-resize;
     }
     .ga-dd-on {
     user-select: none;
@@ -33,6 +36,7 @@
     padding: 5px;
     box-shadow: 3px 4px gainsboro;
     border-radius: 7px;
+    cursor: pointer;
     }
     .ga-dd-menu-e:hover {
     background-color : azure;
@@ -115,17 +119,103 @@
     <label for="ga-dd-inter">Intra field drops:</label><input type="checkbox" id="ga-dd-inter" onclick="ga.dd.reset()">
   </footer>
   <script>
+    
+    ga.layout = {};
+    ga.layout.module =
+    {
+    "name": "energynew",
+    "json": {
+    "executable": "energy.py",
+    "fields": [
+    {
+    "default": "header2",
+    "id": "module_header",
+    "label": "Energy Example",
+    "layout": {
+    "parent": "header"
+    },
+    "posthline": "true",
+    "prehline": "true",
+    "role": "input",
+    "type": "label"
+    },
+    {
+    "help": "Enter the mass in kilograms",
+    "id": "m",
+    "label": "mass [kg]",
+    "layout": {
+    "parent": "leftpanel"
+    },
+    "required": "true",
+    "role": "input",
+    "type": "float"
+    },
+    {
+    "default": 299792458,
+    "help": "Enter the speed of light in meters/second",
+    "id": "c",
+    "label": "Speed of light [m/s]",
+    "layout": {
+    "parent": "leftpanel"
+    },
+    "required": "true",
+    "role": "input",
+    "type": "float"
+    },
+    {
+    "id": "e",
+    "label": "Energy [J]",
+    "layout": {
+    "parent": "rightpanel"
+    },
+    "role": "output",
+    "type": "text"
+    },
+    {
+    "default": "header4",
+    "id": "module_footer",
+    "label": "Example module footer",
+    "layout": {
+    "parent": "footer"
+    },
+    "role": "input",
+    "type": "label"
+    },
+    {
+    "buttontext": "Submit",
+    "id": "b_submit",
+    "layout": {
+    "data": [
+    1,
+    1
+    ],
+    "parent": "leftpanel"
+    },
+    "role": "input",
+    "type": "button"
+    },
+    {
+    "buttontext": "Reset",
+    "id": "b_reset",
+    "layout": {
+    "data": [
+    0,
+    2
+    ],
+    "parent": "leftpanel"
+    },
+    "role": "input",
+    "type": "button"
+    }
+    ],
+    "help": "help for new Energy layout",
+    "label": "Energy",
+    "moduleid": "energynew"
+    }
+    }
+    ;
     ga.dd.gridinit();
     ga.dd.reset();
-    // document.addEventListener('keydown', function( ev ) {
-    // console.log( ev );
-    // });
-    
-//    window.oncontextmenu = function ()
-//    {
-//    showCustomMenu();
-//    return false;     // cancel default menu
-//    }
     
   </script>
 </html>

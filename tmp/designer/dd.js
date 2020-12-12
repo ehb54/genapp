@@ -17,6 +17,13 @@ ga.dd = {};
 // ga.dd.dragnode
 // ga.dd.draggid
 // ga.dd.dragpanelid
+// ga.dd.fields.original                    field settings for "reset"
+// ga.dd.fields.undo                        array for undos?
+// ga.dd.fields.current                     current field settings
+// ga.dd.node.dd                            node of id=ga-dd-dd   - the designer area
+// ga.dd.node.grid                          node of id=ga-dd-grid - the parent cssgrid for the module & designer
+// ga.dd.node.mod                           node of id=ga-dd-mod  - the module 
+// 
 // ----------------------------------------------------------------------------------------------------------
 // summary of operations
 // ----------------------------------------------------------------------------------------------------------
@@ -202,6 +209,7 @@ ga.dd.reset = function () {
                 dds[i].ondragleave   = function(ev){ga.dd.dragleave(ev)};
                 dds[i].ondragstart   = function(ev){ga.dd.drag(ev)};
                 dds[i].oncontextmenu = function(ev){ga.dd.rclick(ev)};
+                dds[i].ondblclick    = function(ev){ga.dd.dblclick(ev)};
                 dds[i].classList.add( "ga-dd-on" );
             }
         }
@@ -215,6 +223,7 @@ ga.dd.reset = function () {
                 dds[i].ondragstart   = null;
                 dds[i].oncontextmenu = null;
                 dds[i].ondragleave   = null;
+                dds[i].ondblclick    = null;
                 dds[i].classList.remove( "ga-dd-on" );
             }
         }
@@ -298,27 +307,71 @@ ga.dd.menu = function( choice ) {
 
 ga.dd.gridinit = function() {
     console.log( 'ga.dd.gridinit()' );
+    ga.dd.node      = ga.dd.node || {};
+    ga.dd.node.dd   = document.getElementById( "ga-dd-dd" );
+    ga.dd.node.grid = document.getElementById( "ga-dd-grid" );
+    ga.dd.node.mod  = document.getElementById( "ga-dd-mod" );
     Split({
         columnGutters: [{
             track: 1,
             element: document.querySelector('.ga-dd-vertical-gutter'),
         }]
     });
+    ga.dd.moduleinit();
 }
 
 ga.dd.resetgrid = function() {
     console.log( 'ga.dd.resetgrid()' );
-    var ddgrid = document.getElementById( "ga-dd-grid" );
-    var dddd = document.getElementById( "ga-dd-dd" );
     if ( ga.dd.on ) {
-        ddgrid.style.gridTemplateColumns = ga.dd.prevgtc;
-        ddgrid.style.gridTemplateRows = ga.dd.prevgtr;
-        dddd.style.display = "block";
+        ga.dd.node.grid.style.gridTemplateColumns = ga.dd.prevgtc;
+        ga.dd.node.grid.style.gridTemplateRows = ga.dd.prevgtr;
+        ga.dd.node.dd.style.display = "block";
     } else {
-        ga.dd.prevgtc = ddgrid.style.gridTemplateColumns;
-        ga.dd.prevgtr = ddgrid.style.gridTemplateRows;;
-        ddgrid.style.gridTemplateColumns = "1fr";
-        ddgrid.style.gridTemplateRows = "1fr";
-        dddd.style.display = "none";
+        ga.dd.prevgtc = ga.dd.node.grid.style.gridTemplateColumns;
+        ga.dd.prevgtr = ga.dd.node.grid.style.gridTemplateRows;;
+        ga.dd.node.grid.style.gridTemplateColumns = "1fr";
+        ga.dd.node.grid.style.gridTemplateRows = "1fr";
+        ga.dd.node.dd.style.display = "none";
     }
 }
+
+ga.dd.moduleinit = function() {
+    console.log( 'ga.dd.moduleinit()' );
+    if ( !ga.layout ||
+         !ga.layout.module ||
+         !ga.layout.module.json ||
+         !ga.layout.module.json.fields
+       ) {
+        console.warn( 'ga.dd.moduleinit() : ga.layout.module.json.fields is not defined' );
+        return;
+    }
+    
+    ga.dd.fields          = {};
+    ga.dd.fields.original = {};
+    for ( var i in ga.layout.module.json.fields ) {
+        if ( !ga.layout.module.json.fields[i].id ) {
+            console.warn( `ga.dd.moduleinit() : fields[${i}].id is not defined` );
+        }
+        ga.dd.fields.original[ ga.layout.module.json.fields[i].id ] = ga.layout.module.json.fields[i];
+    }
+    ga.dd.fields.current = ga.dd.fields.original;
+}
+
+ga.dd.dfield = function( id ) {
+    console.log( `ga.dd.dfield('${id}')` );
+    // temporary just display JSON
+    if ( !ga.dd.fields.current[ id ] ) {
+        console.warn( `ga.dd.dfield('${id}') : no ga.dd.fields.current['${id}']` );
+        ga.dd.node.dd.innerHTML = "";
+        return;
+    }
+    ga.dd.node.dd.innerHTML = '<pre>' + JSON.stringify( ga.dd.fields.current[id], null, 2 ) + '</pre>';
+}
+
+ga.dd.dblclick = function( ev ) {
+    console.log( 'ga.dd.dblclick()' );
+    ga.dd.node.dclickd = ev.target;
+    ga.dd.selid        = ev.target.id.replace( /^ga-[a-z]*-/, '' );
+    ga.dd.dfield( ga.dd.selid );
+}
+    
