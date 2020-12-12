@@ -1,0 +1,80 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset="utf-8">
+  </head>
+  <script src="split-grid.js"></script>
+  <style>
+    html, body, .grid {
+    padding: 0;
+    }
+
+    .grid {
+    display: grid;
+    grid-template-columns: 1fr 8px 1fr;
+    grid-template-rows: 1;
+    overflow-x:hidden;
+    }
+
+    .vertical-gutter {
+    grid-area: 1 / 2 / 4 / 2;
+    background: rgba(0,0,0,0.2);
+    }
+  </style>
+  <body>
+    <div id="dgrid" class="grid">
+      <div id="dhtml">
+        HTML
+      </div>
+      <div id="dcss">
+        CSS<br>
+        lots<br>
+        of<br>
+        lines<br>
+      </div>
+      <div class="vertical-gutter">
+      </div>
+    </div>
+  </body>
+  <footer>
+    <p></p>
+    <hr>
+    <label for="ga-dd-on">Activate Drag and Drop:</label><input type="checkbox" id="ga-dd-on" onclick="ga.dd.reset()">
+  </footer>
+
+  <script>
+    Split({
+    columnGutters: [{
+    track: 1,
+    element: document.querySelector('.vertical-gutter'),
+    }]
+    })
+    var ga = {};
+    ga.dd = {};
+    ga.dd.reset = function () {
+    console.log( "ga.dd.reset()" );
+    ga.dd.on    = document.getElementById( "ga-dd-on"    ).checked;
+    var dcss = document.getElementById( "dcss" );
+    // var djs = document.getElementById( "djs" );
+    // var dres = document.getElementById( "dres" );
+    // var dgrid = document.getElementById( "dgrid" );
+    if ( ga.dd.on ) {
+    dgrid.style.gridTemplateColumns = ga.dd.prevgtc;
+    dgrid.style.gridTemplateRows = ga.dd.prevgtr;
+    dcss.style.display = "block";
+    // djs.style.display = "block";
+    // dres.style.display = "block";
+    } else {
+    ga.dd.prevgtc = dgrid.style.gridTemplateColumns;
+    ga.dd.prevgtr = dgrid.style.gridTemplateRows;;
+    dgrid.style.gridTemplateColumns = "1fr";
+    dgrid.style.gridTemplateRows = "1fr";
+    dcss.style.display = "none";
+    // djs.style.display = "none";
+    // dres.style.display = "none";
+    }
+    }
+    ga.dd.reset();
+  </script>
+  
+</html>

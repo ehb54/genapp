@@ -1,0 +1,131 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset="utf-8">
+  </head>
+  <script src="split-grid.js"></script>
+  <script src="dd.js"></script>
+  <style>
+    html, body, .ga-dd-grid {
+    padding: 0;
+    }
+    .ga-dd-grid {
+    display: grid;
+    grid-template-columns: 1fr 8px 1fr;
+    grid-template-rows: 1;
+    overflow-x:hidden;
+    }
+    .ga-dd-vertical-gutter {
+    grid-area: 1 / 2 / 4 / 2;
+    background: rgba(0,0,0,0.2);
+    }
+    .ga-dd-on {
+    user-select: none;
+    border: 1px solid coral;
+    }
+    .ga-dd-menu {
+    display: none;
+    position: absolute;
+    z-index: 100;
+    background-color: white;
+    border: 1px solid gainsboro;
+    margin: 12px;
+    padding: 5px;
+    box-shadow: 3px 4px gainsboro;
+    border-radius: 7px;
+    }
+    .ga-dd-menu-e:hover {
+    background-color : azure;
+    }
+    .ga-dd-sel {
+    border: 2px solid lawngreen;
+    background-color : azure;
+    }
+  </style>
+  <body>  
+    <div id="ga-dd-grid" class="ga-dd-grid">
+      <div id="ga-dd-mod">
+
+        <div id="ga-dd-menu" class="ga-dd-menu" role="menu" style="display:none;list-style-type:none" >
+          <div id="ga-dd-menu-irowu" class="ga-dd-menu-e" onclick="ga.dd.menu('irowu')" >Insert row above</div>
+          <div id="ga-dd-menu-irowd" class="ga-dd-menu-e" onclick="ga.dd.menu('irowd')" >Insert row below</div>
+          <div id="ga-dd-menu-icoll" class="ga-dd-menu-e" onclick="ga.dd.menu('icoll')" >Insert column left</div>
+          <div id="ga-dd-menu-icolr" class="ga-dd-menu-e" onclick="ga.dd.menu('icolr')" >Insert column right</div>
+        </div>
+        
+        <div id="ga-panel-root" style="display:grid;grid-template-rows:repeat(1,auto);grid-template-columns:auto;grid-gap:5px;text-align:left">
+          <div id="ga-panel-header" style="display:grid;grid-template-rows:auto;grid-template-columns:auto;grid-row:1;grid-column:1/-1;grid-gap:5px;text-align:center">
+            <div id="ga-label-module_header" style="grid-row:1;grid-column:1;" class="ga-type-label ">
+              <label id="module_header_label" class="ga-field-input-header2 ">header_label
+              </label>
+            </div>
+
+          </div>
+
+          <div id="ga-panel-body" style="display:grid;grid-template-rows:auto;grid-template-columns:1fr 1fr ;grid-row:2;grid-column:1/-1;grid-gap:5px;text-align:left">
+            <div id="ga-panel-leftpanel" style="display:grid;grid-template-rows:auto;grid-template-columns:2;grid-row:1;grid-column:1;grid-gap:5px;text-align:left">
+              <div id="ga-label-m" style="grid-row:1;grid-column:1;" class="ga-type-float ga-dd ">
+                label-m
+              </div>
+              <div id="ga-data-m" style="grid-row:1;grid-column:2;" class="ga-type-float ga-dd ">
+                data-m
+              </div>
+
+
+              <div id="ga-label-c" style="grid-row:2;grid-column:1;" class="ga-type-float ga-dd ">
+                label-c
+              </div>
+
+              <div id="ga-data-c" style="grid-row:2;grid-column:2;" class="ga-type-float ga-dd ">
+                data-c
+              </div>
+
+            </div>
+
+            <div id="ga-panel-rightpanel" style="display:grid;grid-template-rows:auto;grid-template-columns:2;grid-row:1;grid-column:2;grid-gap:5px;text-align:right">
+
+              <div id="ga-label-e" style="grid-row:1;grid-column:2;" class="ga-type-text ga-dd ">
+                label-e
+              </div>
+
+              <div id="ga-data-e" style="grid-row:1;grid-column:1;" class="ga-type-text ga-dd ">
+                data-e
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      </div>
+      <div id="ga-dd-dd">
+        CSS<br>
+        lots<br>
+        of<br>
+        lines<br>
+      </div>
+      <div class="ga-dd-vertical-gutter">
+      </div>
+    </div>
+    
+  </body>
+  <footer>
+    <p></p>
+    <hr>
+    <label for="ga-dd-on">Activate Drag and Drop:</label><input type="checkbox" id="ga-dd-on" onclick="ga.dd.reset()">
+    <label for="ga-dd-inter">Intra field drops:</label><input type="checkbox" id="ga-dd-inter" onclick="ga.dd.reset()">
+  </footer>
+  <script>
+    ga.dd.gridinit();
+    ga.dd.reset();
+    // document.addEventListener('keydown', function( ev ) {
+    // console.log( ev );
+    // });
+    
+//    window.oncontextmenu = function ()
+//    {
+//    showCustomMenu();
+//    return false;     // cancel default menu
+//    }
+    
+  </script>
+</html>

@@ -218,7 +218,8 @@ ga.dd.reset = function () {
                 dds[i].classList.remove( "ga-dd-on" );
             }
         }
-    }        
+    }
+    ga.dd.resetgrid();
 }    
 
 ga.dd.rclick = function( ev ) {
@@ -292,5 +293,32 @@ ga.dd.menu = function( choice ) {
     default:
         console.warn( `ga.dd.menu(): unknown command ${choice}` );
         break;
+    }
+}
+
+ga.dd.gridinit = function() {
+    console.log( 'ga.dd.gridinit()' );
+    Split({
+        columnGutters: [{
+            track: 1,
+            element: document.querySelector('.ga-dd-vertical-gutter'),
+        }]
+    });
+}
+
+ga.dd.resetgrid = function() {
+    console.log( 'ga.dd.resetgrid()' );
+    var ddgrid = document.getElementById( "ga-dd-grid" );
+    var dddd = document.getElementById( "ga-dd-dd" );
+    if ( ga.dd.on ) {
+        ddgrid.style.gridTemplateColumns = ga.dd.prevgtc;
+        ddgrid.style.gridTemplateRows = ga.dd.prevgtr;
+        dddd.style.display = "block";
+    } else {
+        ga.dd.prevgtc = ddgrid.style.gridTemplateColumns;
+        ga.dd.prevgtr = ddgrid.style.gridTemplateRows;;
+        ddgrid.style.gridTemplateColumns = "1fr";
+        ddgrid.style.gridTemplateRows = "1fr";
+        dddd.style.display = "none";
     }
 }
