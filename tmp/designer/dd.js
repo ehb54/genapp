@@ -27,6 +27,7 @@ ga.dd = {};
 // ga.dd.node.ddpalette                     palette (dictionary) tab contents
 // ga.dd.node.grid                          node of id=ga-dd-grid - the parent cssgrid for the module & designer
 // ga.dd.node.mod                           node of id=ga-dd-mod  - the module 
+// ga.dd.node.menu                          node of id=ga-dd-menu - the contextmenu
 // 
 // ----------------------------------------------------------------------------------------------------------
 // summary of operations
@@ -303,9 +304,38 @@ ga.dd.menu = function( choice ) {
     case "icolr" :
         console.log( msg_ok );
         break;
+    case "iclr" :
+        console.log( msg_ok );
+        ga.dd.menu.iclr()
+        break;
     default:
         console.warn( `ga.dd.menu(): unknown command ${choice}` );
         break;
+    }
+}
+
+ga.dd.menu.iclr = function() {
+    console.log( "ga.dd.menu.iclr()" );
+    var sel = document.querySelectorAll('.ga-dd-menu-e');
+
+    if ( ga.dd.node.dd.classList.contains('ga-dd-iclr') ) {
+        // turn off
+        ga.dd.node.dd.classList.remove( 'ga-dd-iclr' );
+        ga.dd.node.menu.classList.remove( 'ga-dd-iclr' );
+        for ( var i in sel ) {
+            if ( sel.hasOwnProperty( i ) ) {
+                sel[i].classList.remove( 'ga-dd-iclr' );
+            }
+        }
+    } else {
+        // turn on
+        ga.dd.node.dd.classList.add( 'ga-dd-iclr' );
+        ga.dd.node.menu.classList.add( 'ga-dd-iclr' );
+        for ( var i in sel ) {
+            if ( sel.hasOwnProperty( i ) ) {
+                sel[i].classList.add( 'ga-dd-iclr' );
+            }
+        }
     }
 }
 
@@ -317,8 +347,9 @@ ga.dd.gridinit = function() {
     ga.dd.node.ddlayout    = document.getElementById( "ga-dd-layout-content" );
     ga.dd.node.ddjson      = document.getElementById( "ga-dd-json-content" );
     ga.dd.node.ddpalette   = document.getElementById( "ga-dd-palette-content" );
-    ga.dd.node.grid = document.getElementById( "ga-dd-grid" );
-    ga.dd.node.mod  = document.getElementById( "ga-dd-mod" );
+    ga.dd.node.grid        = document.getElementById( "ga-dd-grid" );
+    ga.dd.node.mod         = document.getElementById( "ga-dd-mod" );
+    ga.dd.node.menu        = document.getElementById( "ga-dd-menu" );
     Split({
         columnGutters: [{
             track: 1,

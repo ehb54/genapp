@@ -34,8 +34,26 @@ html, body, .ga-dd-grid {
 .ga-dd-dd {
     font-family: Arial;
 }
+
+.ga-dd-iclr {
+    filter: invert(95%);
+}
+
+.ga-dd-menu-e {
+    color: black;
+}
+
 .ga-dd-menu-e:hover {
     background-color : azure;
+}
+
+.ga-dd-menu-e.ga-dd-iclr {
+    color: white;
+}
+
+.ga-dd-menu-e.ga-dd-iclr:hover {
+    color: black;
+    filter: invert(95%);
 }
 .ga-dd-sel {
     border: 2px solid lawngreen;
@@ -80,4 +98,5 @@ html, body, .ga-dd-grid {
     padding: 6px 12px;
     border: 1px solid #ccc;
     border-top: none;
+    background-color: white;
 } 

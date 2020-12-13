@@ -15,6 +15,9 @@
           <div id="ga-dd-menu-irowd" class="ga-dd-menu-e" onclick="ga.dd.menu('irowd')" >Insert row below</div>
           <div id="ga-dd-menu-icoll" class="ga-dd-menu-e" onclick="ga.dd.menu('icoll')" >Insert column left</div>
           <div id="ga-dd-menu-icolr" class="ga-dd-menu-e" onclick="ga.dd.menu('icolr')" >Insert column right</div>
+          <hr>
+          <div id="ga-dd-menu-iclr" class="ga-dd-menu-e" onclick="ga.dd.menu('iclr')" >Invert Designer colors</div>
+          
         </div>
         
         <div id="ga-panel-root" style="display:grid;grid-template-rows:repeat(1,auto);grid-template-columns:auto;grid-gap:5px;text-align:left">
@@ -199,8 +202,10 @@
     }
     }
     ;
+  </script>
+  <script src="ga_db.js"></script>
+  <script>
     ga.dd.gridinit();
     ga.dd.reset();
-    
   </script>
 </html>
