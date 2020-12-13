@@ -28,7 +28,6 @@ ga.dd = {};
 // ga.dd.node.grid                          node of id=ga-dd-grid - the parent cssgrid for the module & designer
 // ga.dd.node.mod                           node of id=ga-dd-mod  - the module 
 // ga.dd.node.menu                          node of id=ga-dd-menu - the contextmenu
-// 
 // ----------------------------------------------------------------------------------------------------------
 // summary of operations
 // ----------------------------------------------------------------------------------------------------------
@@ -403,14 +402,46 @@ ga.dd.moduleinit = function() {
 ga.dd.dfield = function( id ) {
     console.log( `ga.dd.dfield('${id}')` );
     // display in appropriate tab'd content area
-    // currently just JSON
     
+
     if ( !ga.dd.fields.current[ id ] ) {
         console.warn( `ga.dd.dfield('${id}') : no ga.dd.fields.current['${id}']` );
         ga.dd.node.ddjson.innerHTML = "";
+        ga.dd.node.dddetails.innerHTML = "";
         return;
     }
+
+    // JSON
+
     ga.dd.node.ddjson.innerHTML = '<pre>' + JSON.stringify( ga.dd.fields.current[id], null, 2 ) + '</pre>';
+
+    // Details
+    
+
+    // Layout
+
+    var type = ga.dd.fields.current[id].type;
+    var role = ga.dd.fields.current[id].role;
+    var html;
+    if ( !ga.fdb ||
+         !ga.fdb[type] ||
+         !ga.fdb[type][role] ||
+         !ga.fdb[type][role].attrib ) {
+        console.warn( `ga.dd.dfield('${id}') no ga.fdb.${type}.${role}.${attrib}` );
+        ga.dd.node.dddetails.innerHTML = '';
+    } else {
+        html = `id : ${id}<br>role : ${role}<br>type : ${type}<br>`;
+        for ( var i in ga.fdb[type][role].attrib ) {
+            var attrib = ga.fdb[type][role].attrib[i];
+            var val    = ga.dd.fields.current[id][attrib];
+            html += `${attrib} : `
+            if ( val ) {
+                html += ga.dd.fields.current[id][attrib];
+            }
+            html += '<br>';    
+        }
+        ga.dd.node.dddetails.innerHTML = html;
+    }
 }
 
 ga.dd.pickoff = function () {
