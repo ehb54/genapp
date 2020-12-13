@@ -21,6 +21,10 @@ ga.dd = {};
 // ga.dd.fields.undo                        array for undos?
 // ga.dd.fields.current                     current field settings
 // ga.dd.node.dd                            node of id=ga-dd-dd   - the designer area
+// ga.dd.node.ddlayout                      layout tab contents
+// ga.dd.node.dddetails                     details tab contents
+// ga.dd.node.ddjson                        json tab contents
+// ga.dd.node.ddpalette                     palette (dictionary) tab contents
 // ga.dd.node.grid                          node of id=ga-dd-grid - the parent cssgrid for the module & designer
 // ga.dd.node.mod                           node of id=ga-dd-mod  - the module 
 // 
@@ -198,7 +202,7 @@ ga.dd.reset = function () {
     ga.dd.intra = document.getElementById( "ga-dd-inter" ).checked;
     console.log( `ga.dd.on ${ga.dd.on} ga.dd.intra ${ga.dd.intra}` );
     // find dragables class ga-dd
-    var dds = document.querySelectorAll(".ga-dd");
+    var dds = document.getElementsByClassName('ga-dd');
     if ( ga.dd.on ) {
         for ( var i in dds ) {
             if ( dds.hasOwnProperty( i ) ) {
@@ -265,7 +269,7 @@ ga.dd.setup = function() {
 
 ga.dd.seloff = function() {
     console.log( "ga.dd.seloff()" );
-    var sel = document.querySelectorAll(".ga-dd-sel");
+    var sel = document.querySelectorAll('.ga-dd-sel');
     for ( var i in sel ) {
         if ( sel.hasOwnProperty( i ) ) {
             sel[i].classList.remove( "ga-dd-sel" );
@@ -307,8 +311,12 @@ ga.dd.menu = function( choice ) {
 
 ga.dd.gridinit = function() {
     console.log( 'ga.dd.gridinit()' );
-    ga.dd.node      = ga.dd.node || {};
-    ga.dd.node.dd   = document.getElementById( "ga-dd-dd" );
+    ga.dd.node             = ga.dd.node || {};
+    ga.dd.node.dd          = document.getElementById( "ga-dd-dd" );
+    ga.dd.node.dddetails   = document.getElementById( "ga-dd-details-content" );
+    ga.dd.node.ddlayout    = document.getElementById( "ga-dd-layout-content" );
+    ga.dd.node.ddjson      = document.getElementById( "ga-dd-json-content" );
+    ga.dd.node.ddpalette   = document.getElementById( "ga-dd-palette-content" );
     ga.dd.node.grid = document.getElementById( "ga-dd-grid" );
     ga.dd.node.mod  = document.getElementById( "ga-dd-mod" );
     Split({
@@ -326,12 +334,16 @@ ga.dd.resetgrid = function() {
         ga.dd.node.grid.style.gridTemplateColumns = ga.dd.prevgtc;
         ga.dd.node.grid.style.gridTemplateRows = ga.dd.prevgtr;
         ga.dd.node.dd.style.display = "block";
+        if ( ga.dd.node && ga.dd.node.dclickd ) {
+            ga.dd.dblclick( { target : ga.dd.node.dclickd } );
+        }
     } else {
         ga.dd.prevgtc = ga.dd.node.grid.style.gridTemplateColumns;
         ga.dd.prevgtr = ga.dd.node.grid.style.gridTemplateRows;;
         ga.dd.node.grid.style.gridTemplateColumns = "1fr";
         ga.dd.node.grid.style.gridTemplateRows = "1fr";
         ga.dd.node.dd.style.display = "none";
+        ga.dd.pickoff();
     }
 }
 
@@ -359,19 +371,54 @@ ga.dd.moduleinit = function() {
 
 ga.dd.dfield = function( id ) {
     console.log( `ga.dd.dfield('${id}')` );
-    // temporary just display JSON
+    // display in appropriate tab'd content area
+    // currently just JSON
+    
     if ( !ga.dd.fields.current[ id ] ) {
         console.warn( `ga.dd.dfield('${id}') : no ga.dd.fields.current['${id}']` );
-        ga.dd.node.dd.innerHTML = "";
+        ga.dd.node.ddjson.innerHTML = "";
         return;
     }
-    ga.dd.node.dd.innerHTML = '<pre>' + JSON.stringify( ga.dd.fields.current[id], null, 2 ) + '</pre>';
+    ga.dd.node.ddjson.innerHTML = '<pre>' + JSON.stringify( ga.dd.fields.current[id], null, 2 ) + '</pre>';
 }
 
+ga.dd.pickoff = function () {
+    console.log( "ga.dd.pickoff()" );
+    var sel = document.querySelectorAll('.ga-dd-pick');
+    for ( var i in sel ) {
+        if ( sel.hasOwnProperty( i ) ) {
+            sel[i].classList.remove( "ga-dd-pick" );
+        }
+    }
+}
+    
 ga.dd.dblclick = function( ev ) {
     console.log( 'ga.dd.dblclick()' );
     ga.dd.node.dclickd = ev.target;
-    ga.dd.selid        = ev.target.id.replace( /^ga-[a-z]*-/, '' );
-    ga.dd.dfield( ga.dd.selid );
+    ga.dd.pickid       = ev.target.id.replace( /^ga-[a-z]*-/, '' );
+    ga.dd.pickoff();
+    document.getElementById( `ga-label-${ga.dd.pickid}` ).classList.add( "ga-dd-pick" );
+    document.getElementById( `ga-data-${ga.dd.pickid}` ).classList.add( "ga-dd-pick" );
+    ga.dd.dfield( ga.dd.pickid );
 }
     
+ga.dd.tab = function(evt, id) {
+    var i, tabcontent, tablinks;
+
+    // Get all elements with class="tabcontent" and hide them
+    tabcontent = document.getElementsByClassName("ga-dd-tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+
+    // Get all elements with class="tablinks" and remove the class "active"
+    tablinks = document.getElementsByClassName("ga-dd-tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+
+    // Show the current tab, and add an "active" class to the button that opened the tab
+    document.getElementById(id).style.display = "block";
+    evt.currentTarget.className += " active";
+} 
+

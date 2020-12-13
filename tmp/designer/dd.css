@@ -1,0 +1,83 @@
+html, body, .ga-dd-grid {
+    padding: 0;
+}
+.ga-dd-grid {
+    display: grid;
+    grid-template-columns: 1fr 10px 1fr;
+    grid-template-rows: 1;
+    overflow-x:hidden;
+}
+.ga-dd-vertical-gutter {
+    grid-area: 1 / 2 / 4 / 2;
+    background: rgba(0,0,0,0.2);
+    margin: 2px;
+    cursor: col-resize;
+}
+.ga-dd-on {
+    user-select: none;
+    border: 1px solid coral;
+    cursor: grab;
+}
+.ga-dd-menu {
+    font-family: Arial;
+    display: none;
+    position: absolute;
+    z-index: 100;
+    background-color: white;
+    border: 1px solid gainsboro;
+    margin: 12px;
+    padding: 5px;
+    box-shadow: 3px 4px gainsboro;
+    border-radius: 7px;
+    cursor: pointer;
+}
+.ga-dd-dd {
+    font-family: Arial;
+}
+.ga-dd-menu-e:hover {
+    background-color : azure;
+}
+.ga-dd-sel {
+    border: 2px solid lawngreen;
+    background-color : azure;
+}
+.ga-dd-pick {
+    border: 2px solid blue;
+}
+
+
+/* Style the tab */
+.ga-dd-tab {
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+}
+
+/* Style the buttons that are used to open the tab content */
+.ga-dd-tab button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+}
+
+/* Change background color of buttons on hover */
+.ga-dd-tab button:hover {
+    background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+.ga-dd-tab tab button.active {
+    background-color: #ccc;
+}
+
+/* Style the tab content */
+.ga-dd-tabcontent {
+    display: none;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-top: none;
+} 

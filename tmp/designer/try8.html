@@ -5,47 +5,7 @@
   </head>
   <script src="split-grid.js"></script>
   <script src="dd.js"></script>
-  <style>
-    html, body, .ga-dd-grid {
-    padding: 0;
-    }
-    .ga-dd-grid {
-    display: grid;
-    grid-template-columns: 1fr 10px 1fr;
-    grid-template-rows: 1;
-    overflow-x:hidden;
-    cursor: grab;
-    }
-    .ga-dd-vertical-gutter {
-    grid-area: 1 / 2 / 4 / 2;
-    background: rgba(0,0,0,0.2);
-    margin: 2px;
-    cursor: col-resize;
-    }
-    .ga-dd-on {
-    user-select: none;
-    border: 1px solid coral;
-    }
-    .ga-dd-menu {
-    display: none;
-    position: absolute;
-    z-index: 100;
-    background-color: white;
-    border: 1px solid gainsboro;
-    margin: 12px;
-    padding: 5px;
-    box-shadow: 3px 4px gainsboro;
-    border-radius: 7px;
-    cursor: pointer;
-    }
-    .ga-dd-menu-e:hover {
-    background-color : azure;
-    }
-    .ga-dd-sel {
-    border: 2px solid lawngreen;
-    background-color : azure;
-    }
-  </style>
+  <link rel="stylesheet" href="dd.css">
   <body>  
     <div id="ga-dd-grid" class="ga-dd-grid">
       <div id="ga-dd-mod">
@@ -101,11 +61,36 @@
           </div>
         </div>
       </div>
-      <div id="ga-dd-dd">
-        CSS<br>
-        lots<br>
-        of<br>
-        lines<br>
+      <div id="ga-dd-dd" class="ga-dd-dd">
+        <div class="ga-dd-tab">
+          <button class="ga-dd-tablinks" onclick="ga.dd.tab(event, 'ga-dd-details')">Details</button>
+          <button class="ga-dd-tablinks" onclick="ga.dd.tab(event, 'ga-dd-layout')">Layout</button>
+          <button class="ga-dd-tablinks" onclick="ga.dd.tab(event, 'ga-dd-json')">JSON</button>
+          <button class="ga-dd-tablinks" onclick="ga.dd.tab(event, 'ga-dd-palette')">Dictionary</button>
+        </div>
+
+        <div id="ga-dd-details" class="ga-dd-tabcontent">
+          <h3>Details</h3>
+          <div id="ga-dd-details-content">
+          </div>
+        </div>
+        <div id="ga-dd-layout" class="ga-dd-tabcontent">
+          <h3>Layout</h3>
+          <div id="ga-dd-layout-content">
+          </div>
+        </div>
+        <div id="ga-dd-json" class="ga-dd-tabcontent">
+          <h3>JSON</h3>
+          <div id="ga-dd-json-content">
+          </div>
+        </div>
+        <div id="ga-dd-palette" class="ga-dd-tabcontent">
+          <h3>Dictionary</h3>
+          <div id="ga-dd-palette-content">
+          </div>
+        </div>
+
+        
       </div>
       <div class="ga-dd-vertical-gutter">
       </div>
