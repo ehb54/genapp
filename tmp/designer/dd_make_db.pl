@@ -69,7 +69,7 @@ sub extract_fields {
     }
     my @res;
     for my $k ( keys %tags ) {
-        push @res, $k;
+        push @res, $k if $k !~ /(_$|^id$)/;
     }
     @res = sort { $a cmp $b } @res;
     return @res;
@@ -84,11 +84,16 @@ die "expected directory $tdir does not exist\n" if !-d $tdir;
 $cmd = "(cd $tdir && ls *.input *.output | awk -F. '{ print \$1 }' | sort -u)";
 # print "$cmd\n";
 
-@types = `(cd $tdir && (ls *.input *.output | awk -F. '{ print \$1 }' | sort -u))`; 
+@types = `(cd $tdir && (ls *.input *.output | awk -F. '{ print \$1 }' | sort -u))`;
+
+# $debug++;
+
+@types = ( "float", "integer" ) if $debug;
 
 grep chomp, @types;
 
 $res = {};
+
 
 for $t ( @types ) {
     $$res{ $t } = {};
@@ -100,14 +105,20 @@ for $t ( @types ) {
         }
         $$res{ $t }{ $e } = {};
         $cc = clean_content( $f );
-        $$res{ $t }{ $e }{ 'content' } = $cc;
-        @res = extract_fields( $cc );
-        for $k ( @res ) {
-            $$res{ $t }{ $e }{ 'attrib' } = \@res;
+        $$res{ $t }{ $e }{ 'content' } = $cc if !$debug;
+        my @res = extract_fields( $cc );
+        if ( $debug ) {
+            print "type '$t' role '$e':\n";
+            print join "\n", @res;
+            print "\n";
         }
+        $$res{ $t }{ $e }{ 'attrib' } = \@res;
     }
 }
 
-# $json = JSON->new;
-# print $json->pretty->encode( $res ) . "\n";
-print "ga.fdb = " . encode_json( $res ) . ";\n";
+if ( $debug ) {
+    $json = JSON->new;
+    print $json->pretty->encode( $res ) . "\n";
+} else {
+    print "ga.fdb = " . encode_json( $res ) . ";\n";
+}
