@@ -346,6 +346,7 @@ ga.dd.gridinit = function() {
     ga.dd.node.ddlayout    = document.getElementById( "ga-dd-layout-content" );
     ga.dd.node.ddjson      = document.getElementById( "ga-dd-json-content" );
     ga.dd.node.ddpalette   = document.getElementById( "ga-dd-palette-content" );
+    ga.dd.node.ddctrls     = document.getElementById( "ga-dd-ctrls-content" );
     ga.dd.node.grid        = document.getElementById( "ga-dd-grid" );
     ga.dd.node.mod         = document.getElementById( "ga-dd-mod" );
     ga.dd.node.menu        = document.getElementById( "ga-dd-menu" );
@@ -355,6 +356,11 @@ ga.dd.gridinit = function() {
             element: document.querySelector('.ga-dd-vertical-gutter'),
         }]
     });
+
+    ga.dd.node.ddctrls.innerHTML =
+        `<label for="ga-dd-inter">Intra field drops:</label><input type="checkbox" id="ga-dd-inter" onclick="ga.dd.reset()"><br>`
+        + `<label onclick="ga.dd.menu('iclr')">Invert Designer colors</label><br>`
+    ;
     ga.dd.moduleinit();
 }
 
@@ -438,8 +444,10 @@ ga.dd.dfield = function( id ) {
             if ( val ) {
                 html += ga.dd.fields.current[id][attrib];
             }
-            html += '<br>';    
+            html += '<br>';
         }
+        // kludge for overflow-y issue
+        html += '<br>';
         ga.dd.node.dddetails.innerHTML = html;
     }
 }

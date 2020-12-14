@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="dd.css">
   <body>  
     <div id="ga-dd-grid" class="ga-dd-grid">
-      <div id="ga-dd-mod">
+      <div id="ga-dd-mod" class="ga-dd-mod">
 
         <div id="ga-dd-menu" class="ga-dd-menu" role="menu" style="display:none;list-style-type:none" >
           <div id="ga-dd-menu-irowu" class="ga-dd-menu-e" onclick="ga.dd.menu('irowu')" >Insert row above</div>
@@ -70,6 +70,7 @@
           <button class="ga-dd-tablinks" onclick="ga.dd.tab(event, 'ga-dd-layout')">Layout</button>
           <button class="ga-dd-tablinks" onclick="ga.dd.tab(event, 'ga-dd-json')">JSON</button>
           <button class="ga-dd-tablinks" onclick="ga.dd.tab(event, 'ga-dd-palette')">Dictionary</button>
+          <button class="ga-dd-tablinks" onclick="ga.dd.tab(event, 'ga-dd-ctrls')">Controls</button>
         </div>
 
         <div id="ga-dd-details" class="ga-dd-tabcontent">
@@ -92,7 +93,11 @@
           <div id="ga-dd-palette-content">
           </div>
         </div>
-
+        <div id="ga-dd-ctrls" class="ga-dd-tabcontent">
+          <h3>Controls</h3>
+          <div id="ga-dd-ctrls-content">
+          </div>
+        </div>
         
       </div>
       <div class="ga-dd-vertical-gutter">
@@ -100,11 +105,9 @@
     </div>
     
   </body>
-  <footer>
+  <footer class="ga-dd-footer">
     <p></p>
-    <hr>
-    <label for="ga-dd-on">Activate Drag and Drop:</label><input type="checkbox" id="ga-dd-on" onclick="ga.dd.reset()">
-    <label for="ga-dd-inter">Intra field drops:</label><input type="checkbox" id="ga-dd-inter" onclick="ga.dd.reset()">
+    <label for="ga-dd-on" style="float:right"><img height=25px src=designer.png>&nbsp;&nbsp;</label><input type="checkbox" hidden id="ga-dd-on" onclick="ga.dd.reset()">
   </footer>
   <script>
     
