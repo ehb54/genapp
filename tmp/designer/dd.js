@@ -428,26 +428,26 @@ ga.dd.dfield = function( id ) {
 
     var type = ga.dd.fields.current[id].type;
     var role = ga.dd.fields.current[id].role;
-    var html;
-    if ( !ga.fdb ||
-         !ga.fdb[type] ||
-         !ga.fdb[type][role] ||
-         !ga.fdb[type][role].attrib ) {
-        console.warn( `ga.dd.dfield('${id}') no ga.fdb.${type}.${role}.${attrib}` );
+    var html = '<div style="display:grid;grid-template-columns:1fr 8fr;grid-gap:5px">';
+    if ( !ga.fdb.t ||
+         !ga.fdb.t[type] ||
+         !ga.fdb.t[type][role] ||
+         !ga.fdb.t[type][role].attrib ) {
+        console.warn( `ga.dd.dfield('${id}') no ga.fdb.t.${type}.${role}.${attrib}` );
         ga.dd.node.dddetails.innerHTML = '';
     } else {
-        html = `id : ${id}<br>role : ${role}<br>type : ${type}<br>`;
-        for ( var i in ga.fdb[type][role].attrib ) {
-            var attrib = ga.fdb[type][role].attrib[i];
+        html += `<div>id</div><div>${id}</div><div>role</div><div>${role}</div><div>type</div><div>${type}</div>`;
+        for ( var i in ga.fdb.t[type][role].attrib ) {
+            var attrib = ga.fdb.t[type][role].attrib[i];
             var val    = ga.dd.fields.current[id][attrib];
-            html += `${attrib} : `
+            html += `<div>${attrib}</div><div>`
             if ( val ) {
                 html += ga.dd.fields.current[id][attrib];
             }
-            html += '<br>';
+            html += '</div>';
         }
         // kludge for overflow-y issue
-        html += '<br>';
+        html += '</div><br>';
         ga.dd.node.dddetails.innerHTML = html;
     }
 }

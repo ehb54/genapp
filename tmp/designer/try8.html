@@ -206,7 +206,11 @@
     }
     ;
   </script>
-  <script src="ga_db.js"></script>
+  <script>
+    ga.fdb = {};
+  </script>
+  <script src="ga_fdb_t.js"></script>
+  <script src="ga_fdb_d.js"></script>
   <script>
     ga.dd.gridinit();
     ga.dd.reset();

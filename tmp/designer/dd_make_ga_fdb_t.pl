@@ -6,6 +6,11 @@ $|=1;
 
 my $gb   = $ENV{ "GENAPP" } || die "$0: environment variable GENAPP must be set\n";
 
+
+$notes = "usage: $0
+outputs js for ga.fdb from $gb/languages/html/types
+";
+
 print "perl version is $]\n" if $debug;
 print "command is: $0 @ARGV\n" if $debug;
 
@@ -120,5 +125,5 @@ if ( $debug ) {
     $json = JSON->new;
     print $json->pretty->encode( $res ) . "\n";
 } else {
-    print "ga.fdb = " . encode_json( $res ) . ";\n";
+    print "ga.fdb.t = " . encode_json( $res ) . ";\n";
 }
