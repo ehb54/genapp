@@ -167,6 +167,7 @@ for $a ( @typefloat) {
     "directory",
     "globuslogin",
     "googlelogin",
+    "readonly",
     "repeater",
     );
 

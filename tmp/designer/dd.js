@@ -440,17 +440,59 @@ ga.dd.dfield = function( id ) {
         for ( var i in ga.fdb.t[type][role].attrib ) {
             var attrib = ga.fdb.t[type][role].attrib[i];
             var val    = ga.dd.fields.current[id][attrib];
-            html += `<div>${attrib}</div><div>`
-            if ( val ) {
-                html += ga.dd.fields.current[id][attrib];
-            }
-            html += '</div>';
+            html += ga.dd.dfihtml( attrib, val );
+            // html += `<div>${attrib}</div><div>`
+            // if ( val ) {
+            // html += ga.dd.fields.current[id][attrib];
+            // }
+            // html += '</div>';
         }
         // kludge for overflow-y issue
         html += '</div><br>';
         ga.dd.node.dddetails.innerHTML = html;
     }
 }
+
+ga.dd.dfihtml = function( attrib, val ) {
+    var dmsg = `ga.dd.dfihtml('${attrib}','${val}')`;
+    console.log( dmsg );
+    // return html string
+    if ( !ga.fdb.d ||
+         !ga.fdb.d[attrib] ){
+        console.warn( `${dmsg}: no ga.fdb.d[${attrib}]` );
+        return '';
+    }
+    var itype = ga.fdb.d[attrib].type;
+    console.log( `${dmsg}: itype=${itype}` );
+
+    if ( !val ) {
+        val = '';
+    }
+
+    var html=`<div><label for='ga-dd-i-${attrib}'>${attrib}</label></div><div>`;
+    // var events = `onblur='ga.dd.ichange("${attrib}")' onchange='ga.dd.ichange("${attrib}")'`;
+    var events = `onchange='ga.dd.ichange("${attrib}")'`;
+    switch( itype ) {
+    case "text" :
+        html += `<input id='ga-dd-i-${attrib}' type=text value="${val}" size=60 ${events}>`;
+        break;
+    case "float" :
+        html += `<input id='ga-dd-i-${attrib}' type=number value=${val} size=60 ${events}>`;
+        break;
+    case "checkbox" :
+        if ( val == "true" || val == 1 ) {
+            html += `<input id='ga-dd-i-${attrib}' type=checkbox checked=true ${events}>`;
+        } else {
+            html += `<input id='ga-dd-i-${attrib}' type=checkbox ${events}>`;
+        }
+        break;
+    default:
+        console.warn( `${dmsg}: itype=${itype} itype not supported` );
+    }
+    html += '</div>';
+    console.log( `${dmsg}: html='${html}'` );
+    return html;
+}    
 
 ga.dd.pickoff = function () {
     console.log( "ga.dd.pickoff()" );
@@ -460,6 +502,10 @@ ga.dd.pickoff = function () {
             sel[i].classList.remove( "ga-dd-pick" );
         }
     }
+}
+
+ga.dd.ichange = function( attrib ) {
+    console.log( `ga.dd.ichange('${attrib}')` );
 }
     
 ga.dd.dblclick = function( ev ) {
