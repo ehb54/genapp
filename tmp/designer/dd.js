@@ -441,11 +441,6 @@ ga.dd.dfield = function( id ) {
             var attrib = ga.fdb.t[type][role].attrib[i];
             var val    = ga.dd.fields.current[id][attrib];
             html += ga.dd.dfihtml( attrib, val );
-            // html += `<div>${attrib}</div><div>`
-            // if ( val ) {
-            // html += ga.dd.fields.current[id][attrib];
-            // }
-            // html += '</div>';
         }
         // kludge for overflow-y issue
         html += '</div><br>';
