@@ -135,6 +135,13 @@
                    }
                    ,{
                     "frequency"  : "once",
+                    "output"     : "ajax/getports.php",
+                    "inputs"     : [ 
+                                    { "sys/getports.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
                     "output"     : "ajax/sys_config/sys_jobs.php",
                     "inputs"     : [ 
                                     { "sys/sys_jobs.php" : "once" }

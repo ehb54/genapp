@@ -24,6 +24,7 @@ if ( !sizeof( $_REQUEST ) )
 $do_logoff = 0;
 
 require_once "__docroot:html5__/__application__/ajax/ga_filter.php";
+require_once "__docroot:html5__/__application__/ajax/getports.php";
 $modjson = json_decode( '__modulejson__' );
 $inputs_req = $_REQUEST;
 $validation_inputs = ga_sanitize_validate( $modjson, $inputs_req, '__menu:modules:id__' );
@@ -219,6 +220,11 @@ if ( !file_exists( $logdir ) )
 
 $_REQUEST[ '_base_directory' ] = $dir;
 $_REQUEST[ '_log_directory' ] = $logdir;
+$getports = ga_getports( $modjson, $_REQUEST[ '_uuid' ] );
+if ( $getports->{'status'} == "success" &&
+     isset( $getports->{'_ports'} ) ) {
+    $_REQUEST[ '_ports' ] = $getports->{'_ports'};
+}
 
 $app_json = json_decode( file_get_contents( "__appconfig__" ) );
 
