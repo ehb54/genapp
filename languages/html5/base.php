@@ -221,9 +221,10 @@ if ( !file_exists( $logdir ) )
 $_REQUEST[ '_base_directory' ] = $dir;
 $_REQUEST[ '_log_directory' ] = $logdir;
 $getports = ga_getports( $modjson, $_REQUEST[ '_uuid' ] );
-if ( $getports->{'status'} == "success" &&
-     isset( $getports->{'_ports'} ) ) {
-    $_REQUEST[ '_ports' ] = $getports->{'_ports'};
+if ( $getports->{'status'} == "success" ) {
+    if ( isset( $getports->{'_ports'} ) ) {
+        $_REQUEST[ '_ports' ] = $getports->{'_ports'};
+    }
 } else {
     $results[ "error" ] .= "No ports available for streaming services";
     $results[ '_status' ] = 'failed';
