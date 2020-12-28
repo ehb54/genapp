@@ -414,6 +414,9 @@ __~debug:values{        console.log( "ga.data.update() atomic structure jmol scr
             if ( msging_f ) {
                 if ( k.charAt( 0 ) == "_" ) {
                     if ( !/^_fs_/.test( k ) || !ga.data.nofcrefresh[ mod ] ) {
+                        if ( k == "_iframe" ) {
+                            ga.data.iframe( v );
+                        }
                         if ( k == "_message" )
                         { 
                             ga.msg.box( v );
@@ -628,4 +631,13 @@ __~debug:airavata{    console.log( "ga.data.airavata( " + hmod_out + " , " + v +
     }
         
     jqhmod_out_airavata.html( v );
+}
+
+ga.data.iframe = function( v ) {
+    __~debug:ports{console.log( 'ga.data.iframe() v is' );}
+    __~debug:ports{console.dir( v );}
+
+    __~debug:ports{src = `http://${window.location.hostname}:${v.port}`;}
+    __~debug:ports{console.log( `src is now ${src}` );}
+    document.getElementById( v.id ).src = `http://${window.location.hostname}:${v.port}`;
 }

@@ -7,7 +7,7 @@ ga.layout.fields[ "__fields:id__" ].lhtml =
   ;
 
 ga.layout.fields[ "__fields:id__" ].dhtml =
-  '<iframe id="_fields:id__"__~fields:border{ frameborder="__fields:border__"}__~fields:height{ height="__fields:height__px"}__~fields:width{ width="__fields:width__px"} src=""></iframe>';
+  '<iframe id="__fields:id__"__~fields:border{ frameborder="__fields:border__"}__~fields:height{ height="__fields:height__px"}__~fields:width{ width="__fields:width__px"} src=""></iframe>';
 ga.layout.fields[ "__fields:id__" ].eval  = '';
 
 // -- end matplotlib.output --
