@@ -101,7 +101,6 @@ class genapp(object):
         else:
             return {'error':'message must be a json string or dict'}
 
-
         # send question
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((self.jsoninput['_tcphost'],int( self.jsoninput['_tcpport']) ))
@@ -115,27 +114,28 @@ class genapp(object):
         if not self.tcp_enabled:
             return { 'error':'no tcp support' }
 
-        msg = {
-            '_uuid'    : self.jsoninput['_uuid']
-        }
-
         if isinstance( message, basestring ):
             try:
-                msg['_message'] = json.loads(message)
+                msg = json.loads(message)
             except ValueError:
                 return {'error':'tcpmessage:json message decoding error'}
         elif isinstance( message, dict ):
-            msg['_message'] = message
+            msg = message
         else:
             return {'error':'message must be a json string or dict'}
 
+        msg[ '_uuid' ] = self.jsoninput['_uuid']
 
         # send question
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((self.jsoninput['_tcphost'],int( self.jsoninput['_tcpport']) ))
-        s.send(msgj)
+        s.send( json.dumps( msg ).encode('utf-8') )
         s.close()
         return {'status':'ok'}
+
+    def tcpprogress( self, val ):
+        """send a progress update over tcp"""
+        return self.tcpmessage( { "_progress" : str( val ) } )
 
     def udpmessagebox( self, message ):
         """send a message box over udp"""
@@ -147,7 +147,7 @@ class genapp(object):
             '_uuid'    : self.jsoninput['_uuid']
         }
 
-        if isinstance( message, str ):
+        if isinstance( message, basestring ):
             try:
                 msg['_message'] = json.loads(message)
             except ValueError:
@@ -156,8 +156,6 @@ class genapp(object):
             msg['_message'] = message
         else:
             return {'error':'message must be a json string or dict'}
-
-        msg[ '_uuid' ] = self.jsoninput['_uuid']
 
         # send message
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -189,6 +187,10 @@ class genapp(object):
         s.sendto( json.dumps( msg ).encode('utf-8'), ( self.jsoninput['_udphost'], int( self.jsoninput['_udpport'] ) ) )
         sys.stderr.write( "genapp.udpmessge() " + json.dumps( msg ) + "\n" );
         return {'status':'ok'}
+
+    def udpprogress( self, val ):
+        """send a progress update over udp"""
+        return self.udpmessage( { "_progress" : str( val ) } )
 
     # extend plotshow with figure id which should be in the jsoninput
     # the jsoninput figure id should have an assigned port, which we will use
