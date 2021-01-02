@@ -1,5 +1,5 @@
 """
-GenApp helper library
+GenApp helper library for Python 2.7+
 """
 
 import sys
@@ -236,4 +236,4 @@ class genapp(object):
             ,'_mplhost'  : '127.0.0.1'
         } )
 
-        print json.dumps( ga.info() )
+        print ( json.dumps( ga.info() ) )

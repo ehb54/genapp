@@ -1,5 +1,5 @@
 """
-GenApp helper library
+GenApp helper library for Python 3
 """
 
 import sys
@@ -15,7 +15,7 @@ class genapp(object):
         if isinstance( jsoninput, dict ) :
             self.jsoninput = jsoninput
         else:
-            if isinstance( jsoninput, basestring ) :
+            if isinstance( jsoninput, str ) :
                 try:
                     self.jsoninput = json.loads( jsoninput )
                 except ValueError:
@@ -29,7 +29,7 @@ class genapp(object):
         self.udp_enabled  = '_udphost' in self.jsoninput and '_udpport' in self.jsoninput
         self.tcp_enabled  = '_tcphost' in self.jsoninput and '_tcpport' in self.jsoninput
         self.tcpr_enabled = self.tcp_enabled and '_tcprport' in self.jsoninput
-        self.mpl_enabled  = '_mplhost' in self.jsoninput
+        self.mpl_enabled  = '_ports' in self.jsoninput
         # if mpl_enabled, check mpl plot ports and interval timer keepalive
 
     def info( self ):
@@ -56,7 +56,7 @@ class genapp(object):
             ,'timeout' : timeout
         }
 
-        if isinstance( question, basestring ):
+        if isinstance( question, str ):
             try:
                 msg['_question'] = json.loads(question)
             except ValueError:
@@ -91,7 +91,7 @@ class genapp(object):
             '_uuid'    : self.jsoninput['_uuid']
         }
 
-        if isinstance( message, basestring ):
+        if isinstance( message, str ):
             try:
                 msg['_message'] = json.loads(message)
             except ValueError:
@@ -115,7 +115,7 @@ class genapp(object):
         if not self.tcp_enabled:
             return { 'error':'no tcp support' }
 
-        if isinstance( message, basestring ):
+        if isinstance( message, str ):
             try:
                 msg = json.loads(message)
             except ValueError:
@@ -133,6 +133,10 @@ class genapp(object):
         s.send(json.dumps(msg).encode('utf-8'))
         s.close()
         return {'status':'ok'}
+
+    def tcpprogress( self, val ):
+        """send a progress update over tcp"""
+        return self.tcpmessage( { "_progress" : str( val ) } )
 
     def udpmessagebox( self, message ):
         """send a message box over udp"""
@@ -186,6 +190,10 @@ class genapp(object):
         s.sendto( json.dumps( msg ).encode('utf-8'), ( self.jsoninput['_udphost'], int( self.jsoninput['_udpport'] ) ) )
         return {'status':'ok'}
     
+    def udpprogress( self, val ):
+        """send a progress update over udp"""
+        return self.udpmessage( { "_progress" : str( val ) } )
+
     # extend plotshow with figure id which should be in the jsoninput
     # the jsoninput figure id should have an assigned port, which we will use
 
