@@ -117,6 +117,14 @@ MongoClient.connect( mongo_url, async ( err, db ) => {
     json_obj._base_directory = job.directory;
     json_obj._log_directory  = job.directorylog;
 
+    if ( appconfig.messaging &&
+         appconfig.messaging.udphostip &&
+         appconfig.messaging.udpport ) {
+        console.log( "udp defined" );
+        json_obj._udphostip = appconfig.messaging.udphostip;
+        json_obj._udpport   = appconfig.messaging.udpport;
+    }
+
     json_input = JSON.stringify( json_obj );
 
     try {
