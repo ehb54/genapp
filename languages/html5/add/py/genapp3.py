@@ -1,12 +1,12 @@
 """
-GenApp helper library
+GenApp helper library for Python 3
 """
 
 import sys
 import json
 import socket
 import pickle
-import cStringIO
+#import cStringIO
 
 class genapp(object):
 
@@ -15,7 +15,7 @@ class genapp(object):
         if isinstance( jsoninput, dict ) :
             self.jsoninput = jsoninput
         else:
-            if isinstance( jsoninput, basestring ) :
+            if isinstance( jsoninput, str ) :
                 try:
                     self.jsoninput = json.loads( jsoninput )
                 except ValueError:
@@ -56,7 +56,7 @@ class genapp(object):
             ,'timeout' : timeout
         }
 
-        if isinstance( question, basestring ):
+        if isinstance( question, str ):
             try:
                 msg['_question'] = json.loads(question)
             except ValueError:
@@ -73,7 +73,7 @@ class genapp(object):
         # send question
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((self.jsoninput['_tcphost'],int( self.jsoninput['_tcpport']) ))
-        s.send(msgj)
+        s.send(msgj.encode('utf-8'))
 
         # receive answer
 
@@ -91,7 +91,7 @@ class genapp(object):
             '_uuid'    : self.jsoninput['_uuid']
         }
 
-        if isinstance( message, basestring ):
+        if isinstance( message, str ):
             try:
                 msg['_message'] = json.loads(message)
             except ValueError:
@@ -115,27 +115,28 @@ class genapp(object):
         if not self.tcp_enabled:
             return { 'error':'no tcp support' }
 
-        msg = {
-            '_uuid'    : self.jsoninput['_uuid']
-        }
-
-        if isinstance( message, basestring ):
+        if isinstance( message, str ):
             try:
-                msg['_message'] = json.loads(message)
+                msg = json.loads(message)
             except ValueError:
                 return {'error':'tcpmessage:json message decoding error'}
         elif isinstance( message, dict ):
-            msg['_message'] = message
+            msg = message
         else:
             return {'error':'message must be a json string or dict'}
 
+        msg[ '_uuid' ] = self.jsoninput['_uuid']
 
         # send question
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((self.jsoninput['_tcphost'],int( self.jsoninput['_tcpport']) ))
-        s.send(msgj)
+        s.send(json.dumps(msg).encode('utf-8'))
         s.close()
         return {'status':'ok'}
+
+    def tcpprogress( self, val ):
+        """send a progress update over tcp"""
+        return self.tcpmessage( { "_progress" : str( val ) } )
 
     def udpmessagebox( self, message ):
         """send a message box over udp"""
@@ -157,8 +158,6 @@ class genapp(object):
         else:
             return {'error':'message must be a json string or dict'}
 
-        msg[ '_uuid' ] = self.jsoninput['_uuid']
-
         # send message
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.sendto( json.dumps( msg ).encode('utf-8'), ( self.jsoninput['_udphost'], int( self.jsoninput['_udpport'] ) ) )
@@ -170,9 +169,11 @@ class genapp(object):
         if not self.udp_enabled:
             return { 'error':'no udp support' }
 
-        msg = {}
-        
-        if isinstance( message, basestring ):
+        msg = {
+            '_uuid'    : self.jsoninput['_uuid']
+        }
+
+        if isinstance( message, str ):
             try:
                 msg = json.loads(message)
             except ValueError:
@@ -187,17 +188,19 @@ class genapp(object):
         # send message
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.sendto( json.dumps( msg ).encode('utf-8'), ( self.jsoninput['_udphost'], int( self.jsoninput['_udpport'] ) ) )
-        sys.stderr.write( "genapp.udpmessge() " + json.dumps( msg ) + "\n" );
         return {'status':'ok'}
+    
+    def udpprogress( self, val ):
+        """send a progress update over udp"""
+        return self.udpmessage( { "_progress" : str( val ) } )
 
     # extend plotshow with figure id which should be in the jsoninput
     # the jsoninput figure id should have an assigned port, which we will use
 
-    def plotshow( self, mpl, plt, id, port ):
+    def plotshow( self, mpl, plt, port ):
         """Show a plot for matplotlib via GenApp UI on the defined host"""
 
         if not self.mpl_enabled:
-            sys.stderr.write( "genapp.plotshow mpl is not enabled\n" )
             return { 'error':'no mpl support' }
 
         mpl.rcParams['webagg.open_in_browser'] = False
@@ -205,25 +208,22 @@ class genapp(object):
         mpl.rcParams['webagg.port'] = port
         # this should be pushed to backend_webagg.py right before server starts
         # perhaps we could redefine the class member externally?
-        sys.stderr.write( "now messsage that plot (will shortly be) available\n" )
-        self.stdout_off()
-        # block only works in matplotlib 3 (python 3)
-        # plt.show( block=False )
-        sys.stderr.write( json.dumps( self.udpmessage( { "_iframe" : { "id" : id, "port" : port } } ) ) )
+        print("now messsage that plot (will shortly be) available")
+#        self.stdout_off()
         plt.show()
-        self.stdout_on()
-        sys.stderr.write( "register atend pickler doesn't seem relevant, pickle here\n" )
+#        self.stdout_on()
+        print("register atend pickler doesn't seem relevant, pickle here")
         pickle.dump( plt.figure(), file( 'plot-' + str( port ) + '.pickle' , 'w' ) )
-        sys.stderr.write( "pickle saved\n" )
+        print("pickle saved")
 
-    @staticmethod
-    def stdout_off():
-        sys.stdout = cStringIO.StringIO()
+#    @staticmethod
+#    def stdout_off():
+#        sys.stdout = cStringIO.StringIO()
 
-    @staticmethod
-    def stdout_on():
-        sys.stdout.close()
-        sys.stdout = sys.__stdout__
+#    @staticmethod
+#    def stdout_on():
+#        sys.stdout.close()
+#        sys.stdout = sys.__stdout__
 
     @staticmethod
     def test():
@@ -234,4 +234,4 @@ class genapp(object):
             ,'_mplhost'  : '127.0.0.1'
         } )
 
-        print json.dumps( ga.info() )
+        print(json.dumps( ga.info() ))

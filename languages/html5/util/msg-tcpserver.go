@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/fredli74/lockfile"
-	zmq "github.com/pebbe/zmq__zmqversion__"
+	"github.com/ehb54/lockfile"
+	zmq "github.com/ehb54/zmq__zmqversion__"
 	"encoding/json"
 	"net"
 	"io"

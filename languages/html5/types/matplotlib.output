@@ -1,0 +1,13 @@
+// -- matplotlib.output --
+
+ga.layout.fields[ "__fields:id__" ] = {};
+ga.layout.fields[ "__fields:id__" ].lhtml =
+  '<label for="__fields:id__" class="help_link __fields:default__">__fields:label__</label>'
+  __~fields:help{+ '<span class="help">__fields:help__</span>'}
+  ;
+
+ga.layout.fields[ "__fields:id__" ].dhtml =
+  '<iframe id="__fields:id__"__~fields:border{ frameborder="__fields:border__"}__~fields:height{ height="__fields:height__px"}__~fields:width{ width="__fields:width__px"} src=""></iframe>';
+ga.layout.fields[ "__fields:id__" ].eval  = '';
+
+// -- end matplotlib.output --
