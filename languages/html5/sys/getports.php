@@ -63,8 +63,10 @@ function ga_get_ports_from_db( $uuid, $count, $error_json_exit = false ) {
         __~debug:ports{error_log( __FILE__ . " could not open database\n", 3, "/tmp/mylog" );}
         return [];
     }
-    $portmin = __userports:min__;
-    $portmax = __userports:max__;
+    __~userports:min{$portmin = __userports:min__;}
+    __!userports:min{$portmin = 60000;}
+    __~userports:max{$portmax = __userports:max__;}
+    __!userports:max{$portmax = 65000;}
     
     $allocated = [];
 
