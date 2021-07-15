@@ -100,7 +100,8 @@ foreach ($cursor_jobs as $obj_jobs) {
   //print_r($obj_jobs);	
 	
   $this_user = $obj_jobs['user'];   
-  
+
+  $obj_jobs['when'] = (array) $obj_jobs['when'];
   $this_when_start = $obj_jobs[ 'when' ][0];
   $this_when_current = end( $obj_jobs[ 'when' ] );
        
@@ -110,7 +111,8 @@ foreach ($cursor_jobs as $obj_jobs) {
 // Status
 
    if ( array_key_exists( 'status', $obj_jobs ) ) {
-   	  $this_status = end( $obj_jobs[ 'status' ] );
+       $obj_jobs['status'] = (array) $obj_jobs['status'];
+       $this_status = end( $obj_jobs[ 'status' ] );
    } else {
        $this_status = 'unknown';
    }

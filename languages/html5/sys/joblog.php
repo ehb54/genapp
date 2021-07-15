@@ -297,6 +297,9 @@ function getmenumodule( $jobid,  $error_json_exit = false )
        ) {
       if ( isset( $doc[ 'menu' ] ) && isset( $doc[ 'module' ] ) )
       {
+         if ( isset( $doc[ 'status'] ) ) {
+            $doc['status'] = (array) $doc['status'];
+         }
          $GLOBALS[ "getmenumodule"        ] = $doc[ 'menu' ] . "/" . $doc[ 'module' ];
          $GLOBALS[ "getmenumoduleproject" ] = ( isset( $doc[ 'project'      ] ) && strlen( $doc[ 'project'       ] ) ) ? $doc[ 'project' ] : 'no_project_specified';
          $GLOBALS[ "getmenumoduledir"     ] = ( isset( $doc[ 'directory'    ] ) && strlen( $doc[ 'directory'     ] ) ) ? $doc[ 'directory' ] : '_no_project_dir_';

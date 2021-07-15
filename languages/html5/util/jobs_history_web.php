@@ -123,12 +123,15 @@ foreach ($cursor_jobs as $obj_jobs) {
   $this_user = $obj_jobs['user'];   
 
   $this_when_start = $obj_jobs[ 'when' ][0];
+
+  $obj_jobs['when'] = (array) $obj_jobs['when'];
   $this_when_current = end( $obj_jobs[ 'when' ] );
        
   $user_start = ga_db_date_secs( $this_when_start );
   $user_current = ga_db_date_secs( $this_when_current );
 
   if ( array_key_exists( 'status', $obj_jobs ) ) {
+      $obj_jobs['status'] = (array) $obj_jobs['status'];
       $this_status = end( $obj_jobs[ 'status' ] );
   } else {
       $this_status = 'unknown';

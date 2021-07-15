@@ -115,6 +115,10 @@ if ( !isset( $_REQUEST[ "_tree" ] ) &&
            $project = 'no_project_specified';
        }
 
+       if ( isset( $doc[ 'status'] ) ) {
+           $job['status'] = (array) $job['status'];
+       }
+
        if ( isset( $job[ 'directory' ] ) && isprojectlocked( $job[ 'directory' ] ) )
        {
           if ( !strlen( $project ) )
@@ -222,6 +226,9 @@ if ( isset( $_REQUEST[ "_tree" ] ) ) {
         if ( isset( $job[ "project" ] ) && strlen( $job[ "project" ] ) )
         {
             $project =  $job[ "project" ];
+        }
+        if ( isset( $doc[ 'status'] ) ) {
+            $job['status'] = (array) $job['status'];
         }
         if ( isset( $job[ 'directory' ] ) && isprojectlocked( $job[ 'directory' ] ) )
         {
@@ -355,6 +362,9 @@ if ( isset( $_REQUEST[ "_asuser" ] ) ) {
             $project =  $job[ "project" ];
         }
         $o_project = $project;
+        if ( isset( $doc[ 'status'] ) ) {
+            $job['status'] = (array) $job['status'];
+        }
         if ( isset( $job[ 'directory' ] ) && isprojectlocked( $job[ 'directory' ] ) ) {
             if ( isset( $job[ 'status' ] ) && count( $job[ 'status' ] ) && end($job[ 'status' ]) != 'failed' && end($job[ 'status' ]) != 'finished' && end($job[ 'status' ]) != 'cancelled' ) {
                 $project = "<font color='red'>$project</font>";
