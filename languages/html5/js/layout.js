@@ -399,3 +399,18 @@ ga.layout.buttons = function() {
     ga.layout.buttonsused = 1;
     return buttonhtml;
 }
+
+ga.layout.output_ids = function() {
+    var result = [];
+    if ( !ga.layout.module || !ga.layout.module.json || !ga.layout.module.json.fields ) {
+        return result;
+    }
+    for ( var f in ga.layout.module.json.fields ) {
+        if ( ga.layout.module.json.fields[ f ].role &&
+             ga.layout.module.json.fields[ f ].id &&
+             ga.layout.module.json.fields[ f ].role == "output" ) {
+            result.push( ga.layout.module.json.fields[ f ].id );
+        }
+    }
+    return result;
+}

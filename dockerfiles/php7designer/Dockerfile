@@ -153,12 +153,14 @@ RUN apt-get install -y libssl-dev
 RUN apt-get install -y libnode-dev
 RUN apt-get install -y node-gyp
 RUN apt-get install -y npm
+# for tcp messaging
+RUN apt-get install -y golang
 
 # mpi optional
-RUN apt-get install -y mpich
+# RUN apt-get install -y mpich
 
 # qt optional
-RUN apt-get install -y qt5-default
+# RUN apt-get install -y qt5-default
 
 # Careful here, if the genapp.git changes, you should force docker to not use a cache'd image for this
 # options:

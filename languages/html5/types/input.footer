@@ -355,6 +355,12 @@ __~debug:ajax{    console.log( "calling ajax" );}
     delete ga.tmp.elements;
     delete ga.tmp.files;
               
+    ga.tmp.ids = ga.layout.output_ids();              
+    for ( ga.tmp.id in ga.tmp.ids ) {
+        formData.delete( ga.tmp.ids[ ga.tmp.id ] );
+    }
+    delete ga.tmp.ids;
+    delete ga.tmp.id;
 
     $.ajax( {
              dataType: "json",

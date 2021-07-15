@@ -12,7 +12,7 @@ ga.layout.module.name = "__moduleid__";
 ga.layout.buttonhtml = {};
 ga.layout.fields = {};
 ga.layout.panel = JSON.parse( '__layout__' );
-__~designer{ga.layout.module.json = JSON.parse( '__modulejson__' );}
+ga.layout.module.json = JSON.parse( '__modulejson__' );
 ga.layout.handler = ga.layout.handler || {};
 ga.layout.handler[ '__moduleid__' ] = {};
 ga.layout.init();
