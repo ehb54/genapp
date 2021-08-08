@@ -97,11 +97,11 @@ __~debug:data{    console.log( "ga.data.update( " + mod + " , " + data + " )" );
 __~debug:data{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_msgs );} 
 __~debug:getinput{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_msgs );} 
 
-    if ( msging_f ) {
-__~debug:data{    console.log( "ga.data.update() msging_f defined" );}
-        $( "#" + mod + "_progress" ).empty();
-        jqhmod_out_msgs.text( "" );
-    }
+//    if ( msging_f ) {
+//__~debug:data{    console.log( "ga.data.update() msging_f defined" );}
+//        $( "#" + mod + "_progress" ).empty();
+//        jqhmod_out_msgs.text( "" );
+//    }
 
     $.each(data, function(k, v) {
         __~debug:data{console.log( "ga.data.update() k " + k + " v " + v );}
@@ -447,6 +447,11 @@ __~debug:values{        console.log( "ga.data.update() atomic structure jmol scr
                                 msging_f( msg_id, 0, 0 );
                             }
                         }
+                        if ( k == "_progress" )
+                        { 
+                            __~debug:progress{console.log( "ga.data.update() _progress is now " + v );}
+                            ga.progress( mod, v );
+                        }
                     }
                 } else {
                     if ( !appended )
@@ -493,6 +498,11 @@ __~debug:values{        console.log( "ga.data.update() atomic structure jmol scr
                         { 
                             __~debug:loginapprove{console.log( "ga.data.update() approve options found " + v );}
                             ga.login.approve( v );
+                        }
+                        if ( k == "_progress" )
+                        { 
+                            __~debug:progress{console.log( "ga.data.update() _progress is now " + v );}
+                            ga.progress( mod, v );
                         }
                     }
                 } else {

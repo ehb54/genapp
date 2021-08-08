@@ -934,3 +934,32 @@ ga.hhelp.set = function() {
        $( "#hoverhelp" ).html( "Help on" );
    }
 }
+
+ga.progress = function( mod, val, valmax ) {
+  __~debug:progress{console.log( `ga.progress( ${mod}, ${val}, ${valmax} )` );}
+  if ( !$(`#${mod}_progress`).html().length ) {
+     ga.progress.set( mod );
+  }
+  __~debug:progress{console.log( 'ga.progress() html is now: ' +  $(`#${mod}_progress`).html() );}
+
+  if ( valmax ) {
+    val = val / valmax;
+  }
+
+  $(`#${mod}_progress progress`).attr({value:val,max:1});
+}
+
+ga.progress.set = function( mod, prefix ) {
+  __~debug:progress{console.log( `ga.progress.set( ${mod}, ${prefix} )` );}
+  prefix = prefix ? `${prefix}:` : '';
+  $(`#${mod}_progress`).html( prefix +  '<progress></progress>' );
+  __~debug:progress{console.log( 'ga.progress.set() html is now: ' +  $(`#${mod}_progress`).html() );}
+}
+
+ga.progress.clear = function( mod, msg ) {
+  __~debug:progress{console.log( `ga.progress.clear( ${mod} ) ${msg}` );}
+  $(`#${mod}_progress`).empty();
+}  
+
+
+

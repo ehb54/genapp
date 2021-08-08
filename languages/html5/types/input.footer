@@ -60,6 +60,7 @@ __~nojobcontrol{           do_refresh = 0;}
                   __moduleid___timeout_handler = "unset";
               }
               ga.ws.unsub( id, "__moduleid__" );
+              ga.progress.clear(  "__moduleid__", "input.footer 4" );
               eval( __moduleid___done_eval );
            } else {
                if ( !last_timeout || last_timeout < 2000 )
@@ -368,8 +369,8 @@ __~debug:ajax{           console.log( data );}
 __~debug:ajax{           console.log( status );}
 __~debug:ajax{           console.log( xhr );}
 // refresh cache for this project
-           $('#__moduleid___progress').html( "" );
-   
+           ga.progress.clear( '__moduleid__', 'input.footer 2' );
+
            var do_refresh = 1;
 __~nojobcontrol{           do_refresh = 0;}
            if ( do_refresh ) {
@@ -391,6 +392,7 @@ __~nojobcontrol{           do_refresh = 0;}
                    __moduleid___timeout_handler = "unset";
                }
                ga.ws.unsub( vuuid, "__moduleid__" );
+               ga.progress.clear(  "__moduleid__", "input.footer 4" );
                eval( __moduleid___done_eval );
            } else {
                __moduleid___timeout_handler = setTimeout( get_results___moduleid__, 2000, vuuid, 2000, 0 );
