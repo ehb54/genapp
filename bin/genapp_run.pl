@@ -438,6 +438,14 @@ foreach my $l ( keys %langs )
                         my $js = JSON->new;
                         $js->canonical(1);
                         my $enc_mod_json = $js->encode( get_file_json_lang_specific( $module_to_file{ $l }{ $$rplc_menu{ 'menu:modules:id' } }, $l, 1 ) );
+                        # fix for embedded html with quotes
+                        $enc_mod_json =~ s/\\\\'/\\'/g;
+                        $enc_mod_json =~ s/\\"/\\\\"/g;
+                        if ( $debug_modulejson ) {
+                            open my $fh, ">>/tmp/modulejsons";
+                            print $fh "__modulejson__\n" . $enc_mod_json . "\n";
+                            close $fh;
+                        }
                         grep s/__modulejson__/$enc_mod_json/g, @l;
                     }
 
@@ -653,6 +661,14 @@ foreach my $l ( keys %langs )
                                     my $js = JSON->new;
                                     $js->canonical(1);
                                     my $enc_mod_json = $js->encode( get_file_json_lang_specific( $module_to_file{ $l }{ $$rplc_menu2{ 'menu:modules:id' } }, $l, 1 ) );
+                                    # fix for embedded html with quotes
+                                    $enc_mod_json =~ s/\\\\'/\\'/g;
+                                    $enc_mod_json =~ s/\\"/\\\\"/g;
+                                    if ( $debug_modulejson ) {
+                                        open my $fh, ">>/tmp/modulejsons";
+                                        print $fh "__modulejson__\n" . $enc_mod_json . "\n";
+                                        close $fh;
+                                    }
                                     grep s/__modulejson__/$enc_mod_json/g, @l;
                                 }
                                 foreach my $sub ( keys %extra_subs ) {
