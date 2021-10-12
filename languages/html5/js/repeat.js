@@ -144,11 +144,12 @@ ga.repeat.repeat = function( mod, id ) {
         .replace( "<td></td>", "" )
     ;
 
+    // perhaps more need 'g' here:
     ga.repeat.data[ mod ].repeat[ id ].dhtmlr = 
         ga.repeat.data[ mod ].repeat[ id ].dhtml
         .replace( /<\/label>/, "%%label%%</label>" )
         .replace( RegExp( 'id="' + id + '"' ), 'id="%%id%%"' )
-        .replace( RegExp( 'name="' + id ), 'name="%%id%%' )
+        .replace( RegExp( 'name="' + id, 'g' ), 'name="%%id%%' )
         .replace( RegExp( 'for="' + id + '"' ), 'for="%%id%%"' )
         .replace( RegExp( 'id="' + id + '_msg"' ), 'id="%%id%%_msg"' )
         .replace( RegExp( 'id="' + id + '_tr"' ), 'id="%%id%%_tr"' )
