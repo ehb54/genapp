@@ -402,7 +402,7 @@ ga.qr.question = function( mod, q ) {
                     if ( tf.label ) {
                         qtext += ga.grid.next( gridref, tf.grid ? tf.grid.label : null, align ) + '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label></div>';
                     }
-                    qtext += ga.grid.next( gridref, tf.grid ? tf.grid.data : null, align ) + '<select id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
+                    qtext += ga.grid.next( gridref, tf.grid ? tf.grid.data : null, align ) + '<select class="ga-field-input-control" id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
                     if ( tf.required ) {
                         qtext += ' required';
                     }
@@ -728,7 +728,7 @@ ga.qr.question = function( mod, q ) {
                     } else {
                         qtext += '<td>';
                     }
-                    qtext += '<select id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
+                    qtext += '<select class="ga-field-input-control" id="' + tf.id + '" name="' + tf.id + '"' + ifhelp;
                     if ( tf.required ) {
                         qtext += ' required';
                     }

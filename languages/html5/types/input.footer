@@ -34,7 +34,7 @@ __~newsession{<button id="__moduleid___newsession"><span class="buttontext">Star
 <!-- <span id="__moduleid___progress"></span> -->
 <script>
 __~noreset{$( "#__moduleid___b_reset_button" ).remove();}
-__~submit_label{$( "#__moduleid___submit .buttontext" ).html( "__submit_label__" );}
+__~submit_label{$( "#__moduleid__b_submit_button .buttontext" ).html( "__submit_label__" );}
 __~nosubmit{$( "#__moduleid___b_submit_button" ).remove();}
 __~hideifnotlogon{if(!$( "#_state" ).data( "_logon" ).length){$( "#__moduleid___submit" ).hide();$( "#__moduleid___reset" ).hide();}}
 __~newsession{$( "#__moduleid___newsession" ).click( function() { getSid(); return false; });}
