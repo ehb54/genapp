@@ -21,7 +21,7 @@ ga.msg.box = function( m, force, mnum ) {
           return;
       }
    }
-   if ( m.icon )
+   if ( m.icon && m.icon != "noicon.png")
    {
       $( "#configbody" + mnum ).html( "<table style='width:95%;vertical-align:middle'><tr><td style='width:10%'><img src='pngs/" + m.icon + "' width=40px></td><td style='text-align:center'>" + m.text + "</td></tr></table>" );
    } else {
