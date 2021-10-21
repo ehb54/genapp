@@ -276,25 +276,26 @@ __~debug:_tree{           console.log( "this.id:" + this.id );}
     });
 __~debug:_tree{    console.log( tree_html );}
     $( this ).append( tree_html );
+    $( ".ga-i-r" ).remove();
 
-__~session{   var input = $("<input>").attr("type", "hidden").attr("name", "_sid").val( $( "#global_data" ).data( "sid" ) );$( this ).append($(input)); }
-    var logonadd = $("<input>").attr("type", "hidden").attr("name", "_logon").val( $( "#_state" ).data( "_logon" ) );$( this ).append($(logonadd));
-    var projectadd = $("<input>").attr("type", "hidden").attr("name", "_project").val( $( "#_state" ).data( "_project" ) );$( this ).append($(projectadd));
-    var windowadd = $("<input>").attr("type", "hidden").attr("name", "_window").val( window.name );$( this ).append($(windowadd));
-    __~xsedeproject{if ( ga.xsede.useproject ) { $( this ).append( $("<input>").attr("type", "hidden").attr("name", "_xsedeproject").val( ga.xsede.useproject ) ); } }
+__~session{   var input = $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_sid").val( $( "#global_data" ).data( "sid" ) );$( this ).append($(input)); }
+    var logonadd = $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_logon").val( $( "#_state" ).data( "_logon" ) );$( this ).append($(logonadd));
+    var projectadd = $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_project").val( $( "#_state" ).data( "_project" ) );$( this ).append($(projectadd));
+    var windowadd = $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_window").val( window.name );$( this ).append($(windowadd));
+    __~xsedeproject{if ( ga.xsede.useproject ) { $( this ).append( $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_xsedeproject").val( ga.xsede.useproject ) ); } }
     var vuuid = uuid.v1();
 __~debug:job{    console.log( "uuid:" + vuuid );}
 __~debug:jc{    console.log( "uuid: " + vuuid );}
 
-__~navigator{       $( this ).append( $("<input>").attr("type", "hidden").attr("name", "_navigator").val( navigator.userAgent ) );}
-__~eventlog{        $( this ).append( $("<input>").attr("type", "hidden").attr("name", "_eventlog").val( ga.event.list() ) );}
-__~docrootexecutable{$( this ).append( $("<input>").attr("type", "hidden").attr("name", "_docrootexecutable").val( "__docrootexecutable__" ) );}
+__~navigator{       $( this ).append( $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_navigator").val( navigator.userAgent ) );}
+__~eventlog{        $( this ).append( $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_eventlog").val( ga.event.list() ) );}
+__~docrootexecutable{$( this ).append( $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_docrootexecutable").val( "__docrootexecutable__" ) );}
 
     if ( airavataresource != "notused" ) {
-        $( this ).append( $("<input>").attr("type", "hidden").attr("name", "_airavataresource").val( airavataresource ) );
+        $( this ).append( $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_airavataresource").val( airavataresource ) );
     }
 
-    var uuidadd = $("<input>").attr("type", "hidden").attr("name", "_uuid").val( vuuid );$( this ).append($(uuidadd));
+    var uuidadd = $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_uuid").val( vuuid );$( this ).append($(uuidadd));
 //    ga.altfile.add( "__moduleid__" );
     ga.valuen.addhtml( "__moduleid__" );
 
