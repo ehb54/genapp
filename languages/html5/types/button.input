@@ -3,7 +3,7 @@
 ga.layout.fields[ "__fields:id__" ] = {};
 ga.layout.fields[ "__fields:id__" ].lhtml = '<label class="__~fields:default{__fields:default__ }__~fields:fontclass{__fields:fontclass__ }__~fields:help{help_link}">__~fields:label{__fields:label__}</label>';
 ga.layout.fields[ "__fields:id__" ].lhtml += '__~fields:help{<span class="help">__fields:help__</span>}';
-ga.layout.fields[ "__fields:id__" ].dhtml = '<button id="__moduleid_____fields:id___button"><span class="buttontext">__fields:buttontext__</span></button><div id="__fields:id___buttonval"__~fields:help{ class="help_link"}></div>';
+ga.layout.fields[ "__fields:id__" ].dhtml = '<button id="__moduleid_____fields:id___button"__~fields:margin{ style="margin:__fields:margin__"}><span class="buttontext">__fields:buttontext__</span></button><div id="__fields:id___buttonval"__~fields:help{ class="help_link"}></div>';
 ga.layout.fields[ "__fields:id__" ].dhtml += '__~fields:help{<span class="help">__fields:help__</span>}';
 
 __~fields:repeat{ga.layout.slayout( '__fields:id__' );}
