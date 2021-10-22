@@ -3,6 +3,7 @@
 
 ga.qr               = {};
 ga.qr.openq         = {};
+ga.qr.msgtext       = {};
 
 // ----------------------------------------------------------------------------------------------------------
 // background
@@ -23,6 +24,7 @@ ga.qr.openq         = {};
 // ga.qr.answered   : question response acknowledged (could have been a simultaneously attached session)
 // ga.qr.timeout    : question response timeout
 // ----------------------------------------------------------------------------------------------------------
+
 
 ga.qr.question = function( mod, q ) {
     __~debug:qr{console.log( "ga.qr.question( " + mod + ", q )" );}
@@ -76,6 +78,10 @@ ga.qr.question = function( mod, q ) {
 
     if ( q._question.text ) {
         qtext += q._question.text;
+    }
+
+    if ( q._question.timeouttext ) {
+        ga.qr.msgtext.timeout = q._question.timeouttext;
     }
 
     id = q._uuid + "-" + q._msgid;
@@ -912,7 +918,7 @@ ga.qr.cb = function( q, result, required ) {
         case "timeout" : {
             ga.msg.box( {
                 icon : "information.png"
-                ,text : "The time for answering a question has expired"
+                ,text : ga.qr.msgtext.timeout ? ga.qr.msgtext.timeout : "The time for answering a question has expired"
             } );
             delete ga.qr.openq[ id ];
             return true;
