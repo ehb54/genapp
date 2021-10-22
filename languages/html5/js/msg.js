@@ -157,6 +157,11 @@ ga.msg.close4 = function() {
 
 ga.msg.close = function( mnum ) {
     __~debug:msgbox{console.log( 'ga.msg.close() mnum:' + mnum );}
+    if ( mnum < 4 &&
+         !$( "#closeModal" + mnum ).hasClass( "modalClose" ) ) {
+        $( "#closeModal" + mnum ).addClass( "modalClose" ).html( "X" );
+    }
+
     switch( mnum ) {
         case 1 : ga.msg.close1(); break;
         case 2 : ga.msg.close2(); break;
