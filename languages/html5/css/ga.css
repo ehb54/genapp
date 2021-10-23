@@ -442,3 +442,7 @@ font-size: 2em;
     right    : 100%;
     bottom   : 100%;
 }
+
+.startuphide {
+    display  : none;
+}

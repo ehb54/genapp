@@ -15,8 +15,8 @@ ga.layout.fields[ "__fields:id__" ].eval  =
     ''
   __~fields:jsmoladd{+ 'ga.set( "__moduleid__:jsmoladd" , "__fields:jsmoladd__;" );'}
   + '_jmol_info[ "__fields:id__" ] = {\
-        __~fields:width{width: __fields:width__,}\
-        __~fields:height{height: __fields:height__,}\
+        __~fields:width{width: "__fields:width__",}\
+        __~fields:height{height: "__fields:height__",}\
         disableJ2SLoadMonitor: true,\
         disableInitialConsole: true,\
 	use: "HTML5",\

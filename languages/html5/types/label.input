@@ -1,7 +1,7 @@
 // -- label.input --
 
 ga.layout.fields[ "__fields:id__" ] = {};
-ga.layout.fields[ "__fields:id__" ].lhtml = '<label id="__fields:id___label" class="ga-field-input-__~fields:default{__fields:default__ }__~fields:fontclass{__fields:fontclass__ }__~fields:help{help_link}"__~fields:margin{ style="margin:__fields:margin__"}>__fields:label__</label>'
+ga.layout.fields[ "__fields:id__" ].lhtml = '<label id="__fields:id___label" class="ga-field-input-__~fields:default{__fields:default__ }__~fields:fontclass{__fields:fontclass__ }__~fields:help{help_link}" style="__~fields:marginbottom{margin-bottom:__fields:marginbottom__;}__~fields:margin{margin:__fields:margin__;}">__fields:label__</label>'
  __~bootstrap:package{+ '<span class="help">__fields:help__</span>'}
  '<div id="__fields:id__"__~fields:help{ class="help_link"}></div>'; // ga.layout (for testing needs comment)
 ga.layout.fields[ "__fields:id__" ].dhtml = '';

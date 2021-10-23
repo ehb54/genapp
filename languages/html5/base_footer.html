@@ -20,7 +20,6 @@ ga.group.hideall();
                     parseFloat( $( ".sidebar" ).css( "margin-left" ) ) +
                     parseFloat( $( ".sidebar" ).css( "margin-right" ) )
     ;
-    var speed = 400;
     $( "#panelmain" ).css( "left", count % 2 ? 0 : sidewidth );
 __~debug:css{ console.log( "sidewidth: " + sidewidth );}
     $( ".sidebar ul li" ).click( function() {
@@ -43,8 +42,9 @@ __~docsbaseurl{        $( "#tab_docs > a" ).attr( "href", "__docsbaseurl__/" + m
         if ( !ga.set.data[ "nohidemenu:" + myTag ] ) { $( "#menuspan" ).trigger( "click" ); };
     } );
 
-    function menuOnOff(event) {
+    function menuOnOff(event,quick) {
         count++;
+        var speed = quick ? 0 : 300;
         __~style:nomenuhide{count = 0;}
 // __~debug:css{        // console.log( count % 2 ? "menuonoff true" : "menuonoff false" );}
         var ofs = count % 2 ? 0 : sidewidth;
@@ -320,7 +320,7 @@ __~debug:job{         console.log( "ajax/" + sw[0] + ".html" );}
              $( "#seabug" ).html( "<img height=50px style=\"vertical-align:middle\" id='" + sw[0] + "'" + ( ga.set.data[ "icon:" + sw[0] ] ? "' src='" + ga.set.data[ "icon:" + sw[0] ] + "'" : "" ) + ">" );
              if ( !( count % 2 ) )
              {
-                menuOnOff();
+                menuOnOff({},1);
              }
              var tmp =  sw[1] + "_timeout_handler";
              var chk = "if( typeof " + tmp + " !== 'undefined' && " + tmp + " != 'unset' ){ console.log( 'clearing timeout' );clearTimeout(" + tmp + ");};";
@@ -426,7 +426,7 @@ syncState();
 });
 }
 
-$( document ).ready( function() { ga.get_sys_status(); });
+$( document ).ready( function() { ga.get_sys_status(); $(".startuprm").remove();$(".startuphide").removeClass( "startuphide" ); });
 
 ga.fc.delete_warn_delete = function( ids ) {
     ga.msg.box( {
