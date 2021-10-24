@@ -446,3 +446,15 @@ font-size: 2em;
 .startuphide {
     display  : none;
 }
+
+.ga-highlight {
+    color: rgb( 255, 200, 0 );
+}
+
+.ga-field-output-control.ga-highlight {
+    color: rgb( 255, 200, 0 );
+}
+
+.ga-field-input-control.ga-highlight {
+    color: rgb( 0, 0, 0 );
+}
