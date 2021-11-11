@@ -183,7 +183,7 @@ RUN cd $SRCBASE && git clone https://github.com/ehb54/genapp.git && cd $GENAPP &
 RUN touch $GENAPPETC/no_sudo
 
 RUN groupadd -g 5401 genapp && \
-    useradd genapp -r -s /usr/sbin/nologin -d $APPBASE -g genapp && \
+    useradd genapp -r -s /usr/sbin/nologin -d $APPBASE -u 5401 -g genapp && \
     chmod g+rwx $APPBASE && \
     chown genapp:genapp $APPBASE && \
     chmod g+s $APPBASE && \
