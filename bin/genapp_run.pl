@@ -18,6 +18,7 @@ options:
 $gap = $ENV{ "GENAPP" } || die "$0: error env variable GENAPP must be defined\n";
 
 use File::Basename;
+use File::stat;
 
 while ( $ARGV[ 0 ] =~ /^-(\w{1,2})/ )
 {
@@ -72,7 +73,6 @@ while ( $ARGV[ 0 ] =~ /^-(\w{1,2})/ )
             next;
         }
     }
-        
     if ( $arg eq 'h' )
     {
         print $notes;
@@ -1084,7 +1084,6 @@ foreach my $l ( keys %langs )
             `$cmd`;
         }
     }
-        
     # copy over add/*
     if ( -d "$gap/languages/$l/add" )
     {
@@ -1098,9 +1097,12 @@ foreach my $l ( keys %langs )
                 $warn .= "duplicate output for $fo\n" if $created{ $fo }++;
                 my $docopy = 1;
                 if ( -e $fo ) {
-                    my $cmd = "cmp $gap/languages/$l/add/$k $fo\n";
-                    system( $cmd );
-                    $docopy = $?;
+                    my $stime = stat( "$gap/languages/$l/add/$k" )->mtime;
+                    my $dtime = stat( $fo )->mtime;
+                    $docopy = $dtime < $stime;
+                    # my $cmd = "cmp $gap/languages/$l/add/$k $fo\n";
+                    # system( $cmd );
+                    # docopy = $?;
                 }
                 if ( $docopy ) {
                     mkdir_for_file( $fo );
@@ -1124,9 +1126,12 @@ foreach my $l ( keys %langs )
                 $warn .= "duplicate output for $fo\n" if $created{ $fo }++;
                 my $docopy = 1;
                 if ( -e $fo ) {
-                    my $cmd = "cmp add/$k $fo\n";
-                    system( $cmd );
-                    $docopy = $?;
+                    my $stime = stat( "$add/$k" )->mtime;
+                    my $dtime = stat( $fo )->mtime;
+                    $docopy = $dtime < $stime;
+                    # my $cmd = "cmp add/$k $fo\n";
+                    # system( $cmd );
+                    # $docopy = $?;
                 }
                 if ( $docopy ) {
                     mkdir_for_file( $fo );
@@ -1150,9 +1155,12 @@ foreach my $l ( keys %langs )
                 $warn .= "duplicate output for $fo\n" if $created{ $fo }++;
                 my $docopy = 1;
                 if ( -e $fo ) {
-                    my $cmd = "cmp $l/add/$k $fo\n";
-                    system( $cmd );
-                    $docopy = $?;
+                    my $stime = stat( "$l/$add/$k" )->mtime;
+                    my $dtime = stat( $fo )->mtime;
+                    $docopy = $dtime < $stime;
+                    # my $cmd = "cmp $l/add/$k $fo\n";
+                    # system( $cmd );
+                    # $docopy = $?;
                 }
                 if ( $docopy ) {
                     mkdir_for_file( $fo );
@@ -1199,6 +1207,7 @@ foreach my $l ( keys %langs )
         my $res = `$cmd`;
         print "registering:$res\n" if $debug_main;
     }
+    print "debug9\n";
 } # end for language
 
 print '-'x60 . "\nNo changes.\n" . '-'x60 . "\n"      if !$created;
