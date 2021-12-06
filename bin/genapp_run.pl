@@ -1207,7 +1207,6 @@ foreach my $l ( keys %langs )
         my $res = `$cmd`;
         print "registering:$res\n" if $debug_main;
     }
-    print "debug9\n";
 } # end for language
 
 print '-'x60 . "\nNo changes.\n" . '-'x60 . "\n"      if !$created;
