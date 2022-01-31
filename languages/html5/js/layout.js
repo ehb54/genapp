@@ -258,10 +258,68 @@ ga.layout.setup = function() {
 
 // recursively expand the panels
 
-ga.layout.html = function () {
+ga.layout.html = function ( designer ) {
     ga.layout.buttonsused = ga.layout.fields[ 'b_submit' ] || ga.layout.fields[ 'b_reset' ];
     // console.error( "used buttons: " + ga.layout.buttonsused ? "yes" : "no" );
-    return ga.layout.thishtml( 'root' );
+    if ( !designer ) {
+        return ga.layout.thishtml( 'root' );
+    }
+    return `
+    <div id="ga-dd-grid" class="ga-dd-grid">
+      <div id="ga-dd-mod" class="ga-dd-mod">
+        <!-- right click menu -->
+        <div id="ga-dd-menu" class="ga-dd-menu" role="menu" style="display:none;list-style-type:none" >
+          <div id="ga-dd-menu-irowu" class="ga-dd-menu-e" onclick="ga.dd.menu('irowu')" >Insert row above</div>
+          <div id="ga-dd-menu-irowd" class="ga-dd-menu-e" onclick="ga.dd.menu('irowd')" >Insert row below</div>
+          <div id="ga-dd-menu-icoll" class="ga-dd-menu-e" onclick="ga.dd.menu('icoll')" >Insert column left</div>
+          <div id="ga-dd-menu-icolr" class="ga-dd-menu-e" onclick="ga.dd.menu('icolr')" >Insert column right</div>
+          <hr>
+          <div id="ga-dd-menu-iclr" class="ga-dd-menu-e" onclick="ga.dd.menu('iclr')" >Invert Designer colors</div>
+        </div>`
+        + ga.layout.thishtml( 'root' )
+        +
+     ` </div><!-- ga-dd-mod -->
+      <!-- div for designer controls -->
+      <div id="ga-dd-dd" class="ga-dd-dd">
+        <div class="ga-dd-tab">
+          <button class="ga-dd-tablinks" onclick="ga.dd.tab(event, 'ga-dd-details')">Details</button>
+          <button class="ga-dd-tablinks" onclick="ga.dd.tab(event, 'ga-dd-layout')">Layout</button>
+          <button class="ga-dd-tablinks" onclick="ga.dd.tab(event, 'ga-dd-json')">JSON</button>
+          <button class="ga-dd-tablinks" onclick="ga.dd.tab(event, 'ga-dd-palette')">Dictionary</button>
+          <button class="ga-dd-tablinks" onclick="ga.dd.tab(event, 'ga-dd-ctrls')">Controls</button>
+        </div>
+
+        <div id="ga-dd-details" class="ga-dd-tabcontent">
+          <h3>Details</h3>
+          <div id="ga-dd-details-content">
+          </div>
+        </div>
+        <div id="ga-dd-layout" class="ga-dd-tabcontent">
+          <h3>Layout</h3>
+          <div id="ga-dd-layout-content">
+          </div>
+        </div>
+        <div id="ga-dd-json" class="ga-dd-tabcontent">
+          <h3>JSON</h3>
+          <div id="ga-dd-json-content">
+          </div>
+        </div>
+        <div id="ga-dd-palette" class="ga-dd-tabcontent">
+          <h3>Dictionary</h3>
+          <div id="ga-dd-palette-content">
+          </div>
+        </div>
+        <div id="ga-dd-ctrls" class="ga-dd-tabcontent">
+          <h3>Controls</h3>
+          <div id="ga-dd-ctrls-content">
+          </div>
+        </div>
+        
+      </div>
+      <div class="ga-dd-vertical-gutter">
+      </div>
+    </div>
+`;
 }
 
 ga.layout.thishtml = function( panel ) {

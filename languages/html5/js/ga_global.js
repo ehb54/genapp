@@ -969,7 +969,3 @@ ga.progress.clear = function( mod, msg ) {
   __~debug:progress{console.log( `ga.progress.clear( ${mod} ) ${msg}` );}
   $(`#${mod}_progress`).empty();
 }  
-
-
-
-
