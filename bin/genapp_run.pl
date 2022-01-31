@@ -1207,6 +1207,16 @@ foreach my $l ( keys %langs )
         my $res = `$cmd`;
         print "registering:$res\n" if $debug_main;
     }
+    if ( $$directives{ 'designer' } 
+         && $$directives{ 'designer' } ne 'false'
+         && $$directives{ 'designer' } ne 'off' ) {
+        print '='x80 . "\n";
+        print "designer additions\n";
+        my $dprog = "$gap/etc/perl/dd_make_db.pl";
+        die "designer required $dprog does not exist\n" if !-e $dprog;
+        my $res = `perl $dprog output/$l/js`;
+        $created .= $res;
+    }
 } # end for language
 
 print '-'x60 . "\nNo changes.\n" . '-'x60 . "\n"      if !$created;
