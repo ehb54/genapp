@@ -1212,7 +1212,7 @@ foreach my $l ( keys %langs )
          && $$directives{ 'designer' } ne 'off' ) {
         print '='x80 . "\n";
         print "designer additions\n";
-        my $dprog = "$gap/etc/perl/dd_make_db.pl";
+        my $dprog = "$gap/etc/perl/dd_make_ga_fdb.pl";
         die "designer required $dprog does not exist\n" if !-e $dprog;
         my $res = `perl $dprog output/$l/js`;
         $created .= $res;
