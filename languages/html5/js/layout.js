@@ -262,7 +262,7 @@ ga.layout.html = function ( designer ) {
     ga.layout.buttonsused = ga.layout.fields[ 'b_submit' ] || ga.layout.fields[ 'b_reset' ];
     // console.error( "used buttons: " + ga.layout.buttonsused ? "yes" : "no" );
     if ( !designer ) {
-        return ga.layout.thishtml( 'root' );
+        return ga.layout.thishtml( 'root', false );
     }
     return `
     <div id="ga-dd-grid" class="ga-dd-grid">
@@ -276,7 +276,7 @@ ga.layout.html = function ( designer ) {
           <hr>
           <div id="ga-dd-menu-iclr" class="ga-dd-menu-e" onclick="ga.dd.menu('iclr')" >Invert Designer colors</div>
         </div>`
-        + ga.layout.thishtml( 'root' )
+        + ga.layout.thishtml( 'root', designer )
         +
      ` </div><!-- ga-dd-mod -->
       <!-- div for designer controls -->
@@ -322,7 +322,7 @@ ga.layout.html = function ( designer ) {
 `;
 }
 
-ga.layout.thishtml = function( panel ) {
+ga.layout.thishtml = function( panel, designer ) {
     var html = "";
     var style = "display:grid";
     if ( ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gtr ) {
@@ -346,7 +346,7 @@ ga.layout.thishtml = function( panel ) {
     html += `<div id=ga-panel-${panel} style="${style}">`; // Panel ${panel}`;
     if ( ga.layout.children[ panel ] ) {
         for ( var i = 0; i < ga.layout.children[ panel ].length; ++i ) {
-            html += ga.layout.thishtml( ga.layout.children[ panel ][ i ] );
+            html += ga.layout.thishtml( ga.layout.children[ panel ][ i ], designer );
         }
     }
     if ( ga.layout.panelfields[ panel ] ) {
@@ -366,6 +366,9 @@ ga.layout.thishtml = function( panel ) {
             }
             if ( ga.layout.panelfields[ panel ][ i ].type ) {
                 fclass += `ga-type-${ga.layout.panelfields[panel][i].type} `;
+                if ( designer ) {
+                    fclass += 'ga-dd ';
+                }
             }
             if ( ga.layout.panelfields[ panel ][ i ].lgr ) {
                 lfstyle += "grid-row:" + ga.layout.panelfields[ panel ][ i ].lgr + ";";
