@@ -240,14 +240,16 @@ sub setappconfig {
     $$json{ "hostip"   } = $$cfgjson{ 'hostip' }   || die "$0 hostip not defined in $cfgjsonf. $cfgjsonnotes";
     $$json{ "hostname" } = $$cfgjson{ 'hostname' } || die "$0 hostname not defined in $cfgjsonf. $cfgjsonnotes";
 
-    $$json{ "messaging" }{ "wsport" }    = $$cfgjson{ "messaging" }{ "wsport" } || die "$0 wsport not defined in $cfgjsonf. $cfgjsonnotes";
-    $$json{ "messaging" }{ "wssport" }   = $$cfgjson{ "messaging" }{ "wssport" } || die "$0 wssport not defined in $cfgjsonf. $cfgjsonnotes";
-    $$json{ "messaging" }{ "zmqhostip" } = $$cfgjson{ "messaging" }{ "zmqhostip" } || die "$0 zmqhostip not defined in $cfgjsonf. $cfgjsonnotes";
-    $$json{ "messaging" }{ "zmqport" }   = $$cfgjson{ "messaging" }{ "zmqport" } || die "$0 zmqport not defined in $cfgjsonf. $cfgjsonnotes";
-    $$json{ "messaging" }{ "udphostip" } = $$cfgjson{ "messaging" }{ "udphostip" } || die "$0 udphostip not defined in $cfgjsonf. $cfgjsonnotes";
-    $$json{ "messaging" }{ "udpport" }   = $$cfgjson{ "messaging" }{ "udpport" } || die "$0 udpport not defined in $cfgjsonf. $cfgjsonnotes";
-    $$json{ "messaging" }{ "tcphostip" } = $$cfgjson{ "messaging" }{ "tcphostip" } || die "$0 tcphostip not defined in $cfgjsonf. $cfgjsonnotes";
-    $$json{ "messaging" }{ "tcpport" }   = $$cfgjson{ "messaging" }{ "tcpport" } || die "$0 tcpport not defined in $cfgjsonf. $cfgjsonnotes";
+    $$json{ "messaging" }{ "wsport" }     = $$cfgjson{ "messaging" }{ "wsport" } || die "$0 wsport not defined in $cfgjsonf. $cfgjsonnotes";
+    $$json{ "messaging" }{ "wssport" }    = $$cfgjson{ "messaging" }{ "wssport" } || die "$0 wssport not defined in $cfgjsonf. $cfgjsonnotes";
+    $$json{ "messaging" }{ "zmqhostip" }  = $$cfgjson{ "messaging" }{ "zmqhostip" } || die "$0 zmqhostip not defined in $cfgjsonf. $cfgjsonnotes";
+    $$json{ "messaging" }{ "zmqport" }    = $$cfgjson{ "messaging" }{ "zmqport" } || die "$0 zmqport not defined in $cfgjsonf. $cfgjsonnotes";
+    $$json{ "messaging" }{ "udphostip" }  = $$cfgjson{ "messaging" }{ "udphostip" } || die "$0 udphostip not defined in $cfgjsonf. $cfgjsonnotes";
+    $$json{ "messaging" }{ "udpport" }    = $$cfgjson{ "messaging" }{ "udpport" } || die "$0 udpport not defined in $cfgjsonf. $cfgjsonnotes";
+    $$json{ "messaging" }{ "tcphostip" }  = $$cfgjson{ "messaging" }{ "tcphostip" } || die "$0 tcphostip not defined in $cfgjsonf. $cfgjsonnotes";
+    $$json{ "messaging" }{ "tcpport" }    = $$cfgjson{ "messaging" }{ "tcpport" } || die "$0 tcpport not defined in $cfgjsonf. $cfgjsonnotes";
+    $$json{ "messaging" }{ "tcprport" }   = $$cfgjson{ "messaging" }{ "tcprport" } || die "$0 tcprport not defined in $cfgjsonf. $cfgjsonnotes";
+    $$json{ "messaging" }{ "tcptimeout" } = $$cfgjson{ "messaging" }{ "tcptimeout" } || die "$0 tcptimeout not defined in $cfgjsonf. $cfgjsonnotes";
 
     $$json{ "restricted" }{ "admin" } = ( $admin ) if $admin;
 
