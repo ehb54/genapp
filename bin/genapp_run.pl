@@ -1126,7 +1126,7 @@ foreach my $l ( keys %langs )
                 $warn .= "duplicate output for $fo\n" if $created{ $fo }++;
                 my $docopy = 1;
                 if ( -e $fo ) {
-                    my $stime = stat( "$add/$k" )->mtime;
+                    my $stime = stat( "add/$k" )->mtime;
                     my $dtime = stat( $fo )->mtime;
                     $docopy = $dtime < $stime;
                     # my $cmd = "cmp add/$k $fo\n";
@@ -1155,7 +1155,7 @@ foreach my $l ( keys %langs )
                 $warn .= "duplicate output for $fo\n" if $created{ $fo }++;
                 my $docopy = 1;
                 if ( -e $fo ) {
-                    my $stime = stat( "$l/$add/$k" )->mtime;
+                    my $stime = stat( "$l/add/$k" )->mtime;
                     my $dtime = stat( $fo )->mtime;
                     $docopy = $dtime < $stime;
                     # my $cmd = "cmp $l/add/$k $fo\n";
