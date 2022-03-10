@@ -265,7 +265,7 @@ ga.layout.html = function ( designer ) {
         return ga.layout.thishtml( 'root', false );
     }
     return `
-    <div id="ga-dd-grid" class="ga-dd-grid">
+    <div id="ga-dd-grid" class="ga-dd-gridhg">
       <div id="ga-dd-mod" class="ga-dd-mod">
         <!-- right click menu -->
         <div id="ga-dd-menu" class="ga-dd-menu" role="menu" style="display:none;list-style-type:none" >
@@ -285,6 +285,7 @@ ga.layout.html = function ( designer ) {
           <button class="ga-dd-tablinks" onclick="ga.dd.tab(event, 'ga-dd-details')">Details</button>
           <button class="ga-dd-tablinks" onclick="ga.dd.tab(event, 'ga-dd-layout')">Layout</button>
           <button class="ga-dd-tablinks" onclick="ga.dd.tab(event, 'ga-dd-json')">JSON</button>
+          <button class="ga-dd-tablinks" onclick="ga.dd.tab(event, 'ga-dd-module')">Module</button>
           <button class="ga-dd-tablinks" onclick="ga.dd.tab(event, 'ga-dd-palette')">Dictionary</button>
           <button class="ga-dd-tablinks" onclick="ga.dd.tab(event, 'ga-dd-ctrls')">Controls</button>
         </div>
@@ -304,6 +305,11 @@ ga.layout.html = function ( designer ) {
           <div id="ga-dd-json-content">
           </div>
         </div>
+        <div id="ga-dd-module" class="ga-dd-tabcontent">
+          <h3>Module</h3>
+          <div id="ga-dd-module-content">
+          </div>
+        </div>
         <div id="ga-dd-palette" class="ga-dd-tabcontent">
           <h3>Dictionary</h3>
           <div id="ga-dd-palette-content">
@@ -316,7 +322,7 @@ ga.layout.html = function ( designer ) {
         </div>
         
       </div>
-      <div class="ga-dd-vertical-gutter">
+      <div id="ga-dd-gutter" class="ga-dd-gutter">
       </div>
     </div>
 `;

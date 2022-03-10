@@ -1,8 +1,14 @@
 /*jslint white: true, plusplus: true*/
 
+if ( !ga ) {
+    var ga = {};
+}
 
-var ga = {};
+ga = ga || {};
+ga.fdb = ga.fdb || {};
+
 ga.dd = {};
+ga.dd.hv = {};
 
 // ----------------------------------------------------------------------------------------------------------
 // background
@@ -24,6 +30,7 @@ ga.dd = {};
 // ga.dd.node.ddlayout                      layout tab contents
 // ga.dd.node.dddetails                     details tab contents
 // ga.dd.node.ddjson                        json tab contents
+// ga.dd.node.ddmodule                      module tab contents
 // ga.dd.node.ddpalette                     palette (dictionary) tab contents
 // ga.dd.node.grid                          node of id=ga-dd-grid - the parent cssgrid for the module & designer
 // ga.dd.node.mod                           node of id=ga-dd-mod  - the module 
@@ -40,6 +47,7 @@ ga.dd = {};
 // ga.dd.menuoff                            turns off menu
 // ga.dd.reset                              turn on/off dd based upon checkboxes
 // ga.dd.seloff                             turn off ga-dd-sel highlighting (remove class)
+// ga.dd.hv                                 horizontal/vertical split controls
 // ----------------------------------------------------------------------------------------------------------
 
 ga.dd.dragover = function (ev) {
@@ -130,38 +138,75 @@ ga.dd.drop = function (ev) {
 
     var from_label_node       = document.getElementById( `ga-label-${from_id}` );
     var from_data_node        = document.getElementById( `ga-data-${from_id}` );
+    var to_label_node         = document.getElementById( `ga-label-${to_id}` );
+    var to_data_node          = document.getElementById( `ga-data-${to_id}` );
 
-    var from_label_node_style = from_label_node.style;
-    var from_data_node_style  = from_data_node.style;
-    var to_label_node_style = document.getElementById( `ga-label-${to_id}` ).style;
-    var to_data_node_style  = document.getElementById( `ga-data-${to_id}` ).style;
+    if ( from_label_node ) {
+        var from_label_node_style = from_label_node.style;
+        var from_label_row        = from_label_node_style.gridRow;
+        var from_label_col        = from_label_node_style.gridColumn;
+    }
+    if ( from_data_node ) {
+        var from_data_node_style  = from_data_node.style;
+        var from_data_row         = from_data_node_style.gridRow;
+        var from_data_col         = from_data_node_style.gridColumn;
+    }
+    if ( to_label_node ) {
+        var to_label_node_style   = to_label_node.style;
+        var to_label_row          = to_label_node_style.gridRow;
+        var to_label_col          = to_label_node_style.gridColumn;
+    }
+    if ( to_data_node ) {
+        var to_data_node_style    = to_data_node.style;
+        var to_data_row           = to_data_node_style.gridRow;
+        var to_data_col           = to_data_node_style.gridColumn;
+    }
+
+    // various choices depending on source & destination types
+    // cases:
+    // from_label_node && from_data_node && to_label_node && to_data_node
+    // from_label_node && from_data_node && to_label_node && !to_data_node
+    // from_label_node && from_data_node && !to_label_node && to_data_node
+    // from_label_node && !from_data_node && to_label_node && to_data_node
+    // !from_label_node && from_data_node && to_label_node && to_data_node
+    // from_label_node && !from_data_node && to_label_node && to_data_node
+    // from_label_node && from_data_node && !to_label_node && !to_data_node
+    // from_label_node && !from_data_node && to_label_node && !to_data_node
+    // !from_label_node && from_data_node && to_label_node && to_data_node
+    // !from_label_node && from_data_node && to_label_node && to_data_node
+    // etc
+    // eliminate as many cases as possible
+
+    var mode = 0;
     
+    if ( !from_label_node && !from_data_node ) {
+        return alert( "drag from nothing?" );
+    }
+    if ( !to_label_node && !to_data_node ) {
+        return alert( "drop to nothing?" );
+    }
 
-    var from_label_row = from_label_node_style.gridRow;
-    var from_label_col = from_label_node_style.gridColumn;
-    var from_data_row = from_data_node_style.gridRow;
-    var from_data_col = from_data_node_style.gridColumn;
-
-    var to_label_row = to_label_node_style.gridRow;
-    var to_label_col = to_label_node_style.gridColumn;
-    var to_data_row = to_data_node_style.gridRow;
-    var to_data_col = to_data_node_style.gridColumn;
-
+    var label_ok = from_label_node && to_label_node;
+    var data_ok  = from_data_node && to_data_node;
+    
     console.log( `from label at ${from_label_row},${from_label_col} data at ${from_data_row},${from_data_col}` );
     console.log( `to label at ${to_label_row},${to_label_col} data at ${to_data_row},${to_data_col}` );
 
     if ( samepanel ) {
         // swap coordinates
         console.log( "same panel coordinate swap" );
-        to_label_node_style.gridRow    = from_label_row;
-        to_label_node_style.gridColumn = from_label_col;
-        to_data_node_style.gridRow     = from_data_row;
-        to_data_node_style.gridColumn  = from_data_col;
-        from_label_node_style.gridRow    = to_label_row;
-        from_label_node_style.gridColumn = to_label_col;
-        from_data_node_style.gridRow     = to_data_row;
-        from_data_node_style.gridColumn  = to_data_col;
-        
+        if ( label_ok ) {
+            to_label_node_style.gridRow      = from_label_row;
+            to_label_node_style.gridColumn   = from_label_col;
+            from_label_node_style.gridRow    = to_label_row;
+            from_label_node_style.gridColumn = to_label_col;
+        }
+        if ( data_ok ) {
+            to_data_node_style.gridRow       = from_data_row;
+            to_data_node_style.gridColumn    = from_data_col;
+            from_data_node_style.gridRow     = to_data_row;
+            from_data_node_style.gridColumn  = to_data_col;
+        }
     } else {
         console.log( "different panels... to do" );
         // step 1 - increment all parent panel elements past to (ugh rows & columns, assume row logic for now)
@@ -171,7 +216,7 @@ ga.dd.drop = function (ev) {
         console.log( ev.target.parentNode.id );
         console.dir( ev.target.parentNode.children );
         
-        var to_row_int = parseInt( to_label_row );
+        var to_row_int = parseInt( label_ok ? to_label_row : to_data_row );
 
         for ( i in ev.target.parentNode.children ) {
             if ( ev.target.parentNode.children.hasOwnProperty(i) ) {
@@ -183,15 +228,21 @@ ga.dd.drop = function (ev) {
                     ev.target.parentNode.children[ i ].style.gridRow = this_row_int + 1;
                 }
             }
-            // step 2 - assign new row cols to source
-            from_label_node_style.gridRow    = to_label_row;
-            from_label_node_style.gridColumn = to_label_col;
-            from_data_node_style.gridRow     = to_data_row;
-            from_data_node_style.gridColumn  = to_data_col;
 
-            // step 3 - move to parent panel
-            ev.target.parentNode.appendChild( from_label_node );
-            ev.target.parentNode.appendChild( from_data_node );
+            // step 2 - assign new row cols to source
+            // && step 3 - move to parent panel
+
+            if ( label_ok ) {
+                from_label_node_style.gridRow    = to_label_row;
+                from_label_node_style.gridColumn = to_label_col;
+                ev.target.parentNode.appendChild( from_label_node );
+            }
+            if ( data_ok ) {
+                from_data_node_style.gridRow     = to_data_row;
+                from_data_node_style.gridColumn  = to_data_col;
+                ev.target.parentNode.appendChild( from_data_node );
+            }
+
         }
     }
 }
@@ -320,21 +371,21 @@ ga.dd.menu.iclr = function() {
     if ( ga.dd.node.dd.classList.contains('ga-dd-iclr') ) {
         // turn off
         ga.dd.node.dd.classList.remove( 'ga-dd-iclr' );
-        ga.dd.node.menu.classList.remove( 'ga-dd-iclr' );
-        for ( var i in sel ) {
-            if ( sel.hasOwnProperty( i ) ) {
-                sel[i].classList.remove( 'ga-dd-iclr' );
-            }
-        }
+        // ga.dd.node.menu.classList.remove( 'ga-dd-iclr' );
+        // for ( var i in sel ) {
+        //     if ( sel.hasOwnProperty( i ) ) {
+        //         sel[i].classList.remove( 'ga-dd-iclr' );
+        //     }
+        // }
     } else {
         // turn on
         ga.dd.node.dd.classList.add( 'ga-dd-iclr' );
-        ga.dd.node.menu.classList.add( 'ga-dd-iclr' );
-        for ( var i in sel ) {
-            if ( sel.hasOwnProperty( i ) ) {
-                sel[i].classList.add( 'ga-dd-iclr' );
-            }
-        }
+        // ga.dd.node.menu.classList.add( 'ga-dd-iclr' );
+        // for ( var i in sel ) {
+        //     if ( sel.hasOwnProperty( i ) ) {
+        //         sel[i].classList.add( 'ga-dd-iclr' );
+        //     }
+        // }
     }
 }
 
@@ -345,23 +396,21 @@ ga.dd.gridinit = function() {
     ga.dd.node.dddetails   = document.getElementById( "ga-dd-details-content" );
     ga.dd.node.ddlayout    = document.getElementById( "ga-dd-layout-content" );
     ga.dd.node.ddjson      = document.getElementById( "ga-dd-json-content" );
+    ga.dd.node.ddmodule    = document.getElementById( "ga-dd-module-content" );
     ga.dd.node.ddpalette   = document.getElementById( "ga-dd-palette-content" );
     ga.dd.node.ddctrls     = document.getElementById( "ga-dd-ctrls-content" );
     ga.dd.node.grid        = document.getElementById( "ga-dd-grid" );
     ga.dd.node.mod         = document.getElementById( "ga-dd-mod" );
     ga.dd.node.menu        = document.getElementById( "ga-dd-menu" );
-    Split({
-        columnGutters: [{
-            track: 1,
-            element: document.querySelector('.ga-dd-vertical-gutter'),
-        }]
-    });
 
     ga.dd.node.ddctrls.innerHTML =
-        `<label for="ga-dd-inter">Intra field drops:</label><input type="checkbox" id="ga-dd-inter" onclick="ga.dd.reset()"><br>`
-        + `<label onclick="ga.dd.menu('iclr')">Invert Designer colors</label><br>`
+        `<label class="ga-dd-pointer" for="ga-dd-inter">Intra field drops:</label><input type="checkbox" id="ga-dd-inter" onclick="ga.dd.reset()"><br>`
+        + `<label class="ga-dd-pointer" onclick="ga.dd.menu('iclr')">Invert Designer colors</label><br>`
+        + `<label class="ga-dd-pointer" onclick="ga.dd.hv.swap()">Swap designer location</label><br>`
     ;
     ga.dd.moduleinit();
+    ga.dd.hv.init();
+    ga.dd.menu.iclr(); // start inverted
 }
 
 ga.dd.resetgrid = function() {
@@ -403,13 +452,13 @@ ga.dd.moduleinit = function() {
         ga.dd.fields.original[ ga.layout.module.json.fields[i].id ] = ga.layout.module.json.fields[i];
     }
     ga.dd.fields.current = ga.dd.fields.original;
+    ga.dd.node.ddmodule.innerHTML = '<pre>' + JSON.stringify( ga.layout.module.json, null, 2 ) + '</pre>';
 }
 
 ga.dd.dfield = function( id ) {
     console.log( `ga.dd.dfield('${id}')` );
     // display in appropriate tab'd content area
     
-
     if ( !ga.dd.fields.current[ id ] ) {
         console.warn( `ga.dd.dfield('${id}') : no ga.dd.fields.current['${id}']` );
         ga.dd.node.ddjson.innerHTML = "";
@@ -422,7 +471,9 @@ ga.dd.dfield = function( id ) {
     ga.dd.node.ddjson.innerHTML = '<pre>' + JSON.stringify( ga.dd.fields.current[id], null, 2 ) + '</pre>';
 
     // Details
-    
+
+    // Module
+    // could highlight the field
 
     // Layout
 
@@ -508,8 +559,17 @@ ga.dd.dblclick = function( ev ) {
     ga.dd.node.dclickd = ev.target;
     ga.dd.pickid       = ev.target.id.replace( /^ga-[a-z]*-/, '' );
     ga.dd.pickoff();
-    document.getElementById( `ga-label-${ga.dd.pickid}` ).classList.add( "ga-dd-pick" );
-    document.getElementById( `ga-data-${ga.dd.pickid}` ).classList.add( "ga-dd-pick" );
+    console.log( `ga.dd.dblclick() ev.target.id = ${ev.target.id}` );
+    console.log( `ga.dd.dblclick() ga.dd.pickid = ${ga.dd.pickid}` );
+    var ele;
+    ele = document.getElementById( `ga-label-${ga.dd.pickid}` );
+    if ( ele ) {
+        document.getElementById( `ga-label-${ga.dd.pickid}` ).classList.add( "ga-dd-pick" );
+    }
+    ele = document.getElementById( `ga-data-${ga.dd.pickid}` );
+    if ( ele ) {
+        document.getElementById( `ga-data-${ga.dd.pickid}` ).classList.add( "ga-dd-pick" );
+    }
     ga.dd.dfield( ga.dd.pickid );
 }
     
@@ -533,3 +593,46 @@ ga.dd.tab = function(evt, id) {
     evt.currentTarget.className += " active";
 } 
 
+ga.dd.hv.init = function() {
+    console.log( "ga.dd.hv.init()" );
+    ga.dd.hv.grid   = document.getElementById("ga-dd-grid");
+    ga.dd.hv.gs     = ga.dd.hv.grid.style;
+    ga.dd.hv.gcl    = ga.dd.hv.grid.classList;
+    ga.dd.hv.split  = Split( {} );
+    ga.dd.hv.gutter = document.getElementById("ga-dd-gutter");
+
+    if ( ga.dd.hv.gcl.contains("ga-dd-gridhg") ) {
+        ga.dd.hv.split.addRowGutter( ga.dd.hv.gutter, 1 );
+        ga.dd.hv.lastRows            = ga.dd.hv.gs.gridTemplateRows;
+        ga.dd.hv.lastColumns         = ga.dd.hv.lastRows;
+        ga.dd.hv.gutter.style.cursor = "row-resize";
+    } else {
+        ga.dd.hv.split.addColumnGutter( ga.dd.hv.gutter, 1 );
+        ga.dd.hv.lastColumns         = ga.dd.hv.gs.gridTemplateColumns;
+        ga.dd.hv.lastRows            = ga.dd.hv.lastColumns;
+        ga.dd.hv.gutter.style.cursor = "col-resize";
+    }
+}
+
+ga.dd.hv.swap = function() {
+    console.log( "ga.dd.hv.swap()" );
+    if ( ga.dd.hv.gcl.contains("ga-dd-gridhg") ) {
+        ga.dd.hv.lastRows = ga.dd.hv.gs.gridTemplateRows;
+        ga.dd.hv.gcl.remove("ga-dd-gridhg");
+        ga.dd.hv.gcl.add("ga-dd-gridvg");
+        ga.dd.hv.split.removeRowGutter( 1 );
+        ga.dd.hv.split.addColumnGutter( ga.dd.hv.gutter, 1 );
+        ga.dd.hv.gs.gridTemplateRows    = "1fr";
+        ga.dd.hv.gs.gridTemplateColumns = ga.dd.hv.lastColumns;
+        ga.dd.hv.gutter.style.cursor    = "col-resize";
+    } else {
+        ga.dd.hv.lastColumns = ga.dd.hv.gs.gridTemplateColumns;
+        ga.dd.hv.gcl.remove("ga-dd-gridvg");
+        ga.dd.hv.gcl.add("ga-dd-gridhg");
+        ga.dd.hv.split.removeColumnGutter( 1 );
+        ga.dd.hv.split.addRowGutter( ga.dd.hv.gutter, 1 );
+        ga.dd.hv.gs.gridTemplateColumns = "1fr";
+        ga.dd.hv.gs.gridTemplateRows    = ga.dd.hv.lastRows;
+        ga.dd.hv.gutter.style.cursor    = "row-resize";
+    }
+}

@@ -4,7 +4,7 @@ html, body, .ga-dd-grid {
 
 body {
     height: calc( 100vh - 60px );
-    width: 100vw;
+    width: 99.5vw;
 }
 
 .ga-dd-footer {
@@ -17,20 +17,32 @@ body {
 
 /* footer { position: fixed; left: 0; bottom: 0; height:50px; width: 100%; z-index:50;} */
 
-.ga-dd-grid {
+.ga-dd-gridhg {
     display: grid;
-    grid-template-columns: 1fr 10px 1fr;
-    grid-template-rows: 1;
-    overflow-x:hidden;
-    height: calc( 100vh - 60px );
+    grid-template-rows: 1fr 10px 1fr;
+    grid-template-areas:
+        "module"
+        "gutter"
+        "designer";
+    height: calc( 99vh - 60px );
 }
 
-.ga-dd-vertical-gutter {
-    grid-area: 1 / 2 / 4 / 2;
+.ga-dd-gridvg {
+    display: grid;
+    grid-template-columns: 1fr 10px 1fr;
+    grid-template-rows: 1fr;
+    grid-template-areas:
+        "module gutter designer";
+    height: calc( 99vh - 60px );
+}
+
+.ga-dd-gutter {
+    grid-area: gutter;
     background: rgba(0,0,0,0.2);
     margin: 2px;
     cursor: col-resize;
 }
+
 .ga-dd-on {
     user-select: none;
     border: 1px solid coral;
@@ -49,10 +61,14 @@ body {
     border-radius: 7px;
     cursor: pointer;
 }
+
 .ga-dd-dd {
+    grid-area: designer;
     font-family: Arial;
-    height: calc( 100vh - 60px );
-}
+/*    height: calc( ( 100vh - 60px - 25px ) / 2 ); */
+    overflow: scroll;
+    background:white;
+u}
 
 .ga-dd-iclr {
     filter: invert(95%);
@@ -82,6 +98,9 @@ body {
     border: 2px solid blue;
 }
 
+.ga-dd-pointer {
+    cursor: pointer;
+}
 
 /* Style the tab */
 .ga-dd-tab {
@@ -118,12 +137,13 @@ body {
     border: 1px solid #ccc;
     border-top: none;
     background-color: white;
-    height: calc( 100vh - 60px - 60px);
+/*    height: calc( 100vh - 60px - 60px); */
     overflow: auto;
 } 
 
 .ga-dd-mod {
-    height: calc( 100vh - 60px - 25px);
-    overflow: auto;
+    grid-area: module;
+/*    height: calc( ( 100vh - 60px - 25px ) / 2 ); */
+/*    overflow: scroll; */
 } 
 
