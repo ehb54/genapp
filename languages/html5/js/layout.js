@@ -349,7 +349,16 @@ ga.layout.thishtml = function( panel, designer ) {
     if ( ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].align ) {
         style += ";text-align:" + ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].align;
     }
-    html += `<div id=ga-panel-${panel} style="${style}">`; // Panel ${panel}`;
+    if ( designer ) {
+        html += `<div id=ga-panel-${panel} class="ga-dd-panel" style="${style}">`; // Panel ${panel}`;
+    } else {
+        html += `<div id=ga-panel-${panel} style="${style}">`; // Panel ${panel}`;
+    }
+    
+    if ( designer ) {
+        html += `<div class="ga-dd-pid">panel id:"${panel}"</div>`;
+    }
+        
     if ( ga.layout.children[ panel ] ) {
         for ( var i = 0; i < ga.layout.children[ panel ].length; ++i ) {
             html += ga.layout.thishtml( ga.layout.children[ panel ][ i ], designer );
@@ -419,11 +428,17 @@ ga.layout.thishtml = function( panel, designer ) {
             if ( ga.layout.fields[ id ] ) {
                 if ( ga.layout.fields[ id ].lhtml && ga.layout.fields[ id ].lhtml.length ) {
                     html += `<div id=ga-label-${id} style="${lfstyle}" class="${fclass}">`;
+                    if ( designer ) {
+                        html += `<div class="ga-dd-fid">id:"${id}" label</div>`;
+                    }                        
                     html +=  ga.layout.fields[ id ].lhtml;
                     html += `</div>\n`;
                 }
                 if ( ga.layout.fields[ id ].dhtml ) {
                     html += `<div id=ga-data-${id} style="${dfstyle}" class="${fclass}">`;
+                    if ( designer ) {
+                        html += `<div class="ga-dd-fid">id:"${id}" data</div>`;
+                    }                        
                     html += ga.layout.fields[ id ].dhtml;
                     html += `</div>\n`;
                 }

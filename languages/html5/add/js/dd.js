@@ -49,6 +49,32 @@ ga.dd.hv = {};
 // ga.dd.seloff                             turn off ga-dd-sel highlighting (remove class)
 // ga.dd.hv                                 horizontal/vertical split controls
 // ----------------------------------------------------------------------------------------------------------
+// summary of DOM classes
+// ----------------------------------------------------------------------------------------------------------
+//
+// "static" classes
+//
+// ga-dd                                    all elements
+// ga-dd-grid                               parent
+// ga-dd-mod                                module area
+// ga-dd-menu                               right-click menu
+// ga.dd.menu-e                             menu links (onclick events)
+// ga-dd-dd                                 designer area
+// ga-dd-dd-tab                             the designer area tabs
+// ga-dd-dd-tablinks                        the designer area tab buttons to drigger events in ga.dd.tab()
+// ga-dd-dd-tabcontent                      the designer area content
+// ga-dd-gutter                             gutter for designer
+// ga-dd-fid                                field id with data or label tag
+// ga-dd-pid                                panel id
+//
+// "dynamic" classes (added or removed based upon state/actions)
+//
+// ga-dd-on                                 toggles on all elements with class ga-dd (dragable/dropable)
+// ga-dd-sel                                identifies selected elements when dragover
+// ga-dd-fid-on                             toggles field ids on
+// ga-dd-pid-on                             toggles panel ids on (ga.dd.pid())
+
+// ----------------------------------------------------------------------------------------------------------
 
 ga.dd.dragover = function (ev) {
     console.log( `ga.dd.dragover() ev.target.id ${ev.target.id}` );
@@ -63,8 +89,14 @@ ga.dd.dragover = function (ev) {
     } else {
         to_id = to_id.replace( /^ga-[a-z]*-/, '' );
         if ( ga.dd.draggid != to_id ) {
-            document.getElementById( `ga-label-${to_id}` ).classList.add( "ga-dd-sel" );
-            document.getElementById( `ga-data-${to_id}` ).classList.add( "ga-dd-sel" );
+            var to_label_node = document.getElementById( `ga-label-${to_id}` );
+            if ( to_label_node ) {
+                to_label_node.classList.add( "ga-dd-sel" );
+            }
+            var to_data_node = document.getElementById( `ga-label-${to_id}` );
+            if ( to_data_node ) {
+                to_data_node.classList.add( "ga-dd-sel" );
+            }
         }
     }
 }
@@ -307,8 +339,14 @@ ga.dd.rclick = function( ev ) {
             document.getElementById( from_id ).classList.add( "ga-dd-sel" );
         } else {
             from_id = from_id.replace( /^ga-[a-z]*-/, '' );
-            document.getElementById( `ga-label-${from_id}` ).classList.add( "ga-dd-sel" );
-            document.getElementById( `ga-data-${from_id}` ).classList.add( "ga-dd-sel" );
+            var from_label_node = document.getElementById( `ga-label-${from_id}` );
+            if ( from_label_node ) {
+                from_label_node.classList.add( "ga-dd-sel" );
+            }
+            var from_data_node = document.getElementById( `ga-label-${from_id}` );
+            if ( from_data_node ) {
+                from_data_node.classList.add( "ga-dd-sel" );
+            }
         }
     } else {
         console.log( `ga.dd.rclick() got a click - NOT  right click ev.which ${ev.which}` );
@@ -407,6 +445,8 @@ ga.dd.gridinit = function() {
         `<label class="ga-dd-pointer" for="ga-dd-inter">Intra field drops:</label><input type="checkbox" id="ga-dd-inter" onclick="ga.dd.reset()"><br>`
         + `<label class="ga-dd-pointer" onclick="ga.dd.menu('iclr')">Invert Designer colors</label><br>`
         + `<label class="ga-dd-pointer" onclick="ga.dd.hv.swap()">Swap designer location</label><br>`
+        + `<label class="ga-dd-pointer" onclick="ga.dd.fid()">Toggle field ids</label><br>`
+        + `<label class="ga-dd-pointer" onclick="ga.dd.pid()">Toggle panel ids</label><br>`
     ;
     ga.dd.moduleinit();
     ga.dd.hv.init();
@@ -636,3 +676,92 @@ ga.dd.hv.swap = function() {
         ga.dd.hv.gutter.style.cursor    = "row-resize";
     }
 }
+
+ga.dd.fid = function ( state ) {
+    console.log( "ga.dd.fid()" );
+    // toggle elements with class
+    // find dragables class ga-dd
+    var fids = document.getElementsByClassName('ga-dd-fid');
+    if ( fids === 'undefined' ) {
+        console.log( "ga.dd.fid() no fids" );
+        return;
+    }
+    if ( typeof state !== 'undefined' ? !state : fids[0].classList.contains("ga-dd-fid-on") ) {
+        for ( var i in fids ) {
+            if ( fids.hasOwnProperty( i ) ) {
+                console.log( `ga.dd.fid() removing property ${i}` );
+                fids[i].classList.remove( "ga-dd-fid-on" );
+            }
+        }
+    } else {
+        for ( var i in fids ) {
+            if ( fids.hasOwnProperty( i ) ) {
+                console.log( `ga.dd.fid() adding property ${i}` );
+                fids[i].classList.add( "ga-dd-fid-on" );
+            }
+        }
+    }
+}        
+
+ga.dd.pid = function ( state ) {
+    console.log( "ga.dd.pid()" );
+    // toggle elements with class
+    // find dragables class ga-dd
+    var pids = document.getElementsByClassName('ga-dd-pid');
+    if ( pids === 'undefined' ) {
+        console.log( "ga.dd.pid() no pids" );
+        return;
+    }
+
+    if ( typeof state !== 'undefined' ? !state : pids[0].classList.contains("ga-dd-pid-on") ) {
+        for ( var i in pids ) {
+            if ( pids.hasOwnProperty( i ) ) {
+                console.log( `ga.dd.pid() removing property ${i}` );
+                pids[i].classList.remove( "ga-dd-pid-on" );
+            }
+        }
+    } else {
+        for ( var i in pids ) {
+            if ( pids.hasOwnProperty( i ) ) {
+                console.log( `ga.dd.pid() adding property ${i}` );
+                pids[i].classList.add( "ga-dd-pid-on" );
+            }
+        }
+    }
+}
+
+ga.dd.panel = function ( state ) {
+    console.log( "ga.dd.panel()" );
+    // toggle elements with class
+    // find dragables class ga-dd
+    var panels = document.getElementsByClassName('ga-dd-panel');
+    if ( panels === 'undefined' ) {
+        console.log( "ga.dd.panel() no panels" );
+        return;
+    }
+
+    if ( typeof state !== 'undefined' ? !state : panels[0].classList.contains("ga-dd-panel-on") ) {
+        for ( var i in panels ) {
+            if ( panels.hasOwnProperty( i ) ) {
+                console.log( `ga.dd.panel() removing property ${i}` );
+                panels[i].classList.remove( "ga-dd-panel-on" );
+                panels[i].style["background-image"] = "none";
+            }
+        }
+    } else {
+        for ( var i in panels ) {
+            if ( panels.hasOwnProperty( i ) ) {
+                console.log( `ga.dd.panel() adding property ${i}` );
+                panels[i].classList.add( "ga-dd-panel-on" );
+                panels[i].style["background-image"] = "conic-gradient(blue,yellow,blue)";
+            }
+        }
+    }
+}
+
+ga.dd.panel.bgs = [
+    "conic-gradient(blue,red,blue)"
+    ,"conic-gradient(gree,red,blue)"
+];
+
+    

@@ -147,3 +147,26 @@ u}
 /*    overflow: scroll; */
 } 
 
+.ga-dd-fid {
+    display: none;
+    font-style: italic;
+    color: beige;
+}
+
+.ga-dd-fid.ga-dd-fid-on {
+    display: block;
+}
+
+.ga-dd-pid {
+    display: none;
+    font-style: italic;
+    color: yellow;
+}
+
+.ga-dd-pid.ga-dd-pid-on {
+    display: block;
+}
+
+.ga-dd-panel {
+}
+
