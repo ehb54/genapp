@@ -48,13 +48,17 @@ ga.dd.hv = {};
 // ga.dd.reset                              turn on/off dd based upon checkboxes
 // ga.dd.seloff                             turn off ga-dd-sel highlighting (remove class)
 // ga.dd.hv                                 horizontal/vertical split controls
+// ga.dd.pid                                turns panel ids on/off
+// ga.dd.fid                                turns field ids on/off
+// ga.dd.panel                              turns panel backgrounds on/off
 // ----------------------------------------------------------------------------------------------------------
 // summary of DOM classes
 // ----------------------------------------------------------------------------------------------------------
 //
 // "static" classes
 //
-// ga-dd                                    all elements
+// ga-dd                                    all elements that can be dragged or dropped
+// ga-dd-drop                               all elements that can be dropped to
 // ga-dd-grid                               parent
 // ga-dd-mod                                module area
 // ga-dd-menu                               right-click menu
@@ -156,6 +160,7 @@ ga.dd.drop = function (ev) {
     if ( ga.dd.intra ) {
         if ( !samepanel ) {
             console.log( "ga.dd.drop() intra drops only allowed within one panel" );
+            alert( "intra field drops are checked & intra drops are only allowed in the same panel" );
             return;
         }
         return ga.dd.drop_intra( ev );
@@ -245,19 +250,26 @@ ga.dd.drop = function (ev) {
         // could probably be in its own function
         // simple assumption of numeric rows, could get uglier
 
-        console.log( ev.target.parentNode.id );
+        console.log( `drop parent node id ${ev.target.parentNode.id}` );
         console.dir( ev.target.parentNode.children );
         
         var to_row_int = parseInt( label_ok ? to_label_row : to_data_row );
 
-        for ( i in ev.target.parentNode.children ) {
-            if ( ev.target.parentNode.children.hasOwnProperty(i) ) {
-                var this_row_int = parseInt( ev.target.parentNode.children[ i ].style.gridRow );
-                console.log( `to_row ${to_row_int} this row ${this_row_int} ${ev.target.parentNode.children[i].id}` );
+        // perhaps we need to keep going up parents until we have a panel ?
+        // classList.contains("ga-dd-panel") ?
+        var panelparent = ev.target;
+        while ( panelparent && !panelparent.classList.contains("ga-dd-panel") ) {
+            panelparent = panelparent.parentNode;
+        }
+       
+        for ( i in panelparent.children ) {
+            if ( panelparent.children.hasOwnProperty(i) ) {
+                var this_row_int = parseInt( panelparent.children[ i ].style.gridRow );
+                console.log( `to_row ${to_row_int} this row ${this_row_int} ${panelparent.children[i].id}` );
                 
                 if ( this_row_int >= to_row_int ) {
-                    console.log( `adding 1 to gridRow of ${ev.target.parentNode.children[i].id}` );
-                    ev.target.parentNode.children[ i ].style.gridRow = this_row_int + 1;
+                    console.log( `adding 1 to gridRow of ${panelparent.children[i].id}` );
+                    panelparent.children[ i ].style.gridRow = this_row_int + 1;
                 }
             }
 
@@ -267,12 +279,12 @@ ga.dd.drop = function (ev) {
             if ( label_ok ) {
                 from_label_node_style.gridRow    = to_label_row;
                 from_label_node_style.gridColumn = to_label_col;
-                ev.target.parentNode.appendChild( from_label_node );
+                panelparent.appendChild( from_label_node );
             }
             if ( data_ok ) {
                 from_data_node_style.gridRow     = to_data_row;
                 from_data_node_style.gridColumn  = to_data_col;
-                ev.target.parentNode.appendChild( from_data_node );
+                panelparent.appendChild( from_data_node );
             }
 
         }
@@ -281,11 +293,16 @@ ga.dd.drop = function (ev) {
 
 ga.dd.reset = function () {
     console.log( "ga.dd.reset()" );
-    ga.dd.on    = document.getElementById( "ga-dd-on"    ).checked;
-    ga.dd.intra = document.getElementById( "ga-dd-inter" ).checked;
-    console.log( `ga.dd.on ${ga.dd.on} ga.dd.intra ${ga.dd.intra}` );
+    ga.dd.on        = document.getElementById( "ga-dd-on"        ).checked;
+    ga.dd.intra     = document.getElementById( "ga-dd-inter"     ).checked;
+    ga.dd.showpid   = document.getElementById( "ga-dd-showpid"   ).checked;
+    ga.dd.showfid   = document.getElementById( "ga-dd-showfid"   ).checked;
+    ga.dd.showpanel = document.getElementById( "ga-dd-showpanel" ).checked;
+
+    // console.log( `ga.dd.on ${ga.dd.on} ga.dd.intra ${ga.dd.intra}` );
     // find dragables class ga-dd
-    var dds = document.getElementsByClassName('ga-dd');
+    var dds     = document.getElementsByClassName('ga-dd');
+    var ddsdrop = document.getElementsByClassName('ga-dd-drop');
     if ( ga.dd.on ) {
         for ( var i in dds ) {
             if ( dds.hasOwnProperty( i ) ) {
@@ -300,6 +317,20 @@ ga.dd.reset = function () {
                 dds[i].classList.add( "ga-dd-on" );
             }
         }
+        for ( var i in ddsdrop ) {
+            if ( ddsdrop.hasOwnProperty( i ) ) {
+                console.log( `${ddsdrop[i].id} turning on drop` );
+                ddsdrop[i].ondrop        = function(ev){ga.dd.drop(ev)};
+                ddsdrop[i].ondragover    = function(ev){ga.dd.dragover(ev)};
+                ddsdrop[i].ondragleave   = function(ev){ga.dd.dragleave(ev)};
+                ddsdrop[i].oncontextmenu = function(ev){ga.dd.rclick(ev)};
+                ddsdrop[i].ondblclick    = function(ev){ga.dd.dblclick(ev)};
+                // ddsdrop[i].classList.add( "ga-dd-on" );
+            }
+        }
+        ga.dd.pid  (ga.dd.showpid);
+        ga.dd.fid  (ga.dd.showfid);
+        ga.dd.panel(ga.dd.showpanel);
     } else {
         for ( var i in dds ) {
             if ( dds.hasOwnProperty( i ) ) {
@@ -314,6 +345,20 @@ ga.dd.reset = function () {
                 dds[i].classList.remove( "ga-dd-on" );
             }
         }
+        for ( var i in ddsdrop ) {
+            if ( ddsdrop.hasOwnProperty( i ) ) {
+                console.log( `${ddsdrop[i].id} turning off drop` );
+                ddsdrop[i].ondrop        = null;
+                ddsdrop[i].ondragover    = null;
+                ddsdrop[i].ondragleave   = null; 
+                ddsdrop[i].oncontextmenu = null;
+                ddsdrop[i].ondblclick    = null;
+                // ddsdrop[i].classList.add( "ga-dd-on" );
+            }
+        }
+        ga.dd.pid(0);
+        ga.dd.fid(0);
+        ga.dd.panel(0);
     }
     ga.dd.resetgrid();
 }    
@@ -442,11 +487,15 @@ ga.dd.gridinit = function() {
     ga.dd.node.menu        = document.getElementById( "ga-dd-menu" );
 
     ga.dd.node.ddctrls.innerHTML =
-        `<label class="ga-dd-pointer" for="ga-dd-inter">Intra field drops:</label><input type="checkbox" id="ga-dd-inter" onclick="ga.dd.reset()"><br>`
+        `<input type="checkbox" id="ga-dd-inter" onclick="ga.dd.reset()"><label class="ga-dd-pointer" for="ga-dd-inter"> Intra field drops</label><br>`
+        + `<input type="checkbox" checked id="ga-dd-showfid" onclick="ga.dd.reset()"><label class="ga-dd-pointer" for="ga-dd-showfid"> Show field ids</label><br>`
+        + `<input type="checkbox" checked id="ga-dd-showpid" onclick="ga.dd.reset()"><label class="ga-dd-pointer" for="ga-dd-showpid"> Show panel ids</label><br>`
+        + `<input type="checkbox" checked id="ga-dd-showpanel" onclick="ga.dd.reset()"><label class="ga-dd-pointer" for="ga-dd-showpanel"> Show panel backgrounds</label><br>`
         + `<label class="ga-dd-pointer" onclick="ga.dd.menu('iclr')">Invert Designer colors</label><br>`
         + `<label class="ga-dd-pointer" onclick="ga.dd.hv.swap()">Swap designer location</label><br>`
-        + `<label class="ga-dd-pointer" onclick="ga.dd.fid()">Toggle field ids</label><br>`
-        + `<label class="ga-dd-pointer" onclick="ga.dd.pid()">Toggle panel ids</label><br>`
+        // + `<label class="ga-dd-pointer" onclick="ga.dd.fid()">Toggle field ids</label><br>`
+        // + `<label class="ga-dd-pointer" onclick="ga.dd.pid()">Toggle panel ids</label><br>`
+        // + `<label class="ga-dd-pointer" onclick="ga.dd.panel()">Toggle panel background</label><br>`
     ;
     ga.dd.moduleinit();
     ga.dd.hv.init();
@@ -689,14 +738,14 @@ ga.dd.fid = function ( state ) {
     if ( typeof state !== 'undefined' ? !state : fids[0].classList.contains("ga-dd-fid-on") ) {
         for ( var i in fids ) {
             if ( fids.hasOwnProperty( i ) ) {
-                console.log( `ga.dd.fid() removing property ${i}` );
+                // console.log( `ga.dd.fid() removing property ${i}` );
                 fids[i].classList.remove( "ga-dd-fid-on" );
             }
         }
     } else {
         for ( var i in fids ) {
             if ( fids.hasOwnProperty( i ) ) {
-                console.log( `ga.dd.fid() adding property ${i}` );
+                // console.log( `ga.dd.fid() adding property ${i}` );
                 fids[i].classList.add( "ga-dd-fid-on" );
             }
         }
@@ -716,14 +765,14 @@ ga.dd.pid = function ( state ) {
     if ( typeof state !== 'undefined' ? !state : pids[0].classList.contains("ga-dd-pid-on") ) {
         for ( var i in pids ) {
             if ( pids.hasOwnProperty( i ) ) {
-                console.log( `ga.dd.pid() removing property ${i}` );
+                // console.log( `ga.dd.pid() removing property ${i}` );
                 pids[i].classList.remove( "ga-dd-pid-on" );
             }
         }
     } else {
         for ( var i in pids ) {
             if ( pids.hasOwnProperty( i ) ) {
-                console.log( `ga.dd.pid() adding property ${i}` );
+                // console.log( `ga.dd.pid() adding property ${i}` );
                 pids[i].classList.add( "ga-dd-pid-on" );
             }
         }
@@ -743,25 +792,45 @@ ga.dd.panel = function ( state ) {
     if ( typeof state !== 'undefined' ? !state : panels[0].classList.contains("ga-dd-panel-on") ) {
         for ( var i in panels ) {
             if ( panels.hasOwnProperty( i ) ) {
-                console.log( `ga.dd.panel() removing property ${i}` );
+                // console.log( `ga.dd.panel() removing property ${i}` );
                 panels[i].classList.remove( "ga-dd-panel-on" );
                 panels[i].style["background-image"] = "none";
             }
         }
     } else {
+        var ofs = 0;
         for ( var i in panels ) {
             if ( panels.hasOwnProperty( i ) ) {
-                console.log( `ga.dd.panel() adding property ${i}` );
+                // console.log( `ga.dd.panel() adding property ${i}` );
                 panels[i].classList.add( "ga-dd-panel-on" );
-                panels[i].style["background-image"] = "conic-gradient(blue,yellow,blue)";
+                // var tmpx = ga.dd.panel.bgs[ ofs++ % ga.dd.panel.bgs.length ];
+                panels[i].style["background-image"] = ga.dd.panel.bgs[ ofs++ % ga.dd.panel.bgs.length ];
+                // console.log( `ga.dd.panel() adding property ${i} style bgi (should be ` + ga.dd.panel.bgs[ (ofs - 1 ) % ga.dd.panel.bgs.length ] + ')' +  panels[i].style["background-image"] );
             }
         }
     }
 }
-
+    
 ga.dd.panel.bgs = [
-    "conic-gradient(blue,red,blue)"
-    ,"conic-gradient(gree,red,blue)"
+//    "repeating-conic-gradient(midnightblue 8%,darkslategrey 20%)"
+    "repeating-conic-gradient(#000020 5%, darkslategrey 20%)"
+    ,"repeating-conic-gradient(#002000 6%, darkslategrey 20%)"
+    ,"repeating-conic-gradient(#200000 7%, darkslategrey 20%)"
+    ,"repeating-conic-gradient(#200020 8%, darkslategrey 20%)"
+    ,"repeating-conic-gradient(#202000 9%, darkslategrey 20%)"
+    ,"repeating-conic-gradient(#202020 10%, darkslategrey 20%)"
+    ,"repeating-conic-gradient(#000000 11%, darkslategrey 20%)"
+    ,"repeating-conic-gradient(#000020 12%, darkslategrey 20%)"
+    ,"repeating-conic-gradient(#002000 13%, darkslategrey 20%)"
+    ,"repeating-conic-gradient(#200000 14%, darkslategrey 20%)"
+    ,"repeating-conic-gradient(#200020 15%, darkslategrey 20%)"
+    ,"repeating-conic-gradient(#202000 16%, darkslategrey 20%)"
+    ,"repeating-conic-gradient(#202020 17%, darkslategrey 20%)"
+    ,"repeating-conic-gradient(#000000 18%, darkslategrey 20%)"
+    // ,"repeating-linear-gradient(midnightblue, darkgrey 10%, black 20%)"
+    // ,"repeating-radial-gradient(mediumseagreen, darkgrey 10%, black 20%)"
+    // ,"conic-gradient(darkolivegreen,black,darkolivegreen)"
+    // ,"linear-gradient(dimgrey,black,dimgrey)"
+    // ,"radial-gradient(purple,black,cyan)"
 ];
 
-    

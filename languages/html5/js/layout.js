@@ -356,7 +356,7 @@ ga.layout.thishtml = function( panel, designer ) {
     }
     
     if ( designer ) {
-        html += `<div class="ga-dd-pid">panel id:"${panel}"</div>`;
+        html += `<div id=ga-paneldrop-${panel} class="ga-dd-pid ga-dd-drop">panel id:"${panel}"</div>`;
     }
         
     if ( ga.layout.children[ panel ] ) {
