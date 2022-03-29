@@ -1,15 +1,20 @@
 // -- label.output --
 
 ga.layout.fields[ "__fields:id__" ] = {};
-ga.layout.fields[ "__fields:id__" ].lhtml =
-  '<label for="__fields:id__" class="help_link __fields:default__">__fields:label__ </label>'
-  __~fields:help{+ '<span class="help">__fields:help__</span>'}
-  ;
+ga.layout.fields[ "__fields:id__" ].lhtml = '<label id="__fields:id__" class="ga-field-output-__~fields:default{__fields:default__ }__~fields:fontclass{__fields:fontclass__ }__~fields:help{help_link}" style="__~fields:marginbottom{margin-bottom:__fields:marginbottom__;}__~fields:margin{margin:__fields:margin__;}__~fields:fullwidth{display:block;width:100%;}">__~fields:prehline{<hr>}__fields:label____~fields:posthline{<hr>}</label>'
+ __~bootstrap:package{+ '<span class="help">__fields:help__</span>'}
+ '<div id="__fields:id___div"__~fields:help{ class="help_link"}></div>'; // ga.layout (for testing needs comment)
+
 
 ga.layout.fields[ "__fields:id__" ].dhtml = '';
 ga.layout.fields[ "__fields:id__" ].eval  = '';
 
 /* old way
+
+ga.layout.fields[ "__fields:id__" ].lhtml =
+  '<label for="__fields:id__" class="help_link __fields:default__">__fields:label__ </label>'
+  __~fields:help{+ '<span class="help">__fields:help__</span>'}
+  ;
 
 <tr>__~fields:prehline{<td><hr></td></tr><tr>}<td__~fields:colspan{ colspan="__fields:colspan__"}><label__~fields:default{ class="__fields:default__"}>__fields:label__</label></td>__~fields:posthline{</tr><tr><td><hr></td>}</tr>
 */
