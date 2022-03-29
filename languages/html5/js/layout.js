@@ -269,12 +269,9 @@ ga.layout.html = function ( designer ) {
       <div id="ga-dd-mod" class="ga-dd-mod">
         <!-- right click menu -->
         <div id="ga-dd-menu" class="ga-dd-menu" role="menu" style="display:none;list-style-type:none" >
-          <div id="ga-dd-menu-irowu" class="ga-dd-menu-e" onclick="ga.dd.menu('irowu')" >Insert row above</div>
-          <div id="ga-dd-menu-irowd" class="ga-dd-menu-e" onclick="ga.dd.menu('irowd')" >Insert row below</div>
-          <div id="ga-dd-menu-icoll" class="ga-dd-menu-e" onclick="ga.dd.menu('icoll')" >Insert column left</div>
-          <div id="ga-dd-menu-icolr" class="ga-dd-menu-e" onclick="ga.dd.menu('icolr')" >Insert column right</div>
+          <div id="ga-dd-menu-info" class="ga-dd-menu-info"></div>
           <hr>
-          <div id="ga-dd-menu-iclr" class="ga-dd-menu-e" onclick="ga.dd.menu('iclr')" >Invert Designer colors</div>
+          <div id="ga-dd-menu-cmds"></div>
         </div>`
         + ga.layout.thishtml( 'root', designer )
         +

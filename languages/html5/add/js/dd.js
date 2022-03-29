@@ -51,6 +51,7 @@ ga.dd.hv = {};
 // ga.dd.pid                                turns panel ids on/off
 // ga.dd.fid                                turns field ids on/off
 // ga.dd.panel                              turns panel backgrounds on/off
+// ga.dd.ninfo                              returns structure of node state, e.g. type, panel parent etc, any fields/labels
 // ----------------------------------------------------------------------------------------------------------
 // summary of DOM classes
 // ----------------------------------------------------------------------------------------------------------
@@ -216,11 +217,14 @@ ga.dd.drop = function (ev) {
 
     var mode = 0;
     
+    // var to_empty_panel = 0;
+    
     if ( !from_label_node && !from_data_node ) {
         return alert( "drag from nothing?" );
     }
     if ( !to_label_node && !to_data_node ) {
-        return alert( "drop to nothing?" );
+        // is it to a panel?
+        return alert( `drop to nothing from ${from_id} to ${to_id}?` );
     }
 
     var label_ok = from_label_node && to_label_node;
@@ -363,6 +367,47 @@ ga.dd.reset = function () {
     ga.dd.resetgrid();
 }    
 
+ga.dd.setmenuinfo = function ( ev ) {
+    console.log( `ga.dd.setmenuinfo() ${ev.target.id}` );
+
+    var menuinfo = document.getElementById( "ga-dd-menu-info" );
+    menuinfo.innerHTML = 'unknown';
+
+    var nstate   = ga.dd.nstate( ev.target );
+
+    // panels
+    if ( ev.target.classList.contains( "ga-dd-pid" ) ) {
+        menuinfo.innerHTML =
+            `id: "${nstate.panel.id}"`
+            + `<br>label: panel rows: ${nstate.panel.style.gridTemplateRows}; columns: ${nstate.panel.style.gridTemplateColumns}`
+        ;
+        return;
+    }
+
+    menuinfo.innerHTML =
+        `id: "${ev.target.id}"`;
+
+    if ( nstate.label && nstate.label.style ) {
+        menuinfo.innerHTML +=
+            `<br>label: grid pos: ${nstate.label.style.gridRow}; ${nstate.label.style.gridColumn}`
+        ;
+    }
+    if ( nstate.data && nstate.data.style ) {
+        menuinfo.innerHTML +=
+            `<br>data: grid pos: ${nstate.data.style.gridRow}; ${nstate.data.style.gridColumn}`
+        ;
+    }
+
+    if ( ( nstate.data && nstate.data.style.gridRow > 1 ) ||
+         ( nstate.label && nstate.label.style.gridRow > 1 ) ) {
+        var menucmds = document.getElementById( "ga-dd-menu-cmds" );
+        menucmds.innerHTML =
+            '<div id="ga-dd-menu-join" class="ga-dd-menu-e" onclick="ga.dd.menu(\'join\')" >Join to row above</div>'
+            + menucmds.innerHTML
+        ;
+    }
+}
+
 ga.dd.rclick = function( ev ) {
     var ddmenustyle = document.getElementById( "ga-dd-menu" ).style;
     ddmenustyle.display="none";
@@ -375,6 +420,14 @@ ga.dd.rclick = function( ev ) {
         }
         ga.dd.seloff();
         console.log( "ga.dd.rclick() got a right click" );
+        var ddmenucmds = document.getElementById( "ga-dd-menu-cmds" );
+        ddmenucmds.innerHTML = 
+            '<div id="ga-dd-menu-irowu" class="ga-dd-menu-e" onclick="ga.dd.menu(\'irowu\')" >Insert row above</div>'
+            + '<div id="ga-dd-menu-irowd" class="ga-dd-menu-e" onclick="ga.dd.menu(\'irowd\')" >Insert row below</div>'
+            + '<div id="ga-dd-menu-icoll" class="ga-dd-menu-e" onclick="ga.dd.menu(\'icoll\')" >Insert column left</div>'
+            + '<div id="ga-dd-menu-icolr" class="ga-dd-menu-e" onclick="ga.dd.menu(\'icolr\')" >Insert column right</div>'
+        ;
+
         ddmenustyle.left = ev.clientX + "px";
         ddmenustyle.top  = ev.clientY + "px";
         ddmenustyle.display="block";
@@ -388,11 +441,12 @@ ga.dd.rclick = function( ev ) {
             if ( from_label_node ) {
                 from_label_node.classList.add( "ga-dd-sel" );
             }
-            var from_data_node = document.getElementById( `ga-label-${from_id}` );
+            var from_data_node = document.getElementById( `ga-data-${from_id}` );
             if ( from_data_node ) {
                 from_data_node.classList.add( "ga-dd-sel" );
             }
         }
+        ga.dd.setmenuinfo( ev );
     } else {
         console.log( `ga.dd.rclick() got a click - NOT  right click ev.which ${ev.which}` );
     }
@@ -493,9 +547,6 @@ ga.dd.gridinit = function() {
         + `<input type="checkbox" checked id="ga-dd-showpanel" onclick="ga.dd.reset()"><label class="ga-dd-pointer" for="ga-dd-showpanel"> Show panel backgrounds</label><br>`
         + `<label class="ga-dd-pointer" onclick="ga.dd.menu('iclr')">Invert Designer colors</label><br>`
         + `<label class="ga-dd-pointer" onclick="ga.dd.hv.swap()">Swap designer location</label><br>`
-        // + `<label class="ga-dd-pointer" onclick="ga.dd.fid()">Toggle field ids</label><br>`
-        // + `<label class="ga-dd-pointer" onclick="ga.dd.pid()">Toggle panel ids</label><br>`
-        // + `<label class="ga-dd-pointer" onclick="ga.dd.panel()">Toggle panel background</label><br>`
     ;
     ga.dd.moduleinit();
     ga.dd.hv.init();
@@ -834,3 +885,26 @@ ga.dd.panel.bgs = [
     // ,"radial-gradient(purple,black,cyan)"
 ];
 
+ga.dd.nstate = function ( node ) {
+    console.log( `ga.dd.nstate( ${node.id} )` );
+
+    var result = {};
+
+    result.panel = node;
+    while ( result.panel && !result.panel.classList.contains("ga-dd-panel") ) {
+        result.panel = result.panel.parentNode;
+    }
+
+    if ( !result.panel || result.panel === 'undefined' ) {
+        console.log( "ga.dd.nstate() no panel found" );
+        return result;
+    }
+    
+    result.id     = node.id.replace( /^ga-[a-z]*-/, '' );
+
+    result.cnodes = result.panel.getElementsByClassName( "ga-dd" );
+    result.label  = document.getElementById( `ga-label-${result.id}` );
+    result.data   = document.getElementById( `ga-data-${result.id}` );
+
+    return result;
+}

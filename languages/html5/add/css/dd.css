@@ -78,6 +78,10 @@ u}
     color: black;
 }
 
+.ga-dd-menu-info {
+    color: #005500;
+}
+
 .ga-dd-menu-e:hover {
     background-color : azure;
 }
