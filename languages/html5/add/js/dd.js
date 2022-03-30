@@ -379,7 +379,7 @@ ga.dd.setmenuinfo = function ( ev ) {
     if ( ev.target.classList.contains( "ga-dd-pid" ) ) {
         menuinfo.innerHTML =
             `id: "${nstate.panel.id}"`
-            + `<br>label: panel rows: ${nstate.panel.style.gridTemplateRows}; columns: ${nstate.panel.style.gridTemplateColumns}`
+            + `<br><label onclick="ga.dd.editpgrid('${nstate.panel.id}')">label: panel rows: ${nstate.panel.style.gridTemplateRows}; columns: ${nstate.panel.style.gridTemplateColumns}</label>`
         ;
         return;
     }
@@ -389,12 +389,12 @@ ga.dd.setmenuinfo = function ( ev ) {
 
     if ( nstate.label && nstate.label.style ) {
         menuinfo.innerHTML +=
-            `<br>label: grid pos: ${nstate.label.style.gridRow}; ${nstate.label.style.gridColumn}`
+            `<br><label onclick="ga.dd.editfgrid('${nstate.label.id}')">label: grid pos: ${nstate.label.style.gridRow}; ${nstate.label.style.gridColumn}</label>`
         ;
     }
     if ( nstate.data && nstate.data.style ) {
         menuinfo.innerHTML +=
-            `<br>data: grid pos: ${nstate.data.style.gridRow}; ${nstate.data.style.gridColumn}`
+            `<br><label onclick="ga.dd.editfgrid('${nstate.data.id}')">data: grid pos: ${nstate.data.style.gridRow}; ${nstate.data.style.gridColumn}</label>`
         ;
     }
 
@@ -402,7 +402,7 @@ ga.dd.setmenuinfo = function ( ev ) {
          ( nstate.label && nstate.label.style.gridRow > 1 ) ) {
         var menucmds = document.getElementById( "ga-dd-menu-cmds" );
         menucmds.innerHTML =
-            '<div id="ga-dd-menu-join" class="ga-dd-menu-e" onclick="ga.dd.menu(\'join\')" >Join to row above</div>'
+            `<div id="ga-dd-menu-join" class="ga-dd-menu-e" onclick="ga.dd.menu(\'join\','${ev.target.id}')" >Join to row above</div>`
             + menucmds.innerHTML
         ;
     }
@@ -472,7 +472,7 @@ ga.dd.menuoff = function() {
     ga.dd.seloff();
 }
 
-ga.dd.menu = function( choice ) {
+ga.dd.menu = function( choice, arg ) {
     var msg = `ga.dd.menu( "${choice}" )`;
     console.log( msg );
     ga.dd.menuoff();
@@ -494,6 +494,10 @@ ga.dd.menu = function( choice ) {
     case "iclr" :
         console.log( msg_ok );
         ga.dd.menu.iclr()
+        break;
+    case "join" :
+        console.log( msg_ok );
+        ga.dd.joinrowabove( arg );
         break;
     default:
         console.warn( `ga.dd.menu(): unknown command ${choice}` );
@@ -907,4 +911,132 @@ ga.dd.nstate = function ( node ) {
     result.data   = document.getElementById( `ga-data-${result.id}` );
 
     return result;
+}
+
+ga.dd.nstate.gridinfo = function ( nstate ) {
+    if ( !nstate || !nstate.id ) {
+        console.error( 'ga.dd.nstate() called without a proper value' );
+        return;
+    }
+
+    console.log( `ga.dd.nstate( ${nstate.id} )` );
+    
+    if ( !nstate.cnodes ) {
+        console.error( `ga.dd.nstate( ${nstate.id} ) has empty cnodes` );
+        return;
+    }
+
+    // compute last columns for each row
+    nstate.colmax = [];
+    for ( var i = 0; i < nstate.cnodes.length; ++i ) {
+        var colend   = /^\d*$/.test( nstate.cnodes[i].style.gridColumnEnd ) ? nstate.cnodes[i].style.gridColumnEnd : +nstate.cnodes[i].style.gridColumn;
+        var rowstart = +nstate.cnodes[i].style.gridRowStart;
+        var rowend   = /^\d*$/.test( nstate.cnodes[i].style.gridRowEnd ) ? nstate.cnodes[i].style.gridRowEnd : rowstart;
+        console.log( `nstate.cnodes[${i}] colend ${colend} rowend ${rowend}` );
+        for ( var j = rowstart; j <= rowend; ++j ) {
+            nstate.colmax[j] = nstate.colmax[j] || 0;
+            if ( nstate.colmax[j] < colend ) {
+                nstate.colmax[j] = colend;
+            }
+        }
+    }
+}
+
+
+ga.dd.editpgrid = function( pid ) {
+    console.log( `ga.dd.editpgrid( ${pid} )` );
+
+    // panel edit
+
+}
+
+ga.dd.editfgrid = function( fid ) {
+    console.log( `ga.dd.editfgrid( ${fid} )` );
+
+    // field edit
+}
+
+ga.dd.joinrowabove = function ( id ) {
+    console.log( `ga.dd.joinrowabove( ${id} )` );
+    var from_node = document.getElementById( id );
+    if ( !from_node ) {
+        console.error( `ga.dd.joinrowabove( ${id} ) id=$id not found in DOM` );
+        return;
+    }
+    
+    var nstate = ga.dd.nstate( from_node );
+
+    if ( !nstate.cnodes ) {
+        console.error( `ga.dd.joinrowabove( ${id} ) no nodes found in panel` );
+        return;
+    }
+    
+
+    console.log( `ga.dd.joinrowabove( ${id} ) 1` );
+    console.dir( nstate.cnodes );
+        
+    console.log( `ga.dd.joinrowabove( ${id} ) 2` );
+    ga.dd.nstate.gridinfo( nstate );
+
+    console.log( `ga.dd.joinrowabove( ${id} ) 3` );
+    console.dir( nstate.colmax );
+
+    if ( nstate.label ) {
+        var label_colstart    = nstate.label.style.gridColumnStart;
+        var label_colend_auto = nstate.label.style.gridColumnEnd == 'auto';
+        if ( !label_colend_auto ) {
+            var label_col_length = nstate.label.style.gridColumnEnd - nstate.label.style.gridColumnStart;
+        }
+
+        var label_rowstart    = nstate.label.style.gridRowStart;
+        var label_rowend_auto = nstate.label.style.gridRowEnd == 'auto';
+        if ( !label_rowend_auto ) {
+            var label_row_length = nstate.label.style.gridRowEnd - nstate.label.style.gridRowStart;
+        }
+        
+        var label_join_row      = label_rowstart - 1;
+        var label_join_col      = nstate.colmax[label_join_row] + 1;
+
+        nstate.label.style.gridRowStart   = label_join_row;
+        if ( !label_rowend_auto ) {
+            nstate.label.style.gridRowEnd = label_join_row + label_row_length;
+        }
+
+        nstate.label.style.gridColumnStart   = label_join_col;
+        if ( !label_colend_auto ) {
+            nstate.label.style.gridColumnEnd = label_join_col + data_col_length;
+        }
+
+        // recompute grid info if data
+        if ( nstate.data ) {
+            ga.dd.nstate.gridinfo( nstate );
+        }
+    }
+
+    if ( nstate.data ) {
+        var data_colstart    = nstate.data.style.gridColumnStart;
+        var data_colend_auto = nstate.data.style.gridColumnEnd == 'auto';
+        if ( !data_colend_auto ) {
+            var data_col_length = nstate.data.style.gridColumnEnd - nstate.data.style.gridColumnStart;
+        }
+
+        var data_rowstart    = nstate.data.style.gridRowStart;
+        var data_rowend_auto = nstate.data.style.gridRowEnd == 'auto';
+        if ( !data_rowend_auto ) {
+            var data_row_length = nstate.data.style.gridRowEnd - nstate.data.style.gridRowStart;
+        }
+        
+        var data_join_row      = data_rowstart - 1;
+        var data_join_col      = nstate.colmax[data_join_row] + 1;
+
+        nstate.data.style.gridRowStart   = data_join_row;
+        if ( !data_rowend_auto ) {
+            nstate.data.style.gridRowEnd = data_join_row + data_row_length;
+        }
+
+        nstate.data.style.gridColumnStart   = data_join_col;
+        if ( !data_colend_auto ) {
+            nstate.data.style.gridColumnEnd = data_join_col + data_col_length;
+        }
+    }
 }
