@@ -367,16 +367,16 @@ ga.dd.reset = function () {
     ga.dd.resetgrid();
 }    
 
-ga.dd.setmenuinfo = function ( ev ) {
-    console.log( `ga.dd.setmenuinfo() ${ev.target.id}` );
+ga.dd.setmenuinfo = function ( node ) {
+    console.log( `ga.dd.setmenuinfo() ${node}` );
 
     var menuinfo = document.getElementById( "ga-dd-menu-info" );
     menuinfo.innerHTML = 'unknown';
 
-    var nstate   = ga.dd.nstate( ev.target );
+    var nstate   = ga.dd.nstate( node );
 
     // panels
-    if ( ev.target.classList.contains( "ga-dd-pid" ) ) {
+    if ( node.classList.contains( "ga-dd-pid" ) ) {
         menuinfo.innerHTML =
             `id: "${nstate.panel.id}"`
             + `<br><label onclick="ga.dd.editpgrid('${nstate.panel.id}')">label: panel rows: ${nstate.panel.style.gridTemplateRows}; columns: ${nstate.panel.style.gridTemplateColumns}</label>`
@@ -385,7 +385,7 @@ ga.dd.setmenuinfo = function ( ev ) {
     }
 
     menuinfo.innerHTML =
-        `id: "${ev.target.id}"`;
+        `id: "${node.id}"`;
 
     if ( nstate.label && nstate.label.style ) {
         menuinfo.innerHTML +=
@@ -402,7 +402,7 @@ ga.dd.setmenuinfo = function ( ev ) {
          ( nstate.label && nstate.label.style.gridRow > 1 ) ) {
         var menucmds = document.getElementById( "ga-dd-menu-cmds" );
         menucmds.innerHTML =
-            `<div id="ga-dd-menu-join" class="ga-dd-menu-e" onclick="ga.dd.menu(\'join\','${ev.target.id}')" >Join to row above</div>`
+            `<div id="ga-dd-menu-join" class="ga-dd-menu-e" onclick="ga.dd.menu(\'join\','${node.id}')" >Join to row above</div>`
             + menucmds.innerHTML
         ;
     }
@@ -411,9 +411,11 @@ ga.dd.setmenuinfo = function ( ev ) {
 ga.dd.rclick = function( ev ) {
     var ddmenustyle = document.getElementById( "ga-dd-menu" ).style;
     ddmenustyle.display="none";
-    console.log( `ga.dd.rclick() ${ev.target.id}` );
+    var pld_node = ga.dd.pld( ev.target );
+    console.log( `ga.dd.rclick( ${ev.target.id} ) pld node ${pld_node}` );
+
     // console.dir( ev );
-    if ( ev.which == 3 ) {
+    if ( ev.which == 3 && pld_node ) {
         window.onclick = function() {
             ddmenustyle.display="none";
             ga.dd.seloff();
@@ -432,7 +434,7 @@ ga.dd.rclick = function( ev ) {
         ddmenustyle.top  = ev.clientY + "px";
         ddmenustyle.display="block";
         ev.preventDefault();
-        var from_id = ev.target.id;
+        var from_id = pld_node.id;
         if ( ga.dd.intra ) {
             document.getElementById( from_id ).classList.add( "ga-dd-sel" );
         } else {
@@ -446,7 +448,7 @@ ga.dd.rclick = function( ev ) {
                 from_data_node.classList.add( "ga-dd-sel" );
             }
         }
-        ga.dd.setmenuinfo( ev );
+        ga.dd.setmenuinfo( pld_node );
     } else {
         console.log( `ga.dd.rclick() got a click - NOT  right click ev.which ${ev.which}` );
     }
@@ -889,6 +891,19 @@ ga.dd.panel.bgs = [
     // ,"radial-gradient(purple,black,cyan)"
 ];
 
+ga.dd.pld = function ( node ) {
+    // finds closest panel, label or data associated with node
+    console.log( `ga.dd.pld( ${node.id} )` );
+
+    var result = {};
+    
+    result = node;
+    while ( result && !result.classList.contains("ga-dd-panel") && !result.classList.contains("ga-dd") ) {
+        result = result.parentNode;
+    }
+    return result;
+}
+
 ga.dd.nstate = function ( node ) {
     console.log( `ga.dd.nstate( ${node.id} )` );
 
@@ -956,6 +971,10 @@ ga.dd.editfgrid = function( fid ) {
     // field edit
 }
 
+ga.dd.etype = function ( id ) {
+    return id.replace( /^ga-/, '' ).replace( /-.*$/, '' );
+}
+
 ga.dd.joinrowabove = function ( id ) {
     console.log( `ga.dd.joinrowabove( ${id} )` );
     var from_node = document.getElementById( id );
@@ -970,7 +989,6 @@ ga.dd.joinrowabove = function ( id ) {
         console.error( `ga.dd.joinrowabove( ${id} ) no nodes found in panel` );
         return;
     }
-    
 
     console.log( `ga.dd.joinrowabove( ${id} ) 1` );
     console.dir( nstate.cnodes );
@@ -981,7 +999,7 @@ ga.dd.joinrowabove = function ( id ) {
     console.log( `ga.dd.joinrowabove( ${id} ) 3` );
     console.dir( nstate.colmax );
 
-    if ( nstate.label ) {
+    if ( nstate.label && ( !ga.dd.intra || ga.dd.etype( id ) == 'label' ) ) {
         var label_colstart    = nstate.label.style.gridColumnStart;
         var label_colend_auto = nstate.label.style.gridColumnEnd == 'auto';
         if ( !label_colend_auto ) {
@@ -1013,7 +1031,7 @@ ga.dd.joinrowabove = function ( id ) {
         }
     }
 
-    if ( nstate.data ) {
+    if ( nstate.data && ( !ga.dd.intra || ga.dd.etype( id ) == 'data' )) {
         var data_colstart    = nstate.data.style.gridColumnStart;
         var data_colend_auto = nstate.data.style.gridColumnEnd == 'auto';
         if ( !data_colend_auto ) {
