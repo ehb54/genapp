@@ -1215,6 +1215,7 @@ foreach my $l ( keys %langs )
         my $dprog = "$gap/etc/perl/dd_make_ga_fdb.pl";
         die "designer required $dprog does not exist\n" if !-e $dprog;
         my $res = `perl $dprog output/$l/js`;
+        die "unrecoverable error in designer\n" if $?;
         $created .= $res;
     }
 } # end for language
