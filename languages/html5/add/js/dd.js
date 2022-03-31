@@ -398,13 +398,20 @@ ga.dd.setmenuinfo = function ( node ) {
         ;
     }
 
-    if ( ( nstate.data && nstate.data.style.gridRow > 1 ) ||
-         ( nstate.label && nstate.label.style.gridRow > 1 ) ) {
+    if ( nstate.data || nstate.label ) {
         var menucmds = document.getElementById( "ga-dd-menu-cmds" );
         menucmds.innerHTML =
-            `<div id="ga-dd-menu-join" class="ga-dd-menu-e" onclick="ga.dd.menu(\'join\','${node.id}')" >Join to row above</div>`
+            `<div id="ga-dd-menu-drop" class="ga-dd-menu-e" onclick="ga.dd.menu(\'drop\','${node.id}')" >Drop to row below</div>`
             + menucmds.innerHTML
         ;
+        if ( ( nstate.data && nstate.data.style.gridRow > 1 ) ||
+             ( nstate.label && nstate.label.style.gridRow > 1 ) ) {
+            menucmds.innerHTML =
+                `<div id="ga-dd-menu-join" class="ga-dd-menu-e" onclick="ga.dd.menu(\'join\','${node.id}')" >Join to row above</div>`
+                + menucmds.innerHTML
+            ;
+        }
+
     }
 }
 
@@ -450,7 +457,7 @@ ga.dd.rclick = function( ev ) {
         }
         ga.dd.setmenuinfo( pld_node );
     } else {
-        console.log( `ga.dd.rclick() got a click - NOT  right click ev.which ${ev.which}` );
+        console.log( `ga.dd.rclick() got a click - NOT right click ev.which ${ev.which} or NOT pld_node` );
     }
 }
 
@@ -499,7 +506,11 @@ ga.dd.menu = function( choice, arg ) {
         break;
     case "join" :
         console.log( msg_ok );
-        ga.dd.joinrowabove( arg );
+        ga.dd.moveele( arg, {rowadjust:-1} );
+        break;
+    case "drop" :
+        console.log( msg_ok );
+        ga.dd.moveele( arg, {rowadjust:1} );
         break;
     default:
         console.warn( `ga.dd.menu(): unknown command ${choice}` );
@@ -975,54 +986,61 @@ ga.dd.etype = function ( id ) {
     return id.replace( /^ga-/, '' ).replace( /-.*$/, '' );
 }
 
-ga.dd.joinrowabove = function ( id ) {
-    console.log( `ga.dd.joinrowabove( ${id} )` );
+ga.dd.moveele = function ( id, options ) {
+    console.log( `ga.dd.moveele( ${id} )` );
     var from_node = document.getElementById( id );
     if ( !from_node ) {
-        console.error( `ga.dd.joinrowabove( ${id} ) id=$id not found in DOM` );
+        console.error( `ga.dd.moveele( ${id} ) id=$id not found in DOM` );
         return;
     }
     
     var nstate = ga.dd.nstate( from_node );
 
     if ( !nstate.cnodes ) {
-        console.error( `ga.dd.joinrowabove( ${id} ) no nodes found in panel` );
+        console.error( `ga.dd.moveele( ${id} ) no nodes found in panel` );
         return;
     }
 
-    console.log( `ga.dd.joinrowabove( ${id} ) 1` );
+    if ( !options || !options.rowadjust ) {
+        console.error( `ga.dd.moveele( ${id} ) requires options:rowadjust` );
+        return;
+    }
+        
+    console.log( `ga.dd.moveele( ${id} ) 1` );
     console.dir( nstate.cnodes );
         
-    console.log( `ga.dd.joinrowabove( ${id} ) 2` );
+    console.log( `ga.dd.moveele( ${id} ) 2` );
     ga.dd.nstate.gridinfo( nstate );
 
-    console.log( `ga.dd.joinrowabove( ${id} ) 3` );
+    console.log( `ga.dd.moveele( ${id} ) 3` );
     console.dir( nstate.colmax );
 
     if ( nstate.label && ( !ga.dd.intra || ga.dd.etype( id ) == 'label' ) ) {
-        var label_colstart    = nstate.label.style.gridColumnStart;
-        var label_colend_auto = nstate.label.style.gridColumnEnd == 'auto';
-        if ( !label_colend_auto ) {
-            var label_col_length = nstate.label.style.gridColumnEnd - nstate.label.style.gridColumnStart;
+        var label_col_start    = +nstate.label.style.gridColumnStart;
+        var label_col_end_auto = nstate.label.style.gridColumnEnd == 'auto';
+
+        if ( !label_col_end_auto ) {
+            var label_col_length = +nstate.label.style.gridColumnEnd - +nstate.label.style.gridColumnStart;
         }
 
-        var label_rowstart    = nstate.label.style.gridRowStart;
+        var label_rowstart    = +nstate.label.style.gridRowStart;
         var label_rowend_auto = nstate.label.style.gridRowEnd == 'auto';
         if ( !label_rowend_auto ) {
-            var label_row_length = nstate.label.style.gridRowEnd - nstate.label.style.gridRowStart;
+            var label_row_length = +nstate.label.style.gridRowEnd - +nstate.label.style.gridRowStart;
         }
+        console.log( `ga.dd.moveele( ${id} ) rowstart ${label_rowstart} ${label_row_length}` );
         
-        var label_join_row      = label_rowstart - 1;
-        var label_join_col      = nstate.colmax[label_join_row] + 1;
+        var label_new_row      = label_rowstart + options.rowadjust;
+        var label_new_col      = ( nstate.colmax[label_new_row] ? nstate.colmax[label_new_row] : 0 ) + 1;
 
-        nstate.label.style.gridRowStart   = label_join_row;
+        nstate.label.style.gridRowStart   = label_new_row;
         if ( !label_rowend_auto ) {
-            nstate.label.style.gridRowEnd = label_join_row + label_row_length;
+            nstate.label.style.gridRowEnd = label_new_row + label_row_length;
         }
 
-        nstate.label.style.gridColumnStart   = label_join_col;
-        if ( !label_colend_auto ) {
-            nstate.label.style.gridColumnEnd = label_join_col + data_col_length;
+        nstate.label.style.gridColumnStart   = label_new_col;
+        if ( !label_col_end_auto ) {
+            nstate.label.style.gridColumnEnd = label_new_col + data_col_length;
         }
 
         // recompute grid info if data
@@ -1032,29 +1050,29 @@ ga.dd.joinrowabove = function ( id ) {
     }
 
     if ( nstate.data && ( !ga.dd.intra || ga.dd.etype( id ) == 'data' )) {
-        var data_colstart    = nstate.data.style.gridColumnStart;
-        var data_colend_auto = nstate.data.style.gridColumnEnd == 'auto';
-        if ( !data_colend_auto ) {
-            var data_col_length = nstate.data.style.gridColumnEnd - nstate.data.style.gridColumnStart;
+        var data_col_start    = +nstate.data.style.gridColumnStart;
+        var data_col_end_auto = nstate.data.style.gridColumnEnd == 'auto';
+        if ( !data_col_end_auto ) {
+            var data_col_length = +nstate.data.style.gridColumnEnd - +nstate.data.style.gridColumnStart;
         }
 
-        var data_rowstart    = nstate.data.style.gridRowStart;
+        var data_rowstart    = +nstate.data.style.gridRowStart;
         var data_rowend_auto = nstate.data.style.gridRowEnd == 'auto';
         if ( !data_rowend_auto ) {
-            var data_row_length = nstate.data.style.gridRowEnd - nstate.data.style.gridRowStart;
+            var data_row_length = +nstate.data.style.gridRowEnd - +nstate.data.style.gridRowStart;
         }
         
-        var data_join_row      = data_rowstart - 1;
-        var data_join_col      = nstate.colmax[data_join_row] + 1;
+        var data_new_row      = data_rowstart + options.rowadjust;
+        var data_new_col      = ( nstate.colmax[data_new_row] ? nstate.colmax[data_new_row] : 0 ) + 1;
 
-        nstate.data.style.gridRowStart   = data_join_row;
+        nstate.data.style.gridRowStart   = data_new_row;
         if ( !data_rowend_auto ) {
-            nstate.data.style.gridRowEnd = data_join_row + data_row_length;
+            nstate.data.style.gridRowEnd = data_new_row + data_row_length;
         }
 
-        nstate.data.style.gridColumnStart   = data_join_col;
-        if ( !data_colend_auto ) {
-            nstate.data.style.gridColumnEnd = data_join_col + data_col_length;
+        nstate.data.style.gridColumnStart   = data_new_col;
+        if ( !data_col_end_auto ) {
+            nstate.data.style.gridColumnEnd = data_new_col + data_col_length;
         }
     }
 }
