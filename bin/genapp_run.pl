@@ -105,6 +105,9 @@ $rplc_directives = start_json( $directives, $ref_directives );
 
 my $path = `pwd`;
 chomp $path;
+$toppath = $path;
+$toppath =~ s/^.*\///g;
+
 
 while ( my ( $k, $v ) = each %$rplc_directives )
 {
@@ -122,6 +125,7 @@ foreach my $l ( keys %langs )
 
     # reload for language specific content
     $directives = add_special_directives( get_file_json_lang_specific( "directives.json", $l, 0 ) );
+    die "directives:application '$$directives{application}' must match current directory name '$toppath'\n" if $$directives{application} ne $toppath;
     $rplc_directives = start_json( $directives, $ref_directives );
 
     # reload for language specific content
