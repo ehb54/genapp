@@ -589,29 +589,6 @@ ga.dd.resetgrid = function() {
     }
 }
 
-ga.dd.moduleinit = function() {
-    console.log( 'ga.dd.moduleinit()' );
-    if ( !ga.layout ||
-         !ga.layout.module ||
-         !ga.layout.module.json ||
-         !ga.layout.module.json.fields
-       ) {
-        console.warn( 'ga.dd.moduleinit() : ga.layout.module.json.fields is not defined' );
-        return;
-    }
-    
-    ga.dd.fields          = {};
-    ga.dd.fields.original = {};
-    for ( var i in ga.layout.module.json.fields ) {
-        if ( !ga.layout.module.json.fields[i].id ) {
-            console.warn( `ga.dd.moduleinit() : fields[${i}].id is not defined` );
-        }
-        ga.dd.fields.original[ ga.layout.module.json.fields[i].id ] = ga.layout.module.json.fields[i];
-    }
-    ga.dd.fields.current = ga.dd.fields.original;
-    ga.dd.node.ddmodule.innerHTML = '<pre>' + JSON.stringify( ga.layout.module.json, null, 2 ) + '</pre>';
-}
-
 ga.dd.dfield = function( id ) {
     console.log( `ga.dd.dfield('${id}')` );
     // display in appropriate tab'd content area
@@ -1076,3 +1053,68 @@ ga.dd.moveele = function ( id, options ) {
         }
     }
 }
+
+ga.dd.moduleinit = function() {
+    console.log( 'ga.dd.moduleinit()' );
+    if ( !ga.layout ||
+         !ga.layout.module ||
+         !ga.layout.module.json ||
+         !ga.layout.module.json.fields
+       ) {
+        console.warn( 'ga.dd.moduleinit() : ga.layout.module.json.fields is not defined' );
+        return;
+    }
+    
+    ga.dd.fields          = {};
+    ga.dd.fields.original = {};
+    for ( var i in ga.layout.module.json.fields ) {
+        if ( !ga.layout.module.json.fields[i].id ) {
+            console.warn( `ga.dd.moduleinit() : fields[${i}].id is not defined` );
+        }
+        ga.dd.fields.original[ ga.layout.module.json.fields[i].id ] = ga.layout.module.json.fields[i];
+    }
+    ga.dd.fields.current = ga.dd.fields.original;
+    ga.dd.node.ddmodule.innerHTML = '<pre>' + JSON.stringify( ga.layout.module.json, null, 2 ) + '</pre>';
+}
+
+
+ga.dd.dom2mod = function () {
+    console.log( `ga.dd.dom2mod()` );
+    // build module json from DOM and current module json
+    // see ga.dd.moduleinit for start
+    // https://genapp.rocks/wiki/wiki/docs_layout
+
+    // perhaps first get panels
+
+    // id ga-dd-mod ... ga-dd-panels below
+    // not sure if there is a nice selector, perhaps traverse the "ga-dd-mod" element's children
+    // recursive setup seems right
+    // ga.dd.dom2mod.cpanels( parentnode, panels ) ?
+    
+    var panels = {};
+    var node = ga.dd.node.mod;
+
+    ga.dd.dom2mod.cpanels( document.getElementById( "ga-dd-mod" ), panels );
+    console.log( "panels:\n" + JSON.stringify( panels, null, 2 ) );
+    console.dir( panels );
+}
+
+ga.dd.dom2mod.cpanels = function( node, panels ) {
+    
+    var parent = node.classList.contains( "ga-dd-panel" ) ? node.id.replace( /^ga-panel-/, '' ) : null;
+    
+    for ( var i in node.children ) {
+        if ( node.children.hasOwnProperty(i) ) {
+            if ( node.children[i].classList.contains( "ga-dd-panel" ) ) {
+                var pid = node.children[i].id.replace( /^ga-panel-/, '' );
+                panels[ pid ] = {};
+                if ( parent ) {
+                    panels[ pid ].parent = parent;
+                }
+                ga.dd.dom2mod.cpanels( node.children[i], panels );
+            }
+        }
+    }
+}
+
+    
