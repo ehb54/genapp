@@ -1074,10 +1074,42 @@ ga.dd.moduleinit = function() {
         ga.dd.fields.original[ ga.layout.module.json.fields[i].id ] = ga.layout.module.json.fields[i];
     }
     ga.dd.fields.current = ga.dd.fields.original;
-    ga.dd.node.ddmodule.innerHTML = '<pre>' + JSON.stringify( ga.layout.module.json, null, 2 ) + '</pre>';
+    ga.dd.node.ddmodule.innerHTML =
+        '<button class="ga-button-submit" onclick="ga.dd.copymod()">Copy to clipboard</button>'
+        + '<pre>' + JSON.stringify( ga.layout.module.json, null, 2 ) + '</pre>';
+
 }
 
+ga.dd.copymod = function() {
+    console.log( "ga.dd.copymod()" );
+    ga.dd.copymod.do( JSON.stringify( ga.layout.module.json, null, 2 ) + "\n" );
+}
 
+ga.dd.copymod.do = function (textToCopy) {
+    console.log( "ga.dd.copymod.do()" );
+    // navigator clipboard api needs a secure context (https)
+    if (navigator.clipboard && window.isSecureContext) {
+        // navigator clipboard api method'
+        return navigator.clipboard.writeText(textToCopy);
+    } else {
+        // text area method
+        let textArea = document.createElement("textarea");
+        textArea.value = textToCopy;
+        // make the textarea out of viewport
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        return new Promise((res, rej) => {
+            // here the magic happens
+            document.execCommand('copy') ? res() : rej();
+            textArea.remove();
+        });
+    }
+}
+    
 ga.dd.dom2mod = function () {
     console.log( `ga.dd.dom2mod()` );
     // build module json from DOM and current module json
@@ -1097,8 +1129,24 @@ ga.dd.dom2mod = function () {
     ga.dd.dom2mod.cpanels( document.getElementById( "ga-dd-mod" ), panels );
     console.log( "panels:\n" + JSON.stringify( panels, null, 2 ) );
     console.dir( panels );
+
+    // find all fields and update their panel/layout details
+
+    return panels;
 }
 
+ga.dd.dom2mod.repeat = function ( str ) {
+    // expands css style repeats(n,s)
+    if ( !/^repeat/.test(str) ) {
+        return str;
+    }
+    var ns = str.replace( /(^repeat\(|\$)/g, '' ).split(",");
+    if ( ns.length != 2 ) {
+        console.err( `ga.dd.dom2mod.repeat( ${str} ) failed regexp split` );
+    }
+    return Array(+ns[0]).fill(ns[1].replace(')','').replace( /(^\s+|\s+$)/g, ''));
+}
+    
 ga.dd.dom2mod.cpanels = function( node, panels ) {
     
     var parent = node.classList.contains( "ga-dd-panel" ) ? node.id.replace( /^ga-panel-/, '' ) : null;
@@ -1111,6 +1159,18 @@ ga.dd.dom2mod.cpanels = function( node, panels ) {
                 if ( parent ) {
                     panels[ pid ].parent = parent;
                 }
+                panels[ pid ].align = node.children[i].style.textAlign;
+                panels[ pid ].gap   = node.children[i].style.gap;
+
+                // size needs some work, e.g. 1fr 1fr -> 1,1
+                // array or not etc
+                // validate against original layout
+                panels[ pid ].size  = [ [ ga.dd.dom2mod.repeat( node.children[i].style.gridTemplateRows ) ]
+                                        ,[ ga.dd.dom2mod.repeat( node.children[i].style.gridTemplateColumns ) ] ];
+                
+                // populate other panel required fields
+                // data
+                // label
                 ga.dd.dom2mod.cpanels( node.children[i], panels );
             }
         }
