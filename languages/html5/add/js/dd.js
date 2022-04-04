@@ -147,6 +147,7 @@ ga.dd.drop_intra = function (ev) {
     from_node_style.gridColumn = to_col; 
     to_node_style.gridRow      = from_row; 
     to_node_style.gridColumn   = from_col; 
+    ga.dd.moduleinit.update();
 }
 
 ga.dd.drop = function (ev) {
@@ -293,6 +294,7 @@ ga.dd.drop = function (ev) {
 
         }
     }
+    ga.dd.moduleinit.update();
 }
 
 ga.dd.reset = function () {
@@ -1052,6 +1054,7 @@ ga.dd.moveele = function ( id, options ) {
             nstate.data.style.gridColumnEnd = data_new_col + data_col_length;
         }
     }
+    ga.dd.moduleinit.update();
 }
 
 ga.dd.moduleinit = function() {
