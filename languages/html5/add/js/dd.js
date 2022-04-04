@@ -1074,16 +1074,14 @@ ga.dd.moduleinit = function() {
         ga.dd.fields.original[ ga.layout.module.json.fields[i].id ] = ga.layout.module.json.fields[i];
     }
     ga.dd.fields.current = ga.dd.fields.original;
-    ga.dd.node.ddmodule.innerHTML =
-        '<button class="ga-button-submit" onclick="ga.dd.copymod()">Copy to clipboard</button>'
-        + '<pre>' + JSON.stringify( ga.layout.module.json, null, 2 ) + '</pre>';
-
+    ga.dd.moduleinit.update();
 }
 
 ga.dd.moduleinit.update = function() {
     console.log( "ga.dd.moduleinit.update()" );
     var mod = JSON.parse(JSON.stringify(ga.layout.module.json));
-    mod.panels = ga.dd.dom2mod();
+    var fields; // to be removed when fields are done, replaced with mod.fields
+    [ mod.panels, fields ] = ga.dd.dom2mod();
 
     ga.dd.node.ddmodule.innerHTML =
         '<button class="ga-button-submit" onclick="ga.dd.copymod()">Copy to clipboard</button>'
@@ -1121,18 +1119,20 @@ ga.dd.copymod.do = function (textToCopy) {
 }
     
 ga.dd.dom2mod = function () {
+
     console.log( `ga.dd.dom2mod()` );
     // build module json from DOM and current module json
     // see ga.dd.moduleinit for start
     // https://genapp.rocks/wiki/wiki/docs_layout
 
-    // perhaps first get panels
-
-    // id ga-dd-mod ... ga-dd-panels below
-    // not sure if there is a nice selector, perhaps traverse the "ga-dd-mod" element's children
-    // recursive setup seems right
-    // ga.dd.dom2mod.cpanels( parentnode, panels ) ?
+    // notes:
+    //   general : reorder as per original module, esp. for fields
+    //   panels:
+    //     'label' & 'data' are discarded (implies default values) since each field label & data are explicitly positioned
+    //     location 'next' is discarded as explicitly positioned
     
+    // panels
+
     var panels = {};
     var node = ga.dd.node.mod;
 
@@ -1141,8 +1141,55 @@ ga.dd.dom2mod = function () {
     console.dir( panels );
 
     // find all fields and update their panel/layout details
+    // need to match with original
+    var fields = {};
 
-    return panels;
+    var fnodes = node.getElementsByClassName( "ga-dd" );
+    for ( var i = 0; i < fnodes.length; ++i ) {
+        var fnode = fnodes[i];
+        if ( !fnode.id ) {
+            console.error( "ga.dd.dom2mod() : unexpected: field with class ga-dd has no id" );
+            console.dir( fnode );
+            continue;
+        }
+        var uid = fnode.id.replace( /^ga-(label|data)-/, '' );
+        var nstate = ga.dd.nstate( fnode );
+        fields[ uid ]               = fields[ uid ] || {};
+        fields[ uid ].layout        = fields[ uid ].layout || {};
+        fields[ uid ].layout.parent = nstate.panel.id.replace( /^ga-panel-/, '' );
+
+        if ( /^ga-label-/.test( fnode.id ) ) {
+            fields[ uid ].layout.label = [
+                ga.dd.dom2mod.lfix( [
+                    ga.dd.dom2mod.repeat( fnode.style.gridRowStart ),
+                    ga.dd.dom2mod.repeat( fnode.style.gridRowEnd )
+                ] )
+                ,ga.dd.dom2mod.lfix( [
+                    ga.dd.dom2mod.repeat( fnode.style.gridColumnStart ),
+                    ga.dd.dom2mod.repeat( fnode.style.gridColumnEnd )
+                ] )
+            ];
+            continue;
+        }
+        if ( /^ga-data-/.test( fnode.id ) ) {
+            fields[ uid ].layout.data = [
+                ga.dd.dom2mod.lfix( [
+                    ga.dd.dom2mod.repeat( fnode.style.gridRowStart ),
+                    ga.dd.dom2mod.repeat( fnode.style.gridRowEnd )
+                ] )
+                ,ga.dd.dom2mod.lfix( [
+                    ga.dd.dom2mod.repeat( fnode.style.gridColumnStart ),
+                    ga.dd.dom2mod.repeat( fnode.style.gridColumnEnd )
+                ] )
+            ];
+            continue;
+        }
+        console.error( `ga.dd.dom2mod() : unexpected : field ${fnode.id} not ga-data nor ga-label` );
+    }
+
+    console.log( JSON.stringify( fields, null, 2 ) );
+
+    return [panels, fields];
 }
 
 ga.dd.dom2mod.repeat = function ( str ) {
@@ -1201,7 +1248,6 @@ ga.dd.dom2mod.lfix = function ( obj ) {
 }
 
 ga.dd.dom2mod.cpanels = function( node, panels ) {
-    
     var parent = node.classList.contains( "ga-dd-panel" ) ? node.id.replace( /^ga-panel-/, '' ) : null;
     
     for ( var i in node.children ) {
@@ -1234,9 +1280,6 @@ ga.dd.dom2mod.cpanels = function( node, panels ) {
                     ,ga.dd.dom2mod.sfix( ga.dd.dom2mod.repeat( node.children[i].style.gridTemplateColumns ) )
                 ];
                 
-                // populate other panel required fields
-                // data
-                // label
                 ga.dd.dom2mod.cpanels( node.children[i], panels );
             }
         }
