@@ -1093,7 +1093,7 @@ ga.dd.copymod.do = function (textToCopy) {
         return navigator.clipboard.writeText(textToCopy);
     } else {
         // text area method
-        let textArea = document.createElement("textarea");
+        let textArea = document.createElement("ga-dd-clipboard-textarea");
         textArea.value = textToCopy;
         // make the textarea out of viewport
         textArea.style.position = "fixed";
@@ -1147,6 +1147,39 @@ ga.dd.dom2mod.repeat = function ( str ) {
     return Array(+ns[0]).fill(ns[1].replace(')','').replace( /(^\s+|\s+$)/g, ''));
 }
     
+ga.dd.dom2mod.sfix = function ( obj ) {
+    // special adjustments to map back to expected module layout
+
+    // [ "auto" ] => 1
+    if ( Array.isArray(obj) && obj.every((v, i) => v === "auto" ) ) {
+        return obj.length;
+    }
+    // string of fr => array
+    if ( typeof obj === 'string' && /^\s*(([0-9.]+fr)\s+)*([0-9.]+fr)\s*$/.test(obj) ) {
+        return obj.replace( /(^\s+|fr|\s+$)/g, '' ).split( " " ).map(Number);
+    }
+    return obj;
+}
+
+ga.dd.dom2mod.lfix = function ( obj ) {
+    // special adjustments to map back to expected module layout
+
+    if ( !Array.isArray(obj) || obj.length != 2 ) {
+        console.error( "ga.dd.dom2mod.lfix() unexpected argument value" );
+        return obj;
+    }
+
+    if ( !(obj.every((v, i) => /^-?\d+$/.test( v ) ) ) ) {
+        console.error( "ga.dd.dom2mod.lfix() argument array contains non-numeric strings" );
+        return obj;
+    }
+
+    if ( obj[0] === obj[1] ) {
+        return +obj[0];
+    }
+    return [ +obj[0], +obj[1] ];
+}
+
 ga.dd.dom2mod.cpanels = function( node, panels ) {
     
     var parent = node.classList.contains( "ga-dd-panel" ) ? node.id.replace( /^ga-panel-/, '' ) : null;
@@ -1157,7 +1190,18 @@ ga.dd.dom2mod.cpanels = function( node, panels ) {
                 var pid = node.children[i].id.replace( /^ga-panel-/, '' );
                 panels[ pid ] = {};
                 if ( parent ) {
-                    panels[ pid ].parent = parent;
+                    panels[ pid ].parent   = parent;
+                    panels[ pid ].location = [
+                        ga.dd.dom2mod.lfix( [
+                            ga.dd.dom2mod.repeat( node.children[i].style.gridRowStart ),
+                            ga.dd.dom2mod.repeat( node.children[i].style.gridRowEnd )
+                        ] )
+                        ,ga.dd.dom2mod.lfix( [
+                            ga.dd.dom2mod.repeat( node.children[i].style.gridColumnStart ),
+                            ga.dd.dom2mod.repeat( node.children[i].style.gridColumnEnd )
+                        ] )
+                    ];
+
                 }
                 panels[ pid ].align = node.children[i].style.textAlign;
                 panels[ pid ].gap   = node.children[i].style.gap;
@@ -1165,8 +1209,10 @@ ga.dd.dom2mod.cpanels = function( node, panels ) {
                 // size needs some work, e.g. 1fr 1fr -> 1,1
                 // array or not etc
                 // validate against original layout
-                panels[ pid ].size  = [ [ ga.dd.dom2mod.repeat( node.children[i].style.gridTemplateRows ) ]
-                                        ,[ ga.dd.dom2mod.repeat( node.children[i].style.gridTemplateColumns ) ] ];
+                panels[ pid ].size  = [
+                    ga.dd.dom2mod.sfix( ga.dd.dom2mod.repeat( node.children[i].style.gridTemplateRows ) )
+                    ,ga.dd.dom2mod.sfix( ga.dd.dom2mod.repeat( node.children[i].style.gridTemplateColumns ) )
+                ];
                 
                 // populate other panel required fields
                 // data
