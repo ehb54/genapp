@@ -1080,6 +1080,16 @@ ga.dd.moduleinit = function() {
 
 }
 
+ga.dd.moduleinit.update = function() {
+    console.log( "ga.dd.moduleinit.update()" );
+    var mod = JSON.parse(JSON.stringify(ga.layout.module.json));
+    mod.panels = ga.dd.dom2mod();
+
+    ga.dd.node.ddmodule.innerHTML =
+        '<button class="ga-button-submit" onclick="ga.dd.copymod()">Copy to clipboard</button>'
+        + '<pre>' + JSON.stringify( mod, null, 2 ) + '</pre>';
+}    
+
 ga.dd.copymod = function() {
     console.log( "ga.dd.copymod()" );
     ga.dd.copymod.do( JSON.stringify( ga.layout.module.json, null, 2 ) + "\n" );
@@ -1167,6 +1177,16 @@ ga.dd.dom2mod.lfix = function ( obj ) {
     if ( !Array.isArray(obj) || obj.length != 2 ) {
         console.error( "ga.dd.dom2mod.lfix() unexpected argument value" );
         return obj;
+    }
+
+    // [ 1, -1 ] => "full"
+    if ( obj.every((v, i) => v === ["1","-1"][i] ) ) {
+        return "full";
+    }
+
+    // [ n, "auto" ]
+    if ( /^\d+$/.test(obj[0]) && obj[1] === "auto" ) {
+        return +obj[0];
     }
 
     if ( !(obj.every((v, i) => /^-?\d+$/.test( v ) ) ) ) {
