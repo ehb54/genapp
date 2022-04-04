@@ -1082,15 +1082,21 @@ ga.dd.moduleinit.update = function() {
     var mod = JSON.parse(JSON.stringify(ga.layout.module.json));
     var fields; // to be removed when fields are done, replaced with mod.fields
     [ mod.panels, fields ] = ga.dd.dom2mod();
+    // merge fields for now for layout
+    // later adjust properties as specified in Details
+
+    for ( var i = 0; i < mod.fields.length; ++i ) {
+        mod.fields[ i ].layout = fields[ mod.fields[i].id ].layout;
+    }
 
     ga.dd.node.ddmodule.innerHTML =
         '<button class="ga-button-submit" onclick="ga.dd.copymod()">Copy to clipboard</button>'
-        + '<pre>' + JSON.stringify( mod, null, 2 ) + '</pre>';
+        + '<pre id="ga-dd-module-content-clipboard" >' + JSON.stringify( mod, null, 2 ) + '</pre>';
 }    
 
 ga.dd.copymod = function() {
     console.log( "ga.dd.copymod()" );
-    ga.dd.copymod.do( JSON.stringify( ga.layout.module.json, null, 2 ) + "\n" );
+    ga.dd.copymod.do( document.getElementById("ga-dd-module-content-clipboard").innerHTML + "\n" );
 }
 
 ga.dd.copymod.do = function (textToCopy) {
@@ -1101,7 +1107,7 @@ ga.dd.copymod.do = function (textToCopy) {
         return navigator.clipboard.writeText(textToCopy);
     } else {
         // text area method
-        let textArea = document.createElement("ga-dd-clipboard-textarea");
+        let textArea = document.createElement("textarea");
         textArea.value = textToCopy;
         // make the textarea out of viewport
         textArea.style.position = "fixed";
@@ -1133,12 +1139,12 @@ ga.dd.dom2mod = function () {
     
     // panels
 
-    var panels = {};
+    var panels = [];
     var node = ga.dd.node.mod;
 
     ga.dd.dom2mod.cpanels( document.getElementById( "ga-dd-mod" ), panels );
-    console.log( "panels:\n" + JSON.stringify( panels, null, 2 ) );
-    console.dir( panels );
+    // console.log( "panels:\n" + JSON.stringify( panels, null, 2 ) );
+    // console.dir( panels );
 
     // find all fields and update their panel/layout details
     // need to match with original
@@ -1187,10 +1193,90 @@ ga.dd.dom2mod = function () {
         console.error( `ga.dd.dom2mod() : unexpected : field ${fnode.id} not ga-data nor ga-label` );
     }
 
-    console.log( JSON.stringify( fields, null, 2 ) );
+    // add location to fields
+
+    for ( var i in fields ) {
+        ga.dd.dom2mod.setloc( fields[i].layout );
+    }
+
+    // console.log( JSON.stringify( fields, null, 2 ) );
 
     return [panels, fields];
 }
+
+ga.dd.dom2mod.setloc = function ( field ) {
+    // finds data and/or label and puts location at top-left and resets data & label positions
+    // console.log( "ga.dd.dom2mod.setloc()" );
+    // console.dir( field );
+    field.location = [ -1, -1 ];
+
+    // set location top left data
+    if ( field.data ) {
+        if ( field.data.length != 2 ) {
+            console.error( "ga.dd.dom2mod.setloc : field data not length 2" );
+            return;
+        }
+        if ( Array.isArray( field.data[0] ) ) {
+            field.location[0] = field.data[0][0];
+        } else {
+            field.location[0] = field.data[0];
+        }
+        if ( Array.isArray( field.data[1] ) ) {
+            field.location[1] = field.data[1][0];
+        } else {
+            field.location[1] = field.data[1];
+        }
+    }
+
+    // set location top left label
+    if ( field.label ) {
+        if ( field.label.length != 2 ) {
+            console.error( "ga.dd.dom2mod.setloc : field label not length 2" );
+            return;
+        }
+        if ( Array.isArray( field.label[0] ) ) {
+            if ( field.location[0] < field.label[0][0] ) {
+                field.location[0] = field.label[0][0];
+            }
+        } else {
+            if ( field.location[0] < field.label[0] ) {
+                field.location[0] = field.label[0];
+            }
+        }
+        if ( Array.isArray( field.label[1] ) ) {
+            if ( field.location[1] < field.label[1][0] ) {
+                field.location[1] = field.label[1][0];
+            }
+        } else {
+            if ( field.location[1] < field.label[1] ) {
+                field.location[1] = field.label[1];
+            }
+        }
+    }
+    
+    // adjust coordinates of data & labels
+
+    if ( field.data ) {
+        if ( Array.isArray( field.data[0] ) ) {
+            field.data[0][0] -= field.location[0] - 1;
+            field.data[0][1] -= field.location[0] - 1;
+        } else {
+            field.data[0] -= field.location[0] - 1;
+        }
+    }
+    if ( field.label ) {
+        if ( Array.isArray( field.label[0] ) ) {
+            field.label[0][0] -= field.location[0] - 1;
+            field.label[0][1] -= field.location[0] - 1;
+        } else {
+            field.label[0] -= field.location[0] - 1;
+        }
+    }
+
+    // console.dir( field );
+    
+    return field;
+}    
 
 ga.dd.dom2mod.repeat = function ( str ) {
     // expands css style repeats(n,s)
@@ -1254,10 +1340,11 @@ ga.dd.dom2mod.cpanels = function( node, panels ) {
         if ( node.children.hasOwnProperty(i) ) {
             if ( node.children[i].classList.contains( "ga-dd-panel" ) ) {
                 var pid = node.children[i].id.replace( /^ga-panel-/, '' );
-                panels[ pid ] = {};
+                var pobj = {};
+                pobj[ pid ] = {};
                 if ( parent ) {
-                    panels[ pid ].parent   = parent;
-                    panels[ pid ].location = [
+                    pobj[ pid ].parent   = parent;
+                    pobj[ pid ].location = [
                         ga.dd.dom2mod.lfix( [
                             ga.dd.dom2mod.repeat( node.children[i].style.gridRowStart ),
                             ga.dd.dom2mod.repeat( node.children[i].style.gridRowEnd )
@@ -1269,17 +1356,19 @@ ga.dd.dom2mod.cpanels = function( node, panels ) {
                     ];
 
                 }
-                panels[ pid ].align = node.children[i].style.textAlign;
-                panels[ pid ].gap   = node.children[i].style.gap;
+                pobj[ pid ].align = node.children[i].style.textAlign;
+                pobj[ pid ].gap   = node.children[i].style.gap;
 
                 // size needs some work, e.g. 1fr 1fr -> 1,1
                 // array or not etc
                 // validate against original layout
-                panels[ pid ].size  = [
+                pobj[ pid ].size  = [
                     ga.dd.dom2mod.sfix( ga.dd.dom2mod.repeat( node.children[i].style.gridTemplateRows ) )
                     ,ga.dd.dom2mod.sfix( ga.dd.dom2mod.repeat( node.children[i].style.gridTemplateColumns ) )
                 ];
-                
+
+                panels.push( pobj );
+
                 ga.dd.dom2mod.cpanels( node.children[i], panels );
             }
         }
