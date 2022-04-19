@@ -259,6 +259,16 @@ ga.dd.drop = function (ev) {
         console.dir( ev.target.parentNode.children );
         
         var to_row_int = parseInt( label_ok ? to_label_row : to_data_row );
+        if ( label_ok && !data_ok && from_data_node )  {
+            // from has data but to doesn't
+            to_data_row = to_label_row;
+            to_data_col = 1 + +to_label_col;
+            data_ok = true;
+        } else if ( !label_ok && data_ok && from_label_node )  {
+            to_label_row = to_data_row;
+            to_label_col = 1 + +to_data_col;
+            label_ok = true;
+        }
 
         // perhaps we need to keep going up parents until we have a panel ?
         // classList.contains("ga-dd-panel") ?
@@ -277,21 +287,20 @@ ga.dd.drop = function (ev) {
                     panelparent.children[ i ].style.gridRow = this_row_int + 1;
                 }
             }
+        }
 
-            // step 2 - assign new row cols to source
-            // && step 3 - move to parent panel
+        // step 2 - assign new row cols to source
+        // && step 3 - move to parent panel
 
-            if ( label_ok ) {
-                from_label_node_style.gridRow    = to_label_row;
-                from_label_node_style.gridColumn = to_label_col;
-                panelparent.appendChild( from_label_node );
-            }
-            if ( data_ok ) {
-                from_data_node_style.gridRow     = to_data_row;
-                from_data_node_style.gridColumn  = to_data_col;
-                panelparent.appendChild( from_data_node );
-            }
-
+        if ( label_ok ) {
+            from_label_node_style.gridRow    = to_label_row;
+            from_label_node_style.gridColumn = to_label_col;
+            panelparent.appendChild( from_label_node );
+        }
+        if ( data_ok ) {
+            from_data_node_style.gridRow     = to_data_row;
+            from_data_node_style.gridColumn  = to_data_col;
+            panelparent.appendChild( from_data_node );
         }
     }
     ga.dd.moduleinit.update();
@@ -413,7 +422,14 @@ ga.dd.setmenuinfo = function ( node ) {
                 + menucmds.innerHTML
             ;
         }
-
+        if ( 1 ) { // is_clean ?
+            menucmds.innerHTML =
+                `<div id="ga-dd-menu-cleanrows" class="ga-dd-menu-e" onclick="ga.dd.menu(\'cleanrows\','${node.id}')" >Remove empty rows </div>`
+                + `<div id="ga-dd-menu-cleancols" class="ga-dd-menu-e" onclick="ga.dd.menu(\'cleancols\','${node.id}')" >Shift columns left </div>`
+                + `<div id="ga-dd-menu-cleanall" class="ga-dd-menu-e" onclick="ga.dd.menu(\'cleanall\','${node.id}')" >Remove empty rows & shift cols left </div>`
+                + menucmds.innerHTML
+            ;
+        }
     }
 }
 
@@ -513,6 +529,18 @@ ga.dd.menu = function( choice, arg ) {
     case "drop" :
         console.log( msg_ok );
         ga.dd.moveele( arg, {rowadjust:1} );
+        break;
+    case "cleanrows" :
+        console.log( msg_ok );
+        ga.dd.clean( arg, {mode:'row'} );
+        break;
+    case "cleancols" :
+        console.log( msg_ok );
+        ga.dd.clean( arg, {mode:'col'} );
+        break;
+    case "cleanall" :
+        console.log( msg_ok );
+        ga.dd.clean( arg, {mode:'all'} );
         break;
     default:
         console.warn( `ga.dd.menu(): unknown command ${choice}` );
@@ -918,16 +946,17 @@ ga.dd.nstate = function ( node ) {
     return result;
 }
 
-ga.dd.nstate.gridinfo = function ( nstate ) {
+ga.dd.nstate.colmax = function ( nstate ) {
+    // compute nstate.colmax[]
     if ( !nstate || !nstate.id ) {
-        console.error( 'ga.dd.nstate() called without a proper value' );
+        console.error( 'ga.dd.nstate.colmax() called without a proper value' );
         return;
     }
 
-    console.log( `ga.dd.nstate( ${nstate.id} )` );
+    console.log( `ga.dd.nstate.colmax( ${nstate.id} )` );
     
     if ( !nstate.cnodes ) {
-        console.error( `ga.dd.nstate( ${nstate.id} ) has empty cnodes` );
+        console.error( `ga.dd.nstate.colmax( ${nstate.id} ) has empty cnodes` );
         return;
     }
 
@@ -947,12 +976,173 @@ ga.dd.nstate.gridinfo = function ( nstate ) {
     }
 }
 
+ga.dd.nstate.gridmap = function ( nstate ) {
+    // compute nstate.gridmap
+    if ( !nstate || !nstate.id ) {
+        console.error( 'ga.dd.nstate.gridmap() called without a proper value' );
+        return false;
+    }
 
-ga.dd.editpgrid = function( pid ) {
-    console.log( `ga.dd.editpgrid( ${pid} )` );
+    console.log( `ga.dd.nstate.gridmap( ${nstate.id} )` );
+    
+    if ( !nstate.cnodes ) {
+        console.error( `ga.dd.nstate.gridmap( ${nstate.id} ) has empty cnodes` );
+        return false;
+    }
 
-    // panel edit
+    // setup gridmap
+    nstate.gridmap = [];
+    for ( var i = 0; i < nstate.cnodes.length; ++i ) {
+        var colstart = +nstate.cnodes[i].style.gridColumnStart;
+        var colend   = /^\d*$/.test( nstate.cnodes[i].style.gridColumnEnd ) ? nstate.cnodes[i].style.gridColumnEnd : colstart;
+        var rowstart = +nstate.cnodes[i].style.gridRowStart;
+        var rowend   = /^\d*$/.test( nstate.cnodes[i].style.gridRowEnd ) ? nstate.cnodes[i].style.gridRowEnd : rowstart;
+        console.log( `nstate.cnodes[${i}] colstart ${colstart} colend ${colend} rowstart ${rowstart} rowend ${rowend}` );
+        for ( var j = rowstart; j <= rowend; ++j ) {
+            for ( var k = colstart; k <= colend; ++k ) {
+                nstate.gridmap[j]    = nstate.gridmap[j]    || [];
+                nstate.gridmap[j][k] = nstate.gridmap[j][k] || [];
+                nstate.gridmap[j][k].push( nstate.cnodes[i] );
+            }
+        }
+    }
+    return true;
+}
 
+ga.dd.nstate.gridmap.check = function( node ) {
+    console.log( `ga.dd.nstate.gridmap.check( ${node.id} )` );
+    var nstate = ga.dd.nstate( node );
+    ga.dd.nstate.gridmap( nstate );
+
+    var maxrow = nstate.gridmap.length;
+    var maxcol = nstate.gridmap.reduce( (a,v) => v.length > a ? v.length : a, 0 );
+
+    var outstr = '';
+    
+    for ( var i = 1; i < maxrow; ++i ) {
+        for ( var j = 1; j < maxcol; ++j ) {
+            outstr += ( nstate.gridmap[i] && nstate.gridmap[i][j] ? nstate.gridmap[i][j].length : 'X' ) + ' ';
+        }
+        outstr += '\n';
+    }
+
+    console.log( outstr );
+}
+
+ga.dd.clean = function ( id, obj ) {
+    if ( !id || !obj || !obj.mode ) {
+        console.error( 'ga.dd.clean() insufficient arguments' );
+        return;
+    }
+    
+    console.log( `ga.dd.clean( ${id}, obj ) obj : ` + JSON.stringify( obj ) );
+
+    var node = document.getElementById( id );
+
+    var nstate = ga.dd.nstate( node );
+    if ( !ga.dd.nstate.gridmap( nstate ) ) {
+        console.log( `ga.dd.clean( ${node.id}, obj ) : empty panel is by default clean` );
+        return;
+    }
+
+    switch ( obj.mode ) {
+    case 'row' :
+        {
+            for ( var i = 1; i < nstate.gridmap.length; ++i ) {
+                if ( !nstate.gridmap[i] ) {
+                    ga.dd.clean.rowup( nstate, i );
+                }
+            }
+        }
+        break;
+    case 'col' :
+        {
+            for ( var i = 1; i < nstate.gridmap.length; ++i ) {
+                if ( nstate.gridmap[i] ) {
+                    ga.dd.clean.col( nstate, i );
+                }
+            }
+        }
+        break;
+    case 'all' :
+        {
+            for ( var i = 1; i < nstate.gridmap.length; ++i ) {
+                if ( nstate.gridmap[i] ) {
+                    ga.dd.clean.col( nstate, i );
+                }
+            }
+            for ( var i = 1; i < nstate.gridmap.length; ++i ) {
+                if ( !nstate.gridmap[i] ) {
+                    ga.dd.clean.rowup( nstate, i );
+                }
+            }
+        }
+        break;
+    default :
+        console.error( `ga.dd.clean() object mode ${obj.node} unknown option` );
+        return;
+        break;
+    }
+}
+
+ga.dd.clean.rowup = function( nstate, row ) {
+    console.log( `ga.dd.clean.rowup( nstate, ${row} )` );
+    // ga.dd.debug = ga.dd.debug || {};
+    // ga.dd.debug.lastnstate = nstate;
+
+    var done = {};
+    for ( var i = row + 1; i < nstate.gridmap.length; ++i ) {
+        if ( nstate.gridmap[i] ) {
+            for ( var j = 1; j < nstate.gridmap[i].length; ++j ) {
+                if ( nstate.gridmap[i][j] ) {
+                    for ( var k = 0; k < nstate.gridmap[i][j].length; ++k ) {
+                        if ( nstate.gridmap[i][j][k] && !done[ nstate.gridmap[i][j][k].id ] ) {
+                            done[ nstate.gridmap[i][j][k].id ] = true;
+                            nstate.gridmap[i][j][k].style.gridRowStart = +nstate.gridmap[i][j][k].style.gridRowStart - 1;
+                            nstate.gridmap[i][j][k].style.gridRowEnd   = isNaN( +nstate.gridmap[i][j][k].style.gridRowEnd ) ? nstate.gridmap[i][j][k].style.gridRowEnd : +nstate.gridmap[i][j][k].style.gridRowEnd - 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // ga.dd.debug.rowupdone = done;
+    
+    ga.dd.nstate.gridmap( nstate );
+}
+
+ga.dd.clean.col = function( nstate, row ) {
+    console.log( `ga.dd.clean.col( nstate, ${row} )` );
+    // ga.dd.debug = ga.dd.debug || {};
+    // ga.dd.debug.lastnstate = nstate;
+
+    var done = {};
+    if ( !nstate.gridmap[row] ) {
+        return;
+    }
+
+    var next_col = 1;
+
+    for ( var j = 1; j < nstate.gridmap[row].length; ++j ) {
+        if ( nstate.gridmap[row][j] ) {
+            for ( var k = 0; k < nstate.gridmap[row][j].length; ++k ) {
+                if ( nstate.gridmap[row][j][k] && !done[ nstate.gridmap[row][j][k].id ] ) {
+                    done[ nstate.gridmap[row][j][k].id ] = true;
+                    if ( isNaN( +nstate.gridmap[row][j][k].style.gridColumnEnd ) ) {
+                        nstate.gridmap[row][j][k].style.gridColumnStart = next_col;
+                        ++next_col;
+                    } else {
+                        var colspan = +nstate.gridmap[row][j][k].style.gridColumnEnd - +nstate.gridmap[row][j][k].style.gridColumnStart;
+                        nstate.gridmap[row][j][k].style.gridColumnStart = next_col;
+                        nstate.gridmap[row][j][k].style.gridColumnEnd   = next_col + colspan;
+                        next_col += colspan;
+                    }
+                }
+            }
+        }
+    }
+    ga.dd.nstate.gridmap( nstate );
 }
 
 ga.dd.editfgrid = function( fid ) {
@@ -989,7 +1179,7 @@ ga.dd.moveele = function ( id, options ) {
     console.dir( nstate.cnodes );
         
     console.log( `ga.dd.moveele( ${id} ) 2` );
-    ga.dd.nstate.gridinfo( nstate );
+    ga.dd.nstate.colmax( nstate );
 
     console.log( `ga.dd.moveele( ${id} ) 3` );
     console.dir( nstate.colmax );
@@ -1024,7 +1214,7 @@ ga.dd.moveele = function ( id, options ) {
 
         // recompute grid info if data
         if ( nstate.data ) {
-            ga.dd.nstate.gridinfo( nstate );
+            ga.dd.nstate.colmax( nstate );
         }
     }
 
@@ -1089,7 +1279,11 @@ ga.dd.moduleinit.update = function() {
     // later adjust properties as specified in Details
 
     for ( var i = 0; i < mod.fields.length; ++i ) {
-        mod.fields[ i ].layout = fields[ mod.fields[i].id ].layout;
+        if ( !fields[mod.fields[i].id] ) {
+            console.error( `ga.dd.moduleinit.update(): fields is missing ${mod.fields[i].id} possible repeater issue` );
+        } else {
+            mod.fields[ i ].layout = fields[ mod.fields[i].id ].layout;
+        }
     }
 
     ga.dd.node.ddmodule.innerHTML =
@@ -1377,5 +1571,4 @@ ga.dd.dom2mod.cpanels = function( node, panels ) {
         }
     }
 }
-
     
