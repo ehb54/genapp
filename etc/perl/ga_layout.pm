@@ -597,14 +597,14 @@ sub layout_expand {
 
     if ( $debuglayout ) {
         my $js = JSON->new;
-        print "JSON before prep" . '-'x40 . "\n" . $js->pretty->encode( $json ) . "\n" . '-'x40 . "\n";
+        print "JSON before prep\n" . '-'x40 . "\n" . $js->pretty->encode( $json ) . "\n" . '-'x40 . "\n";
     }
 
     layout_prep( $mname, $json, $jsonfull );
 
     if ( $debuglayout ) {
         my $js = JSON->new;
-        print "JSON after prep" . '-'x40 . "\n" . $js->pretty->encode( $json ) . "\n" . '-'x40 . "\n";
+        print "JSON after prep\n" . '-'x40 . "\n" . $js->pretty->encode( $json ) . "\n" . '-'x40 . "\n";
     }
 
 # phase 1 panels
@@ -835,6 +835,8 @@ sub layout_expand {
             $colt      = '#'    if looks_like_number( $col );
             $rowt      = 'same' if $row eq 'same';
             
+            print "---> row $row rowt $rowt col $col colt $colt\n" if $debugcursor;
+
             if ( $rtype eq 'ARRAYref' ) {
                 $rowt  = 'span';
                 if ( scalar @$row != 2 ) {
@@ -892,7 +894,7 @@ sub layout_expand {
                     $cursor_row{ $parent }++;
                     $cursor_col{ $parent } = 1;
                 } else {
-                    $error .= "module: $mname : panel $k: unexpected error in updating row/column case row '#'\n";
+                    $error .= "module: $mname : panel $k: unexpected error in updating row/column case rowt '#'\n";
                 }
             }  elsif ( $rowt eq 'span' ) {
                 $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gr' } = "$row_s/$row_e";
@@ -913,7 +915,7 @@ sub layout_expand {
                     $cursor_row{ $parent }++;
                     $cursor_col{ $parent } = 1;
                 } else {
-                    $error .= "module: $mname : panel $k: unexpected error in updating row/column case row 'span'\n";
+                    $error .= "module: $mname : panel $k: unexpected error in updating row/column case rowt 'span'\n";
                 }
             }  elsif ( $rowt eq 'next' ) {
                 $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gr' } = $cursor_row{ $parent };
@@ -931,7 +933,7 @@ sub layout_expand {
                     $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gc' } = "1/-1";
                     $cursor_col{ $parent } = 1;
                 } else {
-                    $error .= "module: $mname : panel $k: unexpected error in updating row/column case row 'next'\n";
+                    $error .= "module: $mname : panel $k: unexpected error in updating row/column case rowt 'next'\n";
                 }
             }  elsif ( $rowt eq 'same' ) {
                 $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gr' } = $cursor_row{ $parent };
@@ -949,7 +951,7 @@ sub layout_expand {
                 } elsif ( $colt eq 'full' ) {
                     $error .= "module: $mname : panel $k: row can not be 'same' and column 'full'\n";
                 } else {
-                    $error .= "module: $mname : panel $k: unexpected error in updating row/column case row 'next'\n";
+                    $error .= "module: $mname : panel $k: unexpected error in updating row/column case rowt 'same'\n";
                 }
             }  elsif ( $rowt eq 'full' ) {
                 $$json{'panels'}[$panelpos{$k}]{ $k }{ 'gr' } = "1/-1";
@@ -967,7 +969,7 @@ sub layout_expand {
                 } elsif ( $colt eq 'full' ) {
                     $error .= "module: $mname : panel $k: row can not be 'full' and column 'full'\n";
                 } else {
-                    $error .= "module: $mname : panel $k: unexpected error in updating row/column case row 'next'\n";
+                    $error .= "module: $mname : panel $k: unexpected error in updating row/column case rowt 'next'\n";
                 }
             } else {                
                 $error .= "module: $mname : panel $k: unexpected error in updating row/column case unknown\n";
@@ -981,7 +983,7 @@ sub layout_expand {
 
     if ( $debuglayout ) {
         my $js = JSON->new;
-        print "JSON prep after phase 1" . '-'x40 . "\n" . $js->pretty->encode( $json ) . "\n" . '-'x40 . "\n";
+        print "JSON prep after phase 1\n" . '-'x40 . "\n" . $js->pretty->encode( $json ) . "\n" . '-'x40 . "\n";
     }
 
 ## step 1 check for missing parent panels & assign parent panels
@@ -1196,7 +1198,7 @@ sub layout_expand {
         }
 
         $error .= "module: $mname : field $fieldid unrecognized row type\n"    if !$rowt;
-        $error .= "module: $mname : field $fieldid unrecognized column type\n" if !$colt;
+        $error .= "module: $mname : field $fieldid unrecognized column type ($col)\n" if !$colt;
 
         # print "field $fieldid: rowt $rowt $row_s $row_e colt $colt $col_s $col_e\n";
             
@@ -1244,7 +1246,7 @@ sub layout_expand {
                 $cursor_row{ $parent }++;
                 $cursor_col{ $parent } = 1;
             } else {
-                $error .= "module: $mname : field $fieldid: unexpected error in updating row/column case row 'span'\n";
+                $error .= "module: $mname : field $fieldid: unexpected error in updating row/column case rowt 'span'\n";
             }
         }  elsif ( $rowt eq 'next' ) {
             $loc_row = $cursor_row{ $parent };
@@ -1262,7 +1264,7 @@ sub layout_expand {
                 $loc_col = 1;
                 $cursor_col{ $parent } = 1;
             } else {
-                $error .= "module: $mname : field $fieldid: unexpected error in updating row/column case row 'next'\n";
+                $error .= "module: $mname : field $fieldid: unexpected error in updating row/column case rowt 'next'\n";
             }
         }  elsif ( $rowt eq 'same' ) {
             $loc_row = $cursor_row{ $parent };
@@ -1280,7 +1282,7 @@ sub layout_expand {
             } elsif ( $colt eq 'full' ) {
                 $error .= "module: $mname : field $fieldid: row can not be 'same' and column 'full'\n";
             } else {
-                $error .= "module: $mname : field $fieldid: unexpected error in updating row/column case row 'next'\n";
+                $error .= "module: $mname : field $fieldid: unexpected error in updating row/column case rowt 'same' colt '$colt'\n";
             }
         }  elsif ( $rowt eq 'full' ) {
             $loc_row = 1;
@@ -1298,7 +1300,7 @@ sub layout_expand {
             } elsif ( $colt eq 'full' ) {
                 $error .= "module: $mname : field $fieldid: row can not be 'full' and column 'full'\n";
             } else {
-                $error .= "module: $mname : field $fieldid: unexpected error in updating row/column case row 'next'\n";
+                $error .= "module: $mname : field $fieldid: unexpected error in updating row/column case rowt 'full'\n";
             }
         } else {                
             $error .= "module: $mname : field $fieldid: unexpected error in updating row/column case unknown\n";
@@ -1306,7 +1308,6 @@ sub layout_expand {
         
         # now we have our base location and cursor is updated to the next position
         # determine lgc, lgr, dgc, dgr, rgc, rgr from data, label info
-        print "location tracking: before label: location row $loc_row col $loc_col\n" if $debugcursor;
 
         fields_in_panel( "start '$fieldid'", $parent, $json, $cursor_row{$parent}, $cursor_col{$parent}, $loc_row, $loc_col, "nd", "nd", $debugfields ) if $debugfields;
 
@@ -1353,7 +1354,7 @@ sub layout_expand {
 
         # increment cursor if overflow
         if ( $has_overflow ) {
-            # print STDERR "field $fieldid: has overflow\n";
+            print STDERR "field $fieldid: has overflow\n" if $debug_cursor;
             increment_cursor_column( \$cursor_row{ $parent }, \$cursor_col{ $parent }, $parentcols, $rowt eq 'same' );
         }
 
@@ -1405,6 +1406,7 @@ sub add_field {
     my $fieldid    = $$field{'id'};
 
     print "add field type $type fieldid $$field{'id'}\n" if $debugfields;
+    print "location tracking in add field: location row $$loc_row col $$loc_col\n" if $debugcursor;
 
     die "$0: add_field() unknown type '$type'\n" if $type != /^(label|data|repeats)$/;
 
