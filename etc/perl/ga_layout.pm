@@ -55,6 +55,13 @@ sub increment_cursor_column {
     }
 }
 
+sub debug_json {
+    my $msg  = shift;
+    my $data = shift;
+    my $js = JSON->new;
+    print "$msg : " . $js->pretty->encode( $data ) . "\n";
+}
+
 sub setmaxloc {
     my $loc_r = shift;
     my $loc_c = shift;
@@ -1406,7 +1413,18 @@ sub add_field {
     my $fieldid    = $$field{'id'};
 
     print "add field type $type fieldid $$field{'id'}\n" if $debugfields;
-    print "location tracking in add field: location row $$loc_row col $$loc_col\n" if $debugcursor;
+    print "add field location tracking: row $$loc_row col $$loc_col cursor_r $$cursor_r cursor_c $$cursor_c\n" if $debugcursor;
+    debug_json( "add field field json", $field ) if $debugcursor;
+
+    my $field_loc_row;
+    my $field_loc_col;
+
+    if ( $$field{layout}{location} ) {
+        debug_json( "add field has location", $$field{layout}{location} ) if $debugcursor;
+        $field_loc_row = $$field{layout}{location}[0];
+        $field_loc_col = $$field{layout}{location}[1];
+        print "field_loc_row $field_loc_row field_loc_col $field_loc_col\n" if $debugcursor;
+    }
 
     die "$0: add_field() unknown type '$type'\n" if $type != /^(label|data|repeats)$/;
 
@@ -1435,7 +1453,7 @@ sub add_field {
     $colt      = 'full' if $col eq 'full';
     $rowt      = 'same' if $row eq 'same';
 
-    print "row is $row\n" if $debuglayout;
+    print "row is $row, rowt is $rowt \n" if $debuglayout;
     if ( looks_like_number( $row ) ) {
         print "row looks like a number\n" if $debuglayout;
         $rowt = '#';
@@ -1479,7 +1497,26 @@ sub add_field {
 
     print "processing field $fieldid : rowt $rowt colt $colt\n" if $debuglayout;
 
-    if ( $rowt eq '#' ) {
+    if ( $field_loc_row eq 'same' && $field_loc_col eq 'next' ) {
+        ## ok, maybe a hack, probably needs more digging & general support
+        $row           = $$cursor_r - 1;
+        $row           = 1 if $type eq 'repeats';
+        $$field{ $gr } = $row;
+        if ( $colt eq '#' ) {
+            $col           = $$cursor_c + $col;
+            $$field{ $gc } = $col;
+            $$max_col      = $col;
+            # increment_cursor_column( $cursor_r, $cursor_c, $parentcols );
+        } elsif ( $colt eq 'span' ) {
+            $col_s         += $$cursor_c;
+            $col_e         += $$cursor_c;
+            $$field{ $gc } = "$col_s/$col_e";
+            $$max_col      = $col_e;
+            # increment_cursor_column( $cursor_r, $cursor_c, $parentcols );
+        } else {
+            $error .= "module: $mname : field $fieldid: unexpected error in updating $type row/column case location:same,next";
+        }
+    } elsif ( $rowt eq '#' ) {
         $$field{ $gr } = $row;
         $$max_row = $row;
         if ( $colt eq '#' ) {
