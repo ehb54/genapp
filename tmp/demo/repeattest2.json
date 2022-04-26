@@ -1,0 +1,46 @@
+{
+    "moduleid"    : "repeattest2"
+    ,"label"      : "Repeattest2"
+    ,"help"       : "help for Repeattest2"
+    ,"executable" : "repeattest2"
+    ,"fields"   : [
+        {
+            "role"        : "input"
+            ,"id"         : "a_checkbox"
+            ,"label"      : "type checkbox"
+            ,"type"       : "checkbox"
+            ,"help"       : "help for type checkbox"
+            ,"repeater"   : "true"
+        }
+        ,{
+            "role"        : "input"
+            ,"id"         : "a_integer"
+            ,"label"      : "type integer"
+            ,"type"       : "integer"
+            ,"default"    : 1
+            ,"help"       : "help for type integer"
+            ,"repeater"   : "true"
+            ,"repeat"     : "a_checkbox"
+        }
+        ,{
+            "role"        : "input"
+            ,"id"         : "a_child_checkbox"
+            ,"label"      : "type checkbox child"
+            ,"type"       : "checkbox"
+            ,"style"      : "switch"
+            ,"help"       : "help for type checkbox"
+            ,"repeat"     : "a_integer"
+        }
+        ,{
+            "role"        : "input"
+            ,"id"         : "a_child_lrfile"
+            ,"label"      : "type lrfile child"
+            ,"type"       : "lrfile"
+            ,"help"       : "help for type lrfile"
+            ,"repeat"     : "a_integer"
+            ,"layout" : {
+                "location" : [ "same", "next" ]
+            }
+        }
+    ]
+}

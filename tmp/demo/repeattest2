@@ -1,0 +1,134 @@
+#!/usr/bin/perl
+
+## user defines
+
+# uncomment below to create a logfile
+# $save_in_log = "/tmp/repeattest2.log";
+
+# uncomment below to enable messaging
+# $enable_msg = 1;
+
+## end user defines
+
+{
+    if ( $] < 5.018 ) {
+        my $f = "/etc/profile.d/genapp.sh";
+        my $gb;
+        if ( -e $f ) {
+            my $fh;
+            !open $fh, $f || die "Error: the version of perl found is < 5.18 and, although there exists $f, the permissions do now allow reading by this process\n";
+            my @l = <$fh>;
+            close $fh;
+            @l = grep !/^\s*#/, @l;
+            @l = grep /GENAPP=/, @l;
+            grep chomp, @l;
+            die "Error: the version of perl found is < 5.18 and, although there exists $f, there is no definition of GENAPP available within it.\n" if !@l;
+            my $l = pop @l;
+            ( $gb ) = $l =~ /GENAPP=([^#;]+)/;
+            die "Error: the version of perl found is < 5.18 and, although there exists $f, the value of GENAPP within it could not be parsed.\n" if !$gb;
+            die "Error: the version of perl found is < 5.18 and, although there exists $f, the value of GENAPP within it ($gb) is not a directory.\n" if !-d $gb;
+        } else {
+            die "Error: the version of perl found is < 5.18 and $f does not exist\n";
+        }        
+        if ( -e "$gb/perl/bin/perl" ) {
+            $pv =`$gb/perl/bin/perl -e 'print \$];'`;
+            if ( $pv >= 5.018 ) {
+                unshift @ARGV, $0;
+                exec( "$gb/perl/bin/perl", @ARGV );
+            } else {
+                die "$gb/perl/bin/perl exists, but not a correct version of perl (needs a minimum of 5.18)\n";
+            }
+        } else {
+            die "you need to install a version of perl >= 5.18 in $gb/perl\n
+there is a script $gb/sbin/install-perl-stable to do this";
+        }
+    }
+}
+
+my $rc = eval {
+    require JSON;         JSON->import();
+};
+
+if ( !@ARGV )
+{
+    print "\{\"error\":\"repeattest2 called with no arguments\"\}\n";
+    exit;
+}
+
+$req = decode_json( shift );
+
+## messaging setup
+
+sub sendmsg {};
+
+if ( $enable_msg ) {
+    
+    my $rc = eval {
+        require IO::Socket;   IO::Socket->import();
+    };
+
+    my $domsg = $$req{ "_uuid" } && $$req{ "_udpport" } && $$req{ "_udphost" };
+
+    my $sock;
+    $sock = IO::Socket::INET->new( Proto => 'udp', PeerPort => $$req{ "_udpport" }, PeerAddr => $$req{ "_udphost" } ) if $domsg;
+
+    sub sendmsg {
+        return if !$domsg;
+        my $text = $_[0];
+        my $prog = $_[1];
+        print "sendmsg: $prog $text\n" if $debug;
+
+        if ( length( $text ) || length( $prog ) ) {
+            my $msg  = {};
+            $$msg{ "_uuid" } = $$req{ "_uuid" };
+            $$msg{ "_textarea" } = $text if length( $text );
+            $$msg{ "_progress" } = $prog if length( $prog );
+            $sock->send( encode_json( $msg ) );
+        }
+    }
+}
+
+
+## format inputs for replacement
+sub formatinput {
+    my $x    = $_[0];
+    my $dec  = $_[1];
+    my $mlen = $_[2];
+    my $fmt  = "\%.${mlen}f";
+    my $out  = sprintf( $fmt, $x );
+    $out = substr( $out, 0, $mlen );
+    $out .= '0'x( $mlen - length( $out ) );
+    $out;
+}
+
+$res = {};
+
+# assemble output
+
+$$res{ "note" } = "repeattest2 executable";
+
+my $js = JSON->new;
+
+$$res{'_textarea'} = 
+    "JSON output from executable:\n" . $js->pretty->encode( $res ) . "\n"
+    . "JSON input to executable:\n" . $js->pretty->encode( $req ) . "\n";
+
+if ( length( $save_in_log ) ) {
+    my $rc = eval {
+        require Data::Dumper;;   Data::Dumper->import();
+    };
+
+    open OUT, ">>$save_in_log";
+    print OUT "-"x20 . "\n";
+    print OUT `date`;
+    print OUT "$0\n";
+    print OUT "--- input ---\n";
+    print OUT Dumper($req);
+    print OUT "--- output ---\n";
+    print OUT Dumper($res);
+    print OUT "-"x20 . "\n";
+    close OUT;
+}
+
+print encode_json( $res ) . "\n";
+
