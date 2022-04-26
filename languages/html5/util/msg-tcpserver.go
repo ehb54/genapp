@@ -120,7 +120,9 @@ func getappconfig() {
 		lockdir = jdata["lockdir"].(string)
 	}
 	tcplockfile = lockdir + "/msg-tcp-" + fmt.Sprint( messaging["zmqport"] ) + ".lock"
-	tcplisten = fmt.Sprint( messaging["tcphostip"] ) + ":" + fmt.Sprint( messaging["tcpport"] )
+        if _, ok := messaging["tcplisten"]; ok {
+            tcplisten = fmt.Sprint( messaging["tcplisten"] ) + ":" + fmt.Sprint( messaging["tcpport"] )
+        }
 	tcprlisten = fmt.Sprint( messaging["tcphostip"] ) + ":" + fmt.Sprint( messaging["tcprport"] )
 	zmqlisten = "tcp://" + fmt.Sprint( messaging["zmqhostip"] ) + ":" + fmt.Sprint( messaging["zmqport"] )
 }
