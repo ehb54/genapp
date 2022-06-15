@@ -1,7 +1,7 @@
     <button id="__menu:id_____menu:modules:id__" class="ga-button-menu help_link">__menu:modules:label__</button>__~module:help{<span class="help">__module:help__</span>}
 <script>
     $( "#__menu:id_____menu:modules:id__" ).click(function() {
-        var d=$( "#tab_docs > a" );
+        var d=$( "#tab_docs" );
         if ( d.length ) { d.attr( "href", "__docsbaseurl__/__menu:id__/__menu:modules:id__/__menu:modules:id__.html" ); };
     
         if ( ga.valuen.lastload && $( "#" + ga.valuen.lastload ).is( ":visible" ) ) { ga.valuen.save( ga.valuen.lastload ); }
