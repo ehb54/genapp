@@ -32,6 +32,7 @@ const { spawn }      = require('child_process');
 // global variables
  
 var mongodb;
+var mongodb_msgs;
 
 // utility routines
 
@@ -521,6 +522,24 @@ app.get( '/jobstatus', async ( req, res ) => {
             console.log( robj.error );
         });
 
+    await mongodb_msg.collection("cache").findOne({ _id : query._uuid } )
+        .then( ( doc ) => {
+            var msg_json;
+            if ( doc.data ) {
+                try {
+                    msg_json = JSON.parse( doc.data );
+                    if ( msg_json._progressmsg && msg_json._progressmsg.length ) {
+                        robj.message = msg_json._progressmsg;
+                    }
+                } catch ( err ) {
+                    console.log( "error cache message decoding data" );
+                }
+            }
+        })
+        .catch( ( err ) => {
+            console.log( `cache.msgs ${query._uuid} not found.` );
+        });
+
     writeend( res, robj );
 });
 
@@ -823,6 +842,7 @@ try {
 MongoClient.connect( mongo_url, ( err, db ) => {
     if (err) throw err;
     mongodb = db.db( mongo_db_name );
+    mongodb_msg = db.db( "msgs" );
     console.log( "connected to mongo:" + mongo_url );
     app.listen( listen_port, listen_host, () => console.log('Listening on host:' + listen_host + ' port:' + listen_port ) );
 });
