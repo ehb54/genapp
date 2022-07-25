@@ -5,8 +5,8 @@ require "os_header_cli.php";
 $projects = all_projects();
 
 foreach ( $projects as $project => $v ) {
-#    putenv( "OS_TENANT_NAME=$project" );
-    putenv( "OS_PROJECT_NAME=$project" );
+    print "project $project\n";
+    project_putenv( $project );
 
     $cmd = "openstack server list -c ID -c Name -c Status -c Networks";
 

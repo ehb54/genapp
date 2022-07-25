@@ -26,11 +26,9 @@ if ( !isset( $argv[ 1 ] ) ||
 
 $project = $argv[ 1 ];
 
-#putenv( "OS_TENANT_NAME=$project" );
-putenv( "OS_PROJECT_NAME=$project" );
-
+project_putenv( $project );
  
-// -------------------- set up OS image info --------------------
+## -------------------- set up OS image info --------------------
 
 if ( !isset( $json->resources->oscluster->properties->flavor ) ) {
     echo "error: resources:oscluster:properties:flavor not defined in appconfig\n";
@@ -69,27 +67,28 @@ if ( isset( $json->resources->oscluster->properties->user_data ) ) {
     echo "userdata $userdata\n";
 }
 
-if ( isset( $json->resources->oscluster->properties->network ) ) {
-    $use_network = $json->resources->oscluster->properties->network;
-} else {
-    $use_network = "${project}-api";
+if ( !isset( $json->resources->oscluster->properties->network ) ) {
+    echo "error: resources:oscluster:properties:network not defined in appconfig\n";
+    exit;
 }
 
-echo `nova list`;
+$network = $json->resources->oscluster->properties->network;
+
+## echo `openstack server list`;
 
 $cstrong = true;
 
 $image = [];
 
-// -------------------- boot instances --------------------
+## -------------------- boot instances --------------------
 
 for ( $i = 0; $i < $argv[ 2 ]; ++$i ) {
     
     $name =  
         "${project}-run-" . $argv[ 3 ] . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
-//        "-run-" . bin2hex( openssl_random_pseudo_bytes ( 16, $cstrong ) );
+##        "-run-" . bin2hex( openssl_random_pseudo_bytes ( 16, $cstrong ) );
 
-    $cmd = "nova boot $name --flavor $flavor --image $baseimage --key-name $key --security-groups $secgroup --nic net-name=$use_network $userdata";
+    $cmd = "openstack server create $name --flavor $flavor --image $baseimage --key-name $key --security-group $secgroup --network $network $userdata";
     print "$cmd\n";
     $results = `$cmd 2>&1`;
     print $results;
@@ -121,7 +120,7 @@ if ( isset( $tempfile ) ) {
     unlink( $tempfile );
 }
 
-// -------------------- wait to become active --------------------
+## -------------------- wait to become active --------------------
 
 $isactive = [];
 $ip = [];
@@ -134,8 +133,8 @@ do {
             continue;
         }
         echo "checking $v\n";
-        // probably should be chained to one nova list at the start of the loop
-        $cmd = "nova show $v";
+        ## probably should be chained to one openstack server list at the start of the loop
+        $cmd = "openstack server show $v";
         $results = `$cmd`;
         $resultsarray = explode( "\n", $results );
         $status = array_values( preg_grep( "/ status  /", $resultsarray ) );
@@ -181,7 +180,7 @@ do {
             }
         }
 
-        $network = array_values( preg_grep( "/ network  /", $resultsarray ) );
+        $network = array_values( preg_grep( "/ addresses  /", $resultsarray ) );
         echo "network: " . json_encode( $network, JSON_PRETTY_PRINT ) . "\n";
 
         if ( $network ) {
@@ -190,7 +189,7 @@ do {
             foreach ( $nets as $k2 => $v2 ) {
                 print "nets[$k2]=$v2\n";
             }
-            $ip[ $v ] = array_pop( $nets );
+            $ip[ $v ] = preg_replace( '/^.*=/', '', array_pop( $nets ) );
         }
 
         if ( $status &&
@@ -208,7 +207,7 @@ foreach ( $image as $v ) {
     echo "$v $ip[$v]\n";
 }
 
-// -------------------- wait for ssh to open--------------------
+## -------------------- wait for ssh to open--------------------
 
 $issshopen = [];
 
@@ -246,12 +245,11 @@ echo "all ssh active\n";
 
 if ( isset( $json->resources->oscluster->properties->postssh ) ) {
     foreach ( $image as $v ) {
-        $cmd = "ssh root@$ip[$v] -C '" . $json->resources->oscluster->properties->postssh . "'";
+        $cmd = "ssh -i $os_sshidentity -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $os_sshuser@$ip[$v] -C '" . $json->resources->oscluster->properties->postssh . "'";
         echo "running: $cmd\n";
         echo `$cmd`;
     }
 }
-
 
 foreach ( $image as $v ) {
     echo "$v $ip[$v]\n";

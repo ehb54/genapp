@@ -19,8 +19,7 @@ $projects = all_projects();
 $docmd = "";
 
 foreach ( $projects as $project => $v ) {
-#    putenv( "OS_TENANT_NAME=$project" );
-    putenv( "OS_PROJECT_NAME=$project" );
+    project_putenv( $project );
 
     $cmd = "openstack server list | grep ' ${project}-run-" . $argv[ 1 ] . "-... ' | awk '{ print $2 }'";
     # echo $cmd . "\n";
@@ -30,11 +29,7 @@ foreach ( $projects as $project => $v ) {
     $padded = 0;
 
     foreach ( $ids as $v ) {
-        if ( !$padded ) {
-            $docmd .= "export OS_PROJECT_NAME=$project\n";
-            $padded = 1;
-        }
-        $docmd .= "openstack server delete $v &\n";
+        $docmd .= "$cli_secrets openstack server delete $v &\n";
     }
 }
 
