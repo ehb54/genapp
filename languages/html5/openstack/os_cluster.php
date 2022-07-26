@@ -13,6 +13,8 @@ require_once "os_delete.php";
 
 function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
     global $appjson;
+    global $os_sshidentity;
+    global $os_sshadmin;
 
     # -------------------- set up OS image info --------------------
 
@@ -262,7 +264,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
 
     if ( isset( $appjson->resources->oscluster->properties->postssh ) ) {
         foreach ( $image as $v ) {
-            $cmd = "ssh -i $os_sshidentity -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $os_sshadminr@$ip[$v] -C '" . $appjson->resources->oscluster->properties->postssh . "'";
+            $cmd = "ssh -i $os_sshidentity -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $os_sshadmin@$ip[$v] -C '" . $appjson->resources->oscluster->properties->postssh . "'";
             `$cmd 2>&1 > /dev/null`;
         }
     }
