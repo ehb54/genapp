@@ -38,7 +38,7 @@ __~altversion{        // console.log( myHtml );}
         if ( ga.valuen.lastload && $( "#" + ga.valuen.lastload ).is( ":visible" ) ) { ga.valuen.save( ga.valuen.lastload ); }
         ga.loader.show();
         $( "#panelmain" ).load( "ajax/" + myTag + ".html", function(){ ga.hhelp.reset(); ga.loader.hide(); } );
-__~docsbaseurl{        $( "#tab_docs > a" ).attr( "href", "__docsbaseurl__/" + myTag + "/" + myTag + ".html" );}
+__~docsbaseurl{        $( "#tab_docs" ).attr( "href", "__docsbaseurl__/" + myTag + "/" + myTag + ".html" );}
         if ( !ga.set.data[ "nohidemenu:" + myTag ] ) { $( "#menuspan" ).trigger( "click" ); };
     } );
 
@@ -333,7 +333,7 @@ __~debug:job{         console.log( chk );}
 __~debug:job{           console.log( "now document ready" );}
 __~debug:job{           console.log( "#panel_" + sw[ 0 ] );}
 __~debug:job{           console.log( "ajax/" + sw[0] + "/" + sw[1] + ".html" );}
-__~docsbaseurl{           $( "#tab_docs > a" ).attr( "href", "__docsbaseurl__/" + sw[0] + "/" + sw[1] + "/" + sw[1] + ".html" );}
+__~docsbaseurl{           $( "#tab_docs" ).attr( "href", "__docsbaseurl__/" + sw[0] + "/" + sw[1] + "/" + sw[1] + ".html" );}
                eval( "delete loaded_" + sw[1] );
                $( "#panel_" + sw[ 0 ] ).load( "ajax/" + sw[0] + "/" + sw[1] + ".html",
                    function(){

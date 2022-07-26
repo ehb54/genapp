@@ -13,6 +13,8 @@ require_once "os_delete.php";
 
 function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
     global $appjson;
+    global $os_sshidentity;
+    global $os_sshadmin;
 
     # -------------------- set up OS image info --------------------
 
@@ -27,8 +29,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
         $project = $appjson->resources->oscluster->properties->project;
     }
 
-#    putenv( "OS_TENANT_NAME=$project" );
-    putenv( "OS_PROJECT_NAME=$project" );
+    project_putenv( $project );
 
     if ( isset( $use_flavor ) && !empty( $use_flavor ) ) {
         $flavor = $use_flavor;
@@ -71,13 +72,28 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
         sendudptext( "userdata $userdata\n" );
     }
 
-    if ( isset( $appjson->resources->oscluster->properties->network ) ) {
-        $use_network = $appjson->resources->oscluster->properties->network;
-    } else {
-        $use_network = "${project}-api";
+# currently sharing same network
+#    if ( isset( $appjson->resources->oscluster->properties->network ) ) {
+#        $use_network = $appjson->resources->oscluster->properties->network;
+#    } else {
+#        $use_network = "${project}-api";
+#    }
+
+    if ( !isset( $appjson->resources->oscluster->properties->network ) ) {
+        echo '{"error":"resources:oscluster:properties:network not defined in appconfig"}';
+        exit;
     }
 
-#    sendudptext( `nova list` );
+    $use_network = $appjson->resources->oscluster->properties->network;
+
+    if ( isset( $json->resources->oscluster->properties->postssh ) ) {
+        echo "error: postssh not yet supported\n";
+        ## we need to add user and key for postssh to appconfig &/or secrets
+        ## key should be in a file - with proper user & permissions
+        exit;
+    }
+
+#    sendudptext( `openstack server list` );
 
     $cstrong = true;
 
@@ -91,9 +107,10 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
             
         $name =  
             "${project}-run-" . $uuid . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
-        //        "-run-" . bin2hex( openssl_random_pseudo_bytes ( 16, $cstrong ) );
+        ##        "-run-" . bin2hex( openssl_random_pseudo_bytes ( 16, $cstrong ) );
 
-        $cmd = "nova boot $name --flavor $flavor --image $baseimage --key-name $key --security-groups $secgroup --nic net-name=$use_network $userdata";
+        ## $cmd = "nova boot $name --flavor $flavor --image $baseimage --key-name $key --security-groups $secgroup --nic net-name=$use_network $userdata";
+        $cmd = "openstack server create $name --flavor $flavor --image $baseimage --key-name $key --security-group $secgroup --network $use_network $userdata";
         sendudptext( "$cmd\n" );
         $results = `$cmd 2>&1`;
         sendudptext( $results . "\n" );
@@ -138,8 +155,8 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
                 continue;
             }
             sendudptext( "checking $v\n" );
-            // probably should be chained to one nova list at the start of the loop
-                $cmd = "nova show $v";
+            ## probably should be chained to one openstack server list at the start of the loop (?)
+            $cmd = "openstack server show $v";
             $results = `$cmd`;
             $resultsarray = explode( "\n", $results );
             $status = array_values( preg_grep( "/ status  /", $resultsarray ) );
@@ -181,7 +198,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
             }
 
             # sendudptext( "status: " . json_encode( $status, JSON_PRETTY_PRINT ) . "\n" );
-            $network = array_values( preg_grep( "/ network  /", $resultsarray ) );
+            $network = array_values( preg_grep( "/ addresses  /", $resultsarray ) );
             # sendudptext( "network: " . json_encode( $network, JSON_PRETTY_PRINT ) . "\n" );
 
             if ( $network ) {
@@ -191,7 +208,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
                 #}
                 # strange xxlarge's sometimes get 2 ip's
                 array_pop( $nets );
-                $ip[ $v ] = array_pop( $nets );
+                $ip[ $v ] = preg_replace( '/^.*=/', '', array_pop( $nets ) );
             }
 
             if ( $status &&
@@ -247,16 +264,16 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
 
     if ( isset( $appjson->resources->oscluster->properties->postssh ) ) {
         foreach ( $image as $v ) {
-            $cmd = "ssh root@$ip[$v] -C '" . $appjson->resources->oscluster->properties->postssh . "'";
+            $cmd = "ssh -i $os_sshidentity -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $os_sshadmin@$ip[$v] -C '" . $appjson->resources->oscluster->properties->postssh . "'";
             `$cmd 2>&1 > /dev/null`;
         }
     }
-
 
     # -------------------- check for /tmp/ready --------------------
 
     $ready = [];
 
+    ## need to postssh and/or other ssh setup working
     do {
         $any_notready = false;
         foreach ( $image as $v ) {
@@ -271,7 +288,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
 
             ob_start();
 
-            $cmd = "ssh $ip[$v] 'ls /tmp/ready'";
+            $cmd = "ssh -i $os_sshidentity -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $os_sshadmin@$ip[$v] 'ls /tmp/ready'";
 
             $res = `$cmd 2>&1`;
 

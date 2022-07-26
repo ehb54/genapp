@@ -233,7 +233,8 @@ if ($argc == 3) {
 
     $cmd = 
         "ssh " 
-        . $result_json->clusterips[0] 
+        . "-i $os_sshidentity -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "
+        . "$os_sshuser@" . $result_json->clusterips[0] 
         . " \"cd " 
         . $json_decoded->_base_directory
         . "; __executable_path:html5__/$appId '" 
@@ -288,4 +289,3 @@ if ($argc == 3) {
     echo  "{\"error\":\"insufficient arguments\"}";
 }
     
-?>
