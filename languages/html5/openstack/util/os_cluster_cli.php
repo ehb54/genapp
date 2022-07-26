@@ -245,7 +245,7 @@ echo "all ssh active\n";
 
 if ( isset( $json->resources->oscluster->properties->postssh ) ) {
     foreach ( $image as $v ) {
-        $cmd = "ssh -i $os_sshidentity -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $os_sshuser@$ip[$v] -C '" . $json->resources->oscluster->properties->postssh . "'";
+        $cmd = "ssh -i $os_sshidentity -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $os_sshadmin@$ip[$v] -C '" . $json->resources->oscluster->properties->postssh . "'";
         echo "running: $cmd\n";
         echo `$cmd`;
     }

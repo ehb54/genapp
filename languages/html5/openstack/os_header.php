@@ -41,63 +41,65 @@ if ( !isset( $secrets ) ) {
 
 ## -------------------- set up OS env --------------------
 
-if ( !isset( $json->resources->oscluster->properties->region_name ) ) {
+if ( !isset( $appjson->resources->oscluster->properties->region_name ) ) {
     echo '{"error":"resources:oscluster:properties:region_name not defined in appconfig"}';
     exit;
 }
 
-putenv( "OS_REGION_NAME=" . $json->resources->oscluster->properties->region_name );
+putenv( "OS_REGION_NAME=" . $appjson->resources->oscluster->properties->region_name );
 
-if ( !isset( $json->resources->oscluster->properties->api_version ) ) {
+if ( !isset( $appjson->resources->oscluster->properties->api_version ) ) {
     echo '{"error::"resources:oscluster:properties:api_version not defined in appconfig"}';
     exit;
 }
 
-putenv( "OS_IDENTITY_API_VERSION=" . $json->resources->oscluster->properties->api_version );
+putenv( "OS_IDENTITY_API_VERSION=" . $appjson->resources->oscluster->properties->api_version );
 
-if ( !isset( $json->resources->oscluster->properties->auth_url ) ) {
+if ( !isset( $appjson->resources->oscluster->properties->auth_url ) ) {
     echo '{"error":"resources:oscluster:properties:auth_url not defined in appconfig"}';
     exit;
 }
 
-putenv( "OS_AUTH_URL=" . $json->resources->oscluster->properties->auth_url );
+putenv( "OS_AUTH_URL=" . $appjson->resources->oscluster->properties->auth_url );
 
-if ( !isset( $json->resources->oscluster->properties->auth_type ) ) {
+if ( !isset( $appjson->resources->oscluster->properties->auth_type ) ) {
     echo '{"error:"resources:oscluster:properties:auth_type not defined in appconfig"}';
     exit;
 }
 
-putenv( "OS_AUTH_TYPE=" . $json->resources->oscluster->properties->auth_type );
+putenv( "OS_AUTH_TYPE=" . $appjson->resources->oscluster->properties->auth_type );
 
-if ( !isset( $json->resources->oscluster->properties->interface ) ) {
+if ( !isset( $appjson->resources->oscluster->properties->interface ) ) {
     echo '{"error":"resources:oscluster:properties:interface not defined in appconfig"}';
     exit;
 }
 
-putenv( "OS_INTERFACE=" . $json->resources->oscluster->properties->interface );
+putenv( "OS_INTERFACE=" . $appjson->resources->oscluster->properties->interface );
 
-if ( !isset( $appjson->resources->oscluster->properties->user ) ) {
-    echo '{"error":"resources:oscluster:properties:user not defined in appconfig"}';
-    exit;
+if ( isset( $appjson->resources->oscluster->properties->project ) ) {
+    $project = $appjson->resources->oscluster->properties->project;
 }
 
-if ( isset( $json->resources->oscluster->properties->project ) ) {
-    $project = $json->resources->oscluster->properties->project;
-}
-
-if ( !isset( $json->resources->oscluster->properties->sshuser ) ) {
+if ( !isset( $appjson->resources->oscluster->properties->sshuser ) ) {
     echo "error: resources:oscluster:properties:sshuser not defined in appconfig\n";
     exit;
 }
 
-$os_sshuser = $json->resources->oscluster->properties->sshuser;
+$os_sshuser = $appjson->resources->oscluster->properties->sshuser;
 
-if ( !isset( $json->resources->oscluster->properties->sshidentity ) ) {
+if ( !isset( $appjson->resources->oscluster->properties->sshadmin ) ) {
+    echo "error: resources:oscluster:properties:sshadmin not defined in appconfig\n";
+    exit;
+}
+
+$os_sshadmin = $appjson->resources->oscluster->properties->sshadmin;
+
+if ( !isset( $appjson->resources->oscluster->properties->sshidentity ) ) {
     echo "error: resources:oscluster:properties:sshidentity not defined in appconfig\n";
     exit;
 }
 
-$os_sshidentity = $json->resources->oscluster->properties->sshidentity;
+$os_sshidentity = $appjson->resources->oscluster->properties->sshidentity;
 
 if ( isset( $project ) ) {
     project_putenv( $project );

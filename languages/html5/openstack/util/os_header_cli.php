@@ -73,6 +73,13 @@ if ( !isset( $json->resources->oscluster->properties->sshuser ) ) {
 
 $os_sshuser = $json->resources->oscluster->properties->sshuser;
 
+if ( !isset( $json->resources->oscluster->properties->sshadmin ) ) {
+    echo "error: resources:oscluster:properties:sshadmin not defined in appconfig\n";
+    exit;
+}
+
+$os_sshadmin = $json->resources->oscluster->properties->sshadmin;
+
 if ( !isset( $json->resources->oscluster->properties->sshidentity ) ) {
     echo "error: resources:oscluster:properties:sshidentity not defined in appconfig\n";
     exit;
