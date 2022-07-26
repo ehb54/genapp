@@ -220,6 +220,11 @@ if ( isset( $results[ 'project' ] ) ) {
    {
        $results[ 'project' ][] = "no_project_specified";
    }
+   sort( $results['project'], SORT_NATURAL );
+}
+
+if ( isset( $results[ 'xsedeproject' ] ) ) {
+   sort( $results['xsedeproject'], SORT_NATURAL );
 }
 
 function rgbtohex( $rgb ) {
