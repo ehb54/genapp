@@ -15,6 +15,8 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
     global $appjson;
     global $os_sshidentity;
     global $os_sshadmin;
+    global $os_image;
+    global $os_ip;
 
     # -------------------- set up OS image info --------------------
 
@@ -86,18 +88,11 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
 
     $use_network = $appjson->resources->oscluster->properties->network;
 
-    if ( isset( $json->resources->oscluster->properties->postssh ) ) {
-        echo "error: postssh not yet supported\n";
-        ## we need to add user and key for postssh to appconfig &/or secrets
-        ## key should be in a file - with proper user & permissions
-        exit;
-    }
-
 #    sendudptext( `openstack server list` );
 
     $cstrong = true;
 
-    $image = [];
+    $os_image = [];
 
     # -------------------- boot instances --------------------
 
@@ -120,8 +115,8 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
         if ( count( $results_error ) ) {
             sendudpmsg( "Errors found when trying to boot a virtual cluster node" );
             $cmd = "";
-            if ( count( $image ) ) {
-                $cmd = "openstack server delete --wait " . implode( ' ', $image );
+            if ( count( $os_image ) ) {
+                $cmd = "openstack server delete --wait " . implode( ' ', $os_image );
                 sendudptext( $cmd );
                 sendudpmsg( "Removing successfully booted virtual cluster nodes" );
                 sendudptext( `$cmd 2>&1` );
@@ -134,7 +129,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
             exit;
         }        
 
-        $image[] = $name;
+        $os_image[] = $name;
     }
 
     if ( isset( $tempfile ) ) {
@@ -144,13 +139,13 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
     # -------------------- wait to become active --------------------
 
     $isactive = [];
-    $ip = [];
+    $os_ip = [];
 
     sendudpmsg( "Checking $nodes virtual cluster node" . ( $nodes > 1 ? "s" : "" ) );
 
     do {
         $any_booting = false;
-        foreach ( $image as $v ) {
+        foreach ( $os_image as $v ) {
             if ( array_key_exists( $v, $isactive ) ) {
                 continue;
             }
@@ -163,8 +158,8 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
 
             if ( count( $status ) != 1 ) {
                 $cmd = "";
-                if ( count( $image ) ) {
-                    $cmd = "openstack server delete --wait " . implode( ' ', $image );
+                if ( count( $os_image ) ) {
+                    $cmd = "openstack server delete --wait " . implode( ' ', $os_image );
                     sendudptext( $cmd );
                     sendudpmsg( "Removing successfully booted virtual cluster nodes" );
                     sendudptext( `$cmd 2>&1` );
@@ -185,8 +180,8 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
                 }
                 if ( !$status_ok ) {
                     $cmd = "";
-                    if ( count( $image ) ) {
-                        $cmd = "openstack server delete --wait " . implode( ' ', $image );
+                    if ( count( $os_image ) ) {
+                        $cmd = "openstack server delete --wait " . implode( ' ', $os_image );
                         sendudptext( $cmd );
                         sendudpmsg( "Removing successfully booted virtual cluster nodes" );
                         sendudptext( `$cmd 2>&1` );
@@ -208,7 +203,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
                 #}
                 # strange xxlarge's sometimes get 2 ip's
                 array_pop( $nets );
-                $ip[ $v ] = preg_replace( '/^.*=/', '', array_pop( $nets ) );
+                $os_ip[ $v ] = preg_replace( '/^.*=/', '', array_pop( $nets ) );
             }
 
             if ( $status &&
@@ -223,8 +218,8 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
 
     sendudpmsg( "Nodes all active, waiting for ssh to open" );
     sendudptext( "all active\n" );
-    foreach ( $image as $v ) {
-        sendudptext( "$v $ip[$v]\n" );
+    foreach ( $os_image as $v ) {
+        sendudptext( "$v $os_ip[$v]\n" );
     }
 
     # -------------------- wait for ssh to open--------------------
@@ -233,26 +228,26 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
 
     do {
         $any_notopen = false;
-        foreach ( $image as $v ) {
+        foreach ( $os_image as $v ) {
             if ( array_key_exists( $v, $issshopen ) ) {
                 continue;
             }
-            if ( !isset( $ip[$v] ) ) {
+            if ( !isset( $os_ip[$v] ) ) {
                 sendudptext( "error: $v has no ip address defined\n" );
                 exit(-1);
             }
-            sendudptext("checking for ssh $v $ip[$v]\n" );
+            sendudptext("checking for ssh $v $os_ip[$v]\n" );
 
             ob_start();
-            if ( $fp = fsockopen( $ip[$v], 22, $errno, $errstr, 10 ) ) {
+            if ( $fp = fsockopen( $os_ip[$v], 22, $errno, $errstr, 10 ) ) {
                 ob_end_clean();
                 $issshopen[ $v ] = 1;
-                sendudptext( "$ip[$v] is open\n" );
+                sendudptext( "$os_ip[$v] is open\n" );
                 fclose( $fp );                
             } else {
                 ob_end_clean();
                 $any_notopen = true;
-                sendudptext( "$ip[$v] ssh not open\n" );
+                sendudptext( "$os_ip[$v] ssh not open\n" );
             }
         }
         sleep( 5 );
@@ -263,8 +258,8 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
     # -------------------- run postssh if present --------------------
 
     if ( isset( $appjson->resources->oscluster->properties->postssh ) ) {
-        foreach ( $image as $v ) {
-            $cmd = "ssh -i $os_sshidentity -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $os_sshadmin@$ip[$v] -C '" . $appjson->resources->oscluster->properties->postssh . "'";
+        foreach ( $os_image as $v ) {
+            $cmd = "ssh -i $os_sshidentity -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $os_sshadmin@$os_ip[$v] -C '" . $appjson->resources->oscluster->properties->postssh . "'";
             `$cmd 2>&1 > /dev/null`;
         }
     }
@@ -276,28 +271,30 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
     ## need to postssh and/or other ssh setup working
     do {
         $any_notready = false;
-        foreach ( $image as $v ) {
+        foreach ( $os_image as $v ) {
             if ( array_key_exists( $v, $ready ) ) {
                 continue;
             }
-            if ( !isset( $ip[$v] ) ) {
+            if ( !isset( $os_ip[$v] ) ) {
                 sendudptext( "error: $v has no ip address defined\n" );
                 exit(-1);
             }
-            sendudptext("checking for ready $v $ip[$v]\n" );
+            sendudptext("checking for ready $v $os_ip[$v]\n" );
 
             ob_start();
 
-            $cmd = "ssh -i $os_sshidentity -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $os_sshadmin@$ip[$v] 'ls /tmp/ready'";
+            $cmd = "ssh -i $os_sshidentity -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $os_sshadmin@$os_ip[$v] 'ls /tmp/ready'";
 
             $res = `$cmd 2>&1`;
 
+            ob_end_clean();
+            
             if ( preg_match( '/^\/tmp\/ready$/m', $res ) ) {
                 $ready[ $v ] = 1;
-                sendudptext( "$ip[$v] is ready\n" );
+                sendudptext( "$os_ip[$v] is ready\n" );
             } else {
                 $any_notready = true;
-                sendudptext( "$ip[$v] is not ready\n" );
+                sendudptext( "$os_ip[$v] is not ready\n" );
             }
         }
         sleep( 5 );
@@ -305,8 +302,8 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
     
     sendudpmsg( "Nodes all active and ready" );
 
-    foreach ( $image as $v ) {
-        sendudptext( "$v $ip[$v]\n" );
+    foreach ( $os_image as $v ) {
+        sendudptext( "$v $os_ip[$v]\n" );
     }
-    return '{"clusterips":["' . implode( '","', $ip ) . '"]}';
+    return '{"clusterips":["' . implode( '","', $os_ip ) . '"]}';
 }
