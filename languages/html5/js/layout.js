@@ -216,7 +216,7 @@ $("#${module}_b_reset_button" ).click(function(){
     if ( !ga.layout.fields[ `${module}_output_textarea` ] ) {
         ga.layout.fields[ `${module}_output_textarea` ] = {};
         ga.layout.fields[ `${module}_output_textarea` ].lhtml = '';
-        ga.layout.fields[ `${module}_output_textarea` ].dhtml = `<textarea class="ga-field-output-control" readonly hidden id="${module}_output_textarea"></textarea>`;
+        ga.layout.fields[ `${module}_output_textarea` ].dhtml = `<textarea class="ga-field-output-control ga-field-output-textarea" readonly hidden id="${module}_output_textarea"></textarea>`;
         ga.layout.fields[ `${module}_output_textarea` ].eval = '';
     }
 

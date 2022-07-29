@@ -458,3 +458,8 @@ font-size: 2em;
 .ga-field-input-control.ga-highlight {
     color: rgb( 0, 0, 0 );
 }
+
+.ga-field-output-control.ga-field-output-textarea {
+    font-family: monospace;
+    font-size: 0.75em;
+}
