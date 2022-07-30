@@ -76,6 +76,19 @@ if ( FALSE === ( $cmd = file_get_contents( "${logdir}_cmds_$id" ) ) )
 
 __~debug:runjob{error_log( "jobrun 5\n", 3, "/tmp/php_errors" );}
 $json = json_decode( file_get_contents( "__appconfig__" ) );
+
+if ( isset( $json->messaging ) &&
+     isset( $json->messaging->udphostip ) &&
+     isset( $json->messaging->udpport ) ) {
+    $GLOBALS['udp'] = new stdClass();
+    $GLOBALS['udp']->hostip = $json->messaging->udphostip;
+    $GLOBALS['udp']->port   = $json->messaging->udpport;
+    $GLOBALS['udp']->socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+    $GLOBALS['udp']->msg    = Array( "_uuid"    => $id );
+}
+
+sendudptext( "jobrun: start\n" );
+
 __~debug:runjob{error_log( "jobrun 6\n", 3, "/tmp/php_errors" );}
 $context = new ZMQContext();
 __~debug:runjob{error_log( "jobrun 7\n", 3, "/tmp/php_errors" );}
@@ -92,26 +105,63 @@ __~debug:runjob{error_log( "jobrun 11\n", 3, "/tmp/php_errors" );}
 logrunning();
 __~debug:runjob{error_log( "jobrun 12\n", 3, "/tmp/php_errors" );}
 
+sendudptext( "jobrun: exec:\n$cmd\n" );
+
 $results = exec( $cmd );
 
-__~debug:runjob{error_log( "jobrun 13\n", 3, "/tmp/php_errors" );}
-//__~debug:cancel{error_log( "jobrun.php: return from exec(cmd)\n", 3, "/tmp/mylog" );}
-logjobupdate( "finished", true );
-__~debug:runjob{error_log( "jobrun 14\n", 3, "/tmp/php_errors" );}
-logstoprunning();
-__~debug:runjob{error_log( "jobrun 15\n", 3, "/tmp/php_errors" );}
+sendudptext( "jobrun: exec: returned\n" );
 
-__~seedmelab:url{$seedmecmd="php __docroot:html5__/__application__/seedmelab/syncfilesdirs.php --user " . $GLOBALS['logon']; exec("$seedmecmd >> /tmp/php_errors 2>&1 & echo $!; " );}
+__~debug:runjob{error_log( "jobrun 13\n", 3, "/tmp/php_errors" );}
 
 if ( !$GLOBALS[ 'wascancelled' ] ) {
     $results = str_replace( "__docroot:html5__/__application__/", "", $results );
 
+    sendudptext( "jobrun: writing log file\n" );
     ob_start();
     if ( FALSE === file_put_contents( "${logdir}_stdout_" . $_REQUEST[ '_uuid' ], $results ) ) {
         $cont = ob_get_contents();
         error_log( date( "Y M d H:i:s T", time() ) . " : " .  $argv[ 0 ] . " : error writing _stdout results\n", 3, "/tmp/php_errors" );
     }
     ob_end_clean();
+    sendudptext( "jobrun: exec done, logfile: ${logdir}_stdout_" . $_REQUEST[ '_uuid' ] . "\n" );
+
+#-------- verify log exists
+    $stdoutfile = "${logdir}_stdout_" . $_REQUEST[ '_uuid' ];
+    if ( !is_file( $stdoutfile ) || FALSE === ( $strresults = file_get_contents( $stdoutfile ) ) ) {
+        sendudptext("Waiting for results to propagate to $stdoutfile\n" );
+        ob_start();
+        sendudptext(`ls -l $stdoutfile 2>&1`);
+        ob_end_clean();
+        
+        for ( $i = 0; $i < 20; ++$i ) {
+            if ( !is_file( $stdoutfile ) || FALSE === ( $strresults = file_get_contents( $stdoutfile ) ) ) {
+                sendudptext("Trying again for results to propagate to $stdoutfile\n" );
+                ob_start();
+                sendudptext(`ls -l $stdoutfile 2>&1`);
+                ob_end_clean();
+                sleep( 5 );
+            }      
+        }        
+
+        if ( !is_file( $stdoutfile ) || FALSE === ( $strresults = file_get_contents( $stdoutfile ) ) ) {
+            sendudptext("Warning : no results appear to be propagated to $stdoutfile\n" );
+        }
+    }
+
+    sendudptext( "jobrun: exec done, logfile found\n" );
+}
+
+//__~debug:cancel{error_log( "jobrun.php: return from exec(cmd)\n", 3, "/tmp/mylog" );}
+sendudptext( "jobrun: logjobupdate called\n" );
+logjobupdate( "finished", true );
+__~debug:runjob{error_log( "jobrun 14\n", 3, "/tmp/php_errors" );}
+sendudptext( "jobrun: logstoprunning called\n" );
+logstoprunning();
+__~debug:runjob{error_log( "jobrun 15\n", 3, "/tmp/php_errors" );}
+
+__~seedmelab:url{$seedmecmd="php __docroot:html5__/__application__/seedmelab/syncfilesdirs.php --user " . $GLOBALS['logon']; exec("$seedmecmd >> /tmp/php_errors 2>&1 & echo $!; " );}
+
+if ( !$GLOBALS[ 'wascancelled' ] ) {
     notify( 'finished' );
 } else {
     notify( 'canceled' );
@@ -171,3 +221,23 @@ function notify( $type ) {
         }
     }
 }
+
+function sendudptext( $text ) {
+    __!debug:jobrunudp{return;}
+
+    if ( !isset( $GLOBALS['udp'] ) ) {
+        return;
+    }
+
+    $GLOBALS['udp']->msg[ '_textarea' ] = $text;
+
+    $json_msg = json_encode( $GLOBALS[ 'udp' ]->msg );
+
+    socket_sendto( $GLOBALS[ 'udp' ]->socket,
+                   $json_msg,
+                   strlen( $json_msg ),
+                   0,
+                   $GLOBALS[ 'udp' ]->hostip,
+                   $GLOBALS[ 'udp' ]->port );
+}    
+
