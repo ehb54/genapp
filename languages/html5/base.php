@@ -108,6 +108,7 @@ if ( !isset( $uniquedir ) &&
         strlen( $_REQUEST[ '_project' ] ) > 1 )
    {
       $dir .= $_REQUEST[ '_project' ];
+      __~addproject{addproject( $_REQUEST[ '_project' ] );}
    } else {
       $dir .= 'no_project_specified';
    }

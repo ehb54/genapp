@@ -282,9 +282,9 @@ function getmenumodule( $jobid,  $error_json_exit = false )
        return false;
    }      
 
-   // reset user to check if cached module & has permissions ?
+   ## reset user to check if cached module & has permissions ?
 
-   // if ( $doc = ga_db_output( ga_db_findOne( 'jobs', '', [ "_id" => $jobid, "user" => $GLOBALS[ 'logon' ] ], [], $error_json_exit ) ) ) {
+   ## if ( $doc = ga_db_output( ga_db_findOne( 'jobs', '', [ "_id" => $jobid, "user" => $GLOBALS[ 'logon' ] ], [], $error_json_exit ) ) ) {
    if ( $doc = ga_db_output(
             ga_db_findOne(
                 'jobs',
@@ -499,7 +499,7 @@ function cached_progress( $jobid,  $error_json_exit = false )
    return false;
 }
 
-// take an array of files and extract the project directories
+## take an array of files and extract the project directories
 function get_projects( $files, $error_json_exit = false )
 {
     $uniq = array_flip( preg_replace( '/\/.*/', '', $files ) );
@@ -775,9 +775,9 @@ function jobcancel( $jobs, $error_json_exit = false, $is_admin = false ) {
 
     $context = new ZMQContext();
     $zmq_socket = $context->getSocket(ZMQ::SOCKET_PUSH, '__application__ udp pusher');
-    $zmq_socket->connect("tcp://" . $appjsona['messaging']['zmqhostip'] . ":" . $appjsona['messaging']['zmqport'] );
+    $zmq_socket->connect("tcp:##" . $appjsona['messaging']['zmqhostip'] . ":" . $appjsona['messaging']['zmqport'] );
 
-    // $udp_socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+    ## $udp_socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
 
     $runs =
         ga_db_output( 
@@ -838,8 +838,8 @@ function jobcancel( $jobs, $error_json_exit = false, $is_admin = false ) {
        }
        unset( $fjobs[ $uuid ] );
        $kjobs[ $uuid ] = true;
-       // send messages also if running about "cancelled"
-       // also manually clear job locks and push update to jobs as in jobrun.php
+       ## send messages also if running about "cancelled"
+       ## also manually clear job locks and push update to jobs as in jobrun.php
 
        if ( !logjobupdate( "cancelled", true, $error_json_exit, $uuid ) ) {
            __~debug:cancel{error_log( "jobcancel() $uuid logjobupdate error $ga_db_errors\n", 3, "/tmp/mylog" );}
@@ -851,7 +851,7 @@ function jobcancel( $jobs, $error_json_exit = false, $is_admin = false ) {
        $cancel_notice = "This job has been cancelled by " . ( $is_admin ? "administrator" : "user" ) . " request";
 
        if ( isset( $v[ 'resource' ] ) ) {
-           if ( $v[ 'resource' ] == "openstack" &&
+           if ( $v[ 'resource' ] == "oscluster" &&
                 isset( $v[ 'nodes' ] ) ) {
                require_once "__docroot:html5__/__application__/openstack/os_delete.php";
                os_delete( $v[ 'nodes' ], $uuid, isset( $xsedeproject ) ? $xsedeproject : $project, true );
@@ -873,11 +873,11 @@ function jobcancel( $jobs, $error_json_exit = false, $is_admin = false ) {
                                                   "_status" => "cancelled" ) ) );
        }
 
-       // $jsonmsg = json_encode( array( "_uuid" => $uuid,
-       //                               "Notice" => $cancel_notice,
-       //                               "_status" => "cancelled" ) );
+       ## $jsonmsg = json_encode( array( "_uuid" => $uuid,
+       ##                               "Notice" => $cancel_notice,
+       ##                               "_status" => "cancelled" ) );
        
-       // socket_sendto( $udp_socket, $jsonmsg, strlen( $jsonmsg ), 0, $appjsona['messaging'][ 'udphostip' ], $appjsona['messaging']['udpport'] );
+       ## socket_sendto( $udp_socket, $jsonmsg, strlen( $jsonmsg ), 0, $appjsona['messaging'][ 'udphostip' ], $appjsona['messaging']['udpport'] );
 
        if ( getprojectdir( $uuid ) ) {
            $projectdirs[ $GLOBALS[ 'getprojectdir' ] ] = true;
@@ -914,7 +914,7 @@ function jobcancel( $jobs, $error_json_exit = false, $is_admin = false ) {
         }
     }   
 
-    // cancel anyway
+    ## cancel anyway
     foreach ( $fjobs as $k => $v ) {
         $uuid = $k;
         __~debug:cancel{error_log( "jobcancel() try for $uuid\n", 3, "/tmp/mylog" );}
@@ -933,3 +933,89 @@ function jobcancel( $jobs, $error_json_exit = false, $is_admin = false ) {
     $GLOBALS[ 'lastnotice' ] = $msgs;
     return true;
 }
+
+## add a project if it doesn't exist
+## returns true of project exists or is added, false on add error
+
+function addproject( $project, $desc = "system generated", $error_json_exit = false ) {
+    
+    global $ga_db_errors;
+
+    if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
+        return false;
+    }      
+
+    if ( $doc =
+         ga_db_output(
+             ga_db_findOne( 
+                 'users',
+                 '',
+                 [ "name" => $GLOBALS[ 'logon' ] ],
+                 [],
+                 $error_json_exit
+             )
+         )
+        ) {
+        if ( !preg_match( '/^[a-zA-Z0-9_]+$/', $project ) ) {
+            if ( $error_json_exit ) {
+                $results[ 'error' ]   = "Invalid new project name.  It must contain only letters, numbers and underscores";
+                $results[ '_status' ] = 'complete';
+                echo (json_encode($results));
+                exit();
+            }
+            return false;
+        } else {
+            # check for duplicate
+            $addok = 1;
+            if ( isset( $doc[ 'project' ] ) ) {
+                foreach ( $doc[ 'project' ] as $v ) {
+                    foreach ( $v as $k2 => $v2 ) {
+                        if ( $k2 == $project ) {
+                            $addok = 0;
+                            break;
+                        }
+                    }
+                    if ( !$addok ) {
+                        break;
+                    }
+                }
+            }
+
+            ## do we need to set the session project?, e.g.:
+            ## $_SESSION[ $window ][ 'project' ] = $project,
+
+            if ( !$addok ) {
+                return true; ## already exists
+            } else {
+                if ( !ga_db_status( 
+                          ga_db_update(
+                              'users',
+                              '',
+                              [ "name" => $GLOBALS['logon'] ],
+                              [ '$push' =>
+                                [ 'project' =>
+                                  [ $project => 
+                                    [
+                                     'desc'    => $desc,
+                                     'created' => ga_db_output( ga_db_date() )
+                                    ]
+                                  ]
+                                ]
+                              ]
+                          )
+                     )
+                    ) {
+                    if ( $error_json_exit ) {
+                        $results[ 'error' ]   = $ga_db_errors;
+                        $results[ '_status' ] = 'complete';
+                        echo (json_encode($results));
+                        exit();
+                    }
+                }
+                return true;
+            }
+        }
+    }
+    return false;
+}
+    
