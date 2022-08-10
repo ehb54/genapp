@@ -1252,6 +1252,17 @@ sub check_files {
         {
             my $json = get_file_json_lang_specific( $f, $l, 1 );
             print "checking " . ( $l ? "for language $l " : "" ) . "module file $get_file_json_last\n";
+
+            # check moduleid matches name
+            {
+                my $name = $get_file_json_last;
+                $name =~ s/^.*\///g;
+                $name =~ s/\.json$//;
+                if ( $$json{moduleid} ne $name ) {
+                    $error .= "module file $get_file_json_last : moduleid value must be '$name', but is '$$json{moduleid}'\n";
+                }
+            }
+                
             
             # check types for valid registry
             {
