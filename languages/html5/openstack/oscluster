@@ -112,6 +112,32 @@ if ($argc == 3) {
     }
 
     jsondump( '$json_decoded', $json_decoded );
+
+    ## new case, no numproc, only os_flavor set
+    ## --> determine values from appconfig, nodes == 1
+
+    if ( !isset( $json_decoded->numproc )
+         && isset( $json_decoded->os_flavor )
+         && !isset( $json_decoded->os_ppn )
+         && !isset( $json_decoded->os_nodes )
+        ) {
+        if ( !isset( $appjson->resources )
+             || !isset( $appjson->resources->oscluster )
+             || !isset( $appjson->resources->oscluster->properties )
+             || !isset( $appjson->resources->oscluster->properties->flavors ) ) {
+            echo '{"error":"Internal error: <i>appconfig.json</i> missing <i>resources:oscluster:properties:flavors</i>"}';
+            exit;
+        }
+        $modified_os_flavor = str_replace( "_", ".", $json_decoded->os_flavor );
+        if ( !array_key_exists( $modified_os_flavor, $appjson->resources->oscluster->properties->flavors ) ) {
+            echo '{"error":"Internal error: flavor ' . $modified_os_flavor . ' missing from resources:oscluster:properties:flavors"}';
+            exit;
+        }
+        $json_decoded->numproc  = $appjson->resources->oscluster->properties->flavors->{ $modified_os_flavor };
+        $json_decoded->os_ppn   = $json_decoded->numproc;
+        $json_decoded->os_nodes = 1;
+    }
+
     if ( !isset( $json_decoded->numproc ) || empty( $json_decoded->numproc ) ) {
         echo '{"error":"Number of processors not defined."}';
         exit;
