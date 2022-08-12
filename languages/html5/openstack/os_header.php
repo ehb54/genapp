@@ -8,8 +8,7 @@ if ( !isset( $appconfig ) ) {
 
 if ( !isset( $appjson ) ) {
     if ( NULL == ( $appjson = json_decode( file_get_contents( $appconfig ) ) ) ) {
-        echo '{"error":"appconfig could not be decoded"}';
-        exit;
+        error_exit( "appconfig could not be decoded" );
     }
 }
 
@@ -18,60 +17,51 @@ if ( !isset( $secretsfile ) ) {
 }
 
 if ( !$appjson->resources ) {
-    echo '{"error":"resources not defined in appconfig"}';
-    exit;
+    error_exit( "resources not defined in appconfig" );
 }
 
 if ( !$appjson->resources->oscluster ) {
-    echo '{"error":"resources:oscluster not defined in appconfig"}';
-    exit;
+    error_exit( "resources:oscluster not defined in appconfig" );
 }
    
 if ( !$appjson->resources->oscluster->properties ) {
-    echo '"error":"resources:oscluster:properties not defined in appconfig"}';
-    exit;
+    error_exit( "resources:oscluster:properties not defined in appconfig" );
 }
 
 if ( !isset( $secrets ) ) {
     if ( NULL == ( $secrets = json_decode( file_get_contents( $secretsfile ) ) ) ) {
-        echo '{"error":"secrets could not be decoded"}';
-        exit;
+        error_exit( "secrets could not be decoded" );
     }
 }
 
 ## -------------------- set up OS env --------------------
 
 if ( !isset( $appjson->resources->oscluster->properties->region_name ) ) {
-    echo '{"error":"resources:oscluster:properties:region_name not defined in appconfig"}';
-    exit;
+    error_exit( "resources:oscluster:properties:region_name not defined in appconfig" );
 }
 
 putenv( "OS_REGION_NAME=" . $appjson->resources->oscluster->properties->region_name );
 
 if ( !isset( $appjson->resources->oscluster->properties->api_version ) ) {
-    echo '{"error::"resources:oscluster:properties:api_version not defined in appconfig"}';
-    exit;
+    error_exit( "resources:oscluster:properties:api_version not defined in appconfig" );
 }
 
 putenv( "OS_IDENTITY_API_VERSION=" . $appjson->resources->oscluster->properties->api_version );
 
 if ( !isset( $appjson->resources->oscluster->properties->auth_url ) ) {
-    echo '{"error":"resources:oscluster:properties:auth_url not defined in appconfig"}';
-    exit;
+    error_exit( "resources:oscluster:properties:auth_url not defined in appconfig" );
 }
 
 putenv( "OS_AUTH_URL=" . $appjson->resources->oscluster->properties->auth_url );
 
 if ( !isset( $appjson->resources->oscluster->properties->auth_type ) ) {
-    echo '{"error:"resources:oscluster:properties:auth_type not defined in appconfig"}';
-    exit;
+    error_exit( "resources:oscluster:properties:auth_type not defined in appconfig" );
 }
 
 putenv( "OS_AUTH_TYPE=" . $appjson->resources->oscluster->properties->auth_type );
 
 if ( !isset( $appjson->resources->oscluster->properties->interface ) ) {
-    echo '{"error":"resources:oscluster:properties:interface not defined in appconfig"}';
-    exit;
+    error_exit( "resources:oscluster:properties:interface not defined in appconfig" );
 }
 
 putenv( "OS_INTERFACE=" . $appjson->resources->oscluster->properties->interface );
@@ -81,22 +71,19 @@ if ( isset( $appjson->resources->oscluster->properties->project ) ) {
 }
 
 if ( !isset( $appjson->resources->oscluster->properties->sshuser ) ) {
-    echo "error: resources:oscluster:properties:sshuser not defined in appconfig\n";
-    exit;
+    error_exit( "resources:oscluster:properties:sshuser not defined in appconfig" );
 }
 
 $os_sshuser = $appjson->resources->oscluster->properties->sshuser;
 
 if ( !isset( $appjson->resources->oscluster->properties->sshadmin ) ) {
-    echo "error: resources:oscluster:properties:sshadmin not defined in appconfig\n";
-    exit;
+    error_exit( "resources:oscluster:properties:sshadmin not defined in appconfig" );
 }
 
 $os_sshadmin = $appjson->resources->oscluster->properties->sshadmin;
 
 if ( !isset( $appjson->resources->oscluster->properties->sshidentity ) ) {
-    echo "error: resources:oscluster:properties:sshidentity not defined in appconfig\n";
-    exit;
+    error_exit( "resources:oscluster:properties:sshidentity not defined in appconfig" );
 }
 
 $os_sshidentity = $appjson->resources->oscluster->properties->sshidentity;
@@ -111,23 +98,19 @@ function project_putenv( $project ) {
     if ( !isset( $secrets ) ||
          !isset( $secrets->openstack ) ||
          !isset( $secrets->openstack->projects ) ) {
-        echo '{"error":"no secrets->openstack->projects defined in secrets"}';
-        exit;
+        error_exit( "no secrets->openstack->projects defined in secrets" );
     }
     
     if ( !isset( $secrets->openstack->projects->{$project} ) ) {
-        echo '{"error":"project missing from secrets secrets:openstack:projects:$project $secretfile"}';
-        exit;
+        error_exit( "project missing from secrets secrets:openstack:projects:$project $secretfile" );
     }
 
     if ( !isset( $secrets->openstack->projects->{$project}->id ) ) {
-        echo '{"error":"project id missing from secrets secrets:openstack:projects:project:id $secretfile"}';
-        exit;
+        error_exit( "project id missing from secrets secrets:openstack:projects:project:id $secretfile" );
     }
 
     if ( !isset( $secrets->openstack->projects->{$project}->secret ) ) {
-        echo '{"error":"project secret missing from secrets secrets:openstack:projects:$project:secret $secretfile"}';
-        exit;
+        error_exit( "project secret missing from secrets secrets:openstack:projects:$project:secret $secretfile" );
     }
 
     putenv( "OS_APPLICATION_CREDENTIAL_ID=" . $secrets->openstack->projects->{$project}->id );

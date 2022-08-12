@@ -24,8 +24,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
         $project = $use_project;
     } else {
         if ( !isset( $appjson->resources->oscluster->properties->project ) ) {
-            echo '{"error":"resources:oscluster:properties:project not defined in appconfig"}';
-            exit;
+            error_exit( "resources:oscluster:properties:project not defined in appconfig" );
         }
         
         $project = $appjson->resources->oscluster->properties->project;
@@ -37,30 +36,26 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
         $flavor = $use_flavor;
     } else {
         if ( !isset( $appjson->resources->oscluster->properties->flavor ) ) {
-            echo '{"error":"resources:oscluster:properties:flavor not defined in appconfig"}';
-            exit;
+            error_exit( "resources:oscluster:properties:flavor not defined in appconfig" );
         }
 
         $flavor = $appjson->resources->oscluster->properties->flavor;
     }
 
     if ( !isset( $appjson->resources->oscluster->properties->baseimage ) ) {
-        echo '{"error":"resources:oscluster:properties:baseimage not defined in appconfig"}';
-        exit;
+        error_exit( "resources:oscluster:properties:baseimage not defined in appconfig" );
     }
 
     $baseimage = $appjson->resources->oscluster->properties->baseimage;
 
     if ( !isset( $appjson->resources->oscluster->properties->key ) ) {
-        echo '{"error":"resources:oscluster:properties:key not defined in appconfig"}';
-        exit;
+        error_exit( "resources:oscluster:properties:key not defined in appconfig" );
     }
 
     $key = $appjson->resources->oscluster->properties->key;
 
     if ( !isset( $appjson->resources->oscluster->properties->secgroup ) ) {
-        echo '{"error":"resources:oscluster:properties:secgroup not defined in appconfig"}';
-        exit;
+        error_exit( "resources:oscluster:properties:secgroup not defined in appconfig" );
     }
 
     $secgroup = $appjson->resources->oscluster->properties->secgroup;
@@ -82,8 +77,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
 #    }
 
     if ( !isset( $appjson->resources->oscluster->properties->network ) ) {
-        echo '{"error":"resources:oscluster:properties:network not defined in appconfig"}';
-        exit;
+        error_exit( "resources:oscluster:properties:network not defined in appconfig" );
     }
 
     $use_network = $appjson->resources->oscluster->properties->network;
@@ -104,16 +98,15 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
             "${project}-run-" . $uuid . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
         ##        "-run-" . bin2hex( openssl_random_pseudo_bytes ( 16, $cstrong ) );
 
-        ## $cmd = "nova boot $name --flavor $flavor --image $baseimage --key-name $key --security-groups $secgroup --nic net-name=$use_network $userdata";
         $cmd = "openstack server create $name --flavor $flavor --image $baseimage --key-name $key --security-group $secgroup --network $use_network $userdata";
         sendudptext( "$cmd\n" );
-        $results = `$cmd 2>&1`;
-        sendudptext( $results . "\n" );
-        $results_array = preg_split( '/\n/m', $results );
+        exec( "$cmd 2>&1", $results_array, $cmd_exitCode );
+        sendudptext( implode( "\n", $results_array ) . "\n" );
         $results_error = preg_grep( '/ERROR/', $results_array );
 
-        if ( count( $results_error ) ) {
+        if ( count( $results_error ) || $cmd_exitCode ) {
             sendudpmsg( "Errors found when trying to boot a virtual cluster node" );
+            $create_cmd = $cmd;
             $cmd = "";
             if ( count( $os_image ) ) {
                 $cmd = "openstack server delete --wait " . implode( ' ', $os_image );
@@ -122,11 +115,10 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
                 sendudptext( `$cmd 2>&1` );
             }
             sendudpmsg( "Errors found when trying to boot a virtual cluster node" );
-            echo '{"error":"OpenStack:' . implode( "<p>OpenStack:", $results_error ) . '"}';
             if ( isset( $tempfile ) ) {
                 unlink( $tempfile );
             }
-            exit;
+            error_exit( "Errors found when trying to boot a virtual cluster node.", "command:\n$create_cmd\nreturned:\n" .  implode( "\n", $results_array ) );
         }        
 
         $os_image[] = $name;
@@ -165,8 +157,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
                     sendudptext( `$cmd 2>&1` );
                 }
                 sendudpmsg( "Errors found when trying to boot a virtual cluster node" );
-                echo '{"error":"OpenStack: exactly one status not returned for image ' . $v . '"}';
-                exit;
+                error_exit( "OpenStack: exactly one status not returned for image ' . $v . '" );
             }
 
             $this_status_array = preg_split( '/\s+/', $status[ 0 ] );
@@ -187,8 +178,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
                         sendudptext( `$cmd 2>&1` );
                     }
                     sendudpmsg( "Errors found when trying to boot a virtual cluster node" );
-                    echo '{"error":"OpenStack: unknown status ' . $this_status . ' received for image ' . $v . '"}';
-                    exit;
+                    error_exit( "OpenStack: unknown status ' . $this_status . ' received for image ' . $v . '" );
                 }
             }
 
@@ -269,8 +259,13 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
     $ready = [];
 
     ## need to postssh and/or other ssh setup working
+    $os_ready_sleep_seconds = 5;
+    $os_ready_max_wait      = 60;
+    $os_ready_time_waiting  = 0;
+    $os_ready_ssh_timeout   = 3;
+    $any_notready = false;
+
     do {
-        $any_notready = false;
         foreach ( $os_image as $v ) {
             if ( array_key_exists( $v, $ready ) ) {
                 continue;
@@ -279,11 +274,11 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
                 sendudptext( "error: $v has no ip address defined\n" );
                 exit(-1);
             }
-            sendudptext("checking for ready $v $os_ip[$v]\n" );
+            sendudptext("checking for ready $v $os_ip[$v] time waiting ${os_ready_time_waiting}s\n" );
 
             ob_start();
 
-            $cmd = "ssh -i $os_sshidentity -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $os_sshadmin@$os_ip[$v] 'ls /tmp/ready'";
+            $cmd = "timeout $os_ready_ssh_timeout ssh -i $os_sshidentity -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $os_sshadmin@$os_ip[$v] 'ls /tmp/ready'";
 
             $res = `$cmd 2>&1`;
 
@@ -297,8 +292,25 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
                 sendudptext( "$os_ip[$v] is not ready\n" );
             }
         }
-        sleep( 5 );
-    } while( $any_notready );
+        sleep( $os_ready_sleep_seconds );
+        $os_ready_time_waiting += $os_ready_sleep_seconds;
+    } while( $any_notready && $os_ready_time_waiting < $os_ready_max_wait );
+
+    if ( $any_notready ) {
+        $cmd = "";
+        sendudpmsg( "Timeout while waiting for nodes to go ready, removing virtual cluster nodes" );
+        if ( count( $os_image ) ) {
+            $cmd = "openstack server delete --wait " . implode( ' ', $os_image );
+            sendudptext( $cmd );
+            sendudpmsg( "Removing successfully booted virtual cluster nodes" );
+            sendudptext( `$cmd 2>&1` );
+        }
+        sendudpmsg( "Timeout while waiting for nodes to go ready" );
+        if ( isset( $tempfile ) ) {
+            unlink( $tempfile );
+        }
+        error_exit( "Timeout while waiting for nodes to go ready. Please try again in a short while." ); 
+    }       
     
     sendudpmsg( "Nodes all active and ready" );
 

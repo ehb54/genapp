@@ -43,6 +43,26 @@ function echo_if_debug( $str ) {
     }
 }
 
+function error_exit( $brief, $details = "" ) {
+    $output =
+        [
+         "error" => "OpenStack ERROR: $brief\n"
+         ,"_textarea" =>
+         "OpenStack ERROR:\n$brief\n"
+         . ( strlen( $details ) ? "\nERROR details:\n-----\n$details\n-----\n" : "" )
+         . "If this problem persists, please contact the administrators via the Feedback tab"
+         . ( strlen( $details ) ? " and include the ERROR details above.\n" : ".\n" )
+         ,"_message"  => [
+             "icon" => "toast.png"
+             ,"text" => "OpenStack ERROR: $brief<br>If this problem persists, please contact the administrators via the Feedback tab"
+         ]
+        ]
+        ;
+
+    echo json_encode( $output );
+    exit;
+}
+
 function sendudpmsg( $status ) {
     global $debug;
     if ( $debug ) {
