@@ -86,9 +86,40 @@ if ( !sizeof( $_REQUEST ) ) {
 
 ## validate / is hook defined etc
 
+function error_exit( $msg ) {
+    global $results;
+    $results['error'] = $msg;
+    echo (json_encode($results));
+    exit();
+}    
+
+
+if ( !isset( $_REQUEST['hook'] ) ) {
+    error_exit( "Internal error: \$_REQUEST input JSON contained no key 'hook'" );;
+}    
+
 ## if all ok, assemble json & change to project directory && call defaults handler
 
-$results['error'] = "testing get_defaults";
+$hookexe = "__executable_path:html5__/" . $_REQUEST['hook'];
+
+if ( !file_exists( $hookexe ) ) {
+    error_exit( "defaults executable $hookexe not found" );
+}
+
+if ( !is_executable( $hookexe ) ) {
+    error_exit( "defaults executable $hookexe is not set to be executable" );
+}
+
+## temporary file with input object
+## run executable
+
+## retrieve results
+## rm temp file
+
+## return results
+
+# $results['error'] = "testing get_defaults";
+$results['textfield'] = "new value";
 
 __~debug:getdefaults{error_log( "get_defaults: request\n" . print_r( $_REQUEST, true ) . "\n", 3, "/tmp/mylog.get_defaults" );}
 __~debug:getdefaults{error_log( "get_defaults: results\n" . print_r( $results, true ) . "\n", 3, "/tmp/mylog.get_defaults" );}
