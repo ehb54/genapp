@@ -93,7 +93,6 @@ function error_exit( $msg ) {
     exit();
 }    
 
-
 if ( !isset( $_REQUEST['hook'] ) ) {
     error_exit( "Internal error: \$_REQUEST input JSON contained no key 'hook'" );;
 }    
@@ -110,19 +109,75 @@ if ( !is_executable( $hookexe ) ) {
     error_exit( "defaults executable $hookexe is not set to be executable" );
 }
 
+if ( !strlen( $_SESSION[ $window ][ 'logon' ] ) ) {
+    error_exit( "You must be logged on to utilize this feature" );
+}
+
+## setup for running code
+
+if ( !isset( $_REQUEST[ '_project' ] ) ) {
+    error_exit( "No project specified" );
+}
+
+$dir = "__docroot:html5__/__application__/results/users/" . $_SESSION[ $window ][ 'logon' ];
+
+$project = $_REQUEST[ '_project' ];
+
+if ( !isset( $_REQUEST[ '_project' ] ) ) {
+    error_exit( "No project specified" );
+}
+
+if ( !strlen( $project ) ) {
+    $project = "no_project_specified";
+}
+
+if ( !preg_match( '/^[a-zA-Z0-9]+[a-zA-Z0-9_]+$/', $project ) ) {
+    error_exit( "Invalid project specified" );
+}
+
+## setup directory 
+
+$rdir = "$dir/$project";
+if ( !is_dir( $rdir ) ) {
+    ob_start();
+    mkdir( $rdir, 0660, true );
+    ob_end_clean();
+}
+
+if ( !is_dir( $rdir ) ) {
+    error_exit( "Could not create directory" );
+}
+
+chdir( $rdir );
+
 ## temporary file with input object
+
+$tempfile = tempnam( $rdir, "_defaults_tmp_" );
+
+if ( file_put_contents( $tempfile, json_encode( $_REQUEST ) ) === FALSE ) {
+    error_exit( "Internal error: unable to write data" );
+}
+
 ## run executable
 
-## retrieve results
+exec( "$hookexe < $tempfile 2> /dev/null", $hookresults, $status );
+if ( $status ) {
+    error_exit( "default hook " + $_REQUEST['hook'] + " failed" );
+}
+    
 ## rm temp file
+unlink( $tempfile );
 
-## return results
+## retrieve results
 
-# $results['error'] = "testing get_defaults";
-$results['textfield'] = "new value";
+$hookresultsstring    = implode( '', $hookresults );
+if ( NULL === ( $hookresultsjson = json_decode( $hookresultsstring ) ) ) {
+    error_exit( "default hook " + $_REQUEST['hook'] + " returned invalid JSON" );
+}
 
-__~debug:getdefaults{error_log( "get_defaults: request\n" . print_r( $_REQUEST, true ) . "\n", 3, "/tmp/mylog.get_defaults" );}
-__~debug:getdefaults{error_log( "get_defaults: results\n" . print_r( $results, true ) . "\n", 3, "/tmp/mylog.get_defaults" );}
-echo (json_encode($results));
-exit();
+echo json_encode( $hookresultsjson );
+exit;
+    
+
+
 
