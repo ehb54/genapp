@@ -49,7 +49,7 @@ ga.button.process = function( mod, sendobj ) {
 
     __~debug:getdefaults{ga.msg.box( { icon : "information.png",text : "ajax call data:<br><code>" + JSON.stringify( sendobj, null, "&nbsp;" ) + "</code>" } );}
 
-    $.getJSON( "ajax/sys/get_defaults.php", sendobj )
+    $.post( "ajax/sys/get_defaults.php", sendobj )
         .done( ( data ) => {
             __~debug:getdefaults{console.log( "ga.button.click() callback done with data:\n" );}
             __~debug:getdefaults{console.dir( data );}
@@ -64,8 +64,8 @@ ga.button.process = function( mod, sendobj ) {
                 ga.data.update( mod, data, true );
             }
         })
-        .fail( () => {
-            console.error( "ga.button.click() failed\n" );
+        .fail( ( err ) => {
+            console.error( `ga.button.click() failed ${err}\n` );
             ga.msg.box( { icon : "toast.png"
                           ,text : "ajax call to get_defaults.php failed" } );
         })
