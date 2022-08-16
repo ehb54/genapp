@@ -3,6 +3,13 @@
 
 ga.button              = {};
 
+ga.button.cbclick = function( cb, mod, id, hook, file ) {
+    console.log( `ga.button.cbclick( ${mod}, ${id}, ${hook}, ${file} ) cb checked:${cb.checked}` );
+    if ( cb.checked ) {
+        return ga.button.click( mod, id, hook );
+    }
+}
+
 ga.button.click = function( mod, id, hook, file ) {
     console.log( `ga.button.click( ${mod}, ${id}, ${hook}, ${file})` );
 

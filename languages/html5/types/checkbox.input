@@ -11,7 +11,10 @@ ga.tmp.dhtml.checkbox =
   '<input type="checkbox" name="__fields:id__" id="__fields:id__"__~fields:repeater{ data-repeater="checkbox"}__~fields:required{ required}__~fields:checked{ checked} class="ga-field-input-control-off__~fields:help{ help_link}">'
   ;
 ga.tmp.dhtml.switch =
-  '<div class="custom-control custom-switch"><input type="checkbox" name="__fields:id__" id="__fields:id__"__~fields:repeater{ data-repeater="checkbox"}__~fields:required{ required}__~fields:checked{ checked} class="custom-control-input__~fields:help{ help_link}">'
+  '<div class="custom-control custom-switch">'
+  + '<input type="checkbox" name="__fields:id__" id="__fields:id__"__~fields:repeater{ data-repeater="checkbox"}__~fields:required{ required}__~fields:checked{ checked} class="custom-control-input__~fields:help{ help_link}"'
+  __~fields:hook{+ ` onclick='ga.button.cbclick(this, "__moduleid__","__fields:id__","__fields:hook__")')` }
+  + '__~fields:hidden{ hidden}>'
   __~fields:help{+ '<span class="help">__fields:help__</span>'}
   + '<label class="custom-control-label" for="__fields:id__"></label></div>'
   ;
