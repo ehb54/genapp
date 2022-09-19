@@ -10,6 +10,7 @@ ga.layout.fields[ "__fields:id__" ].dhtml =
 ga.layout.fields[ "__fields:id__" ].eval  =
   '$( "#__fields:id__" ).attr( "type", "div" );'
   + 'ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );__~hoverhighlight{$(".ga-g-__moduleid__-__fields:id__").hover(function(){$(".ga-g-__moduleid__-__fields:id__").toggleClass("ga-highlight")});}'
+  + 'ga.value.extra_resets( "__fields:id__" );'
   ;
 
 /* old way
