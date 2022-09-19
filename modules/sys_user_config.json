@@ -19,7 +19,7 @@
                   {
                    "role"     : "input",
                    "id"       : "xsedeproject",
-                   "label"    : "XSEDE project ids",
+                   "label"    : "ACCESS project ids",
                    "type"     : "listbox",
                    "required" : "false",
                    "pull"     : "xsedeproject",
@@ -28,7 +28,7 @@
                   {
                    "role"     : "input",
                    "id"       : "newxsedeproject",
-                   "label"    : "New XSEDE project id",
+                   "label"    : "New ACCESS project id",
                    "type"     : "checkbox",
                    "required" : "false",
                    "repeater" : "true",
@@ -37,7 +37,7 @@
                   {
                    "role"     : "input",
                    "id"       : "newxsedeprojectid",
-                   "label"    : "XSEDE project id",
+                   "label"    : "ACCESS project id",
                    "type"     : "text",
                    "pattern"  : "^[-a-zA-Z0-9]+$",
                    "required" : "true",

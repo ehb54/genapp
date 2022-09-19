@@ -394,7 +394,7 @@ ga.xsede.select = function( defaultresource, cb, form ) {
     if ( !a || !a.length ) {
         ga.msg.box( {
             icon  : "warning.png"
-            ,text  : "No XSEDE projects currently defined.  Create one under the user configuration button at the top right."
+            ,text  : "No ACCESS projects currently defined.  Create one under the user configuration button at the top right."
         });
         return "abort";
     }
@@ -415,9 +415,11 @@ ga.xsede.select = function( defaultresource, cb, form ) {
             data[0]( data[1] );
         }
     } );
-    msg = '<h3>Select an XSEDE project and press submit</h3><form id="xsedeproject"><table>';
+    msg = '<h3>Select an ACCESS project and press submit</h3><form id="xsedeproject"><table>';
     for ( i in a ) {
-        msg += '<tr><td><input type="radio" name="selectxsedeproject" id="xsedeproject_' + i + '" value="' + i + '"' + ( i==0 ? 'checked="checked"' : '' ) + '></td><td class="hoverhighlight" style="text-align:left"><label for="xsedeproject_' + i + '">' +  a[i] + '</label></td></tr>';
+        if ( a.hasOwnProperty( i ) ) {
+            msg += '<tr><td><input type="radio" name="selectxsedeproject" id="xsedeproject_' + i + '" value="' + i + '"' + ( i==0 ? 'checked="checked"' : '' ) + '></td><td class="hoverhighlight" style="text-align:left"><label for="xsedeproject_' + i + '">' +  a[i] + '</label></td></tr>';
+        }
     }
     msg += '</table>';
 

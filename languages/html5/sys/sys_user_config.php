@@ -159,7 +159,7 @@ if ( $doc =
    {
       if ( !preg_match( '/^[-a-zA-Z0-9]+$/', $_REQUEST[ 'newxsedeproject-newxsedeprojectid' ] ) )
       {
-          $results[ "error" ] .= "Invalid new XSEDE project name.  It must contain only letters, numbers and dashes";
+          $results[ "error" ] .= "Invalid new ACCESS project name.  It must contain only letters, numbers and dashes";
       } else {
           # check for duplicate
           $addok = 1;
@@ -178,14 +178,14 @@ if ( $doc =
           }
 
           if ( !$addok ) {
-              $results[ "error" ] .= "XSEDE project id already exists.";
+              $results[ "error" ] .= "ACCESS project id already exists.";
           } else {
               $update[ '$push' ][ 'xsedeproject' ] = array( 
                   $_REQUEST[ 'newxsedeproject-newxsedeprojectid' ] => array( 
                       'created' => $now 
                   ) 
                   );
-              $results[ 'status' ] .= "Adding XSEDE project id " . $_REQUEST[ 'newxsedeproject-newxsedeprojectid' ] . ". ";
+              $results[ 'status' ] .= "Adding ACCESS project id " . $_REQUEST[ 'newxsedeproject-newxsedeprojectid' ] . ". ";
               $do_update = 1;
               $xsedeadd = 1;
           }
