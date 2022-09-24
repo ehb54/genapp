@@ -338,6 +338,9 @@ if ($argc == 3) {
 
     sendudpmsg( "" );
 
+# ---- unlink hostfile ----
+    __!oscluster:savehostfile{unlink( $json_decoded->_clusterhostfile );}
+
     echo $results;
 } else {
     echo  "{\"error\":\"insufficient arguments\"}";
