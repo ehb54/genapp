@@ -42,11 +42,12 @@ ga.repeat.map           = {};
 // ----------------------------------------------------------------------------------------------------------
 // summary of operations
 // ----------------------------------------------------------------------------------------------------------
-// ga.repeat.repeat   : register a repeat
-// ga.repeat.repeater : register a repeater
-// ga.repeat.repeatOn : register a repeat repeater reference
-// ga.repeat.children : return all "children" ( repeats on the repeater)
-// ga.repeat.change   : change value of a repeater
+// ga.repeat.repeat     : register a repeat
+// ga.repeat.repeater   : register a repeater
+// ga.repeat.repeatOn   : register a repeat repeater reference
+// ga.repeat.children   : return all "children" ( repeats on the repeater)
+// ga.repeat.change     : change value of a repeater
+// ga.repeat.changeMany : change values of multiple repeaters
 // ----------------------------------------------------------------------------------------------------------
 
 
@@ -490,4 +491,19 @@ ga.repeat.map.convert = function( ids_array ) {
 
     __~debug:repeatmap{console.log( "ga.repeat.map.convert to   " + result.join( "," ) );}
     return result;
+}
+
+ga.repeat.changeMany = function( mod, data ) {
+    // hierarchically repeat.change
+    // ie. fewest dashes to max dashes
+
+    // build up list of repeaters sorted by number of -, then call ga.data.update
+    
+    Object.keys( data )
+        .filter( k => typeof ga.repeat.data[mod].repeater[k] === 'object' )
+        .sort( ( a, b ) => ( a.match(/-/g) || [] ).length > ( b.match(/-/g) || [] ).length )
+    // ECMAScript 2015 (ES6) (doesn't seem to work in current Firefox linux, OSX, 2022-09-26)
+    //        .map( k => { ga.data.update( mod, { [k] : data[k] }, true ); ga.repeat.change( mod, k ) } ); 
+        .map( k => { var obj = {}; obj[k]=data[k]; ga.data.update( mod, obj, true ); ga.repeat.change( mod, k ) } );
+    ;
 }
