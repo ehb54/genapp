@@ -67,7 +67,7 @@ ga.button.process = function( mod, sendobj ) {
                 // process normally
                 __~debug:getdefaults{ga.msg.box( { icon : "information.png",text : "ajax call returned:<br><code>" + JSON.stringify( data, null, "&nbsp;" ) + "</code>" } );}
                 // populate fields
-                console.warn( "need to check/possibly process 2 stage - repeaters first, then data" );
+                ga.repeat.changeMany( mod, data );
                 ga.data.update( mod, data, true );
             }
         })
