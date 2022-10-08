@@ -1,0 +1,48 @@
+{
+    "panels"     :
+    [
+        {
+            "root" : {
+                "size"    : [ 1, "auto" ],
+                "label"   : [ 1, 1 ],
+                "data"    : [ 1, 2 ],
+                "align"   : "left",
+                "gap"     : "5px"
+            }
+        },
+        {
+            "header" : {
+                "size"     : [ "auto", "auto" ],
+                "location" : [ "next", "full" ],
+                "label"    : [ 1, 1 ],
+                "data"     : [ 2, 1 ],
+                "align"    : "center"
+            }
+        },
+        {
+            "body" : {
+                "size"     : [ "auto", [ 1, 1 ] ],
+                "location" : [ "next", "full" ],
+                "align"    : "center"
+            }
+        },
+        {
+            "footer" : {
+                "size"     : [ "auto", "auto" ],
+                "location" : [ "next", "full" ],
+                "label"    : [ 1, 1 ],
+                "data"     : [ 2, 1 ],
+                "align"    : "center"
+            }
+        }
+    ]
+    ,"fields" : {
+        "input" : {
+            "parent" : "body"
+        }
+        ,"output" : {
+            "parent" : "body"
+        }
+    }
+    ,"notes" : "header/body/footer layout.\nInput and output fields were put in order in 'body'\n"
+}

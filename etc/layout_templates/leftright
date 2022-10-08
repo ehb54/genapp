@@ -1,0 +1,65 @@
+{
+    "panels"     :
+    [
+        {
+            "root" : {
+                "size"    : [ 1, "auto" ],
+                "label"   : [ 1, 1 ],
+                "data"    : [ 1, 2 ],
+                "align"   : "left",
+                "gap"     : "5px"
+            }
+        },
+        {
+            "header" : {
+                "size"     : [ "auto", "auto" ],
+                "location" : [ "next", "full" ],
+                "label"    : [ 1, 1 ],
+                "data"     : [ 2, 1 ],
+                "align"    : "center"
+            }
+        },
+        {
+            "body" : {
+                "size"     : [ "auto", [ 1, 1 ] ],
+                "location" : [ "next", "full" ]
+            }
+        },
+        {
+            "footer" : {
+                "size"     : [ "auto", "auto" ],
+                "location" : [ "next", "full" ],
+                "label"    : [ 1, 1 ],
+                "data"     : [ 2, 1 ],
+                "align"    : "center"
+            }
+        },
+        {
+            "leftpanel" : {
+                "parent"   : "body",
+                "size"     : [ "auto", 2 ],
+                "location" : [ 1, 1 ]
+            }
+        },
+        {
+            "rightpanel" : {
+                "parent"   : "body",
+                "size"     : [ "auto", 2 ],
+                "location" : [ 1, 2 ],
+                "label"    : [ 1, 2 ],
+                "data"     : [ 1, 1 ],
+                "align"    : "right",
+                "repeats"  : { "indent" : "10px" }
+            }
+        }
+    ]
+    ,"fields" : {
+        "input" : {
+            "parent" : "leftpanel"
+        }
+        ,"output" : {
+            "parent" : "rightpanel"
+        }
+    }
+    ,"notes" : "header/leftpanel/rightpanel/footer layout.\nInput fields were put, in order, in 'leftpanel', outputs in 'rightpanel'\n"
+}
