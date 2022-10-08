@@ -763,7 +763,7 @@ function jobcancel( $jobs, $error_json_exit = false, $is_admin = false ) {
     $appjsona = json_decode( file_get_contents( $appconfig ), true );
     if ( !isset( $appjsona[ 'resources' ] ) ) {
         $GLOBALS[ 'lasterror' ] = "Internal error: could not find resource configuration information in appconfig.json";
-        require_once "mail.php";
+        require_once "__docroot:html5__/__application__/ajax/mail.php";
         error_mail( "[joblog.php jobcancel()] " . $GLOBALS[ 'lasterror' ] );
         return false;
     }
@@ -817,7 +817,7 @@ function jobcancel( $jobs, $error_json_exit = false, $is_admin = false ) {
 
        foreach ( $pids as $k2 => $v2 ) {
            if ( $v2['pid'] < 2 ) {
-               require_once "mail.php";
+               require_once "__docroot:html5__/__application__/ajax/mail.php";
                error_mail( "[joblog.php jobcancel()] invalid pid for kill! " . $v2[ 'pid' ] );
            } else {
                $where = $v2['where'];
@@ -887,7 +887,7 @@ function jobcancel( $jobs, $error_json_exit = false, $is_admin = false ) {
     foreach ( $tokill as $k => $v ) {
         if ( !isset( $appjsona[ 'resources' ][ $k ] ) ) {
             $GLOBALS[ 'lasterror' ] .= "Resource $k missing from resource configuration information in appconfig.json";
-            require_once "mail.php";
+            require_once "__docroot:html5__/__application__/ajax/mail.php";
             error_mail( "[joblog.php jobcancel()] " . $GLOBALS[ 'lasterror' ] );
         } else {
             $kill = $appjsona[ 'resources' ][ $k ] . " __docroot:html5__/__application__/util/ga_killprocs.pl __docroot:html5__/__application__/log $k all " . implode( ' ', $v );
@@ -902,7 +902,7 @@ function jobcancel( $jobs, $error_json_exit = false, $is_admin = false ) {
     foreach ( $tokillparent as $k => $v ) {
         if ( !isset( $appjsona[ 'resources' ][ $k ] ) ) {
             $GLOBALS[ 'lasterror' ] .= "Resource $k missing from resource configuration information in appconfig.json";
-            require_once "mail.php";
+            require_once "__docroot:html5__/__application__/ajax/mail.php";
             error_mail( "[joblog.php jobcancel()] " . $GLOBALS[ 'lasterror' ] );
         } else {
             $kill = $appjsona[ 'resources' ][ $k ] . " __docroot:html5__/__application__/util/ga_killprocs.pl __docroot:html5__/__application__/log $k child " . implode( ' ', $v );
