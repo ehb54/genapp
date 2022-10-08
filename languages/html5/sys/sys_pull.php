@@ -212,6 +212,10 @@ if ( isset( $_REQUEST[ 'datetime' ] ) )
    $results[ 'datetime' ] = date( "Y M d H:i:s T", time() );
 }
 
+if ( isset( $_REQUEST[ 'module' ] ) ) {
+    $results[ 'module' ] = ga_db_output( ga_db_distinct( 'jobs', '', 'module', [ 'user' => $_SESSION[ $window ][ 'logon' ] ] ) );
+}
+
 if ( isset( $results[ 'project' ] ) ) {
    if ( !is_array( $results[ 'project' ] ) ) {
        $results[ 'project' ] = array();
