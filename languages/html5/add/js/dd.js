@@ -739,6 +739,8 @@ ga.dd.dblclick = function( ev ) {
     
 ga.dd.tab = function(evt, id) {
     var i, tabcontent, tablinks;
+    console.log( `ga.dd.tab( ${id} )` );
+    evt.preventDefault();
 
     // Get all elements with class="tabcontent" and hide them
     tabcontent = document.getElementsByClassName("ga-dd-tabcontent");
@@ -1287,7 +1289,7 @@ ga.dd.moduleinit.update = function() {
     }
 
     ga.dd.node.ddmodule.innerHTML =
-        '<button class="ga-button-submit" onclick="ga.dd.copymod()">Copy to clipboard</button>'
+        '<button class="ga-button-submit" onclick="ga.dd.copymod(); return false;">Copy to clipboard</button>'
         + '<pre id="ga-dd-module-content-clipboard" >' + JSON.stringify( mod, null, 2 ) + '</pre>';
 }    
 
