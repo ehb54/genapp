@@ -216,7 +216,7 @@ font-size: 2em;
     text-decoration: none;
     visibility: hidden; /* and hidden */
 /*    width: 25em; */
-    z-index: 10;
+    z-index: 10000;
 }
 
 .hidden {
