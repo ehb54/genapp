@@ -130,6 +130,8 @@ MongoClient.connect( mongo_url, async ( err, db ) => {
     let stderr = `${job.directorylog}/_stderr_${request._uuid}`;
 
     // this can change based on resource type, but for now, simply pass json_input in cmd line
+    // N.B. can prefix ${cmd} with 'taskset -c 4-7 ' to run on cpus 4-7 etc.
+    //      to avoid noted behavior of all cmds being pinned to one cpu
     cmd = `(cd ${job.directory}; ${cmd} '${json_input}') 2> ${stderr} | head -c50000000`;
 
     try {
