@@ -2,6 +2,7 @@
 header('Content-type: application/json');
 session_start(); 
 
+$results = [];
 $results[ '_status' ] = 'complete';
 
 if ( !sizeof( $_REQUEST ) )
@@ -94,10 +95,19 @@ if ( !sizeof( $_REQUEST ) )
 
 ga_db_open( true );
 
+$request = json_decode( json_encode( $_REQUEST ), true );
+if ( isset( $_REQUEST['projecta'] ) ) {
+    unset( $request['projecta'] );
+    $request['project'] = "0";
+}
+unset( $request['modulea'] );
+unset( $request['module'] );
+
+
 if ( $doc = ga_db_output( ga_db_findOne( 'users', '', [ "name" => $_SESSION[ $window ][ 'logon' ] ] ) ) ) {
 // get all keys in request, look in db and join results
    $any_results = 0;
-   foreach ( $_REQUEST as $k=>$v )
+   foreach ( $request as $k=>$v )
    {
       if ( $k[ 0 ] != '_' )
       {
@@ -214,6 +224,13 @@ if ( isset( $_REQUEST[ 'datetime' ] ) )
 
 if ( isset( $_REQUEST[ 'module' ] ) ) {
     $results[ 'module' ] = ga_db_output( ga_db_distinct( 'jobs', '', 'module', [ 'user' => $_SESSION[ $window ][ 'logon' ] ] ) );
+    sort( $results['module'], SORT_NATURAL );
+}
+
+if ( isset( $_REQUEST[ 'modulea' ] ) ) {
+    $results[ 'modulea' ] = ga_db_output( ga_db_distinct( 'jobs', '', 'module', [ 'user' => $_SESSION[ $window ][ 'logon' ] ] ) );
+    sort( $results['modulea'], SORT_NATURAL );
+    array_unshift( $results['modulea'], '*all*' );
 }
 
 if ( isset( $results[ 'project' ] ) ) {
@@ -225,6 +242,18 @@ if ( isset( $results[ 'project' ] ) ) {
        $results[ 'project' ][] = "no_project_specified";
    }
    sort( $results['project'], SORT_NATURAL );
+   if ( isset( $_REQUEST[ 'projecta' ] ) ) {
+       $results['projecta'] = $results['project'];
+       array_unshift( $results['projecta'], '*all*' );
+   }
+} else {
+    if ( isset( $_REQUEST[ 'projecta' ] ) ) {
+        $results[ 'projecta' ] = [ '*all*' ];
+    }
+}
+
+if ( !isset( $_REQUEST[ 'project' ] ) ) {
+    unset( $results['project'] );
 }
 
 if ( isset( $results[ 'xsedeproject' ] ) ) {

@@ -111,6 +111,7 @@ for $k ( keys %$obj ) {
     "min",
     "multiple",
     "name",
+    "onchange",
     "onlyleaf",
     "pan",
     "pattern",

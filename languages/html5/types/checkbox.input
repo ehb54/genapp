@@ -34,6 +34,7 @@ ga.layout.fields[ "__fields:id__" ].eval  = __~fields:pull{'ga.pull.toPull( "__m
   __~fields:hideifnot{+ 'ga.hideifnot( "#__fields:id___tr", "__fields:hideifnot__" );'}
   __~fields:hider{ + 'ga.hide( "__moduleid__", "#__fields:id__" );$( "#__fields:id__" ).change( function() { ga.hide.update( "__moduleid__", "#__fields:id__" ); } );'}
   __~fields:repeater{ + 'ga.repeat.repeater( "__moduleid__", "__fields:id__", "checkbox" );$( "#__fields:id__" ).change( function() { ga.repeat.change( "__moduleid__", "__fields:id__" ); } );'}
+  __~fields:onchange{+ '$( "#__fields:id__" ).off( "change.__fields:id__" ).on( "change.__fields:id__", (e) => { var v = e.currentTarget.checked; __fields:onchange__ } );'}
   ;
 
 __~fields:hider{input_repeats += 'ga.hide.update( "__moduleid__", "#__fields:id__" );';}
