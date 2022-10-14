@@ -174,3 +174,52 @@ __~debug:pull{      console.log( "ga.pull.doPull(): doPull t has NO size" );}
       }
    }
 }
+
+ga.pull.pullone = function( mod, id, pull ) {
+    var gd = $( "#global_data" );
+    var tj = {
+            _window: window.name
+            ,_logon : $('#_state').data('_logon')
+        };
+    tj[ pull ] = 0;
+    var repeater = "";
+    
+    $.getJSON( "ajax/sys_config/sys_pull.php", tj )
+        .done( function( data, status, xhr ) {
+            var tu = gd.data( "_pull_update" + repeater );
+            $.each(data, function(k, v) {
+                if ( typeof( tu[ k ] ) == "object" ) {
+                    $.each( tu[ k ], function( k2, v2 ) {
+                        var t = $( k2 );
+                        switch( v2 )
+                        {
+                            case "checkbox" : 
+                            t.prop( "checked", v == "on" ); break;
+                            case "text" : 
+                            if( t.attr( "data-type" ) == "color" ) {
+                                ga.color.spectrum.val( k2, v );
+                            }
+                            case "email" : 
+                            case "integer" : 
+                            case "float" : 
+                            t.val( v ); break;
+                            case "listbox" : 
+                            t.empty();
+                            $.each( v, function( k3, v3 ) {
+                                t.append($("<option></option>").attr( "value", v3 ).text( v3 ) );
+                            });
+                            break;
+                            case "label" : 
+                            t.html( v );
+                            break;
+                            default : 
+                            console.log( "ga.pull.doPull(): not yet" );
+                        }
+                    });
+                }
+            });
+        })
+        .fail( function( xhr, status, errorThrown ) {
+            console.log( "ga.pull.doPull(): ajax fail" );
+        });
+}
