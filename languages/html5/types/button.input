@@ -6,7 +6,9 @@ ga.layout.fields[ "__fields:id__" ].lhtml += '__~fields:help{<span class="help">
 ga.layout.fields[ "__fields:id__" ].dhtml =
 '<button type="button" id="__moduleid_____fields:id___button"__~fields:margin{ style="margin:__fields:margin__"}__~fields:buttonstyle{ class="ga-button-__fields:buttonstyle__"}'
 + '__!fields:buttonstyle{ class="ga-button-select"}'
-+ ` onclick='ga.button.click("__moduleid__","__fields:id__","__fields:hook__"__~fields:file{,"__fields:file__"})'__~fields:hidden{ hidden}>`
+__~fields:hook{+ ` onclick='ga.button.click("__moduleid__","__fields:id__","__fields:hook__"__~fields:file{,"__fields:file__"})'`}
+__~fields:onclick{+ " onclick='__fields:onclick__'"}
++ `__~fields:hidden{ hidden}>`
 + '<span class="buttontext">__fields:buttontext__</span></button><div id="__fields:id___buttonval"__~fields:help{ class="help_link"}></div>';
 ga.layout.fields[ "__fields:id__" ].dhtml += '__~fields:help{<span class="help">__fields:help__</span>}';
 

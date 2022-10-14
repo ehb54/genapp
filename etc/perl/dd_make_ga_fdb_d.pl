@@ -112,6 +112,7 @@ for $k ( keys %$obj ) {
     "multiple",
     "name",
     "onchange",
+    "onclick",
     "onlyleaf",
     "pan",
     "pattern",

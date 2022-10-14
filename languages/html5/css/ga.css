@@ -463,3 +463,17 @@ font-size: 2em;
     font-family: monospace;
     font-size: 0.75em;
 }
+
+
+/* job actions onclicks for jqGrid in job manager */
+.ga-ja-r {
+    color : red;
+}
+
+.ga-ja-g {
+    color : green;
+}
+
+.ga-ja-y {
+    color : yellow;
+}
