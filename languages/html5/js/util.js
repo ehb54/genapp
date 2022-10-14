@@ -95,9 +95,22 @@ ga.util.jqgrid.load = function( mod, id ) {
     });
 }
 
+ga.util.jqgrid.saveparams = function( mod, id ) {
+    __~debug:jqgrid{console.log( `ga.util.jqgrid.saveparams( ${mod}, ${id})` )};
+    var $grid = $( `#${id}` );
+    ga.util.jqgrid.data[mod][id].params =
+        {
+            sortname: $grid.jqGrid( 'getGridParam', 'sortname' )
+            ,sortorder: $grid.jqGrid( 'getGridParam', 'sortorder' )
+        }
+    ;
+}
+
 ga.util.jqgrid.reload = function( mod, id ) {
     __~debug:jqgrid{console.log( `ga.util.jqgrid.reload( ${mod}, ${id})` )};
-    $( `#${id}` ).jqGrid('GridUnload');
+    var $grid = $( `#${id}` );
+    ga.util.jqgrid.saveparams( mod, id );
+    $grid.jqGrid('GridUnload');
     ga.util.jqgrid.load( mod, id );
 }
 
@@ -141,6 +154,10 @@ ga.util.jqgrid.filter = function( mod, id ) {
     __~debug:jqgrid{console.dir(rules);}
 
     // add running rule (needs first mod to grid data
+
+    if ( ga.util.jqgrid.data[mod][id].params ) {
+        grid.jqGrid("setGridParam", ga.util.jqgrid.data[mod][id].params );
+    };
 
     grid.jqGrid("setGridParam", {
         postData: {
