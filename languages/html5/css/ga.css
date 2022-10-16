@@ -477,3 +477,20 @@ font-size: 2em;
 .ga-ja-y {
     color : yellow;
 }
+
+.ga-ja-r:hover {
+    text-shadow: 1px 1px gray;
+    cursor: pointer;
+}
+.ga-ja-g:hover {
+    text-shadow: 1px 1px gray;
+    cursor: pointer;
+}
+.ga-ja-y:hover {
+    text-shadow: 1px 1px gray;
+    cursor: pointer;
+}
+
+.ga-jqg-title {
+    cursor: move;
+}
