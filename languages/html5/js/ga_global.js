@@ -938,6 +938,11 @@ ga.hhelp.set = function() {
 
 ga.progress = function( mod, val, valmax ) {
   __~debug:progress{console.log( `ga.progress( ${mod}, ${val}, ${valmax} )` );}
+  if ( !$(`#${mod}_progress`) || typeof $(`#${mod}_progress`).html !== 'function' ) {
+      __~debug:progress{console.log( `ga.progress() progress no good` );}
+     return;
+  }
+
   if ( !$(`#${mod}_progress`).html().length ) {
      ga.progress.set( mod );
   }
@@ -958,6 +963,10 @@ ga.progress = function( mod, val, valmax ) {
 
 ga.progress.set = function( mod, prefix ) {
   __~debug:progress{console.log( `ga.progress.set( ${mod}, ${prefix} )` );}
+  if ( !$(`#${mod}_progress`) || typeof $(`#${mod}_progress`).html !== 'function' ) {
+      __~debug:progress{console.log( `ga.progress.set() progress no good` );}
+     return;
+  }
   prefix = prefix ? `${prefix}:` : '';
   $(`#${mod}_progress`).html( prefix +
     ga.bootstrap ? `<div class="progress"><div id="${mod}_upload_progressbar" class="progress-bar" role="progressbar" style="width:0%"></div></div>` : '<progress></progress>'
@@ -967,5 +976,9 @@ ga.progress.set = function( mod, prefix ) {
 
 ga.progress.clear = function( mod, msg ) {
   __~debug:progress{console.log( `ga.progress.clear( ${mod} ) ${msg}` );}
+  if ( !$(`#${mod}_progress`) || typeof $(`#${mod}_progress`).html !== 'function' ) {
+      __~debug:progress{console.log( `ga.progress.clear() progress no good` );}
+     return;
+  }
   $(`#${mod}_progress`).empty();
 }  
