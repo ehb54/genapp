@@ -8,6 +8,17 @@ ga.util = {};
 ga.util.jaa = function( e, newtab ) {
     // attach
     __~debug:jqgrid{console.log( `ga.util.jaa( ${e.parentElement.parentElement.id} )` );}
+    var ide = e.parentElement.parentElement;
+    if ( newtab ) {
+        var link = `${window.location.href}index.html?_reqlogin=1&_switch=${ide.children[1].title}/${ide.children[2].title}/${ide.id}`;
+        console.log( link );
+        window.open( link, '_blank' );
+    } else {
+        var link = `${ide.children[1].title}/${ide.children[2].title}/${ide.id}`;
+        $('#_state').data('_switch', link );
+        syncState();
+    }
+    
     return false;
 }
 
@@ -112,6 +123,7 @@ ga.util.jqgrid.reload = function( mod, id ) {
     ga.util.jqgrid.saveparams( mod, id );
     $grid.jqGrid('GridUnload');
     ga.util.jqgrid.load( mod, id );
+    ga.pull.pullone( mod, id, "datetime" );
 }
 
 // ga.util.jqgrid.filter = function( jqgridid, runningid, moduleid, projectid ) {
