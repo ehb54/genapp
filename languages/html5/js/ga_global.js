@@ -982,3 +982,28 @@ ga.progress.clear = function( mod, msg ) {
   }
   $(`#${mod}_progress`).empty();
 }  
+
+ga.setproject = function( p ) {
+    var cp = document.getElementById( 'sel_project' );
+    if ( !cp ) {
+        return;
+    }
+    
+    if ( p == '' ) {
+        p = 'no_project_specified';
+        $('#_state').data('_project', p );
+        cp.innerHTML = '';
+    } else {
+        $('#_state').data('_project', p );
+        cp.innerHTML = `Project ${p}`;
+    }
+    $.get( "ajax/sys_config/sys_project.php",
+            {
+                _logon    : $( "#_state" ).data( "_logon" )
+                ,_window  : window.name
+                ,_project : $( "#_state" ).data( "_project" )
+            }
+          )
+        .done( () => console.log( `set project to ${p}` ) )
+        .fail( ( err ) => console.error( `ga.setproject failed ${err}` ) );
+}
