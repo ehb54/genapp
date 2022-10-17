@@ -335,6 +335,7 @@ __~debug:job{           console.log( "#panel_" + sw[ 0 ] );}
 __~debug:job{           console.log( "ajax/" + sw[0] + "/" + sw[1] + ".html" );}
 __~docsbaseurl{           $( "#tab_docs" ).attr( "href", "__docsbaseurl__/" + sw[0] + "/" + sw[1] + "/" + sw[1] + ".html" );}
                eval( "delete loaded_" + sw[1] );
+               ga.setproject( sw[ 2 ] );
                $( "#panel_" + sw[ 0 ] ).load( "ajax/" + sw[0] + "/" + sw[1] + ".html",
                    function(){
 __~debug:job{            console.log( "now to eval: ga.ws.sub( '" + sw[3] + "', msg_" + sw[1] + ",'" + sw[1] + "');get_results_" + sw[1] + "('" + sw[3] + "',0,1,1);" );}
