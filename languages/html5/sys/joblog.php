@@ -22,6 +22,9 @@ function logjobstart( $error_json_exit = false, $cache = "" )
    $insert[ 'command'      ] = $GLOBALS[ 'command'   ];
    $insert[ 'resource'     ] = $GLOBALS[ 'resource'  ];
    $insert[ 'jobweight'    ] = $GLOBALS[ 'jobweight' ];
+   if ( isset( $GLOBALS[ "nojobcontrol" ] ) ) {
+       $insert[ 'nojobcontrol'    ] = $GLOBALS[ 'nojobcontrol' ];
+   }
    if ( isset( $GLOBALS[ "numproc" ] ) ) {
        $insert[ 'numprocs'    ] = $GLOBALS[ 'numproc' ];
    }
@@ -87,6 +90,7 @@ function logjobupdate( $status, $log_end = false, $error_json_exit = false, $uui
                     'jobs',
                     '',
                     [ '_id' => $uuid ],
+                    [], 
                     [], 
                     $error_json_exit 
                 ) 
@@ -180,6 +184,7 @@ function cache_check( $key, $error_json_exit = false ) {
                  '',
                  [ '_id' => "$key/_public" ],
                  [],
+                 [], 
                  $error_json_exit
              ) 
          )
@@ -195,6 +200,7 @@ function cache_check( $key, $error_json_exit = false ) {
                  '',
                  [ "_id" => "$key/" . $GLOBALS[ 'logon' ] ],
                  [],
+                 [], 
                  $error_json_exit
              )
          )
@@ -240,6 +246,7 @@ function isprojectlocked( $checkproject,  $error_json_exit = false )
                 '',
                 [ 'name' => $checkproject ],
                 [],
+                [], 
                 $error_json_exit
             ) 
         )
@@ -261,6 +268,7 @@ function getprojectdir( $jobid,  $error_json_exit = false )
                 '',
                 [ "_id" => $jobid, "user" => $GLOBALS[ 'logon' ] ],
                 [],
+                [], 
                 $error_json_exit 
             ) 
         ) 
@@ -291,6 +299,7 @@ function getmenumodule( $jobid,  $error_json_exit = false )
                 '',
                 [ "_id" => $jobid ],
                 [],
+                [], 
                 $error_json_exit
             )
         )
@@ -409,6 +418,7 @@ function removejob( $jobid, $error_json_exit = false )
                  '',
                  [ 'jobid' => $jobid ],
                  [],
+                 [], 
                  $error_json_exit
              )
          )
@@ -455,6 +465,7 @@ function cached_msg( $jobid,  $error_json_exit = false )
                 'msgs',
                 [ '_id' => $jobid ],
                 [],
+                [], 
                 $error_json_exit
             )
         )
@@ -485,6 +496,7 @@ function cached_progress( $jobid,  $error_json_exit = false )
                 'msgs',
                 [ '_id' => $jobid ],
                 [],
+                [], 
                 $error_json_exit
             )
         )
@@ -585,6 +597,7 @@ function logrunning( $error_json_exit = false ) {
                     'global',
                     [ '_id' => "__application__" ],
                     [],
+                    [], 
                     $error_json_exit 
                 ) 
             )
@@ -620,6 +633,7 @@ function logrunning( $error_json_exit = false ) {
                  '',
                  [ "_id" => $_REQUEST[ '_uuid' ], "user" => $GLOBALS[ 'logon' ] ],
                  [ 'xsedeproject' => 1 ],
+                 [], 
                  $error_json_exit
              )
          )
@@ -662,6 +676,7 @@ function logrunningresource( $uuid, $resource, $nodes, $nodesppn, $error_json_ex
                  '',
                  [ "_id" => $uuid ],
                  [ 'xsedeproject' => 1 ],
+                 [], 
                  $error_json_exit
              )
          )
@@ -805,6 +820,7 @@ function jobcancel( $jobs, $error_json_exit = false, $is_admin = false ) {
                    '',
                    [ "_id" => $uuid ],
                    [],
+                   [], 
                    $error_json_exit 
                )
            );
@@ -952,6 +968,7 @@ function addproject( $project, $desc = "system generated", $error_json_exit = fa
                  '',
                  [ "name" => $GLOBALS[ 'logon' ] ],
                  [],
+                 [], 
                  $error_json_exit
              )
          )
@@ -1019,3 +1036,25 @@ function addproject( $project, $desc = "system generated", $error_json_exit = fa
     return false;
 }
     
+function hasjobcontrol( $uuid, $error_json_exit = false ) {
+   global $ga_db_errors;
+   if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
+       return false;
+   }
+
+   if ( $doc = ga_db_output(
+            ga_db_findOne( 
+                'jobs',
+                '',
+                [ '_id' => $uuid ],
+                [ 'nojobcontrol' => 1 ], 
+                [], 
+                $error_json_exit 
+            ) 
+        ) 
+       ) {
+       return !( isset( $doc['nojobcontrol'] ) && $doc['nojobcontrol'] == 1 );
+   }
+   return true;
+}
+   

@@ -92,7 +92,8 @@ $GLOBALS[ 'REMOTE_ADDR' ] = isset( $_SERVER[ 'REMOTE_ADDR' ] ) ? $_SERVER[ 'REMO
 // if user based, use alternate directory structure
 __~uniquedir{$uniquedir = "__uniquedir__";}
 
-__~nojobcontrol{$nojobcontrol = 1;$GLOBALS[ 'modal' ] = true;}
+__~nojobcontrol{$nojobcontrol = 1;$GLOBALS[ 'modal' ] = true;$GLOBALS[ 'nojobcontrol' ] = 1;}
+__!nojobcontrol{unset( $GLOBALS['nojobcontrol'] );}
 __~notify{$GLOBALS[ 'notify' ] = "__notify__";}
 $bdir = "";
 

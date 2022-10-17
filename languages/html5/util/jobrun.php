@@ -169,10 +169,12 @@ if ( !$GLOBALS[ 'wascancelled' ] ) {
 
 if ( $checkrunning == 1 )
 {
-    if( !clearprojectlock( $GLOBALS[ 'getmenumoduledir' ] ) ) {
+    if ( hasjobcontrol( $id ) ) {
+        if( !clearprojectlock( $GLOBALS[ 'getmenumoduledir' ] ) ) {
 // error ignored since there may not be job control
 //      error_log( date( "Y M d H:i:s T", time() ) . " : " .  $argv[ 0 ] . " : " . $GLOBALS[ 'getmenumoduledir' ] . " : error clearprojectlock " . $GLOBALS[ 'lasterror' ] . "\n", 3, "/tmp/php_errors" );
-   }
+       }
+    }
 }
 
 if ( !$GLOBALS[ 'wascancelled' ] ) {
