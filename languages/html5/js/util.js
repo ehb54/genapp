@@ -25,6 +25,18 @@ ga.util.jaa = function( e, newtab ) {
 ga.util.jac = function( e ) {
     // cancel
     __~debug:jqgrid{console.log( `ga.util.jac( ${e.parentElement.parentElement.id} )` );}
+
+    $.get( "ajax/sys_config/sys_job2_manager.php",
+           {
+               _logon    : $( "#_state" ).data( "_logon" )
+               ,_window  : window.name
+               ,_project : $( "#_state" ).data( "_project" )
+           }
+         )
+        .done( () => console.log( `set project to ${p}` ) )
+        .fail( ( err ) => console.error( `ga.setproject failed ${err}` ) );
+
+
     return false;
 }
 
@@ -52,12 +64,13 @@ ga.util.jqgrid.setup = function( mod, id, url ) {
 
     // *** distasteful to have hard coded ids, need to add ids here if we extend the job manager search criteria or pass individually in the relevant .input 
 
-    ga.util.jqgrid.data[mod][ id ] =
+    ga.util.jqgrid.data[mod][id] =
         {
             url : url
-            ,module  : "module"
-            ,project : "project"
-            ,running : "running"
+            ,module   : "module"
+            ,project  : "project"
+            ,running  : "running"
+            ,recent   : "recent"
         }
     ;
 }
@@ -134,11 +147,14 @@ ga.util.jqgrid.filter = function( mod, id ) {
     var projectval = document.getElementById( ga.util.jqgrid.data[mod][id].project ).value;
     var moduleval  = document.getElementById( ga.util.jqgrid.data[mod][id].module ).value;
     var runningval = document.getElementById( ga.util.jqgrid.data[mod][id].running ).checked;
+    var recentval  = document.getElementById( ga.util.jqgrid.data[mod][id].recent ).value;
+    
     __~debug:jqgrid{var runstr = runningval ? "true" : "false";}
     __~debug:jqgrid{console.log( `ga.util.jqgrid.filter() running '${runstr}'  moduleval '${moduleval}'  projectval '${projectval}'` );}
 
     if ( projectval == all &&
          moduleval  == all &&
+         recentval  == all &&
          !runningval ) {
         __~debug:jqgrid{console.log( `ga.util.jqgrid.filter() no filters, resetting grid` );}
         $(`#${id}`).jqGrid("setGridParam", { postData: { filters: {} },search: false }).trigger("reloadGrid" );
@@ -161,6 +177,9 @@ ga.util.jqgrid.filter = function( mod, id ) {
     }
     if ( runningval ) {
         rules.push( { field: "duration", op: "cn", data: `>active<` } );
+    }
+    if ( recentval != all ) {
+        rules.push( { field: "recent", op: "cn", data: recentval } );
     }
 
     __~debug:jqgrid{console.dir(rules);}
