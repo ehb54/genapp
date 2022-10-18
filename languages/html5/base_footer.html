@@ -326,6 +326,7 @@ __~debug:job{         console.log( "ajax/" + sw[0] + ".html" );}
              var chk = "if( typeof " + tmp + " !== 'undefined' && " + tmp + " != 'unset' ){ console.log( 'clearing timeout' );clearTimeout(" + tmp + ");};";
 __~debug:job{         console.log( chk );}
              eval( chk );
+             ga.setproject( sw[ 2 ] );
              ga.event( "reattach", sw[0] , "load" );
              $( "#panelmain" ).load( "ajax/" + sw[0] + ".html", function(){
  __~debug:job{    console.log( "now load complete" );}
@@ -339,6 +340,7 @@ __~docsbaseurl{           $( "#tab_docs" ).attr( "href", "__docsbaseurl__/" + sw
                $( "#panel_" + sw[ 0 ] ).load( "ajax/" + sw[0] + "/" + sw[1] + ".html",
                    function(){
 __~debug:job{            console.log( "now to eval: ga.ws.sub( '" + sw[3] + "', msg_" + sw[1] + ",'" + sw[1] + "');get_results_" + sw[1] + "('" + sw[3] + "',0,1,1);" );}
+                       ga.setproject( sw[ 2 ] );
                        ga.trytilltrue( "typeof loaded_" + sw[1] + " === 'number'", sw[ 1 ] + "_reset(); ga.ws.sub('" + sw[3] + "', msg_" + sw[1] + ",'" + sw[1] + "');get_results_" + sw[1] + "('" + sw[3] + "',0,1,1);", 20, 200 );
                    }); 
                 }); 
