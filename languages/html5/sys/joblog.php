@@ -790,7 +790,7 @@ function jobcancel( $jobs, $error_json_exit = false, $is_admin = false ) {
 
     $context = new ZMQContext();
     $zmq_socket = $context->getSocket(ZMQ::SOCKET_PUSH, '__application__ udp pusher');
-    $zmq_socket->connect("tcp:##" . $appjsona['messaging']['zmqhostip'] . ":" . $appjsona['messaging']['zmqport'] );
+    $zmq_socket->connect("tcp://" . $appjsona['messaging']['zmqhostip'] . ":" . $appjsona['messaging']['zmqport'] );
 
     ## $udp_socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
 
