@@ -2,8 +2,44 @@
 /* assumes: jquery > 1.11.0, jqtree >= 3.0.9, jquery-base64 */
 
 ga.util = {};
+ga.util.jobadmin = {};
 
-// temp for testing
+// jobadmin ajax
+ga.util.jobadmin.cb = function ( mod, id, cmd, jid ) {
+    __~debug:jqgrid{console.log( `ga.util.jobadmin.cb( "${mod}, "${id}", "${cmd}" , "${jid}" )` );}
+    $.get( 
+        ga.util.jobadmin.url
+        ,{
+            tagmode       : "any"
+            ,format       : "json"
+            ,_window      : window.name
+            ,_logon       : $( "#_state" ).data( "_logon" )
+            ,_cmd         : cmd
+            ,_jid          : jid
+        } )
+        .done( function( data, status, xhr ) {
+            __~debug:jqgrid{console.log( "ga.admin.ajax.group.cb() .getJSON done" )};
+            // // required to remove the shebang (#!) 1st line of the script
+            // data = JSON.parse( data.replace( /^\s*[\r\n]/gm, '' ).split( /\r?\n/)[1]);
+            data = JSON.parse( data );
+            if ( data[ 'success' ] == "true" ) {
+                ga.msg.box( { icon : "information.png",
+                text : "manage job command returned success" } );
+                ga.util.jqgrid.reload( mod, id );
+            } else {
+                ga.msg.box( { icon : "toast.png",
+                              text : data[ 'error' ] ? data[ 'error' ] : "unknown error"  } );
+            }
+            __~debug:jqgrid{console.dir( data );}
+        })
+        .fail( function( xhr, status, errorThrown ) {
+            __~debug:jqgrid{console.log( "ga.util.jobadmin.cb() .getJSON fail: " + errorThrown )};
+            ga.msg.box( { icon : "toast.png",
+                          text : "Error: manage job command failed to run: " + errorThrown } );
+        });
+}
+
+// short names to minimize html length (probably relatively useless, should change to jobadmin.* instead of jaa ... jac ...
 
 ga.util.jaa = function( e, newtab ) {
     // attach
@@ -26,10 +62,14 @@ ga.util.jac = function( e ) {
     // cancel
     __~debug:jqgrid{console.log( `ga.util.jac( ${e.parentElement.parentElement.id} )` );}
 
-    var ide = e.parentElement.parentElement;
+    var ide     = e.parentElement.parentElement;
     var module  = ide.children[1].title;
     var project = ide.children[2].title;
     var started = ide.children[3].title;
+    var mod     = document.querySelector(`#${CSS.escape(ide.id)}`).closest('form').id;
+    var id      = ide.parentElement.parentElement.id;
+        
+    // console.log( `ga.util.jac module ${mod} gridid ${id}` );
 
     ga.msg.box( {
         icon  : "question.png"
@@ -38,8 +78,8 @@ ga.util.jac = function( e ) {
             { 
                 id    : "canceljob"
                 ,label : "Yes, terminate"
-                ,cb    : ga.util.do_cancel
-                ,adata  : [ ide.id ]
+                ,cb    : ga.util.jobadmin.cb
+                ,adata  : [ mod, id, "jobcancel", ide.id ]
             }
             ,{
                 id    : "cancel",
@@ -47,24 +87,6 @@ ga.util.jac = function( e ) {
             }
         ]
     } );
-
-    return false;
-}
-
-ga.util.do_cancel = function( id ) {
-    __~debug:jqgrid{console.log( `ga.util.do_cancel( ${id} )` );}
-    return false;
-
-    $.get( "ajax/sys_config/sys_job2_manager.php",
-           {
-               _logon    : $( "#_state" ).data( "_logon" )
-               ,_window  : window.name
-               ,_project : $( "#_state" ).data( "_project" )
-           }
-         )
-        .done( () => console.log( `set project to ${p}` ) )
-        .fail( ( err ) => console.error( `ga.setproject failed ${err}` ) );
-
 
     return false;
 }
