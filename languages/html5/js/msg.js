@@ -54,33 +54,10 @@ ga.msg.box = function( m, force, mnum ) {
       for ( i = 0; i < m.buttons.length; i++ ) {
           if ( m.buttons[ i ].cb ) {
               if ( m.buttons[ i ].adata ) {
-                  switch( m.buttons[ i ].adata.length ) {
-                  case 2 :
-                      if ( m.closeif ) {
-                          $( "#_mbb_" + m.buttons[ i ].id ).off().on( "click" , m.buttons[ i ], function( event ) { if ( event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ] ) ) { ga.msg.close( mnum ); } } );
-                      } else {
-                          $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ] ); ga.msg.close( mnum ); } );
-                      }
-                      break;
-                  case 3 :
-                      if ( m.closeif ) {
-                          $( "#_mbb_" + m.buttons[ i ].id ).off().on( "click" , m.buttons[ i ], function( event ) { if ( event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ], event.data.adata[ 2 ] ) ) { ga.msg.close( mnum ); } } );
-                      } else {
-                          $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ],  event.data.adata[ 2 ]  ); ga.msg.close( mnum ); } );
-                      }
-                      break;
-                  case 4 :
-                      $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ],  event.data.adata[ 2 ], event.data.adata[ 3 ] ); ga.msg.close( mnum ); } );
-                      break;
-                  case 5 :
-                      $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ],  event.data.adata[ 2 ], event.data.adata[ 3 ],  event.data.adata[ 4 ] ); ga.msg.close( mnum ); } )
-                      break;
-                  case 6 :
-                      $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { event.data.cb( event.data.adata[ 0 ], event.data.adata[ 1 ],  event.data.adata[ 2 ], event.data.adata[ 3 ],  event.data.adata[ 4 ], event.data.adata[ 5 ] ); ga.msg.close( mnum ); } )
-                      break;
-                  default : 
-                      console.warn( "in ga.msg.box unsupported number of adata arguments " + m.buttons[ i ].adata.length )
-                      break;
+                  if ( m.closeif ) {
+                      $( "#_mbb_" + m.buttons[ i ].id ).off().on( "click" , m.buttons[ i ], function( event ) { if ( event.data.cb( ...event.data.adata ) ) { ga.msg.close( mnum ); } } );
+                  } else {
+                      $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { event.data.cb( ...event.data.adata ); ga.msg.close( mnum ); } );
                   }
               } else {
                   $( "#_mbb_" + m.buttons[ i ].id ).off().one( "click" , m.buttons[ i ], function( event ) { __~debug:fc{console.log( "you callback clicked " + event.data.label );} event.data.cb( event.data.data ); ga.msg.close( mnum ); } );
