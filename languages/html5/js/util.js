@@ -26,6 +26,35 @@ ga.util.jac = function( e ) {
     // cancel
     __~debug:jqgrid{console.log( `ga.util.jac( ${e.parentElement.parentElement.id} )` );}
 
+    var ide = e.parentElement.parentElement;
+    var module  = ide.children[1].title;
+    var project = ide.children[2].title;
+    var started = ide.children[3].title;
+
+    ga.msg.box( {
+        icon  : "question.png"
+        ,text  : `Are you sure you want to terminate the <i>${module}</i> job<br>running in Project <i>${project}</i><br>since <i>${started}</i> ?`
+        ,buttons : [
+            { 
+                id    : "canceljob"
+                ,label : "Yes, terminate"
+                ,cb    : ga.util.do_cancel
+                ,adata  : [ ide.id ]
+            }
+            ,{
+                id    : "cancel",
+                label : "No, do not terminate"
+            }
+        ]
+    } );
+
+    return false;
+}
+
+ga.util.do_cancel = function( id ) {
+    __~debug:jqgrid{console.log( `ga.util.do_cancel( ${id} )` );}
+    return false;
+
     $.get( "ajax/sys_config/sys_job2_manager.php",
            {
                _logon    : $( "#_state" ).data( "_logon" )
@@ -160,7 +189,7 @@ ga.util.jqgrid.filter = function( mod, id ) {
         $(`#${id}`).jqGrid("setGridParam", { postData: { filters: {} },search: false }).trigger("reloadGrid" );
         return;
     }
-    
+
     // reset grid
     var grid = $(`#${id}`);
     grid.jqGrid('setGridParam',{search:false});
