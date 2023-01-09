@@ -82,7 +82,19 @@ if ( !tryLock() ) {
 }
 
 # remove the lock on exit (Control+C doesn't count as 'exit'?)
-register_shutdown_function( 'unlink', LOCK_FILE );
+# register_shutdown_function( 'unlink', LOCK_FILE );
+
+$restartMyself = function () {
+    global $_, $argv;
+    unlink( LOCK_FILE );
+    ## restart myself
+    echo "restarting\n";
+    pcntl_exec($_, $argv);
+};
+register_shutdown_function( $restartMyself );
+pcntl_signal(SIGTERM, $restartMyself); // kill
+pcntl_signal(SIGHUP,  $restartMyself); // kill -s HUP or kill -1
+pcntl_signal(SIGINT,  $restartMyself); // Ctrl-C
 
 require '../vendor/autoload.php';
 
