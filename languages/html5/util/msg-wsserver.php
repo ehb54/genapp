@@ -84,11 +84,12 @@ if ( !tryLock() ) {
 # remove the lock on exit (Control+C doesn't count as 'exit'?)
 # register_shutdown_function( 'unlink', LOCK_FILE );
 
+$_ = $_SERVER['_'];
 $restartMyself = function () {
     global $_, $argv;
     unlink( LOCK_FILE );
     ## restart myself
-    echo "restarting\n";
+    echo "restarting cmd: $_\n";
     pcntl_exec($_, $argv);
 };
 register_shutdown_function( $restartMyself );
