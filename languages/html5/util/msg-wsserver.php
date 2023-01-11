@@ -89,7 +89,11 @@ $restartMyself = function () {
     global $_, $argv;
     unlink( LOCK_FILE );
     ## restart myself
-    echo "restarting cmd: $_\n";
+    ## if running under nohup, need to add php to front of argv array
+    if ( preg_match( '/nohup$/', $_ ) ) {
+        array_unshift( $argv, 'php' );
+    }
+    echo "restarting cmd: $_ " . implode(' ', $argv ) . "\n";
     pcntl_exec($_, $argv);
 };
 register_shutdown_function( $restartMyself );
