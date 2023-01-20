@@ -334,3 +334,5 @@ $webServer = new Ratchet\Server\IoServer(
 echo "msg_wsserver: listening WS port:" . $json->messaging->wsport . " receiving ZMQ port: " . $json->messaging->zmqport . PHP_EOL;
 
 $loop->run();
+
+die; ## which restarts
