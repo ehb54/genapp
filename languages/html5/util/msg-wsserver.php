@@ -87,6 +87,9 @@ if ( !tryLock() ) {
 $_ = $_SERVER['_'];
 $restartMyself = function () {
     global $_, $argv;
+    global $webSock;
+    echo "restart caught\n";
+    $webSock->shutdown();
     unlink( LOCK_FILE );
     ## restart myself
     ## if running under nohup, need to add php to front of argv array
