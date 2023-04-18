@@ -48,8 +48,25 @@ ga.repeat.map           = {};
 // ga.repeat.children   : return all "children" ( repeats on the repeater)
 // ga.repeat.change     : change value of a repeater
 // ga.repeat.changeMany : change values of multiple repeaters
+// ga.repeat.arrayDefault : check if a default array exists and if so return the array
 // ----------------------------------------------------------------------------------------------------------
 
+// get default array if exists
+ga.repeat.arrayDefault = function( id, n ) {
+    __~debug:repeat{console.log( `ga.repeat.arrayDefault( ${id}, ${n} )` );}
+
+    var obj = ga.layout.module.json.fields.find(o=>o.id===id);
+    if ( obj && "default" in obj && Array.isArray( obj.default ) ) {
+        if ( typeof n === 'undefined' ) { 
+            return obj.default;
+        }
+        if ( n >= obj.default.length ) {
+            n = obj.default.length - 1;
+        }
+        return obj.default[ n ];
+    }
+    return null;
+}
 
 // register a repeat
 // equivalent of ga.repeats.registerRepeat
@@ -159,6 +176,12 @@ ga.repeat.repeat = function( mod, id ) {
         .replace( RegExp( 'name="_selaltval_' + id + '"' ), 'name="_selaltval_%%id%%"' )
         .replace( RegExp( 'id="' + id + '-repeater"' ), 'id="%%id%%-repeater"' )
     ;    
+
+    if ( ga.repeat.arrayDefault( id )
+         && / value=".*"/.test( ga.repeat.data[ mod ].repeat[ id ].dhtmlr )
+       ) {
+        ga.repeat.data[ mod ].repeat[ id ].dhtmlr = ga.repeat.data[ mod ].repeat[ id ].dhtmlr.replace( / value=".*?"/, ' value="%%vectorDefault%%"' );
+    }
 
     __~debug:repeathtmls{console.log( "ga.repeat.repeat( " + mod + " , " + id + " )" );}
     __~debug:repeathtmls{console.log( "--------------------" );}
@@ -308,7 +331,6 @@ ga.repeat.change = function( mod, id, init ) {
 
     if ( !jqhid.length ) {
         __~debug:repeat{console.log( "ga.repeat.change( " + mod + " , " + id + " ) id does not currently exist in DOM" );}
-	//console.log("ga.repeat.change( " + mod + " , " + id + " ) id does not currently exist in DOM" );
         return false;
     }
 
@@ -391,7 +413,7 @@ ga.repeat.change = function( mod, id, init ) {
                 __~debug:repeat{console.log( " j " + j + " i " + i + " dhtmlr " + ga.repeat.data[ mod ].repeat[ i ].dhtmlr );}
                 __~debug:repeat{console.log( " j " + j + " i " + i + " evalr " + ga.repeat.data[ mod ].repeat[ i ].evalr );}
                 add_html += ga.repeat.data[ mod ].repeat[ i ].lhtmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "[" + j + "]" ).replace( ga.repeat.data[ mod ].repeater[ id ].tableize ? /<td.*?><label.*?>.*?<\/label><\/td>/ : "", "" );
-                add_html += ga.repeat.data[ mod ].repeat[ i ].dhtmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "[" + j + "]" ).replace( ga.repeat.data[ mod ].repeater[ id ].tableize ? /<td.*?><label.*?>.*?<\/label><\/td>/ : "", "" );
+                add_html += ga.repeat.data[ mod ].repeat[ i ].dhtmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "[" + j + "]" ).replace( ga.repeat.data[ mod ].repeater[ id ].tableize ? /<td.*?><label.*?>.*?<\/label><\/td>/ : "", "" ).replace( "%%vectorDefault%%", ga.repeat.arrayDefault( i , j - 1 ) );
                 if ( ga.repeat.data[ mod ].repeat[ i ].rhtmlr ) {
                     add_html += ga.repeat.data[ mod ].repeat[ i ].rhtmlr.replace( /%%id%%/g, k );
                 }
