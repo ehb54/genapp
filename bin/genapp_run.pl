@@ -794,6 +794,14 @@ foreach my $l ( keys %langs )
                                 $rplc_mod = start_json( $mod_json, $ref_mod );
 #                               $rplc_mod = rewind_json( $ref_mod );
                                 do {
+                                    if ( $debug_specific_field_id_json ) {
+                                       if ( $$rplc_mod{"fields:id"} eq "values" ) {
+                                            my $js = JSON->new;
+                                            print "rplc_mod: " . $js->pretty->encode( $rplc_mod ) . "\n";
+                                            print "mod_json: " . $js->pretty->encode( $mod_json ) . "\n";
+                                            die;
+                                        }
+                                    }
                                     if ( !defined $$rplc_mod{ 'fields:role' } )
                                     {
                                         $warn .= "fields:role not defined in module " . $$rplc_mod{ 'moduleid' } . " " . "fields:id " . $$rplc_mod{ 'fields:id' } . "\n";

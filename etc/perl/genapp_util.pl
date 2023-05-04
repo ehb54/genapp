@@ -761,14 +761,46 @@ sub get_file_json {
         layout_expand( $mname, $layout, $json );
 #        print "after layout_expand: layout ref " . ref($layout) . " json ref " . ref($json ) . "\n";
         $extra_subs{ '__layout__' } = encode_json( $layout );
-#        if ( $mname eq 'energy' ) {
+#        if ( $mname eq 'vrd' ) {
 #            my $js = JSON->new;
 #            print "layout for $mname:*****\n" . $js->pretty->encode( $$layout{'fields'} ) . "\n";
 #            print "extrasubs version:*****\n" . $extra_subs{ '__layout__' } . "\n";
+#            print "json for $mname:*****\n" . $js->pretty->encode( $json ) . "\n";
+#            print "json{fields} $mname:*****\n" . $js->pretty->encode( $$json{fields} ) . "\n";
+#            print "json{fields}[1] $mname:*****\n" . $js->pretty->encode( $$json{fields}[1] ) . "\n";
+#            print "json{fields}[1]{default}$mname:*****\n" . $js->pretty->encode( $$json{fields}[1]{default} ) . "\n";
+#            die "field test : " . $$json{fields}[1]{default} . " ref " . ref($$json{fields}[1]{default}) . "\n";
 #        }
     }
 
+    remove_field_layout( $json );
+
     $json;
+}
+
+
+sub remove_field_layout {
+    my $json = shift;
+
+
+    if ( $$json{fields} ) {
+        my $js = JSON->new;
+        my $dodie = 0;
+        for ( my $i = 0; $i < @{ $json->{fields} }; ++$i ) {
+            if ( $json->{fields}[$i]{layout} ) {
+                $dodie = 1;
+            }
+        }
+
+        if ( $dodie ) {
+            for ( my $i = 0; $i < @{ $json->{fields} }; ++$i ) {
+                if ( $json->{fields}[$i]{layout} ) {
+                    delete $json->{fields}[$i]{layout};
+                }
+            }
+            # die;
+        }
+    }
 }
 
 sub get_lang_json {
