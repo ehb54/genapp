@@ -726,7 +726,9 @@ ga.cache.url_clear     = "ajax/sys_config/cache_remove_one.php";
 
 ga.apprun         = ga.urlparams( "apprun" );
 ga.admin.ajax.url = "ajax/sys_config/sys_manageusers.php";
-ga.util.jobadmin.url = "ajax/sys_config/sys_managejob.php";
+if ( ga.util ) {
+    ga.util.jobadmin.url = "ajax/sys_config/sys_managejob.php";
+}
   
 __~usesplash{ga.usesplash = 1;}
 __~frontpage:url{ga.frontpageurl = "__frontpage:url__";}
