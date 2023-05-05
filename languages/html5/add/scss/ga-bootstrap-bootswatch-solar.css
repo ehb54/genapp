@@ -1406,7 +1406,7 @@ pre {
     background-color: transparent;
     border: 0; }
   .form-control:focus, .ga-field-input-control:focus, .ga-field-output-control:focus {
-    color: #495057;
+    color: #fff;
     background-color: #a9bdbd;
     border-color: #1394b5;
     outline: 0;
