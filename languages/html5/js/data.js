@@ -94,7 +94,8 @@ ga.data.update = function( mod, data, msging_f, msg_id ) {
         t,
         jsmolfile,
         match,
-        t2;
+        t2,
+        saveh;
 
 __~debug:data{    console.log( "ga.data.update( " + mod + " , " + data + " )" );}
 __~debug:data{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_msgs );} 
@@ -401,10 +402,15 @@ __~debug:values{        console.log( "ga.data.update() atomic structure jmol scr
                 $( "#" + k + "_filelink" ).html( tlink );
                 break;
             default :
+                __~debug:append{console.log( `checking for #global_data _append:${mod_out}_${k}` );}
+
                 if ( $( "#global_data" ).data( "_append:" + mod_out + "_" + k ) )
                 {
-                    match.val( match.val() + "\n" + v );
-                    match.height( parseFloat( match.prop( 'scrollHeight' ) + parseFloat( match.css("borderTopWidth") ) + parseFloat( match.css("borderBottomWidth") ) ) );
+                    __~debug:append{console.log( "found _append" );}
+                    saveh = match.height();
+                    match.val( match.val() + v );
+                    match.height( saveh );
+                    match.scrollTop( match[0].scrollHeight );
                 } else {
                     match.val( v );
                 }
