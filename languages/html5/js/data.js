@@ -604,6 +604,7 @@ __~debug:textarea{    console.log( "ga.data.textarea( " + hmod_out + " , " + v +
                                     parseFloat( jqhmod_out_textarea.css ( 'borderBottomWidth' ) ) );
     } else {
         if ( !ga.data.textarea.h[ hmod_out ] ) {
+            jqhmod_out_textarea.css( { height: 'calc( 1.5em * ' + (ga.set("textarea:rows") + 0.2).toString() + ' - .1em)' } );
             ga.data.textarea.h[ hmod_out ] = parseFloat( jqhmod_out_textarea.prop( 'clientHeight' ) ) + 
                 parseFloat( jqhmod_out_textarea.css ( 'borderTopWidth' ) ) + 
                 parseFloat( jqhmod_out_textarea.css ( 'borderBottomWidth' ) );
