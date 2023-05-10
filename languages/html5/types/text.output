@@ -3,7 +3,12 @@
 ga.layout.fields[ "__fields:id__" ] = {};
 ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id__" class="ga-g-__moduleid__-__fields:id__" style="__~fields:labelmargin{margin:__fields:labelmargin__;}__~fields:labelmargintop{margin-top:__fields:labelmargintop__;margin-bottom:0;}">__fields:label__ </label>';
 ga.layout.fields[ "__fields:id__" ].dhtml = '<input type="text" name="__fields:id__" id="__fields:id__" readonly__~fields:size{ size="__fields:size__"} class="ga-g-__moduleid__-__fields:id__ ga-field-output-control__~fields:help{ help_link}"><span class="help">__fields:help__</span>';
+__~fields:repeat{ga.layout.slayout( '__fields:id__' );}
+
 ga.layout.fields[ "__fields:id__" ].eval  = 'ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );__~hoverhighlight{$(".ga-g-__moduleid__-__fields:id__").hover(function(){$(".ga-g-__moduleid__-__fields:id__").toggleClass("ga-highlight")});}';
+
+__~fields:repeat{[ ga.layout.fields[ "__fields:id__" ].lhtml, ga.layout.fields[ "__fields:id__" ].dhtml ] = ga.repeat.repeat( "__moduleid__", "__fields:id__" );}
+__~fields:repeat{ga.layout.fields[ "__fields:id__" ].eval = 'ga.repeat.repeatOn("__moduleid__", "__fields:id__", "__fields:repeat__" );';}
 
 /* old way
 <tr><td><label for="__fields:id__">__fields:label__ </label></td><td><input type="text" name="__fields:id__" id="__fields:id__" readonly__~fields:size{ size="__fields:size__"}__~fields:help{ class="help_link"><span class="help">__fields:help__</span}></td></tr>
