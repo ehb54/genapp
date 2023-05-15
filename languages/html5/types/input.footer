@@ -3,9 +3,9 @@ input_html += '</table>';
 $( '#__moduleid___input_area' ).html( input_html );
 eval( input_eval );
 </script>
-<p><button id="__moduleid___submit" class="help_link"><span class="buttontext">Submit</span></button>
+<p><button id="__moduleid___submit" class="gabuttonsubmit help_link"><span class="buttontext">Submit</span></button>
 __~help:submit{<span class="help">__help:submit__</span>}
-<button id="__moduleid___reset" class="help_link"><span class="buttontext">Reset to default values</span></button>
+<button id="__moduleid___reset" class="gabuttonreset help_link"><span class="buttontext">Reset to default values</span></button>
 __~help:reset{<span class="help">__help:reset__</span>}
 __~newsession{<button id="__moduleid___newsession"><span class="buttontext">Start new session</span></button>}
 </p>

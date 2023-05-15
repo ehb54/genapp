@@ -1,7 +1,8 @@
 </table>
+<div id="__fields:id__-tr">
 <p><label for="__fields:id__">__fields:label__ <div id="__fields:id__" type="atomicstructure" __~fields:help{ class="help_link"}></div>
 __~fields:help{<span class="help">__fields:help__</span>}</label></p>
-<p><div id="_jmol_panel___fields:id__"></div></p>
+<p><div id="_jmol_panel___fields:id__"></div></p></div>
 <script>
 __~fields:jsmoladd{ga.set( "__moduleid__:jsmoladd" , "__fields:jsmoladd__;" );}
 _jmol_info[ "__fields:id__" ] = {
@@ -19,5 +20,7 @@ __~fields:height{   height: __fields:height__,}
 };
 ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );
 ga.value.extra_resets( "__fields:id__" );
+__~fields:hide{ga.hide.add("__moduleid__", "#__fields:id__-tr", "#__fields:hide__" );}
+__~fields:show{ga.hide.add("__moduleid__", "#__fields:id__-tr", "#__fields:show__", 1 );}
 </script>
 <table>

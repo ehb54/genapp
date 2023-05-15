@@ -31,15 +31,28 @@ __~debug:hide{    console.log( "ga.hide.update( " + module + " , " + id + " )" )
 
     if ( $( id ).prop( 'checked' ) ) {
         for ( i in ga.hide.data[ module ][ id ].hides ) {
-__~debug:hide{    console.log( "ga.hide.update( " + module + " , " + id + " ) hiding " + i );}
-            $( i + "-itd" ).html(" ");
-            $( i ).hide();
-        } 
+            __~debug:hide{console.log( "ga.hide.update( " + module + " , " + id + " ) hiding " + i );}
+            if ( ga.hide.data[ module ][ id ].hidesr && ga.hide.data[ module ][ id ].hidesr[ i ] ) {
+                $( i + "-itd" ).html( ga.hide.data[ module ][ id ].hides[ i ] );
+                $( i ).show();
+            } else {
+                $( i + "-itd" ).html(" ");
+                $( i ).hide();
+            }
+        }
     } else {
         for ( i in ga.hide.data[ module ][ id ].hides ) {
-__~debug:hide{    console.log( "ga.hide.update( " + module + " , " + id + " ) showing " + i );}
+            __~debug:hide{console.log( "ga.hide.update( " + module + " , " + id + " ) showing " + i );}
             $( i + "-itd" ).html( ga.hide.data[ module ][ id ].hides[ i ] );
             $( i ).show();
+            if ( ga.hide.data[ module ][ id ].hidesr && ga.hide.data[ module ][ id ].hidesr[ i ] ) {
+                $( i + "-itd" ).html(" ");
+                $( i ).hide();
+            } else {
+                $( i + "-itd" ).html( ga.hide.data[ module ][ id ].hides[ i ] );
+                $( i ).show();
+            }
+            
         } 
     }
 // fix up help
@@ -47,13 +60,23 @@ __~debug:hide{    console.log( "ga.hide.update( " + module + " , " + id + " ) sh
 __~debug:hide{    console.log( "ga.hide.update( " + module + " , " + id + " ) returns" );}
 }
 
-ga.hide.add = function( module, id, hiderid ) {
-__~debug:hide{   console.log( "ga.hide.add( " + module + " , " + id + " , " + hiderid + " )" );}
+ga.hide.updateall = function( module ) {
+    __~debug:hide{console.log( "ga.hide.updateall( " + module + " )" );}
+    for ( i in ga.hide.data[ module ] ) {
+        ga.hide.update( module, i );
+    }
+}
+
+ga.hide.add = function( module, id, hiderid, rev ) {
+    __~debug:hide{console.log( "ga.hide.add( " + module + " , " + id + " , " + hiderid + " , " + rev + " )" );}
     ga.hide.data = ga.hide.data || {};
     ga.hide.data[ module ] = ga.hide.data[ module ] || {};
     ga.hide.data[ module ][ hiderid ] = ga.hide.data[ module ][ hiderid ] || {};
     ga.hide.data[ module ][ hiderid ].hides = ga.hide.data[ module ][ hiderid ].hides || {};
     ga.hide.data[ module ][ hiderid ].hides[ id ] = $( id + "-itd" ).html();
+    ga.hide.data[ module ][ hiderid ].hidesr = ga.hide.data[ module ][ hiderid ].hidesr || {};
+    ga.hide.data[ module ][ hiderid ].hidesr[ id ] = rev ? 1 : 0;
+    
 __~debug:hide{   console.log( "ga.hide.add() html is " + ga.hide.data[ module ][ hiderid ].hides[ id ] );}
 __~debug:hide{   console.log( "ga.hide.add( " + module + " , " + id + " , " + hiderid + " ) hide added" );}
 };

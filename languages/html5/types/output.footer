@@ -4,4 +4,4 @@ __~centeroutput{</center>}
 __~center{</center>}
 __~height{</div>}
 __~autosubmit{<script>$( "#__moduleid___submit" ).trigger( "click" );</script>}
-<script>loaded___moduleid__ = 1; __~usercolors{ga.color.apply();}</script>
+<script>loaded___moduleid__ = 1; __~usercolors{ga.color.apply();}ga.hide.updateall( "__moduleid__" );</script>

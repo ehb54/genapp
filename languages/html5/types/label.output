@@ -1,4 +1,9 @@
-<tr>__~fields:prehline{<td><hr></td></tr><tr>}<td__~fields:colspan{ colspan="__fields:colspan__"}><label__~fields:default{ class="__fields:default__"}>__fields:label__</label></td>__~fields:posthline{</tr><tr><td><hr></td>}</tr>
+<tr id="__fields:id__-tr">__~fields:prehline{<td><hr></td></tr><tr>}<td__~fields:colspan{ colspan="__fields:colspan__"}><label__~fields:default{ class="__fields:default__"}>__fields:label__</label></td>__~fields:posthline{</tr><tr><td><hr></td>}</tr>
+<script>
+__~fields:hide{ga.hide.add("__moduleid__", "#__fields:id__-tr", "#__fields:hide__" );}
+__~fields:show{ga.hide.add("__moduleid__", "#__fields:id__-tr", "#__fields:show__", 1 );}
+</script>
+
 
 
 

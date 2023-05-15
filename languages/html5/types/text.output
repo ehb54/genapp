@@ -1,4 +1,6 @@
-<tr><td><label for="__fields:id__">__fields:label__ </label></td><td><input type="text" name="__fields:id__" id="__fields:id__" readonly__~fields:size{ size="__fields:size__"}__~fields:help{ class="help_link"><span class="help">__fields:help__</span}></td></tr>
+<tr id="__fields:id__-tr"><td><label for="__fields:id__">__fields:label__ </label></td><td><input type="text" name="__fields:id__" id="__fields:id__" readonly__~fields:size{ size="__fields:size__"}__~fields:help{ class="help_link"><span class="help">__fields:help__</span}></td></tr>
 <script>
 ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );
+__~fields:hide{ga.hide.add("__moduleid__", "#__fields:id__-tr", "#__fields:hide__" );}
+__~fields:show{ga.hide.add("__moduleid__", "#__fields:id__-tr", "#__fields:show__", 1 );}
 </script>
