@@ -401,7 +401,7 @@ ga.repeat.change = function( mod, id, init ) {
 
         if ( ga.repeat.data[ mod ].repeater[ id ].tableize && val > 0 ) {
             for ( i in children ) {
-                add_html += ga.repeat.data[ mod ].repeat[ i ].lhtmls;
+                add_html += ga.repeat.data[ mod ].repeat[ i ].lhtmls.replace(/grid-column:(\d+)/, (m , n) => { return "grid-column:" + (parseInt(n)+1).toString()});
             }
         }
 
@@ -412,7 +412,9 @@ ga.repeat.change = function( mod, id, init ) {
                 __~debug:repeat{console.log( " j " + j + " i " + i + " lhtmlr " + ga.repeat.data[ mod ].repeat[ i ].lhtmlr );}
                 __~debug:repeat{console.log( " j " + j + " i " + i + " dhtmlr " + ga.repeat.data[ mod ].repeat[ i ].dhtmlr );}
                 __~debug:repeat{console.log( " j " + j + " i " + i + " evalr " + ga.repeat.data[ mod ].repeat[ i ].evalr );}
-                add_html += ga.repeat.data[ mod ].repeat[ i ].lhtmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "[" + j + "]" ).replace( ga.repeat.data[ mod ].repeater[ id ].tableize ? /<td.*?><label.*?>.*?<\/label><\/td>/ : "", "" );
+                if ( !ga.repeat.data[ mod ].repeater[ id ].tableize ) {
+                    add_html += ga.repeat.data[ mod ].repeat[ i ].lhtmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "[" + j + "]" ).replace( ga.repeat.data[ mod ].repeater[ id ].tableize ? /<td.*?><label.*?>.*?<\/label><\/td>/ : "", "" );
+                }
                 add_html += ga.repeat.data[ mod ].repeat[ i ].dhtmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "[" + j + "]" ).replace( ga.repeat.data[ mod ].repeater[ id ].tableize ? /<td.*?><label.*?>.*?<\/label><\/td>/ : "", "" ).replace( "%%vectorDefault%%", ga.repeat.arrayDefault( i , j - 1 ) );
                 if ( ga.repeat.data[ mod ].repeat[ i ].rhtmlr ) {
                     add_html += ga.repeat.data[ mod ].repeat[ i ].rhtmlr.replace( /%%id%%/g, k );
