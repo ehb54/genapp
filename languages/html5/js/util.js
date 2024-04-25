@@ -205,7 +205,8 @@ ga.util.jqgrid.load = function( mod, id ) {
                 loadComplete: function() {
                     console.log('jqgrid loadcomplete');
                     console.log(`rows ${this.rows.length}`);
-                    ga.util.jqgrid.filter( mod, id );
+                    // not sure why this doesn't work here instead of at the bottom, but filter adjustments then refresh fail
+                    // ga.util.jqgrid.filter( mod, id );
                 }
             });
             $('#cb_' + $grid[0].id).hide();
@@ -216,7 +217,7 @@ ga.util.jqgrid.load = function( mod, id ) {
                 return 'cb' in item && item.cb ? 1 : 0;
             };
             // not sure why this doesn't work under "loadComplete:"
-            // ga.util.jqgrid.filter( mod, id );
+            ga.util.jqgrid.filter( mod, id );
         }
     });
 }
