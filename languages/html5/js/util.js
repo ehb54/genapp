@@ -24,7 +24,7 @@ ga.util.jobadmin.cb = function ( mod, id, cmd, jid ) {
             data = JSON.parse( data );
             if ( data[ 'success' ] == "true" ) {
                 ga.msg.box( { icon : "information.png",
-                text : "manage job command returned success" } );
+                              text : data[ 'successtext' ] ? data[ 'successtext' ] : "manage job command returned success" } );
                 ga.util.jqgrid.reload( mod, id );
             } else {
                 ga.msg.box( { icon : "toast.png",
@@ -125,6 +125,31 @@ ga.util.jad = function( e ) {
 ga.util.jau = function( e ) {
     // unlock
     __~debug:jqgrid{console.log( `ga.util.jau( ${e.parentElement.parentElement.id} )` );}
+
+    var ide     = e.parentElement.parentElement;
+    var module  = ide.children[1].title;
+    var project = ide.children[2].title;
+    var started = ide.children[3].title;
+    var mod     = document.querySelector(`#${CSS.escape(ide.id)}`).closest('form').id;
+    var id      = ide.parentElement.parentElement.id;
+
+    ga.msg.box( {
+        icon  : "question.png"
+        ,text  : `Are you sure you want to clear the lock on Project <i>${project}</i> ?<br>This can have unintendend consequences of a job is running and a new job started under the same Project`
+        ,buttons : [
+            { 
+                id    : "unlockjob"
+                ,label : "Yes, clear the project lock"
+                ,cb    : ga.util.jobadmin.cb
+                ,adata  : [ mod, id, "clearlock", project ]
+            }
+            ,{
+                id    : "cancel",
+                label : "No, do not clear the project lock"
+            }
+        ]
+    } );
+
     return false;
 }
 

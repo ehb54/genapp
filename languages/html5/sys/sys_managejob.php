@@ -71,6 +71,7 @@ switch( $_REQUEST[ '_cmd' ] ) {
             exit();
         } else {
             $results[ "success" ] = "true";
+            $results[ "successtext" ] = "The job has been canceled";
             echo json_encode( $results );
             exit();
         }
@@ -84,6 +85,26 @@ switch( $_REQUEST[ '_cmd' ] ) {
         $results[ 'error' ] = "Not yet implemented: " . $_REQUEST[ '_cmd' ];
         echo json_encode( $results );
         exit();
+    }
+    break;
+
+    case "clearlock" :
+    { 
+        require_once "../joblog.php";
+        $fullprojectdir = "__docroot:html5__/__application__/results/users/" . $_REQUEST[ "_logon" ] . "/" . $_REQUEST[ '_jid' ];
+        $results[ 'success' ] = "false";
+        $results[ 'error' ] = "Not yet implemented: " . $_REQUEST[ '_cmd' ] . " $fullprojectdir";
+        if ( !clearprojectlock( $fullprojectdir, false ) ) {
+            $results[ 'success' ] = "false";
+            $results[ 'error' ] = $GLOBALS[ 'lasterror' ];
+            echo json_encode( $results );
+            exit();
+        } else {
+            $results[ "success" ] = "true";
+            $results[ "successtext" ] = "The project lock on project <i>" . $_REQUEST[ '_jid' ] . "</i> has been cleared";
+            echo json_encode( $results );
+            exit();
+        }
     }
     break;
 
