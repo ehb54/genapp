@@ -52,6 +52,7 @@ ga.util.jaa = function( e, newtab ) {
     } else {
         var link = `${ide.children[1].title}/${ide.children[2].title}/${ide.id}`;
         $('#_state').data('_switch', link );
+        ga.msg.closeW();
         syncState();
     }
     
@@ -94,6 +95,30 @@ ga.util.jac = function( e ) {
 ga.util.jad = function( e ) {
     // delete
     __~debug:jqgrid{console.log( `ga.util.jad( ${e.parentElement.parentElement.id} )` );}
+    var ide     = e.parentElement.parentElement;
+    var module  = ide.children[1].title;
+    var project = ide.children[2].title;
+    var started = ide.children[3].title;
+    var mod     = document.querySelector(`#${CSS.escape(ide.id)}`).closest('form').id;
+    var id      = ide.parentElement.parentElement.id;
+
+    ga.msg.box( {
+        icon  : "question.png"
+        ,text  : `Are you sure you want to delete this Job with <i>${module}</i> job<br>running in Project <i>${project}</i><br>started <i>${started}</i> ?`
+        ,buttons : [
+            { 
+                id    : "deletejob"
+                ,label : "Yes, delete"
+                ,cb    : ga.util.jobadmin.cb
+                ,adata  : [ mod, id, "jobdelete", ide.id ]
+            }
+            ,{
+                id    : "cancel",
+                label : "No, do not delete this job"
+            }
+        ]
+    } );
+
     return false;
 }
 
@@ -155,6 +180,7 @@ ga.util.jqgrid.load = function( mod, id ) {
                 loadComplete: function() {
                     console.log('jqgrid loadcomplete');
                     console.log(`rows ${this.rows.length}`);
+                    ga.util.jqgrid.filter( mod, id );
                 }
             });
             $('#cb_' + $grid[0].id).hide();
@@ -165,7 +191,7 @@ ga.util.jqgrid.load = function( mod, id ) {
                 return 'cb' in item && item.cb ? 1 : 0;
             };
             // not sure why this doesn't work under "loadComplete:"
-            ga.util.jqgrid.filter( mod, id );
+            // ga.util.jqgrid.filter( mod, id );
         }
     });
 }

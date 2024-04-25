@@ -425,6 +425,40 @@ font-size: 2em;
    background: -o-linear-gradient(rgb( __background_color_rgb__ ), #222);
 }
 
+.modalDialogW {
+   position: fixed;
+/*             font-family: Arial, Helvetica, sans-serif; */
+   top: 0;
+   right: 0;
+   bottom: 0;
+   left: 0;
+   background: rgba(0,0,0,0.8);
+   z-index: 99995;
+   opacity:0;
+   -webkit-transition: opacity 400ms ease-in;
+   -moz-transition: opacity 400ms ease-in;
+   transition: opacity 400ms ease-in;
+   pointer-events: none;
+}
+
+.modalDialogW_on {
+   opacity:1;
+   pointer-events: auto;
+}
+   
+.modalDialogW > div {
+   max-width: 90%;
+   position: relative;
+   margin: 10% auto;
+   padding: 5px 20px 13px 20px;
+   max-height: 95%;
+   border-radius: 10px;
+   background: rgb( __background_color_rgb__ );
+   background: -moz-linear-gradient(rgb( __background_color_rgb__ ), #222);
+   background: -webkit-linear-gradient(rgb( __background_color_rgb__ ), #222);
+   background: -o-linear-gradient(rgb( __background_color_rgb__ ), #222);
+}
+
 .legendLabel {
    color: rgb( __text_color_rgb__ );
 }

@@ -148,6 +148,13 @@
                                    ]
                    }
                    ,{
+                      "frequency"  : "once",
+                      "output"     : "ajax/sys_config/sys_jobs2.php",
+                      "inputs"     : [
+                          { "sys/sys_jobs2.php" : "once" }
+                      ]
+                   }
+                   ,{
                     "frequency"  : "once",
                     "output"     : "ajax/sys_config/sys_license.php",
                     "inputs"     : [ 
@@ -405,6 +412,14 @@
                                    ]
                    }
                    ,{
+                       "frequency"  : "once",
+                       "setexecutable" : "true",
+                       "output"     : "ajax/sys_config/sys_managejob.php",
+                       "inputs"     : [
+                           { "sys/sys_managejob.php" : "once" }
+                       ]
+                   }
+                   ,{
                     "frequency"  : "once",
                     "setexecutable" : "true",
                     "output"     : "ajax/sys_config/cached_results.php",
@@ -529,6 +544,7 @@
                                     ,{ "js/ws.js"               : "once" }
                                     ,{ "js/layout.js"           : "once" }
                                     ,{ "js/button.js"           : "once" }
+                                    ,{ "js/util.js"             : "once" }
                                    ]
                    }
                    ,{

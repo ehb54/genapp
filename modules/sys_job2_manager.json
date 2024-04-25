@@ -1,0 +1,189 @@
+{
+   "resource" : "local"
+    ,"label" : "Submitted Jobs"
+    ,"resetonload" : "true"
+#   "executable" : "sys_job2_manager.php"
+    ,"executable" : "sys_job2_manager"
+    ,"nojobcontrol" : "true"
+#   "nosubmit" : "true"
+    ,"moduleid" : "sys_job2_manager"
+    ,"modal" : "true"
+    ,"modalwidth" : "89%"
+    ,"height" : "89vh"
+    ,"noreset" : "true"
+    ,"submit_label" : "Submit"
+    ,"panels" : [
+      {
+         "root" : {
+            "size" : [
+               1,
+               "auto"
+            ],
+            "data" : [
+               1,
+               2
+            ],
+            "gap" : "5px",
+            "align" : "left",
+            "label" : [
+               1,
+               1
+            ]
+         }
+      },
+      {
+         "header" : {
+            "location" : [
+               "next",
+               "full"
+            ],
+            "align" : "left",
+            "size" : [
+                "auto",
+                "auto"
+            ]
+         }
+      },
+      {
+         "body" : {
+            "size" : [
+               "auto",
+               [
+                  1,
+                  1
+               ]
+            ],
+            "align" : "left",
+            "location" : [
+               "next",
+               "full"
+            ]
+         }
+      },
+      {
+         "footer" : {
+            "size" : [
+               "auto",
+               "auto"
+            ],
+            "label" : [
+               1,
+               1
+            ],
+            "align" : "left",
+            "location" : [
+               "next",
+               "full"
+            ],
+            "data" : [
+               2,
+               1
+            ]
+         }
+      }
+   ],
+   "fields" : [
+      {
+         "label" : "Jobs",
+         "layout" : {
+            "parent" : "header"
+         },
+         "type" : "label",
+         "id" : "label1",
+         "default" : "header3",
+         "role" : "input"
+      },
+      {
+         "role" : "input",
+         "id" : "serverdate",
+         "layout" : {
+             "parent" : "body"
+#             ,"location" : ["same","next"]
+         },
+         "help" : "This is the date and time from the server at the time you opened this window",
+         "type" : "text",
+         "pull" : "datetime",
+          "label" : "Server date",
+          "readonly" : "true"
+      },
+      {
+         "label" : "Running",
+         "role" : "input",
+         "help" : "Show running jobs",
+         "layout" : {
+             "parent" : "body"
+         },
+         "type" : "checkbox",
+          "id" : "running",
+          "onchange" : "if ( v ) { document.getElementById(`recent`).value=`*all*` }; ga.util.jqgrid.filter(`sys_job2_manager`, `jobgrid`)"
+      },
+       {
+         "label" : "Completed in the last",
+           "role" : "input",
+           "values"    : "*all*~*all*~Hour~H~Day~D~Week~W~Month~M",
+           "default"   : "*all*",
+         "help" : "Show recently completed jobs",
+         "layout" : {
+             "parent" : "body"
+         },
+         "type" : "listbox",
+          "id" : "recent",
+           "onchange" : "if ( v != `*all*` ) { document.getElementById( `running` ).checked = false }; ga.util.jqgrid.filter(`sys_job2_manager`, `jobgrid`)"
+       }
+       ,{
+         "pull" : "projecta",
+         "label" : "Project",
+         "id" : "project",
+         "layout" : {
+            "parent" : "body"
+         },
+         "type" : "listbox",
+          "role" : "input",
+          "onchange" : "console.log( `project is now ${v}` );ga.util.jqgrid.filter(`sys_job2_manager`, `jobgrid`)"
+      },
+      {
+         "role" : "input",
+         "type" : "listbox",
+         "layout" : {
+            "parent" : "body"
+#             ,"location" : ["same","next"]
+         },
+         "help" : "Select",
+         "id" : "module",
+         "label" : "Module",
+          "pull" : "modulea",
+          "onchange" : "console.log( `module is now ${v}` );ga.util.jqgrid.filter(`sys_job2_manager`, `jobgrid`)"
+      },
+       {
+           "role" : "input"
+           ,"type" : "button"
+           ,"label" : " "
+           ,"id"    : "refresh" 
+           ,"buttontext"    : "Refresh"
+           ,"onclick" : "ga.util.jqgrid.reload(`sys_job2_manager`,`jobgrid`)"
+           ,"layout" : {
+               "parent" : "body"
+           }
+           ,"margin" : "5px"
+       }
+       ,{
+         "role" : "input",
+         "layout" : {
+            "parent" : "footer"
+         },
+         "type" : "grid2",
+         "help" : "right click on a column header to sort",
+          "id" : "jobgrid"
+          ,"url" : "ajax/sys_config/sys_jobs2.php"
+       }
+       ,{
+         "role" : "input",
+         "layout" : {
+            "parent" : "body"
+         },
+         "type" : "button",
+           "id" : "b_submit",
+           "hidden" : "true"
+       }
+   ]
+}

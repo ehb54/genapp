@@ -59,6 +59,10 @@
                           "label" : "Submitted jobs"
                          }
                         ,{ 
+                          "id"    : "sys_job2_manager",
+                          "label" : "Submitted jobs"
+                         }
+                        ,{ 
                           "id"    : "sys_feedback",
                           "label" : "User feedback"
                          }

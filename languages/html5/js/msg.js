@@ -132,6 +132,12 @@ ga.msg.close4 = function() {
     }
 }
 
+ga.msg.closeW = function() {
+    ga.repeats.restore();
+    $( ".modalDialogW" ).removeClass( "modalDialogW_on" );
+    $( "#configbodyW" ).empty();
+}
+
 ga.msg.close = function( mnum ) {
     __~debug:msgbox{console.log( 'ga.msg.close() mnum:' + mnum );}
     if ( mnum < 4 &&
@@ -144,7 +150,8 @@ ga.msg.close = function( mnum ) {
         case 2 : ga.msg.close2(); break;
         case 3 : ga.msg.close3(); break;
         case 4 : ga.msg.close4(); break;
-        default : console_warn( "ga.msg.close called with unknown modal number " + mnum ); break;
+        case 99 : ga.msg.closeW(); break; // W
+        default : console.warn( "ga.msg.close called with unknown modal number " + mnum ); break;
     }
 }
 
@@ -164,5 +171,9 @@ ga.msg.clicks = function() {
 
     $( "#closeModal4" ).click( function() {
         ga.msg.close( 4 );
+    });
+
+    $( "#closeModalW" ).click( function() {
+        ga.msg.close( 99 );
     });
 }

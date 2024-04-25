@@ -77,6 +77,16 @@ switch( $_REQUEST[ '_cmd' ] ) {
     }
     break;
 
+    case "jobdelete" :
+    { 
+        require_once "../joblog.php";
+        $results[ 'success' ] = "false";
+        $results[ 'error' ] = "Not yet implemented: " . $_REQUEST[ '_cmd' ];
+        echo json_encode( $results );
+        exit();
+    }
+    break;
+
     default : {
         $results[ 'success' ] = "false";
         $results[ 'error' ] = "Internal error: Unknown command " . $_REQUEST[ '_cmd' ] . " received";
