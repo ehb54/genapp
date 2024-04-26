@@ -52,7 +52,7 @@ ga.util.jaa = function( e, newtab ) {
     } else {
         var link = `${ide.children[1].title}/${ide.children[2].title}/${ide.id}`;
         $('#_state').data('_switch', link );
-        ga.msg.closeW();
+        ga.msg.close5();
         syncState();
     }
     
@@ -195,7 +195,7 @@ ga.util.deletemany = function( mod, id ) {
                 label : "No, do not delete anything"
             }
         ]
-    }, true, 2 );
+    }, false, 6 );
 }
 
 ga.util.deletemany.cb = function( mod, id, option ) {

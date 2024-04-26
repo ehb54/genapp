@@ -8,8 +8,6 @@
 #   "nosubmit" : "true"
     ,"moduleid" : "sys_job2_manager"
     ,"modal" : "true"
-    ,"modalwidth" : "89%"
-    ,"height" : "89vh"
     ,"noreset" : "true"
     ,"submit_label" : "Submit"
     ,"panels" : [

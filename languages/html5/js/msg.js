@@ -132,10 +132,16 @@ ga.msg.close4 = function() {
     }
 }
 
-ga.msg.closeW = function() {
+ga.msg.close5 = function() {
     ga.repeats.restore();
-    $( ".modalDialogW" ).removeClass( "modalDialogW_on" );
-    $( "#configbodyW" ).empty();
+    $( ".modalDialog5" ).removeClass( "modalDialog5_on" );
+    $( "#configbody5" ).empty();
+}
+
+ga.msg.close6 = function() {
+    ga.repeats.restore();
+    $( ".modalDialog6" ).removeClass( "modalDialog6_on" );
+    $( "#configbody6" ).empty();
 }
 
 ga.msg.close = function( mnum ) {
@@ -146,12 +152,13 @@ ga.msg.close = function( mnum ) {
     }
 
     switch( mnum ) {
-        case 1 : ga.msg.close1(); break;
-        case 2 : ga.msg.close2(); break;
-        case 3 : ga.msg.close3(); break;
-        case 4 : ga.msg.close4(); break;
-        case 99 : ga.msg.closeW(); break; // W
-        default : console.warn( "ga.msg.close called with unknown modal number " + mnum ); break;
+      case 1 : ga.msg.close1(); break;
+      case 2 : ga.msg.close2(); break;
+      case 3 : ga.msg.close3(); break;
+      case 4 : ga.msg.close4(); break;
+      case 5 : ga.msg.close5(); break;
+      case 6 : ga.msg.close6(); break;
+      default : console.warn( "ga.msg.close called with unknown modal number " + mnum ); break;
     }
 }
 
@@ -173,7 +180,11 @@ ga.msg.clicks = function() {
         ga.msg.close( 4 );
     });
 
-    $( "#closeModalW" ).click( function() {
-        ga.msg.close( 99 );
+    $( "#closeModal5" ).click( function() {
+        ga.msg.close( 5 );
+    });
+
+    $( "#closeModal6" ).click( function() {
+        ga.msg.close( 6 );
     });
 }
