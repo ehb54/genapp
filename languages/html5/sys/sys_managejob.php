@@ -113,6 +113,53 @@ switch( $_REQUEST[ '_cmd' ] ) {
     }
     break;
 
+    case "jobdeletemany" :
+    { 
+        require_once "../joblog.php";
+        $num_total   = count( $_REQUEST[ '_jid' ] );
+        $num_success = 0;
+        $num_fail    = 0;
+        $last_fail   = '';
+
+        if ( $num_total == 0 ) {
+            $results[ 'success' ] = "false";
+            $results[ 'error' ] = "No jobs selected for deletion";
+            echo json_encode( $results );
+            exit();
+        }            
+
+        foreach ( $_REQUEST[ '_jid' ] as $v ) {
+            if ( !removejob( $v, false ) ) {
+                ++$num_fail;
+                $last_fail = $GLOBALS[ 'lasterror' ];
+            } else {
+                ++$num_success;
+            }
+        }
+
+        if ( $num_fail == 0 ) {
+            $results[ "success" ] = "true";
+            $results[ "successtext" ] = "All $num_success jobs deleted";
+            echo json_encode( $results );
+            exit();
+        }
+            
+        if ( $num_success == 0 ) {
+            $results[ "success" ] = "false";
+            $results[ 'error' ] = "None of the $num_total jobs deleted<br>Errors:<br>$last_fail";
+            echo json_encode( $results );
+            exit();
+        }
+            
+        # some jobs deleted & some not
+        
+        $results[ 'success' ] = "false";
+        $results[ 'error' ] = "Only $num_success of $num_total jobs deleted<br>Errors:<br>$last_fail";
+        echo json_encode( $results );
+        exit();
+    }
+    break;
+
     default : {
         $results[ 'success' ] = "false";
         $results[ 'error' ] = "Internal error: Unknown command " . $_REQUEST[ '_cmd' ] . " received";

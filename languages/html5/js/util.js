@@ -153,6 +153,98 @@ ga.util.jau = function( e ) {
     return false;
 }
 
+// callback for "delete many"
+ga.util.deletemany = function( mod, id ) {
+    __~debug:jqgrid{console.log( `ga.util.deletemany( '${mod}', '${id}'  )` );}
+    var grid = $( `#${id}` );
+    var IDs  = grid.getDataIDs().filter( (id) => grid.getRowData(id).duration != '<small>active</small>' );
+    
+    var body = 
+        "<table style='border-collapse:separate;border-spacing:5px;'>\n"
+        + '<tr><th>' + [ 'module', 'project', 'start', 'end', 'duration' ].reduce( ( a, v ) => a + '<th>' +  v.charAt(0).toUpperCase() + v.slice(1) + '</th>', '' ) + '</tr>'
+        + IDs.reduce( ( a, id ) =>
+                      a
+                      + `<tr><td><input type='checkbox' class='_deletemany' name='${id}' id='${id}'></td>\n`
+                      + [ 'module', 'project', 'start', 'end', 'duration' ].reduce( ( a, v ) => a + '<td>' + grid.getRowData(id)[v] + '</td>', '' )
+                      + '</tr>\n'
+                      , '' )
+        + '</table>'
+    ;
+
+    __~debug:jqgrid{console.log( body );}
+
+    ga.msg.box( {
+        icon  : "noicon.png"
+        ,text  : `Delete many jobs<br>${body}`
+        ,closeif : true
+        ,buttons : [
+            { 
+                id    : "deletelisted"
+                ,label : 'Delete all jobs shown'
+                ,cb    : ga.util.deletemany.cb
+                ,adata  : [ mod, id, "listed" ]
+            }
+            ,{ 
+                id    : "deleteselected"
+                ,label : 'Delete selected jobs'
+                ,cb    : ga.util.deletemany.cb
+                ,adata  : [ mod, id, "selected" ]
+            }
+            ,{
+                id    : "cancel",
+                label : "No, do not delete anything"
+            }
+        ]
+    }, true, 2 );
+}
+
+ga.util.deletemany.cb = function( mod, id, option ) {
+    __~debug:jqgrid{console.log( `ga.util.deletemany.cb( ${mod}, ${id}, ${option} )` )};
+    var ids = [];
+    
+    switch( option ) {
+    case "listed" :
+        ids = Object.values( document.getElementsByClassName("_deletemany") ).map((x) => x.id );
+        break;
+    case "selected" :
+        ids = Object.values( document.getElementsByClassName("_deletemany") ).filter( (x) => x.checked ).map((x) => x.id );
+        break;
+    default:
+        ga.msg.box( { icon : "toast.png",
+                      text : `Internal error: ga.util.deletemany.cb() unknown option ${option}` } );
+        return false;
+        break;
+    }
+
+    __~debug:jqgrid{console.dir( ids );}
+    if ( !ids.length ) {
+        ga.msg.box( {
+            icon : "information.png"
+            ,text : "Nothing selected to delete"
+        });
+        return false;
+    }
+    
+    ga.msg.box( {
+        icon  : "question.png"
+        ,text  : `Are you sure you want to permanently delete these ${ids.length} jobs ?`
+        ,buttons : [
+            { 
+                id    : "multidelete"
+                ,label : "Yes, delete them"
+                ,cb    : ga.util.jobadmin.cb
+                ,adata  : [ mod, id, "jobdeletemany", ids ]
+            }
+            ,{
+                id    : "cancel",
+                label : "No, do not delete"
+            }
+        ]
+    });
+    
+    return true;
+}
+    
 /* utilities for jqgrid */
 
 ga.util.jqgrid = {};
@@ -205,8 +297,17 @@ ga.util.jqgrid.load = function( mod, id ) {
                 loadComplete: function() {
                     console.log('jqgrid loadcomplete');
                     console.log(`rows ${this.rows.length}`);
+                    $('#cb_' + $grid[0].id).hide();
+                    $('#jqgh_' + $grid[0].id + '_cb').addClass('ui-jqgrid-sortable');
+                    cbColModel = $grid.jqGrid('getColProp', 'cb');
+                    cbColModel.sortable = true;
+                    cbColModel.sorttype = function(value, item) {
+                        return 'cb' in item && item.cb ? 1 : 0;
+                    };
+
                     // not sure why this doesn't work here instead of at the bottom, but filter adjustments then refresh fail
-                    // ga.util.jqgrid.filter( mod, id );
+
+                    ga.util.jqgrid.filter( mod, id );
                 }
             });
             $('#cb_' + $grid[0].id).hide();
