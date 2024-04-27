@@ -566,3 +566,8 @@ font-size: 2em;
 .ga-jqg-title {
     cursor: move;
 }
+
+.ga-repeat {
+    padding: 0 0 0 2px;
+    margin: 0 0 2px 0;
+}

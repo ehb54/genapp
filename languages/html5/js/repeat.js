@@ -105,10 +105,10 @@ ga.repeat.repeat = function( mod, id ) {
     ga.repeat.data[ mod ].repeat[ id ].eval    = ga.layout.fields[ id ].eval;
 
     if ( ga.layout.fields[ id ].lgc ) {
-        ga.repeat.data[ mod ].repeat[ id ].lhtml  = `<div style="grid-column:${ga.layout.fields[id].lgc}">${ga.repeat.data[ mod ].repeat[ id ].lhtml}</div>`;
+        ga.repeat.data[ mod ].repeat[ id ].lhtml  = `<div class="ga-repeat" style="grid-column:${ga.layout.fields[id].lgc}">${ga.repeat.data[ mod ].repeat[ id ].lhtml}</div>`;
     }
     if ( ga.layout.fields[ id ].dgc ) {
-        ga.repeat.data[ mod ].repeat[ id ].dhtml  = `<div style="grid-column:${ga.layout.fields[id].dgc}">${ga.repeat.data[ mod ].repeat[ id ].dhtml}</div>`;
+        ga.repeat.data[ mod ].repeat[ id ].dhtml  = `<div class="ga-repeat" style="grid-column:${ga.layout.fields[id].dgc}">${ga.repeat.data[ mod ].repeat[ id ].dhtml}</div>`;
     }
 
     if ( !ga.layout.fields[ id ].lgc && !ga.layout.fields[ id ].dgc ) {

@@ -502,6 +502,7 @@ eval( input_repeats );
 ga.hhelp.set();
 ga.hhelp.reset();
 ga.pull.doPull();
+ga.calc.processall( '__moduleid__' );
 </script>
 </form>
 <div id="__moduleid___results"></div>
