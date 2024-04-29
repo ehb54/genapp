@@ -387,7 +387,8 @@ ga.repeat.change = function( mod, id, init ) {
 
     // get children
     children = ga.repeat.children( mod, id );
-
+    var children_count = Object.keys( children ).length;
+    
     __~debug:repeat{ for ( i in children ) { console.log( "ga.repeat.change( " + mod + " , " + id + " ) child " + i );} }
 
     // save values
@@ -507,7 +508,11 @@ ga.repeat.change = function( mod, id, init ) {
 
         for ( j1 = 1; j1 <= vals[0]; ++j1 ) {
             for ( j2 = 1; j2 <= vals[1]; ++j2 ) {
+                let firstchild = true;
+                let child_pos  = -1;
                 for ( i in children ) {
+                    ++child_pos;
+
                     k = id + "-" + i + "-" + ( j1 - 1 ) + "-" + ( j2 - 1 );
                     
                     ga.repeat.map[ i ] = k;
@@ -517,14 +522,14 @@ ga.repeat.change = function( mod, id, init ) {
                     
                     // label
 
-                    if ( j2 == 1 ) {
+                    if ( j2 == 1 && firstchild ) {
                         if ( j1 == 1 ) {
                             for ( j2h = 1; j2h <= vals[1]; ++j2h ) {
                                 kh = id + "-" + i + "-colh-" + ( j1 - 1 ) + "-" + ( j2h - 1 );
                                 add_html += ga.repeat.data[ mod ].repeat[ i ].lhtmlrg
                                     .replace( /%%id%%/g, kh )
                                     .replace( "%%label%%", ga.repeat.headers( mod, id, 'column', j2h-1 )[0] )
-                                    .replace( /%%gridcol%%/, j2h + 1 )
+                                    .replace( /%%gridcol%%/, ( j2h - 1 ) * children_count + 2 )
                                 ;
                                 ga.repeat.headers( mod, id, 'column', j2h-1 )[1].map( v => ga.repeat.setpairupdateids( v, mod, id, kh, 'column', j2h - 1 ) );
                             }
@@ -537,12 +542,14 @@ ga.repeat.change = function( mod, id, init ) {
                             .replace( "%%gridcol%%", 1 )
                         ;
                         ga.repeat.headers( mod, id, 'row', j1-1 )[1].map( v => ga.repeat.setpairupdateids( v, mod, id, kh, 'row', j1 - 1 ) );
+                        firstchild = false;
                     }
                     
                     add_html += ga.repeat.data[ mod ].repeat[ i ].dhtmlrg
                         .replace( /%%id%%/g, k )
-                        .replace( "%%label%%", "[" + j1 + "-" + j2 + "]" )
-                        .replace( /%%gridcol%%/, j2 + 1 )
+                        // .replace( "%%label%%", "[" + j1 + "-" + j2 + "]" )
+                        .replace( "%%label%%", '' )
+                        .replace( /%%gridcol%%/, ( j2 - 1 ) * children_count + child_pos + 2 )
 
                     // .replace( ga.repeat.data[ mod ].repeater[ id ].tableize ? /<td.*?><label.*?>.*?<\/label><\/td>/ : "", "" )
                         .replace( "%%vectorDefault%%", ga.repeat.arrayDefault( i , j - 1 ) )
@@ -721,7 +728,10 @@ ga.repeat.savevalues = function( mod, id, init ) {
         ga.repeat.valuestore[ mod ][ id ] = {};
     }
     Object.values(document.getElementById( `ga-repeater-${id}` ).getElementsByTagName('input')).map( x => {
-        ga.repeat.valuestore[ mod ][ id ][ x.id ] = x.value;
+        ga.repeat.valuestore[ mod ][ id ][ x.id ] = {
+            value : x.value
+            ,checked : x.checked
+        };
     });
 }
 
@@ -734,7 +744,8 @@ ga.repeat.restorevalues = function( mod, id ) {
     Object.keys( ga.repeat.valuestore[ mod ][ id ] ).map( x => {
         let e = document.getElementById( x );
         if ( e ) {
-            e.value = ga.repeat.valuestore[ mod ][ id ][ x ];
+            e.value = ga.repeat.valuestore[ mod ][ id ][ x ].value;
+            e.checked = ga.repeat.valuestore[ mod ][ id ][ x ].checked;
         }
     });
 }
