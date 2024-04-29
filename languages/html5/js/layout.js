@@ -17,6 +17,7 @@ ga.layout = {};
 // ga.layout.fields[ fieldname ].eval                : eval
 // ga.layout.fields[ fieldname ].{lgr,lgc,dgr,dgc}   : css grid values - stored in ga.layout.slayout
 // ga.layout.modules[ module ].fields[ fieldname ]   : layout structure by field name
+// ga.layout.modules[ module ].json[ fieldname ]     : field structure (from ga.layout.module.json)
 // ----------------------------------------------------------------------------------------------------------
 // summary of operations
 // ----------------------------------------------------------------------------------------------------------
@@ -49,6 +50,10 @@ ga.layout.init = function () {
         ga.layout.modules[ ga.layout.module.name ].fields[ ga.layout.panel.fields[ i ].id ] = ga.layout.panel.fields[ i ].layout;
         __~debug:layoutloc{console.log( `in layout.js:setting layout for ${ga.layout.module.name} field ${ga.layout.panel.fields[i].id} to ` + JSON.stringify( ga.layout.panel.fields[i].layout ) );}
     }
+
+    ga.layout.modules[ ga.layout.module.name ].json = ga.layout.modules[ ga.layout.module.name ].json || {};
+
+    ga.layout.module.json.fields.map( x => ga.layout.modules[ ga.layout.module.name ].json[ x.id ] = x );
 }
 
 ga.layout.slayout = function ( field ) {

@@ -243,6 +243,9 @@ ga.calc.process = function( mod, id ) {
     // }
 
     $( "#" + id ).val( result ).trigger( "change" );
+    if ( ga.repeat && ga.repeat.data[ mod ] && ga.repeat.data[ mod ].repeater && ga.repeat.data[ mod ].repeater[ id ] ) {
+        ga.repeat.change( mod, id );
+    }
 }
 
 // convert calc string into a token list

@@ -4,6 +4,7 @@
 ga.repeat               = {};
 ga.repeat.data          = {};
 ga.repeat.map           = {};
+ga.repeat.pairupdateids = {};
 
 // ----------------------------------------------------------------------------------------------------------
 // background
@@ -21,9 +22,11 @@ ga.repeat.map           = {};
 // ga.repeat.data[ mod ].repeat[ id ]             : repeat data object for repeat id 
 // ga.repeat.data[ mod ].repeat[ id ].lhtml       : repeat id's lhtml
 // ga.repeat.data[ mod ].repeat[ id ].lhtmlr      : repeat id's lhtml modified to ease replacement
+// ga.repeat.data[ mod ].repeat[ id ].lhtmlrg     : repeat id's lhtmlr modified to remove label text and grid-column:
 // ga.repeat.data[ mod ].repeat[ id ].lhtmls      : repeat id's lhtml structure and label only for table header
 // ga.repeat.data[ mod ].repeat[ id ].dhtml       : repeat id's dhtml
 // ga.repeat.data[ mod ].repeat[ id ].dhtmlr      : repeat id's dhtml modified to ease replacement
+// ga.repeat.data[ mod ].repeat[ id ].dhtmlrg     : repeat id's dhtml as above but also replacement for grid-column:
 // ga.repeat.data[ mod ].repeat[ id ].rhtml       : repeat id's rhtml
 // ga.repeat.data[ mod ].repeat[ id ].rhtmlr      : repeat id's rhtml modified to ease replacement
 // ga.repeat.data[ mod ].repeat[ id ].eval        : repeat id's eval
@@ -32,11 +35,13 @@ ga.repeat.map           = {};
 //
 // ga.repeat.data[ mod ].repeater                 : repeater data object
 // ga.repeat.data[ mod ].repeater[ id ]           : repeater data object for repeater id
-// ga.repeat.data[ mod ].repeater[ id ].type      : repeater type (currently, checkbox, listbox or integer)
+// ga.repeat.data[ mod ].repeater[ id ].type      : repeater type (currently, checkbox, listbox, integer or integerpair)
 // ga.repeat.data[ mod ].repeater[ id ].child     : repeater's children (as registered in repeatOn)
 // ga.repeat.data[ mod ].repeater[ id ].choice    : repeater's listbox choice
 // ga.repeat.data[ mod ].repeater[ id ].value     : repeater's last value
 // ga.repeat.data[ mod ].repeater[ id ].layoutr   : repeater's layout.repeats
+//
+// ga.repeat.pairupdateids                        : for integerpair repeaters, keeps list of target ids that need updating when header value changes
 //
 // ga.repeat.map                                  : map of original id's to DOM id's of repeats
 // ----------------------------------------------------------------------------------------------------------
@@ -88,7 +93,7 @@ ga.repeat.repeat = function( mod, id ) {
         console.error( `repeat.js: mod ${mod} id ${id} lhtml missing` );
         has_errors = true;
     }
-    if ( !( "dhtml" in ga.layout.fields[ id ] ) ) {
+   if ( !( "dhtml" in ga.layout.fields[ id ] ) ) {
         console.error( `repeat.js: mod ${mod} id ${id} dhtml missing` );
         has_errors = true;
     }
@@ -150,6 +155,13 @@ ga.repeat.repeat = function( mod, id ) {
         .replace( RegExp( 'id="' + id + '-repeater"' ), 'id="%%id%%-repeater"' )
     ;    
 
+    ga.repeat.data[ mod ].repeat[ id ].lhtmlrg = 
+        ga.repeat.data[ mod ].repeat[ id ].lhtmlr
+        .replace( />[^>]*%%label%%</, '>%%label%%<' )
+        .replace( / for=/, ' id=' )
+        .replace( /grid-column:\d+/, 'grid-column:%%gridcol%%' )
+    ;
+
     ga.repeat.data[ mod ].repeat[ id ].lhtmls = // grab just relevant table structure and label text
         ga.repeat.data[ mod ].repeat[ id ].lhtml
         .replace( /<td><label.*?>(.*?)<\/label>\s*<\/td>/, "%%td%%$1%%etd%%" )
@@ -176,6 +188,11 @@ ga.repeat.repeat = function( mod, id ) {
         .replace( RegExp( 'name="_selaltval_' + id + '"' ), 'name="_selaltval_%%id%%"' )
         .replace( RegExp( 'id="' + id + '-repeater"' ), 'id="%%id%%-repeater"' )
     ;    
+
+    ga.repeat.data[ mod ].repeat[ id ].dhtmlrg =
+        ga.repeat.data[ mod ].repeat[ id ].dhtmlr
+        .replace( /grid-column:\d+/, 'grid-column:%%gridcol%%' )
+    ;
 
     if ( ga.repeat.arrayDefault( id )
          && / value=".*"/.test( ga.repeat.data[ mod ].repeat[ id ].dhtmlr )
@@ -271,6 +288,9 @@ ga.repeat.repeater = function( mod, id, type, tableize ) {
         ga.repeat.data[ mod ].repeater[ id ].layoutr = ga.layout.modules[ mod ].fields[ uid ].repeats || null;
         __~debug:layoutloc{console.log( `ga.repeat.repeater() usage of style : setting layout for repeater "${mod}" field "${uid}" to ` + JSON.stringify( ga.repeat.data[ mod ].repeater[ uid ].layoutr ) );}
     }
+    if ( type == 'integerpair' ) {
+        document.getElementById( `ga-repeater-${id}`).style.gridTemplateColumns="1fr auto";
+    }
 }
 
 // return all children
@@ -310,16 +330,17 @@ ga.repeat.children = function( mod, id, result ) {
 
 ga.repeat.change = function( mod, id, init ) {
     var val,
-    child_repeaters = [],
-    hid = "#" + id,
-    jqhid = $( hid ),
-    children,
-    add_html = "",
-    add_eval = "",
-    tid,
-    i,
-    j,
-    k;
+        child_repeaters = [],
+        hid = "#" + id,
+        jqhid = $( hid ),
+        children,
+        add_html = "",
+        add_eval = "",
+        tid,
+        i,
+        j,
+        k,
+        kh;
 
     __~debug:repeat{console.log( "ga.repeat.change( " + mod + " , " + id + " )" );}
     if ( !ga.repeat.data[ mod ] || 
@@ -342,6 +363,7 @@ ga.repeat.change = function( mod, id, init ) {
         
     case "integer" :
     case "listbox" :
+    case "integerpair" :
         val = jqhid.val();
 	//console.log("Value:  " + val );
         break;
@@ -469,6 +491,78 @@ ga.repeat.change = function( mod, id, init ) {
         }
         break;
 
+    case "integerpair" :
+
+        var vals = val.split(",").map( x => parseInt(x) );
+
+        if ( vals.length != 2 ) {
+            console.warn( `integerpair vals expected length 2, ${vals.length} found` );
+            return false;
+        }
+
+        for ( j1 = 1; j1 <= vals[0]; ++j1 ) {
+            for ( j2 = 1; j2 <= vals[1]; ++j2 ) {
+                for ( i in children ) {
+                    k = id + "-" + i + "-" + ( j1 - 1 ) + "-" + ( j2 - 1 );
+                    
+                    ga.repeat.map[ i ] = k;
+                    __~debug:repeat{console.log( " j1 " + j1 + " j2 " + j2 + " i " + i + " lhtmlr " + ga.repeat.data[ mod ].repeat[ i ].lhtmlr );}
+                    __~debug:repeat{console.log( " j1 " + j1 + " j2 " + j2 + " i " + i + " dhtmlr " + ga.repeat.data[ mod ].repeat[ i ].dhtmlr );}
+                    __~debug:repeat{console.log( " j1 " + j1 + " j2 " + j2 + " i " + i + " evalr " + ga.repeat.data[ mod ].repeat[ i ].evalr );}
+                    
+                    // label
+
+                    if ( j2 == 1 ) {
+                        if ( j1 == 1 ) {
+                            for ( j2h = 1; j2h <= vals[1]; ++j2h ) {
+                                kh = id + "-" + i + "-colh-" + ( j1 - 1 ) + "-" + ( j2h - 1 );
+                                add_html += ga.repeat.data[ mod ].repeat[ i ].lhtmlrg
+                                    .replace( /%%id%%/g, kh )
+                                    .replace( "%%label%%", ga.repeat.headers( mod, id, 'column', j2h-1 )[0] )
+                                    .replace( /%%gridcol%%/, j2h + 1 )
+                                ;
+                                ga.repeat.headers( mod, id, 'column', j2h-1 )[1].map( v => ga.repeat.setpairupdateids( v, mod, id, kh, 'column', j2h - 1 ) );
+                            }
+                        }
+                        kh = id + "-" + i + "-rowh-" + ( j1 - 1 ) + "-" + ( j2h - 1 );
+
+                        add_html += ga.repeat.data[ mod ].repeat[ i ].lhtmlrg
+                            .replace( /%%id%%/g, kh )
+                            .replace( "%%label%%", ga.repeat.headers( mod, id, 'row', j1-1 )[0] )
+                            .replace( "%%gridcol%%", 1 )
+                        ;
+                        ga.repeat.headers( mod, id, 'row', j1-1 )[1].map( v => ga.repeat.setpairupdateids( v, mod, id, kh, 'row', j1 - 1 ) );
+                    }
+                    
+                    add_html += ga.repeat.data[ mod ].repeat[ i ].dhtmlrg
+                        .replace( /%%id%%/g, k )
+                        .replace( "%%label%%", "[" + j1 + "-" + j2 + "]" )
+                        .replace( /%%gridcol%%/, j2 + 1 )
+
+                    // .replace( ga.repeat.data[ mod ].repeater[ id ].tableize ? /<td.*?><label.*?>.*?<\/label><\/td>/ : "", "" )
+                        .replace( "%%vectorDefault%%", ga.repeat.arrayDefault( i , j - 1 ) )
+                    ;
+                    
+                    if ( ga.repeat.data[ mod ].repeat[ i ].rhtmlr ) {
+                        add_html += ga.repeat.data[ mod ].repeat[ i ].rhtmlr.replace( /%%id%%/g, k );
+                    }
+                    add_eval += ga.repeat.data[ mod ].repeat[ i ].evalr.replace( /%%id%%/g, k );
+                    if ( ga.repeat.data[ mod ].repeater[ i ] ) {
+                        __~debug:repeat{console.log( "child repeater " + k );}
+                        if ( !ga.repeat.data[ mod ].repeater[ k ] ) {
+                            ga.repeat.data[ mod ].repeater[ k ] = jQuery.extend( {}, ga.repeat.data[ mod ].repeater[ i ] );
+                        }
+                        child_repeaters.push( k );
+                        if ( ga.repeat.data[ mod ].repeater[ k ].value ) {
+                            delete ga.repeat.data[ mod ].repeater[ k ].value;
+                        }
+                    }
+                }
+            }
+        }
+        break;
+
+
     default :
         console.warn( "ga.repeat.change( " + mod + " , " + id + " ) type " + ga.repeat.data[ mod ].repeater[ id ].type + " not supported" );
         return false;
@@ -531,3 +625,84 @@ ga.repeat.changeMany = function( mod, data ) {
         .map( k => { var obj = {}; obj[k]=data[k]; ga.data.update( mod, obj, true ); ga.repeat.change( mod, k ) } );
     ;
 }
+
+ga.repeat.headers = function( mod, id, type, n ) {
+    // for integerpair repeaters
+    // type is row or column
+    // concat values for all headers if exist, o.w. [n]
+
+    if ( 
+         !ga.layout.modules[ mod ]
+         || !ga.layout.modules[ mod ].json
+         || !ga.layout.modules[ mod ].json[ id ]
+         || !ga.layout.modules[ mod ].json[ id ].headers
+       ) {
+        console.warn( `ga.repeat.headers( ${mod}, ${id}, ${type}, ${n} ) - ga.layout.modules[ mod ].json[ id ].headers not defined` );
+        return `${type} [${n}]`;
+    }
+
+    if ( !ga.layout.modules[ mod ].json[ id ].headers[ type ] ) {
+        console.warn( `ga.repeat.headers( ${mod}, ${id}, ${type}, ${n} ) - missing type` );
+        return `${type} [${n}]`;
+    }
+
+    // get repeat refs
+
+    return [ ga.layout.modules[ mod ].json[ id ].headers[ type ]
+             // get repeat refs
+             .map( x => `${ga.layout.modules[mod].json[x].repeat}-${x}-${n}` )
+             // reduce values
+             .reduce( ( a, v ) => a + ( document.getElementById( v ) ? [ document.getElementById( v ).addEventListener( 'change', ga.repeat.headers.update ), document.getElementById( v ).value ][ 1 ] : "?" ) + " ", '' )
+             .replace( / *$/, '' )
+             ,
+             // get repeat refs ids for change events
+             ga.layout.modules[ mod ].json[ id ].headers[ type ]
+             .map( x => `${ga.layout.modules[mod].json[x].repeat}-${x}-${n}` )
+           ]             
+             
+    ;
+}
+
+ga.repeat.headers.update = function( event ) {
+    __~debug:repeat{console.log( `ga.repeat.headers.update( event ) id ${event.target.id}` );}
+    // find any
+    if ( !ga.repeat.pairupdateids[ event.target.id ] ) {
+        __~debug:repeat{console.log( `ga.repeat.headers.update( event ) id ${event.target.id} ga.repeat.pairupdateids[ ${event.target.id} not true` );}
+        return;
+    }
+
+    Object.keys( ga.repeat.pairupdateids[ event.target.id ] )
+        .map( mod => {
+            __~debug:repeat{console.log( `mod is ${mod}` );}
+            Object.keys( ga.repeat.pairupdateids[ event.target.id ][ mod ] )
+                .map( id => {
+                    __~debug:repeat{console.log( `mod is ${mod} id is ${id}` );}
+                    Object.keys( ga.repeat.pairupdateids[ event.target.id ][ mod ][ id ] )
+                        .map( k => {
+                            __~debug:repeat{console.log( `mod is ${mod} id is ${id} k is ${k}` );}
+                            Object.keys( ga.repeat.pairupdateids[ event.target.id ][ mod ][ id ][ k ] )
+                                .map( type => {
+                                    __~debug:repeat{console.log( `mod is ${mod} id is ${id} k is ${k} type is ${type}` );}
+                                    Object.keys( ga.repeat.pairupdateids[ event.target.id ][ mod ][ id ][ k ][ type ] )
+                                        .map( v => {
+                                            __~debug:repeat{console.log( `mod is ${mod} id is ${id} k is ${k} type is ${type} v is ${v} ` );}
+                                            __~debug:repeat{console.log( `fixup id=${k} with ga.repeat.headers( ${mod}, ${id}, ${type}, ${v} )` );}
+                                            let e = document.getElementById( k );
+                                            if ( e ) { e.innerHTML = ga.repeat.headers( mod, id, type, v )[0]; }
+                                        })
+                                })
+                        })
+                })
+        })
+    ;
+}
+
+ga.repeat.setpairupdateids = function( v, mod, id, k, type, n ) {
+    ga.repeat.pairupdateids[ v ] = ga.repeat.pairupdateids[ v ] || {};
+    ga.repeat.pairupdateids[ v ][ mod ] = ga.repeat.pairupdateids[ v ][ mod ] || {};
+    ga.repeat.pairupdateids[ v ][ mod ][ id ] = ga.repeat.pairupdateids[ v ][ mod ][ id ] || {};
+    ga.repeat.pairupdateids[ v ][ mod ][ id ][ k ] = ga.repeat.pairupdateids[ v ][ mod ][ id ][ k ] || {};
+    ga.repeat.pairupdateids[ v ][ mod ][ id ][ k ][ type ] = ga.repeat.pairupdateids[ v ][ mod ][ id ][ k ][ type ] || {};
+    ga.repeat.pairupdateids[ v ][ mod ][ id ][ k ][ type ][ n ] = true;
+}
+
