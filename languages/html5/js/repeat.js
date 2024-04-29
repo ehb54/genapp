@@ -5,6 +5,7 @@ ga.repeat               = {};
 ga.repeat.data          = {};
 ga.repeat.map           = {};
 ga.repeat.pairupdateids = {};
+ga.repeat.valuestore    = {};
 
 // ----------------------------------------------------------------------------------------------------------
 // background
@@ -42,7 +43,8 @@ ga.repeat.pairupdateids = {};
 // ga.repeat.data[ mod ].repeater[ id ].layoutr   : repeater's layout.repeats
 //
 // ga.repeat.pairupdateids                        : for integerpair repeaters, keeps list of target ids that need updating when header value changes
-//
+// ga.repeat.valuestore                           : for restoring values after repeater changes
+
 // ga.repeat.map                                  : map of original id's to DOM id's of repeats
 // ----------------------------------------------------------------------------------------------------------
 // summary of operations
@@ -388,6 +390,9 @@ ga.repeat.change = function( mod, id, init ) {
 
     __~debug:repeat{ for ( i in children ) { console.log( "ga.repeat.change( " + mod + " , " + id + " ) child " + i );} }
 
+    // save values
+    ga.repeat.savevalues( mod, id, init );
+
     // build up add_html & add_eval
 
     switch ( ga.repeat.data[ mod ].repeater[ id ].type ) {
@@ -595,6 +600,8 @@ ga.repeat.change = function( mod, id, init ) {
     __~debug:pull{else { console.log( "ga.repeat.change() did not find pull json for id " + id );} }
 
     ga.hhelp.reset();
+
+    ga.repeat.restorevalues( mod, id );
 }
 
 ga.repeat.map.convert = function( ids_array ) {
@@ -706,3 +713,33 @@ ga.repeat.setpairupdateids = function( v, mod, id, k, type, n ) {
     ga.repeat.pairupdateids[ v ][ mod ][ id ][ k ][ type ][ n ] = true;
 }
 
+ga.repeat.savevalues = function( mod, id, init ) {
+    __~debug:repeat{console.log( `ga.repeat.savevalues( ${mod}, ${id} )` );}
+    ga.repeat.valuestore[ mod ]       = ga.repeat.valuestore[ mod ] || {};
+    ga.repeat.valuestore[ mod ][ id ] = ga.repeat.valuestore[ mod ][ id ] || {};
+    if ( init ) {
+        ga.repeat.valuestore[ mod ][ id ] = {};
+    }
+    Object.values(document.getElementById( `ga-repeater-${id}` ).getElementsByTagName('input')).map( x => {
+        ga.repeat.valuestore[ mod ][ id ][ x.id ] = x.value;
+    });
+}
+
+ga.repeat.restorevalues = function( mod, id ) {
+    __~debug:repeat{console.log( `ga.repeat.restorevalues( ${mod}, ${id} )` );}
+    if ( !ga.repeat.valuestore[ mod ] ||
+         !ga.repeat.valuestore[ mod ][ id ] ) {
+        return;
+    }
+    Object.keys( ga.repeat.valuestore[ mod ][ id ] ).map( x => {
+        let e = document.getElementById( x );
+        if ( e ) {
+            e.value = ga.repeat.valuestore[ mod ][ id ][ x ];
+        }
+    });
+}
+
+ga.repeat.resetvalues = function( mod ) {
+    __~debug:repeat{console.log( `ga.repeat.restorevalues( ${mod} )` );}
+    ga.repeat.valuestore[ mod ] = {};
+}
