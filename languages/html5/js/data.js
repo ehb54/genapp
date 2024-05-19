@@ -137,8 +137,13 @@ __~debug:getinput{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_
 		
 		ga.plot3dglobal     = v.layout;
 		ga.dataplot3dglobal = v.data;
+                if ( v.config ) {
+                    ga.configplot3dglobal = v.config;
+                }
+
 		ga.plotted3d[ mod ] = 0;
 		
+		__~debug:plotly{console.log("plotly JSON Config: " + JSON.stringify(v.config));}
 		__~debug:plotly{console.log("Plotly JSON Options: " + JSON.stringify(v.layout));}
 		__~debug:plotly{console.log("plotly JSON Data: " + JSON.stringify(v.data));}
 
@@ -149,7 +154,12 @@ __~debug:getinput{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_
 		
 		//if(!ga.showcollapse3d)
 		//{
-		Plotly.newPlot(k, v.data, v.layout);
+                if ( v.config ) {
+		    Plotly.newPlot(k, v.data, v.layout, v.config);
+                } else {
+		    Plotly.newPlot(k, v.data, v.layout );
+                }
+                    
 		//}
 		if ( ga.showcollapse3d[ mod ] )
 		{
