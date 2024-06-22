@@ -644,11 +644,27 @@ ga.repeat.changeMany = function( mod, data ) {
     ;
 }
 
+ga.repeat.prefix  = function( mod, id ) {
+    __~debug:repeat{console.log( `ga.repeat.prefix( '${mod}', '${id}' )` );}
+
+    var result = "";
+
+    while ( ga.layout.modules[mod].json[id] && ga.layout.modules[mod].json[id].repeat ) {
+        var nextid = ga.layout.modules[mod].json[id].repeat.replace( ':', '-' );
+        result = nextid + "-" + result;
+        id = nextid;
+    }
+
+    return result;
+}
+    
 ga.repeat.headers = function( mod, id, type, n ) {
     // for integerpair repeaters
     // type is row or column
     // concat values for all headers if exist, o.w. [n]
     __~debug:repeat{console.log( `ga.repeat.headers( '${mod}', '${id}', '${type}', ${n} )` );}
+
+    id = id.split( /-/ ).slice(-1)[0];
 
     if ( 
          !ga.layout.modules[ mod ]
@@ -669,7 +685,8 @@ ga.repeat.headers = function( mod, id, type, n ) {
 
     return [ ga.layout.modules[ mod ].json[ id ].headers[ type ]
              // get repeat refs
-             .map( x => `${ga.layout.modules[mod].json[x].repeat}-${x}-${n}` )
+             // .map( x => `${ga.layout.modules[mod].json[x].repeat}-${x}-${n}` )
+             .map( x => `${ga.repeat.prefix(mod,x)}${x}-${n}` )
              // reduce values
              .reduce( ( a, v ) => a + ( document.getElementById( v ) ? [ document.getElementById( v ).addEventListener( 'change', ga.repeat.headers.update ), document.getElementById( v ).value ][ 1 ] : "?" ) + " ", '' )
              .replace( / *$/, '' )
@@ -678,11 +695,14 @@ ga.repeat.headers = function( mod, id, type, n ) {
              ga.layout.modules[ mod ].json[ id ].headers[ type ]
              .map( x => `${ga.layout.modules[mod].json[x].repeat}-${x}-${n}` )
            ]             
-             
     ;
 }
 
 ga.repeat.headers.have = function( mod, id ) {
+    __~debug:repeat{console.log( `ga.repeat.headers.have( '${mod}', '${id}' )` );}
+
+    id = id.split( /-/ ).slice(-1)[0];
+
     has_headers = ga.layout.modules[ mod ].json[ id ] && ga.layout.modules[ mod ].json[ id ].headers;
 
     return [
