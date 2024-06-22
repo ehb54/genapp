@@ -503,8 +503,10 @@ ga.repeat.change = function( mod, id, init ) {
 
         var use_headers = ga.repeat.headers.have( mod, id )[1] && ga.repeat.headers.have( mod, id )[2];
 
+        __~debug:repeat{console.log( `integerpair val ${val}` );}
+
         if ( vals.length != 2 ) {
-            console.warn( `integerpair vals expected length 2, ${vals.length} found` );
+            console.warn( `integerpair vals expected length 2, ${vals.length} found : '${val}'` );
             return false;
         }
 
@@ -759,6 +761,9 @@ ga.repeat.restorevalues = function( mod, id ) {
         if ( e ) {
             e.value = ga.repeat.valuestore[ mod ][ id ][ x ].value;
             e.checked = ga.repeat.valuestore[ mod ][ id ][ x ].checked;
+            if ( ga.repeat.data[ mod ].repeater[ x.split( /-/ ).slice(-1)[0] ] ) {
+                ga.repeat.change( mod, x );
+            }
         }
     });
 }
