@@ -501,6 +501,8 @@ ga.repeat.change = function( mod, id, init ) {
 
         var vals = val.split(",").map( x => parseInt(x) );
 
+        var use_headers = ga.repeat.headers.have( mod, id )[1] && ga.repeat.headers.have( mod, id )[2];
+
         if ( vals.length != 2 ) {
             console.warn( `integerpair vals expected length 2, ${vals.length} found` );
             return false;
@@ -522,7 +524,7 @@ ga.repeat.change = function( mod, id, init ) {
                     
                     // label
 
-                    if ( j2 == 1 && firstchild ) {
+                    if ( use_headers && j2 == 1 && firstchild ) {
                         if ( j1 == 1 ) {
                             for ( j2h = 1; j2h <= vals[1]; ++j2h ) {
                                 kh = id + "-" + i + "-colh-" + ( j1 - 1 ) + "-" + ( j2h - 1 );
@@ -644,6 +646,7 @@ ga.repeat.headers = function( mod, id, type, n ) {
     // for integerpair repeaters
     // type is row or column
     // concat values for all headers if exist, o.w. [n]
+    __~debug:repeat{console.log( `ga.repeat.headers( '${mod}', '${id}', '${type}', ${n} )` );}
 
     if ( 
          !ga.layout.modules[ mod ]
@@ -675,6 +678,16 @@ ga.repeat.headers = function( mod, id, type, n ) {
            ]             
              
     ;
+}
+
+ga.repeat.headers.have = function( mod, id ) {
+    has_headers = ga.layout.modules[ mod ].json[ id ] && ga.layout.modules[ mod ].json[ id ].headers;
+
+    return [
+        has_headers
+        ,has_headers && ga.layout.modules[ mod ].json[ id ].headers.row
+        ,has_headers && ga.layout.modules[ mod ].json[ id ].headers.column
+    ];
 }
 
 ga.repeat.headers.update = function( event ) {

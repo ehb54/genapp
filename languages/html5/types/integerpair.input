@@ -8,7 +8,7 @@ __~fields:repeat{ga.layout.slayout( '__fields:id__' );}
 
 ga.layout.fields[ "__fields:id__" ].eval  =
   __~fields:pull{'ga.pull.toPull( "__moduleid__", "#__fields:id__", "text", "__fields:pull__", "#__fields:repeat__" );' + }
-  __~fields:repeater{'ga.repeat.repeater( "__moduleid__", "__fields:id__", "integerpair", "__fields:tableize__" );' + }
+  __~fields:repeater{'ga.repeat.repeater( "__moduleid__", "__fields:id__", "integerpair", "__fields:tableize__" );$( "#__fields:id__" ).change( function() { ga.repeat.change( "__moduleid__", "__fields:id__" ); } );' + }
   __~fields:safefile{ '$( "#__fields:id__" ).blur( function() { ga.valid.safeFile( "#__fields:id__" ); } );' + }
   __~fields:calc{'ga.calc.register( "__moduleid__", "__fields:id__", "__fields:calc__" );' + }
   __~fields:repeater{'ga.repeat.change( "__moduleid__", "__fields:id__" );' +}
