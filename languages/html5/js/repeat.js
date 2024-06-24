@@ -535,7 +535,7 @@ ga.repeat.change = function( mod, id, init ) {
                                     .replace( "%%label%%", ga.repeat.headers( mod, id, 'column', j2h-1 )[0] )
                                     .replace( /%%gridcol%%/, ( j2h - 1 ) * children_count + 2 )
                                 ;
-                                ga.repeat.headers( mod, id, 'column', j2h-1 )[1].map( v => ga.repeat.setpairupdateids( v, mod, id, kh, 'column', j2h - 1 ) );
+                                ga.repeat.headers( mod, id, 'column', j2h-1 )[1].map( v => ga.repeat.setpairupdateids( ga.repeat.prefix( mod, ga.repeat.lastid(v) ) + ga.repeat.headerid( mod, id, 'column' ) + `${j2h - 1}`, mod, id, kh, 'column', j2h - 1 ) );
                             }
                         }
                         kh = id + "-" + i + "-rowh-" + ( j1 - 1 ) + "-" + ( j2h - 1 );
@@ -545,7 +545,7 @@ ga.repeat.change = function( mod, id, init ) {
                             .replace( "%%label%%", ga.repeat.headers( mod, id, 'row', j1-1 )[0] )
                             .replace( "%%gridcol%%", 1 )
                         ;
-                        ga.repeat.headers( mod, id, 'row', j1-1 )[1].map( v => ga.repeat.setpairupdateids( v, mod, id, kh, 'row', j1 - 1 ) );
+                        ga.repeat.headers( mod, id, 'row', j1-1 )[1].map( v => ga.repeat.setpairupdateids( ga.repeat.prefix( mod, ga.repeat.lastid(v) ) + ga.repeat.headerid( mod, id, 'row' ) + `${j1 - 1}`, mod, id, kh, 'row', j1 - 1 ) );
                         firstchild = false;
                     }
                     
@@ -644,6 +644,16 @@ ga.repeat.changeMany = function( mod, data ) {
     ;
 }
 
+ga.repeat.firstid = function( id ) {
+    __~debug:repeat{console.log( `ga.repeat.firstid( '${id}' )` );}
+    return id.split( /-/ )[0];
+}
+
+ga.repeat.lastid = function( id ) {
+    __~debug:repeat{console.log( `ga.repeat.lastid( '${id}' )` );}
+    return id.replace( /-\d*$/, '' ).split( /-/ ).slice(-1)[0];
+}
+
 ga.repeat.prefix  = function( mod, id ) {
     __~debug:repeat{console.log( `ga.repeat.prefix( '${mod}', '${id}' )` );}
 
@@ -658,6 +668,29 @@ ga.repeat.prefix  = function( mod, id ) {
     return result;
 }
     
+ga.repeat.headerid = function( mod, id, type ) {
+    __~debug:repeat{console.log( `ga.repeat.headerid( '${mod}', '${id}', '${type}' )` );}
+    id = ga.repeat.lastid( id );
+    
+    if ( 
+         !ga.layout.modules[ mod ]
+         || !ga.layout.modules[ mod ].json
+         || !ga.layout.modules[ mod ].json[ id ]
+         || !ga.layout.modules[ mod ].json[ id ].headers
+       ) {
+        console.warn( `ga.repeat.headers( ${mod}, ${id}, ${type} ) - ga.layout.modules[ mod ].json[ id ].headers not defined` );
+        return "";
+    }
+
+    if ( !ga.layout.modules[ mod ].json[ id ].headers[ type ] ) {
+        console.warn( `ga.repeat.headers( ${mod}, ${id}, ${type} ) - missing type` );
+        return '';
+    }
+    
+    // NOTE : this breaks multi-header concat
+    return ga.layout.modules[ mod ].json[ id ].headers[ type ][0] + '-';
+}
+
 ga.repeat.headers = function( mod, id, type, n ) {
     // for integerpair repeaters
     // type is row or column
@@ -747,6 +780,7 @@ ga.repeat.headers.update = function( event ) {
 }
 
 ga.repeat.setpairupdateids = function( v, mod, id, k, type, n ) {
+    __~debug:repeat{console.log( `ga.repeat.setpairupdateids( '${v}', '${mod}', '${id}', '${k}', '${type}', '${n}' )` );}
     ga.repeat.pairupdateids[ v ] = ga.repeat.pairupdateids[ v ] || {};
     ga.repeat.pairupdateids[ v ][ mod ] = ga.repeat.pairupdateids[ v ][ mod ] || {};
     ga.repeat.pairupdateids[ v ][ mod ][ id ] = ga.repeat.pairupdateids[ v ][ mod ][ id ] || {};
