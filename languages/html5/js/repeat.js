@@ -528,6 +528,15 @@ ga.repeat.change = function( mod, id, init ) {
 
                     if ( use_headers && j2 == 1 && firstchild ) {
                         if ( j1 == 1 ) {
+
+                            kh = id + "-" + i + "-corner";
+
+                            add_html += ga.repeat.data[ mod ].repeat[ i ].lhtmlrg
+                                .replace( /%%id%%/g, kh )
+                                .replace( "%%label%%", ga.repeat.headers( mod, id, 'corner' ) )
+                                .replace( /%%gridcol%%/, 0 )
+                            ;
+                            
                             for ( j2h = 1; j2h <= vals[1]; ++j2h ) {
                                 kh = id + "-" + i + "-colh-" + ( j1 - 1 ) + "-" + ( j2h - 1 );
                                 add_html += ga.repeat.data[ mod ].repeat[ i ].lhtmlrg
@@ -708,6 +717,11 @@ ga.repeat.headers = function( mod, id, type, n ) {
         console.warn( `ga.repeat.headers( ${mod}, ${id}, ${type}, ${n} ) - ga.layout.modules[ mod ].json[ id ].headers not defined` );
         return `${type} [${n}]`;
     }
+
+    if ( type == 'corner' ) {
+        return ga.layout.modules[ mod ].json[ id ].headers[ type ] || '';
+    }
+    
 
     if ( !ga.layout.modules[ mod ].json[ id ].headers[ type ] ) {
         console.warn( `ga.repeat.headers( ${mod}, ${id}, ${type}, ${n} ) - missing type` );
