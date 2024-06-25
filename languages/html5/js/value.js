@@ -703,7 +703,7 @@ ga.value.setLastValue = function( pkg, tag, defval ) {
     if ( !/_output$/.test( pkg ) ) {
         return false;
     }
-__~debug:values{   console.log( "ga.value.setLastValue() pkg:" + pkg + " tag:" + tag + " type:" + t.attr( "type" ) + " tagName:" + t.prop( "tagName" ) + " value:" + t.val() );}
+    __~debug:values{console.log( `ga.value.setLastValue( '${pkg}', '${tag}', '${defval}' )` + " type:" + t.attr( "type" ) + " tagName:" + t.prop( "tagName" ) + " value:" + t.val() );}
     if ( $( "#global_data" ).data( tl ) == undefined ) {
         switch( t.attr( "type" ) )
         {
@@ -722,8 +722,8 @@ __~debug:values{   console.log( "ga.value.setLastValue() pkg:" + pkg + " tag:" +
 	        var tag_s = tag;
 	        tag_s = tag_s.replace(/^#/, "");
 	    __~debug:plotly{console.log("PLOT3D: " + tag_s);}
-	        Plotly.newPlot(tag_s,[],{});
-	        Plotly.purge(tag_s);
+ 	        // Plotly.newPlot(tag_s,[],{}); -- not needed
+    	        Plotly.purge(tag_s);
 	        break;
 	    case "plot2d" :
                __~debug:values{console.log( "ga.value.setLastValue() on undefined plot2d not yet: " + tl );}
