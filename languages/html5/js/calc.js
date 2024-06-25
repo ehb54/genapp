@@ -217,15 +217,24 @@ ga.calc.install = function( mod, id ) {
 
 // process all fields for module
 ga.calc.processall = function( mod ) {
-    __~debug:calc{console.log( `ga.calc.processall( ${mod} )` );}
+    __~debug:calc{console.log( `ga.calc.processall( '${mod}' )` );}
     if ( mod in ga.calc.data ) {
+        __~debug:calc{console.log( `ga.calc.processall( ${mod} ) - mod in ga.calc.data` );}
         Object.values( ga.calc.data[ mod ] ).map( v => ga.calc.process( mod, Object.keys(v)[0]));
     }
 }
 
+ga.calc.processifok = function( mod, id ) {
+    __~debug:calc{console.log( `ga.calc.processifok( '${mod}', '${id}' )` );}
+    if ( ga.calc.data[ mod ] && ga.calc.data[ mod ].calc[ id ] && ga.calc.data[ mod ].calc[ id ].tree ) {
+        return ga.calc.process( mod, id );
+    }
+    __~debug:calc{console.log( `ga.calc.processifok( '${mod}', '${id}' ) - not found` );}
+}
+
 // update field
 ga.calc.process = function( mod, id ) {
-    __~debug:calc{console.log( "ga.calc.process( " + mod + " , " + id + " )" );}
+    __~debug:calc{console.log( `ga.calc.process( '${mod}', '${id}' )` );}
     var result = ga.calc.evaltree( jQuery.extend( true, {}, ga.calc.data[ mod ].calc[ id ].tree ) );
 
     if ( result._error ) {
