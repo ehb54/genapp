@@ -212,7 +212,8 @@ ga.repeat.repeat = function( mod, id ) {
         .replace( RegExp( 'id="' + id + '-repeater"' ), 'id="%%id%%-repeater"' )
     ;    
 
-    if ( ga.repeat.arrayDefault( mod, id )[0]
+    if ( ga.repeat.arrayDefault( mod, id )
+         && ga.repeat.arrayDefault( mod, id )[0]
          && / value=".*"/.test( ga.repeat.data[ mod ].repeat[ id ].dhtmlr )
        ) {
         ga.repeat.data[ mod ].repeat[ id ].dhtmlr =
