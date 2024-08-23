@@ -59,18 +59,39 @@ ga.repeat.valuestore    = {};
 // ----------------------------------------------------------------------------------------------------------
 
 // get default array if exists
-ga.repeat.arrayDefault = function( id, n ) {
-    __~debug:repeat{console.log( `ga.repeat.arrayDefault( ${id}, ${n} )` );}
-
+ga.repeat.arrayDefault = function( mod, id, m, n ) {
+    __~debug:repeat{console.log( `ga.repeat.arrayDefault( ${mod}, ${id}, ${m}, ${n} )` );}
+    
     var obj = ga.layout.module.json.fields.find(o=>o.id===id);
+    var dim = 1;
     if ( obj && "default" in obj && Array.isArray( obj.default ) ) {
-        if ( typeof n === 'undefined' ) { 
-            return obj.default;
+        if ( obj.repeat && ga.repeat.data[mod].repeater && ga.repeat.data[mod].repeater[obj.repeat] && ga.repeat.data[mod].repeater[obj.repeat].type == 'integerpair' ) {
+            dim = 2;
+        } else if ( obj.default.constructor == Array && obj.default[0].constructor == Array ) {
+            dim = 2;
         }
-        if ( n >= obj.default.length ) {
-            n = obj.default.length - 1;
+        if ( typeof m === 'undefined' ) { 
+            return [ obj.default, dim ];
         }
-        return obj.default[ n ];
+        if ( dim == 2 ) {
+            __~debug:repeat{console.log( `ga.repeat.arrayDefault( ${mod}, ${id}, ${m}, ${n} ) - found integerpair` );}
+            if ( isNaN( m ) ) {
+                __~debug:repeat{console.log( `ga.repeat.arrayDefault( ${mod}, ${id}, ${m}, ${n} ) - found integerpair - m isNaN - returning null` );}
+                return null;
+            }
+            if ( m >= obj.default.length ) {
+                m = obj.default.length - 1;
+            }
+            if ( n >= obj.default[ m ].length ) {
+                n = obj.default[ m ].length - 1;
+            }
+            return obj.default[ m ][ n ];
+        } else {
+            if ( m >= obj.default.length ) {
+                m = obj.default.length - 1;
+            }
+            return obj.default[ m ];
+        }
     }
     return null;
 }
@@ -191,16 +212,24 @@ ga.repeat.repeat = function( mod, id ) {
         .replace( RegExp( 'id="' + id + '-repeater"' ), 'id="%%id%%-repeater"' )
     ;    
 
+    if ( ga.repeat.arrayDefault( mod, id )[0]
+         && / value=".*"/.test( ga.repeat.data[ mod ].repeat[ id ].dhtmlr )
+       ) {
+        ga.repeat.data[ mod ].repeat[ id ].dhtmlr =
+            ga.repeat.data[ mod ].repeat[ id ].dhtmlr
+            .replace( / value=".*?"/
+                      , ga.repeat.arrayDefault( mod, id )[1] == 1 ? ' value="%%vectorDefault%%"' : ' value="%%matrixDefault%%"' );
+        // if ( /%%matrixDefault%%/.test( ga.repeat.data[ mod ].repeat[ id ].dhtmlr ) ) {
+        //    console.log( `matrixDefault set dim ${ga.repeat.arrayDefault( mod, id )[1]} - ${ga.repeat.data[mod].repeat[id].dhtmlr}`);
+        // } else { 
+        //    console.log( `vectorDefault set dim ${ga.repeat.arrayDefault( mod, id )[1]} - ${ga.repeat.data[mod].repeat[id].dhtmlr}`);
+        // }
+    }
+
     ga.repeat.data[ mod ].repeat[ id ].dhtmlrg =
         ga.repeat.data[ mod ].repeat[ id ].dhtmlr
         .replace( /grid-column:\d+/, 'grid-column:%%gridcol%%' )
     ;
-
-    if ( ga.repeat.arrayDefault( id )
-         && / value=".*"/.test( ga.repeat.data[ mod ].repeat[ id ].dhtmlr )
-       ) {
-        ga.repeat.data[ mod ].repeat[ id ].dhtmlr = ga.repeat.data[ mod ].repeat[ id ].dhtmlr.replace( / value=".*?"/, ' value="%%vectorDefault%%"' );
-    }
 
     __~debug:repeathtmls{console.log( "ga.repeat.repeat( " + mod + " , " + id + " )" );}
     __~debug:repeathtmls{console.log( "--------------------" );}
@@ -443,7 +472,13 @@ ga.repeat.change = function( mod, id, init ) {
                 if ( !ga.repeat.data[ mod ].repeater[ id ].tableize ) {
                     add_html += ga.repeat.data[ mod ].repeat[ i ].lhtmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "[" + j + "]" ).replace( ga.repeat.data[ mod ].repeater[ id ].tableize ? /<td.*?><label.*?>.*?<\/label><\/td>/ : "", "" );
                 }
-                add_html += ga.repeat.data[ mod ].repeat[ i ].dhtmlr.replace( /%%id%%/g, k ).replace( "%%label%%", "[" + j + "]" ).replace( ga.repeat.data[ mod ].repeater[ id ].tableize ? /<td.*?><label.*?>.*?<\/label><\/td>/ : "", "" ).replace( "%%vectorDefault%%", ga.repeat.arrayDefault( i , j - 1 ) );
+                add_html += ga.repeat.data[ mod ].repeat[ i ].dhtmlr
+                    .replace( /%%id%%/g, k )
+                    .replace( "%%label%%", "[" + j + "]" )
+                    .replace( ga.repeat.data[ mod ].repeater[ id ].tableize ? /<td.*?><label.*?>.*?<\/label><\/td>/ : "", "" )
+                    .replace( "%%vectorDefault%%", ga.repeat.arrayDefault( mod, i , j - 1 ) )
+                    .replace( "%%matrixDefault%%", `${j} ${k}` )
+                ;
                 if ( ga.repeat.data[ mod ].repeat[ i ].rhtmlr ) {
                     add_html += ga.repeat.data[ mod ].repeat[ i ].rhtmlr.replace( /%%id%%/g, k );
                 }
@@ -565,7 +600,8 @@ ga.repeat.change = function( mod, id, init ) {
                         .replace( /%%gridcol%%/, ( j2 - 1 ) * children_count + child_pos + 2 )
 
                     // .replace( ga.repeat.data[ mod ].repeater[ id ].tableize ? /<td.*?><label.*?>.*?<\/label><\/td>/ : "", "" )
-                        .replace( "%%vectorDefault%%", ga.repeat.arrayDefault( i , j - 1 ) )
+                        .replace( "%%vectorDefault%%", ga.repeat.arrayDefault( mod, i , j - 1 ) )
+                        .replace( "%%matrixDefault%%", ga.repeat.arrayDefault( mod, i , j1 - 1, j2 - 1 ) )
                     ;
                     
                     if ( ga.repeat.data[ mod ].repeat[ i ].rhtmlr ) {
@@ -837,6 +873,6 @@ ga.repeat.restorevalues = function( mod, id ) {
 }
 
 ga.repeat.resetvalues = function( mod ) {
-    __~debug:repeat{console.log( `ga.repeat.restorevalues( ${mod} )` );}
+    __~debug:repeat{console.log( `ga.repeat.resetvalues( ${mod} )` );}
     ga.repeat.valuestore[ mod ] = {};
 }
