@@ -22,7 +22,7 @@ ga.button.click = function( mod, id, hook, file ) {
         ,hook     : hook
     }
 
-    if ( file ) {
+    if ( file && file != '__fields:file__' ) {
         // perhaps "lfile", "rfile" etc, right now, currently lfile
         console.log( `ga.button.click() - file requested, load and put file in json - todo` );
         // FileReader requires <input type=file>, so setup a dialog
