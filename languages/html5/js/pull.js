@@ -89,10 +89,12 @@ __~debug:pull{    console.log( "ga.pull.doPull(): in tu[k]:" + k2 + " => " + v2 
 // setup html for results
 __~debug:pull{   console.log( "ga.pull.doPull(): listbox pull'd " + typeof( v ) ); }
 __~debug:pull{   console.log( v ); }
-                         $.each( v, function( k3, v3 ) {
-__~debug:pull{   console.log( "ga.pull.doPull(): listbox append " + v3 ); }
-                           t.append($("<option></option>").attr( "value", v3 ).text( v3 ) );
-                         });
+                         if ( Array.isArray( v ) ) {
+                             $.each( v, function( k3, v3 ) {
+                                 __~debug:pull{console.log( "ga.pull.doPull(): listbox append " + v3 ); }
+                                 t.append($("<option></option>").attr( "value", v3 ).text( v3 ) );
+                             });
+                         }
                          break;
                         case "label" : 
 __~debug:pull{   console.log( "ga.pull.doPull(): label for " + k2 ); }
