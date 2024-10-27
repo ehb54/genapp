@@ -10,8 +10,8 @@ ga.button.cbclick = function( cb, mod, id, hook, file ) {
     }
 }
 
-ga.button.click = function( mod, id, hook, file ) {
-    console.log( `ga.button.click( ${mod}, ${id}, ${hook}, ${file})` );
+ga.button.click = function( mod, id, hook, file, extradata ) {
+    console.log( `ga.button.click( ${mod}, ${id}, ${hook}, ${file}, ${extradata} )` );
 
     // validate & use ga.msg (msgbox?) if issues
 
@@ -48,6 +48,13 @@ ga.button.click = function( mod, id, hook, file ) {
         );
         return;
     }
+
+    if ( extradata && document.getElementById( extradata ) ) {
+        sendobj[ extradata ] = document.getElementById( extradata ).value;
+    } else {
+        sendobj[ extradata ] = `${extradata} no element`;
+    }
+        
     return ga.button.process( mod, sendobj );
 }
 
