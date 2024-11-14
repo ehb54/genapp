@@ -109,7 +109,7 @@ if ( !isset( $uniquedir ) &&
         strlen( $_REQUEST[ '_project' ] ) > 1 )
    {
       $dir .= $_REQUEST[ '_project' ];
-      __~addproject{addproject( $_REQUEST[ '_project' ] );}
+      __~addproject{if ( addproject( $_REQUEST[ '_project' ] ) ) { $_SESSION[ $window ][ 'project' ] = $project; } }
    } else {
       $dir .= 'no_project_specified';
    }

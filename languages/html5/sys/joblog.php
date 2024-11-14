@@ -1000,6 +1000,7 @@ function addproject( $project, $desc = "system generated", $error_json_exit = fa
 
             ## do we need to set the session project?, e.g.:
             ## $_SESSION[ $window ][ 'project' ] = $project,
+            ## --> done in base.php if this returns true
 
             if ( !$addok ) {
                 return true; ## already exists
