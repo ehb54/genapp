@@ -6,7 +6,7 @@
 # inspects/update mongodb to get ports
 # returns an object with port values for each field
 
-define( GA_PORT_TIMEOUT_SECS, 60 );
+define( "GA_PORT_TIMEOUT_SECS", 60 );
 
 require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
 
