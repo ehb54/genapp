@@ -252,6 +252,14 @@
                          "type"    : "integer"
                         },
 			{
+                        "id"      : "_height",
+                         "type"    : "integer"
+                        },
+			{
+                        "id"      : "_width",
+                         "type"    : "integer"
+                        },
+			{
                         "id"      : "tags",
                          "type"    : "text"
                         },
