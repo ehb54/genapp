@@ -302,6 +302,13 @@ __~docrootexecutable{$( this ).append( $("<input>").attr("type", "hidden").attr(
 //    ga.altfile.add( "__moduleid__" );
     ga.valuen.addhtml( "__moduleid__" );
 
+    // this should all be cleaned up, moved to js/
+
+    var tmpadd = $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_height").val( window.screen.height );
+    $( this ).append($(tmpadd));
+    tmpadd = $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_width").val( window.screen.width );
+    $( this ).append($(tmpadd));
+
     ga.extrahidden( "__moduleid__" );
 
     ga.ws.sub( vuuid, msg___moduleid__, "__moduleid__" );

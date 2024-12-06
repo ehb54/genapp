@@ -20,6 +20,8 @@ ga.button.click = function( mod, id, hook, file, extradata ) {
         ,_window  : window.name
         ,_project : $( "#_state" ).data( "_project" )
         ,hook     : hook
+        ,_height : window.screen.height
+        ,_width : window.screen.width
     }
 
     if ( file && file != '__fields:file__' ) {
@@ -49,10 +51,12 @@ ga.button.click = function( mod, id, hook, file, extradata ) {
         return;
     }
 
-    if ( extradata && document.getElementById( extradata ) ) {
-        sendobj[ extradata ] = document.getElementById( extradata ).value;
-    } else {
-        sendobj[ extradata ] = `${extradata} no element`;
+    if ( extradata ) {
+        if ( document.getElementById( extradata ) ) {
+            sendobj[ extradata ] = document.getElementById( extradata ).value;
+        } else {
+            sendobj[ extradata ] = `${extradata} no element`;
+        }
     }
         
     return ga.button.process( mod, sendobj );
