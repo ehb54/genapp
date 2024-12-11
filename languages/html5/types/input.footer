@@ -304,9 +304,9 @@ __~docrootexecutable{$( this ).append( $("<input>").attr("type", "hidden").attr(
 
     // this should all be cleaned up, moved to js/
 
-    var tmpadd = $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_height").val( window.screen.height );
+    var tmpadd = $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_height").val( Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0 ) );
     $( this ).append($(tmpadd));
-    tmpadd = $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_width").val( window.screen.width );
+    tmpadd = $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_width").val( Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0 ) );
     $( this ).append($(tmpadd));
 
     ga.extrahidden( "__moduleid__" );
