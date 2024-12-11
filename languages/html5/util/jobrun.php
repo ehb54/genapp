@@ -113,6 +113,8 @@ sendudptext( "jobrun: exec: returned\n" );
 
 __~debug:runjob{error_log( "jobrun 13\n", 3, "/tmp/php_errors" );}
 
+$disable_notify = false;
+
 if ( !$GLOBALS[ 'wascancelled' ] ) {
     $results = str_replace( "__docroot:html5__/__application__/", "", $results );
 
@@ -148,6 +150,13 @@ if ( !$GLOBALS[ 'wascancelled' ] ) {
         }
     }
 
+    $objresults = json_decode( $strresults );
+    if ( isset( $objresults->_disable_notify ) ) {
+        $disable_notify = true;
+    }
+
+    __~debug:runjob{error_log( "jobrun 13 - outputcontents\n" . json_encode( json_decode( $strresults ), JSON_PRETTY_PRINT ) . "\n", 3, "/tmp/php_errors" );}
+
     sendudptext( "jobrun: exec done, logfile found\n" );
 }
 
@@ -161,10 +170,15 @@ __~debug:runjob{error_log( "jobrun 15\n", 3, "/tmp/php_errors" );}
 
 __~seedmelab:url{$seedmecmd="php __docroot:html5__/__application__/seedmelab/syncfilesdirs.php --user " . $GLOBALS['logon']; exec("$seedmecmd >> /tmp/php_errors 2>&1 & echo $!; " );}
 
-if ( !$GLOBALS[ 'wascancelled' ] ) {
-    notify( 'finished' );
+if ( !$disable_notify ) {
+    __~debug:runjob{error_log( "jobrun 15 - will do email notification\n", 3, "/tmp/php_errors" );}
+    if ( !$GLOBALS[ 'wascancelled' ] ) {
+        notify( 'finished' );
+    } else {
+        notify( 'canceled' );
+    }
 } else {
-    notify( 'canceled' );
+    __~debug:runjob{error_log( "jobrun 15 - will NOT do email notification\n", 3, "/tmp/php_errors" );}
 }
 
 if ( $checkrunning == 1 )
