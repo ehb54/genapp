@@ -87,6 +87,7 @@ __~nojobcontrol{           do_refresh = 0;}
               ga.ws.unsub( id, "__moduleid__" );
               eval( __moduleid___done_eval );
               ga.progress.clear(  "__moduleid__", "input.footer 4" );
+              ga.button.disablebuttons( '__moduleid__', false, "get_results___moduleid__" );
            } else {
                if ( !last_timeout || last_timeout < 2000 )
                { 
@@ -115,6 +116,7 @@ __~debug:job{        console.log( "get results fail" );}
            }
            ga.ws.unsub( id, "__moduleid__" );
            eval( __moduleid___done_eval );
+           ga.button.disablebuttons( '__moduleid__', false, "get_results___moduleid__" );
           } );
     return false;
 };
@@ -127,6 +129,7 @@ function msg___moduleid__ ( id, data )
 $( "#__moduleid___submit" ).click( function( e ) {
    e.preventDefault();
    e.returnValue = false;
+   ga.button.disablebuttons( '__moduleid__', true, "jquery __moduleid__submit.click()" );
    $( "#__moduleid__" ).find( ".toclear" ).remove();   
    if ( __moduleid___timeout_handler != "unset" ) {
        __~debug:jobtimeout{console.log( "Unsetting previous handler uuid " + __moduleid___timeout_handler_uuid );}
@@ -149,6 +152,8 @@ function do___moduleid___submit( $form, airavataresource, skipcached ) {
    __~nojobcontrol{   $ok = 1;}
    __~debug:valuenx{ga.valuen.save( "__moduleid__" ); if (!$ok) {return false;};}
 
+   ga.button.disablebuttons( '__moduleid__', true, "jquery do___moduleid__submit.click()" );
+
    ga.event( "", "__moduleid__", "submit clicked" );
 
    __~license{if(!ga.license("__license__")){return false;}}
@@ -159,6 +164,7 @@ __~debug:job{   console.log( "you clicked" );}
 
    if ( !ga.valid.checksubmit( "__moduleid__" ) ) {
        ga.valid.showerrormessage( "__moduleid__" );
+       ga.button.disablebuttons( '__moduleid__', false, '!ga.valid.checksubmit()' );
        return false;
    }
 
@@ -208,11 +214,13 @@ __~debug:job{                 console.log( "joblocked returned:" + data );}
              case "1" :
              {
                  ga.msg.box( { icon:"warning.png", text:"This project directory is currently locked by another project.\nYou can wait until it completes, change the project in user configuration or clear the lock in the job manager." } );
+                 ga.button.disablebuttons( '__moduleid__', false, 'ajax1:1' );
                  return;
              } break;
              case "2" :
              {
                  ga.msg.box( { icon:"warning.png", text:"You must be logged in to submit this module." } );
+                 ga.button.disablebuttons( '__moduleid__', false, 'ajax1:2' );
                  return;
              } break;
              case "0" :
@@ -225,6 +233,7 @@ __~debug:job{                 console.log( "ok, but we are not submitting yet" )
                 if ( /^Your job/.test( data ) ) {
                    ga.msg.box( { icon : "warning.png",
                                  text : data } );
+                   ga.button.disablebuttons( '__moduleid__', false, 'ajax1:default warning' );
                    return;
                 }
                 __~debug:cache{console.log( "cache check found uuid " + data );}
@@ -238,6 +247,7 @@ __~debug:job{                 console.log( "ok, but we are not submitting yet" )
           }
        }
        ,error: function() { // your error handler
+          ga.button.disablebuttons( '__moduleid__', false, 'ajax1 error' );
           ga.msg.box( { icon:"toast.png", text:"Checking the project lock failed. This is possibly a server or network issue" } );
        }
        ,complete: function() { 
@@ -262,6 +272,7 @@ __~debug:ajax{          console.log( "missing: " + tag );}
                  }
               });
               if ( found_errors ) {
+                  ga.button.disablebuttons( '__moduleid__', false, 'ajax1 found error' );
                   return;
               }
 
@@ -436,6 +447,7 @@ __~nojobcontrol{           do_refresh = 0;}
                }
                ga.ws.unsub( vuuid, "__moduleid__" );
                eval( __moduleid___done_eval );
+               ga.button.disablebuttons( '__moduleid__', false, 'multistage cancel etc' );
            } else {
                __moduleid___timeout_handler = setTimeout( get_results___moduleid__, 2000, vuuid, 2000, 0 );
                __moduleid___timeout_handler_uuid = vuuid;
@@ -456,6 +468,7 @@ __~debug:ajax{           console.log( errorThrown );}
            }
            ga.ws.unsub( vuuid, "__moduleid__" );
            eval( __moduleid___done_eval );
+           ga.button.disablebuttons( '__moduleid__', false, 'multistage cancel etc 2' );
           } );
           } else {
 __~debug:job{              console.log( "complete but locked" );}
@@ -511,6 +524,9 @@ ga.hhelp.set();
 ga.hhelp.reset();
 ga.pull.doPull();
 ga.calc.processall( '__moduleid__' );
+if ( ga.ws.is_sub( '__moduleid__' ) ) {
+    ga.button.disablebuttons( '__moduleid__', true, 'at end of input footer' );
+}
 __~loadfields{ga.button.click( '__moduleid__', '_loadfields', '__loadfields__' );}
 </script>
 </form>

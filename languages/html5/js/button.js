@@ -92,3 +92,23 @@ ga.button.process = function( mod, sendobj ) {
     return false;
 }
 
+ga.button.disablebuttons = function( mod, disable, msg ) {
+    __~debug:button{console.log(`ga.button.disablebuttons('${mod}','` + ( disable ? 'true' : 'false' ) + `' , '${msg}')`);}
+    let doc;
+    
+    doc = document.getElementById(`${mod}_b_submit_button`);
+    if ( doc ) {
+        __~debug:button{console.log('ga.button.disablebuttons() for doc for submit found');}
+        doc.disabled = disable;
+    } else {
+        __~debug:button{console.log('ga.button.disablebuttons() doc not for submit found');}
+    }
+
+    doc = document.getElementById(`${mod}_b_reset_button`);
+    if ( doc ) {
+        __~debug:button{console.log('ga.button.disablebuttons() doc for reset found');}
+        doc.disabled = disable;
+    } else {
+        __~debug:button{console.log('ga.button.disablebuttons() doc for reset not found');}
+    }
+}

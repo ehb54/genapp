@@ -128,3 +128,7 @@ ga.ws.unsub = function( vuuid, moduleid ) {
 ga.ws.generic = function( vuuid, data ) {
    console.log( 'ga.ws.generic ' + vuuid + ' : ' + data.json);
 }
+
+ga.ws.is_sub = function( mod ) {
+    return mod in ga.ws.subd;
+}
