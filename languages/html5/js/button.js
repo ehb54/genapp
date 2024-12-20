@@ -24,33 +24,6 @@ ga.button.click = function( mod, id, hook, file, extradata ) {
         ,_width : window.screen.width
     }
 
-    if ( file && file != '__fields:file__' ) {
-        // perhaps "lfile", "rfile" etc, right now, currently lfile
-        console.log( `ga.button.click() - file requested, load and put file in json - todo` );
-        // FileReader requires <input type=file>, so setup a dialog
-        ga.msg.box(
-            {
-                text :
-                '<label for="_get_defaults_input">Choose a file for loading defaults &nbsp;</label>'
-                    + '<label class="ga-button-select zeromargin" for="_get_defaults_input">Browse local files</label>'
-                    + '<input type="file" id="_get_defaults_input" class="offscreen">'
-                ,eval :
-                "document.getElementById('_get_defaults_input').addEventListener('change', () => { "
-                    + "console.log( 'msg box eval change on get_defaults_input' );"
-                    + "var sendobj=" + JSON.stringify( sendobj ) + ";"
-	            + 'var reader = new FileReader();'
-	            + 'reader.onload = (evt) => {'
-                    + 'sendobj._filedata = evt.target.result;'
-                    + "ga.msg.close( mnum );"
-                    + `ga.button.process( "${mod}", sendobj );`
-	            + '};'
-                    + 'reader.readAsText(document.getElementById("_get_defaults_input").files[0]);'
-                    + "} );"
-            }
-        );
-        return;
-    }
-
     if ( extradata ) {
         if ( extradata == "_allformdata" ) {
             let formdata = new FormData( document.getElementById( `${mod}` ) );
@@ -66,6 +39,62 @@ ga.button.click = function( mod, id, hook, file, extradata ) {
         }
     }
         
+    if ( file && file != '__fields:file__' ) {
+        // perhaps "lfile", "rfile" etc, right now, currently lfile
+        console.log( `ga.button.click() - file requested, load and put file in json - todo` );
+        // FileReader requires <input type=file>, so setup a dialog
+        switch ( file ) {
+        case 'lfile' :
+            ga.msg.box(
+                {
+                    text :
+                    '<label for="_get_defaults_input">Choose a file for loading defaults &nbsp;</label>'
+                        + '<label class="ga-button-select zeromargin" for="_get_defaults_input">Browse local files</label>'
+                        + '<input type="file" id="_get_defaults_input" class="offscreen">'
+                    ,eval :
+                    "document.getElementById('_get_defaults_input').addEventListener('change', () => { "
+                        + "console.log( 'msg box eval change on get_defaults_input' );"
+                        + "var sendobj=" + JSON.stringify( sendobj ) + ";"
+                        + 'var reader = new FileReader();'
+                        + 'reader.onload = (evt) => {'
+                        + 'sendobj._filedata = evt.target.result;'
+                        + "ga.msg.close( mnum );"
+                        + `ga.button.process( "${mod}", sendobj );`
+                        + '};'
+                        + 'reader.readAsText(document.getElementById("_get_defaults_input").files[0]);'
+                        + "} );"
+                }
+            );
+            break;
+
+        case 'rfile' :
+            ga.msg.box(
+                {
+                    text : 'hook rfile currently in development'
+                }
+            );
+            break;
+
+        case 'lrfile' :
+            ga.msg.box(
+                {
+                    text : 'hook lrfile currently in development'
+                }
+            );
+            break;
+
+        default :
+            ga.msg.box(
+                {
+                    text : `hook unknown choice - ${file}`
+                }
+            );
+            break;
+        }
+
+        return;
+    }
+    
     return ga.button.process( mod, sendobj );
 }
 
