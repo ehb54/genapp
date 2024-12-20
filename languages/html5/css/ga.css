@@ -591,6 +591,6 @@ font-size: 2em;
 
     /* make it white but fully transparent */
     background-color: white;
-    opacity:.02;
-    filter: alpha(opacity=2%);
+    opacity: 0;
+    filter: alpha(opacity=0);
 }
