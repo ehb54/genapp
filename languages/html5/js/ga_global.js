@@ -170,6 +170,8 @@ ga.frontpage = function( url ) {
     $( 'html' ).load( url );
 }
 
+// setups a loader an initializes the delay
+
 ga.loader = function( jqtag, delay ) {
     __~debug:loader{console.log( "ga.loader( " + delay + " , " + jqtag + " )" );}
     ga.loader.jqtag = jqtag;
@@ -177,35 +179,60 @@ ga.loader = function( jqtag, delay ) {
 };
 
 ga.loader.timeout = null;
+ga.loader.active  = {};
+
+// disable all when active
+
+ga.loader.disableall = function( disable ) {
+    __~debug:loader{console.log( "ga.loader.disableall( " + ( disable ? "true" : "false" ) + " )" );}
+    if ( disable ) {
+        document.getElementById('disablingDiv').style.display='block';
+    } else {
+        document.getElementById('disablingDiv').style.display='none';
+    }
+}    
+
+// timer entrypoint, not to be called except by setTimer in ga.loader.show()
 
 ga.loader.startshow = function() {
     __~debug:loader{console.log( "ga.loader.startshow tag is " + ga.loader.jqtag );}
+    ga.loader.disableall( true );
     if ( ga.loader.timeout ) {
         clearTimeout( ga.loader.timeout );
         ga.loader.timeout = null;
         $( ga.loader.jqtag ).show();
-    } else {
-        __~debug:loader{console.log( "ga.loader.startshow hiding" );}
-        $( ga.loader.jqtag ).hide();
+        // } else {
+        // do we need this?
+        // __~debug:loader{console.log( "ga.loader.startshow hiding" );}
+        // $( ga.loader.jqtag ).hide();
     }
 }
 
-ga.loader.hide = function() {
+// general hide()
+
+ga.loader.hide = function( id ) {
     __~debug:loader{console.log( "ga.loader.hide tag is " + ga.loader.jqtag );}
-    if ( ga.loader.timeout ) {
-        clearTimeout( ga.loader.timeout );
-        ga.loader.timeout = null;
+    delete ga.loader.active[id];
+    if ( !Object.keys( ga.loader.active ).length ) {
+        if ( ga.loader.timeout ) {
+            clearTimeout( ga.loader.timeout );
+            ga.loader.timeout = null;
+        }
+        __~debug:loader{console.log( "ga.loader.hide hiding" );}
+        $( ga.loader.jqtag ).hide();
+        ga.loader.disableall( false );
     }
-    __~debug:loader{console.log( "ga.loader.hide hiding" );}
-    $( ga.loader.jqtag ).hide();
 }
 
-ga.loader.show = function() {
+// callable show
+
+ga.loader.show = function( id ) {
     __~debug:loader{console.log( "ga.loader.show tag is " + ga.loader.jqtag );}
+    ga.loader.active[id] = true;
     if ( ga.loader.timeout ) {
         clearTimeout( ga.loader.timeout );
     }
-    ga.loader.timeout = setTimeout( ga.loader.startshow(), ga.loader.delay );
+    ga.loader.timeout = setTimeout( ga.loader.startshow, ga.loader.delay );
 }
 
 ga.menumodules = [];
