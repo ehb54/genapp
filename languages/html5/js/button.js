@@ -52,10 +52,17 @@ ga.button.click = function( mod, id, hook, file, extradata ) {
     }
 
     if ( extradata ) {
-        if ( document.getElementById( extradata ) ) {
-            sendobj[ extradata ] = document.getElementById( extradata ).value;
+        if ( extradata == "_allformdata" ) {
+            let formdata = new FormData( document.getElementById( `${mod}` ) );
+            for ( const [key, value] of formdata ) {
+                sendobj[ key ] = value;
+            }
         } else {
-            sendobj[ extradata ] = `${extradata} no element`;
+            if ( document.getElementById( extradata ) ) {
+                sendobj[ extradata ] = document.getElementById( extradata ).value;
+            } else {
+                sendobj[ extradata ] = `${extradata} no element`;
+            }
         }
     }
         
