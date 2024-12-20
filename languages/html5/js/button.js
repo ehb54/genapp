@@ -67,11 +67,14 @@ ga.button.process = function( mod, sendobj ) {
 
     __~debug:button{ga.msg.box( { icon : "information.png",text : "ajax call data:<br><code>" + JSON.stringify( sendobj, null, "&nbsp;" ) + "</code>" } );}
 
+    ga.loader.show( `button.process.${mod}` );
+
     $.post( "ajax/sys/get_defaults.php", sendobj )
         .done( ( data ) => {
             __~debug:button{console.log( "ga.button.click() callback done with data:\n" );}
             __~debug:button{console.dir( data );}
             if ( data.hasOwnProperty( 'error' ) ) {
+                ga.loader.hide( `button.process.${mod}` );
                 ga.msg.box( { icon : "toast.png"
                               ,text : `Error: ${data.error}` } );
             } else {
@@ -80,9 +83,11 @@ ga.button.process = function( mod, sendobj ) {
                 // populate fields
                 ga.repeat.changeMany( mod, data );
                 ga.data.update( mod, data, true );
+                ga.loader.hide( `button.process.${mod}` );
             }
         })
         .fail( ( err ) => {
+            ga.loader.hide( `button.process.${mod}` );
             console.error( `ga.button.click() failed ${err}\n` );
             ga.msg.box( { icon : "toast.png"
                           ,text : "ajax call to get_defaults.php failed" } );

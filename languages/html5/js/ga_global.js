@@ -187,8 +187,10 @@ ga.loader.disableall = function( disable ) {
     __~debug:loader{console.log( "ga.loader.disableall( " + ( disable ? "true" : "false" ) + " )" );}
     if ( disable ) {
         document.getElementById('disablingDiv').style.display='block';
+        $("#disablingDiv").animate({ opacity: .2 }, 2000);
     } else {
         document.getElementById('disablingDiv').style.display='none';
+        $("#disablingDiv").animate({ opacity: 0 }, 1);
     }
 }    
 
