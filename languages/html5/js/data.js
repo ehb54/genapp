@@ -134,38 +134,48 @@ __~debug:getinput{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_
 		htag = "#" + k;
                 __~debug:plotly{console.log( "Plotly v:" + JSON.stringify( v ) );}
 		// v.layout = $.extend( {}, v.layout, {showlegend: false } );
-		
-		ga.plot3dglobal     = v.layout;
-		ga.dataplot3dglobal = v.data;
-                if ( v.config ) {
-                    ga.configplot3dglobal = v.config;
-                }
-
-		ga.plotted3d[ mod ] = 0;
-		
-		__~debug:plotly{console.log("plotly JSON Config: " + JSON.stringify(v.config));}
-		__~debug:plotly{console.log("Plotly JSON Options: " + JSON.stringify(v.layout));}
-		__~debug:plotly{console.log("plotly JSON Data: " + JSON.stringify(v.data));}
-
-		if ( $( htag  + "_showcollapse" ).length )
-		{
-		    $(htag + "_showcollapse").removeClass( "hidden" );
-		}
-		
-		//if(!ga.showcollapse3d)
-		//{
-                if ( v.config ) {
-		    Plotly.newPlot(k, v.data, v.layout, v.config);
+                if ( typeof v !== 'object' || v === null ) {
+                    let ele = document.getElementById( k );
+                    if ( ele ) {
+                        ele.innerHTML=v;
+                    }
                 } else {
-		    Plotly.newPlot(k, v.data, v.layout );
-                }
+                    let ele = document.getElementById( k );
+                    if ( ele ) {
+                        ele.innerHTML='';
+                    }
+		    ga.plot3dglobal     = v.layout;
+		    ga.dataplot3dglobal = v.data;
+                    if ( v.config ) {
+                        ga.configplot3dglobal = v.config;
+                    }
+
+		    ga.plotted3d[ mod ] = 0;
+		    
+		    __~debug:plotly{console.log("plotly JSON Config: " + JSON.stringify(v.config));}
+		    __~debug:plotly{console.log("Plotly JSON Options: " + JSON.stringify(v.layout));}
+		    __~debug:plotly{console.log("plotly JSON Data: " + JSON.stringify(v.data));}
+
+		    if ( $( htag  + "_showcollapse" ).length )
+		    {
+		        $(htag + "_showcollapse").removeClass( "hidden" );
+		    }
+		    
+		    //if(!ga.showcollapse3d)
+		    //{
+                    if ( v.config ) {
+		        Plotly.newPlot(k, v.data, v.layout, v.config);
+                    } else {
+		        Plotly.newPlot(k, v.data, v.layout );
+                    }
                     
-		//}
-		if ( ga.showcollapse3d[ mod ] )
-		{
-		    ga.plotted3d[ mod ] = 1;
-		    $(  htag  + "_showcollapse" ).trigger( "click" );
-		}
+		    //}
+		    if ( ga.showcollapse3d[ mod ] )
+		    {
+		        ga.plotted3d[ mod ] = 1;
+		        $(  htag  + "_showcollapse" ).trigger( "click" );
+		    }
+                }
 		savekey = mod_out + ":#" + k + ":last_value";
                 $( "#global_data" ).data( savekey , v ); 
 		break;
@@ -345,21 +355,29 @@ __~debug:getinput{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_
                 } else {
                     jsmolfile = v;
                 }
-                __~debug:jsmol{console.log("jsmolfile is " + jsmolfile);}
-                _jmol_info[ k ].script =
-                    'set background [' + ga.colors.background + ']; set zoomlarge false;set echo top center;echo loading ' + jsmolfile.split( '/' ).pop() + ';refresh;load "' + jsmolfile + '";';
-                if ( ga.set( mod + ":jsmoladd" ) ) {
-                    _jmol_info[ k ].script += ga.set( mod + ":jsmoladd" );
+                if ( jsmolfile == '' || jsmolfile === null ) {
+                    let ele = document.getElementById( k );
+                    if ( ele ) {
+                        ele.innerHTML='';
+                    }
+                    $( "#global_data" ).removeData( savekey );
+                } else {
+                    __~debug:jsmol{console.log("jsmolfile is " + jsmolfile);}
+                    _jmol_info[ k ].script =
+                        'set background [' + ga.colors.background + ']; set zoomlarge false;set echo top center;echo loading ' + jsmolfile.split( '/' ).pop() + ';refresh;load "' + jsmolfile + '";';
+                    if ( ga.set( mod + ":jsmoladd" ) ) {
+                        _jmol_info[ k ].script += ga.set( mod + ":jsmoladd" );
+                    }
+                    if ( v.script ) {
+                        _jmol_info[ k ].script += ";" + v.script;
+                    }
+                    __~debug:jsmol{console.log( "jsmol script is " + _jmol_info[ k ].script );}
+                    //                               Jmol.getApplet("jmol", _jmol_info[ k ]);
+                    __~debug:values{console.log( "ga.data.update() atomic structure jmol script before: " + _jmol_info[ k ].script );}
+                    $( "#global_data" ).data( savekey , _jmol_info[ k ].script ); 
+                    $("#" + k ).html(Jmol.getAppletHtml( "jmolApplet" + k, _jmol_info[ k ] ));
+                    __~debug:values{console.log( "ga.data.update() atomic structure jmol script after: " + _jmol_info[ k ].script );}
                 }
-                if ( v.script ) {
-                    _jmol_info[ k ].script += ";" + v.script;
-                }
-                __~debug:jsmol{console.log( "jsmol script is " + _jmol_info[ k ].script );}
-                //                               Jmol.getApplet("jmol", _jmol_info[ k ]);
-__~debug:values{        console.log( "ga.data.update() atomic structure jmol script before: " + _jmol_info[ k ].script );}
-                $( "#global_data" ).data( savekey , _jmol_info[ k ].script ); 
-                $("#" + k ).html(Jmol.getAppletHtml( "jmolApplet" + k, _jmol_info[ k ] ));
-__~debug:values{        console.log( "ga.data.update() atomic structure jmol script after: " + _jmol_info[ k ].script );}
                 break;
             case "checkbox" : 
             case "radio" : 

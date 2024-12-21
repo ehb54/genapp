@@ -764,22 +764,22 @@ __~debug:values{            console.log( "ga.value.setLastValue() default attrib
             case "msgs" : t.html( $( "#global_data" ).data( tl ) ); break;
             case "atomicstructure" : 
                   var stag = tag.replace( /^#/, "" );
-__~debug:values{                     console.log( "ga.value.setLastValue() atomic structure global tag " + stag + " data tag " + tl );}
+                  __~debug:values{console.log( "ga.value.setLastValue() atomic structure global tag " + stag + " data tag " + tl );}
                   if ( $( "#global_data" ).data( tl ) ) {
-__~debug:values{        console.log( "ga.value.setLastValue() atomic structure global data found tag " + stag );}
+                      __~debug:values{console.log( "ga.value.setLastValue() atomic structure global data found tag " + stag );}
                       _jmol_info[ stag ].script = $( "#global_data" ).data( tl );
-__~debug:values{        console.log( "ga.value.setLastValue() atomic structure jmol script: " + _jmol_info[ stag ].script );}
+                      __~debug:values{console.log( "ga.value.setLastValue() atomic structure jmol script: " + _jmol_info[ stag ].script );}
                       t.html(Jmol.getAppletHtml( "jmolApplet" + stag,  _jmol_info[ stag ] ) );
-__~debug:values{        console.log( "ga.value.setLastValue() atomic structure jmol getAppletHtml finished" );}
+                      __~debug:values{console.log( "ga.value.setLastValue() atomic structure jmol getAppletHtml finished" );}
                   } else {
-__~debug:values{        console.log( "ga.value.setLastValue() atomic structure global data NOT found for tag " + stag );}
+                      __~debug:values{console.log( "ga.value.setLastValue() atomic structure global data NOT found for tag " + stag );}
                       t.empty();
                   }
                   break;
 
             case "plot2d" : 
-__~debug:values{                     console.log( "ga.value.setLastValue() on plot2d trying" );}
-__~debug:plottwod{                     console.log( "ga.value.setLastValue() plot2d" );}
+                     __~debug:values{console.log( "ga.value.setLastValue() on plot2d trying" );}
+                     __~debug:plottwod{console.log( "ga.value.setLastValue() plot2d" );}
                      p2d = gd.data( tl );
                      if ( p2d.data ) {
                          ga.value.set.plot2d( tag, p2d.options );
@@ -793,7 +793,11 @@ __~debug:plottwod{                     console.log( "ga.value.setLastValue() plo
             __~debug:values{console.log( "ga.value.setLastValue() on plotly trying" );}
                      var ptly = gd.data( tl );
                      if ( ptly.data ) {
-                         Plotly.plot(tag.replace( /^#/, "" ), ptly.data, ptly.layout);
+                         if ( plty.config ) {
+                             Plotly.plot(tag.replace( /^#/, "" ), ptly.data, ptly.layout, plty.config );
+                         } else {
+                             Plotly.plot(tag.replace( /^#/, "" ), ptly.data, ptly.layout);
+                         }
                      }
                      break;
             case "bokeh" : 
@@ -842,12 +846,12 @@ __~debug:values{ console.log( "ga.value.saveLastValue() on plot2d not yet" );  }
                      break;
        case "atomicstructure" : 
                      var stag = tag.replace( /^#/, "" );
-__~debug:values{ console.log( "ga.value.saveLastValue() saving atomic structure html from tag " + stag );  }
+                     __~debug:values{console.log( "ga.value.saveLastValue() saving atomic structure html from tag " + stag );  }
                      if ( _jmol_info && _jmol_info[ stag ] && _jmol_info[ stag ].length ) {
-__~debug:values{ console.log( "ga.value.saveLastValue() atomic structure _jmol_info found for tag " + stag );}
+                         __~debug:values{console.log( "ga.value.saveLastValue() atomic structure _jmol_info found for tag " + stag );}
                          $( "#global_data" ).data( pkg + ":" + tag + ":last_value", _jmol_info[ stag ].script ); 
                      } else {
-__~debug:values{ console.log( "ga.value.saveLastValue() atomic structure _jmol_info NOT found for tag " + stag );}
+                         __~debug:values{console.log( "ga.value.saveLastValue() atomic structure _jmol_info NOT found for tag " + stag );}
                          $( "#global_data" ).data( pkg + ":" + tag + ":last_value", "" ); 
                      }
                      break;
@@ -959,11 +963,11 @@ __~debug:plottwod{                     console.log( "ga.value.resetDefaultValue(
           break;
 
           case "atomicstructure" : 
-                        var stag = tag.replace( /^#/, "" );
-__~debug:values{                         console.log( "ga.value.resetDefaultValue() atomic structure " + pkg + ":" + tag + ":last_value" );}
-                        $( "#global_data" ).data( pkg + ":" + tag + ":last_value", "" );
-                        $( tag ).empty();
-                        break;
+              var stag = tag.replace( /^#/, "" );
+              __~debug:values{console.log( "ga.value.resetDefaultValue() atomic structure " + pkg + ":" + tag + ":last_value" );}
+              $( "#global_data" ).data( pkg + ":" + tag + ":last_value", "" );
+              $( tag ).empty();
+              break;
           default: t.val( t.attr( "value" ) ); break;
       }
    }
