@@ -18,7 +18,7 @@ ga.button.click = function( mod, id, hook, file, extradata ) {
     var sendobj = {
         _logon    : $( "#_state" ).data( "_logon" )
         ,_window  : window.name
-        ,_project : $( "#_state" ).data( "_project" ).length ? $( "#_state" ).data( "_project" ).length : "no_project_specified"
+        ,_project : $( "#_state" ).data( "_project" ).length ? $( "#_state" ).data( "_project" ) : "no_project_specified"
         ,hook     : hook
         ,_height : window.screen.height
         ,_width : window.screen.width
