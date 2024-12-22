@@ -437,6 +437,13 @@ ga.util.jobadmin.modulecancel = function() {
 
 ga.util.jobadmin.modulecancel.cb = function ( id ) {
     __~debug:modulecancel{console.log( `ga.util.jobadmin.cb( "${id}" )` );}
+    if ( ga.util.jobadmin.current.mod
+         && ga.util.jobadmin.current.mod.length ) {
+        let ele = document.getElementById( `${ga.util.jobadmin.current.mod}_b_cancel_button` );
+        if ( ele ) {
+            ele.disabled = true;
+        }
+    }
     $.get( 
         ga.util.jobadmin.url
         ,{
