@@ -410,7 +410,7 @@ ga.util.jqgrid.filter = function( mod, id ) {
 
 // cancel from the module page
 
-ga.util.jobadmin.modulecancel = function() {
+ga.util.jobadmin.modulecancel = function( usercb ) {
     __~debug:modulecancel{console.log( 'ga.util.jobadmin.modulecancel()' );}
     if ( !ga.util.jobadmin.current.uuid
          || !ga.util.jobadmin.current.uuid.length ) {
@@ -424,7 +424,7 @@ ga.util.jobadmin.modulecancel = function() {
                 id    : "canceljob"
                 ,label : "Yes, Cancel"
                 ,cb    : ga.util.jobadmin.modulecancel.cb
-                ,adata  : [ ga.util.jobadmin.current.uuid ]
+                ,adata  : [ ga.util.jobadmin.current.uuid, usercb ]
             }
             ,{
                 id    : "cancel",
@@ -436,7 +436,7 @@ ga.util.jobadmin.modulecancel = function() {
     return false;
 }    
 
-ga.util.jobadmin.modulecancel.cb = function ( id ) {
+ga.util.jobadmin.modulecancel.cb = function ( id, usercb ) {
     __~debug:modulecancel{console.log( `ga.util.jobadmin.cb( "${id}" )` );}
     if ( ga.util.jobadmin.current.mod
          && ga.util.jobadmin.current.mod.length ) {
@@ -467,6 +467,9 @@ ga.util.jobadmin.modulecancel.cb = function ( id ) {
                               text : data[ 'successtext' ] ? data[ 'successtext' ] : "manage job command returned success" } );
                 delete ga.util.jobadmin.current.uuid;
                 ga.util.jobadmin.current.canceled = true;
+                if ( typeof usercb === 'function' ) {
+                    usercb();
+                }
             } else {
                 ga.msg.box( { icon : "toast.png",
                               text : data[ 'error' ] ? data[ 'error' ] : "unknown error"  } );
