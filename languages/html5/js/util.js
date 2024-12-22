@@ -3,6 +3,7 @@
 
 ga.util = {};
 ga.util.jobadmin = {};
+ga.util.jobadmin.current = {};
 
 // jobadmin ajax
 ga.util.jobadmin.cb = function ( mod, id, cmd, jid ) {
@@ -403,5 +404,68 @@ ga.util.jqgrid.filter = function( mod, id ) {
         },
         search : true
     }).trigger( "reloadGrid" );
+}
+
+
+// cancel from the module page
+
+ga.util.jobadmin.modulecancel = function() {
+    __~debug:modulecancel{console.log( 'ga.util.jobadmin.modulecancel()' );}
+    if ( !ga.util.jobadmin.current.uuid
+         || !ga.util.jobadmin.current.uuid.length ) {
+        return false;
+    }
+    ga.msg.box( {
+        icon  : "question.png"
+        ,text  : `Are you sure you want to cancel this job ?`
+        ,buttons : [
+            { 
+                id    : "canceljob"
+                ,label : "Yes, Cancel"
+                ,cb    : ga.util.jobadmin.modulecancel.cb
+                ,adata  : [ ga.util.jobadmin.current.uuid ]
+            }
+            ,{
+                id    : "cancel",
+                label : "No, do not cancel"
+            }
+        ]
+    } );
+
+    return false;
+}    
+
+ga.util.jobadmin.modulecancel.cb = function ( id ) {
+    __~debug:modulecancel{console.log( `ga.util.jobadmin.cb( "${id}" )` );}
+    $.get( 
+        ga.util.jobadmin.url
+        ,{
+            tagmode       : "any"
+            ,format       : "json"
+            ,_window      : window.name
+            ,_logon       : $( "#_state" ).data( "_logon" )
+            ,_cmd         : "jobcancel"
+            ,_jid          : id
+        } )
+        .done( function( data, status, xhr ) {
+            __~debug:modulecancel{console.log( "ga.util.jobadmin.modulecancel.cb() .get() done" )};
+            // // required to remove the shebang (#!) 1st line of the script
+            // data = JSON.parse( data.replace( /^\s*[\r\n]/gm, '' ).split( /\r?\n/)[1]);
+            data = JSON.parse( data );
+            if ( data[ 'success' ] == "true" ) {
+                ga.msg.box( { icon : "information.png",
+                              text : data[ 'successtext' ] ? data[ 'successtext' ] : "manage job command returned success" } );
+                delete ga.util.jobadmin.current.uuid;
+            } else {
+                ga.msg.box( { icon : "toast.png",
+                              text : data[ 'error' ] ? data[ 'error' ] : "unknown error"  } );
+            }
+            __~debug:modulecancel{console.dir( data );}
+        })
+        .fail( function( xhr, status, errorThrown ) {
+            __~debug:modulecancel{console.log( "ga.util.jobadmin.cb() .getJSON fail: " + errorThrown )};
+            ga.msg.box( { icon : "toast.png",
+                          text : "Error: manage job command failed to run: " + errorThrown } );
+        });
 }
 

@@ -298,6 +298,9 @@ __~session{   var input = $("<input>").attr("type", "hidden").attr("class","ga-i
     var windowadd = $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_window").val( window.name );$( this ).append($(windowadd));
     __~xsedeproject{if ( ga.xsede.useproject ) { $( this ).append( $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_xsedeproject").val( ga.xsede.useproject ) ); } }
     var vuuid = uuid.v1();
+    ga.util.jobadmin.current.uuid = vuuid;
+    ga.util.jobadmin.current.mod  = "__moduleid__";
+    
 __~debug:job{    console.log( "uuid:" + vuuid );}
 __~debug:jc{    console.log( "uuid: " + vuuid );}
 
