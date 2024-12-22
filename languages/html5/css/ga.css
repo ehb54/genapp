@@ -85,16 +85,17 @@ table {
    text-align : center;
 }
 
-__~footersize{footer { position: fixed; left: 0; bottom: 0; height: __footersize__; width: 100%; z-index:50;}}
+__~footersize{footer { position: fixed; left: 0; bottom: 0; height: __footersize__; width: 100%; z-index:9100;}}
 
 #footertext { position: fixed; bottom: 0; width: 100%; text-align: center; }
 
-.logo { position: fixed; bottom: 0px; right: 0; z-index:51;}
-.wsstatus { position: fixed; right: 30px; color:red; z-index:51 }
+.logo { position: fixed; bottom: 0px; right: 0; z-index:9101;}
+.wsstatus { position: fixed; right: 30px; color:red; z-index:9101; }
 .helpwsstatus {
     position:fixed;
     right:10px;
     min-width: 20em;
+    z-index:9102;
 }
 
 .warning {

@@ -1042,3 +1042,15 @@ ga.setproject = function( p ) {
         .done( () => console.log( `set project to ${p}` ) )
         .fail( ( err ) => console.error( `ga.setproject failed ${err}` ) );
 }
+
+ga.footerColor = function() {
+    let ele = document.getElementById('ga-footer');
+    if ( ele ) {
+        ele.style.backgroundColor=document.body.style.backgroundColor;
+    }
+
+    ele = document.getElementById('ga-footer-padding');
+    if ( ele ) {
+        ele.style.height = (parseInt(ele.style.height) + 20) + "px";
+    }
+}
