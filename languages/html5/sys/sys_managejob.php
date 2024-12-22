@@ -52,6 +52,18 @@ if ( isset( $_REQUEST[ "_logon" ] ) &&
 
 session_write_close();
 
+$is_admin = true;
+if ( isset( $_REQUEST[ "_isadmin" ] ) ) {
+    $is_admin = $_REQUEST[ "_isadmin" ] == "true";
+}
+
+$no_cancel_notice_msg = false;
+if ( isset( $_REQUEST[ "_no_cancel_notice_msg" ] ) ) {
+    $no_cancel_notice_msg = $_REQUEST[ "_no_cancel_notice_msg" ] == "true";
+}
+ 
+file_put_contents( "/tmp/managejob.txt", "$addout is_admin " . ( $is_admin ? "true" : "false" ) . "\n\n\$_REQUEST:\n" . json_encode( $_REQUEST, JSON_PRETTY_PRINT ) . "\n" );
+    
 switch( $_REQUEST[ '_cmd' ] ) {
     #        case "clearlock" : {
     #        }
@@ -64,7 +76,7 @@ switch( $_REQUEST[ '_cmd' ] ) {
     case "jobcancel" :
     { 
         require_once "../joblog.php";
-        if ( !jobcancel( [ $_REQUEST[ '_jid' ] ], false, true ) ) {
+        if ( !jobcancel( [ $_REQUEST[ '_jid' ] ], false, $is_admin, $no_cancel_notice_msg ) ) {
             $results[ 'success' ] = "false";
             $results[ 'error' ] = $GLOBALS[ 'lasterror' ];
             echo json_encode( $results );

@@ -16,7 +16,8 @@ ga.util.jobadmin.cb = function ( mod, id, cmd, jid ) {
             ,_window      : window.name
             ,_logon       : $( "#_state" ).data( "_logon" )
             ,_cmd         : cmd
-            ,_jid          : jid
+            ,_jid         : jid
+            ,_isadmin     : false
         } )
         .done( function( data, status, xhr ) {
             __~debug:jqgrid{console.log( "ga.admin.ajax.group.cb() .getJSON done" )};
@@ -447,12 +448,14 @@ ga.util.jobadmin.modulecancel.cb = function ( id ) {
     $.get( 
         ga.util.jobadmin.url
         ,{
-            tagmode       : "any"
-            ,format       : "json"
-            ,_window      : window.name
-            ,_logon       : $( "#_state" ).data( "_logon" )
-            ,_cmd         : "jobcancel"
-            ,_jid          : id
+            tagmode                : "any"
+            ,format                : "json"
+            ,_window               : window.name
+            ,_logon                : $( "#_state" ).data( "_logon" )
+            ,_cmd                  : "jobcancel"
+            ,_jid                  : id
+            ,_isadmin              : false
+            ,_no_cancel_notice_msg : true
         } )
         .done( function( data, status, xhr ) {
             __~debug:modulecancel{console.log( "ga.util.jobadmin.modulecancel.cb() .get() done" )};
@@ -463,6 +466,7 @@ ga.util.jobadmin.modulecancel.cb = function ( id ) {
                 ga.msg.box( { icon : "information.png",
                               text : data[ 'successtext' ] ? data[ 'successtext' ] : "manage job command returned success" } );
                 delete ga.util.jobadmin.current.uuid;
+                ga.util.jobadmin.current.canceled = true;
             } else {
                 ga.msg.box( { icon : "toast.png",
                               text : data[ 'error' ] ? data[ 'error' ] : "unknown error"  } );

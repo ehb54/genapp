@@ -445,7 +445,7 @@ __~debug:getinput{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_
                 break;
             }
         } else {
-            if ( msging_f ) {
+            if ( msging_f && typeof msging_f === 'function') {
                 if ( k.charAt( 0 ) == "_" ) {
                     if ( !/^_fs_/.test( k ) || !ga.data.nofcrefresh[ mod ] ) {
                         if ( k == "_iframe" ) {

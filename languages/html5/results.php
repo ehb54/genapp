@@ -66,6 +66,7 @@ if ( !isset( $_REQUEST[ '_uuid' ] ) )
 
 $getinput = isset( $_REQUEST[ '_getinput' ] ) && $_REQUEST[ '_getinput' ] == "true";
 
+
 __~debug:getinput{error_log( "in results.php getinput is " . ( $getinput ? "true" : "false" ) . "\n", 3, "/tmp/mylog" );}
 
 $GLOBALS[ 'logon' ] = isset( $_SESSION[ $window ][ 'logon' ] ) ? $_SESSION[ $window ][ 'logon' ] : 'not logged in';
@@ -149,7 +150,14 @@ if ( $GLOBALS[ "getmenumodulestatus" ] != 'finished' &&
     exit();
 }
 
-$wascancelled = $GLOBALS[ "getmenumodulestatus" ] == 'cancelled';
+$wascancelled =
+    $GLOBALS[ "getmenumodulestatus" ] == 'cancelled'
+    || (
+        isset( $_REQUEST['_canceled'] )
+        && $_REQUEST['_canceled'] == true
+    )
+    ;
+
 // get the results and return
 
 // possibly merge cached 

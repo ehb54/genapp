@@ -766,7 +766,7 @@ function logstoprunning( $error_json_exit = false, $uuid = false ) {
     return true;
 }
 
-function jobcancel( $jobs, $error_json_exit = false, $is_admin = false ) {
+function jobcancel( $jobs, $error_json_exit = false, $is_admin = false, $no_cancel_notice_msg = false ) {
     __~debug:cancel{error_log( "jobcancel() called with jobs of " . print_r( $jobs, true ), 3, "/tmp/mylog" );}
 
     $GLOBALS[ 'lasterror' ] = "";
@@ -864,7 +864,7 @@ function jobcancel( $jobs, $error_json_exit = false, $is_admin = false ) {
 
        $specmsg = false;
 
-       $cancel_notice = "This job has been cancelled by " . ( $is_admin ? "administrator" : "user" ) . " request";
+       $cancel_notice = "This job has been canceled by " . ( $is_admin ? "administrator" : "user" ) . " request";
 
        if ( isset( $v[ 'resource' ] ) ) {
            if ( $v[ 'resource' ] == "oscluster" &&
@@ -872,21 +872,35 @@ function jobcancel( $jobs, $error_json_exit = false, $is_admin = false ) {
                require_once "__docroot:html5__/__application__/openstack/os_delete.php";
                os_delete( $v[ 'nodes' ], $uuid, isset( $xsedeproject ) ? $xsedeproject : $project, true );
                $specmsg = true;
-               $zmq_socket->send( json_encode( array( "_uuid" => $uuid,
-                                                      "Notice" => $cancel_notice,
-                                                      "_cancel" => "true",
-                                                      "_status" => "cancelled",
-                                                      "_airavata" => ""
-                                               ) ) );
+
+               $msgobj = (object) [
+                   "_uuid" => $uuid,
+                   "_cancel" => "true",
+                   "_status" => "cancelled",
+                   "_airavata" => ""
+                   ];
+               
+               if ( !$no_cancel_notice_msg ) {
+                   $msgobj->Notice = $cancel_notice;
+               }
+               
+               $zmq_socket->send( json_encode( $msgobj ) );
 
            }
        }
 
        if ( !$specmsg ) {
-           $zmq_socket->send( json_encode( array( "_uuid" => $uuid,
-                                                  "Notice" => $cancel_notice,
-                                                  "_cancel" => "true",
-                                                  "_status" => "cancelled" ) ) );
+           $msgobj = (object) [
+               "_uuid" => $uuid,
+               "_cancel" => "true",
+               "_status" => "cancelled"
+               ];
+               
+           if ( !$no_cancel_notice_msg ) {
+               $msgobj->Notice = $cancel_notice;
+           }
+
+           $zmq_socket->send( json_encode( $msgobj ) );
        }
 
        ## $jsonmsg = json_encode( array( "_uuid" => $uuid,

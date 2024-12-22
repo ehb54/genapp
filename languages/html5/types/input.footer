@@ -63,7 +63,8 @@ __~debug:job{    console.log( "get results 1 id " + id );}
                 _logon : $( "#_state" ).data( "_logon" ),
                 _uuid : id,
                 _getlastmsg : getlastmsg,
-                _getinput : getinput ? true : false
+                _getinput : getinput ? true : false,
+                _canceled : ga.util.jobadmin.current.canceled
              } )
     .done( function( data, status, xhr ) {
 __~debug:job{        console.log( "get results 2" );}
@@ -298,8 +299,9 @@ __~session{   var input = $("<input>").attr("type", "hidden").attr("class","ga-i
     var windowadd = $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_window").val( window.name );$( this ).append($(windowadd));
     __~xsedeproject{if ( ga.xsede.useproject ) { $( this ).append( $("<input>").attr("type", "hidden").attr("class","ga-i-r" ).attr("name", "_xsedeproject").val( ga.xsede.useproject ) ); } }
     var vuuid = uuid.v1();
-    ga.util.jobadmin.current.uuid = vuuid;
-    ga.util.jobadmin.current.mod  = "__moduleid__";
+    ga.util.jobadmin.current.uuid     = vuuid;
+    ga.util.jobadmin.current.mod      = "__moduleid__";
+    ga.util.jobadmin.current.canceled = false;
     
 __~debug:job{    console.log( "uuid:" + vuuid );}
 __~debug:jc{    console.log( "uuid: " + vuuid );}
