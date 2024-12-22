@@ -31,7 +31,7 @@ grep chomp, @ltmpls;
 
 die "no layouts found in $ltmpl\n" if !@ltmpls;
 
-$notes = "usage: $0 template-name
+$notes = "usage: $0 template-name module-json
 
 where template-name can be one of
 
