@@ -89,6 +89,7 @@ for $k ( keys %$obj ) {
     "file",
     "hidden",
     "hook",
+    "hookdata",
     "fontclass",
     "fullwidth",
     "globuslogin",
