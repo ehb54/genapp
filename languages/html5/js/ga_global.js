@@ -1054,3 +1054,19 @@ ga.footerColor = function() {
         ele.style.height = (parseInt(ele.style.height) + 20) + "px";
     }
 }
+
+ga.menuhighlight = function( mod, id ) {
+    // turn on menu highlight for this module, off for others
+    let panel = document.getElementById('panelmain');
+    if ( panel ) {
+        const buttons = panel.querySelectorAll('button');
+        const rgxmod = new RegExp( `^${mod}_` );
+        const rgxid  = new RegExp( `^${mod}_${id}$` );
+        
+        for ( button of buttons ) {
+            if ( rgxmod.test( button.id ) ) {
+                button.style.fontWeight = rgxid.test( button.id ) ? 'bold' : '';
+            }
+        }
+    }
+}
