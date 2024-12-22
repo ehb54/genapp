@@ -5,7 +5,7 @@
 #   "executable" : "sys_job2_manager.php"
     ,"executable" : "sys_job2_manager"
     ,"nojobcontrol" : "true"
-#   "nosubmit" : "true"
+    ,"nosubmit" : "true"
     ,"moduleid" : "sys_job2_manager"
     ,"modal" : "true"
     ,"noreset" : "true"
@@ -179,6 +179,18 @@
             ,"margin" : "5px"
         }
         ,{
+            "role" : "output"
+            ,"type" : "html"
+            ,"label" : "<strong>Actions Legend</strong><br><span class=ga-ja-g>&rarr;</span> attach to job ;&nbsp;&nbsp;<span class=ga-ja-g>&rArr;</span> attach to job in a new window<br><span class=ga-ja-r>&dArr;</span> delete job ;&nbsp;&nbsp;<span class=ga-ja-r>&otimes;</span> cancel job ;&nbsp;&nbsp;<span class=ga-ja-r>&empty;</span> clear lock"
+            ,"id"    : "actionlegend"
+            ,"layout" : {
+                "parent" : "body"
+                ,"label" : [ 0, 1 ]
+                ,"data"  : [ 0, 1 ]
+            }
+        }
+
+        ,{
             "role" : "input",
             "layout" : {
                 "parent" : "footer"
@@ -188,14 +200,14 @@
             "id" : "jobgrid"
             ,"url" : "ajax/sys_config/sys_jobs2.php"
         }
-        ,{
-            "role" : "input",
-            "layout" : {
-                "parent" : "body"
-            },
-            "type" : "button",
-            "id" : "b_submit",
-            "hidden" : "true"
-        }
+#        ,{
+#            "role" : "input",
+#            "layout" : {
+#                "parent" : "body"
+#            },
+#            "type" : "button",
+#            "id" : "b_submit",
+#            "hidden" : "true"
+#        }
     ]
 }
