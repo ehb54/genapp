@@ -152,4 +152,12 @@ ga.button.disablebuttons = function( mod, disable, msg ) {
     } else {
         __~debug:button{console.log('ga.button.disablebuttons() doc for reset not found');}
     }
+
+    doc = document.getElementById(`${mod}_b_cancel_button`);
+    if ( doc ) {
+        __~debug:button{console.log('ga.button.disablebuttons() doc for cancel found');}
+        doc.disabled = !disable;
+    } else {
+        __~debug:button{console.log('ga.button.disablebuttons() doc for cancel not found');}
+    }
 }
