@@ -54,9 +54,7 @@ __~debug:job{    console.log( "get results 1 id " + id );}
 //             url:"ajax/get_results.php?_window=" +  window.name + "&_logon=" +$( "#_state" ).data( "_logon" ) + '&_uuid=' + id,
     var job_status = "";
     __~debug:getinput{console.log( "get_results___moduleid__( " + id + " , " + last_timeout + " , " + getlastmsg + " , " + getinput + " )" );}
-    $.getJSON( 
-             "ajax/get_results.php",
-             {
+    let getobj = {
                 tagmode: "any",
                 format: "json",
                 _window : window.name,
@@ -64,8 +62,15 @@ __~debug:job{    console.log( "get results 1 id " + id );}
                 _uuid : id,
                 _getlastmsg : getlastmsg,
                 _getinput : getinput ? true : false,
-                _canceled : ga.util.jobadmin.current.canceled
-             } )
+    };
+
+    if ( ga.util.jobadmin.current.canceled ) {
+        getobj._canceled = true;
+    }
+    
+    $.getJSON( 
+        "ajax/get_results.php",
+        getobj )
     .done( function( data, status, xhr ) {
 __~debug:job{        console.log( "get results 2" );}
            var do_refresh = 1;
