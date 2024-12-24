@@ -90,6 +90,7 @@
                    "type"     : "checkbox",
                    "required" : "false",
                    "repeater" : "true"
+                      ,"hideifnot" : "sharing"
                    },
                   {
                    "role"     : "input",
@@ -188,38 +189,41 @@
                    "label"    : "Allow other users to see your User id",
                    "type"     : "checkbox",
                    "help"     : "Setting this flag allows other users to share their projects with you",
-                   "pull"     : "visible"
+                      "pull"     : "visible"
+                      ,"hideifnot" : "sharing"
                    }
                   ,{
                    "role"     : "input",
                    "id"       : "groups",
                    "type"     : "group"
                   }
-                  ,{
-                   "role"     : "input",
-                   "id"       : "updatecolors",
-                   "label"    : "Update colors",
-                   "type"     : "checkbox",
-                   "required" : "false",
-                   "repeater" : "true",
-                   "hideifnot" : "usercolors"
-                   }
-                  ,{
-                   "role"     : "input",
-                   "id"       : "colorbg",
-                   "type"     : "color",
-                   "label"    : "Select a background color",
-                   "repeat"   : "updatecolors",
-                   "pull"     : "color:body:background"
-                  }
-                  ,{
-                   "role"     : "input",
-                   "id"       : "colortext",
-                   "type"     : "color",
-                   "label"    : "Select a text color",
-                   "repeat"   : "updatecolors",
-                   "pull"     : "color:body:color"
-                  }
+## user colors no longer works with bootstrap themes
+## replace with update theme at some point
+#                  ,{
+#                   "role"     : "input",
+#                   "id"       : "updatecolors",
+#                   "label"    : "Update colors",
+#                   "type"     : "checkbox",
+#                   "required" : "false",
+#                   "repeater" : "true",
+#                   "hideifnot" : "usercolors"
+#                   }
+#                  ,{
+#                   "role"     : "input",
+#                   "id"       : "colorbg",
+#                   "type"     : "color",
+#                   "label"    : "Select a background color",
+#                   "repeat"   : "updatecolors",
+#                   "pull"     : "color:body:background"
+#                  }
+#                  ,{
+#                   "role"     : "input",
+#                   "id"       : "colortext",
+#                   "type"     : "color",
+#                   "label"    : "Select a text color",
+#                   "repeat"   : "updatecolors",
+#                   "pull"     : "color:body:color"
+#                  }
                   ,{
                    "role"     : "output",
                    "id"       : "status",
