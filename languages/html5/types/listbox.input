@@ -17,7 +17,7 @@ ga.layout.fields[ "__fields:id__" ].eval  =
   '$( "#__fields:id__" ).prop( "value", $( "#__fields:id__" ).val() );' +
   'ga.value.setLastValue( "__moduleid__", "#__fields:id__"__~fields:default{, "__fields:default__"} );'
   __~fields:repeater{+ 'ga.repeat.change( "__moduleid__", "__fields:id__" );$( "#__fields:id__" ).change( function() { ga.repeat.change( "__moduleid__", "__fields:id__" ); ga.calc.processall( "__moduleid__" ); } );'}
-  __~fields:hideifnot{+ 'ga.hideifnot( "#__fields:id___tr", "__fields:hideifnot__" );'}
+  __~fields:hideifnot{+ 'ga.hideifnot( "__fields:id__", "__fields:hideifnot__" );'}
   __~fields:onchange{+ '$( "#__fields:id__" ).off( "change.__fields:id__" ).on( "change.__fields:id__", (e) => { var v = e.currentTarget.value; __fields:onchange__ } );'}
   __~hoverhighlight{+ '$(".ga-g-__moduleid__-__fields:id__").hover(function(){$(".ga-g-__moduleid__-__fields:id__").toggleClass("ga-highlight")});'}
   ;

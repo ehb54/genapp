@@ -71,12 +71,15 @@ ga.directives = function( directive, value ) {
 
 ga.hideifnot = function( id, directive ) {
     __~debug:directives{console.log( "ga.hideifnot( " + id + " , " + directive + " )" );}
+    
     if ( ga.directives.data &&
          ga.directives.data[ directive ] &&
          !/^(off|false|0$)/.test( ga.directives.data[ directive ].toLowerCase() ) ) {
         __~debug:directives{console.log( "ga.hideifnot() skipped" );}
         return;
     }
-    $( id ).hide();
+    
+    $( `#ga-label-${id}` ).hide();
+    $( `#ga-data-${id}` ).hide();
 }
 
