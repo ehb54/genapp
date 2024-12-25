@@ -603,6 +603,11 @@ ga.data.textarea = function( hmod_out, v ) {
     console.log( `ga.data.textarea hmod_out_textarea = ${hmod_out_textarea}` );
 
     var jqhmod_out_textarea = $( hmod_out_textarea );
+    if ( !jqhmod_out_textarea ) {
+        console.warn( "writing to a textarea not available, need to handle" );
+        return;
+    }
+        
     var isatend = ( jqhmod_out_textarea[0].scrollHeight - jqhmod_out_textarea[0].scrollTop === jqhmod_out_textarea[0].clientHeight );
 
     __~debug:textareascroll{console.log( "current scrolltop " + jqhmod_out_textarea.scrollTop() + " scrollheight " + jqhmod_out_textarea[0].scrollHeight );}
