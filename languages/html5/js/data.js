@@ -603,7 +603,8 @@ ga.data.textarea = function( hmod_out, v ) {
     console.log( `ga.data.textarea hmod_out_textarea = ${hmod_out_textarea}` );
 
     var jqhmod_out_textarea = $( hmod_out_textarea );
-    if ( !jqhmod_out_textarea ) {
+
+    if ( !jqhmod_out_textarea.length ) {
         console.warn( "writing to a textarea not available, need to handle" );
         return;
     }
