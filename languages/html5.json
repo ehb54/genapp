@@ -463,6 +463,13 @@
                                     { "sys/get_defaults.php" : "once" }
                                    ]
                    }
+                  ,{
+                    "frequency"  : "once",
+                    "output"     : "ajax/sys/running.php",
+                    "inputs"     : [ 
+                                    { "sys/running.php" : "once" }
+                                   ]
+                   }
                    ,{
                     "frequency"  : "once",
                     "output"     : "util/test_mail.php",

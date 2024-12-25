@@ -1070,3 +1070,67 @@ ga.menuhighlight = function( mod, id ) {
         }
     }
 }
+
+// job running bits
+// currently in development
+// $.get() calls return
+//    _none=true if no results
+//    running[mod].id if any()
+//    id if .module()
+
+ga.running = {};
+
+ga.running.any = function() {
+    __~debug:running{console.log( 'ga.running.any()' );}
+
+    $.get( 
+        ga.running.url
+        ,{
+            tagmode                : "any"
+            ,format                : "json"
+            ,_window               : window.name
+            ,_logon                : $( "#_state" ).data( "_logon" )
+            ,_project              : $( "#_state" ).data( "_project" )
+        } )
+        .done( function( data, status, xhr ) {
+            __~debug:running{console.log( "ga.running.any() .get() done" )};
+            if ( data._status == "complete" ) {
+                __~debug:running{console.log( 'ga.running.any() complete, returns:' )};
+                __~debug:running{console.dir( data )};
+            } else {
+                console.warn( 'ga.running.any() not complete, returns:' );
+                console.dir( data );
+            }
+        })
+        .fail( function( xhr, status, errorThrown ) {
+            console.warn( `ga.running.any() .get() failed error ${errorThrown}` );
+        });
+}
+
+ga.running.module = function( mod ) {
+    __~debug:running{console.log( 'ga.running.any()' );}
+
+    $.get( 
+        ga.running.url
+        ,{
+            tagmode                : "any"
+            ,format                : "json"
+            ,_window               : window.name
+            ,_logon                : $( "#_state" ).data( "_logon" )
+            ,_project              : $( "#_state" ).data( "_project" )
+            ,module                : mod
+        } )
+        .done( function( data, status, xhr ) {
+            __~debug:running{console.log( "ga.running.any() .get() done" )};
+            if ( data._status == "complete" ) {
+                __~debug:running{console.log( 'ga.running.any() complete, returns:' )};
+                __~debug:running{console.dir( data )};
+            } else {
+                console.warn( 'ga.running.any() not complete, returns:' );
+                console.dir( data );
+            }
+        })
+        .fail( function( xhr, status, errorThrown ) {
+            console.warn( `ga.running.any() .get() failed error ${errorThrown}` );
+        });
+}
