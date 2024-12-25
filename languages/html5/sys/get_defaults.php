@@ -5,6 +5,8 @@
 header('Content-type: application/json');
 session_start(); 
 
+$results = [];
+
 $results[ '_status' ] = 'complete';
 
 if ( !sizeof( $_REQUEST ) ) {
