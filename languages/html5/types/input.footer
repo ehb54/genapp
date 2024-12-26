@@ -397,7 +397,8 @@ __~debug:ajax{    console.log( "calling ajax" );}
     delete ga.tmp.id;
 
     for ( const ele of document.forms['__moduleid__'].getElementsByTagName( 'select' ) ) {
-        if ( ga.layout.module.json.fields.find( field => field.id == ele.id && field.type == 'listbox' ).multiple ) {
+        const match = ga.layout.module.json.fields.find( field => field.id == ele.id && field.type == 'listbox' )    
+        if ( match && match.multiple ) {
             formData.delete( ele.id );
             for ( const opt of ele.options ) {
                 if ( opt.selected ) {
