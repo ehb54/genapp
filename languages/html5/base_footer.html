@@ -583,7 +583,7 @@ $( '.wsstatus' ).css( "bottom", ga.tmp.ftr.ws.toString() + ga.tmp.ftr.unit  );
 $( '.helpwsstatus' ).css( "bottom", ga.tmp.ftr.org ).css( "bottom", "+=3px" ).css( "position", "fixed" );
 ga.tmp.ftr = {};
 ga.hhelp.reset();
-__~footersize{window.addEventListener( 'load', setTimeout( ga.footerColor, 300 ) );}
+  __~footersize{window.addEventListener( 'load', () => { setTimeout( ga.footerColor, 300 ) } );}
 </script>
 </body>
 </html>
