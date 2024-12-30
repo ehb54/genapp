@@ -297,58 +297,58 @@ __~debug:fc{      console.log( "fs_refresh used " + fsr );}
 
    var swl = s.data( '_switch' );
    if ( swl && swl.length ) {
-      if ( s.data( '_reqlogin' ) ) {
-         s.removeData( '_reqlogin' );
-         if ( $( "#login" ).html() == "Login" ) {
-             __~debug:extrahidden{console.log( "switch for extra hidden + logon set" );}
-             ga.set( "extrahidden", { "sys_login" : { "_switch" : swl } } );
-             s.removeData( '_switch' );
-             $( "#login" ).trigger( "click" );
-             return;
-         }
-      }
-      var sw = swl.split( "/" );
-      if ( sw && sw.length == 4 ) {
-         if ( !ga.menumodules[ sw[0] + "/" + sw[1] ] ||
-              !/^[a-zA-Z0-9_\-\.]+$/.test( sw[0] + sw[1] + sw[2] + sw[3] ) ) {
-             console.warn( "bad switch: '" + sw[0] + sw[1] + sw[2] + sw[3] + "'" );
-             ga.msg.box( { icon: "toast.png", text: "Invalid switch parameters" } );
-         } else {
-__~debug:switch{         console.log( "switch to " + sw[0] + " module " + sw[1] + " project " + sw[2] + " id " + sw[3] );}
-__~debug:job{         console.log( "ajax/" + sw[0] + ".html" );}
-             s.data( '_project', sw[ 2 ] );
-             $( "#seabug" ).html( "<img height=50px style=\"vertical-align:middle\" id='" + sw[0] + "'" + ( ga.set.data[ "icon:" + sw[0] ] ? "' src='" + ga.set.data[ "icon:" + sw[0] ] + "'" : "" ) + ">" );
-             if ( !( count % 2 ) )
-             {
-                menuOnOff({},1);
-             }
-             var tmp =  sw[1] + "_timeout_handler";
-             var chk = "if( typeof " + tmp + " !== 'undefined' && " + tmp + " != 'unset' ){ console.log( 'clearing timeout' );clearTimeout(" + tmp + ");};";
-__~debug:job{         console.log( chk );}
-             eval( chk );
-             ga.setproject( sw[ 2 ] );
-             ga.event( "reattach", sw[0] , "load" );
-             $( "#panelmain" ).load( "ajax/" + sw[0] + ".html", function(){
- __~debug:job{    console.log( "now load complete" );}
-                 $( document ).ready( function() {
-__~debug:job{           console.log( "now document ready" );}
-__~debug:job{           console.log( "#panel_" + sw[ 0 ] );}
-__~debug:job{           console.log( "ajax/" + sw[0] + "/" + sw[1] + ".html" );}
-__~docsbaseurl{           $( "#tab_docs" ).attr( "href", "__docsbaseurl__/" + sw[0] + "/" + sw[1] + "/" + sw[1] + ".html" );}
-               eval( "delete loaded_" + sw[1] );
+       if ( s.data( '_reqlogin' ) ) {
+           s.removeData( '_reqlogin' );
+           if ( $( "#login" ).html() == "Login" ) {
+               __~debug:extrahidden{console.log( "switch for extra hidden + logon set" );}
+               ga.set( "extrahidden", { "sys_login" : { "_switch" : swl } } );
+               s.removeData( '_switch' );
+               $( "#login" ).trigger( "click" );
+               return;
+           }
+       }
+       var sw = swl.split( "/" );
+       if ( sw && sw.length == 4 ) {
+           if ( !ga.menumodules[ sw[0] + "/" + sw[1] ] ||
+                !/^[a-zA-Z0-9_\-\.]+$/.test( sw[0] + sw[1] + sw[2] + sw[3] ) ) {
+               console.warn( "bad switch: '" + sw[0] + sw[1] + sw[2] + sw[3] + "'" );
+               ga.msg.box( { icon: "toast.png", text: "Invalid switch parameters" } );
+           } else {
+               __~debug:switch{console.log( "switch to " + sw[0] + " module " + sw[1] + " project " + sw[2] + " id " + sw[3] );}
+               __~debug:job{console.log( "ajax/" + sw[0] + ".html" );}
+               s.data( '_project', sw[ 2 ] );
+               $( "#seabug" ).html( "<img height=50px style=\"vertical-align:middle\" id='" + sw[0] + "'" + ( ga.set.data[ "icon:" + sw[0] ] ? "' src='" + ga.set.data[ "icon:" + sw[0] ] + "'" : "" ) + ">" );
+               if ( !( count % 2 ) )
+               {
+                   menuOnOff({},1);
+               }
+               var tmp =  sw[1] + "_timeout_handler";
+               var chk = "if( typeof " + tmp + " !== 'undefined' && " + tmp + " != 'unset' ){ console.log( 'clearing timeout' );clearTimeout(" + tmp + ");};";
+               __~debug:job{console.log( chk );}
+               eval( chk );
                ga.setproject( sw[ 2 ] );
-               $( "#panel_" + sw[ 0 ] ).load( "ajax/" + sw[0] + "/" + sw[1] + ".html",
-                   function(){
-__~debug:job{            console.log( "now to eval: ga.ws.sub( '" + sw[3] + "', msg_" + sw[1] + ",'" + sw[1] + "');get_results_" + sw[1] + "('" + sw[3] + "',0,1,1);" );}
+               ga.event( "reattach", sw[0] , "load" );
+               $( "#panelmain" ).load( "ajax/" + sw[0] + ".html", function(){
+                   __~debug:job{console.log( "now load complete" );}
+                   $( document ).ready( function() {
+                       __~debug:job{console.log( "now document ready" );}
+                       __~debug:job{console.log( "#panel_" + sw[ 0 ] );}
+                       __~debug:job{console.log( "ajax/" + sw[0] + "/" + sw[1] + ".html" );}
+                       __~docsbaseurl{$( "#tab_docs" ).attr( "href", "__docsbaseurl__/" + sw[0] + "/" + sw[1] + "/" + sw[1] + ".html" );}
+                       eval( "delete loaded_" + sw[1] );
                        ga.setproject( sw[ 2 ] );
-                       ga.trytilltrue( "typeof loaded_" + sw[1] + " === 'number'", sw[ 1 ] + "_reset(); ga.ws.sub('" + sw[3] + "', msg_" + sw[1] + ",'" + sw[1] + "');get_results_" + sw[1] + "('" + sw[3] + "',0,1,1);", 20, 200 );
+                       $( "#panel_" + sw[ 0 ] ).load( "ajax/" + sw[0] + "/" + sw[1] + ".html",
+                                                      function(){
+                                                          __~debug:job{console.log( "now to eval: ga.ws.sub( '" + sw[3] + "', msg_" + sw[1] + ",'" + sw[1] + "');get_results_" + sw[1] + "('" + sw[3] + "',0,1,1);" );}
+                                                          ga.setproject( sw[ 2 ] );
+                                                          ga.trytilltrue( "typeof loaded_" + sw[1] + " === 'number'", sw[ 1 ] + "_reset(); ga.ws.sub('" + sw[3] + "', msg_" + sw[1] + ",'" + sw[1] + "');get_results_" + sw[1] + "('" + sw[3] + "',0,1,1);", 20, 200 );
+                                                      }); 
                    }); 
-                }); 
-             });
-         }
-      }
-      s.removeData( '_switch' );
-      s.removeData( '_reqlogin' );
+               });
+           }
+       }
+       s.removeData( '_switch' );
+       s.removeData( '_reqlogin' );
    }
    var p = s.data( '_project' );
    var pl = s.data( '_project:last' );
@@ -362,7 +362,7 @@ __~debug:job{            console.log( "now to eval: ga.ws.sub( '" + sw[3] + "', 
       }
       s.data( '_project:last', p );
    }
-__~debug:project{   console.log( "project " + p );}
+   __~debug:project{console.log( "project " + p );}
    var m = s.data( '_message' );
    if ( m ) {
        ga.msg.box( m );
@@ -371,7 +371,7 @@ __~debug:project{   console.log( "project " + p );}
    var fsc = s.data( '_fs_clear' );
    if ( fsc && fsc.length )
    {
-__~debug:fc{    console.log( "fsc clear " + fsc );}
+       __~debug:fc{console.log( "fsc clear " + fsc );}
        ga.fc.clear( fsc );
        s.removeData( '_fs_clear' );
    }
