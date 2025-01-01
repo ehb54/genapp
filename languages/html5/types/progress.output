@@ -5,12 +5,12 @@ ga.layout.fields[ "__fields:id__" ].lhtml = '<label for="__fields:id__">__fields
 
 ga.tmp.dhtml = {};
 ga.tmp.dhtml.org =
-  '<progress name="__fields:id__" id="__fields:id__" value="0"__~fields:max{ max="__fields:max__"}__~fields:help{ class="help_link"}></progress>'
+  '<progress name="__fields:id__" id="__fields:id__" value="0"__~fields:max{ max="__fields:max__"}__~fields:help{ class="help_link"}__~fields:hidden{ hidden}></progress>'
   __~fields:help{+ '<span class="help">__fields:help__</span>'}
   ;  
 
 ga.tmp.dhtml.bootstrap =
-  '<div class="progress help_link"><div id="__fields:id__" class="progress-bar" role="progressbar" style="width:0%"></div></div>'
+  '<div class="progress help_link" ><div id="__fields:id__" class="progress-bar" role="progressbar" style="width:0%"__~fields:hidden{ hidden}></div></div>'
   __~fields:help{+ '<span class="help">__fields:help__</span>'}
   ;
 
