@@ -142,7 +142,7 @@ if ( !preg_match( '/^[a-zA-Z0-9]+[a-zA-Z0-9_]+$/', $project ) ) {
 $rdir = "$dir/$project";
 if ( !is_dir( $rdir ) ) {
     ob_start();
-    mkdir( $rdir, 0770, true );
+    mkdir( $rdir, 0775, true );
     ob_end_clean();
 }
 
