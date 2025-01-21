@@ -53,6 +53,7 @@ ga.util.jaa = function( e, newtab ) {
         window.open( link, '_blank' );
     } else {
         var link = `${ide.children[1].title}/${ide.children[2].title}/${ide.id}`;
+        __~debug:jqgrid{console.warn( `attach link ${link}` );}
         $('#_state').data('_switch', link );
         ga.msg.close5();
         syncState();

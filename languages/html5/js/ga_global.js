@@ -23,8 +23,6 @@ ga.plotted2d      = {};
 
 //ga.firstplotted3d = 0;
 
-
-
 // extend jstree for singleselect & conditional select plugins:
 
 (function ($, undefined) {
@@ -1107,8 +1105,8 @@ ga.running.any = function() {
         });
 }
 
-ga.running.module = function( mod ) {
-    __~debug:running{console.log( 'ga.running.any()' );}
+ga.running.module = function( mod, cbobj ) {
+    __~debug:running{console.log( `ga.running.module( ${mod} )` );}
 
     $.get( 
         ga.running.url
@@ -1121,16 +1119,112 @@ ga.running.module = function( mod ) {
             ,module                : mod
         } )
         .done( function( data, status, xhr ) {
-            __~debug:running{console.log( "ga.running.any() .get() done" )};
+            __~debug:running{console.log( "ga.running.module() .get() done" )};
             if ( data._status == "complete" ) {
-                __~debug:running{console.log( 'ga.running.any() complete, returns:' )};
+                __~debug:running{console.log( 'ga.running.module() complete, returns:' )};
                 __~debug:running{console.dir( data )};
+                if ( data._none ) {
+                    __~debug:running{console.log( "ga.running.module() not active" )};
+                    if ( cbobj ) {
+                        if ( cbobj.notrunning
+                             && cbobj.notrunning.cb
+                             && typeof cbobj.notrunning.cb === 'function' ) {
+                            __~debug:running{console.log( "ga.running.module() not running callback" )};
+                            if ( cbobj.notrunning.args ) {
+                                cbobj.notrunning.cb( ...cbobj.notrunning.args );
+                            } else {
+                                cbobj.notrunning.cb();
+                            }
+                        }
+                    }
+                } else {
+                    __~debug:running{console.log( "ga.running.module() is active" )};
+                    if ( cbobj ) {
+                        if ( cbobj.running
+                             && cbobj.running.cb
+                             && typeof cbobj.running.cb === 'function' ) {
+                            if ( data.id ) {
+                                __~debug:running{console.log( "ga.running.module() running callback" )};
+                                if ( cbobj.running.args ) {
+                                    cbobj.running.cb( data.id, ...cbobj.running.args );
+                                } else {
+                                    cbobj.running.cb();
+                                }
+                            } else {
+                                console.warn( 'ga.running.module() GET responds is running, but no id in response' );
+                                console.dir( data );
+                            }
+                        }
+                    }
+                }                    
             } else {
-                console.warn( 'ga.running.any() not complete, returns:' );
+                console.warn( 'ga.running.module() not complete, returns:' );
                 console.dir( data );
             }
         })
         .fail( function( xhr, status, errorThrown ) {
-            console.warn( `ga.running.any() .get() failed error ${errorThrown}` );
+            console.warn( `ga.running.module() .get() failed error ${errorThrown}` );
         });
+}
+
+// if module is running attach, if not and loadname != '__loadfields__', then ga.button.click( '__moduleid__', '_loadfields', '__loadfields__' );
+// don't forget about ws connection & disable/enable buttons ga.button.disablebuttons
+
+ga.running.attachifactive = function( mod, loadfields ) {
+    __~debug:running{console.log( `ga.running.attachifactive( ${mod} )` );}
+    let obj = {
+        running : {
+            cb    : ga.running.attach
+            ,args : [ mod ]
+        }
+    };
+    
+    // broke up __loadfields below to prevent genapp postprocessing
+    if ( loadfields && loadfields != '_' + '_loadfields__' ) {
+        obj.notrunning = {
+            cb    : ga.button.click
+            ,args : [ mod, loadfields, loadfields ]
+        }
+    }
+    ga.running.module( mod, obj );
+}
+
+ga.running.syncing = false;
+
+ga.running.attach = function( id, mod ) {
+    __~debug:running{console.log( `ga.running.attach( '${id}', '${mod}' )` );}
+    if ( ga.running.syncing ) {
+        console.warn( "ga.running.attach() - disabled, syncing true" );
+        return;
+    }
+    console.warn( 'ga.running.attach() to be implemented' );
+    // link = menu/module/project/id
+    const project = $( "#_state" ).data( "_project" );
+    const menu    = document.getElementById( "panelmain" ).querySelectorAll('[id^="panel_"]')[0].id.replace( /^panel_/, '' );
+    
+    let link = `${menu}/${mod}/${project}/${id}`;
+    console.warn( `link ${link}` );
+    $('#_state').data('_switch', link );
+    ga.running.syncing = true;
+    syncState();
+}
+
+ga.prettyhtml = function( html ) {
+    // from https://stackoverflow.com/questions/3913355/how-to-format-tidy-beautify-in-javascript
+    var tab    = '\t';
+    var result = '';
+    var indent = '';
+
+    html.split( />\s*</ ).forEach( function( element ) {
+        if ( element.match( /^\/\w/ ) ) {
+            indent = indent.substring(tab.length);
+        }
+        result += indent + '<' + element + '>\r\n';
+
+        if (element.match( /^<?\w[^>]*[^\/]$/ ) && !element.startsWith("input")  ) {
+            indent += tab;
+        }
+    });
+
+    return result.substring(1, result.length-3);
 }

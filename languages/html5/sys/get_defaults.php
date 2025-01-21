@@ -154,6 +154,15 @@ chdir( $rdir );
 
 ## temporary file with input object
 
+if ( isset( $_REQUEST[ "_file_enc_to_load" ] ) ) {
+    $file = "$dir/" . base64_decode( $_REQUEST[ "_file_enc_to_load" ] );
+    if ( false === $_REQUEST[ "_filedata" ] = file_get_contents( $file ) ) {
+        unset( $_REQUEST[ "_filedata" ] );
+        $_REQUEST[ "_filedata_error" ] = "ERROR reading file $file\n";
+    }
+    unset( $_REQUEST[ "_file_enc_to_load" ] );
+}
+
 $tempfile = tempnam( $rdir, "_defaults_tmp_" );
 
 if ( file_put_contents( $tempfile, json_encode( $_REQUEST ) ) === FALSE ) {

@@ -550,7 +550,12 @@ ga.calc.processall( '__moduleid__' );
 if ( ga.ws.is_sub( '__moduleid__' ) ) {
     ga.button.disablebuttons( '__moduleid__', true, 'at end of input footer' );
 }
-__~loadfields{ga.button.click( '__moduleid__', '_loadfields', '__loadfields__' );}
+// figure out how, will likely need callbacks
+// don't want to loadfileds
+ga.running.doattach = false;
+__~autoattach{ga.running.doattach = true; ga.running.attachifactive( '__moduleid__', '__loadfields__' );}
+__~loadfields{if ( !ga.running.doattach ) { ga.button.click( '__moduleid__', '_loadfields', '__loadfields__' ); };}
+
 </script>
 </form>
 <div id="__moduleid___results"></div>

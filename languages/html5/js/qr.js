@@ -26,8 +26,18 @@ ga.qr.msgtext       = {};
 // ----------------------------------------------------------------------------------------------------------
 
 
-ga.qr.question = function( mod, q ) {
+ga.qr.question = function( mod, q, cb ) {
     __~debug:qr{console.log( "ga.qr.question( " + mod + ", q )" );}
+    __~debug:qr{console.log( 'ga.qr.question() q =' );}
+    __~debug:qr{console.dir( q );}
+    __~debug:qr{global_q = q;}
+
+    var use_cb = ga.qr.cb;
+
+    if ( cb && typeof cb === 'function' ) {
+        use_cb = cb;
+    }
+
     // the text will need assembling as html from the q itself
     var qtext = "";
     var r = {};
@@ -43,6 +53,8 @@ ga.qr.question = function( mod, q ) {
     var usedids = {};
     var ifhelp;
     var ifhhelp;
+    var ifhelp_file;
+    var ifhhelp_file;
     var helpspan;
     var gridcss;
     var gridref;
@@ -50,19 +62,21 @@ ga.qr.question = function( mod, q ) {
 
     // initial error checking
 
-    if ( !q._uuid ) {
+    // not correct, ! on undefined gives error
+
+    if ( !( '_uuid' in q ) ) {
         etext += "no _uuid in received data. ";
     }
 
-    if ( !q._msgid ) {
+    if ( !( '_msgid' in q ) ) {
         etext += "no _msgid in received data. ";
     }
 
-    if ( !q._question ) {
+    if ( !( '_question' in q ) ) {
         etext += "no _question in received data. ";
     }
         
-    if ( !q._question.fields ) {
+    if ( !( 'fields' in q._question ) ) {
         etext += "no _question:fields in received data. ";
     }
 
@@ -147,7 +161,6 @@ ga.qr.question = function( mod, q ) {
                 etext += "No type in field " + i + ". ";
             }
             
-
             if ( tf.id && tf.type ) {
                 align = "text-align:" + ( tf.grid && tf.grid.align ? tf.grid.align : ga.grid.align ) + ";";
 
@@ -155,16 +168,22 @@ ga.qr.question = function( mod, q ) {
                     etext += "Duplicate id in _question fields:" + tf.id + ". ";
                 }
                 usedids[tf.id] = 1;
-                
+
                 if ( tf.help ) {
                     ifhelp = ' class="help_link"';
                     ifhhelp = ' class="highlight help_link"'; 
+                    ifhelp_file = ' class="help_link ga-button-select zeromargin"';
+                    ifhhelp_file = ' class="highlight help_link ga-button-select zeromargin"'; 
                     help_span = '<span class="help">' + tf.help + '</span>';
                 } else {
                     ifhelp = '';
                     ifhhelp = ' class="highlight"';
+                    ifhelp_file = ' class="ga-button-select zeromargin"';
+                    ifhhelp_file = ' class="highlight ga-button-select zeromargin"';
                     help_span = '';
                 }
+                
+                __~debug:qr{console.log(`using grid\nifhelp:'${ifhelp}'\nifhelp_file:'${ifhelp_file}'\nifhhelp:'${ifhhelp}'\nifhhelp_file:'${ifhhelp_file}'\n`);}
 
                 switch ( tf.type ) {
                 case "label" : {
@@ -184,9 +203,11 @@ ga.qr.question = function( mod, q ) {
                 case "file" : {
                     ga.grid.newrow( gridref );
                     if ( tf.label ) {
-                        qtext += ga.grid.next( gridref, tf.grid ? tf.grid.label : null, align ) + '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label></div>';
-                    }
-                    qtext += ga.grid.next( gridref, tf.grid ? tf.grid.data : null, align ) + '<input type="file" id="' + tf.id + '" name="' + tf.id + '[]"' + ifhelp;
+                        qtext += ga.grid.next( gridref, tf.grid ? tf.grid.label : null, align ) + '<label for="' + tf.id + '"' + ifhelp_file + '>' + tf.label + '</label></div>';
+                    } else {
+                        qtext += ga.grid.next( gridref, tf.grid ? tf.grid.label : null, align ) + '<label for="' + tf.id + '"' + ifhelp_file + '>Browse local files</label></div>';
+                    }                        
+                    qtext += ga.grid.next( gridref, tf.grid ? tf.grid.data : null, align ) + '<input type="file" id="' + tf.id + '" name="' + tf.id + '[]" class="offscreen"';
                     if ( tf.required ) {
                         qtext += ' required';
                     }
@@ -203,9 +224,11 @@ ga.qr.question = function( mod, q ) {
                 case "lrfile" : {
                     ga.grid.newrow( gridref );
                     if ( tf.label ) {
-                        qtext += ga.grid.next( gridref, tf.grid ? tf.grid.label : null, align ) + '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label></div>';
-                    }
-                    qtext += ga.grid.next( gridref, tf.grid ? tf.grid.data : null, align ) + '<input type="file" id="' + tf.id + '" name="' + tf.id + '[]" data-add="' + tf.id + '_altval"' + ifhelp;
+                        qtext += ga.grid.next( gridref, tf.grid ? tf.grid.label : null, align ) + '<label for="' + tf.id + '"' + ifhelp_file + '>' + tf.label + '</label></div>';
+                    } else {
+                        qtext += ga.grid.next( gridref, tf.grid ? tf.grid.label : null, align ) + '<label for="' + tf.id + '"' + ifhelp_file + '>Browse local files</label></div>';
+                    }                        
+                    qtext += ga.grid.next( gridref, tf.grid ? tf.grid.data : null, align ) + '<input type="file" id="' + tf.id + '" name="' + tf.id + '[]" data-add="' + tf.id + '_altval" class="offscreen"';
                     if ( tf.required ) {
                         qtext += ' required';
                     }
@@ -217,8 +240,8 @@ ga.qr.question = function( mod, q ) {
                     }
                     qtext += '>'
                         + help_span
-                        + ' or <button id="' + tf.id + '_button" name="' + tf.id + '_button" data-type="lrfile"' + ifhelp 
-                        + '><span class="buttontext">Browse server</span></button>'
+                        + '&nbsp; or &nbsp;<button id="' + tf.id + '_button" name="' + tf.id + '_button" data-type="lrfile"' + ifhelp_file 
+                        + '><span class="buttontext">Browse server</span></button>&nbsp;'
                         + help_span 
                         + '<span id="' + tf.id + '_altval"></span>'
                         + '<input type="hidden" name="_selaltval_' + tf.id + '" value="' + tf.id + '_altval"</input>'
@@ -242,7 +265,6 @@ ga.qr.question = function( mod, q ) {
                     __~debug:qr{console.log( qeval );}
                 }
                     break;
-
 
                 case "text" : {
                     ga.grid.newrow( gridref );
@@ -479,17 +501,23 @@ ga.qr.question = function( mod, q ) {
                     etext += "Duplicate id in _question fields:" + tf.id + ". ";
                 }
                 usedids[tf.id] = 1;
-                
+
                 if ( tf.help ) {
                     ifhelp = ' class="help_link"';
                     ifhhelp = ' class="highlight help_link"'; 
+                    ifhelp_file = ' class="help_link ga-button-select zeromargin"';
+                    ifhhelp_file = ' class="highlight help_link ga-button-select zeromargin"'; 
                     help_span = '<span class="help">' + tf.help + '</span>';
                 } else {
                     ifhelp = '';
                     ifhhelp = ' class="highlight"';
+                    ifhelp_file = ' class="ga-button-select zeromargin"';
+                    ifhhelp_file = ' class="highlight ga-button-select zeromargin"';
                     help_span = '';
                 }
 
+                __~debug:qr{console.log(`not using grid\nifhelp:'${ifhelp}'\nifhelp_file:'${ifhelp_file}'\nifhhelp:'${ifhhelp}'\nifhhelp_file:'${ifhhelp_file}'\n`);}
+                
                 switch ( tf.type ) {
                 case "label" : {
                     qtext += '<tr><td colspan=2><label' + ifhelp+ '>';
@@ -507,9 +535,11 @@ ga.qr.question = function( mod, q ) {
                 case "file" : {
                     qtext += "<tr><td>";
                     if ( tf.label ) {
-                        qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
-                    }
-                    qtext += '</td><td><input type="file" id="' + tf.id + '" name="' + tf.id + '[]"' + ifhelp;
+                        qtext += '<label for="' + tf.id + '"' + ifhelp_file + '>' + tf.label + '</label>';
+                    } else {
+                        qtext += '<label for="' + tf.id + '"' + ifhelp_file + '>Browse local files</label></div>';
+                    }                        
+                    qtext += '</td><td><input type="file" id="' + tf.id + '" name="' + tf.id + '[]" class="offscreen"';
                     if ( tf.required ) {
                         qtext += ' required';
                     }
@@ -526,10 +556,12 @@ ga.qr.question = function( mod, q ) {
                 case "lrfile" : {
                     qtext += "<tr><td>";
                     if ( tf.label ) {
-                        qtext += '<label for="' + tf.id + '"' + ifhelp + '>' + tf.label + '</label>';
-                    }
+                        qtext += '<label for="' + tf.id + '"' + ifhelp_file + '>' + tf.label + '</label>';
+                    } else {
+                        qtext += '<label for="' + tf.id + '"' + ifhelp_file + '>Browse local files</label></div>';
+                    }                        
                     qtext += '</td><td>'
-                        + '<input type="file" id="' + tf.id + '" name="' + tf.id + '[]" data-add="' + tf.id + '_altval"' + ifhelp;
+                        + '<input type="file" id="' + tf.id + '" name="' + tf.id + '[]" data-add="' + tf.id + '_altval" class="offscreen"';
                     if ( tf.required ) {
                         qtext += ' required';
                     }
@@ -541,8 +573,8 @@ ga.qr.question = function( mod, q ) {
                     }
                     qtext += '>'
                         + help_span
-                        + ' or <button id="' + tf.id + '_button" name="' + tf.id + '_button" data-type="lrfile"' + ifhelp 
-                        + '><span class="buttontext">Browse server</span></button>'
+                        + '&nbsp; or &nbsp;<button class="ga-button-select" id="' + tf.id + '_button" name="' + tf.id + '_button" data-type="lrfile"' + ifhelp_file 
+                        + '><span class="buttontext">Browse server</span></button>&nbsp;'
                         + help_span 
                         + '</td><td><span id="' + tf.id + '_altval"></td></span>'
                         + '<input type="hidden" name="_selaltval_' + tf.id + '" value="' + tf.id + '_altval"</input>'
@@ -802,7 +834,7 @@ ga.qr.question = function( mod, q ) {
                 qbuttons.push( {
                     id : bid
                     ,label : b
-                    ,cb    : ga.qr.cb
+                    ,cb    : use_cb
                     ,adata : [ q, bid, b.skiprequired ? 0 : 1 ]
                 } );
                 break;
@@ -833,7 +865,7 @@ ga.qr.question = function( mod, q ) {
                     qbuttons.push( {
                         id : b.id
                         ,label : b.label
-                        ,cb    : ga.qr.cb
+                        ,cb    : use_cb
                         ,adata : [ q, b.id, b.skiprequired ? 0 : 1 ]
                     } );
                     if ( b.help ) {
@@ -862,14 +894,14 @@ ga.qr.question = function( mod, q ) {
             { 
                 id    : "ok"
                 ,label : "OK"
-                ,cb    : ga.qr.cb
-                ,adata  : [ q, "ok", 1 ]
+                ,cb    : use_cb
+                ,adata : [ q, "ok", 1 ]
             }
             ,{ 
                 id    : "cancel"
                 ,label : "Cancel"
-                ,cb    : ga.qr.cb
-                ,adata  : [ q, "cancel", 0 ]
+                ,cb    : use_cb
+                ,adata : [ q, "cancel", 0 ]
             }
         ]
         ;
@@ -880,6 +912,7 @@ ga.qr.question = function( mod, q ) {
     }
 
     __~debug:qr{console.log( "qtext:" + qtext );}
+    __~debug:qr{console.log( ga.prettyhtml( qtext ) + "\n" );}
 
     ga.qr.openq[ id ] = "open";
 

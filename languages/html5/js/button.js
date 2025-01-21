@@ -4,14 +4,14 @@
 ga.button              = {};
 
 ga.button.cbclick = function( cb, mod, id, hook, file ) {
-    console.log( `ga.button.cbclick( ${mod}, ${id}, ${hook}, ${file} ) cb checked:${cb.checked}` );
+    __~debug:button{console.log( `ga.button.cbclick( ${mod}, ${id}, ${hook}, ${file} ) cb checked:${cb.checked}` );}
     if ( cb.checked ) {
         return ga.button.click( mod, id, hook );
     }
 }
 
 ga.button.click = function( mod, id, hook, file, extradata ) {
-    console.log( `ga.button.click( ${mod}, ${id}, ${hook}, ${file}, ${extradata} )` );
+    __~debug:button{console.log( `ga.button.click( ${mod}, ${id}, ${hook}, ${file}, ${extradata} )` );}
 
     // validate & use ga.msg (msgbox?) if issues
 
@@ -34,14 +34,16 @@ ga.button.click = function( mod, id, hook, file, extradata ) {
             if ( document.getElementById( extradata ) ) {
                 sendobj[ extradata ] = document.getElementById( extradata ).value;
             } else {
-                sendobj[ extradata ] = `${extradata} no element`;
+                if ( extradata != "_" + "_fields:hookdata__" ) {
+                    sendobj[ extradata ] = `${extradata} no element`;
+                }
             }
         }
     }
         
     if ( file && file != '__fields:file__' ) {
         // perhaps "lfile", "rfile" etc, right now, currently lfile
-        console.log( `ga.button.click() - file requested, load and put file in json - todo` );
+        __~debug:button{console.log( `ga.button.click() - file requested, load and put file in json` );}
         // FileReader requires <input type=file>, so setup a dialog
         switch ( file ) {
         case 'lfile' :
@@ -70,17 +72,42 @@ ga.button.click = function( mod, id, hook, file, extradata ) {
         case 'rfile' :
             ga.msg.box(
                 {
-                    text : 'hook rfile currently in development'
+                    text : 'hook rfile type not currently supported'
                 }
             );
             break;
 
         case 'lrfile' :
-            ga.msg.box(
-                {
-                    text : 'hook lrfile currently in development'
+            ga.qr.question(
+                mod
+                ,{
+                    _uuid : 'na'
+                    ,_msgid : 'na'
+                    ,_sendobj : JSON.stringify( sendobj )
+                    ,_mod     : mod
+                    ,_question : {
+                        id : `_hook_button_lrfile_mod_${id}`
+                        ,title : '<h4>Select a file</h4>'
+                        ,icon : 'question.png'
+//                        ,grid : {
+//                            gap        : "5px"
+//                            ,colwidths : [ 3, 1, 3, 6 ]
+//                            ,align     : "center"
+//                        }
+                        ,text : ''
+                        // ,buttons : []
+                        ,fields : [
+                            {
+                                id          : "f1"
+                                ,type       : "lrfile"
+                                ,label      : "Browse local files"
+                                ,align      : "center"
+                            }
+                        ]
+                    }
                 }
-            );
+                ,ga.button.cb_lrfile
+            )
             break;
 
         default :
@@ -98,13 +125,85 @@ ga.button.click = function( mod, id, hook, file, extradata ) {
     return ga.button.process( mod, sendobj );
 }
 
+ga.button.cb_lrfile = function ( q, bid, v ) {
+    __~debug:button{console.log( `ga.button.cb_lrfile( q, '${bid}', ${v} )` );}
+    var id = q._uuid + "-" + q._msgid;
+    __~debug:button{console.log( `ga.button.cb_lrfile id is ${id}` );}
+    __~debug:button{console.dir( q );}
+
+    switch ( bid ) {
+    case 'ok' :
+        let sendobj = JSON.parse( q._sendobj );
+        let mod     = q._mod;
+        var faltvalele = document.getElementById( "f1_altval" );
+        if ( faltvalele ) {
+            let ok = 0;
+            __~debug:button{console.log( `faltvalele.innerHTML ${faltvalele.innerHTML}` );}
+            if ( /^<i>Local/.test( faltvalele.innerHTML ) ) {
+                // local file defined
+                __~debug:button{console.log( "matched local" );}
+                let fele = document.getElementById( 'f1' );
+                if ( fele.files && fele.files.length ) {
+                    let fname = fele.files[ 0 ];
+                    ok = 1;
+                    __~debug:button{console.log( `found local file ${fname}, read and continue processing` );}
+                    let reader = new FileReader();
+                    reader.onload = (evt) => {
+                        sendobj._filedata = evt.target.result;
+                        ga.msg.close( 2 );
+                        delete ga.qr.openq[ id ];
+                        ga.button.process( mod, sendobj );
+                    }
+                    reader.readAsText( fname );
+                }
+            }
+            if ( /^<i>Server/.test( faltvalele.innerHTML ) ) {
+                // server file define
+                __~debug:button{console.log( "matched server" );}
+                let feles = document.getElementsByClassName( '_hidden_lrfile_sels_f1' );
+                if ( feles && feles.length == 1 ) {
+                    let fname = atob( feles[0].value );
+                    ok = 1;
+                    __~debug:button{console.warn( `found server file ${fname}, add to remote for post processing in get_defaults.php` );}
+                    sendobj._file_enc_to_load = feles[0].value;
+                    ga.button.process( mod, sendobj );
+                }
+            }
+            if ( !ok ) {
+                __~debug:button{console.warn( "no file method selected, treating like cancel?" );}
+                return;
+            }
+        } else {
+            __~debug:button{console.warn( "no file method selected" );}
+            return;
+        }
+        break;
+
+    case 'cancel' :
+        break;
+
+    default :
+        ga.msg.box(
+            {
+                text : `Internal error - unknown button ${bid} returned to ga.button.cb_lrfile`
+            }
+        );
+        break;
+    }
+    ga.msg.close( 2 );
+    delete ga.qr.openq[ id ];
+}    
+
 ga.button.process = function( mod, sendobj ) {
-    console.log( `ga.button.process()` );
+    __~debug:button{console.log( `ga.button.process()` );}
 
     __~debug:button{ga.msg.box( { icon : "information.png",text : "ajax call data:<br><code>" + JSON.stringify( sendobj, null, "&nbsp;" ) + "</code>" } );}
 
-    ga.loader.show( `button.process.${mod}` );
+    // disable loader block when debugging as the ajax post/response messageboxes will be blocked
+    __!debug:button{ga.loader.show( `button.process.${mod}` );}
 
+    __~debug:button{console.log( "object to send:" );console.dir( sendobj );}
+    
     $.post( "ajax/sys/get_defaults.php", sendobj )
         .done( ( data ) => {
             __~debug:button{console.log( "ga.button.click() callback done with data:\n" );}
