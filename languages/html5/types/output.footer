@@ -6,6 +6,5 @@ __~height{</div>}
 __~autosubmit{<script>$( "#__moduleid___submit" ).trigger( "click" );</script>}
 <script>
 loaded___moduleid__ = 1;
-__~footersize{setTimeout( ga.footerColor, 300 );}
 __~usercolors{ga.color.apply();}
 </script>

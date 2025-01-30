@@ -1044,13 +1044,21 @@ ga.setproject = function( p ) {
 ga.footerColor = function() {
     let ele = document.getElementById('ga-footer');
     if ( ele ) {
-        ele.style.backgroundColor=document.body.style.backgroundColor;
+        if ( document.body.style.backgroundColor.length ) {
+            ele.style.backgroundColor = document.body.style.backgroundColor;
+        } else {
+            ele.style.backgroundColor = getComputedStyle(document.body).getPropertyValue('background-color')
+            if ( !ele.style.backgroundColor.length ) {
+                console.warn( "ga.footerColor() : ga-footer found but could not find background-color?" );
+            }
+        }
     }
 
-    ele = document.getElementById('ga-footer-padding');
-    if ( ele ) {
-        ele.style.height = (parseInt(ele.style.height) + 20) + "px";
-    }
+    // why was this done ? doesn't make sense... 
+    // ele = document.getElementById('ga-footer-padding');
+    // if ( ele ) {
+    // ele.style.height = (parseInt(ele.style.height) + 20) + "px";
+    // }
 }
 
 ga.menuhighlight = function( mod, id ) {
