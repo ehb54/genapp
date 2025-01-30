@@ -1054,11 +1054,12 @@ ga.footerColor = function() {
         }
     }
 
-    // why was this done ? doesn't make sense... 
-    // ele = document.getElementById('ga-footer-padding');
-    // if ( ele ) {
-    // ele.style.height = (parseInt(ele.style.height) + 20) + "px";
-    // }
+    // done to pad bottom of page for scrolling ... o.w. might hide behind non-transparent footer
+    ele = document.getElementById('ga-footer-padding');
+    if ( ele && !ele.style.padding_increase_done ) {
+        ele.style.height = (parseInt(ele.style.height) + 20) + "px";
+        ele.style.padding_increase_done = 1;
+    }
 }
 
 ga.menuhighlight = function( mod, id ) {
