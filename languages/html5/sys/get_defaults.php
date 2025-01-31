@@ -173,7 +173,7 @@ if ( file_put_contents( $tempfile, json_encode( $_REQUEST ) ) === FALSE ) {
 
 exec( "$hookexe < $tempfile 2> /dev/null", $hookresults, $status );
 if ( $status ) {
-    error_exit( "default hook " + $_REQUEST['hook'] + " failed" );
+    error_exit( "default hook " . $_REQUEST['hook'] . " failed" );
 }
     
 ## rm temp file
@@ -183,12 +183,8 @@ unlink( $tempfile );
 
 $hookresultsstring    = implode( '', $hookresults );
 if ( NULL === ( $hookresultsjson = json_decode( $hookresultsstring ) ) ) {
-    error_exit( "default hook " + $_REQUEST['hook'] + " returned invalid JSON" );
+    error_exit( "default hook " . $_REQUEST['hook'] . " returned invalid JSON<br>" . substr( $hookresultsstring, 0, 1000 ) );
 }
 
 echo json_encode( $hookresultsjson );
 exit;
-    
-
-
-
