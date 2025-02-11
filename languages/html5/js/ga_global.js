@@ -424,6 +424,34 @@ ga.cssrule.add = function (ruleName) {                           // Create a new
    return ga.cssrule.get(ruleName);                           // return rule we just created.
 } 
 
+ga.cssrule.loadscss = function( name )  {
+    document.getElementsByTagName('head')[0].getElementsByTagName('link')[1].href=`scss/ga-bootstrap-bootswatch-${name}.css`;
+}
+
+ga.cssrule.findscsslinks = function() {
+    const links = document.getElementsByTagName('head')[0].getElementsByTagName('link');
+    for ( i of links ) {
+        console.log( i.href );
+    }
+    return links;
+}
+
+ga.cssrule.refreshCSS = function() {
+    // location.reload(true);
+    let links = document.getElementsByTagName('link');
+    for (let i = 0; i < links.length; i++) {
+        if (links[i].getAttribute('rel') == 'stylesheet') {
+            let href = links[i].getAttribute('href')
+                .split('?')[0];
+
+            let newHref = href + '?version='
+                + new Date().getMilliseconds();
+
+            links[i].setAttribute('href', newHref);
+        }
+    }
+}
+
 ga.cache = {};
 
 ga.cache.msg = function( cachefound, cachedelete, cb_get_results, cb_do_submit, uuid, $form, airavataresource ) {

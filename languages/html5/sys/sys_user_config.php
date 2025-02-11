@@ -394,6 +394,24 @@ if ( $doc =
        }
    }
 
+   if ( isset( $_REQUEST[ "theme" ] ) ) {
+       if (
+           (
+            isset( $doc->theme ) && $doc->theme != $_REQUEST[ "theme" ]
+           ) 
+           ||
+           (
+            !isset( $doc->theme ) && $doc->theme != 'default'
+           )
+           ) {
+           ## needs updating
+           $update[ '$set' ][ 'theme' ] = $_REQUEST[ "theme" ];
+           $do_update = 1;
+           $results[ 'status' ] .= "Updating theme. ";
+           $results[ '_theme' ] = $_REQUEST[ "theme" ];
+       }
+   }
+
    if ( $do_update )
    {
        if ( !ga_db_status( 

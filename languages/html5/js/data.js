@@ -499,6 +499,10 @@ __~debug:getinput{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_
                             __~debug:progress{console.log( "ga.data.update() _progress is now " + v );}
                             ga.progress( mod, v );
                         }
+                        if ( k == "_theme" )
+                        { 
+                            ga.cssrule.loadscss( v );
+                        }
                     }
                 } else {
                     if ( !appended )
@@ -550,6 +554,9 @@ __~debug:getinput{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_
                         { 
                             __~debug:progress{console.log( "ga.data.update() _progress is now " + v );}
                             ga.progress( mod, v );
+                        }
+                        if ( k == "_theme" ) {
+                            ga.cssrule.loadscss( v );
                         }
                     }
                 } else {
