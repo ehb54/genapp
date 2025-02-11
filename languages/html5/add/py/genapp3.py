@@ -6,9 +6,12 @@ import sys
 import json
 import socket
 import pickle
+import time
 #import cStringIO
 
 class genapp(object):
+
+    _TCP_SLEEP_MS = 0.5
 
     def __init__( self, jsoninput ):
         """Always initialize with json input either as a json string or as a dict or object"""
@@ -79,6 +82,7 @@ class genapp(object):
 
         data = s.recv(buffersize)
         s.close()
+        time.sleep( self._TCP_SLEEP_MS / 1000 )
         return json.loads(data)
 
     def tcpmessagebox( self, message ):
@@ -107,6 +111,7 @@ class genapp(object):
         s.connect((self.jsoninput['_tcphost'],int( self.jsoninput['_tcpport']) ))
         s.send(json.dumps(msg).encode('utf-8'))
         s.close()
+        time.sleep( self._TCP_SLEEP_MS / 1000 )
         return {'status':'ok'}
 
     def tcpmessage( self, message ):
@@ -132,6 +137,7 @@ class genapp(object):
         s.connect((self.jsoninput['_tcphost'],int( self.jsoninput['_tcpport']) ))
         s.send(json.dumps(msg).encode('utf-8'))
         s.close()
+        time.sleep( self._TCP_SLEEP_MS / 1000 )
         return {'status':'ok'}
 
     def tcpprogress( self, val ):
