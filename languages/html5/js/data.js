@@ -97,9 +97,9 @@ ga.data.update = function( mod, data, msging_f, msg_id ) {
         t2,
         saveh;
 
-__~debug:data{    console.log( "ga.data.update( " + mod + " , " + data + " )" );}
-__~debug:data{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_msgs );} 
-__~debug:getinput{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_msgs );} 
+    __~debug:data{console.log( "ga.data.update( " + mod + " , " + data + " )" );}
+    __~debug:data{console.log( "ga.data.update() hmod_out_msgs " + hmod_out_msgs );} 
+    __~debug:getinput{console.log( "ga.data.update() hmod_out_msgs " + hmod_out_msgs );} 
 
 //    if ( !msging_f ) {
 //      __~debug:data{console.log( "ga.data.update() msging_f defined" );}
@@ -601,13 +601,13 @@ __~debug:getinput{    console.log( "ga.data.update() hmod_out_msgs " + hmod_out_
 };
 
 ga.data.textarea = function( hmod_out, v ) {
-    console.log( `ga.data.textarea hmod_out = ${hmod_out}` );
+    __~debug:textarea{console.log( `ga.data.textarea hmod_out = ${hmod_out}` );}
     
     var hmod_out_textarea   = hmod_out + "_textarea";
     var mod_out = hmod_out.replace( /^#/, '' );
     var mod_out_textarea = mod_out + "_textarea"; 
 
-    console.log( `ga.data.textarea hmod_out_textarea = ${hmod_out_textarea}` );
+    __~debug:textareascroll{console.log( `ga.data.textarea hmod_out_textarea = ${hmod_out_textarea}` );}
 
     var jqhmod_out_textarea = $( hmod_out_textarea );
 
@@ -625,9 +625,9 @@ ga.data.textarea = function( hmod_out, v ) {
         v = '';
     }
 
-__~debug:textarea{    console.log( "ga.data.textarea( " + hmod_out + " , " + v + " )" );}
+    __~debug:textarea{console.log( "ga.data.textarea( " + hmod_out + " , " + v + " )" );}
     if ( jqhmod_out_textarea.is( ":hidden" ) ) {
-__~debug:textarea{    console.log( "ga.data.textarea( " + hmod_out + " , " + v + " ) show" );}
+        __~debug:textarea{console.log( "ga.data.textarea( " + hmod_out + " , " + v + " ) show" );}
         document.getElementById( mod_out_textarea ).removeAttribute("hidden")
         document.getElementById( mod_out_textarea ).removeAttribute("style")
 //        jqhmod_out_textarea.show();
@@ -645,7 +645,7 @@ __~debug:textarea{    console.log( "ga.data.textarea( " + hmod_out + " , " + v +
         jqhmod_out_textarea.val( jqhmod_out_textarea.val() + v );
     }
     if ( !ga.set( "textarea:rows" ) ) {
-__~debug:textarea{    console.log( "ga.data.textarea( " + hmod_out + " , " + v + " ) height set to " + ( parseFloat( jqhmod_out_textarea.prop( 'scrollHeight' ) ) + parseFloat( jqhmod_out_textarea.css ( 'borderTopWidth' ) ) + parseFloat( jqhmod_out_textarea.css ( 'borderBottomWidth' ) ) ) );}
+        __~debug:textarea{console.log( "ga.data.textarea( " + hmod_out + " , " + v + " ) height set to " + ( parseFloat( jqhmod_out_textarea.prop( 'scrollHeight' ) ) + parseFloat( jqhmod_out_textarea.css ( 'borderTopWidth' ) ) + parseFloat( jqhmod_out_textarea.css ( 'borderBottomWidth' ) ) ) );}
         jqhmod_out_textarea.height( parseFloat( jqhmod_out_textarea.prop( 'scrollHeight' ) ) + 
                                     parseFloat( jqhmod_out_textarea.css ( 'borderTopWidth' ) ) + 
                                     parseFloat( jqhmod_out_textarea.css ( 'borderBottomWidth' ) ) );
@@ -673,7 +673,7 @@ ga.data.airavata = function( hmod_out, v ) {
     var hmod_out_airavata   = hmod_out + "_airavata",
         jqhmod_out_airavata = $( hmod_out_airavata );
 
-__~debug:airavata{    console.log( "ga.data.airavata( " + hmod_out + " , " + v + " )" );}
+    __~debug:airavata{console.log( "ga.data.airavata( " + hmod_out + " , " + v + " )" );}
     if ( jqhmod_out_airavata.is( ":hidden" ) ) {
         jqhmod_out_airavata.show();
     }

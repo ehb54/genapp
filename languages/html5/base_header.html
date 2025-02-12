@@ -598,12 +598,13 @@ if ( 10 != __~enablecaptcha{1}0 ) {
 
 __~xsedeproject{ga.directives( "xsedeproject", "__xsedeproject__" );}
 __~sharing{ga.directives( "sharing", "__sharing__" );}
+__~usertheme{ga.directives( "usertheme", "__usertheme__" );}
 
 ga.colors.usethemecolors = "x__~bootstrap:package{__bootstrap:package__}".match( /^x(material-design|bootswatch)$/ );
-console.log( `ga.colors.usethemecolors ${ga.colors.usethemecolors}` );
+__~debug:theme{console.log( `ga.colors.usethemecolors ${ga.colors.usethemecolors}` );}
 
 if ( !ga.colors.usethemecolors ) {
-  console.log( "!ga.colors.usethemecolors" );
+  __~debug:theme{console.log( "!ga.colors.usethemecolors" );}
   ga.colors({
     background : "__background_color_rgb__"
     ,text       : "__text_color_rgb__" 
@@ -622,7 +623,7 @@ if ( !ga.colors.usethemecolors ) {
    __~header4_color{,".header4" : { "color" : "rgb( __header4_color__ )" }}
   } );
 } else {
-  console.log( "ga.colors.usethemecolors" );
+    __~debug:theme{console.log( "ga.colors.usethemecolors" );}
   ga.colors({
     background : $( "body" ).css( "background-color" )
     ,text       : $( "body" ).css( "color" )

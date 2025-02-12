@@ -154,6 +154,21 @@ if ( isset( $_SESSION[ $window ][ 'logon' ] ) ) {
               ) {
               $results[ "_color" ] = isset( $doc[ "color" ] ) ? $doc[ "color" ] : "";
           }
+          if ( __~usertheme{1}0 
+               && $doc = 
+               ga_db_output( 
+                   ga_db_findOne(
+                       'users',
+                       '',
+                       [ "name" => $_SESSION[ $window ][ 'logon' ] ],
+                       [ "theme" => 1 ]
+                   ) 
+               ) 
+              ) {
+              if ( isset( $doc[ "theme" ] ) ) {
+                  $results[ "_theme" ] = $doc[ "theme" ];
+              }
+          }
       }
 
       # is this correct? maybe down a couple levels?

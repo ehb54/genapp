@@ -19,10 +19,14 @@ ga.layout.handler[ '__moduleid__' ] = {};
 ga.layout.init();
 
 ga.tmp.bgi = ga.color.data.body.background;
+// ga.tmp.bgi = window.getComputedStyle(document.body).backgroundColor;
 __~style:backgroundimage{ga.tmp.bgi = "url(__style:backgroundimage__)";}
 __~menu:backgroundimage{ga.tmp.bgi = "url(__menu:backgroundimage__)";}
 __~backgroundimage{ga.tmp.bgi = "url(__backgroundimage__)";}
 __~modal{$("body").css( { "background": ga.tmp.bgi + " no-repeat center center fixed", "-webkit-background-size" : "cover", "-moz-background-size" : "cover", "-o-background-size" : "cover" , "background-size": "cover"} );}
+//__~modal{$("body").css( { "background": + " no-repeat center center fixed", "-webkit-background-size" : "cover", "-moz-background-size" : "cover", "-o-background-size" : "cover" , "background-size": "cover"} );}
+//__~modal{$("body").css( { "-webkit-background-size" : "cover", "-moz-background-size" : "cover", "-o-background-size" : "cover" , "background-size": "cover"} );}
+__~usertheme{document.body.style.background='';}
 __~nofcrefresh{ga.data.nofcrefresh[ "__moduleid__" ] = true;}
 input_eval = "";
 input_html = "<table>";

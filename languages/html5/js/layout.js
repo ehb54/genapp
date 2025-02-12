@@ -149,7 +149,7 @@ ga.layout.process = function ( defaults ) {
 // -- submit eval --
     ga.layout.fields[ "b_submit" ].eval  = `
 $( "#${module}_b_submit_button" ).click( function( e ) {
-    console.log("b_submit");
+    __~debug:layout{console.log("b_submit");}
    e.preventDefault();
    e.returnValue = false;
    $( "#${module}" ).find( ".toclear" ).remove();   
@@ -192,7 +192,7 @@ $( "#${module}_b_submit_button" ).click( function( e ) {
 // -- reset eval --
     ga.layout.fields[ "b_reset" ].eval  = `
 $("#${module}_b_reset_button" ).click(function(){
-    console.log("b_reset");
+    __~debug:layout{console.log("b_reset");}
     return ${module}_reset();
 });`;
 // -- end reset eval

@@ -394,10 +394,10 @@ if ( $doc =
        }
    }
 
-   if ( isset( $_REQUEST[ "theme" ] ) ) {
+   if ( isset( $_REQUEST[ "changetheme-theme" ] ) ) {
        if (
            (
-            isset( $doc->theme ) && $doc->theme != $_REQUEST[ "theme" ]
+            isset( $doc->theme ) && $doc->theme != $_REQUEST[ "changetheme-theme" ]
            ) 
            ||
            (
@@ -405,10 +405,23 @@ if ( $doc =
            )
            ) {
            ## needs updating
-           $update[ '$set' ][ 'theme' ] = $_REQUEST[ "theme" ];
+           $update[ '$set' ][ 'theme' ] = $_REQUEST[ "changetheme-theme" ];
            $do_update = 1;
-           $results[ 'status' ] .= "Updating theme. ";
-           $results[ '_theme' ] = $_REQUEST[ "theme" ];
+           $usetotheme = $_REQUEST[ "changetheme-theme" ];
+           if ( $usetotheme == '__bootstrap:theme__' ) {
+               $usetotheme = 'default';
+           }
+           if ( isset( $doc->theme ) ) {
+               $usefromtheme = $doc->theme;
+               if ( $usefromtheme == '__bootstrap:theme__' ) {
+                   $usefromtheme = 'default';
+               }
+               $results[ 'status' ] .= "Updating theme from '$usefromtheme' to '$usetotheme'. ";
+           } else {
+               $results[ 'status' ] .= "Updating theme to '$usetotheme'. ";
+           }
+               
+           $results[ '_theme' ] = $_REQUEST[ "changetheme-theme" ];
        }
    }
 

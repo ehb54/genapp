@@ -425,7 +425,46 @@ ga.cssrule.add = function (ruleName) {                           // Create a new
 } 
 
 ga.cssrule.loadscss = function( name )  {
-    document.getElementsByTagName('head')[0].getElementsByTagName('link')[1].href=`scss/ga-bootstrap-bootswatch-${name}.css`;
+    __~debug:theme{console.log( `ga.cssrule.loadscss( '${name}' )` );}
+    let ele = document.getElementsByTagName('head')[0].getElementsByTagName('link')[1];
+    __~debug:theme{console.log( `ga.cssrule.loadscss() href ${ele.href}` );}
+    const regex = new RegExp( `-${name}\.css$` );
+    if ( !regex.test( ele.href ) ) {
+        __~debug:theme{console.log( 'ga.cssrule.loadscss() resetting' );}
+        ele.href = `scss/ga-bootstrap-bootswatch-${name}.css`;
+        // in case of css load delay, multiples
+        for ( i of [ 500, 2000, 5000 ] ) {
+            setTimeout( ga.footerColor, i );
+            setTimeout( ga.cssrule.setmodalrules, i );
+            // setTimeout( ga.cssrule.resethelpstyle, i );
+            setTimeout( ga.hhelp.reset, i );
+        }
+    }
+}
+
+ga.cssrule.setmodalrules = function() {
+    // ids openModal, 2, 3, 4, 5, 6
+    // also classes modelDialog 2,3,4,5,6
+    __~debug:theme{console.log( 'ga.cssrule.setmodalrules()' );}
+
+    const bgcolor = window.getComputedStyle(document.body).backgroundColor;
+
+    for ( i of [ '', '2', '3', '4', '5', '6' ] ) {
+        const id = `openModal${i}`;
+        const ele = document.getElementById( id );
+        if ( ele ) {
+            __~debug:theme{console.log( `ga.cssrule.setmodalrules() found ele ${id}` );}
+            const elediv = ele.children[0];
+            if ( elediv && elediv.tagName === 'DIV' ) {
+                __~debug:theme{console.log( `ga.cssrule.setmodalrules() found ele ${id} div` );}
+                elediv.style.backgroundColor = bgcolor;
+            } else {
+                console.warn( `ga.cssrule.setmodalrules() did not find ele ${id} div` );
+            }
+        } else {
+            console.warn( `ga.cssrule.setmodalrules() did not find ele ${id}` );
+        }
+    }
 }
 
 ga.cssrule.findscsslinks = function() {
@@ -978,7 +1017,9 @@ ga.hhelp.reset = function() {
        $( ".help_link" ).removeClass( "help_link_on" );
        $( ".help_link" ).addClass( "help_link_on" );
    }
-   $( ".help" ).css( { 'background-color' : ga.colors.makeRGBstr( ga.colors.background ) } );
+    
+    // $( ".help" ).css( { 'background-color' : ga.colors.makeRGBstr( ga.colors.background ) } );
+    $( ".help" ).css( { 'background-color' : window.getComputedStyle(document.body).backgroundColor } );
 }
 
 ga.hhelp.set = function() {
@@ -995,6 +1036,7 @@ ga.hhelp.set = function() {
        $( ".help_link" ).addClass( "help_link_on" );
        $( "#hoverhelp" ).html( "Help on" );
    }
+   $( ".help" ).css( { 'background-color' : window.getComputedStyle(document.body).backgroundColor } );
 }
 
 ga.progress = function( mod, val, valmax ) {
@@ -1070,6 +1112,11 @@ ga.setproject = function( p ) {
 }
 
 ga.footerColor = function() {
+    __~debug:footer{console.log( 'ga.footerColor()' );}
+    if ( !ga.footerColor.use ) {
+        return;
+    }
+    __~debug:footer{console.log( 'ga.footerColor() use' );}
     let ele = document.getElementById('ga-footer');
     if ( ele ) {
         if ( document.body.style.backgroundColor.length ) {

@@ -202,6 +202,11 @@ function syncState() {
        s.removeData( "_color" );
    }
 
+   if ( s.data( "_theme" ) ) {
+       ga.cssrule.loadscss( s.data( "_theme" ) );
+       s.removeData( "_theme" );
+   }
+
    if ( s.data( "_xsedeproject" ) ) {
        ga.xsede.data = s.data( "_xsedeproject" );
        __~debug:xsedeproject{console.log( "received _xsedeproject data" );//console.dir( ga.xsede.data );}
@@ -257,6 +262,7 @@ function syncState() {
               ga.apprun = 0;
               __~usesplash{splashlogin();}
           }
+          __~usertheme{ga.cssrule.loadscss( "__bootstrap:theme__" );}
       }
       s.data( '_logon:last', l );
       if ( clearem ) {
@@ -413,6 +419,10 @@ if ( "_usergroups" in data ) {
 if ( "_color" in data ) {
    __~debug:colorcomm{console.log( "getJSON sys status received _color" );console.dir( data[ "_color" ] );}
   $( '#_state' ).data( "_color", data[ "_color" ] );
+}
+
+if ( "_theme" in data ) {
+   $( '#_state' ).data( "_theme", data[ "_theme" ] );
 }
 __~debug:project{console.log( "project from sysstatus:" + data[ "_project" ] );}
 if ( ga.urlparams( "_switch" ) ) {
@@ -583,7 +593,8 @@ $( '.wsstatus' ).css( "bottom", ga.tmp.ftr.ws.toString() + ga.tmp.ftr.unit  );
 $( '.helpwsstatus' ).css( "bottom", ga.tmp.ftr.org ).css( "bottom", "+=3px" ).css( "position", "fixed" );
 ga.tmp.ftr = {};
 ga.hhelp.reset();
-  __~footersize{window.addEventListener( 'load', () => { setTimeout( ga.footerColor, 300 ) } );}
+__~footersize{ga.footerColor.use = 1;}  
+__~footersize{window.addEventListener( 'load', () => { setTimeout( ga.footerColor, 300 ) } );}
 </script>
 </body>
 </html>

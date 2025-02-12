@@ -946,7 +946,7 @@ __~debug:plottwod{                     console.log( "ga.value.resetDefaultValue(
               break;
           case "plot3d" :
           case "plotly" :
-              console.log( "reset default value for plot3d: " + tag );
+              __~debug:plotly{console.log( "reset default value for plot3d: " + tag );}
               Plotly.purge(tag.replace( /^#/, "" ));
               if ( $( tag + "_showcollapse" ).length )
                 {
