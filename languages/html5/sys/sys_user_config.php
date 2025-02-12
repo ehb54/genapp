@@ -401,16 +401,11 @@ if ( $doc =
            ) 
            ||
            (
-            !isset( $doc->theme ) && $doc->theme != 'default'
+            !isset( $doc->theme ) && $doc->theme != '__bootstrap:theme__'
            )
            ) {
-           ## needs updating
-           $update[ '$set' ][ 'theme' ] = $_REQUEST[ "changetheme-theme" ];
-           $do_update = 1;
+           ## theme requested an update 
            $usetotheme = $_REQUEST[ "changetheme-theme" ];
-           if ( $usetotheme == '__bootstrap:theme__' ) {
-               $usetotheme = 'default';
-           }
            if ( isset( $doc->theme ) ) {
                $usefromtheme = $doc->theme;
                if ( $usefromtheme == '__bootstrap:theme__' ) {
@@ -420,8 +415,14 @@ if ( $doc =
            } else {
                $results[ 'status' ] .= "Updating theme to '$usetotheme'. ";
            }
-               
-           $results[ '_theme' ] = $_REQUEST[ "changetheme-theme" ];
+
+           $changetotheme = $_REQUEST[ "changetheme-theme" ];
+           if ( $changetotheme == "default" ) {
+               $changetotheme = '__bootstrap:theme__';
+           }
+           $results[ '_theme' ] = $changetotheme;
+           $update[ '$set' ][ 'theme' ] = $changetotheme;
+           $do_update = 1;
        }
    }
 
