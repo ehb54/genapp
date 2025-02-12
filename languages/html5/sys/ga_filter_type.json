@@ -143,6 +143,11 @@
             "id"      : "_groups",
             "type"    : "integer"
         },
+	{
+            "id"      : "_setgroup_groups_beta",
+            "type"    : "text",
+            "pattern" : "^on$"
+        },
         {  
             "id"      : "_getlastmsg",
             "type"    : "integer"

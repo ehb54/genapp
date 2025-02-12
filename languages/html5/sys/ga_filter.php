@@ -347,7 +347,7 @@ function ga_sanitize_validate( $modjson, $inputs, $modulename ) {
                 $inputs[ $k ] = "empty" ;
             };
             $results[ "error" ] = "Invalid inputs " . $k . " => " . $inputs[ $k ] . " found\n";
-	    __~debug:validate{error_log( "   WARNING: Invalid value " . $inputs[ $k ] . " for ". $k ." \n", 3, '/tmp/validatelog' );}
+	    __~debug:validate{error_log( "   WARNING: Invalid value '" . $inputs[ $k ] . "' for '". $k ."' \n", 3, '/tmp/validatelog' );}
 #	    break;
 	  };
 	    # Code must exit with echo ( json_encode($results) ) if Invalid inputs found. 
