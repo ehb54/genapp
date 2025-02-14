@@ -179,9 +179,9 @@ position: relative;
 }
 
 __~link_unvisited_color_rgb{a:link   {color: rgb( __link_unvisited_color_rgb__ );}}
-a:visited {color: rgb( __text_color_rgb__ );}
+__~notused{a:visited {color: rgb( __text_color_rgb__ );}}
 __~link_hover_color_rgb{a:hover   {color: rgb( __link_hover_color_rgb__ );}}
-a:active  {color: rgb( __select_color_rgb__ );}
+__~notused{a:active  {color: rgb( __select_color_rgb__ );}}
 
 .box-shadow-menu { 
 vertical-align:middle;

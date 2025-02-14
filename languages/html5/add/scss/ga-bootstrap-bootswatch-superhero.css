@@ -7638,9 +7638,11 @@ label,
 .modal-header, .modal-footer {
   background-color: rgba(255, 255, 255, 0.075); }
 
-.ga-field-output-control {
-  color: white; }
-
+/* disabled
+ * .ga-field-output-control {
+ *
+ *  color: white; }
+ */
 .ga-vertical-buttons-container {
   position: fixed;
   right: 0px;
