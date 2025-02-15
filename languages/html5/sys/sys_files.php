@@ -26,7 +26,7 @@ if ( !isset( $_SESSION[ $window ] ) )
    $_SESSION[ $window ] = array( "logon" => "", "project" => "" );
 }
 
-// $results[ '_status' ] = 'complete';
+## $results[ '_status' ] = 'complete';
 
 if ( $is_spec_fc = isset( $_REQUEST[ '_spec' ] ) && $_REQUEST[ '_spec' ] == "fc_cache" )
 {
@@ -37,14 +37,18 @@ if ( $is_spec_fc = isset( $_REQUEST[ '_spec' ] ) && $_REQUEST[ '_spec' ] == "fc_
    }
 }
 
-if ( !isset( $_SESSION[ $window ][ 'logon' ] ) ||  !strlen( $_SESSION[ $window ][ 'logon' ] )) // && !$is_spec_fc )
+if ( !isset( $_SESSION[ $window ][ 'logon' ] ) ||  !strlen( $_SESSION[ $window ][ 'logon' ] )) ## && !$is_spec_fc )
 {
   echo '{}';
-//  echo json_encode( $results );
+##  echo json_encode( $results );
   exit();
 }
 
 session_write_close();
+
+function debug_json( $msg, $obj ) {
+    return $msg . ":\n" . json_encode( $obj, JSON_PRETTY_PRINT ) . "\n";
+}
 
 $to_delete = array();
 
@@ -77,8 +81,8 @@ $no_pattern = !isset( $_REQUEST[ 'pattern' ] );
 
 if ( !$no_pattern )
 {
-//    $patterns = array_map(function ( $str ) { return "/$str/"; }, explode( ":", $_REQUEST[ 'pattern' ] ) );
-//    error_log( print_r( $pattern, true ) . "\n", 3, "/tmp/mylog" );
+##    $patterns = array_map(function ( $str ) { return "/$str/"; }, explode( ":", $_REQUEST[ 'pattern' ] ) );
+##    error_log( print_r( $pattern, true ) . "\n", 3, "/tmp/mylog" );
     $pattern = "/" . $_REQUEST[ 'pattern' ] . "/i";
 }
 
@@ -257,12 +261,12 @@ ob_start();
 if ( !chdir( $dir ) )
 {
   ob_end_clean();
-//  echo json_encode( $results );
+##  echo json_encode( $results );
   echo '{}';
   exit();
 }
 
-// $usedir = isset( $_SESSION[ $window ][ 'logon' ] ) ? $_SESSION[ $window ][ 'logon' ] : ".";
+## $usedir = isset( $_SESSION[ $window ][ 'logon' ] ) ? $_SESSION[ $window ][ 'logon' ] : ".";
 $usedir = ( isset( $_SESSION[ $window ][ 'logon' ] ) && strlen( $_SESSION[ $window ][ 'logon' ] ) ) ? $_SESSION[ $window ][ 'logon' ] : ".";
 if ( isset( $_REQUEST[ 'project' ] ) )
 {
@@ -274,7 +278,7 @@ if ( $is_spec_fc )
    if ( !is_dir( $usedir ) || !chdir( $usedir ) )
    {
      ob_end_clean();
-//  echo json_encode( $results );
+##  echo json_encode( $results );
      echo '{}';
      exit();
    }
@@ -282,10 +286,10 @@ if ( $is_spec_fc )
    {
        $GLOBALS[ 'dir' ] = $dir;
 
-//       error_log( print_r( $to_delete, true ) . "\n", 3, "/tmp/mylog" );
+##       error_log( print_r( $to_delete, true ) . "\n", 3, "/tmp/mylog" );
        $results[ 'projects' ] = get_projects( $to_delete );
        $results[ 'locked' ] = get_projects_locked( $to_delete );
-//       error_log( print_r( $results, true ) . "\n", 3, "/tmp/mylog" );
+##       error_log( print_r( $results, true ) . "\n", 3, "/tmp/mylog" );
 
        if ( count( $results[ 'locked' ] ) )
        {
@@ -298,7 +302,7 @@ if ( $is_spec_fc )
        $is_dirs   = array();
        $to_delete_new = array();
 
-       // find directories
+       ## find directories
 
        foreach ( $to_delete as $file )
        {
@@ -324,7 +328,7 @@ if ( $is_spec_fc )
 
        $to_delete = $to_delete_new;
 
-       // remove anything starting with a directory from to_delete
+       ## remove anything starting with a directory from to_delete
 
        $dont_use = array();
        
@@ -350,7 +354,7 @@ if ( $is_spec_fc )
            }
        }
 
-       // check each directory to see if a parent is present
+       ## check each directory to see if a parent is present
 
        $dirs_keys = array_flip( $dirs );
 
@@ -374,7 +378,7 @@ if ( $is_spec_fc )
            } while( 1 );
        }
 
-       // parent_dirs_used now contains directories to be removed
+       ## parent_dirs_used now contains directories to be removed
        
        $remove_dirs = array();
 
@@ -388,7 +392,7 @@ if ( $is_spec_fc )
 
        $remove_dirs_keys = array_flip( $remove_dirs );
 
-       // make all_dirs in backup area
+       ## make all_dirs in backup area
        $dirs_to_make = array();
 
        $log = "";
@@ -415,7 +419,7 @@ if ( $is_spec_fc )
        $results[ "dirs_keys" ] = $dirs_keys;
        $results[ "parent_dirs_used" ] = $parent_dirs_used;
        
-       //   $results[ "error" ] = "not yet<p>remove dirs<p>" . join( " ", $remove_dirs );;
+       ##   $results[ "error" ] = "not yet<p>remove dirs<p>" . join( " ", $remove_dirs );;
        $results[ "log" ] = $log;
 
        error_log( print_r( $results, true ) . "\n", 3, "/tmp/mylog" );
@@ -423,10 +427,10 @@ if ( $is_spec_fc )
        $do_cmd = 1;
        if ( isset( $do_cmd ) )
        {
-          // make backup user directory if need
+          ## make backup user directory if need
           $cstrong = true;
           $tmplen = 6;
-          // check for bin2hex
+          ## check for bin2hex
           $uniq = bin2hex( openssl_random_pseudo_bytes ( $tmplen, $cstrong ) );
           if ( strlen( $uniq ) != $tmplen * 2 )
           {
@@ -471,20 +475,20 @@ if ( $is_spec_fc )
           ob_end_clean();
 
           $cmd = "";
-          $cmd .= "// make needed directories\n";
+          $cmd .= "## make needed directories\n";
           foreach ( $dirs_to_make as $to_make => $v )
           {
               $cmd .= "mkdir( \"$deldir/$to_make\" );\n";
           }
 
-          $cmd .= "// move directories\n";
+          $cmd .= "## move directories\n";
 
           foreach ( $remove_dirs as $file )
           {
               $cmd .= "rename( \"$file\", \"$deldir/$file\" );\n";
           }
 
-          $cmd .= "// now files\n";
+          $cmd .= "## now files\n";
           foreach ( $remove_files as $file )
           {
               $cmd .= "rename( \"$file\", \"$deldir/$file\" );\n";
@@ -494,11 +498,18 @@ if ( $is_spec_fc )
           $results[ 'cmd' ] = $cmd;
           error_log( "cmd = " . $cmd . "\n", 3, "/tmp/mylog" );
 
-          // now actually do it
+          ## now actually do it
           
-          $debug_on = 0;
-          __~debug:deletefiles{$debug_on = 1; // set from directives:debug:deletefiles}
-          if ( $debug_on ) {
+          ## to debug:
+          ##  set directives:debug:deletefile2file to store in /tmp/delete.log & do not process
+          ## ** or **
+          ##  set directives:debug:deletefile2email to send via email & do not process
+          ## ** or **
+          ##  set directives:debug:deletefile to store in /tmp/delete.log & continue processing
+
+          $debug_to_email = 0;
+          __~debug:deletefile2email{$debug_to_email = 1;}
+          if ( $debug_to_email ) {
               $results[ "error" ] = "Debugging on, nothing removed, email sent";
               error_mail( "sys_files.php\n" .
                           "Debugging information\n" .
@@ -507,13 +518,28 @@ if ( $is_spec_fc )
               exit();
           }
 
+          $debug_to_file = 0;
+          __~debug:deletefile2file{$debug_to_file = 1;}
+          if ( $debug_to_file ) {
+              error_log( debug_json( "sys_files.php - debug\n", $results ) . "\ncmd:\n" . $results[ 'cmd' ] . "\n", 3, "/tmp/delete.log" );
+              $results[ "error" ] = "Debugging on, nothing removed, cmds saved";
+              echo (json_encode($results));
+              exit();
+          }
+
+          $debug_file = 0;
+          __~debug:deletefile{$debug_file = 1;}
+          if ( $debug_file ) {
+              error_log( debug_json( "sys_files.php - debug\n", $results ) . "\ncmd:\n" . $results[ 'cmd' ] . "\n", 3, "/tmp/delete.log" );
+          }
+
           $do_it = 1;
           if ( $do_it )
           {
               $dosend = array();
               ob_start();
 
-              // make needed directories
+              ## make needed directories
               
               foreach ( $dirs_to_make as $to_make => $v )
               {
@@ -532,7 +558,7 @@ if ( $is_spec_fc )
                   chmod( $makedir, 0775 );
               }
 
-              // move directories
+              ## move directories
 
               foreach ( $remove_dirs as $file )
               {
@@ -601,7 +627,7 @@ if ( $is_spec_fc )
                   $dosend[ "reroot" ] = 1;
               }              
 
-              // now move files
+              ## now move files
               foreach ( $remove_files as $file )
               {
                   $target = dirname( "$deldir/$file" );
@@ -656,7 +682,7 @@ if ( $is_spec_fc )
 
    getDirectoryTree( $usedir, 0 );
 
-   // clean up
+   ## clean up
 
    $any_unset = 0;
    foreach ( $pos_dirs as $k=>$v )
@@ -676,7 +702,7 @@ if ( $is_spec_fc )
    {
       $result_dirs = array_values( $result_dirs );
    }
-   // print_r( $result_dirs );
+   ## print_r( $result_dirs );
 }   
 ob_end_clean();
 

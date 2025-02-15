@@ -135,6 +135,11 @@
             "type"    : "text"
         },
 	{
+            "id"      : "_delete",
+            "type"    : "text",
+	    "pattern" : "^[A-Za-z0-9+=,]*$"
+        },
+	{
             "id"      : "_spec_dir",
             "type"    : "text",
 	    "pattern" : "^[-A-Za-z0-9+=]{1,50}|=[^=]|={3,}$"
