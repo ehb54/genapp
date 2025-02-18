@@ -62,7 +62,8 @@ ga.repeat.valuestore    = {};
 ga.repeat.arrayDefault = function( mod, id, m, n ) {
     __~debug:repeat{console.log( `ga.repeat.arrayDefault( ${mod}, ${id}, ${m}, ${n} )` );}
     
-    var obj = ga.layout.module.json.fields.find(o=>o.id===id);
+    // var obj = ga.layout.module.json.fields.find(o=>o.id===id);
+    var obj = ga.layout.modules[mod].json[id];
     var dim = 1;
     if ( obj && "default" in obj && Array.isArray( obj.default ) ) {
         if ( obj.repeat && ga.repeat.data[mod].repeater && ga.repeat.data[mod].repeater[obj.repeat] && ga.repeat.data[mod].repeater[obj.repeat].type == 'integerpair' ) {
