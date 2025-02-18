@@ -11,7 +11,7 @@ import time
 
 class genapp(object):
 
-    _TCP_SLEEP_MS = 0.5
+    _TCP_SLEEP_MS = 5
 
     def __init__( self, jsoninput ):
         """Always initialize with json input either as a json string or as a dict or object"""
