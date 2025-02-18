@@ -852,6 +852,7 @@ ga.repeat.setpairupdateids = function( v, mod, id, k, type, n ) {
 
 ga.repeat.savevalues = function( mod, id, init ) {
     __~debug:repeat{console.log( `ga.repeat.savevalues( ${mod}, ${id} )` );}
+    __~debug:repeatsaverestore{console.log( `ga.repeat.savevalues( ${mod}, ${id} )` );}
     ga.repeat.valuestore[ mod ]       = ga.repeat.valuestore[ mod ] || {};
     ga.repeat.valuestore[ mod ][ id ] = ga.repeat.valuestore[ mod ][ id ] || {};
     if ( init ) {
@@ -867,6 +868,7 @@ ga.repeat.savevalues = function( mod, id, init ) {
 
 ga.repeat.restorevalues = function( mod, id ) {
     __~debug:repeat{console.log( `ga.repeat.restorevalues( ${mod}, ${id} )` );}
+    __~debug:repeatsaverestore{console.log( `ga.repeat.restorevalues( ${mod}, ${id} )` );}
     if ( !ga.repeat.valuestore[ mod ] ||
          !ga.repeat.valuestore[ mod ][ id ] ) {
         return;
@@ -884,6 +886,6 @@ ga.repeat.restorevalues = function( mod, id ) {
 }
 
 ga.repeat.resetvalues = function( mod ) {
-    __~debug:repeat{console.log( `ga.repeat.resetvalues( ${mod} )` );}
+    __~debug:repeatsaverestore{console.log( `ga.repeat.resetvalues( ${mod} )` );}
     ga.repeat.valuestore[ mod ] = {};
 }
