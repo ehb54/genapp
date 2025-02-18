@@ -374,7 +374,7 @@ ga.repeat.change = function( mod, id, init ) {
         k,
         kh;
 
-    __~debug:repeat{console.log( "ga.repeat.change( " + mod + " , " + id + " )" );}
+    __~debug:repeat{console.log( "ga.repeat.change( '" + mod + "' , '" + id + "' )" );}
     if ( !ga.repeat.data[ mod ] || 
          !ga.repeat.data[ mod ].repeater || 
          !ga.repeat.data[ mod ].repeater[ id ] ) {
