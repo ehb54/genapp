@@ -218,9 +218,10 @@ ga.calc.install = function( mod, id ) {
 // process all fields for module
 ga.calc.processall = function( mod ) {
     __~debug:calc{console.log( `ga.calc.processall( '${mod}' )` );}
-    if ( mod in ga.calc.data ) {
+    if ( mod in ga.calc.data && 'calc' in ga.calc.data[mod] ) {
         __~debug:calc{console.log( `ga.calc.processall( ${mod} ) - mod in ga.calc.data` );}
-        Object.values( ga.calc.data[ mod ] ).map( v => ga.calc.process( mod, Object.keys(v)[0]));
+        Object.keys( ga.calc.data[mod].calc ).map( v => ga.calc.process( mod, v ) );
+        // Object.values( ga.calc.data[ mod ] ).map( v => ga.calc.process( mod, Object.keys(v)[0]));
     }
 }
 
