@@ -429,7 +429,7 @@ ga.cssrule.loadscss = function( name )  {
     let ele = document.getElementsByTagName('head')[0].getElementsByTagName('link')[1];
     __~debug:theme{console.log( `ga.cssrule.loadscss() href ${ele.href}` );}
     const regex = new RegExp( `-${name}\.css$` );
-    if ( !regex.test( ele.href ) ) {
+    if ( ele && !regex.test( ele.href ) ) {
         __~debug:theme{console.log( 'ga.cssrule.loadscss() resetting' );}
         ele.href = `scss/ga-bootstrap-bootswatch-${name}.css`;
         // in case of css load delay, multiples
