@@ -796,6 +796,16 @@ ga.repeat.headers.have = function( mod, id ) {
     ];
 }
 
+ga.repeat.headers.updateall = function() {
+    __~debug:repeat{console.log( `ga.repeat.headers.updateall()` );}
+    for ( let id in ga.repeat.pairupdateids ) {
+        console.log( `${id}` );
+        if ( document.getElementById( id ) ) {
+            ga.repeat.headers.update( { target:{ id: id } } );
+        }
+    }
+}
+
 ga.repeat.headers.update = function( event ) {
     __~debug:repeat{console.log( `ga.repeat.headers.update( event ) id ${event.target.id}` );}
     // find any

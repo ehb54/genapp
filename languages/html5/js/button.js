@@ -218,6 +218,7 @@ ga.button.process = function( mod, sendobj ) {
                 // populate fields
                 ga.repeat.changeMany( mod, data );
                 ga.data.update( mod, data, true );
+                ga.repeat.headers.updateall();
                 ga.loader.hide( `button.process.${mod}` );
             }
         })
