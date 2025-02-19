@@ -171,7 +171,8 @@ if ( !isset( $_REQUEST[ "_tree" ] ) &&
            $jobactions .= " <span class='ga-ja-r' onclick='ga.util.jad(this)'>&dArr;</span>";
        }
        if ( $locked ) {
-           $jobactions .= " <span class='ga-ja-r' onclick='ga.util.jau(this)'>&empty;</span>";
+#           $jobactions .= " <span class='ga-ja-r' onclick='ga.util.jau(this)'>&empty;</span>";
+           $jobactions .= " <span class='ga-ja-r' onclick='ga.util.jau(this)'>&#x1F512;</span>";
        }           
 
        $row = array();
