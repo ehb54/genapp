@@ -138,7 +138,7 @@ ga.util.jau = function( e ) {
 
     ga.msg.box( {
         icon  : "question.png"
-        ,text  : `Are you sure you want to clear the lock on Project <i>${project}</i> ?<br>This can have unintendend consequences of a job is running and a new job started under the same Project`
+        ,text  : `Are you sure you want to clear the lock on Project <i>${project}</i> ?<br>This can have unintendend consequences if a job is running and a new job started under the same Project`
         ,buttons : [
             { 
                 id    : "unlockjob"
