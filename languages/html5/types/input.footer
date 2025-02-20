@@ -516,6 +516,7 @@ __moduleid___reset = function() {
     }
     ga.event( "", "__moduleid__", "reset clicked" );
     ga.valid.clearerrorcounter( "__moduleid__" );
+    ga.valuen.noresets.save( "__moduleid__" );
 
    if ( ga.multistage["__moduleid__"] )
      {
@@ -533,6 +534,8 @@ __moduleid___reset = function() {
     eval( input_repeats );
     ga.repeat.resetvalues( '__moduleid__' );
     __~loadfields{ga.button.click( '__moduleid__', '_loadfields', '__loadfields__' );}
+    ga.valuen.noresets.restore( "__moduleid__" );
+
     return false;
 }
 

@@ -168,6 +168,41 @@ ga.valuen.restore.dflt = function( form ) {
     return ga.valuen.restore( form, ga.valuen.dflt.data[ form ], ga.valuen.dflt.html[ form ] );
 }
 
+// save noresets
+
+ga.valuen.noresets = {};
+ga.valuen.noresets.data = {};
+
+ga.valuen.noresets.save = function( mod ) {
+    __~debug:valuen{console.log( `ga.valuen.noresets.save( ${mod} )` );}
+
+    ga.valuen.noresets.data[ mod ] = {}
+    
+    for ( id in ga.valuen.dflt.data[ mod ] ) {
+        if ( mod in ga.layout.modules
+             && id in ga.layout.modules[ mod ].json
+             && ga.layout.modules[ mod ].json[ id ].noreset ) {
+            const ele = document.getElementById( id );
+            if ( ele && ele.value ) {
+                ga.valuen.noresets.data[ mod ][ id ] = ele.value;
+            }
+        }
+    }
+}    
+
+ga.valuen.noresets.restore = function( mod ) {
+    __~debug:valuen{console.log( `ga.valuen.noresets.restore( ${mod} )` );}
+
+    for ( id in ga.valuen.noresets.data[ mod ] ) {
+        const ele = document.getElementById( id );
+        if ( ele ) {
+            ele.value = ga.valuen.noresets.data[ mod ][ id ];
+            ga.repeat.change( mod, id, true );
+            ga.calc.processall( mod );
+        }
+    }
+}    
+
 // save data from form and optionally store as dflt
 
 ga.valuen.save = function( form, asdflt ) {
