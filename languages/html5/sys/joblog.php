@@ -22,6 +22,9 @@ function logjobstart( $error_json_exit = false, $cache = "" )
    $insert[ 'command'      ] = $GLOBALS[ 'command'   ];
    $insert[ 'resource'     ] = $GLOBALS[ 'resource'  ];
    $insert[ 'jobweight'    ] = $GLOBALS[ 'jobweight' ];
+   if ( isset( $GLOBALS[ 'details' ] ) ) {
+       $insert[ 'details'    ] = $GLOBALS[ 'details' ];
+   }
    if ( isset( $GLOBALS[ "nojobcontrol" ] ) ) {
        $insert[ 'nojobcontrol'    ] = $GLOBALS[ 'nojobcontrol' ];
    }

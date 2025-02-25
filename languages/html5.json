@@ -674,6 +674,13 @@
                                     { "sys/ga_filter_type.json" : "once" }
                                    ]
                    }		   
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "ajax/details.php",
+                    "inputs"     : [
+                                    { "sys/details.php" : "once" }
+                                   ]
+                   }		   
                   ]
 }
 

@@ -25,6 +25,7 @@ $do_logoff = 0;
 
 require_once "__docroot:html5__/__application__/ajax/ga_filter.php";
 require_once "__docroot:html5__/__application__/ajax/getports.php";
+require_once "__docroot:html5__/__application__/ajax/details.php";
 $modjson = json_decode( '__modulejson__' );
 $inputs_req = $_REQUEST;
 
@@ -1064,6 +1065,8 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
        exit();
     }
     ob_end_clean();
+
+    details( $_REQUEST, $modjson );
 
     logjobstart(__~cache{ false, "__cache__" });
 
