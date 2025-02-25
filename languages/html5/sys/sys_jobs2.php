@@ -115,6 +115,11 @@ if ( !isset( $_REQUEST[ "_tree" ] ) &&
            $project = 'no_project_specified';
        }
 
+       $details = '';
+       if ( isset( $job[ 'details' ] ) ) {
+           $details = $job[ 'details' ];
+       } 
+
        if ( isset( $doc[ 'status'] ) ) {
            $job['status'] = (array) $job['status'];
        }
@@ -182,6 +187,7 @@ if ( !isset( $_REQUEST[ "_tree" ] ) &&
        $row[ "cells" ][] = [ "value" => $jobactions ];
        $row[ "cells" ][] = array( "value" => small_string( $job["menu"] . "/" . $job["module"] ) );
        $row[ "cells" ][] = array( "value" => small_string( $project ) );
+       __~jobdetails{$row[ "cells" ][] = array( "value" => small_string( $details ) );}
        $row[ "cells" ][] = array( "value" => small_string( isset( $job["start"] ) ? date( "Y M d H:i:s T", ga_db_date_secs( $job["start"] ) ): "unknown", 2 ) );
        $row[ "cells" ][] = array( "value" => intval( isset( $job["start"] ) ? ga_db_date_secs( $job["start"] ) : 0 ) );
        if ( $endasprogress )
@@ -222,6 +228,7 @@ if ( !isset( $_REQUEST[ "_tree" ] ) &&
    $results["colModel"][] = array( "name" => "actions", "index" => "actions", "width" => 100, "align" => "left", "jsonmap" => "cells.$index.value" ); $index++;
    $results["colModel"][] = array( "name" => "module", "index" => "module", "width" => 200, "align" => "left", "jsonmap" => "cells.$index.value" ); $index++;
    $results["colModel"][] = array( "name" => "project", "index" => "project", "width" => 200, "align" => "left", "jsonmap" => "cells.$index.value" ); $index++;
+   __~jobdetails{$results["colModel"][] = array( "name" => "details", "index" => "details", "width" => 200, "align" => "left", "jsonmap" => "cells.$index.value" ); $index++;}
    $results["colModel"][] = array( "name" => "start", "index" => "startnumeric", "width" => 150, "align" => "left", "jsonmap" => "cells.$index.value" ); $index++;
    $results["colModel"][] = array( "name" => "startnumeric", "index" => "startnumeric", "width" => 150, "align" => "left", "jsonmap" => "cells.$index.value", "hidden" => true ); $index++;
    $results["colModel"][] = array( "name" => "end", "index" => "endnumeric", "width" => 160, "align" => "left", "jsonmap" => "cells.$index.value" ); $index++;
@@ -236,6 +243,7 @@ if ( !isset( $_REQUEST[ "_tree" ] ) &&
        "Actions"
        ,"<span class='ga-jqg-title'>Module</span>"
        , "<span class='ga-jqg-title'>Project</span>"
+       __~jobdetails{, "<span class='ga-jqg-title'>Details</span>"}
        , "<span class='ga-jqg-title'>Start</span>"
        , "Start numeric"
        , "<span class='ga-jqg-title'>End</span>"
@@ -425,6 +433,10 @@ if ( isset( $_REQUEST[ "_asuser" ] ) ) {
             $project =  $job[ "project" ];
         }
         $o_project = $project;
+        $details = '';
+        if ( isset( $job[ 'details' ] ) ) {
+            $details = $job[ 'details' ];
+        } 
         if ( isset( $doc[ 'status'] ) ) {
             $job['status'] = (array) $job['status'];
         }
@@ -474,6 +486,7 @@ if ( isset( $_REQUEST[ "_asuser" ] ) ) {
                 ,"menu"       => isset( $job[ "menu" ] ) ? $job[ "menu" ] : ""
                 ,"module"     => isset( $job[ "module" ] ) ? ( $switchok ? ( "<a href=?_reqlogin=1&_switch=" . $job[ "menu" ] . "/" . $job[ "module" ] . "/$o_project/" . $job[ '_id' ] . " target='_blank'>" . $job[ "module" ] . "</a>" ) : $job[ "module" ] ) : ""
                 ,"project"    => $project
+                __~jobdetails{,"details"    => $details}
                 ,"duration"   => $duration . $button_add
                 ,"processors" => isset( $job[ "numprocs" ] ) ? $job[ "numprocs" ] : ""
             );
