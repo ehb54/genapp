@@ -230,7 +230,7 @@
                         "id"       : "themelight",
                         "label"    : "",
                         "type"     : "listbox",
-                        "values"   : "cerulean~cerulean~cosmo~cosmo~flatly~flatly~journal~journal~litera~litera~lumen~lumen~lux~lux~materia~materia~minty~minty~pulse~pulse~sandstone~sandstone~simplex~simplex~sketchy~sketchy~spacelab~spacelab~united~united~yeti~yeti",
+                        "values"   : "default~litera~cerulean~cerulean~cosmo~cosmo~flatly~flatly~journal~journal~litera~litera~lumen~lumen~lux~lux~materia~materia~minty~minty~pulse~pulse~sandstone~sandstone~simplex~simplex~sketchy~sketchy~spacelab~spacelab~united~united~yeti~yeti",
                         "repeat"   : "themetype:light",
                         "help"     : "Select a light theme"
                     }

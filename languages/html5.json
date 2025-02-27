@@ -20,7 +20,8 @@
                     "frequency"  : "once",
                     "output"     : "css/ga.css",
                     "inputs"     : [ 
-                                    { "css/ga.css" : "once"        }
+                                    { "css/ga.css" : "once"           },
+                                    { "css/jstree.min.css" : "once"   }
                                    ]
                     },
                    {

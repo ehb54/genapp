@@ -4,6 +4,15 @@
  * Copyright 2011-2021 Twitter, Inc.
  * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
  */
+
+.jstree-default .jstree-clicked {
+    background: #ff95d2;
+}
+
+a.jstree-anchor:hover {
+    background: #ffa5e2;
+}
+
 @import url("https://fonts.googleapis.com/css2?family=News+Cycle:wght@400;700&display=swap");
 :root {
   --blue: #eb6864;
