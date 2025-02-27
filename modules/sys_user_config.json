@@ -205,16 +205,45 @@
                    "required" : "false",
                      "repeater" : "true",
                      "hideifnot" : "usertheme"
-                   }
-                  ,{
-                      "role"     : "input",
-                      "id"       : "theme",
-                      "label"    : "Theme",
-                      "type"     : "listbox",
-                      "values"   : "default~default~cerulean~cerulean~cosmo~cosmo~cyborg~cyborg~darkly~darkly~flatly~flatly~journal~journal~litera~litera~lumen~lumen~lux~lux~materia~materia~minty~minty~pulse~pulse~sandstone~sandstone~simplex~simplex~sketchy~sketchy~slate~slate~solar~solar~spacelab~spacelab~superhero~superhero~united~united~yeti~yeti",
-                      "repeat"   : "changetheme",
-                      "help"     : "Select a theme"
-                  }
+                 }
+                    ,{
+                        "role"     : "input",
+                        "id"       : "themetype",
+                        "label"    : "Theme",
+                        "type"     : "listbox",
+                        "values"   : "Dark themes~dark~Light themes~light",
+                        "repeater" : "true",
+                        "repeat"   : "changetheme",
+                        "help"     : "Select from light or dark themes"
+                    }
+                    ,{
+                        "role"     : "input",
+                        "id"       : "themedark",
+                        "label"    : "",
+                        "type"     : "listbox",
+                        "values"   : "default~default~cyborg~cyborg~darkly~darkly~slate~slate~solar~solar~superhero~superhero",
+                        "repeat"   : "themetype:dark",
+                        "help"     : "Select a dark theme"
+                    }
+                    ,{
+                        "role"     : "input",
+                        "id"       : "themelight",
+                        "label"    : "",
+                        "type"     : "listbox",
+                        "values"   : "cerulean~cerulean~cosmo~cosmo~flatly~flatly~journal~journal~litera~litera~lumen~lumen~lux~lux~materia~materia~minty~minty~pulse~pulse~sandstone~sandstone~simplex~simplex~sketchy~sketchy~spacelab~spacelab~united~united~yeti~yeti",
+                        "repeat"   : "themetype:light",
+                        "help"     : "Select a light theme"
+                    }
+
+#                  ,{
+#                      "role"     : "input",
+#                      "id"       : "theme",
+#                      "label"    : "Theme",
+#                      "type"     : "listbox",
+#                      "values"   : "default~default~cerulean~cerulean~cosmo~cosmo~cyborg~cyborg~darkly~darkly~flatly~flatly~journal~journal~litera~litera~lumen~lumen~lux~lux~materia~materia~minty~minty~pulse~pulse~sandstone~sandstone~simplex~simplex~sketchy~sketchy~slate~slate~solar~solar~spacelab~spacelab~superhero~superhero~united~united~yeti~yeti",
+#                      "repeat"   : "changetheme",
+#                      "help"     : "Select a theme"
+#                  }
 ## user colors no longer works with bootstrap themes
 ## replace with update theme at some point
 #                  ,{

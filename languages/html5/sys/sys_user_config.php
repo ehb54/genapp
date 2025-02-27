@@ -394,35 +394,42 @@ if ( $doc =
        }
    }
 
-   if ( isset( $_REQUEST[ "changetheme-theme" ] ) ) {
-       if (
-           (
-            isset( $doc->theme ) && $doc->theme != $_REQUEST[ "changetheme-theme" ]
-           ) 
-           ||
-           (
-            !isset( $doc->theme ) && $doc->theme != '__bootstrap:theme__'
-           )
-           ) {
-           ## theme requested an update 
-           $usetotheme = $_REQUEST[ "changetheme-theme" ];
-           if ( isset( $doc->theme ) ) {
-               $usefromtheme = $doc->theme;
-               if ( $usefromtheme == '__bootstrap:theme__' ) {
-                   $usefromtheme = 'default';
+   if ( isset( $_REQUEST[ "changetheme" ] ) ) {
+       if ( isset( $_REQUEST[ "changetheme-themetype-dark-themedark" ] ) ) {
+           $newtheme = $_REQUEST[ "changetheme-themetype-dark-themedark" ];
+       } else if ( isset( $_REQUEST[ "changetheme-themetype-light-themelight" ] ) ) {
+           $newtheme = $_REQUEST[ "changetheme-themetype-light-themelight" ];
+       }
+       if ( isset( $newtheme ) ) {
+           if (
+               (
+                isset( $doc->theme ) && $doc->theme != $newtheme
+               ) 
+               ||
+               (
+                !isset( $doc->theme ) && $doc->theme != '__bootstrap:theme__'
+               )
+               ) {
+               ## theme requested an update 
+               $usetotheme = $newtheme;
+               if ( isset( $doc->theme ) ) {
+                   $usefromtheme = $doc->theme;
+                   if ( $usefromtheme == '__bootstrap:theme__' ) {
+                       $usefromtheme = 'default';
+                   }
+                   $results[ 'status' ] .= "Updating theme from '$usefromtheme' to '$usetotheme'. ";
+               } else {
+                   $results[ 'status' ] .= "Updating theme to '$usetotheme'. ";
                }
-               $results[ 'status' ] .= "Updating theme from '$usefromtheme' to '$usetotheme'. ";
-           } else {
-               $results[ 'status' ] .= "Updating theme to '$usetotheme'. ";
-           }
 
-           $changetotheme = $_REQUEST[ "changetheme-theme" ];
-           if ( $changetotheme == "default" ) {
-               $changetotheme = '__bootstrap:theme__';
+               $changetotheme = $newtheme;
+               if ( $changetotheme == "default" ) {
+                   $changetotheme = '__bootstrap:theme__';
+               }
+               $results[ '_theme' ] = $changetotheme;
+               $update[ '$set' ][ 'theme' ] = $changetotheme;
+               $do_update = 1;
            }
-           $results[ '_theme' ] = $changetotheme;
-           $update[ '$set' ][ 'theme' ] = $changetotheme;
-           $do_update = 1;
        }
    }
 
