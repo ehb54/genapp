@@ -533,6 +533,7 @@ __moduleid___reset = function() {
     __~debug:repeat{console.log( "input_repeats:" + input_repeats );}
     eval( input_repeats );
     ga.repeat.resetvalues( '__moduleid__' );
+    ga.repeat.resetrepeaters( '__moduleid__' );
     __~loadfields{ga.button.click( '__moduleid__', '_loadfields', '__loadfields__' );}
     ga.valuen.noresets.restore( "__moduleid__" );
 

@@ -691,6 +691,17 @@ ga.repeat.changeMany = function( mod, data ) {
     ;
 }
 
+ga.repeat.resetrepeaters = function( mod ) {
+    __~debug:repeat{console.log( `ga.repeat.resetrepeaters( '${mod}' )` );}
+    if ( ga.repeat.data[ mod ]
+         && ga.repeat.data[ mod ].repeater
+       ) {
+        for ( let id in ga.repeat.data[ mod ].repeater ) {
+            ga.repeat.change( mod, id, 1 );
+        }
+    }
+}
+
 ga.repeat.firstid = function( id ) {
     __~debug:repeat{console.log( `ga.repeat.firstid( '${id}' )` );}
     return id.split( /-/ )[0];
