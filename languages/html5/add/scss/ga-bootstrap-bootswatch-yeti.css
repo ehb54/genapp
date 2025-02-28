@@ -7818,21 +7818,21 @@ label,
 
 .ga-vertical-buttons-container {
   position: fixed;
-  right: 0px;
+  right: -160px;
   display: inline-block;
   top: 50%;
   z-index: 1; }
 
 .ga-vertical-buttons {
   animation: 1s ease-out 0s 1 ga-anim-hide-after-load;
-  transform: translateX(16px) rotate(-90deg);
+  transform: translateX(-144px) rotate(-90deg);
   transform-origin: left bottom;
   right: -100%;
   position: relative;
   transition: transform 1s ease-out; }
   .ga-vertical-buttons:hover {
     transition: transform 0.15s ease-in;
-    transform: translateX(0px) rotate(-90deg); }
+    transform: translateX(-160px) rotate(-90deg); }
   .ga-vertical-buttons > .ga-vertical-button {
     border-top-left-radius: .25rem;
     border-top-right-radius: .25rem;
@@ -7847,6 +7847,6 @@ label,
 
 @keyframes ga-anim-hide-after-load {
   0% {
-    transform: translateX(0px) rotate(-90deg); }
+    transform: translateX(-160px) rotate(-90deg); }
   100% {
-    transform: translateX(16px) rotate(-90deg); } }
+    transform: translateX(-144px) rotate(-90deg); } }
