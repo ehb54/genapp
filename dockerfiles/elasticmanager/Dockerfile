@@ -71,6 +71,11 @@ USER jobrunner
 RUN touch /home/jobrunner/p
 RUN echo 'export PATH=$PATH:/home/jobrunner/.local/bin' >> /home/jobrunner/.bashrc
 
+## setup commands
+
+ENV SETUP_CMDS jobrunner_shell_setup
+COPY $SETUP_CMDS /home/jobrunner/.local/bin/shell_setup
+
 ## mongo fake
 
 ENV MONGO_FAKE mongo
@@ -78,7 +83,9 @@ ENV MONGO_FAKE mongo
 COPY $MONGO_FAKE /home/jobrunner/.local/bin/
 
 USER root
+RUN chmod +x /home/jobrunner/.local/bin/shell_setup
 RUN chmod +x /home/jobrunner/.local/bin/${MONGO_FAKE}
+RUN chown jobrunner:jobrunner /home/jobrunner/.local/bin/*
 RUN apt-get install -y jq
 
 

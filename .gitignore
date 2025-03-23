@@ -6,3 +6,10 @@ etc/no_sudo
 #*
 *#
 .#*
+secrets.json*
+appconfig.json*
+mongo
+*rsa*
+jobrunner*
+
+
