@@ -1,0 +1,12 @@
+{
+    "flavors" :
+    {
+        "m3.tiny" : {
+            "idle" : 2
+            ,"maximum" : 5
+        }
+    }
+}
+
+            
+        
