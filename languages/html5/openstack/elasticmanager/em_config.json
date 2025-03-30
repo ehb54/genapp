@@ -1,6 +1,6 @@
 {
     "project" : "TG-MCB170057"
-    ,"id" : "id1"
+    ,"id" : "saxsafold"
     ,"files" : {
         "appconfig"      : "appconfig.json"
         ,"secrets"       : "secrets.json"
@@ -10,6 +10,7 @@
     ,"sleep" : {
         "idle"          : 600
         ,"service_loop" : 30
+        ,"acquire_wait" : 15
     }
     ,"flavors" : {
         "m3.tiny" : {

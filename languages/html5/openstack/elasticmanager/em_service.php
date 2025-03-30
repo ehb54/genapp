@@ -116,23 +116,3 @@ register_shutdown_function( 'unlink', LOCK_FILE );
 $em_openstack = new em_openstack( true, EMCONFIG );
 
 $em_openstack->server_start();
-
-
-$em_status = new em_status();
-echo $em_status->dump( "should be empty");
-$em_status->state->hi = "there";
-echo $em_status->dump( "should have something");
-
-$em_status->read_lock();
-echo "service locked and sleeping 10\n";
-sleep( 10 );
-$em_status->state->hidi = "ho";
-$em_status->save();
-echo "unlocked\n";
-
-error_exit( "testing" );
-
-while( 1 ) {
-    echo "sleeping\n";
-    sleep( SERVICEPOLLTIMESECS );
-}
