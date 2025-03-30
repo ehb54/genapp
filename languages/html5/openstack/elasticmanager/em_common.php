@@ -2,7 +2,7 @@
 
 {};
 
-class em_status {
+class em_state {
     private $statefile;
 
     private $statefilehandle;
@@ -30,15 +30,15 @@ class em_status {
     ## read and lock
     public function read_lock() {
         if ( $this->debug ) {
-            echo "em_common: read_lock()\n";
+            echo "em_state: read_lock()\n";
         }
 
         if ( $this->have_lock ) {
-            error_exit( "em_status: read_lock() we already have lock" );
+            error_exit( "em_state: read_lock() we already have lock" );
         }
 
         if ( !($this->statefilehandle = fopen( $this->statefile, "r+" ) ) ) {
-            error_exit( "em_status: read_lock() could not open statefile" );
+            error_exit( "em_state: read_lock() could not open statefile" );
         }
 
         if ( flock( $this->statefilehandle, LOCK_EX ) ) {
@@ -47,14 +47,14 @@ class em_status {
             $this->have_lock = true;
             return true;
         } else {
-            error_exit( "em_status: read_lock() could not lock $hist->statefile" );
+            error_exit( "em_state: read_lock() could not lock $hist->statefile" );
         }            
     }
 
     ## read without locking, useful for status
     public function read_no_lock() {
         if ( $this->debug ) {
-            echo "em_common: read_no_lock()\n";
+            echo "em_state: read_no_lock()\n";
         }
         if ( file_exists( $this->statefile ) ) {
             $this->state = json_decode( file_get_contents( $this->statefile ) );
@@ -66,11 +66,11 @@ class em_status {
     ## release lock - if the code read_lock'd and decided not to write?
     public function release_lock() {
         if ( $this->debug ) {
-            echo "em_common: release_lock()\n";
+            echo "em_state: release_lock()\n";
         }
 
         if ( !$this->have_lock ) {
-            error_exit( "em_status: release_lock() we don't have a lock" );
+            error_exit( "em_state: release_lock() we don't have a lock" );
         }
 
         flock( $this->statefilehandle, LOCK_UN );
@@ -82,11 +82,11 @@ class em_status {
 
     public function save() {
         if ( $this->debug ) {
-            echo "em_common: save()\n";
+            echo "em_state: save()\n";
         }
 
         if ( !$this->have_lock ) {
-            error_exit( "em_status: save() lock was not acquired." );
+            error_exit( "em_state: save() lock was not acquired." );
         }
 
         ftruncate( $this->statefilehandle, 0 );
@@ -94,7 +94,7 @@ class em_status {
         $contents = json_encode( $this->state );
         
         if ( strlen( $contents ) != fwrite( $this->statefilehandle, $contents ) ) {
-            error_exit( "em_status: save() write failed" );
+            error_exit( "em_state: save() write failed" );
         }
         
         $this->release_lock();
@@ -102,7 +102,7 @@ class em_status {
 
     public function init() {
         if ( $this->debug ) {
-            echo "em_common: init()\n";
+            echo "em_state: init()\n";
         }
         $this->read_lock();
         $this->state = (object)[];
@@ -194,4 +194,8 @@ function error_exit( $msg, $cb = null ) {
     }
     echo "ERROR, terminating : $msg\n";
     exit;
+}
+
+function debug_json( $msg, $obj ) {
+    echo "$msg:\n", json_encode( $obj, JSON_PRETTY_PRINT ) . "\n";
 }

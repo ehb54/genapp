@@ -1,12 +1,20 @@
 {
-    "flavors" :
-    {
+    "project" : "TG-MCB170057"
+    ,"id" : "id1"
+    ,"files" : {
+        "appconfig"      : "appconfig.json"
+        ,"secrets"       : "secrets.json"
+        ,"state"         : "em_state.json"
+        ,"lockdir"       : "/var/run/genapp"
+    }        
+    ,"sleep" : {
+        "idle"          : 600
+        ,"service_loop" : 30
+    }
+    ,"flavors" : {
         "m3.tiny" : {
             "idle" : 2
             ,"maximum" : 5
         }
     }
 }
-
-            
-        

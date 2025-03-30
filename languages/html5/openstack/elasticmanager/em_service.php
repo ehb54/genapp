@@ -5,19 +5,7 @@
 
 require_once "em_config.php";
 require_once "em_common.php";
-
-
-if ( !file_exists( EMCONFIG ) ) {
-    print "File " . EMCONFIG . " does not exist\n";
-    exit;
-}
-
-try {
-    $emconfig = json_decode( file_get_contents( EMCONFIG ) );
-} catch ( Exception $e ) {
-    echo $e->getMessage();
-    exit -1;
-}
+require_once "em_openstack.php";
 
 if ( !file_exists( APPCONFIG ) ) {
     print "File " . APPCONFIG . " does not exist\n";
@@ -31,7 +19,7 @@ try {
     exit -1;
 }
 
-if ( !file_exists( SECRETS) ) {
+if ( !file_exists( SECRETS ) ) {
     print "File " . SECRETS . " does not exist\n";
     exit;
 }
@@ -42,7 +30,6 @@ try {
     echo $e->getMessage();
     exit -1;
 }
-
 
 if ( isset( $appconfig->lockdir ) ) {
     $lockdir = $appconfig->lockdir;
@@ -125,6 +112,10 @@ if ( !tryLock() ) {
 }
 # remove the lock on exit (Control+C doesn't count as 'exit'?)
 register_shutdown_function( 'unlink', LOCK_FILE );
+
+$em_openstack = new em_openstack( true, EMCONFIG );
+
+$em_openstack->server_start();
 
 
 $em_status = new em_status();
