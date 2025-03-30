@@ -311,7 +311,7 @@ class em_openstack {
         ## add missing current to state, they are idle
         
         foreach ( (array) $current as $k => $v ) {
-            $this->em_state->state->$k = $v;
+            $this->em_state->state->$k = json_decode( json_encode( $v ) );
             $this->em_state->state->$k->use_status = "idle";
             $this->em_state->state->$k->use_id     = "";
         }
@@ -327,7 +327,6 @@ class em_openstack {
         $this->debug_echo( "em_openstack: status()" );
 
         $this->em_state->read_lock();
-        $this->em_state->release_lock();
 
         $needed_idle = $this->em_config->flavors->{$this->flavor}->idle;
         $maximum     = $this->em_config->flavors->{$this->flavor}->maximum;
@@ -408,6 +407,8 @@ class em_openstack {
             $instances_to_idle = -$difference;
         }
 
+        $this->em_state->release_lock();
+
         if ( $update ) {
             if ( $instances_to_start > 0
                  || $instances_to_idle > 0 ) {
@@ -426,9 +427,13 @@ class em_openstack {
                     $instances_to_start > 0
                     && count( $missing ) ) {
                     $k = array_shift( $missing );
-                    if ( $this->launch_one( $k ) ) {
-                        ## ok
-                        --$instances_to_start;
+                    if ( isset( $this->em_state->state->$k ) ) {
+                        $this->echo_warn( "trying to launch an instance that already exists!" );
+                    } else {
+                        if ( $this->launch_one( $k ) ) {
+                            ## ok
+                            --$instances_to_start;
+                        }
                     }
                 }                    
                 if ( $instances_to_start > 0 ) {

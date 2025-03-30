@@ -97,6 +97,8 @@ class em_state {
             error_exit( "em_state: save() write failed" );
         }
         
+        fflush( $this->statefilehandle );
+
         $this->release_lock();
     }
 
