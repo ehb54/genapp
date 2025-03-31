@@ -7,13 +7,15 @@ require_once "em_common.php";
 
 $reps = 50;
 
+$tag = sprintf( "em_test_%d", getmypid() );
+
 for ( $i = 1; $i <= $reps; ++$i  ) {
     echo "rep $i of $reps...\n";
 
     $run_for = rand( 60, 600 );
     $sleep_for = rand( 60, 600 );
 
-    $cmd = "php em_client.php --acquire m3.tiny";
+    $cmd = "php em_client.php --acquire m3.tiny $tag";
 
     echo "$cmd\n";
     $res = explode( " ", trim( run_cmd( $cmd ) ) );

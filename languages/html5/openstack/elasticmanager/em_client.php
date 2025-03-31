@@ -21,10 +21,9 @@ airavata job status messages
 
     --help                     : print this information and exit
 
-    --acquire flavor           : get an instance
+    --acquire flavor tag       : get an instance and tag it supplementary info
     --release id               : release an instance
     --status                   : print status
-
 
 __EOD;
 
@@ -42,10 +41,11 @@ while( count( $u_argv ) && substr( $u_argv[ 0 ], 0, 1 ) == "-" ) {
         }
         case "--acquire" : {
             array_shift( $u_argv );
-            if ( !count( $u_argv ) ) {
-                error_exit( "ERROR: option '$arg' requires an argument\n$notes" );
+            if ( count( $u_argv ) < 2 ) {
+                error_exit( "ERROR: option '$arg' requires two arguments\n$notes" );
             }
-            $acquire = array_shift( $u_argv );
+            $acquire     = array_shift( $u_argv );
+            $acquire_tag = array_shift( $u_argv );
             break;
         }
         case "--release" : {
@@ -54,6 +54,14 @@ while( count( $u_argv ) && substr( $u_argv[ 0 ], 0, 1 ) == "-" ) {
                 error_exit( "ERROR: option '$arg' requires an argument\n$notes" );
             }
             $release = array_shift( $u_argv );
+            break;
+        }
+        case "--error" : {
+            array_shift( $u_argv );
+            if ( !count( $u_argv ) ) {
+                error_exit( "ERROR: option '$arg' requires an argument\n$notes" );
+            }
+            $error = array_shift( $u_argv );
             break;
         }
         case "--status": {
@@ -85,7 +93,7 @@ if ( isset( $acquire ) ) {
     $number = -1;
     $ip     = "";
     
-    if ( $em_openstack->acquire( $acquire, $number, $ip ) ) {
+    if ( $em_openstack->acquire( $acquire, $acquire_tag, $number, $ip ) ) {
         ## got one
         echo "$number $ip\n";
         exit( 0 );
@@ -96,5 +104,14 @@ if ( isset( $acquire ) ) {
 
 if ( isset( $release ) ) {
     $em_openstack->release( $release );
+    exit( 0 );
+}
+
+## only for testing
+#   --error id                 : set instance into ERROR state (for testing)
+
+if ( isset( $error ) ) {
+    $em_openstack->load_secrets();
+    $em_openstack->error_instance( $error );
     exit( 0 );
 }

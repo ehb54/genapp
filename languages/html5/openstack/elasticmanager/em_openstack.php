@@ -395,15 +395,16 @@ class em_openstack {
         $needed_idle = $this->em_config->flavors->{$this->flavor}->idle;
         $maximum     = $this->em_config->flavors->{$this->flavor}->maximum;
 
-        $idle    = [];
-        $in_use  = [];
-        $active  = [];
-        $shelved = [];
-        $error   = [];
-        $build   = [];
-        $unknown = [];
-        $all     = [];
-        $missing = [];
+        $idle       = [];
+        $in_use     = [];
+        $in_use_ids = [];
+        $active     = [];
+        $shelved    = [];
+        $error      = [];
+        $build      = [];
+        $unknown    = [];
+        $all        = [];
+        $missing    = [];
 
         for ( $i = 0; $i < $maximum; ++$i ) {
             if ( !isset( $this->em_state->state->$i ) ) {
@@ -419,7 +420,8 @@ class em_openstack {
                     if ( $v->use_status == "idle" ) {
                         $idle[] = $k;
                     } else {
-                        $in_use[] = $k;
+                        $in_use[]     = $k;
+                        $in_use_ids[] = empty( $v->use_id ) ? 'none' : $v->use_id;
                     }
                 }
                 break;
@@ -474,9 +476,18 @@ class em_openstack {
         $this->em_state->release_lock();
 
         if ( $update ) {
+            $do_reload_state = false;
+            while ( count( $error ) ) {
+                $k = array_shift( $error );
+                ## simply warn & remove the instance, new instance will be created next loop
+                $this->delete_instance( $k );
+                $do_reload_state = true;
+            }
+                
             if ( $instances_to_start > 0
                  || $instances_to_idle > 0 ) {
                 $this->debug_echo( "updating.... (to start $instances_to_start, to idle $instances_to_idle) " );
+                $do_reload_state = true;
                 while (
                     $instances_to_start > 0
                     && count( $shelved )
@@ -519,7 +530,9 @@ class em_openstack {
                 if ( $instances_to_idle > 0 ) {
                     $this->echo_warn( "could not idle expected instances" );
                 }
+            }
 
+            if ( $do_reload_state ) {
                 $this->reload_state();
             } else {
                 ## nothing to update
@@ -529,7 +542,7 @@ class em_openstack {
             
         return sprintf(
             "idle    %d [%s]\n"
-            . "in_use  %d [%s]\n"
+            . "in_use  %d [%s] ids %s\n"
             . "active  %d [%s]\n"
             . "shelved %d [%s]\n"
             . "error   %d [%s]\n"
@@ -543,7 +556,7 @@ class em_openstack {
             . "instances to idle $instances_to_idle\n"
 
             ,count( $idle ), implode( ",", $idle )
-            ,count( $in_use ), implode( ",", $in_use )
+            ,count( $in_use ), implode( ",", $in_use ), implode( ", ", $in_use_ids )
             ,count( $active ), implode( ",", $active )
             ,count( $shelved ), implode( ",", $shelved )
             ,count( $error ), implode( ",", $error )
@@ -552,6 +565,54 @@ class em_openstack {
             ,count( $missing ), implode( ",", $missing )
 
             );
+    }
+
+    ## delete_instance() - remove an instance (e.g. in ERROR state)
+    function delete_instance( $number ) {
+        $this->debug_echo( "em_openstack: delete_instance( $number )" );
+
+        if ( !isset( $this->em_state->state )
+             || !isset( $this->em_state->state->$number ) ) {
+            error_exit( "delete_instance() - invalid instance number $number" );
+        }
+
+        $id = $this->em_state->state->$number->id;
+
+        $this->echo_warn( "em_openstack: deleting instance $number, id $id" );
+
+        $this->project_putenv( $this->project );
+        $cmd = "openstack server delete --wait $id";
+        echo run_cmd( $cmd );
+    }
+
+    ## error_instance() - put instance into ERROR state for testing
+    function error_instance( $number ) {
+        $this->debug_echo( "em_openstack: error_instance( $number )" );
+
+        if ( !isset( $this->em_state->state )
+             || !isset( $this->em_state->state->$number ) ) {
+            error_exit( "error_instance() - invalid instance number $number" );
+        }
+
+        $id = $this->em_state->state->$number->id;
+        $this->echo_warn( "em_openstack: setting instance to ERROR state $number, id $id" );
+
+        ## policy doesn't allow this on js2
+        # $this->project_putenv( $this->project );
+        # $cmd = "openstack server set --state error $id";
+        # echo "$cmd";
+        # $res = run_cmd( $cmd );
+        # echo $res;
+
+        # fake state
+
+        $this->em_state->read_lock();
+        if ( !isset( $this->em_state->state )
+             || !isset( $this->em_state->state->$number ) ) {
+            error_exit( "error_instance() - invalid instance number $number" );
+        }
+        $id = $this->em_state->state->$number->status = "ERROR";
+        $this->em_state->save();
     }
 
     ## launch_one() - launch a new instance given a number 
@@ -704,7 +765,7 @@ class em_openstack {
                         $cmd = "openstack server delete --wait " . implode( ' ', $os_image );
                         $this->debug_echo( $cmd );
                         $this->debug_echo( "Removing successfully booted virtual cluster nodes" );
-                        ## RESTORE WHEN CONFIDENT ! $this->debug_echo( `$cmd 2>&1` );
+                        $this->debug_echo( `$cmd 2>&1` );
                     }
                     $this->debug_echo( "Errors found when trying to boot a virtual cluster node" );
                     error_exit( "OpenStack: exactly one status not returned for image ' . $v . '" );
@@ -725,7 +786,7 @@ class em_openstack {
                             $cmd = "openstack server delete --wait " . implode( ' ', $os_image );
                             $this->debug_echo( $cmd );
                             $this->debug_echo( "Removing successfully booted virtual cluster nodes" );
-                            ## RESTORE WHEN CONFIDENT ! $this->debug_echo( `$cmd 2>&1` );
+                            $this->debug_echo( `$cmd 2>&1` );
                         }
                         $this->debug_echo( "Errors found when trying to boot a virtual cluster node" );
                         error_exit( "OpenStack: unknown status ' . $this_status . ' received for image ' . $v . '" );
@@ -856,7 +917,7 @@ class em_openstack {
                 $cmd = "openstack server delete --wait " . implode( ' ', $os_image );
                 $this->debug_echo( $cmd );
                 $this->debug_echo( "Removing successfully booted virtual cluster nodes" );
-                ## RESTORE WHEN CONFIDENT ! $this->debug_echo( `$cmd 2>&1` );
+                $this->debug_echo( `$cmd 2>&1` );
             }
             $this->debug_echo( "Timeout while waiting for nodes to go ready" );
             if ( isset( $tempfile ) ) {
@@ -971,7 +1032,7 @@ class em_openstack {
 
     ## --- client functions ----
 
-    function acquire( $flavor, &$number, &$ip, $wait = true ) {
+    function acquire( $flavor, $tag, &$number, &$ip, $wait = true ) {
         if ( $flavor != $this->flavor ) {
             $this->echo_warn( "flavor $flavor not currently available, use $this->flavor" );
             return false;
@@ -985,6 +1046,7 @@ class em_openstack {
                 if ( $v->status == "ACTIVE"
                      && $v->use_status == "idle" ) {
                     $v->use_status = "in use";
+                    $v->use_id     = $tag;
                     $this->em_state->save();
                     $number = $k;
                     $ip     = $this->em_state->state->$k->network;
@@ -1011,6 +1073,7 @@ class em_openstack {
             return false;
         }
         $this->em_state->state->$number->use_status = "idle";
+        $this->em_state->state->$number->use_id     = "";
         $this->em_state->save();
         return true;
     }
