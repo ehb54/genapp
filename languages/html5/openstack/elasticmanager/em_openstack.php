@@ -211,6 +211,7 @@ class em_openstack {
             $this->echo_warn( "$cmd failed with code $run_cmd_last_error_code, results:\n$res" );
             return false;
         }
+
         return true;
     }
 
@@ -234,6 +235,58 @@ class em_openstack {
             $this->echo_warn( "$cmd failed with code $run_cmd_last_error_code, results:\n$res" );
             return false;
         }
+
+        ## post unshelve tests
+
+        if ( !isset( $this->em_state->state->$number ) 
+             || !isset( $this->em_state->state->$number->network ) ) {
+            error_exit( "unshelve: no ip found for $number" );
+        }
+        
+        $ip = $this->em_state->state->$number->network;
+        
+        ## run ssh is-open test
+
+        $tries    = 0;
+        $maxtries = 10;
+        $sshopen = false;
+        do {
+            if ( $fp = fsockopen( $ip, 22, $errno, $errstr, 10 ) ) {
+                $sshopen = true;
+                $this->debug_echo( "$ip is open\n" );
+                fclose( $fp );                
+            } else {
+                $this->debug_echo( "$ip ssh not open\n" );
+                sleep( 5 );
+            }
+        } while ( !$sshopen && ++$tries <= $maxtries );
+
+        ## was this instance in error?
+        if ( !$sshopen ) {
+            $this->echo_warn( "unshelving $number could not ssh" );
+        }
+
+        ## run postssh if defined
+        if ( isset( $this->appconfig->resources->oscluster->properties->postssh ) ) {
+
+            if ( !isset( $this->appconfig->resources->oscluster->properties->sshadmin ) ) {
+                error_exit( "resources:oscluster:properties:sshadmin not defined in appconfig" );
+            }
+
+            $os_sshadmin = $this->appconfig->resources->oscluster->properties->sshadmin;
+
+            if ( !isset( $this->appconfig->resources->oscluster->properties->sshidentity ) ) {
+                error_exit( "resources:oscluster:properties:sshidentity not defined in appconfig" );
+            }
+
+            $os_sshidentity = $this->appconfig->resources->oscluster->properties->sshidentity;
+
+
+            $cmd = "ssh -i $os_sshidentity -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $os_sshadmin@$ip -C '" . $this->appconfig->resources->oscluster->properties->postssh . "'";
+            $this->debug_echo( "post ssh : $cmd" );
+            `$cmd 2>&1 > /dev/null`;
+        }
+
         return true;
     }
     

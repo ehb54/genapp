@@ -22,6 +22,12 @@ for ( $i = 1; $i <= $reps; ++$i  ) {
     $ip = $res[1];
     echo "got server with id $id, ip $ip\n";
 
+    ## try ssh ?
+
+    $cmd = "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no jobrunner@$ip ls -l /genappdata/container_mounts";
+    echo $cmd;
+    echo `$cmd`;
+
     echo "sleep $run_for [s]\n";
     sleep( $run_for );
 
