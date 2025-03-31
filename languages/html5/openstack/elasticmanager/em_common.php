@@ -42,8 +42,14 @@ class em_state {
         }
 
         if ( flock( $this->statefilehandle, LOCK_EX ) ) {
-            $contents = fread( $this->statefilehandle, filesize( $this->statefile ) );
-            $this->state = json_decode( $contents );
+            $this->state = json_decode( file_get_contents( $this->statefile ) );
+
+            # $contents = fread( $this->statefilehandle, filesize( $this->statefile ) );
+            # echo sprintf( "read_lock() filesize %d contentssize %d\n"
+            # ,filesize( $this->statefile )
+            # ,strlen( $contents )
+            # );
+            # $this->state = json_decode( $contents );
             $this->have_lock = true;
             return true;
         } else {
@@ -76,6 +82,8 @@ class em_state {
         flock( $this->statefilehandle, LOCK_UN );
         fclose( $this->statefilehandle );
         $this->have_lock = false;
+
+        $this->read_no_lock();
     }
     
     ## save - requries a prior read_lock()

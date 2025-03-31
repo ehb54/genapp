@@ -285,6 +285,8 @@ class em_openstack {
 
         $this->em_state->read_lock();
 
+        debug_json( "em_state", $this->em_state->state );
+
         ## compare state with current
 
         foreach ( (array) $this->em_state->state as $k => $v ) {
@@ -316,7 +318,9 @@ class em_openstack {
             $this->em_state->state->$k->use_id     = "";
         }
             
+        debug_json( "reload state em_state - before save", $this->em_state->state );
         $this->em_state->save();
+        debug_json( "reload state em_state - after save", $this->em_state->state );
             
         # error_exit( "em_openstack:reload_state() - not yet implemented" );
     }
@@ -327,6 +331,13 @@ class em_openstack {
         $this->debug_echo( "em_openstack: status()" );
 
         $this->em_state->read_lock();
+
+        debug_json( "status em_state", $this->em_state->state );
+
+        if ( !isset( $this->em_state->state ) ) {
+            $this->em_state->release_lock();
+            error_exit( "status: em_state->state not set?" );
+        }
 
         $needed_idle = $this->em_config->flavors->{$this->flavor}->idle;
         $maximum     = $this->em_config->flavors->{$this->flavor}->maximum;
@@ -412,7 +423,7 @@ class em_openstack {
         if ( $update ) {
             if ( $instances_to_start > 0
                  || $instances_to_idle > 0 ) {
-                $this->debug_echo( "updating...." );
+                $this->debug_echo( "updating.... (to start $instances_to_start, to idle $instances_to_idle) " );
                 while (
                     $instances_to_start > 0
                     && count( $shelved )
@@ -813,6 +824,7 @@ class em_openstack {
         $this->reload_state();
 
         echo $this->status();
+
         echo $this->status( true );
 
         while( 1 ) {
