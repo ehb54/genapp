@@ -25,7 +25,7 @@ for ( $i = 1; $i <= $reps; ++$i  ) {
     echo "sleep $run_for [s]\n";
     sleep( $run_for );
 
-    $cmd = "php os_client.php --release $id";
+    $cmd = "php em_client.php --release $id";
     
     echo "$cmd\n";
     $res = run_cmd( $cmd );
