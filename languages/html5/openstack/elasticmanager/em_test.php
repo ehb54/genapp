@@ -5,6 +5,17 @@
 
 require_once "em_common.php";
 
+function run_cmd( $cmd, $exit_if_error = true, $array_result = false ) {
+    exec( "$cmd 2>&1", $res, $run_cmd_last_error_code );
+    if ( $exit_if_error && $run_cmd_last_error_code ) {
+        $error_exit( "shell command [$cmd] returned result:<br>" . implode( "<br> ", $res ) . "<br>and with exit status '$run_cmd_last_error_code'" );
+    }
+    if ( !$array_result ) {
+        return implode( "\n", $res ) . "\n";
+    }
+    return $res;
+}
+
 $reps = 50;
 
 $tag = sprintf( "em_test_%d", getmypid() );

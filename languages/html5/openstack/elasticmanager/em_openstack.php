@@ -2,6 +2,8 @@
 
 {};
 
+date_default_timezone_set('UTC');
+
 require_once "em_common.php";
 
 ## class for managing openstack instance pool
@@ -30,19 +32,24 @@ class em_openstack {
     private $flavor;
     private $idprefix = "genapp_elastic";
 
+    private $logfile;
+    private $notify = "";
+
     private $projects;
 
     private $global_putenv_done = false;
+
+    private $run_cmd_last_error_code;
     
     function __construct( $debug = false, $configfile = "em_config.json" ) {
         $this->debug       = $debug;
         $this->configfile  = $configfile;
         $this->read_config();
         if ( !isset( $this->em_config->files ) ) {
-            error_exit( "$this->configfile does not define 'files'" );
+            $this->error_exit( "$this->configfile does not define 'files'" );
         }
         if ( !isset( $this->em_config->files->state ) ) {
-            error_exit( "$this->configfile does not define 'files'->'state'" );
+            $this->error_exit( "$this->configfile does not define 'files'->'state'" );
         }
 
         $this->statefile   = $this->em_config->files->state;
@@ -55,40 +62,52 @@ class em_openstack {
         $this->debug_echo( "em_openstack: read_config()" );
 
         if ( !file_exists( $this->configfile ) ) {
-            error_exit( "File $this->configfile does not exist\n" );
+            $this->error_exit( "File $this->configfile does not exist\n" );
         }
 
         try {
             $this->em_config = json_decode( file_get_contents( $this->configfile ) );
         } catch ( Exception $e ) {
-            error_exit( "Error decoding $this->configfile : " . $e->getMessage() );
+            $this->error_exit( "Error decoding $this->configfile : " . $e->getMessage() );
         }
 
         if ( !isset( $this->em_config->flavors ) ) {
-            error_exit( "$this->configfile does not define 'flavors'" );
+            $this->error_exit( "$this->configfile does not define 'flavors'" );
         }
 
         foreach ( $this->em_config->flavors as $flavor => $v ) {
             $this->flavor = $flavor;
             if ( !isset( $v->idle ) ) {
-                error_exit( "$this->configfile does not define flavors:$flavor:idle" );
+                $this->error_exit( "$this->configfile does not define flavors:$flavor:idle" );
             }
             if ( !isset( $v->maximum ) ) {
-                error_exit( "$this->configfile does not define flavors:$flavor:maximum" );
+                $this->error_exit( "$this->configfile does not define flavors:$flavor:maximum" );
             }
         }
 
         if ( !isset( $this->em_config->project ) ) {
-            error_exit( "$this->configfile does not define project" );
+            $this->error_exit( "$this->configfile does not define project" );
         }
 
         $this->project = $this->em_config->project;
 
         if ( !isset( $this->em_config->id ) ) {
-            error_exit( "$this->configfile does not define id" );
+            $this->error_exit( "$this->configfile does not define id" );
         }
 
         $this->id = $this->em_config->id;
+
+        if ( !isset( $this->em_config->logfile ) ) {
+            $this->error_exit( "$this->configfile does not define logfile" );
+        }
+
+        $this->logfile = $this->em_config->logfile;
+
+        if ( !isset( $this->em_config->notify ) ) {
+            $this->echo_warn( "$this->configfile does not define notify" );
+        } else {
+            $this->notify = $this->em_config->notify;
+        }
 
         if ( $this->debug ) {
             debug_json( "em_openstack:read_config() em_config:", $this->em_config );
@@ -99,21 +118,21 @@ class em_openstack {
     function load_secrets() {
         $this->debug_echo( "em_openstack: load_secrets()" );
         if ( !isset( $this->em_config->files->secrets ) ) {
-            error_exit( "$this->configfile does not define 'files'->'secrets'" );
+            $this->error_exit( "$this->configfile does not define 'files'->'secrets'" );
         }
         
         try {
             $this->secrets = json_decode( file_get_contents( $this->em_config->files->secrets ) );
         } catch ( Exception $e ) {
-            error_exit( "Error decoding $this->em_config->files->secrets " . $e->getMessage() );
+            $this->error_exit( "Error decoding $this->em_config->files->secrets " . $e->getMessage() );
         }
 
         if ( !isset( $this->secrets->openstack ) ) {
-            error_exit( "$this->em_config->files->secrets does not define 'openstack'" );
+            $this->error_exit( "$this->em_config->files->secrets does not define 'openstack'" );
         }
 
         if ( !isset( $this->secrets->openstack->projects ) ) {
-            error_exit( "$this->em_config->files->secrets does not define 'openstack'->'projects'" );
+            $this->error_exit( "$this->em_config->files->secrets does not define 'openstack'->'projects'" );
         }
 
         $this->projects = $this->secrets->openstack->projects;
@@ -121,7 +140,7 @@ class em_openstack {
         ## restrict to a single defined project, run separate managers, separate config for each project
 
         if ( !isset( $this->projects->{ $this->project } ) ) {
-            error_exit( "main project $this->project is not defined in $this->em_config->files->secrets" );
+            $this->error_exit( "main project $this->project is not defined in $this->em_config->files->secrets" );
         }
 
         $this->secrets_loaded = true;
@@ -131,29 +150,29 @@ class em_openstack {
     function load_appconfig() {
         $this->debug_echo( "em_openstack: load_appconfig()" );
         if ( !isset( $this->em_config->files->appconfig ) ) {
-            error_exit( "$this->configfile does not define 'files'->'appconfig'" );
+            $this->error_exit( "$this->configfile does not define 'files'->'appconfig'" );
         }
         
         try {
             $this->appconfig = json_decode( file_get_contents( $this->em_config->files->appconfig ) );
         } catch ( Exception $e ) {
-            error_exit( "Error decoding $this->em_config->files->appconfig " . $e->getMessage() );
+            $this->error_exit( "Error decoding $this->em_config->files->appconfig " . $e->getMessage() );
         }
 
         if ( !isset( $this->appconfig->resources ) ) {
-            error_exit( "error: resources not defined in $this->em_config->files->appconfig" );
+            $this->error_exit( "error: resources not defined in $this->em_config->files->appconfig" );
         }
 
         if ( !isset( $this->appconfig->resources->oscluster ) ) {
-            error_exit( "error: resources:oscluster not defined in $this->em_config->files->appconfig" );
+            $this->error_exit( "error: resources:oscluster not defined in $this->em_config->files->appconfig" );
         }
         
         if ( !isset( $this->appconfig->resources->oscluster->properties ) ) {
-            error_exit( "error: resources:oscluster:properties not defined in $this->em_config->files->appconfig" );
+            $this->error_exit( "error: resources:oscluster:properties not defined in $this->em_config->files->appconfig" );
         }
 
         if ( !isset( $this->appconfig->resources->oscluster->properties->baseimage ) ) {
-            error_exit( "error: resources:oscluster:properties:baseimage not defined in $this->em_config->files->appconfig" );
+            $this->error_exit( "error: resources:oscluster:properties:baseimage not defined in $this->em_config->files->appconfig" );
         }
         $this->image = $this->appconfig->resources->oscluster->properties->baseimage;
 
@@ -179,19 +198,20 @@ class em_openstack {
 
     ## echo_warn() - print warning, perhaps to stderr later
     function echo_warn( $msg ) {
+        $this->log( "WARNING: $msg" );
         echo "WARNING: $msg\n";
     }
 
     ## shelve() - shelve, offload instance
     function shelve( $number ) {
-        global $run_cmd_last_error_code;
-
         $this->debug_echo( "em_openstack: shelve( $number )" );
+        $this->log( "shelve $number" );
 
         ## might have gone in_use
         $this->em_state->read_lock();
         if ( !isset( $this->em_state->state->$number ) ) {
-            error_exit( "em_openstack: shelve() $number is missing from em_state" );
+            $this->echo_warn( "em_openstack: shelve() $number is missing from em_state" );
+            return false;
         }
         if ( $this->em_state->state->$number->use_status != "idle" ) {
             ## was acquired!
@@ -205,10 +225,10 @@ class em_openstack {
         $cmd = "openstack server shelve --offload --wait " . $this->em_state->state->$number->id . " 2>&1";
         $this->debug_echo( $cmd );
 
-        $res = run_cmd( $cmd, false );
+        $res = $this->run_cmd( $cmd, false );
 
-        if ( $run_cmd_last_error_code != 0 ) {
-            $this->echo_warn( "$cmd failed with code $run_cmd_last_error_code, results:\n$res" );
+        if ( $this->run_cmd_last_error_code != 0 ) {
+            $this->echo_warn( "$cmd failed with code $this->run_cmd_last_error_code, results:\n$res" );
             return false;
         }
 
@@ -217,22 +237,21 @@ class em_openstack {
 
     ## unshelve() - shelve, offload instance
     function unshelve( $number ) {
-        global $run_cmd_last_error_code;
         $this->debug_echo( "em_openstack: unshelve( $number )" );
+        $this->log( "unshelve $number" );
 
         if ( !isset( $this->em_state->state->$number ) ) {
-            error_exit( "em_openstack: unshelve() $number is missing from em_state" );
+            $this->echo_warn( "em_openstack: unshelve() $number is missing from em_state" );
+            return false;
         }
 
         $this->project_putenv( $this->project );
         $cmd = "openstack server unshelve --wait " . $this->em_state->state->$number->id . " 2>&1";
         $this->debug_echo( $cmd );
-        $res = run_cmd( $cmd, false );
+        $res = $this->run_cmd( $cmd, false );
 
-        if ( $run_cmd_last_error_code != 0 ) {
-            error_exit( "$cmd failed with code $run_cmd_last_error_code, results:\n$res" );
-
-            $this->echo_warn( "$cmd failed with code $run_cmd_last_error_code, results:\n$res" );
+        if ( $this->run_cmd_last_error_code != 0 ) {
+            $this->echo_warn( "$cmd failed with code $this->run_cmd_last_error_code, results:\n$res" );
             return false;
         }
 
@@ -240,7 +259,8 @@ class em_openstack {
 
         if ( !isset( $this->em_state->state->$number ) 
              || !isset( $this->em_state->state->$number->network ) ) {
-            error_exit( "unshelve: no ip found for $number" );
+            $this->echo_warn( "em_openstack: unshelve() ip found for $number" );
+            return false;
         }
         
         $ip = $this->em_state->state->$number->network;
@@ -251,11 +271,14 @@ class em_openstack {
         $maxtries = 10;
         $sshopen = false;
         do {
-            if ( $fp = fsockopen( $ip, 22, $errno, $errstr, 10 ) ) {
+            ob_start();
+            if ( @$fp = fsockopen( $ip, 22, $errno, $errstr, 10 ) ) {
+                ob_end_clean();
                 $sshopen = true;
                 $this->debug_echo( "$ip is open\n" );
                 fclose( $fp );                
             } else {
+                ob_end_clean();
                 $this->debug_echo( "$ip ssh not open\n" );
                 sleep( 5 );
             }
@@ -264,19 +287,20 @@ class em_openstack {
         ## was this instance in error?
         if ( !$sshopen ) {
             $this->echo_warn( "unshelving $number could not ssh" );
+            return false;
         }
 
         ## run postssh if defined
         if ( isset( $this->appconfig->resources->oscluster->properties->postssh ) ) {
 
             if ( !isset( $this->appconfig->resources->oscluster->properties->sshadmin ) ) {
-                error_exit( "resources:oscluster:properties:sshadmin not defined in appconfig" );
+                $this->error_exit( "resources:oscluster:properties:sshadmin not defined in appconfig" );
             }
 
             $os_sshadmin = $this->appconfig->resources->oscluster->properties->sshadmin;
 
             if ( !isset( $this->appconfig->resources->oscluster->properties->sshidentity ) ) {
-                error_exit( "resources:oscluster:properties:sshidentity not defined in appconfig" );
+                $this->error_exit( "resources:oscluster:properties:sshidentity not defined in appconfig" );
             }
 
             $os_sshidentity = $this->appconfig->resources->oscluster->properties->sshidentity;
@@ -289,7 +313,6 @@ class em_openstack {
 
         return true;
     }
-    
         
     ## reload state() - reload from openstack api call
     function reload_state() {
@@ -303,14 +326,15 @@ class em_openstack {
             $this->project_putenv( $project );
             $cmd = "openstack server list -c ID -c Name -c Status -c Networks";
             $regexp = "/\| $project-run-$this->idprefix-$this->id-$this->flavor-/";
-            $results_all = run_cmd( $cmd, true, true );
+            $results_all = $this->run_cmd( $cmd, false, true );
             $results = preg_grep( $regexp, $results_all );
             $this->debug_echo( "cmd : $cmd\n" . implode( "\n", $results ) );
 
             foreach ( $results as $v ) {
                 $l = explode( "|", $v );
                 if ( count( $l ) < 5 ) {
-                    error_exit( "unexpected results : $v" );
+                    $this->echo_warn( "reload_state() - unexpected results : $v" );
+                    continue;
                 }
                 $id       = trim( $l[ 1 ] );
                 $name     = trim( $l[ 2 ] );
@@ -332,13 +356,17 @@ class em_openstack {
             }
         }
 
-        debug_json( "current", $current );
+        if ( $this->debug ) {
+            debug_json( "current", $current );
+        }
 
         ## setup statefile
 
         $this->em_state->read_lock();
 
-        debug_json( "em_state", $this->em_state->state );
+        if ( $this->debug ) {
+            debug_json( "em_state", $this->em_state->state );
+        }
 
         ## compare state with current
 
@@ -357,7 +385,7 @@ class em_openstack {
             }
 
             if ( $this->em_state->state->$k->status != $current->$k->status ) {
-                $this->echo_warn( "instance $k status differences" );
+                $this->debug_echo( "instance $k status differences" );
                 $this->em_state->state->$k->status = $current->$k->status;
             }
             unset( $current->$k );
@@ -371,11 +399,15 @@ class em_openstack {
             $this->em_state->state->$k->use_id     = "";
         }
             
-        debug_json( "reload state em_state - before save", $this->em_state->state );
+        if ( $this->debug ) {
+            debug_json( "reload state em_state - before save", $this->em_state->state );
+        }
         $this->em_state->save();
-        debug_json( "reload state em_state - after save", $this->em_state->state );
+        if ( $this->debug ) {
+            debug_json( "reload state em_state - after save", $this->em_state->state );
+        }
             
-        # error_exit( "em_openstack:reload_state() - not yet implemented" );
+        # $this->error_exit( "em_openstack:reload_state() - not yet implemented" );
     }
 
 
@@ -385,11 +417,13 @@ class em_openstack {
 
         $this->em_state->read_lock();
 
-        debug_json( "status em_state", $this->em_state->state );
+        if ( $this->debug ) {
+            debug_json( "status em_state", $this->em_state->state );
+        }
 
         if ( !isset( $this->em_state->state ) ) {
             $this->em_state->release_lock();
-            error_exit( "status: em_state->state not set?" );
+            $this->error_exit( "status: em_state->state not set?" );
         }
 
         $needed_idle = $this->em_config->flavors->{$this->flavor}->idle;
@@ -570,10 +604,11 @@ class em_openstack {
     ## delete_instance() - remove an instance (e.g. in ERROR state)
     function delete_instance( $number ) {
         $this->debug_echo( "em_openstack: delete_instance( $number )" );
+        $this->log( "delete $number" );
 
         if ( !isset( $this->em_state->state )
              || !isset( $this->em_state->state->$number ) ) {
-            error_exit( "delete_instance() - invalid instance number $number" );
+            $this->error_exit( "delete_instance() - invalid instance number $number" );
         }
 
         $id = $this->em_state->state->$number->id;
@@ -582,7 +617,7 @@ class em_openstack {
 
         $this->project_putenv( $this->project );
         $cmd = "openstack server delete --wait $id";
-        echo run_cmd( $cmd );
+        echo $this->run_cmd( $cmd );
     }
 
     ## error_instance() - put instance into ERROR state for testing
@@ -591,7 +626,7 @@ class em_openstack {
 
         if ( !isset( $this->em_state->state )
              || !isset( $this->em_state->state->$number ) ) {
-            error_exit( "error_instance() - invalid instance number $number" );
+            $this->error_exit( "error_instance() - invalid instance number $number" );
         }
 
         $id = $this->em_state->state->$number->id;
@@ -601,7 +636,7 @@ class em_openstack {
         # $this->project_putenv( $this->project );
         # $cmd = "openstack server set --state error $id";
         # echo "$cmd";
-        # $res = run_cmd( $cmd );
+        # $res = $this->run_cmd( $cmd );
         # echo $res;
 
         # fake state
@@ -609,7 +644,7 @@ class em_openstack {
         $this->em_state->read_lock();
         if ( !isset( $this->em_state->state )
              || !isset( $this->em_state->state->$number ) ) {
-            error_exit( "error_instance() - invalid instance number $number" );
+            $this->error_exit( "error_instance() - invalid instance number $number" );
         }
         $id = $this->em_state->state->$number->status = "ERROR";
         $this->em_state->save();
@@ -618,6 +653,7 @@ class em_openstack {
     ## launch_one() - launch a new instance given a number 
     function launch_one( $number ) {
         $this->debug_echo( "em_openstack: launch_one( $number )" );
+        $this->log( "launch $number" );
 
         $flavor = $this->flavor;
 
@@ -630,19 +666,19 @@ class em_openstack {
         }
 
         if ( !isset( $this->appconfig->resources->oscluster->properties->sshuser ) ) {
-            error_exit( "resources:oscluster:properties:sshuser not defined in appconfig" );
+            $this->error_exit( "resources:oscluster:properties:sshuser not defined in $this->em_config->files->appconfig" );
         }
 
         $os_sshuser = $this->appconfig->resources->oscluster->properties->sshuser;
 
         if ( !isset( $this->appconfig->resources->oscluster->properties->sshadmin ) ) {
-            error_exit( "resources:oscluster:properties:sshadmin not defined in appconfig" );
+            $this->error_exit( "resources:oscluster:properties:sshadmin not defined in $this->em_config->files->appconfig" );
         }
 
         $os_sshadmin = $this->appconfig->resources->oscluster->properties->sshadmin;
 
         if ( !isset( $this->appconfig->resources->oscluster->properties->sshidentity ) ) {
-            error_exit( "resources:oscluster:properties:sshidentity not defined in appconfig" );
+            $this->error_exit( "resources:oscluster:properties:sshidentity not defined in $this->em_config->files->appconfig" );
         }
 
         $os_sshidentity = $this->appconfig->resources->oscluster->properties->sshidentity;
@@ -656,13 +692,13 @@ class em_openstack {
         $this->project_putenv( $this->project );
 
         if ( !isset( $this->appconfig->resources->oscluster->properties->key ) ) {
-            error_exit( "resources:oscluster:properties:key not defined in $this->em_config->files->appconfig" );
+            $this->error_exit( "resources:oscluster:properties:key not defined in $this->em_config->files->appconfig" );
         }
 
         $key = $this->appconfig->resources->oscluster->properties->key;
 
         if ( !isset( $this->appconfig->resources->oscluster->properties->secgroup ) ) {
-            error_exit( "resources:oscluster:properties:secgroup not defined in $this->em_config->files->appconfig" );
+            $this->error_exit( "resources:oscluster:properties:secgroup not defined in $this->em_config->files->appconfig" );
         }
 
         $secgroup = $this->appconfig->resources->oscluster->properties->secgroup;
@@ -684,7 +720,7 @@ class em_openstack {
         #    }
 
         if ( !isset( $this->appconfig->resources->oscluster->properties->network ) ) {
-            error_exit( "resources:oscluster:properties:network not defined in $this->em_config->files->appconfig" );
+            $this->error_exit( "resources:oscluster:properties:network not defined in $this->em_config->files->appconfig" );
         }
 
         $use_network = $this->appconfig->resources->oscluster->properties->network;
@@ -729,7 +765,8 @@ class em_openstack {
                 if ( isset( $tempfile ) ) {
                     unlink( $tempfile );
                 }
-                error_exit( "Errors found when trying to boot a virtual cluster node.", "command:\n$create_cmd\nreturned:\n" .  implode( "\n", $results_array ) );
+                $this->echo_warn( "Errors found when trying to boot a virtual cluster node.", "command:\n$create_cmd\nreturned:\n" .  implode( "\n", $results_array ) );
+                return false;
             }        
 
             $os_image[] = $name;
@@ -768,7 +805,8 @@ class em_openstack {
                         $this->debug_echo( `$cmd 2>&1` );
                     }
                     $this->debug_echo( "Errors found when trying to boot a virtual cluster node" );
-                    error_exit( "OpenStack: exactly one status not returned for image ' . $v . '" );
+                    $this->echo_warn( "OpenStack: exactly one status not returned for image ' . $v . '" );
+                    return false;
                 }
 
                 $this_status_array = preg_split( '/\s+/', $status[ 0 ] );
@@ -789,7 +827,8 @@ class em_openstack {
                             $this->debug_echo( `$cmd 2>&1` );
                         }
                         $this->debug_echo( "Errors found when trying to boot a virtual cluster node" );
-                        error_exit( "OpenStack: unknown status ' . $this_status . ' received for image ' . $v . '" );
+                        $this->echo_warn( "OpenStack: unknown status ' . $this_status . ' received for image ' . $v . '" );
+                        return false;
                     }
                 }
 
@@ -840,7 +879,7 @@ class em_openstack {
                 $this->debug_echo("checking for ssh $v $os_ip[$v]\n" );
 
                 ob_start();
-                if ( $fp = fsockopen( $os_ip[$v], 22, $errno, $errstr, 10 ) ) {
+                if ( @$fp = fsockopen( $os_ip[$v], 22, $errno, $errstr, 10 ) ) {
                     ob_end_clean();
                     $issshopen[ $v ] = 1;
                     $this->debug_echo( "$os_ip[$v] is open\n" );
@@ -923,7 +962,8 @@ class em_openstack {
             if ( isset( $tempfile ) ) {
                 unlink( $tempfile );
             }
-            error_exit( "Timeout while waiting for nodes to go ready. Please try again in a short while." ); 
+            $this->echo_warn( "Timeout while waiting for nodes to go ready. Please try again in a short while." );
+            return false;
         }
         return true;
     }
@@ -931,18 +971,19 @@ class em_openstack {
     ## server start
     function server_start() {
         $this->debug_echo( "em_openstack: server_start()" );
+        $this->log( "STARTUP : elastic manager server id $this->id flavor $this->flavor" );
 
         ## read current server state & config & determine what's needed
         $this->read_config();
         
         $this->reload_state();
 
-        echo $this->status();
+        $this->debug_echo( $this->status() );
 
-        echo $this->status( true );
+        $this->debug_echo( $this->status( true ) );
 
         while( 1 ) {
-            echo $this->status( true );
+            $this->debug_echo( $this->status( true ) );
             sleep( $this->em_config->sleep->service_loop );
         }            
     }
@@ -958,19 +999,19 @@ class em_openstack {
         if ( !isset( $this->secrets ) ||
              !isset( $this->secrets->openstack ) ||
              !isset( $this->secrets->openstack->projects ) ) {
-            error_exit( "error: no secrets->openstack->projects defined in " . $this->em_config->files->secrets );
+            $this->error_exit( "error: no secrets->openstack->projects defined in " . $this->em_config->files->secrets );
         }
         
         if ( !isset( $this->secrets->openstack->projects->{$project} ) ) {
-            error_exit( "error: project missing from secrets secrets:openstack:projects:$project " . $this->em_config->files->secrets );
+            $this->error_exit( "error: project missing from secrets secrets:openstack:projects:$project " . $this->em_config->files->secrets );
         }
 
         if ( !isset( $this->secrets->openstack->projects->{$project}->id ) ) {
-            error_exit( "error: project id missing from secrets secrets:openstack:projects:project:id " . $this->em_config->files->secrets );
+            $this->error_exit( "error: project id missing from secrets secrets:openstack:projects:project:id " . $this->em_config->files->secrets );
         }
 
         if ( !isset( $this->secrets->openstack->projects->{$project}->secret ) ) {
-            error_exit( "error: project secret missing from secrets secrets:openstack:projects:$project:secret " . $this->em_config->files->secrets );
+            $this->error_exit( "error: project secret missing from secrets secrets:openstack:projects:$project:secret " . $this->em_config->files->secrets );
         }
 
         putenv( "OS_APPLICATION_CREDENTIAL_ID=" . $this->secrets->openstack->projects->{$project}->id );
@@ -992,31 +1033,31 @@ class em_openstack {
         }
 
         if ( !isset( $this->appconfig->resources->oscluster->properties->region_name ) ) {
-            error_exit( "error: resources:oscluster:properties:region_name not defined $this->em_config->files->appconfig" );
+            $this->error_exit( "error: resources:oscluster:properties:region_name not defined $this->em_config->files->appconfig" );
         }
 
         putenv( "OS_REGION_NAME=" . $this->appconfig->resources->oscluster->properties->region_name );
 
         if ( !isset( $this->appconfig->resources->oscluster->properties->api_version ) ) {
-            error_exit( "error: resources:oscluster:properties:api_version not defined $this->em_config->files->appconfig" );
+            $this->error_exit( "error: resources:oscluster:properties:api_version not defined $this->em_config->files->appconfig" );
         }
 
         putenv( "OS_IDENTITY_API_VERSION=" . $this->appconfig->resources->oscluster->properties->api_version );
 
         if ( !isset( $this->appconfig->resources->oscluster->properties->auth_url ) ) {
-            error_exit( "error: resources:oscluster:properties:auth_url not defined $this->em_config->files->appconfig" );
+            $this->error_exit( "error: resources:oscluster:properties:auth_url not defined $this->em_config->files->appconfig" );
         }
 
         putenv( "OS_AUTH_URL=" . $this->appconfig->resources->oscluster->properties->auth_url );
 
         if ( !isset( $this->appconfig->resources->oscluster->properties->auth_type ) ) {
-            error_exit( "error: resources:oscluster:properties:auth_type not defined $this->em_config->files->appconfig" );
+            $this->error_exit( "error: resources:oscluster:properties:auth_type not defined $this->em_config->files->appconfig" );
         }
 
         putenv( "OS_AUTH_TYPE=" . $this->appconfig->resources->oscluster->properties->auth_type );
 
         if ( !isset( $this->appconfig->resources->oscluster->properties->interface ) ) {
-            error_exit( "error: resources:oscluster:properties:interface not defined $this->em_config->files->appconfig" );
+            $this->error_exit( "error: resources:oscluster:properties:interface not defined $this->em_config->files->appconfig" );
         }
 
         putenv( "OS_INTERFACE=" . $this->appconfig->resources->oscluster->properties->interface );
@@ -1030,9 +1071,52 @@ class em_openstack {
         }
     }
 
+    ## --- logfile functions ----
+    function timestamp() {
+        $date = new DateTimeImmutable();
+        return $date->format( 'Y-m-d H:i:s' );
+    }
+
+    # write a message to the logfile
+    function log( $msg ) {
+        file_put_contents( $this->logfile, $this->timestamp() . " - $msg\n", LOCK_EX | FILE_APPEND );
+    }
+
+    ## os interaction
+
+    function run_cmd( $cmd, $exit_if_error = false, $array_result = false ) {
+        exec( "$cmd 2>&1", $res, $this->run_cmd_last_error_code );
+        if ( $this->run_cmd_last_error_code ) {
+            $this->log( "run_cmd() $cmd failed error code $this->run_cmd_last_error_code, result : " . implode( "<br> ", $res ) );
+        }
+
+        if ( $exit_if_error && $this->run_cmd_last_error_code ) {
+            $this->error_exit( "shell command [$cmd] returned result:<br>" . implode( "<br> ", $res ) . "<br>and with exit status '$this->run_cmd_last_error_code'" );
+        }
+        if ( !$array_result ) {
+            return implode( "\n", $res ) . "\n";
+        }
+        return $res;
+    }
+    
+    function error_exit( $msg, $cb = null ) {
+        if ( is_callable( $cb ) ) {
+            $cb();
+        }
+
+        if ( !strlen( $msg ) ) {
+            $msg = "Empty error message!";
+        }
+        echo "ERROR, terminating : $msg\n";
+        $this->log( "ERROR, terminating : $msg\n" );
+        exit;
+    }
+
     ## --- client functions ----
 
     function acquire( $flavor, $tag, &$number, &$ip, $wait = true ) {
+        $this->debug_echo( "em_openstack: acquire( $flavor, '$tag' )" );
+        $this->log( "em_client.php : acquire flavor $flavor tag $tag" );
         if ( $flavor != $this->flavor ) {
             $this->echo_warn( "flavor $flavor not currently available, use $this->flavor" );
             return false;
@@ -1050,6 +1134,7 @@ class em_openstack {
                     $this->em_state->save();
                     $number = $k;
                     $ip     = $this->em_state->state->$k->network;
+                    $this->log( "em_client.php : acquire flavor $flavor tag $tag, acquired $number ip $ip" );
                     return true;
                 }
             }
@@ -1065,7 +1150,10 @@ class em_openstack {
         }
     }
 
+    ## could verify tag for a validated release
     function release( $number ) {
+        $this->debug_echo( "em_openstack: release( $number )" );
+        $this->log( "em_client.php : release $number" );
         $this->em_state->read_lock();
         if ( $this->em_state->state->$number->use_status != "in use" ) {
             $this->em_state->release_lock();
@@ -1078,5 +1166,3 @@ class em_openstack {
         return true;
     }
 }        
-
-

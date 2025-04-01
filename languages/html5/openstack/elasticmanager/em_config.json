@@ -1,6 +1,8 @@
 {
-    "project" : "TG-MCB170057"
-    ,"id" : "saxsafold"
+    "project"  : "TG-MCB170057"
+    ,"id"      : "saxsafold"
+    ,"logfile" : "em_saxsafold.log"
+    ,"notify"  : "emre@flash.net"
     ,"files" : {
         "appconfig"      : "appconfig.json"
         ,"secrets"       : "secrets.json"

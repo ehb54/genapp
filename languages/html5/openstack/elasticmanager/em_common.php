@@ -135,18 +135,6 @@ function mkdir_if_needed( $dir ) {
     return is_dir( $dir );
 }
 
-function run_cmd( $cmd, $exit_if_error = true, $array_result = false ) {
-    global $run_cmd_last_error_code;
-
-    exec( "$cmd 2>&1", $res, $run_cmd_last_error_code );
-    if ( $exit_if_error && $run_cmd_last_error_code ) {
-        error_exit( "shell command [$cmd] returned result:<br>" . implode( "<br> ", $res ) . "<br>and with exit status '$run_cmd_last_error_code'" );
-    }
-    if ( !$array_result ) {
-        return implode( "\n", $res ) . "\n";
-    }
-    return $res;
-}
 
 function run_streaming_cmd( $cmd, $cb_on_write, $exit_if_error = true, $array_result = false, $stderr_file = "error-output.txt" ) {
     global $run_cmd_last_error_code;

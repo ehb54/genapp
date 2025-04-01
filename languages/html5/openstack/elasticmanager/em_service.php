@@ -111,8 +111,52 @@ if ( !tryLock() ) {
    die( "Already running.\n" );
 }
 # remove the lock on exit (Control+C doesn't count as 'exit'?)
+    
+
 register_shutdown_function( 'unlink', LOCK_FILE );
 
-$em_openstack = new em_openstack( true, EMCONFIG );
+$em_openstack = new em_openstack( false, EMCONFIG );
+
+function shutdown() {
+    global $em_openstack;
+    $this->log( "SHUTDOWN : elastic manager server id $this->id flavor $this->flavor" );
+}
+
+## doesn't work without signal handler, which still doesn't seem to work
+
+register_shutdown_function( 'shutdown' );
+
+/* signal handler doesn't seem to work as expected
+declare(ticks = 1);
+
+function sig_handler($sig) {
+    global $em_openstack;
+
+    switch($sig) {
+        case SIGTERM:
+        echo "caught signal SIGTERM\n";
+        $em_openstack->error_exit( "Terminated via signal SIGTERM" );
+        exit;
+        break;
+        case SIGINT:
+        echo "caught signal SIGINT\n";
+        $em_openstack->error_exit( "Terminated via signal SIGINT" );
+        exit;
+        break;
+        case SIGHUP:
+        echo "caught signal SIGHUP\n";
+        $em_openstack->error_exit( "Terminated via signal SIGHUP" );
+        exit;
+        break;
+      default: 
+        echo "caught signal, ignored\n";
+        break;
+    }
+}
+
+pcntl_signal(SIGINT,  "sig_handler");
+pcntl_signal(SIGTERM, "sig_handler");
+pcntl_signal(SIGHUP,  "sig_handler");
+*/
 
 $em_openstack->server_start();
