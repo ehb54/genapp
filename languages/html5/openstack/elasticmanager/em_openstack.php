@@ -5,6 +5,7 @@
 date_default_timezone_set('UTC');
 
 require_once "em_common.php";
+require_once "em_mail.php";
 
 ## class for managing openstack instance pool
 
@@ -26,10 +27,10 @@ class em_openstack {
     private $secrets_loaded = false;
     private $cli_secrets;
 
-    private $id;
+    public $id;
     private $project;
     private $image;
-    private $flavor;
+    public $flavor;
     private $idprefix = "genapp_elastic";
 
     private $logfile;
@@ -196,11 +197,6 @@ class em_openstack {
         }
     }
 
-    ## echo_warn() - print warning, perhaps to stderr later
-    function echo_warn( $msg ) {
-        $this->log( "WARNING: $msg" );
-        echo "WARNING: $msg\n";
-    }
 
     ## shelve() - shelve, offload instance
     function shelve( $number ) {
@@ -1080,9 +1076,33 @@ class em_openstack {
     # write a message to the logfile
     function log( $msg ) {
         file_put_contents( $this->logfile, $this->timestamp() . " - $msg\n", LOCK_EX | FILE_APPEND );
+        if ( isset( $this->notify )
+             && preg_match( '/(ERROR|WARNING|STARTUP|SHUTDOWN)/', $msg ) ) {
+            $tag = "";
+            if ( preg_match( '/WARNING/', $msg ) ) {
+                $tag .= " WARNING";
+            }
+            if ( preg_match( '/ERROR/', $msg ) ) {
+                $tag .= " ERROR";
+            }
+            if ( preg_match( '/STARTUP/', $msg ) ) {
+                $tag .= "startup";
+            }
+            if ( preg_match( '/SHUTDOWN/', $msg ) ) {
+                $tag .= "shutdown";
+            }
+            $host = gethostname();
+            mymail( $this->notify, "[$host][$this->id] $tag", $msg );
+        }
     }
 
     ## os interaction
+
+    ## echo_warn() - print warning, perhaps to stderr later
+    function echo_warn( $msg ) {
+        $this->log( "WARNING: $msg" );
+        echo "WARNING: $msg\n";
+    }
 
     function run_cmd( $cmd, $exit_if_error = false, $array_result = false ) {
         exec( "$cmd 2>&1", $res, $this->run_cmd_last_error_code );

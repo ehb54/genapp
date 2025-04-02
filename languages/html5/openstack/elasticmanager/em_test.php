@@ -52,6 +52,3 @@ for ( $i = 1; $i <= $reps; ++$i  ) {
     echo "sleep $sleep_for [s]\n";
     sleep( $sleep_for );
 }
-
-    
-    

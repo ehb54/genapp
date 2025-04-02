@@ -119,7 +119,7 @@ $em_openstack = new em_openstack( false, EMCONFIG );
 
 function shutdown() {
     global $em_openstack;
-    $this->log( "SHUTDOWN : elastic manager server id $this->id flavor $this->flavor" );
+    $em_openstack->log( "SHUTDOWN : elastic manager server id $em_openstack->id flavor $em_openstack->flavor" );
 }
 
 ## doesn't work without signal handler, which still doesn't seem to work
