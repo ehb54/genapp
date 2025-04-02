@@ -1,18 +1,26 @@
 FROM debian
 
-ENV SSHPORT 22
-EXPOSE $SSHPORT/tcp
+# ssh not needed 
+# ENV SSHPORT 22
+# EXPOSE $SSHPORT/tcp
 
-ENV GENAPP_UID                 54001
-ENV GENAPP_GID                 54001
+ENV GENAPP_UID                 5401
+ENV GENAPP_GID                 5401
 
 ENV JOBRUNNER_UID              54002
 ENV JOBRUNNER_GID              54002
 ENV JOBRUNNER_PRIVATE_KEY      jobrunner_rsa
 ENV JOBRUNNER_PUBLIC_KEY       jobrunner_rsa.pub
 ENV JOBRUNNER_AUTHORIZED_KEYS  jobrunner_authorized_keys
+ENV SETUP_CMDS                 jobrunner_shell_setup
 ENV SECRETS_JSON               secrets.json
 ENV APPCONFIG_JSON             appconfig.json
+
+# SETUP_CMDS is a convenience script to be run at the cli
+ENV SETUP_CMDS                 jobrunner_shell_setup
+
+# we are not installing mongo, this is currently to fake the mongo call
+ENV MONGO_FAKE                 mongo
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -20,7 +28,7 @@ RUN apt-get update
 RUN apt-get install -y git
 RUN apt-get install -y php-cli
 RUN apt-get install -y pipx
-
+RUN apt-get install -y jq
 
 ## dev/maintenance tools
 
@@ -32,9 +40,9 @@ RUN apt-get install -y emacs-nox
 
 RUN apt-get install -y openssh-server
 
-# Configure SSH 
-RUN mkdir /var/run/sshd
-RUN sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
+# # Configure SSH 
+# RUN mkdir /var/run/sshd
+# RUN sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
 
 # genapp
 
@@ -47,12 +55,12 @@ RUN cd /src && chown -R genapp:genapp genapp && chmod -R g+w genapp
 RUN groupadd --gid $JOBRUNNER_GID jobrunner
 RUN useradd -m --uid $JOBRUNNER_UID --gid $JOBRUNNER_GID -s /bin/bash -d /home/jobrunner jobrunner
 RUN usermod -a -G genapp jobrunner
+RUN usermod -a -G www-data jobrunner
 RUN mkdir /home/jobrunner/.ssh && chown jobrunner:jobrunner /home/jobrunner/.ssh
 COPY $JOBRUNNER_PRIVATE_KEY      /home/jobrunner/.ssh/id_rsa
 COPY $JOBRUNNER_PUBLIC_KEY       /home/jobrunner/.ssh/id_rsa.pub
 COPY $JOBRUNNER_AUTHORIZED_KEYS  /home/jobrunner/.ssh/authorized_keys
 RUN cd /home/jobrunner/.ssh && cat id_rsa.pub >> authorized_keys && chown -R jobrunner:jobrunner . && chmod go-rwx . && chmod go-rw * && chmod u-w * 
-
 
 ## merge these upstream as appropriate
 
@@ -63,31 +71,24 @@ RUN ln -s /src/genapp/languages/html5/openstack /home/jobrunner/openstack
 COPY $APPCONFIG_JSON /home/jobrunner/openstack/util/
 COPY $SECRETS_JSON /home/jobrunner/openstack/util/
 
-USER root
-RUN chown -R jobrunner:jobrunner /home/jobrunner/openstack/util/*
-RUN cp /root/.emacs /home/jobrunner/ && chown jobrunner:jobrunner /home/jobrunner/.emacs
-
-USER jobrunner
 RUN touch /home/jobrunner/p
 RUN echo 'export PATH=$PATH:/home/jobrunner/.local/bin' >> /home/jobrunner/.bashrc
 
-## setup commands
-
-ENV SETUP_CMDS jobrunner_shell_setup
 COPY $SETUP_CMDS /home/jobrunner/.local/bin/shell_setup
-
-## mongo fake
-
-ENV MONGO_FAKE mongo
-
 COPY $MONGO_FAKE /home/jobrunner/.local/bin/
 
 USER root
+RUN chown -R jobrunner:jobrunner /home/jobrunner/openstack/util/*
+RUN cp /root/.emacs /home/jobrunner/ && chown jobrunner:jobrunner /home/jobrunner/.emacs
 RUN chmod +x /home/jobrunner/.local/bin/shell_setup
 RUN chmod +x /home/jobrunner/.local/bin/${MONGO_FAKE}
 RUN chown jobrunner:jobrunner /home/jobrunner/.local/bin/*
-RUN apt-get install -y jq
-
-
 
 # CMD ["/usr/sbin/sshd", "-D"]
+
+## for enabling mail
+#  php / genapp mail bits
+#RUN apt install postfix
+#RUN apt install php-pear
+#RUN apt install gcc
+#RUN pear install -a Mail
