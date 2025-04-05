@@ -1,9 +1,5 @@
 FROM debian
 
-# ssh not needed 
-# ENV SSHPORT 22
-# EXPOSE $SSHPORT/tcp
-
 ENV GENAPP_UID                 5401
 ENV GENAPP_GID                 5401
 
@@ -36,20 +32,22 @@ RUN cd && git clone https://github.com/ehb54/convenience &&  ./convenience/insta
 
 RUN apt-get install -y emacs-nox
 
-## ssh server
-
-RUN apt-get install -y openssh-server
-
-# # Configure SSH 
-# RUN mkdir /var/run/sshd
-# RUN sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config
-
 # genapp
 
 RUN groupadd --gid $GENAPP_GID genapp
 RUN useradd -m --uid $GENAPP_UID --gid $GENAPP_GID -s /sbin/nologin -d /home/genapp genapp
 RUN mkdir /src && cd /src && git clone https://github.com/ehb54/genapp && cd genapp && git checkout php7designer
 RUN cd /src && chown -R genapp:genapp genapp && chmod -R g+w genapp
+
+# postfix
+
+RUN apt install -y postfix
+RUN apt install -y php-pear
+RUN apt install -y gcc
+RUN pear install -a Mail
+COPY main.cf /etc/postfix
+COPY sasl_passwd /etc/postfix/sasl
+RUN cd /etc/postfix/sasl && postmap sasl_passwd
 
 # Create a user 
 RUN groupadd --gid $JOBRUNNER_GID jobrunner
@@ -68,9 +66,8 @@ USER jobrunner
 RUN pipx ensurepath
 RUN pipx install python-openstackclient
 RUN ln -s /src/genapp/languages/html5/openstack /home/jobrunner/openstack
-COPY $APPCONFIG_JSON /home/jobrunner/openstack/util/
-COPY $SECRETS_JSON /home/jobrunner/openstack/util/
-
+COPY $APPCONFIG_JSON /home/jobrunner/openstack/elasticmanager/
+COPY $SECRETS_JSON /home/jobrunner/openstack/elasticmanager/
 RUN touch /home/jobrunner/p
 RUN echo 'export PATH=$PATH:/home/jobrunner/.local/bin' >> /home/jobrunner/.bashrc
 
@@ -78,17 +75,11 @@ COPY $SETUP_CMDS /home/jobrunner/.local/bin/shell_setup
 COPY $MONGO_FAKE /home/jobrunner/.local/bin/
 
 USER root
+RUN chown jobrunner:jobrunner /home/jobrunner/openstack/elasticmanager/*
 RUN chown -R jobrunner:jobrunner /home/jobrunner/openstack/util/*
 RUN cp /root/.emacs /home/jobrunner/ && chown jobrunner:jobrunner /home/jobrunner/.emacs
 RUN chmod +x /home/jobrunner/.local/bin/shell_setup
 RUN chmod +x /home/jobrunner/.local/bin/${MONGO_FAKE}
 RUN chown jobrunner:jobrunner /home/jobrunner/.local/bin/*
 
-# CMD ["/usr/sbin/sshd", "-D"]
-
-## for enabling mail
-#  php / genapp mail bits
-#RUN apt install postfix
-#RUN apt install php-pear
-#RUN apt install gcc
-#RUN pear install -a Mail
+CMD ["sleep", "infinity"]
