@@ -150,6 +150,9 @@ foreach my $l ( keys %langs )
         my $freq    = $$use{ "frequency" };
         my $prefix  = $$use{ "prefix" } && $$use{ "prefix" } eq 'enable';
         my $output  = $$use{ "output" };
+        while ( my ( $k, $v ) = each %$rplc_directives ) {
+            $output =~  s/__${k}__/${v}/g;
+        }
         my $setexec = $$use{ "setexecutable" };
         my $clobber = $$use{ "clobber" };
         my $inputs  = $$use{ "inputs" };

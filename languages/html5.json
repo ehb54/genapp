@@ -149,6 +149,13 @@
                                    ]
                    }
                    ,{
+                    "frequency"  : "once",
+                    "output"     : "ajax/sys_config/sys_project.php",
+                    "inputs"     : [ 
+                                    { "sys/sys_project.php" : "once" }
+                                   ]
+                   }
+                   ,{
                       "frequency"  : "once",
                       "output"     : "ajax/sys_config/sys_jobs2.php",
                       "inputs"     : [
@@ -573,6 +580,7 @@
                    }
                    ,{
                     "frequency"  : "once",
+#                    "output"     : "js/genapp.__datetimeinseconds__.js",
                     "output"     : "js/genapp.js",
                     "inputs"     : [ 
                         {  "add/js/jquery-3.3.1.min.js"             : "once" }

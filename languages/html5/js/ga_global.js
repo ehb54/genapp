@@ -1086,9 +1086,11 @@ ga.progress.clear = function( mod, msg ) {
   $(`#${mod}_progress`).empty();
 }  
 
-ga.setproject = function( p ) {
+ga.setproject = function( p, cb, cbarg ) {
+    __~debug:project{console.log(`ga.setproject('${p}')`);}
     var cp = document.getElementById( 'sel_project' );
     if ( !cp ) {
+        __~debug:project{console.log(`ga.setproject() - no sel_project element found`);}
         return;
     }
     
@@ -1100,6 +1102,8 @@ ga.setproject = function( p ) {
         $('#_state').data('_project', p );
         cp.innerHTML = `Project ${p}`;
     }
+    __~debug:project{console.log(`ga.setproject() - ajax get()`);}
+
     $.get( "ajax/sys_config/sys_project.php",
             {
                 _logon    : $( "#_state" ).data( "_logon" )
@@ -1107,8 +1111,92 @@ ga.setproject = function( p ) {
                 ,_project : $( "#_state" ).data( "_project" )
             }
           )
-        .done( () => console.log( `set project to ${p}` ) )
-        .fail( ( err ) => console.error( `ga.setproject failed ${err}` ) );
+        .done( () => {
+            console.log( `set project to ${p}` ) ;
+            if ( typeof cb === 'function' ) {
+                cb( true, cbarg );
+            }
+        })
+        .fail( ( err ) => {
+            console.error( `ga.setproject failed ${err}` );
+            if ( typeof cb === 'function' ) {
+                cb( false, cbarg );
+            }
+        });
+}
+
+ga.switch = function( swl ) {
+    __~debug:switch{console.log(`ga.switch( '${swl}' )`);}
+    var s = $( '#_state' );
+    if ( s.data( '_reqlogin' ) ) {
+        s.removeData( '_reqlogin' );
+        if ( $( "#login" ).html() == "Login" ) {
+            __~debug:extrahidden{console.log( "switch for extra hidden + logon set" );}
+            ga.set( "extrahidden", { "sys_login" : { "_switch" : swl } } );
+            s.removeData( '_switch' );
+            $( "#login" ).trigger( "click" );
+            return;
+        }
+    }
+    var sw = swl.split( "/" );
+    if ( sw && sw.length == 4 ) {
+        if ( !ga.menumodules[ sw[0] + "/" + sw[1] ] ||
+             !/^[a-zA-Z0-9_\-\.]+$/.test( sw[0] + sw[1] + sw[2] + sw[3] ) ) {
+            console.warn( "bad switch: '" + sw[0] + sw[1] + sw[2] + sw[3] + "'" );
+            ga.msg.box( { icon: "toast.png", text: "Invalid switch parameters" } );
+        } else {
+            __~debug:switch{console.log( "switch to " + sw[0] + " module " + sw[1] + " project " + sw[2] + " id " + sw[3] );}
+            __~debug:job{console.log( "ajax/" + sw[0] + ".html" );}
+            s.data( '_project', sw[ 2 ] );
+            $( "#seabug" ).html( "<img height=50px style=\"vertical-align:middle\" id='" + sw[0] + "'" + ( ga.set.data[ "icon:" + sw[0] ] ? "' src='" + ga.set.data[ "icon:" + sw[0] ] + "'" : "" ) + ">" );
+            if ( !( count % 2 ) )
+            {
+                menuOnOff({},1);
+            }
+            var tmp =  sw[1] + "_timeout_handler";
+            var chk = "if( typeof " + tmp + " !== 'undefined' && " + tmp + " != 'unset' ){ console.log( 'clearing timeout' );clearTimeout(" + tmp + ");};";
+            __~debug:job{console.log( chk );}
+            eval( chk );
+            ga.setproject( sw[ 2 ], ga.switch.cb, sw );
+        }
+    }
+    s.removeData( '_switch' );
+    s.removeData( '_reqlogin' );
+}    
+
+// call back to finish switch after setproject
+ga.switch.cb = function( ok, sw ) {
+    __~debug:switch{console.log(`ga.switch.cb( ${ok}, sw )`);}
+    if ( !ok ) {
+        ga.msg.box( { icon: "toast.png", text: "Unable to set project" } );
+        return;
+    }
+
+    ga.event( "reattach", sw[0] , "load" );
+    $( "#panelmain" ).load( "ajax/" + sw[0] + ".html", function(){
+        __~debug:job{console.log( "now load complete" );}
+        $( document ).ready( function() {
+            __~debug:job{console.log( "now document ready" );}
+            __~debug:job{console.log( "#panel_" + sw[ 0 ] );}
+            __~debug:job{console.log( "ajax/" + sw[0] + "/" + sw[1] + ".html" );}
+            if ( ga.set.data.docsbaseurl ) {
+                $( "#tab_docs" ).attr( "href", ga.set.data.docsbaseurl + "/" + sw[0] + "/" + sw[1] + "/" + sw[1] + ".html" );
+            }
+            eval( "delete loaded_" + sw[1] );
+            ga.setproject( sw[ 2 ], ga.switch.cb2, sw );
+        }); 
+    });
+}    
+
+// 2nd call back to finish switch after setproject
+ga.switch.cb2 = function( ok, sw ) {
+    __~debug:switch{console.log(`ga.switch.cb2( ${ok}, sw )`);}
+    $( "#panel_" + sw[ 0 ] ).load( "ajax/" + sw[0] + "/" + sw[1] + ".html",
+                                   function(){
+                                       __~debug:job{console.log( "now to eval: ga.ws.sub( '" + sw[3] + "', msg_" + sw[1] + ",'" + sw[1] + "');get_results_" + sw[1] + "('" + sw[3] + "',0,1,1);" );}
+                                       ga.setproject( sw[ 2 ] );
+                                       ga.trytilltrue( "typeof loaded_" + sw[1] + " === 'number'", sw[ 1 ] + "_reset(); ga.ws.sub('" + sw[3] + "', msg_" + sw[1] + ",'" + sw[1] + "');get_results_" + sw[1] + "('" + sw[3] + "',0,1,1);", 20, 200 );
+                                   }); 
 }
 
 ga.footerColor = function() {

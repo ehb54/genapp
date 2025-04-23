@@ -573,6 +573,7 @@ __~bokeh:version{<link rel="stylesheet" href="css/bokeh-tables-__bokeh:version__
 __~bokeh:version{<style>.bk-root .bk-tooltip {background-color: white;}.bk-root .bk-tooltip-row-label {text-align: right;color: slategray;}.bk-root .bk-tooltip-row-value {color: black;}</style>}
 
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"/>
+<!-- <script src="js/genapp.__datetimeinseconds__.js"></script>-->
 <script src="js/genapp.js?v=__datetimeinseconds__"></script>
 __~bokeh:version{<script src="js/bokeh-__bokeh:version__.min.js"></script>}
 __~bokeh:version{<script src="js/bokeh-widgets-__bokeh:version__.min.js"></script>}
@@ -713,8 +714,6 @@ __~debug:sid{   console.log( "sid ajax:" + k + " => " + v );}
 
 getSid();
 
-
-
 function generateUUID(){
     var d = new Date().getTime();
     var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -750,6 +749,8 @@ if ( ga.util ) {
     ga.util.jobadmin.url = "ajax/sys_config/sys_managejob.php";
 }
 ga.running.url     = "ajax/sys/running.php";
+
+__~docsbaseurl{ga.set.data.docsbaseurl = "__docsbaseurl__";}
   
 __~usesplash{ga.usesplash = 1;}
 __~frontpage:url{ga.frontpageurl = "__frontpage:url__";}
