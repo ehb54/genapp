@@ -1175,6 +1175,10 @@ sub check_files {
                 $info = "GenApp " . svninfo( $gap );
                 $special_directives{ 'revision' } = $info;
                 print "info: $info\n";
+                my $datetimeinseconds = `date +'%s'`;
+                chomp $datetimeinseconds;
+                $special_directives{ 'datetimeinseconds' } = $datetimeinseconds;
+                print "date time in seconds (since 1 Jan 1970): $datetimeinseconds\n";
             }
         }
 
