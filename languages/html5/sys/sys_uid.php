@@ -6,6 +6,7 @@ $json = json_decode( file_get_contents( "__appconfig__" ) );
 $response[ '_ws'  ] = 'ws://' . $json->hostip . ':' . $json->messaging->wsport;
 __~usewss{$response[ '_ws'  ] = 'wss://' . $json->hostname . ':' . $json->messaging->wssport . "/wss2";}
 __~usews{$response[ '_ws'  ] = 'ws://' . $json->hostname . ':' . $json->messaging->wssport . "/ws2";}
+__~usewssapp{$response[ '_ws'  ] = 'wss://' . $json->hostname . ':' . $json->messaging->wssport . "/__application__/wss2";}
 
 $response[ '_airavata' ] = [];
 if ( isset( $json->resources ) &&
