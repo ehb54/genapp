@@ -39,7 +39,7 @@ if ( isset( $_REQUEST[ '_window' ] ) ) {
     $window = $_REQUEST[ '_window' ];
 }
 
-session_start();
+session_name( strtoupper( preg_replace('/[^a-zA-Z0-9_]+/', '_', "GENAPP___application__" ) ) ); session_start();
 
 if ( isset( $_REQUEST[ "_logon" ] ) && 
      ( !isset( $_SESSION[ $window ][ 'logon' ] ) || $_REQUEST[ "_logon" ] != $_SESSION[ $window ][ 'logon' ] ) ) {

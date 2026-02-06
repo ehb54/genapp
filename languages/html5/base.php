@@ -2,7 +2,8 @@
 header('Content-type: application/json');
 # setup php session
 __~debug:basemylog{error_log( "startup __application__ __menu:id__ __menu:modules:id__\n", 3, "/tmp/mylog" );}
-session_start();
+session_name( strtoupper( preg_replace('/[^a-zA-Z0-9_]+/', '_', "GENAPP___application__" ) ) ); session_start();
+
 if (!isset($_SESSION['count'])) {
   $_SESSION['count'] = 0;
 } else {

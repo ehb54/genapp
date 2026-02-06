@@ -1,5 +1,5 @@
 <?php
-session_start(); 
+session_name( strtoupper( preg_replace('/[^a-zA-Z0-9_]+/', '_', "GENAPP___application__" ) ) ); session_start();
 
 require_once "__docroot:html5__/__application__/ajax/ga_filter.php";
 
@@ -155,7 +155,7 @@ switch( $_REQUEST[ 'action' ] )
               error_log( $GLOBALS[ "getmenumodule" ], 3, "/tmp/mylog" );
               $results[ "_switch" ] = $GLOBALS[ "getmenumodule" ] . "/" . $GLOBALS[ "getmenumoduleproject" ] . "/" . $jobs[ 0 ];
               $results[ "-close" ] = true;
-              session_start(); 
+              session_name( strtoupper( preg_replace('/[^a-zA-Z0-9_]+/', '_', "GENAPP___application__" ) ) ); session_start();
               $_SESSION[ $window ][ "project" ] = $GLOBALS[ "getmenumoduleproject" ];
               session_write_close();
           }

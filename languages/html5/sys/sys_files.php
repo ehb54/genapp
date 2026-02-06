@@ -1,6 +1,6 @@
 <?php
 
-session_start(); 
+session_name( strtoupper( preg_replace('/[^a-zA-Z0-9_]+/', '_', "GENAPP___application__" ) ) ); session_start();
 
 require_once "__docroot:html5__/__application__/ajax/ga_filter.php";
 

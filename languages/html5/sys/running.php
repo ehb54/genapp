@@ -3,7 +3,7 @@
 {};
 
 header('Content-type: application/json');
-session_start(); 
+session_name( strtoupper( preg_replace('/[^a-zA-Z0-9_]+/', '_', "GENAPP___application__" ) ) ); session_start();
 
 $results = (object)[];
 $results->_status = 'complete';
