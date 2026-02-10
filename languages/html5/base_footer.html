@@ -33,8 +33,27 @@ __~altversion{        // console.log( $( "#seabug" ).html() );}
 __~altversion{        // console.log( myHtml );}
         var myTag = $( this ).attr( "id" );
         if ( ga.set.data[ "menuurl:" + myTag ] ) {
-            const myWindow = window.open( ga.set.data[ "menuurl:" + myTag ], ga.getdUUID( "__application__:" + myTag ) );
-            if ( myWindow ) {
+            const windowName = ga.getdUUID("__application__:" + myTag);
+            const url = ga.set.data["menuurl:" + myTag];
+
+            // 1. Try to find the window by name without passing the URL
+            let myWindow = window.open('', windowName);
+
+            // 2. Check if the window is "new" or "blank"
+            // We check the location.href. If it's 'about:blank', it's a new tab.
+            try {
+                if (myWindow.location.href === 'about:blank') {
+                    // It's a new window, so NOW we navigate it
+                    myWindow.location.href = url;
+                }
+            } catch (e) {
+                // If we hit a Cross-Origin error, the window is open
+                // but on a different domain. We can't check the URL,
+                // but it definitely already exists!
+            }
+
+            // 3. Bring it to the front
+            if (myWindow) {
                 myWindow.focus();
             }
             return;
