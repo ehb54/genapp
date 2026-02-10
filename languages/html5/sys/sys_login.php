@@ -499,7 +499,7 @@ if ( $loginok == 1 )
                                     "created" => new MongoDate()
                                 ] ],
                               [ 'upsert' => true
-                              __~mongojournal{, writeConcern => [ "j" => true ]}
+                              __~mongojournal{, "writeConcern" => [ "j" => true ]}
                               ] );
        } catch(MongoCursorException $e) {
            $results[ 'status' ] .= "Unable to store session id. ";
