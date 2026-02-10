@@ -32,6 +32,14 @@ __~altversion{        // var myHtml = "<img height=50px id='" + $( this ).attr( 
 __~altversion{        // console.log( $( "#seabug" ).html() );}
 __~altversion{        // console.log( myHtml );}
         var myTag = $( this ).attr( "id" );
+        if ( ga.set.data[ "menuurl:" + myTag ] ) {
+            const myWindow = window.open( ga.set.data[ "menuurl:" + myTag ], "GENAPP:__application__:" + myTag );
+            if ( myWindow ) {
+                myWindow.focus();
+            }
+            return;
+        }
+    
         $( "#seabug" ).html( "<img height=50px style=\"vertical-align:middle\" id='" + myTag + "' src='" + ga.set.data[ "icon:" + myTag ] + "'>" );
         ga.event( "global", myTag, "load" );
         ga.tmp.menuclicked = 1;

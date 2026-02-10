@@ -4,4 +4,6 @@ __~menu:restricted{ga.restricted.add( "__menu:restricted__", "#__menu:id__" );}
 __~menu:group{ga.group.addmenu( "__menu:group__", "#__menu:id__" );}
 __~menu:startup{ga.startup = '$("#__menu:id__" ).trigger( "click" );'; ga.tmp.atend += 'if ( !ga.tmp.menuclicked ){' + ga.startup + '};';}
 __~menu:nohidemenu{ga.set("nohidemenu:__menu:id__",1);}
+__~menu:url{ga.set("menuurl:__menu:id__","__menu:url__");}
+
 
