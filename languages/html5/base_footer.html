@@ -33,7 +33,7 @@ __~altversion{        // console.log( $( "#seabug" ).html() );}
 __~altversion{        // console.log( myHtml );}
         var myTag = $( this ).attr( "id" );
         if ( ga.set.data[ "menuurl:" + myTag ] ) {
-            const myWindow = window.open( ga.set.data[ "menuurl:" + myTag ], "GENAPP:__application__:" + myTag );
+            const myWindow = window.open( ga.set.data[ "menuurl:" + myTag ], ga.getdUUID( "__application__:" + myTag ) );
             if ( myWindow ) {
                 myWindow.focus();
             }

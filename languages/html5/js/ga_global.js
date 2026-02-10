@@ -1400,3 +1400,39 @@ ga.prettyhtml = function( html ) {
 
     return result.substring(1, result.length-3);
 }
+
+// generate a deterministic UUID from the string
+ga.getdUUID = function(str) {
+    // 1. Simple, fast deterministic hash (cyrb53 logic)
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (let i = 0, ch; i < str.length; i++) {
+        ch = str.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+    h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
+    h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+
+    // 2. Generate 4 segments of 8 hex chars each
+    // Using >>> 0 ensures we treat the result as an unsigned 32-bit integer
+    const p1 = (h1 >>> 0).toString(16).padStart(8, '0');
+    const p2 = (h2 >>> 0).toString(16).padStart(8, '0');
+    
+    // We create the rest of the 32 chars by mixing h1 and h2 again 
+    // This is still 100% deterministic (same input = same p3/p4)
+    const p3 = ((h1 ^ h2) >>> 0).toString(16).padStart(8, '0');
+    const p4 = ((h1 + h2) >>> 0).toString(16).padStart(8, '0');
+
+    const full = p1 + p2 + p3 + p4;
+
+    // 3. Final format: 8-4-4-4-12
+    return [
+        full.substring(0, 8),
+        full.substring(8, 12),
+        full.substring(12, 16),
+        full.substring(16, 20),
+        full.substring(20, 32)
+    ].join('-');
+}
