@@ -20,11 +20,11 @@
 
    if ((int)$_SESSION["first"])
    {    
-   	$redirect_uri = "http://" . $app->hostname . "/__application__/". "/?register=1&weloggedingoogle=1&email=$user_email&username=$username";
+   	$redirect_uri = "https://" . $app->hostname . "/__application__/". "/?register=1&weloggedingoogle=1&email=$user_email&username=$username";
    }
    else
    {
-	$redirect_uri = "http://" . $app->hostname . "/__application__/". "/?weloggedingoogle=1&email=$user_email&username=$username";
+	$redirect_uri = "https://" . $app->hostname . "/__application__/". "/?weloggedingoogle=1&email=$user_email&username=$username";
    }	
 
    header('Location: ' . filter_var($redirect_uri, FILTER_SANITIZE_URL));

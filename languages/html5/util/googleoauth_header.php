@@ -23,7 +23,7 @@ $app = json_decode( file_get_contents( "__appconfig__" ) );
 $client_id = $app->oauth2->google->client_id;
 $client_secret = $app->oauth2->google->client_secret;
 
-$redirect_uri = "http://" . $app->hostname . "/__application__/util/googleoauth.php";  
+$redirect_uri = "https://" . $app->hostname . "/__application__/util/googleoauth.php";
 
 $client = new Google_Client();
 $client->setClientId($client_id);
