@@ -266,8 +266,21 @@ if ($argc == 3) {
     file_put_contents( $json_decoded->_clusterhostfile, $hostfiletext );
     ob_end_clean();
 
+    # MPICH compatible hostfile (machinefile format)
+    $json_decoded->_clustermachinefile = "machinefile-$uuid.txt";
+    $machinefiletext = "";
+    foreach ( $result_json->clusterips as $ip ) {
+        for ( $i = 0; $i < $ppn; $i++ ) {
+            $machinefiletext .= "$ip\n";
+        }
+    }
+    ob_start();
+    file_put_contents( $json_decoded->_clustermachinefile, $machinefiletext );
+    ob_end_clean();
+
     sendudptext( "json with clusters:\n" . json_encode( $json_decoded, JSON_PRETTY_PRINT ) . "\n" );
     sendudptext( "hostfiletext:\n$hostfiletext\n" );
+    sendudptext( "machinefiletext:\n$machinefiletext\n" );
 
     sendudpmsg( "Nodes all active and ready" );
 
@@ -340,6 +353,7 @@ if ($argc == 3) {
 
 # ---- unlink hostfile ----
     __!oscluster:savehostfile{unlink( $json_decoded->_clusterhostfile );}
+    __!oscluster:savehostfile{unlink( $json_decoded->_clustermachinefile );}
 
     echo $results;
 } else {
