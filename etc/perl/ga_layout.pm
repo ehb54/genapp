@@ -39,6 +39,124 @@ sub typeof {
     return ref( \$expr );
 }
 
+sub track_count {
+    my $tracks = shift;
+    return undef if !defined $tracks;
+    return undef if !ref( $tracks ) && $tracks eq 'auto';
+    return scalar @$tracks if ref( $tracks ) eq 'ARRAY';
+    return $tracks if looks_like_number( $tracks );
+    return undef;
+}
+
+sub json_clone {
+    my $data = shift;
+    return decode_json( encode_json( $data ) );
+}
+
+sub hash_overlay {
+    my $base     = shift;
+    my $override = shift;
+
+    return $base if ref( $override ) ne 'HASH';
+
+    for my $k ( keys %$override ) {
+        if ( ref( $$base{ $k } ) eq 'HASH' && ref( $$override{ $k } ) eq 'HASH' ) {
+            hash_overlay( $$base{ $k }, $$override{ $k } );
+        } else {
+            $$base{ $k } = json_clone( $$override{ $k } );
+        }
+    }
+
+    return $base;
+}
+
+sub layout_row_extent {
+    my $layout = shift;
+    my $row    = shift;
+
+    return 0 if !$layout;
+    return 0 if !defined $row;
+    return $$row[1] if ref( $row ) eq 'ARRAY' && looks_like_number( $$row[1] );
+    return $row     if !ref( $row ) && looks_like_number( $row );
+    return 0;
+}
+
+sub max_authored_row_in_panel {
+    my $json  = shift;
+    my $panel = shift;
+    my %skip  = map { $_ => 1 } @_;
+    my $max   = 0;
+
+    for my $field ( @{ $$json{ 'fields' } } ) {
+        next if !exists $$field{ 'id' };
+        next if $skip{ $$field{ 'id' } };
+
+        my $layout = $$field{ 'layout' };
+        next if ref( $layout ) ne 'HASH';
+        next if ( $$layout{ 'parent' } || 'root' ) ne $panel;
+
+        my $base = 0;
+        $base = layout_row_extent( $layout, $$layout{ 'location' }[0] )
+            if ref( $$layout{ 'location' } ) eq 'ARRAY';
+
+        if ( $base ) {
+            my $label = layout_row_extent( $layout, ref( $$layout{ 'label' } ) eq 'ARRAY' ? $$layout{ 'label' }[0] : undef );
+            my $data  = layout_row_extent( $layout, ref( $$layout{ 'data' } )  eq 'ARRAY' ? $$layout{ 'data' }[0]  : undef );
+            my $span  = $label > $data ? $label : $data;
+            $span = 1 if !$span;
+            my $end = $base + $span - 1;
+            $max = $end if $end > $max;
+        } else {
+            $max++;
+        }
+    }
+
+    return $max;
+}
+
+sub apply_runtime_layout {
+    my $json    = shift;
+    my $key     = shift;
+    my $fieldid = shift;
+    my $default = shift;
+
+    my $layout = json_clone( $default );
+    my $rt     = $$json{ 'runtime_layout' };
+
+    return $layout if ref( $rt ) ne 'HASH';
+
+    if ( ref( $$rt{ $fieldid } ) eq 'HASH' ) {
+        hash_overlay( $layout, $$rt{ $fieldid } );
+    } elsif ( ref( $$rt{ $key } ) eq 'HASH' ) {
+        hash_overlay( $layout, $$rt{ $key } );
+    }
+
+    return $layout;
+}
+
+sub add_runtime_layout_panels {
+    my $layout = shift;
+    my $json   = shift;
+    my $rt     = $$json{ 'runtime_layout' };
+
+    return if ref( $rt ) ne 'HASH';
+    return if ref( $$rt{ 'panels' } ) ne 'ARRAY';
+
+    my %panel_apos;
+    for ( my $i = 0; $i < @{ $$layout{ 'panels' } }; ++$i ) {
+        my $panel_name = ( keys %{ $$layout{ 'panels' }[$i] } )[0];
+        $panel_apos{ $panel_name } = $i;
+    }
+
+    for my $panel ( @{ $$rt{ 'panels' } } ) {
+        next if ref( $panel ) ne 'HASH';
+        my $panel_name = ( keys %$panel )[0];
+        next if !$panel_name || exists $panel_apos{ $panel_name };
+        push @{ $$layout{ 'panels' } }, json_clone( $panel );
+        $panel_apos{ $panel_name } = $#{ $$layout{ 'panels' } };
+    }
+}
+
 sub increment_cursor_column {
     my $cursor_r   = shift;
     my $cursor_c   = shift;
@@ -315,6 +433,8 @@ sub layout_prep {
         }
     }
 
+    add_runtime_layout_panels( $layout, $json );
+
     %panel_apos = ();
 
     {
@@ -379,13 +499,15 @@ sub layout_prep {
             }
         }
 
-        if ( ( keys %panel_apos ) - $r_panels == 1 ) {
-            $control_case = "only_root";
-#            if ( (keys %panel_apos)[0] ne 'root' ) {
+        if ( ( keys %panel_apos ) - $r_panels == 1 &&
+             $non_r_panel_name  ne 'root' ) {
+            $control_case = "only_root_error";
             if ( $non_r_panel_name  ne 'root' ) {
                 $error .= "module: $mname : only one non repeater panel defined and it is not named 'root'\n";
             }
-        } elsif ( exists $panel_apos{ 'controls' } ) {
+        }
+
+        if ( exists $panel_apos{ 'controls' } ) {
             $control_case       = "control_panel_exists";
             $use_control_panel  = 1;
             $inserts_at_end     = 1;
@@ -404,7 +526,7 @@ sub layout_prep {
             push @{$$layout{ 'panels' }}, decode_json(
                 '{
                     "controls" : {
-                        "size"     : [ "auto", "auto" ],
+                        "size"     : [ "auto", [ 1, 1 ] ],
                         "location" : [ "next", "full" ],
                         "label"    : [ 1, 1 ],
                         "data"     : [ 2, 1 ],
@@ -525,6 +647,77 @@ sub layout_prep {
             }
         }
 
+        my @runtime_ids = (
+            'b_submit',
+            'b_reset',
+            "${moduleid}_progress",
+            "${moduleid}_output_airavata",
+            "${moduleid}_output_msgs",
+            "${moduleid}_output_textarea"
+            );
+
+        my $runtime_row = max_authored_row_in_panel( $json, 'controls', @runtime_ids ) + 1;
+        $runtime_row = 1 if $runtime_row < 1;
+
+        my %runtime_default_layout = (
+            'b_submit' => {
+                'parent'   => 'controls',
+                'location' => [ $runtime_row, 1 ],
+                'label'    => 'none',
+                'data'     => [ 1, 1 ]
+            },
+            'b_reset' => {
+                'parent'   => 'controls',
+                'location' => [ $runtime_row, 2 ],
+                'label'    => 'none',
+                'data'     => [ 1, 2 ]
+            },
+            "${moduleid}_progress" => {
+                'parent'   => 'controls',
+                'location' => [ $runtime_row + 1, 1 ],
+                'label'    => 'none',
+                'data'     => [ 1, [ 1, 3 ] ]
+            },
+            "${moduleid}_output_airavata" => {
+                'parent'   => 'controls',
+                'location' => [ $runtime_row + 2, 1 ],
+                'label'    => 'none',
+                'data'     => [ 1, [ 1, 3 ] ]
+            },
+            "${moduleid}_output_msgs" => {
+                'parent'   => 'controls',
+                'location' => [ $runtime_row + 3, 1 ],
+                'label'    => 'none',
+                'data'     => [ 1, [ 1, 3 ] ]
+            },
+            "${moduleid}_output_textarea" => {
+                'parent'   => 'controls',
+                'location' => [ $runtime_row + 4, 1 ],
+                'label'    => 'none',
+                'data'     => [ 1, [ 1, 3 ] ]
+            }
+        );
+
+        my %runtime_key = (
+            'b_submit'                         => 'submit',
+            'b_reset'                          => 'reset',
+            "${moduleid}_progress"             => 'progress',
+            "${moduleid}_output_airavata"      => 'airavata',
+            "${moduleid}_output_msgs"          => 'messages',
+            "${moduleid}_output_textarea"      => 'textarea'
+        );
+
+        for my $k ( @runtime_ids ) {
+            next if !exists $insertjson{ $k };
+            $insertjson{ $k }{ 'runtime_owned' } = 'true';
+            $insertjson{ $k }{ 'layout' } = apply_runtime_layout(
+                $json,
+                $runtime_key{ $k },
+                $k,
+                $runtime_default_layout{ $k }
+                );
+        }
+
 # extract field info & layout info
 
         # extract specific fields:tags
@@ -535,6 +728,7 @@ sub layout_prep {
                         "role",
                         "type",
                         "layout",
+                        "runtime_owned",
                         "repeater",
                         "repeat" );
             @keepids{ @ids } = (1) x @ids;
@@ -811,8 +1005,8 @@ sub layout_expand {
                 $col = $$location[1];
             }
             if ( $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'size' } ) {
-                $parentcols = $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'size' }[0];
-                $parentrows = $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'size' }[1];
+                $parentrows = track_count( $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'size' }[0] );
+                $parentcols = track_count( $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'size' }[1] );
             }
 
             undef $parentcols if $parentcols eq 'auto';
@@ -1149,8 +1343,8 @@ sub layout_expand {
             $col = $$location[1];
         }
         if ( $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'size' } ) {
-            $parentcols = $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'size' }[0];
-            $parentrows = $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'size' }[1];
+            $parentrows = track_count( $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'size' }[0] );
+            $parentcols = track_count( $$json{'panels'}[$panelpos{$parent}]{ $parent }{ 'size' }[1] );
         }
 
         undef $parentcols if $parentcols eq 'auto';

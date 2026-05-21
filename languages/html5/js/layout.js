@@ -271,6 +271,62 @@ ga.layout.html = function ( designer ) {
     }
     return `
     <div id="ga-dd-grid" class="ga-dd-gridhg">
+      <div id="ga-dd-left" class="ga-dd-left">
+        <div class="ga-dd-left-section">
+          <h3>Primitives</h3>
+          <button class="ga-dd-primitive" onclick="ga.dd.primitive('panel-stack'); return false;">Panel Stack</button>
+          <button class="ga-dd-primitive" onclick="ga.dd.primitive('two-columns'); return false;">Two Columns</button>
+          <button class="ga-dd-primitive" onclick="ga.dd.primitive('three-columns'); return false;">Three Columns</button>
+          <button class="ga-dd-primitive" onclick="ga.dd.primitive('compact-grid'); return false;">Compact Grid</button>
+          <button class="ga-dd-primitive" onclick="ga.dd.primitive('collapsible-input'); return false;">Collapsible Input</button>
+          <button class="ga-dd-primitive" onclick="ga.dd.primitive('input-field'); return false;">Input Field</button>
+          <button class="ga-dd-primitive" onclick="ga.dd.primitive('output-field'); return false;">Output Field</button>
+          <button class="ga-dd-primitive" onclick="ga.dd.primitive('message-field'); return false;">Message Field</button>
+        </div>
+        <div class="ga-dd-left-section">
+          <h3>Template</h3>
+          <div id="ga-dd-left-module" class="ga-dd-left-note"></div>
+          <button class="ga-dd-action" onclick="ga.dd.undo.restore(); return false;">Undo <span id="ga-dd-left-undo-count">0</span></button>
+          <button class="ga-dd-action" onclick="ga.dd.hv.swap(); return false;">Swap Side</button>
+          <button class="ga-dd-action" onclick="ga.dd.draft.save(); return false;">Save Draft</button>
+          <button class="ga-dd-action" onclick="ga.dd.draft.load(); return false;">Load Draft</button>
+          <div id="ga-dd-left-status" class="ga-dd-left-status"></div>
+        </div>
+        <div class="ga-dd-left-section">
+          <h3>Panel</h3>
+          <div id="ga-dd-panel-id" class="ga-dd-left-note">No panel selected</div>
+          <label class="ga-dd-left-label" for="ga-dd-panel-cols">Columns</label>
+          <select id="ga-dd-panel-cols" class="ga-dd-left-control">
+            <option value="">Current</option>
+            <option value="1fr">1 column</option>
+            <option value="1fr 1fr">2 columns</option>
+            <option value="1fr 1fr 1fr">3 columns</option>
+            <option value="1fr 1fr 1fr 1fr">4 columns</option>
+            <option value="0.4fr 1fr">label/data</option>
+          </select>
+          <label class="ga-dd-left-label" for="ga-dd-panel-rows">Rows</label>
+          <select id="ga-dd-panel-rows" class="ga-dd-left-control">
+            <option value="">Current</option>
+            <option value="auto">auto</option>
+            <option value="auto auto">2 rows</option>
+            <option value="auto auto auto">3 rows</option>
+          </select>
+          <label class="ga-dd-left-label" for="ga-dd-panel-gap">Gap</label>
+          <input id="ga-dd-panel-gap" class="ga-dd-left-control" type="text" placeholder="5px">
+          <label class="ga-dd-left-label" for="ga-dd-panel-align">Align</label>
+          <select id="ga-dd-panel-align" class="ga-dd-left-control">
+            <option value="">Current</option>
+            <option value="left">left</option>
+            <option value="center">center</option>
+            <option value="right">right</option>
+          </select>
+          <label class="ga-dd-left-toggle"><input id="ga-dd-panel-collapsible" type="checkbox"> Collapsible</label>
+          <label class="ga-dd-left-toggle"><input id="ga-dd-panel-default-open" type="checkbox" checked> Open by default</label>
+          <button class="ga-dd-action" onclick="ga.dd.panelctl.apply(); return false;">Apply Panel</button>
+          <div id="ga-dd-panel-field-id" class="ga-dd-left-note">No field selected</div>
+          <button class="ga-dd-action" onclick="ga.dd.panelctl.movefield(); return false;">Move Field Here</button>
+        </div>
+      </div>
       <div id="ga-dd-mod" class="ga-dd-mod">
         <!-- right click menu -->
         <div id="ga-dd-menu" class="ga-dd-menu" role="menu" style="display:none;list-style-type:none" >
@@ -278,7 +334,7 @@ ga.layout.html = function ( designer ) {
           <hr>
           <div id="ga-dd-menu-cmds"></div>
         </div>`
-        + ga.layout.thishtml( 'root', designer )
+        + ga.layout.thishtml( 'root', designer, 0 )
         +
      ` </div><!-- ga-dd-mod -->
       <!-- div for designer controls -->
@@ -330,40 +386,89 @@ ga.layout.html = function ( designer ) {
 `;
 }
 
-ga.layout.thishtml = function( panel, designer ) {
+ga.layout.truthy = function( value ) {
+    return value === true || value === 1 || value === "true" || value === "1";
+}
+
+ga.layout.falsey = function( value ) {
+    return value === false || value === 0 || value === "false" || value === "0";
+}
+
+ga.layout.togglepanel = function( ev, button ) {
+    if ( ev && ev.stopPropagation ) {
+        ev.stopPropagation();
+    }
+    if ( ev && ev.preventDefault ) {
+        ev.preventDefault();
+    }
+
+    var panel = button;
+    while ( panel && !( panel.id && /^ga-panel-/.test( panel.id ) ) ) {
+        panel = panel.parentNode;
+    }
+    if ( !panel ) {
+        return false;
+    }
+
+    var collapsed = !panel.classList.contains( "ga-layout-collapsed" );
+    panel.classList.toggle( "ga-layout-collapsed", collapsed );
+    button.setAttribute( "aria-expanded", collapsed ? "false" : "true" );
+    button.innerHTML = ( collapsed ? "Show " : "Hide " ) + panel.id.replace( /^ga-panel-/, "" );
+    return false;
+}
+
+ga.layout.thishtml = function( panel, designer, depth ) {
+    depth = depth || 0;
     var html = "";
     var style = "display:grid";
-    if ( ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gtr ) {
-        style += ";grid-template-rows:" + ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gtr;
+    var pspec = ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ];
+    if ( pspec.gtr ) {
+        style += ";grid-template-rows:" + pspec.gtr;
     }
-    if ( ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gtc ) {
-        style += ";grid-template-columns:" + ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gtc;
+    if ( pspec.gtc ) {
+        style += ";grid-template-columns:" + pspec.gtc;
     }
-    if ( ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gr ) {
-        style += ";grid-row:" + ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gr;
+    if ( pspec.gr ) {
+        style += ";grid-row:" + pspec.gr;
     }
-    if ( ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gc ) {
-        style += ";grid-column:" + ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gc;
+    if ( pspec.gc ) {
+        style += ";grid-column:" + pspec.gc;
     }
-    if ( ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gap ) {
-        style += ";grid-gap:" + ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gap;
+    if ( pspec.gap ) {
+        style += ";grid-gap:" + pspec.gap;
     }
-    if ( ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].align ) {
-        style += ";text-align:" + ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].align;
+    if ( pspec.align ) {
+        style += ";text-align:" + pspec.align;
     }
+    var collapsible = ga.layout.truthy( pspec.collapsible );
+    var collapsed = collapsible && ga.layout.falsey( pspec.default_open );
+    var classes = [];
     if ( designer ) {
-        html += `<div id=ga-panel-${panel} class="ga-dd-panel" style="${style}">`; // Panel ${panel}`;
-    } else {
-        html += `<div id=ga-panel-${panel} style="${style}">`; // Panel ${panel}`;
+        classes.push( "ga-dd-panel" );
     }
+    if ( collapsible ) {
+        classes.push( "ga-layout-collapsible" );
+    }
+    if ( collapsed ) {
+        classes.push( "ga-layout-collapsed" );
+    }
+    html += `<div id=ga-panel-${panel} class="${classes.join( " " )}" style="${style}"`;
+    if ( collapsible ) {
+        html += ` data-ga-collapsible="true"`;
+    }
+    html += `>`; // Panel ${panel}`;
     
     if ( designer ) {
-        html += `<div id=ga-paneldrop-${panel} class="ga-dd-pid ga-dd-drop">panel id:"${panel}"</div>`;
+        html += `<div id=ga-paneldrop-${panel} class="ga-dd-pid ga-dd-drop" style="top:${2 + depth * 18}px">panel id:"${panel}"</div>`;
+    }
+    if ( collapsible ) {
+        html += `<button type="button" class="ga-layout-collapse-toggle" aria-expanded="${collapsed ? "false" : "true"}" onclick="return ga.layout.togglepanel(event,this)">`;
+        html += `${collapsed ? "Show " : "Hide "}${panel}</button>`;
     }
         
     if ( ga.layout.children[ panel ] ) {
         for ( var i = 0; i < ga.layout.children[ panel ].length; ++i ) {
-            html += ga.layout.thishtml( ga.layout.children[ panel ][ i ], designer );
+            html += ga.layout.thishtml( ga.layout.children[ panel ][ i ], designer, depth + 1 );
         }
     }
     if ( ga.layout.panelfields[ panel ] ) {
@@ -386,6 +491,9 @@ ga.layout.thishtml = function( panel, designer ) {
                 if ( designer ) {
                     fclass += 'ga-dd ';
                 }
+            }
+            if ( designer && ga.layout.panelfields[ panel ][ i ].runtime_owned ) {
+                fclass += 'ga-dd-runtime ';
             }
             if ( ga.layout.panelfields[ panel ][ i ].lgr ) {
                 lfstyle += "grid-row:" + ga.layout.panelfields[ panel ][ i ].lgr + ";";
@@ -428,8 +536,9 @@ ga.layout.thishtml = function( panel, designer ) {
             }
             __~debug:layout{console.error( `id is ${id}` );}
             if ( ga.layout.fields[ id ] ) {
-                if ( ga.layout.fields[ id ].lhtml && ga.layout.fields[ id ].lhtml.length ) {
-                    html += `<div id=ga-label-${id} style="${lfstyle}" class="${fclass}">`;
+                if ( ga.layout.fields[ id ].lhtml && ga.layout.fields[ id ].lhtml.length &&
+                     ga.layout.panelfields[ panel ][ i ].layout.label != "none" ) {
+                    html += `<div id=ga-label-${id} style="${lfstyle}" class="${fclass}" onclick="ga.dd.selectfield(event,'${id}')">`;
                     if ( designer ) {
                         html += `<div class="ga-dd-fid">id:"${id}" label</div>`;
                     }                        
@@ -437,7 +546,7 @@ ga.layout.thishtml = function( panel, designer ) {
                     html += `</div>\n`;
                 }
                 if ( ga.layout.fields[ id ].dhtml ) {
-                    html += `<div id=ga-data-${id} style="${dfstyle}" class="${fclass}">`;
+                    html += `<div id=ga-data-${id} style="${dfstyle}" class="${fclass}" onclick="ga.dd.selectfield(event,'${id}')">`;
                     if ( designer ) {
                         html += `<div class="ga-dd-fid">id:"${id}" data</div>`;
                     }                        

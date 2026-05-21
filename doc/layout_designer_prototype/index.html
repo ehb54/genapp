@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GenApp Layout Designer Prototype</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="appbar">
+    <div>
+      <h1>GenApp Layout Designer</h1>
+      <p>Prototype for arranging panels, placing fields, and exporting layout templates.</p>
+    </div>
+    <div class="actions">
+      <label class="mode-toggle" for="designer-active">
+        <input id="designer-active" type="checkbox" checked>
+        Designer Active
+      </label>
+      <button id="reset-demo" type="button">Reset Demo</button>
+      <button id="blank-canvas" type="button">Blank Canvas</button>
+      <button id="copy-template" type="button">Copy Template</button>
+    </div>
+  </header>
+
+  <main class="designer-shell">
+    <aside class="rail palette" aria-label="Layout primitives">
+      <h2>Primitives</h2>
+      <button class="primitive" type="button" data-add-panel="stack">Panel Stack</button>
+      <button class="primitive" type="button" data-add-panel="two-column">Two Columns</button>
+      <button class="primitive" type="button" data-add-panel="three-column">Three Columns</button>
+      <button class="primitive" type="button" data-add-panel="compact-grid">Compact Grid</button>
+      <button class="primitive" type="button" data-add-panel="output">Output Panel</button>
+      <button class="primitive" type="button" data-add-field="input">Input Field</button>
+      <button class="primitive" type="button" data-add-field="output">Output Field</button>
+      <button class="primitive" type="button" data-add-field="message">Message Field</button>
+
+      <h2>Template</h2>
+      <label for="template-name">Name</label>
+      <input id="template-name" type="text" value="prototype_layout">
+      <label for="template-notes">Notes</label>
+      <textarea id="template-notes" rows="5">Prototype template exported from the GenApp layout designer prototype.</textarea>
+    </aside>
+
+    <section class="workspace" aria-label="Layout canvas">
+      <div class="workspace-toolbar">
+        <div>
+          <strong>Live Canvas / Mock GenApp Module</strong>
+          <span class="canvas-help">Edit this center area; turn Designer Active off to preview the app without layout chrome.</span>
+          <span id="selection-label">No selection</span>
+        </div>
+        <div class="toolbar-actions">
+          <button id="inspector-side" type="button">Inspector Side</button>
+          <button id="inspector-below" type="button">Inspector Below</button>
+          <button id="inspector-toggle" type="button">Hide Inspector</button>
+          <button id="undo-action" type="button" disabled>Undo</button>
+          <button id="delete-selected" type="button">Delete</button>
+          <button id="clean-layout" type="button">Clean</button>
+        </div>
+      </div>
+      <div id="canvas" class="canvas" aria-live="polite"></div>
+    </section>
+
+    <aside class="rail inspector" aria-label="Inspector and export">
+      <h2>Inspector</h2>
+      <form id="inspector-form">
+        <label for="item-id">ID</label>
+        <input id="item-id" type="text">
+
+        <label for="item-parent">Parent</label>
+        <select id="item-parent"></select>
+
+        <label for="item-location">Location</label>
+        <select id="item-location">
+          <option value="next-full">next, full</option>
+          <option value="next-next">next, next</option>
+          <option value="same-next">same, next</option>
+          <option value="same-full">same, full</option>
+        </select>
+
+        <label for="item-column-span">Column Span</label>
+        <select id="item-column-span">
+          <option value="1">1 column</option>
+          <option value="2">2 columns</option>
+          <option value="3">3 columns</option>
+          <option value="4">4 columns</option>
+          <option value="full">full row</option>
+        </select>
+
+        <label for="item-row-span">Row Span</label>
+        <select id="item-row-span">
+          <option value="1">1 row</option>
+          <option value="2">2 rows</option>
+          <option value="3">3 rows</option>
+        </select>
+
+        <label for="item-control-width">Control Width</label>
+        <select id="item-control-width">
+          <option value="fill">fill</option>
+          <option value="wide">wide</option>
+          <option value="normal">normal</option>
+          <option value="compact">compact</option>
+        </select>
+
+        <label for="item-size">Size</label>
+        <select id="item-size">
+          <option value="auto-1">auto rows, 1 column</option>
+          <option value="auto-2">auto rows, 2 columns</option>
+          <option value="1-1">1 row, 1 column</option>
+          <option value="1-2">1 row, 2 columns</option>
+        </select>
+
+        <label for="item-child-mode">Child Flow</label>
+        <select id="item-child-mode">
+          <option value="stack">stack</option>
+          <option value="two-column">two columns</option>
+          <option value="three-column">three columns</option>
+          <option value="four-column">four columns</option>
+          <option value="compact-grid">compact grid</option>
+        </select>
+
+        <label for="item-align">Align</label>
+        <select id="item-align">
+          <option value="left">left</option>
+          <option value="center">center</option>
+          <option value="right">right</option>
+        </select>
+
+        <label for="item-gap">Gap</label>
+        <input id="item-gap" type="text" value="5px">
+
+        <button id="apply-inspector" type="submit">Apply</button>
+      </form>
+
+      <h2>Export</h2>
+      <textarea id="template-json" class="template-json" spellcheck="false" aria-label="Exported template JSON"></textarea>
+      <button id="load-minimal-template" type="button">Load Minimal Template JSON</button>
+      <button id="import-template" type="button">Import From JSON</button>
+    </aside>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

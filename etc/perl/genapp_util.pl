@@ -213,6 +213,7 @@ undef %include_additional_files;
 
 sub replace_file_json_walk {
     my ( $hash, $lang, $file ) = @_;
+    return if ref( $hash ) ne 'HASH';
     while (my ($k, $v) = each %$hash) {
         if (ref($v) eq 'HASH' && $k !~ /^panels$/ ) {
             replace_file_json_walk( $v, $lang, $file );
@@ -1323,12 +1324,14 @@ sub check_files {
                 my %ids;
 
                 do {
-                    if ( !$$mod_info{ 'fields:id' } ) {
-                        $error .= "Module $f has field without field id defined\n" if $$mod_info{ 'fields:type' } ne "info";
-                    } else {
-                        $error .= "Module $f has fields with duplicate id \"" . $$mod_info{ 'fields:id' } . "\"\n" if $ids{ $$mod_info{ 'fields:id' } }++;
+                    if ( exists $$mod_info{ 'fields:id' } || exists $$mod_info{ 'fields:type' } ) {
+                        if ( !$$mod_info{ 'fields:id' } ) {
+                            $error .= "Module $f has field without field id defined\n" if $$mod_info{ 'fields:type' } ne "info";
+                        } else {
+                            $error .= "Module $f has fields with duplicate id \"" . $$mod_info{ 'fields:id' } . "\"\n" if $ids{ $$mod_info{ 'fields:id' } }++;
+                        }
+                        $error .= "Module $f field " . $$mod_info{ 'fields:id' } . " is a listbox but is missing the required \"values\" tag\n" if $$mod_info{ 'fields:type' } eq 'listbox' && !$$mod_info{ 'fields:values' } && !$$mod_info{ 'fields:pull' };
                     }
-                    $error .= "Module $f field " . $$mod_info{ 'fields:id' } . " is a listbox but is missing the required \"values\" tag\n" if $$mod_info{ 'fields:type' } eq 'listbox' && !$$mod_info{ 'fields:values' } && !$$mod_info{ 'fields:pull' };
                 } while( $mod_info = next_json( $ref_mod, 'fields:id' ) );
             }
             # check repeaters & repeats
