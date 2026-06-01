@@ -537,6 +537,62 @@ font-size: 2em;
     font-size: 0.75em;
 }
 
+.ga-panel-collapsible {
+    min-height: 2em;
+    padding-top: 2em;
+    position: relative;
+}
+
+.ga-panel-summary {
+    align-items: center;
+    box-sizing: border-box;
+    display: flex;
+    gap: 0.5em;
+    left: 0;
+    min-height: 1.6em;
+    overflow: hidden;
+    position: absolute;
+    right: 0;
+    text-align: left;
+    top: 0;
+    white-space: nowrap;
+}
+
+.ga-panel-toggle {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+}
+
+.ga-panel-toggle:focus {
+    outline: 1px dotted;
+}
+
+.ga-panel-toggle-icon {
+    display: inline-block;
+    min-width: 2em;
+}
+
+.ga-panel-toggle-title {
+    font-weight: bold;
+}
+
+.ga-panel-summary-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ga-panel-collapsed {
+    min-height: 2em;
+}
+
+.ga-panel-collapsed > :not(.ga-panel-summary) {
+    display: none !important;
+}
+
 
 /* job actions onclicks for jqGrid in job manager */
 .ga-ja-r {

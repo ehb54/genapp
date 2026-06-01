@@ -558,6 +558,7 @@
                                     ,{ "js/msg.js"              : "once" }
                                     ,{ "js/ws.js"               : "once" }
                                     ,{ "js/layout.js"           : "once" }
+                                    ,{ "js/panel.js"            : "once" }
                                     ,{ "js/button.js"           : "once" }
                                     ,{ "js/util.js"             : "once" }
                                    ]
@@ -692,4 +693,3 @@
                    }		   
                   ]
 }
-

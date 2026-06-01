@@ -124,6 +124,29 @@ ga.layout.rhtml = function ( field ) {
     __~debug:layoutloc{console.log( `ga.layout.rhtml( ${field} ) returns "${htmlopen}"`);}
     return htmlopen;
 }
+
+ga.layout.paneldef = function( panel ) {
+    if ( !ga.layout.panel ||
+         !ga.layout.panel.panels ||
+         ga.layout.panelpos[ panel ] === undefined ) {
+        return {};
+    }
+
+    return ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ] || {};
+}
+
+ga.layout.panelui = function( panel ) {
+    return ga.layout.paneldef( panel ).ui || {};
+}
+
+ga.layout.htmlencode = function( value ) {
+    return String( value )
+        .replace( /&/g, "&amp;" )
+        .replace( /</g, "&lt;" )
+        .replace( />/g, "&gt;" )
+        .replace( /"/g, "&quot;" )
+        .replace( /'/g, "&#39;" );
+}
     
 ga.layout.process = function ( defaults ) {
     if ( !defaults ||
@@ -333,28 +356,47 @@ ga.layout.html = function ( designer ) {
 ga.layout.thishtml = function( panel, designer ) {
     var html = "";
     var style = "display:grid";
-    if ( ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gtr ) {
-        style += ";grid-template-rows:" + ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gtr;
+    var paneldef = ga.layout.paneldef( panel );
+    var panelui = ga.layout.panelui( panel );
+    var collapsible = !designer &&
+        panel != "root" &&
+        panelui.collapsible;
+    if ( paneldef.gtr ) {
+        style += ";grid-template-rows:" + paneldef.gtr;
     }
-    if ( ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gtc ) {
-        style += ";grid-template-columns:" + ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gtc;
+    if ( paneldef.gtc ) {
+        style += ";grid-template-columns:" + paneldef.gtc;
     }
-    if ( ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gr ) {
-        style += ";grid-row:" + ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gr;
+    if ( paneldef.gr ) {
+        style += ";grid-row:" + paneldef.gr;
     }
-    if ( ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gc ) {
-        style += ";grid-column:" + ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gc;
+    if ( paneldef.gc ) {
+        style += ";grid-column:" + paneldef.gc;
     }
-    if ( ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gap ) {
-        style += ";grid-gap:" + ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gap;
+    if ( paneldef.gap ) {
+        style += ";grid-gap:" + paneldef.gap;
     }
-    if ( ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].align ) {
-        style += ";text-align:" + ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].align;
+    if ( paneldef.align ) {
+        style += ";text-align:" + paneldef.align;
     }
     if ( designer ) {
         html += `<div id=ga-panel-${panel} class="ga-dd-panel" style="${style}">`; // Panel ${panel}`;
     } else {
-        html += `<div id=ga-panel-${panel} style="${style}">`; // Panel ${panel}`;
+        var panelclass = collapsible ? ' class="ga-panel-collapsible' + ( panelui.default_state == "collapsed" ? " ga-panel-collapsed" : "" ) + '"' : "";
+        html += `<div id=ga-panel-${panel}${panelclass} style="${style}">`; // Panel ${panel}`;
+    }
+
+    if ( collapsible ) {
+        var title = ga.layout.htmlencode( panelui.title || panel );
+        var defaultState = panelui.default_state == "collapsed" ? "collapsed" : "expanded";
+        var expanded = defaultState == "expanded";
+        html += `<div id=ga-panel-summary-${panel} class="ga-panel-summary">`;
+        html += `<button type="button" class="ga-panel-toggle" data-ga-panel="${panel}" aria-controls="ga-panel-${panel}" aria-expanded="${expanded}">`;
+        html += `<span class="ga-panel-toggle-icon">${expanded ? "[-]" : "[+]"}</span>`;
+        html += `<span class="ga-panel-toggle-title">${title}</span>`;
+        html += `</button>`;
+        html += `<span class="ga-panel-summary-text" id=ga-panel-summary-text-${panel}></span>`;
+        html += `</div>`;
     }
     
     if ( designer ) {
@@ -429,6 +471,9 @@ ga.layout.thishtml = function( panel, designer ) {
             __~debug:layout{console.error( `id is ${id}` );}
             if ( ga.layout.fields[ id ] ) {
                 if ( ga.layout.fields[ id ].lhtml && ga.layout.fields[ id ].lhtml.length ) {
+                    if ( collapsible ) {
+                        fclass += "ga-panel-content ";
+                    }
                     html += `<div id=ga-label-${id} style="${lfstyle}" class="${fclass}">`;
                     if ( designer ) {
                         html += `<div class="ga-dd-fid">id:"${id}" label</div>`;
@@ -437,6 +482,9 @@ ga.layout.thishtml = function( panel, designer ) {
                     html += `</div>\n`;
                 }
                 if ( ga.layout.fields[ id ].dhtml ) {
+                    if ( collapsible && fclass.indexOf( "ga-panel-content" ) < 0 ) {
+                        fclass += "ga-panel-content ";
+                    }
                     html += `<div id=ga-data-${id} style="${dfstyle}" class="${fclass}">`;
                     if ( designer ) {
                         html += `<div class="ga-dd-fid">id:"${id}" data</div>`;

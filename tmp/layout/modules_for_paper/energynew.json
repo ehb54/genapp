@@ -42,7 +42,13 @@
             "leftpanel" : {
                 "parent"   : "body",
                 "size"     : [ "auto", 2 ],
-                "location" : [ 1, 1 ]
+                "location" : [ 1, 1 ],
+                "ui"       : {
+                    "title"         : "Inputs",
+                    "collapsible"   : true,
+                    "default_state" : "expanded",
+                    "summary_fields": [ "m", "c" ]
+                }
             }
         },
         {
@@ -52,7 +58,12 @@
                 "location" : [ 1, 2 ],
                 "label"    : [ 1, 2 ],
                 "data"     : [ 1, 1 ],
-                "align"    : "right"
+                "align"    : "right",
+                "ui"       : {
+                    "title"         : "Results",
+                    "collapsible"   : true,
+                    "default_state" : "collapsed"
+                }
             }
         }
     ]

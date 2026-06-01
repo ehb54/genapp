@@ -19,6 +19,9 @@ ga.layout.process( {
 });
 __~debug:layout{console.log( ga.layout.html() );}
 $( '#__moduleid___input_area' ).html( ga.layout.html( __~designer{1}0 ) );
+if ( ga.panel && !__~designer{1}0 ) {
+    ga.panel.init( "__moduleid__", ga.layout.panel );
+}
 __~designer{ga.dd.gridinit();}
 __~designer{ga.dd.reset();}
 
@@ -167,6 +170,10 @@ function do___moduleid___submit( $form, airavataresource, skipcached ) {
 __~submit_cb{   ga.altfile.bdata[ "__moduleid__" ].cb("#__submit_cb__"); ga.altfile.button.cb(); return false;}
 
 __~debug:job{   console.log( "you clicked" );}
+
+   if ( ga.panel ) {
+       ga.panel.expandForValidation( "__moduleid__" );
+   }
 
    if ( !ga.valid.checksubmit( "__moduleid__" ) ) {
        ga.valid.showerrormessage( "__moduleid__" );
@@ -564,4 +571,3 @@ __~loadfields{if ( !ga.running.doattach ) { ga.button.click( '__moduleid__', '_l
 </form>
 <div id="__moduleid___results"></div>
 <!-- end input.footer -->
-
