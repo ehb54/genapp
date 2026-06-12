@@ -155,7 +155,7 @@ RUN set -eu; \
     '          useDefaultConfig: true,' \
     '          onUpdate: (data, layout) => setFigure({ data, layout }),' \
     '        },' \
-    '        (editorProps) => React.createElement(DefaultEditor, editorProps)' \
+    '        React.createElement(DefaultEditor)' \
     '      )' \
     '    );' \
     '  }' \
