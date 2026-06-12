@@ -1,38 +1,41 @@
 ###############################################################################
-# react-chart-editor bundle builder (single-file JS, includes React + Plotly)
+# react-chart-editor bundle builder for GenApp / static hosting
 #
-# Purpose:
-#   Build a stand-alone browser bundle:
-#     - react-chart-editor.bundle.min.js   (includes React + ReactDOM + Plotly)
-#     - react-chart-editor.min.css
+# What this builds (written to /out inside the container):
+#   - react-chart-editor.bundle.min.js   (self-contained IIFE bundle:
+#                                        React + ReactDOM + Plotly + editor)
+#   - react-chart-editor.app.min.js      (tiny “mount” helper; no JSX/Babel)
+#   - react-chart-editor.min.css
+#   - react-chart-editor.bundle.min.js.map  (optional; see INCLUDE_SOURCEMAP)
 #
-# Output:
-#   Artifacts are copied to /out inside the container. Use a bind mount to
-#   collect them on the host.
+# Why this exists:
+#   - Avoids "Uncaught ReferenceError: global is not defined" in browsers by
+#     defining `global` as `globalThis` at build time (no HTML shim needed).
+#   - Avoids in-browser Babel and avoids needing separate React UMD files.
 #
-# Quick start:
-#   docker build -t rce-bundle .
+# Build:
+#   docker build -t rce-bundle -f Dockerfile .
+#
+# Export artifacts to ./out (recommended: keep host ownership, not root:root):
 #   mkdir -p out
 #   docker run --rm -u "$(id -u):$(id -g)" -v "$PWD/out:/out" rce-bundle
 #
-# Override pins (recommended to keep builds reproducible):
+# Optional: include sourcemap (larger; useful for debugging):
+#   docker build -t rce-bundle --build-arg INCLUDE_SOURCEMAP=1 .
+#
+# Suggested HTML usage (no Babel; place files next to _chart_edit.html):
+#   <link rel="stylesheet" href="react-chart-editor.min.css">
+#   <script src="react-chart-editor.bundle.min.js"></script>
+#   <script src="react-chart-editor.app.min.js"></script>
+#   <div id="editor-root"></div>
+#
+# Pin versions for reproducible builds (examples):
 #   docker build -t rce-bundle \
 #     --build-arg RCE_TAG=v0.46.1 \
 #     --build-arg PLOTLY_DIST_VERSION=2.35.2 \
 #     --build-arg ESBUILD_VERSION=0.24.0 \
 #     --build-arg NODE_MAJOR=20 \
 #     .
-#
-# Optional: include sourcemap (large; useful for debugging)
-#   docker build -t rce-bundle --build-arg INCLUDE_SOURCEMAP=1 .
-#
-# Notes:
-# - react-chart-editor has legacy peer-dep constraints; we use npm
-#   --legacy-peer-deps to keep npm v7+ from failing dependency resolution.
-# - We generate bundle-entry.js with printf (not heredoc) because heredocs
-#   can end up empty depending on how the Dockerfile is generated/edited.
-# - The resulting bundle may contain "eval" (esbuild warns). If you later add
-#   a strict CSP, you may need 'unsafe-eval' for this page.
 ###############################################################################
 
 FROM debian:latest
@@ -84,28 +87,95 @@ RUN set -eu; \
     'import React from "react";' \
     'import ReactDOM from "react-dom";' \
     'import Plotly from "plotly.js-dist-min";' \
-    'import { PlotlyEditor, DefaultEditor } from "./lib/index.js";' \
+    'import PlotlyEditor, { DefaultEditor } from "./lib/index.js";' \
     '' \
     'globalThis.ReactChartEditor = {' \
-    '  React,' \
-    '  ReactDOM,' \
-    '  Plotly,' \
-    '  PlotlyEditor,' \
-    '  DefaultEditor,' \
+    '  React: (React && React.default) ? React.default : React,' \
+    '  ReactDOM: (ReactDOM && ReactDOM.default) ? ReactDOM.default : ReactDOM,' \
+    '  Plotly: (Plotly && Plotly.default) ? Plotly.default : Plotly,' \
+    '  PlotlyEditor: (PlotlyEditor && PlotlyEditor.default) ? PlotlyEditor.default : PlotlyEditor,' \
+    '  DefaultEditor: (DefaultEditor && DefaultEditor.default) ? DefaultEditor.default : DefaultEditor,' \
     '};' \
     > bundle-entry.js; \
   mkdir -p dist; \
-  ESBUILD_FLAGS="--bundle --platform=browser --packages=bundle --format=iife --minify --loader:.js=jsx --outfile=dist/react-chart-editor.bundle.min.js"; \
+  # NOTE: Some upstream deps still reference the Node-style `global` identifier.
+  # In browsers, that doesn't exist (use globalThis). We fix this at build time
+  # so the consuming HTML does *not* need shims.
+  ESBUILD_FLAGS="--bundle --platform=browser --packages=bundle --format=iife --minify --loader:.js=jsx --define:global=globalThis --define:process.env.NODE_ENV=\"production\" --outfile=dist/react-chart-editor.bundle.min.js"; \
   if [ "${INCLUDE_SOURCEMAP}" = "1" ]; then ESBUILD_FLAGS="$ESBUILD_FLAGS --sourcemap"; fi; \
   npx esbuild bundle-entry.js $ESBUILD_FLAGS; \
   echo "Built:"; \
   ls -lh dist/react-chart-editor.bundle.min.js; \
   if [ "${INCLUDE_SOURCEMAP}" = "1" ] && [ -f dist/react-chart-editor.bundle.min.js.map ]; then ls -lh dist/react-chart-editor.bundle.min.js.map; fi; \
-  ls -lh lib/react-chart-editor.min.css
+  ls -lh lib/react-chart-editor.min.css; \
+  \
+  # Build a tiny optional helper script that mounts the editor WITHOUT Babel,
+  # and WITHOUT requiring React/ReactDOM globals. This is useful for your
+  # GenApp iframe page: it can just load the bundle + this script.
+  printf '%s\n' \
+    '(function(){' \
+    '  "use strict";' \
+    '  const RCE = globalThis.ReactChartEditor || {};' \
+    '  const React = RCE.React;' \
+    '  const ReactDOM = RCE.ReactDOM;' \
+    '  const Plotly = RCE.Plotly;' \
+    '  const PlotlyEditor = RCE.PlotlyEditor;' \
+    '  const DefaultEditor = RCE.DefaultEditor;' \
+    '' \
+    '  if (!React || !ReactDOM || !Plotly || !PlotlyEditor || !DefaultEditor) {' \
+    '    console.error("Missing expected ReactChartEditor globals", RCE);' \
+    '    return;' \
+    '  }' \
+    '' \
+    '  const { useState, useEffect } = React;' \
+    '' \
+    '  function App(){' \
+    '    const [figure, setFigure] = useState({ data: [], layout: {} });' \
+    '' \
+    '    useEffect(() => {' \
+    '      const handleMessage = (e) => {' \
+    '        if (e && e.data && e.data.type === "LOAD_CHART") {' \
+    '          setFigure(e.data.payload || { data: [], layout: {} });' \
+    '        }' \
+    '      };' \
+    '      window.addEventListener("message", handleMessage);' \
+    '      return () => window.removeEventListener("message", handleMessage);' \
+    '    }, []);' \
+    '' \
+    '    return React.createElement(' \
+    '      "div",' \
+    '      { style: { height: "calc(100vh - 45px)" } },' \
+    '      React.createElement(' \
+    '        PlotlyEditor,' \
+    '        {' \
+    '          data: figure.data,' \
+    '          layout: figure.layout,' \
+    '          plotly: Plotly,' \
+    '          useDefaultConfig: true,' \
+    '          onUpdate: (data, layout) => setFigure({ data, layout }),' \
+    '        },' \
+    '        (editorProps) => React.createElement(DefaultEditor, editorProps)' \
+    '      )' \
+    '    );' \
+    '  }' \
+    '' \
+    '  const el = document.getElementById("editor-root");' \
+    '  if (!el) { console.error("Missing #editor-root"); return; }' \
+    '' \
+    '  if (typeof ReactDOM.createRoot === "function") {' \
+    '    ReactDOM.createRoot(el).render(React.createElement(App));' \
+    '  } else {' \
+    '    ReactDOM.render(React.createElement(App), el);' \
+    '  }' \
+    '})();' \
+    > app-entry.js; \
+  npx esbuild app-entry.js --bundle --platform=browser --format=iife --minify --outfile=dist/react-chart-editor.app.min.js; \
+  ls -lh dist/react-chart-editor.app.min.js
 
 CMD sh -lc 'set -eu; \
   mkdir -p /out; \
   cp -av dist/react-chart-editor.bundle.min.js /out/; \
+  cp -av dist/react-chart-editor.app.min.js /out/; \
   if [ "${INCLUDE_SOURCEMAP:-0}" = "1" ] && [ -f dist/react-chart-editor.bundle.min.js.map ]; then cp -av dist/react-chart-editor.bundle.min.js.map /out/; fi; \
   cp -av lib/react-chart-editor.min.css /out/; \
   echo; \
