@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chart editor</title>
+<link rel="stylesheet" href="react-chart-editor.min.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  #editor-root { height: 100%; }
+</style>
+</head>
+<body>
+<div id="editor-root"></div>
+
+<script>
+  // Standalone test data. When opened by a GenApp page, this is replaced by
+  // a postMessage({type: "LOAD_CHART", payload: figure}) from the opener,
+  // so this default is only used when the page is opened directly.
+  window.GENAPP_INITIAL_FIGURE = {
+    data: [
+      {
+        type: "scatter",
+        mode: "lines+markers",
+        x: [1, 2, 3, 4, 5],
+        y: [2, 5, 3, 8, 4],
+        name: "Sample series"
+      }
+    ],
+    layout: {
+      title: "Sample chart (standalone test data)"
+    }
+  };
+</script>
+<script src="react-chart-editor.bundle.min.js"></script>
+<script src="react-chart-editor.app.min.js"></script>
+</body>
+</html>
