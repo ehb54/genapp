@@ -130,7 +130,8 @@ RUN set -eu; \
     '  const { useState, useEffect } = React;' \
     '' \
     '  function App(){' \
-    '    const [figure, setFigure] = useState({ data: [], layout: {} });' \
+    '    const initial = globalThis.GENAPP_INITIAL_FIGURE || { data: [], layout: {} };' \
+    '    const [figure, setFigure] = useState(initial);' \
     '' \
     '    useEffect(() => {' \
     '      const handleMessage = (e) => {' \
