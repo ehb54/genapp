@@ -22,15 +22,60 @@
   window.GENAPP_INITIAL_FIGURE = {
     data: [
       {
+        x: [-3.1416, -2.3562, -1.5708, -0.7854, 0, 0.7854, 1.5708, 2.3562, 3.1416],
+        y: [0, -0.7071, -1, -0.7071, 0, 0.7071, 1, 0.7071, 0],
         type: "scatter",
         mode: "lines+markers",
-        x: [1, 2, 3, 4, 5],
-        y: [2, 5, 3, 8, 4],
-        name: "Sample series"
+        name: "sin(x)",
+        line: {
+          color: "rgb(150,150,222)",
+          width: 1
+        }
+      },
+      {
+        x: [-3.1416, -2.3562, -1.5708, -0.7854, 0, 0.7854, 1.5708, 2.3562, 3.1416],
+        y: [-1, -0.7071, 0, 0.7071, 1, 0.7071, 0, -0.7071, -1],
+        type: "scatter",
+        mode: "lines+markers",
+        name: "cos(x)",
+        line: {
+          color: "rgb(50,255,50)",
+          width: 1
+        }
+      },
+      {
+        x: [-3.1416, -2.3562, -1.5708, -0.7854, 0, 0.7854, 1.5708, 2.3562, 3.1416],
+        y: [0, 1, null, -1, 0, 1, null, -1, 0],
+        type: "scatter",
+        mode: "lines+markers",
+        name: "tan(x)",
+        line: {
+          color: "rgb(255,100,100)",
+          width: 1
+        }
       }
     ],
     layout: {
-      title: "Sample chart (standalone test data)"
+      title: "sin, cos, tan from -π to π",
+      font: {
+        color: "rgb(0,5,80)"
+      },
+      paper_bgcolor: "rgb(255,255,255)",
+      plot_bgcolor: "rgb(255,255,255)",
+      xaxis: {
+        gridcolor: "rgba(111,111,111,0.5)",
+        title: {
+          text: "x (radians)"
+        }
+      },
+      yaxis: {
+        gridcolor: "rgba(111,111,111,0.5)",
+        title: {
+          text: "y"
+        },
+        range: [-2, 2]
+      },
+      showlegend: true
     }
   };
 </script>
