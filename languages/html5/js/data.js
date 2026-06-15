@@ -174,7 +174,8 @@ ga.data.update = function( mod, data, msging_f, msg_id ) {
                                     localStorage.setItem( id, JSON.stringify( { data: gd.data, layout: gd.layout } ) );
                                     window.open(
                                         v.config.genapp_chart_editor.url + '?id=' + encodeURIComponent( id ),
-                                        v.config.genapp_chart_editor.target || '_blank'
+                                        v.config.genapp_chart_editor.target || '_blank',
+                                        'noopener'
                                     );
                                 }
                             }]);
