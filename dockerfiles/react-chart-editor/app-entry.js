@@ -108,10 +108,26 @@
     return result;
   }
 
+  // Escapes non-ASCII characters as \uXXXX so the exported JSON round-trips
+  // safely through GenApp's Perl decode_json pipeline, which chokes on
+  // strings carrying Perl's internal UTF8 flag from a prior decode.
+  function escapeNonAscii(str) {
+    var out = "";
+    for (var i = 0; i < str.length; i++) {
+      var code = str.charCodeAt(i);
+      if (code > 127) {
+        out += "\\u" + ("000" + code.toString(16)).slice(-4);
+      } else {
+        out += str.charAt(i);
+      }
+    }
+    return out;
+  }
+
   // GenApp's plotly field JSON shape: top-level data/layout/config, rather
   // than separate variables.
   function figureToJSON(figure) {
-    return JSON.stringify(
+    var json = JSON.stringify(
       {
         data: (figure && figure.data) || [],
         layout: sanitizeLayout(figure && figure.layout),
@@ -120,6 +136,7 @@
       null,
       2
     );
+    return escapeNonAscii(json);
   }
 
   function App() {
