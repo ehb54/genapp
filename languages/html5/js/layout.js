@@ -112,9 +112,9 @@ ga.layout.rhtml = function ( field ) {
     }
 
     if ( ga.layout.panel.fields[ pos ].repeat ) {
-        htmlopen += ` style="display:grid;grid-template-rows:${ga.layout.panel.fields[pos].rgtr};grid-template-columns:${ga.layout.panel.fields[pos].rgtc};grid-column:${ga.layout.panel.fields[pos].rgc}`;
+        htmlopen += ` style="display:grid;grid-template-rows:min-content;grid-template-columns:${ga.layout.panel.fields[pos].rgtc};grid-column:${ga.layout.panel.fields[pos].rgc}`;
     } else {
-        htmlopen += ` style="display:grid;grid-template-rows:${ga.layout.panel.fields[pos].rgtr};grid-template-columns:${ga.layout.panel.fields[pos].rgtc};grid-row:${ga.layout.panel.fields[pos].rgr};grid-column:${ga.layout.panel.fields[pos].rgc}`;
+        htmlopen += ` style="display:grid;grid-template-rows:min-content;grid-template-columns:${ga.layout.panel.fields[pos].rgtc};grid-row:${ga.layout.panel.fields[pos].rgr};grid-column:${ga.layout.panel.fields[pos].rgc}`;
     }
     if ( ga.layout.panel.fields[ pos ].ralign ) {
         htmlopen += `;text-align:${ga.layout.panel[pos].ralign}`;
@@ -334,7 +334,7 @@ ga.layout.thishtml = function( panel, designer ) {
     var html = "";
     var style = "display:grid";
     if ( ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gtr ) {
-        style += ";grid-template-rows:" + ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gtr;
+        style += ";grid-template-rows:min-content";
     }
     if ( ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gtc ) {
         style += ";grid-template-columns:" + ga.layout.panel.panels[ ga.layout.panelpos[ panel ] ][ panel ].gtc;
@@ -412,7 +412,7 @@ ga.layout.thishtml = function( panel, designer ) {
                 rfstyle += "display:grid;";
             }
 //            if ( ga.layout.panelfields[ panel ][ i ].rgtr ) {
-//                rfstyle += "grid-template-rows:" + ga.layout.panelfields[ panel ][ i ].rgtr + ";";
+//                rfstyle += "grid-template-rows:min-content;"
 //            }
 //            if ( ga.layout.panelfields[ panel ][ i ].rgtc ) {
 //                rfstyle += "grid-template-columns:" + ga.layout.panelfields[ panel ][ i ].rgtc + ";";
