@@ -689,3 +689,34 @@ ga.data.iframe = function( v ) {
     __~debug:ports{console.log( `src is now ${src}` );}
     document.getElementById( v.id ).src = `http://${window.location.hostname}:${v.port}`;
 }
+
+ga.data.plotly = {};
+ga.data.plotly.errorbars = function( divId, turnoff ) {
+    const gd = document.getElementById( divId );
+    if ( !gd || !gd.data ) {
+        console.warn( `no plotly data for ${divId}` );
+        return;
+    }
+
+    Plotly.restyle( divId, { 'error_y.visible':turnoff }, [...Array(gd.data.length - 1).keys()].slice(1) );
+}
+
+ga.data.plotly.linewidth = function( divId, linewidth ) {
+    const gd = document.getElementById( divId );
+    if ( !gd || !gd.data ) {
+        console.warn( `no plotly data for ${divId}` );
+        return;
+    }
+
+    Plotly.restyle( divId, { 'line.width': linewidth  }, [...Array(gd.data.length).keys()] );
+}
+
+ga.data.plotly.linename = function( divId, curvenumber, newlabel ) {
+    const gd = document.getElementById( divId );
+    if ( !gd || !gd.data ) {
+        console.warn( `no plotly data for ${divId}` );
+        return;
+    }
+
+    Plotly.restyle( divId, { 'name': newlabel  }, curvenumber );
+}

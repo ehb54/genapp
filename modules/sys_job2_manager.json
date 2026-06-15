@@ -112,6 +112,7 @@
                 "parent" : "body"
             },
             "type" : "checkbox",
+            "checked" : "true",
             "id" : "running",
             "onchange" : "if ( v ) { document.getElementById(`recent`).value=`*all*` }; ga.util.jqgrid.filter(`sys_job2_manager`, `jobgrid`)"
         },
