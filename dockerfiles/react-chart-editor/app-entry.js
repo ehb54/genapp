@@ -91,13 +91,30 @@
     return lines.join("\r\n");
   }
 
+  // Plotly can leave an axis with a zero-width range (range[0] === range[1])
+  // and autorange:false after certain editor interactions, which renders as
+  // a chart zoomed into nothing. Drop such ranges and let the axis autorange.
+  function sanitizeLayout(layout) {
+    var result = JSON.parse(JSON.stringify(layout || {}));
+    Object.keys(result).forEach(function (key) {
+      if (!/^[xy]axis\d*$/.test(key)) return;
+      var axis = result[key];
+      var range = axis && axis.range;
+      if (Array.isArray(range) && range.length === 2 && range[0] === range[1]) {
+        delete axis.range;
+        axis.autorange = true;
+      }
+    });
+    return result;
+  }
+
   // GenApp's plotly field JSON shape: top-level data/layout/config, rather
   // than separate variables.
   function figureToJSON(figure) {
     return JSON.stringify(
       {
         data: (figure && figure.data) || [],
-        layout: (figure && figure.layout) || {},
+        layout: sanitizeLayout(figure && figure.layout),
         config: (figure && figure.config) || {},
       },
       null,
