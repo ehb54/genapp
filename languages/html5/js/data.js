@@ -164,6 +164,21 @@ ga.data.update = function( mod, data, msging_f, msg_id ) {
 		    //if(!ga.showcollapse3d)
 		    //{
                     if ( v.config ) {
+                        if ( v.config.genapp_chart_editor && v.config.genapp_chart_editor.enabled ) {
+                            v.config.modeBarButtonsToAdd = ( v.config.modeBarButtonsToAdd || [] ).concat([{
+                                name  : 'editInChartEditor',
+                                title : 'Edit in Chart Editor',
+                                icon  : Plotly.Icons.pencil,
+                                click : function ( gd ) {
+                                    var id = 'gace_' + Date.now() + '_' + Math.floor( Math.random() * 1e6 );
+                                    localStorage.setItem( id, JSON.stringify( { data: gd.data, layout: gd.layout } ) );
+                                    window.open(
+                                        v.config.genapp_chart_editor.url + '?id=' + encodeURIComponent( id ),
+                                        v.config.genapp_chart_editor.target || '_blank'
+                                    );
+                                }
+                            }]);
+                        }
 		        Plotly.newPlot(k, v.data, v.layout, v.config);
                     } else {
 		        Plotly.newPlot(k, v.data, v.layout );

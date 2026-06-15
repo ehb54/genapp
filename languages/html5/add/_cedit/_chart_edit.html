@@ -14,9 +14,11 @@
 <div id="editor-root"></div>
 
 <script>
-  // Standalone test data. When opened by a GenApp page, this is replaced by
-  // a postMessage({type: "LOAD_CHART", payload: figure}) from the opener,
-  // so this default is only used when the page is opened directly.
+  // Standalone/fallback test data. When opened from a GenApp page via
+  // ?id=<key>, the editor loads window.localStorage[id] (a one-shot
+  // {data, layout} snapshot written by the "Edit in Chart Editor" modebar
+  // button) instead. This default is only used when opened directly with
+  // no ?id, or if the stored snapshot is missing.
   window.GENAPP_INITIAL_FIGURE = {
     data: [
       {
