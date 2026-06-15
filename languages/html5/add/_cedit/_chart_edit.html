@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chart editor</title>
+<link rel="stylesheet" href="react-chart-editor.min.css">
+<style>
+  html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  #editor-root { height: 100%; }
+</style>
+</head>
+<body>
+<div id="editor-root"></div>
+
+<script>
+  // Standalone/fallback test data. When opened from a GenApp page via
+  // ?id=<key>, the editor loads window.localStorage[id] (a one-shot
+  // {data, layout} snapshot written by the "Edit in Chart Editor" modebar
+  // button) instead. This default is only used when opened directly with
+  // no ?id, or if the stored snapshot is missing.
+  window.GENAPP_INITIAL_FIGURE = {
+    data: [
+      {
+        x: [-3.1416, -2.3562, -1.5708, -0.7854, 0, 0.7854, 1.5708, 2.3562, 3.1416],
+        y: [0, -0.7071, -1, -0.7071, 0, 0.7071, 1, 0.7071, 0],
+        type: "scatter",
+        mode: "lines+markers",
+        name: "sin(x)",
+        line: {
+          color: "rgb(150,150,222)",
+          width: 1
+        }
+      },
+      {
+        x: [-3.1416, -2.3562, -1.5708, -0.7854, 0, 0.7854, 1.5708, 2.3562, 3.1416],
+        y: [-1, -0.7071, 0, 0.7071, 1, 0.7071, 0, -0.7071, -1],
+        type: "scatter",
+        mode: "lines+markers",
+        name: "cos(x)",
+        line: {
+          color: "rgb(50,255,50)",
+          width: 1
+        }
+      },
+      {
+        x: [-3.1416, -2.3562, -1.5708, -0.7854, 0, 0.7854, 1.5708, 2.3562, 3.1416],
+        y: [0, 1, null, -1, 0, 1, null, -1, 0],
+        type: "scatter",
+        mode: "lines+markers",
+        name: "tan(x)",
+        line: {
+          color: "rgb(255,100,100)",
+          width: 1
+        }
+      }
+    ],
+    layout: {
+      title: "sin, cos, tan from -π to π",
+      font: {
+        color: "rgb(0,5,80)"
+      },
+      paper_bgcolor: "rgb(255,255,255)",
+      plot_bgcolor: "rgb(255,255,255)",
+      xaxis: {
+        gridcolor: "rgba(111,111,111,0.5)",
+        title: {
+          text: "x (radians)"
+        }
+      },
+      yaxis: {
+        gridcolor: "rgba(111,111,111,0.5)",
+        title: {
+          text: "y"
+        },
+        range: [-2, 2]
+      },
+      showlegend: true
+    }
+  };
+</script>
+<script src="react-chart-editor.bundle.min.js"></script>
+<script src="react-chart-editor.app.min.js"></script>
+</body>
+</html>
