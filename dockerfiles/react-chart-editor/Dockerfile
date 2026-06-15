@@ -127,21 +127,24 @@ RUN set -eu; \
     '    return;' \
     '  }' \
     '' \
-    '  const { useState, useEffect } = React;' \
+    '  const { useState } = React;' \
     '' \
     '  function App(){' \
-    '    const initial = globalThis.GENAPP_INITIAL_FIGURE || { data: [], layout: {} };' \
-    '    const [figure, setFigure] = useState(initial);' \
-    '' \
-    '    useEffect(() => {' \
-    '      const handleMessage = (e) => {' \
-    '        if (e && e.data && e.data.type === "LOAD_CHART") {' \
-    '          setFigure(e.data.payload || { data: [], layout: {} });' \
+    '    const params = new URLSearchParams(window.location.search);' \
+    '    const id = params.get("id");' \
+    '    let initial = globalThis.GENAPP_INITIAL_FIGURE || { data: [], layout: {} };' \
+    '    if (id) {' \
+    '      const stored = localStorage.getItem(id);' \
+    '      if (stored) {' \
+    '        try {' \
+    '          initial = JSON.parse(stored);' \
+    '        } catch (err) {' \
+    '          console.error("genapp chart editor: failed to parse stored figure", err);' \
     '        }' \
-    '      };' \
-    '      window.addEventListener("message", handleMessage);' \
-    '      return () => window.removeEventListener("message", handleMessage);' \
-    '    }, []);' \
+    '        localStorage.removeItem(id);' \
+    '      }' \
+    '    }' \
+    '    const [figure, setFigure] = useState(initial);' \
     '' \
     '    return React.createElement(' \
     '      "div",' \
