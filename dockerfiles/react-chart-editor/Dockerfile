@@ -107,72 +107,15 @@ RUN set -eu; \
   echo "Built:"; \
   ls -lh dist/react-chart-editor.bundle.min.js; \
   if [ "${INCLUDE_SOURCEMAP}" = "1" ] && [ -f dist/react-chart-editor.bundle.min.js.map ]; then ls -lh dist/react-chart-editor.bundle.min.js.map; fi; \
-  ls -lh lib/react-chart-editor.min.css; \
-  \
-  # Build a tiny optional helper script that mounts the editor WITHOUT Babel,
-  # and WITHOUT requiring React/ReactDOM globals. This is useful for your
-  # GenApp iframe page: it can just load the bundle + this script.
-  printf '%s\n' \
-    '(function(){' \
-    '  "use strict";' \
-    '  const RCE = globalThis.ReactChartEditor || {};' \
-    '  const React = RCE.React;' \
-    '  const ReactDOM = RCE.ReactDOM;' \
-    '  const Plotly = RCE.Plotly;' \
-    '  const PlotlyEditor = RCE.PlotlyEditor;' \
-    '  const DefaultEditor = RCE.DefaultEditor;' \
-    '' \
-    '  if (!React || !ReactDOM || !Plotly || !PlotlyEditor || !DefaultEditor) {' \
-    '    console.error("Missing expected ReactChartEditor globals", RCE);' \
-    '    return;' \
-    '  }' \
-    '' \
-    '  const { useState } = React;' \
-    '' \
-    '  function App(){' \
-    '    const params = new URLSearchParams(window.location.search);' \
-    '    const id = params.get("id");' \
-    '    let initial = globalThis.GENAPP_INITIAL_FIGURE || { data: [], layout: {} };' \
-    '    if (id) {' \
-    '      const stored = localStorage.getItem(id);' \
-    '      if (stored) {' \
-    '        try {' \
-    '          initial = JSON.parse(stored);' \
-    '        } catch (err) {' \
-    '          console.error("genapp chart editor: failed to parse stored figure", err);' \
-    '        }' \
-    '        localStorage.removeItem(id);' \
-    '      }' \
-    '    }' \
-    '    const [figure, setFigure] = useState(initial);' \
-    '' \
-    '    return React.createElement(' \
-    '      "div",' \
-    '      { style: { height: "calc(100vh - 45px)" } },' \
-    '      React.createElement(' \
-    '        PlotlyEditor,' \
-    '        {' \
-    '          data: figure.data,' \
-    '          layout: figure.layout,' \
-    '          plotly: Plotly,' \
-    '          useDefaultConfig: true,' \
-    '          onUpdate: (data, layout) => setFigure({ data, layout }),' \
-    '        },' \
-    '        React.createElement(DefaultEditor)' \
-    '      )' \
-    '    );' \
-    '  }' \
-    '' \
-    '  const el = document.getElementById("editor-root");' \
-    '  if (!el) { console.error("Missing #editor-root"); return; }' \
-    '' \
-    '  if (typeof ReactDOM.createRoot === "function") {' \
-    '    ReactDOM.createRoot(el).render(React.createElement(App));' \
-    '  } else {' \
-    '    ReactDOM.render(React.createElement(App), el);' \
-    '  }' \
-    '})();' \
-    > app-entry.js; \
+  ls -lh lib/react-chart-editor.min.css
+
+# Tiny "mount" helper that mounts the editor WITHOUT Babel, and WITHOUT
+# requiring React/ReactDOM globals. This is useful for your GenApp iframe
+# page: it can just load the bundle + this script. Source lives alongside
+# this Dockerfile (app-entry.js) for readability/maintainability.
+COPY app-entry.js ./app-entry.js
+
+RUN set -eu; \
   npx esbuild app-entry.js --bundle --platform=browser --format=iife --minify --outfile=dist/react-chart-editor.app.min.js; \
   ls -lh dist/react-chart-editor.app.min.js
 
