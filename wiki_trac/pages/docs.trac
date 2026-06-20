@@ -1,0 +1,44 @@
+= Documentation =
+
+== Primary Documentation ==
+  * [wiki:presentations Presentations and Papers]
+  * [wiki:wrapanapp wrap an application howto]
+  * [wiki:docs_directives directives json]
+  * [wiki:docs_menu menu json]  
+  * [wiki:docs_module_fields module json]
+  * [wiki:docs_cache module results cache]
+  * [wiki:docs_projects_files projects and files]
+  * [wiki:docs_appconfig application configuration json]
+  * [wiki:docs_plot2d 2d plot info]
+  * [wiki:docs_plot3d 3d plot info]
+  * [wiki:docs_plotly plotly plot info]  
+  * [wiki:docs_calc calculated fields]
+  * [wiki:docs_jobs job submission info]
+  * [wiki:docs_udpmsg udp messaging for html5/php]
+  * [wiki:docs_messagebox message box]
+  * [wiki:docs_dir_layout directory layout]
+  * [wiki:docs_image_video_input_types include images and video into json module]
+  * [wiki:docs_themes themes]
+
+=== Advanced topics ===
+  * [wiki:docs_user_css custom css]
+  * [wiki:docs_module_depend module dependencies]
+  * [wiki:docs_https Securing your gateway with https]
+  * [wiki:docs_file_inclusion file inclusion]
+  * [wiki:docs_repeat repeaters and repeats]
+  * [wiki:docs_openstack running on jetstream with openstack virtual clusters]
+  * [wiki:docs_oauth2 Authentication via OAuth2 protocol & disabling regular login/registration]
+  * [wiki:docs_multistage multistage execution]
+  * [wiki:docs_defaults getting values to populate input fields]
+  * [wiki:docs_cb_hider checkbox hider] 
+  * Notes for repository commits
+   * [wiki:add_directives directives.json and appconfig.json notes]
+
+== Instance Documentation ==
+  * [https://html5test.com/ test your browser for html5 compatibility] 
+  * [https://html5test.com/results/desktop.html other browsers]
+  * [wiki:questionsdecisiontree_html5 preliminary questions to answer before implementing an html5 instance] 
+  * [wiki:namd_docs NAMDrunner]
+
+== Historic ==
+  * [wiki:WikiStart_old Old main page]

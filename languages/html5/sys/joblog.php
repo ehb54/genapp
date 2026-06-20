@@ -99,7 +99,8 @@ function logjobupdate( $status, $log_end = false, $error_json_exit = false, $uui
                 ) 
             ) 
            ) {
-           if ( in_array( "cancelled", $doc[ 'status' ] ) ) {
+           $status_list = is_array( $doc[ 'status' ] ) ? $doc[ 'status' ] : iterator_to_array( $doc[ 'status' ] );
+           if ( in_array( "cancelled", $status_list ) ) {
                __~debug:cancel{error_log( "joblogupdate( $status,.. ) skipping end since cancelled uuid: $uuid\n", 3, "/tmp/mylog" );}
                $GLOBALS['wascancelled'] = true;
                return true;
