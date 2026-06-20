@@ -50,6 +50,8 @@ like( $output_html, qr/<progress name="progress_output" id="progress_output" val
 like( $output_html, qr/\$\( "#html_report" \)\.attr\( "type", "div" \)/, 'html output sets div type handler' );
 like( $output_html, qr/<textarea name="log_text" id="log_text" rows="8" cols="60" readonly/s, 'textarea output is generated' );
 like( $output_html, qr/_append:output_contract_log_text/, 'textarea append behavior is wired' );
+unlike( $output_html, qr/ga\.value\.registerid\("output_contract","plot_main"/, 'output-only plot field does not receive input registration' );
+unlike( $output_html, qr/ga\.value\.setLastValue\( "output_contract_output", "#safe_name"/, 'input-only text field does not receive output last-value wiring' );
 unlike( $output_html, qr/__moduleid__|__fields:id__|__fields:type__/, 'output module html has key template tokens replaced' );
 
 my $transport_html = read_file( File::Spec->catfile( $app_dir, qw(output html5 ajax transport_fixtures transport_contract.html) ) );

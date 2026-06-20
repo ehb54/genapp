@@ -1317,19 +1317,21 @@ sub check_files {
             }
             # check for duplicate id's and listbox values
             {
-                my $ref_mod = {};
-                my $mod_info = start_json( $json, $ref_mod );
-                
                 my %ids;
 
-                do {
-                    if ( !$$mod_info{ 'fields:id' } ) {
-                        $error .= "Module $f has field without field id defined\n" if $$mod_info{ 'fields:type' } ne "info";
+                foreach my $field ( @{ $$json{ 'fields' } || [] } )
+                {
+                    my $field_id   = $$field{ 'id' };
+                    my $field_type = $$field{ 'type' } || '';
+
+                    if ( !$field_id ) {
+                        $error .= "Module $f has field without field id defined\n" if $field_type ne "info";
                     } else {
-                        $error .= "Module $f has fields with duplicate id \"" . $$mod_info{ 'fields:id' } . "\"\n" if $ids{ $$mod_info{ 'fields:id' } }++;
+                        $error .= "Module $f has fields with duplicate id \"$field_id\"\n" if $ids{ $field_id }++;
                     }
-                    $error .= "Module $f field " . $$mod_info{ 'fields:id' } . " is a listbox but is missing the required \"values\" tag\n" if $$mod_info{ 'fields:type' } eq 'listbox' && !$$mod_info{ 'fields:values' } && !$$mod_info{ 'fields:pull' };
-                } while( $mod_info = next_json( $ref_mod, 'fields:id' ) );
+                    $error .= "Module $f field $field_id is a listbox but is missing the required \"values\" tag\n"
+                        if $field_type eq 'listbox' && !$$field{ 'values' } && !$$field{ 'pull' };
+                }
             }
             # check repeaters & repeats
             {

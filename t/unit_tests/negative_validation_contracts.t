@@ -63,6 +63,21 @@ _invalid_app(
 );
 
 _invalid_app(
+    'duplicate field ids are rejected',
+    menu_modules => [ 'dup_fields' ],
+    modules      => {
+        dup_fields => _module_json(
+            moduleid => 'dup_fields',
+            fields   => [
+                _text_field('same_id'),
+                _text_field('same_id'),
+            ],
+        ),
+    },
+    pattern => qr/duplicate|same_id/i,
+);
+
+_invalid_app(
     'bad repeat parent is rejected',
     menu_modules => [ 'bad_repeat' ],
     modules      => {
