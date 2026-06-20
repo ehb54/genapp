@@ -97,6 +97,14 @@ when it exists.
   `tools/install_github_wiki_hook.sh` to refresh the wiki after pulls in this
   repo.
 
+Wiki update reminder:
+
+1. Edit pages in the sibling wiki checkout: `../genapp.wiki`.
+2. Commit and push from that wiki checkout with normal Git commands. `gacp`
+   means `git add`, `git commit`, `git push`.
+3. Return to this repo and run `tools/refresh_github_wiki.sh` so the local
+   sync marker reflects the pushed wiki commit.
+
 Old Trac or `wiki_trac/` material is historical migration context only. Do not
 use Trac mirror content to override the GitHub wiki when answering current
 GenApp questions or making code changes.
