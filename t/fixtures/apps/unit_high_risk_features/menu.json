@@ -1,0 +1,30 @@
+{
+    "header" : "Unit High Risk Features Fixture",
+    "menu"   : [
+        {
+            "id"      : "contracts",
+            "label"   : "Contracts",
+            "modules" : [
+                {
+                    "id"    : "repeater_contract",
+                    "label" : "Repeater Contract"
+                },
+                {
+                    "id"    : "output_contract",
+                    "label" : "Output Contract"
+                }
+            ]
+        },
+        {
+            "id"      : "transport_fixtures",
+            "label"   : "Transport Fixtures",
+            "hidden"  : "true",
+            "modules" : [
+                {
+                    "id"    : "transport_contract",
+                    "label" : "Transport Contract"
+                }
+            ]
+        }
+    ]
+}

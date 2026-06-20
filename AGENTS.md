@@ -99,6 +99,15 @@ When working on GenApp itself:
 8. Put new automated tests under the Perl-native `t/` tree. New additions that
    need coverage should extend that harness unless there is a strong,
    documented reason to use a different test location.
+9. For JavaScript-oriented test helpers, prefer a minimal repo-local Node.js
+   LTS setup with bundled `npm`, and drive it from the Perl harness instead of
+   introducing a separate test runner stack unless the coverage need clearly
+   requires it.
+10. Treat Linux CI or a Linux container as the authoritative environment for
+    JavaScript test results because GenApp production runs on Linux servers.
+    Mac results are useful for local developer feedback, syntax checks, and
+    quick runtime validation, but they are convenience checks rather than the
+    source of truth.
 
 When wrapping or debugging an application:
 

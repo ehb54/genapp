@@ -1,0 +1,15 @@
+{
+    "header" : "Base Override Fixture",
+    "menu"   : [
+        {
+            "id"      : "base_menu",
+            "label"   : "Base Menu",
+            "modules" : [
+                {
+                    "id"    : "base_only",
+                    "label" : "Base Only"
+                }
+            ]
+        }
+    ]
+}

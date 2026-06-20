@@ -1,0 +1,15 @@
+{
+    "header" : "HTML5 Override Fixture",
+    "menu"   : [
+        {
+            "id"      : "html5_menu",
+            "label"   : "HTML5 Menu",
+            "modules" : [
+                {
+                    "id"    : "shared",
+                    "label" : "HTML5 Shared"
+                }
+            ]
+        }
+    ]
+}

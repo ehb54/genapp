@@ -1,0 +1,85 @@
+{
+    "moduleid"   : "output_contract",
+    "label"      : "Output Contract",
+    "executable" : "output_contract",
+    "resource"   : "local",
+    "fields"     : [
+        {
+            "role"     : "input",
+            "id"       : "server_path",
+            "label"    : "Server Path",
+            "type"     : "rpath",
+            "required" : "true",
+            "help"     : "Server-side path selection"
+        },
+        {
+            "role"     : "input",
+            "id"       : "safe_name",
+            "label"    : "Safe Name",
+            "type"     : "text",
+            "default"  : "result.dat",
+            "safefile" : "true",
+            "help"     : "Safe output file name"
+        },
+        {
+            "role"     : "input",
+            "id"       : "local_upload",
+            "label"    : "Local Upload",
+            "type"     : "file",
+            "multiple" : "true",
+            "help"     : "Local file selection"
+        },
+        {
+            "role"         : "output",
+            "id"           : "plot_main",
+            "label"        : "Plot Main",
+            "type"         : "plotly",
+            "showcollapse" : "true"
+        },
+        {
+            "role"  : "output",
+            "id"    : "structure_view",
+            "label" : "Structure View",
+            "type"  : "atomicstructure",
+            "width" : "420",
+            "height": "320"
+        },
+        {
+            "role"  : "output",
+            "id"    : "result_image",
+            "label" : "Result Image",
+            "type"  : "image",
+            "width" : "320",
+            "height": "240"
+        },
+        {
+            "role"     : "output",
+            "id"       : "download_files",
+            "label"    : "Download Files",
+            "type"     : "file",
+            "multiple" : "true"
+        },
+        {
+            "role"  : "output",
+            "id"    : "progress_output",
+            "label" : "Progress",
+            "type"  : "progress",
+            "max"   : "1.0"
+        },
+        {
+            "role"  : "output",
+            "id"    : "html_report",
+            "label" : "HTML Report",
+            "type"  : "html"
+        },
+        {
+            "role"   : "output",
+            "id"     : "log_text",
+            "label"  : "Log Text",
+            "type"   : "textarea",
+            "append" : "on",
+            "rows"   : "8",
+            "cols"   : "60"
+        }
+    ]
+}

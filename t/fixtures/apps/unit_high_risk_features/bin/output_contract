@@ -1,0 +1,5 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+
+print qq({"html_report":"not executed by unit tests"}\n);

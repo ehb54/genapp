@@ -1,0 +1,75 @@
+{
+    "moduleid"   : "repeater_contract",
+    "label"      : "Repeater Contract",
+    "executable" : "repeater_contract",
+    "resource"   : "local",
+    "fields"     : [
+        {
+            "role"     : "input",
+            "id"       : "analysis_mode",
+            "label"    : "Analysis Mode",
+            "type"     : "listbox",
+            "values"   : "Basic~basic~Advanced~advanced~Pair Grid~pair",
+            "default"  : "basic",
+            "repeater" : "true"
+        },
+        {
+            "role"     : "input",
+            "id"       : "advanced_count",
+            "label"    : "Advanced Rows",
+            "type"     : "integer",
+            "default"  : "2",
+            "min"      : "0",
+            "max"      : "4",
+            "repeater" : "true",
+            "repeat"   : "analysis_mode:advanced"
+        },
+        {
+            "role"    : "input",
+            "id"      : "advanced_label",
+            "label"   : "Advanced Label",
+            "type"    : "text",
+            "default" : "advanced",
+            "repeat"  : "advanced_count"
+        },
+        {
+            "role"     : "input",
+            "id"       : "nested_gate",
+            "label"    : "Nested Gate",
+            "type"     : "checkbox",
+            "repeater" : "true",
+            "repeat"   : "advanced_count"
+        },
+        {
+            "role"    : "input",
+            "id"      : "nested_value",
+            "label"   : "Nested Value",
+            "type"    : "text",
+            "default" : "nested",
+            "repeat"  : "nested_gate"
+        },
+        {
+            "role"     : "input",
+            "id"       : "pair_grid",
+            "label"    : "Pair Grid",
+            "type"     : "integerpair",
+            "default"  : "2,3",
+            "repeater" : "true",
+            "repeat"   : "analysis_mode:pair"
+        },
+        {
+            "role"    : "input",
+            "id"      : "pair_payload",
+            "label"   : "Pair Payload",
+            "type"    : "text",
+            "default" : "payload",
+            "repeat"  : "pair_grid"
+        },
+        {
+            "role"  : "output",
+            "id"    : "repeater_summary",
+            "label" : "Repeater Summary",
+            "type"  : "text"
+        }
+    ]
+}

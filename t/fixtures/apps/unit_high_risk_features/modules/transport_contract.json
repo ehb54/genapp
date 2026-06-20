@@ -1,0 +1,46 @@
+{
+    "moduleid"   : "transport_contract",
+    "label"      : "Transport Contract",
+    "help"       : "Hidden transport-style module fixture",
+    "executable" : "transport_contract",
+    "resource"   : "local",
+    "fields"     : [
+        {
+            "role"    : "input",
+            "id"      : "stream_value",
+            "label"   : "Stream Value",
+            "type"    : "float",
+            "default" : "0.5",
+            "min"     : "0.0",
+            "max"     : "1.0",
+            "step"    : "0.1"
+        },
+        {
+            "role"   : "output",
+            "id"     : "stream_log",
+            "label"  : "Stream Log",
+            "type"   : "textarea",
+            "append" : "on",
+            "cols"   : "60"
+        },
+        {
+            "role"  : "output",
+            "id"    : "stream_progress",
+            "label" : "Stream Progress",
+            "type"  : "progress",
+            "max"   : "1.0"
+        },
+        {
+            "role"  : "output",
+            "id"    : "plotbar",
+            "label" : "Barchart Plot",
+            "type"  : "plotly"
+        },
+        {
+            "role"  : "output",
+            "id"    : "plotline",
+            "label" : "Line Plot",
+            "type"  : "plotly"
+        }
+    ]
+}

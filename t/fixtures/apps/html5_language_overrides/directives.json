@@ -1,0 +1,7 @@
+{
+    "title"       : "Base Override Fixture",
+    "application" : "html5_language_overrides",
+    "version"     : "0.01",
+    "languages"   : [ "html5" ],
+    "footer"      : "Base footer"
+}

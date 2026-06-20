@@ -1,0 +1,5 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+
+print qq({"repeater_summary":"not executed by unit tests"}\n);

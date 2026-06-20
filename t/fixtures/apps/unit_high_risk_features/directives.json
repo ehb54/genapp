@@ -1,0 +1,6 @@
+{
+    "title"       : "Unit High Risk Features Fixture",
+    "application" : "unit_high_risk_features",
+    "version"     : "0.01",
+    "languages"   : [ "html5" ]
+}

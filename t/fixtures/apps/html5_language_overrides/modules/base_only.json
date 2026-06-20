@@ -1,0 +1,21 @@
+{
+    "moduleid"   : "base_only",
+    "label"      : "Base Only",
+    "executable" : "base_only",
+    "resource"   : "local",
+    "fields"     : [
+        {
+            "role"    : "input",
+            "id"      : "base_input",
+            "label"   : "Base Input",
+            "type"    : "text",
+            "default" : "base"
+        },
+        {
+            "role"  : "output",
+            "id"    : "base_output",
+            "label" : "Base Output",
+            "type"  : "text"
+        }
+    ]
+}

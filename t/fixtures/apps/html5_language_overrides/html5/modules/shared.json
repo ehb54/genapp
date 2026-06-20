@@ -1,0 +1,21 @@
+{
+    "moduleid"   : "shared",
+    "label"      : "HTML5 Shared",
+    "executable" : "html5_shared",
+    "resource"   : "local",
+    "fields"     : [
+        {
+            "role"    : "input",
+            "id"      : "html5_input",
+            "label"   : "HTML5 Input",
+            "type"    : "text",
+            "default" : "html5 override"
+        },
+        {
+            "role"  : "output",
+            "id"    : "html5_output",
+            "label" : "HTML5 Output",
+            "type"  : "text"
+        }
+    ]
+}
