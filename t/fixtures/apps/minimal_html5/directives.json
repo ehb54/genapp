@@ -1,0 +1,6 @@
+{
+    "title"       : "Minimal HTML5 Fixture",
+    "application" : "minimal_html5",
+    "version"     : "0.01",
+    "languages"   : [ "html5" ]
+}

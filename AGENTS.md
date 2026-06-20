@@ -82,12 +82,23 @@ When working on GenApp itself:
 1. Read the relevant current wiki page and the corresponding local source or
    template before editing.
 2. Prefer existing generator patterns in `bin/`, `etc/perl/`, and `languages/`.
-3. Keep generated-output changes separate from generator/template changes unless
+3. Prefer Perl for new GenApp maintenance code, tests, and harnesses when it is
+   practical. GenApp already uses Perl heavily because that matched the original
+   author's preference; staying in that language helps keep future maintenance
+   sane. Use another language only when it clearly fits the target runtime or
+   existing local tooling better.
+4. Avoid calling preliminary validation a "smoke test." Prefer clearer phrases
+   such as "basic validation," "initial verification," "generation sanity
+   check," or "workflow check."
+5. Keep generated-output changes separate from generator/template changes unless
    the user explicitly asks for generated artifacts.
-4. Validate JSON changes with `bin/check_json.pl` where applicable.
-5. Validate application directories with `bin/genapp_check.pl` or by running
+6. Validate JSON changes with `bin/check_json.pl` where applicable.
+7. Validate application directories with `bin/genapp_check.pl` or by running
    `genapp` from the application base directory when an application fixture is
    available.
+8. Put new automated tests under the Perl-native `t/` tree. New additions that
+   need coverage should extend that harness unless there is a strong,
+   documented reason to use a different test location.
 
 When wrapping or debugging an application:
 

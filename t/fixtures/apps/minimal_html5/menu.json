@@ -1,0 +1,15 @@
+{
+    "header" : "Minimal HTML5 Fixture",
+    "menu"   : [
+        {
+            "id"      : "demo",
+            "label"   : "Demo",
+            "modules" : [
+                {
+                    "id"    : "echo",
+                    "label" : "Echo"
+                }
+            ]
+        }
+    ]
+}
