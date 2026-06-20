@@ -81,19 +81,28 @@ Before committing to SVN, inspect an existing working copy with `svn info` to
 confirm whether the expected URL convention is `svn://genapp.rocks/<project>`
 or `svn://genapp.rocks/base/<project>`.
 
-## Local Wiki Mirror
+## Current Wiki Documentation
 
-This repo contains a local Trac wiki mirror scaffold in `wiki_trac/`.
+The GitHub wiki is the current source of truth for GenApp documentation. Prefer
+the local sibling checkout at `../genapp.wiki` for fast, token-efficient reads
+when it exists.
 
-- Tracked page sources live under `wiki_trac/pages/*.trac`.
-- Local credentials belong in `wiki_trac/.env`, which is ignored by Git.
-- Use `tools/trac_wiki.py fetch <page>` to mirror public page source through
-  Trac's `?format=txt` endpoint.
-- Use `tools/trac_wiki.py publish <page>` only after Trac XML-RPC is enabled
-  and credentials are configured.
+- Refresh the local GitHub wiki checkout with
+  `tools/refresh_github_wiki.sh` before relying on freshness-sensitive docs.
+- The refresh script clones or updates `../genapp.wiki` from
+  `https://github.com/ehb54/genapp.wiki.git` by default.
+- Use `GENAPP_WIKI_DIR`, `GENAPP_WIKI_URL`, `GENAPP_WIKI_REMOTE`, or
+  `GENAPP_WIKI_BRANCH` to override the default checkout location or remote.
+- A local post-merge hook can be installed with
+  `tools/install_github_wiki_hook.sh` to refresh the wiki after pulls in this
+  repo.
 
-Do not commit passwords, cookies, `.htpasswd` content, Trac DB dumps, or other
-server secrets.
+Old Trac or `wiki_trac/` material is historical migration context only. Do not
+use Trac mirror content to override the GitHub wiki when answering current
+GenApp questions or making code changes.
+
+Do not commit passwords, cookies, `.htpasswd` content, Trac DB dumps, wiki
+credential files, or other server secrets.
 
 ## Backups
 
