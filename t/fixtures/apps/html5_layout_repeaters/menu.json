@@ -1,0 +1,15 @@
+{
+    "header" : "HTML5 Layout Repeater Fixture",
+    "menu"   : [
+        {
+            "id"      : "demo",
+            "label"   : "Demo",
+            "modules" : [
+                {
+                    "id"    : "repeat_demo",
+                    "label" : "Repeat Demo"
+                }
+            ]
+        }
+    ]
+}

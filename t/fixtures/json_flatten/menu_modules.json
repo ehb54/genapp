@@ -1,0 +1,17 @@
+{
+    "menu" : [
+        {
+            "id"      : "m1",
+            "modules" : [
+                { "id" : "alpha", "label" : "Alpha" },
+                { "id" : "beta",  "label" : "Beta" }
+            ]
+        },
+        {
+            "id"      : "m2",
+            "modules" : [
+                { "id" : "gamma", "label" : "Gamma" }
+            ]
+        }
+    ]
+}

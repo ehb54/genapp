@@ -1,0 +1,20 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use JSON;
+
+my $raw = do { local $/; <STDIN> };
+my $request = eval { decode_json($raw) } || {};
+
+print encode_json(
+    {
+        summary => {
+            row_count     => $request->{row_count},
+            row_label     => $request->{row_label},
+            include_extra => $request->{include_extra},
+            extra_text    => $request->{extra_text},
+        }
+    }
+);

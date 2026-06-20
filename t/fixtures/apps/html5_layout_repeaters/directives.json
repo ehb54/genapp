@@ -1,0 +1,6 @@
+{
+    "title"       : "HTML5 Layout Repeater Fixture",
+    "application" : "html5_layout_repeaters",
+    "version"     : "0.01",
+    "languages"   : [ "html5" ]
+}

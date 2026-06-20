@@ -1,0 +1,47 @@
+{
+    "moduleid"   : "repeat_demo",
+    "label"      : "Repeat Demo",
+    "executable" : "repeat_demo",
+    "resource"   : "local",
+    "fields"     : [
+        {
+            "role"     : "input",
+            "id"       : "row_count",
+            "label"    : "Rows",
+            "type"     : "integer",
+            "default"  : "2",
+            "min"      : "0",
+            "max"      : "4",
+            "repeater" : "true"
+        },
+        {
+            "role"    : "input",
+            "id"      : "row_label",
+            "label"   : "Row Label",
+            "type"    : "text",
+            "default" : "sample",
+            "repeat"  : "row_count"
+        },
+        {
+            "role"     : "input",
+            "id"       : "include_extra",
+            "label"    : "Include Extra",
+            "type"     : "checkbox",
+            "repeater" : "true"
+        },
+        {
+            "role"    : "input",
+            "id"      : "extra_text",
+            "label"   : "Extra Text",
+            "type"    : "text",
+            "default" : "extra",
+            "repeat"  : "include_extra"
+        },
+        {
+            "role"  : "output",
+            "id"    : "summary",
+            "label" : "Summary",
+            "type"  : "text"
+        }
+    ]
+}
