@@ -129,6 +129,9 @@ ga.data.update = function( mod, data, msging_f, msg_id ) {
             }
             switch ( match.attr( "type" ) )
             {
+            case "dynamicoutput" :
+                ga.dynamicOutput.update( mod, k, v );
+                break;
 	    case "plot3d" :
 	    case "plotly" :
 		htag = "#" + k;

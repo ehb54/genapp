@@ -1318,6 +1318,7 @@ sub check_files {
             # check for duplicate id's and listbox values
             {
                 my %ids;
+                my %dynamic_output_supported = map { $_ => 1 } qw(html plotly);
 
                 foreach my $field ( @{ $$json{ 'fields' } || [] } )
                 {
@@ -1331,6 +1332,25 @@ sub check_files {
                     }
                     $error .= "Module $f field $field_id is a listbox but is missing the required \"values\" tag\n"
                         if $field_type eq 'listbox' && !$$field{ 'values' } && !$$field{ 'pull' };
+
+                    if ( $$field{ 'dynamicoutput' } &&
+                         $$field{ 'dynamicoutput' } ne 'false' &&
+                         $$field{ 'dynamicoutput' } ne '0' )
+                    {
+                        my $field_prefix = $$field{ 'idprefix' };
+
+                        $error .= "Module $f field $field_id dynamicoutput is currently supported only for html5\n"
+                            if $l && $l ne 'html5';
+                        $error .= "Module $f field $field_id dynamicoutput requires role output\n"
+                            if ( $$field{ 'role' } || '' ) ne 'output';
+                        $error .= "Module $f field $field_id dynamicoutput type '$field_type' is not supported\n"
+                            if !$dynamic_output_supported{ $field_type };
+                        $error .= "Module $f field $field_id dynamicoutput requires idprefix\n"
+                            if !$field_prefix;
+                        $error .= "Module $f field $field_id dynamicoutput requires positive integer max\n"
+                            if !$$field{ 'max' } || $$field{ 'max' } !~ /^\d+$/ || $$field{ 'max' } < 1;
+                        $error .= valid_name( "$f dynamicoutput idprefix", \$field_prefix ) if $field_prefix;
+                    }
                 }
             }
             # check repeaters & repeats

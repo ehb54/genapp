@@ -38,6 +38,7 @@ like( $repeater_html, qr/ga\.repeat\.repeatOn\("repeater_contract", "nested_valu
 like( $repeater_html, qr/ga\.repeat\.repeatOn\("repeater_contract", "pair_payload", "pair_grid"/, 'integerpair repeated child is wired' );
 
 my $output_html = read_file( File::Spec->catfile( $app_dir, qw(output html5 ajax contracts output_contract.html) ) );
+my $genapp_js   = read_file( File::Spec->catfile( $app_dir, qw(output html5 js genapp.js) ) );
 like( $output_html, qr/data-type="rpath"/, 'rpath input emits server path selector' );
 like( $output_html, qr/ga\.altfile\.button\("output_contract","server_path","Server Path","rpath"/, 'rpath input wires altfile handler' );
 like( $output_html, qr/ga\.valid\.safeFile\( "#safe_name" \)/, 'safefile text input wires safe path validation' );
@@ -50,9 +51,16 @@ like( $output_html, qr/<progress name="progress_output" id="progress_output" val
 like( $output_html, qr/\$\( "#html_report" \)\.attr\( "type", "div" \)/, 'html output sets div type handler' );
 like( $output_html, qr/<textarea name="log_text" id="log_text" rows="8" cols="60" readonly/s, 'textarea output is generated' );
 like( $output_html, qr/_append:output_contract_log_text/, 'textarea append behavior is wired' );
+like( $output_html, qr/id="dynamic_html" type="dynamicoutput" data-dynamic-type="html"/, 'dynamic html output group is generated' );
+like( $output_html, qr/id="dynamic_plot" type="dynamicoutput" data-dynamic-type="plotly"/, 'dynamic plotly output group is generated' );
+like( $output_html, qr/ga\.layout\.fields\[ "dynamic_html" \]\.eval\s*=.*ga\.dynamicOutput\.register\( "output_contract", \{.*id: "dynamic_html".*type: "html".*idprefix: "dyn_html".*max: parseInt\( "3"/s, 'dynamic html output registers trusted metadata' );
+like( $output_html, qr/ga\.layout\.fields\[ "dynamic_plot" \]\.eval\s*=.*ga\.dynamicOutput\.register\( "output_contract", \{.*id: "dynamic_plot".*type: "plotly".*idprefix: "dyn_plot".*max: parseInt\( "2"/s, 'dynamic plotly output registers trusted metadata' );
+unlike( $output_html, qr/id="dyn_html_1"|id="dyn_plot_1"/, 'dynamic output instances are not generated statically' );
 unlike( $output_html, qr/ga\.value\.registerid\("output_contract","plot_main"/, 'output-only plot field does not receive input registration' );
 unlike( $output_html, qr/ga\.value\.setLastValue\( "output_contract_output", "#safe_name"/, 'input-only text field does not receive output last-value wiring' );
 unlike( $output_html, qr/__moduleid__|__fields:id__|__fields:type__/, 'output module html has key template tokens replaced' );
+like( $genapp_js, qr/ga\.dynamicOutput\.register = function/, 'generated app bundle includes dynamic output runtime' );
+like( $genapp_js, qr/case "dynamicoutput" :\s+ga\.dynamicOutput\.update/s, 'generated app bundle routes dynamic output updates' );
 
 my $transport_html = read_file( File::Spec->catfile( $app_dir, qw(output html5 ajax transport_fixtures transport_contract.html) ) );
 like( $transport_html, qr/<textarea name="stream_log" id="stream_log"/, 'transport fixture has streaming textarea output' );

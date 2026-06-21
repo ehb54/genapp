@@ -20,7 +20,7 @@ my @module_files = map { File::Spec->catfile( $fixture, 'modules', "$_.json" ) }
     transport_contract
 );
 
-my ( %types, %output_types, %repeaters, %repeats, %modules );
+my ( %types, %output_types, %dynamic_outputs, %repeaters, %repeats, %modules );
 for my $path (@module_files) {
     my $json = decode_json( _json_text($path) );
     my $id   = $json->{moduleid};
@@ -30,6 +30,7 @@ for my $path (@module_files) {
         my $type = $field->{type} || q{};
         $types{$type}{$id} = 1 if length $type;
         $output_types{$type}{$id} = 1 if ( $field->{role} || q{} ) eq 'output';
+        $dynamic_outputs{ $field->{id} } = $type if ( $field->{dynamicoutput} || q{} ) eq 'true';
         $repeaters{ $field->{id} } = $id if ( $field->{repeater} || q{} ) eq 'true';
         $repeats{ $field->{id} } = $field->{repeat} if exists $field->{repeat};
     }
@@ -46,6 +47,9 @@ for my $type (qw(integerpair plotly atomicstructure image file rpath progress ht
 for my $type (qw(plotly atomicstructure image file progress html textarea)) {
     ok( exists $output_types{$type}, "fixture covers $type output type" );
 }
+
+is( $dynamic_outputs{dynamic_html}, 'html',   'fixture covers dynamic html output declaration' );
+is( $dynamic_outputs{dynamic_plot}, 'plotly', 'fixture covers dynamic plotly output declaration' );
 
 for my $repeater (qw(analysis_mode advanced_count nested_gate pair_grid)) {
     ok( exists $repeaters{$repeater}, "$repeater is declared as a repeater" );

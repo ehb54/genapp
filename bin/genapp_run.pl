@@ -818,6 +818,13 @@ foreach my $l ( keys %langs )
                                             print "s/__${k}__/${v}/g\n" if $debug_srplc;
                                             $use_input =~ s/__${k}__/${v}/g;
                                         }
+                                        if ( $role eq 'output' &&
+                                             $$rplc_mod{ 'fields:dynamicoutput' } &&
+                                             $$rplc_mod{ 'fields:dynamicoutput' } ne 'false' &&
+                                             $$rplc_mod{ 'fields:dynamicoutput' } ne '0' )
+                                        {
+                                            $use_input = 'types/dynamicoutput.output';
+                                        }
                                         my $f = "$gap/languages/$l/$use_input";
                                         print "processing role input from $f\n" if $debug_main;
                                         if ( !-e $f )

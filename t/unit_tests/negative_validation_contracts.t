@@ -148,6 +148,76 @@ _invalid_app(
     pattern => qr/definitely_missing_type|types/i,
 );
 
+_invalid_app(
+    'dynamic output requires role output',
+    menu_modules => [ 'bad_dynamic_role' ],
+    modules      => {
+        bad_dynamic_role => _module_json(
+            moduleid => 'bad_dynamic_role',
+            fields   => [
+                _text_field( 'dyn_in', dynamicoutput => 'true', idprefix => 'dyn_in', max => '2' ),
+            ],
+        ),
+    },
+    pattern => qr/dynamicoutput|role output/i,
+);
+
+_invalid_app(
+    'dynamic output requires supported type',
+    menu_modules => [ 'bad_dynamic_type' ],
+    modules      => {
+        bad_dynamic_type => _module_json(
+            moduleid => 'bad_dynamic_type',
+            fields   => [
+                _output_field( 'dyn_textarea', type => 'textarea', dynamicoutput => 'true', idprefix => 'dyn_textarea', max => '2' ),
+            ],
+        ),
+    },
+    pattern => qr/dynamicoutput|textarea|not supported/i,
+);
+
+_invalid_app(
+    'dynamic output requires max',
+    menu_modules => [ 'bad_dynamic_max' ],
+    modules      => {
+        bad_dynamic_max => _module_json(
+            moduleid => 'bad_dynamic_max',
+            fields   => [
+                _output_field( 'dyn_html', type => 'html', dynamicoutput => 'true', idprefix => 'dyn_html' ),
+            ],
+        ),
+    },
+    pattern => qr/dynamicoutput|positive integer max/i,
+);
+
+_invalid_app(
+    'dynamic output requires idprefix',
+    menu_modules => [ 'bad_dynamic_missing_prefix' ],
+    modules      => {
+        bad_dynamic_missing_prefix => _module_json(
+            moduleid => 'bad_dynamic_missing_prefix',
+            fields   => [
+                _output_field( 'dyn_html', type => 'html', dynamicoutput => 'true', max => '2' ),
+            ],
+        ),
+    },
+    pattern => qr/dynamicoutput|idprefix/i,
+);
+
+_invalid_app(
+    'dynamic output requires safe idprefix',
+    menu_modules => [ 'bad_dynamic_prefix' ],
+    modules      => {
+        bad_dynamic_prefix => _module_json(
+            moduleid => 'bad_dynamic_prefix',
+            fields   => [
+                _output_field( 'dyn_html', type => 'html', dynamicoutput => 'true', idprefix => '../bad', max => '2' ),
+            ],
+        ),
+    },
+    pattern => qr/idprefix|invalid name/i,
+);
+
 done_testing();
 
 sub _invalid_app {
@@ -206,6 +276,17 @@ sub _text_field {
         label   => $id,
         type    => 'text',
         default => 'value',
+        %extra,
+    };
+}
+
+sub _output_field {
+    my ( $id, %extra ) = @_;
+    return {
+        role  => 'output',
+        id    => $id,
+        label => $id,
+        type  => 'html',
         %extra,
     };
 }

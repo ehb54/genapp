@@ -545,6 +545,7 @@
                                     ,{ "js/repeats.js"          : "once" }
                                     ,{ "js/repeat.js"           : "once" }
                                     ,{ "js/hide.js"             : "once" }
+                                    ,{ "js/dynamic_output.js"   : "once" }
                                     ,{ "js/data.js"             : "once" }
                                     ,{ "js/sync.js"             : "once" }
                                     ,{ "js/valuen.js"           : "once" }
@@ -692,4 +693,3 @@
                    }		   
                   ]
 }
-

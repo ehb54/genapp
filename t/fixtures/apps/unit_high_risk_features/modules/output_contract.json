@@ -80,6 +80,24 @@
             "append" : "on",
             "rows"   : "8",
             "cols"   : "60"
+        },
+        {
+            "role"          : "output",
+            "id"            : "dynamic_html",
+            "label"         : "Dynamic HTML",
+            "type"          : "html",
+            "dynamicoutput" : "true",
+            "idprefix"      : "dyn_html",
+            "max"           : "3"
+        },
+        {
+            "role"          : "output",
+            "id"            : "dynamic_plot",
+            "label"         : "Dynamic Plot",
+            "type"          : "plotly",
+            "dynamicoutput" : "true",
+            "idprefix"      : "dyn_plot",
+            "max"           : "2"
         }
     ]
 }

@@ -96,6 +96,18 @@ function createDomHarness() {
       removeClass() { return this; },
       append(value) {
         ele.html += value;
+        String(value).replace(/<[^>]*\sid="([^"]+)"[^>]*>/g, (match, childId) => {
+          const child = element(childId);
+          const type = match.match(/\stype="([^"]+)"/);
+          if (type) {
+            child.attributes.type = type[1];
+          }
+          return match;
+        });
+        return this;
+      },
+      remove() {
+        delete elements[id];
         return this;
       },
       on() { return this; },
@@ -141,6 +153,7 @@ function createDomHarness() {
       addClass() { return this; },
       removeClass() { return this; },
       append() { return this; },
+      remove() { return this; },
       on() { return this; },
       off() { return this; },
       blur() { return this; },
@@ -271,9 +284,27 @@ function runDataUpdateScenario(gaPath) {
   h.element("plot_main").attributes.type = "plotly";
   h.element("progress_output").attributes.type = "progress";
   h.element("log_text").attributes.type = "textarea";
+  h.element("dynamic_html").attributes.type = "dynamicoutput";
+  h.element("dynamic_plot").attributes.type = "dynamicoutput";
 
   ga.value.setLastValue("output_contract_output", "#html_report");
   ga.value.extra_resets("html_report");
+  ga.dynamicOutput.register("output_contract", {
+    id: "dynamic_html",
+    type: "html",
+    label: "Dynamic HTML",
+    idprefix: "dyn_html",
+    max: 3,
+  });
+  ga.dynamicOutput.register("output_contract", {
+    id: "dynamic_plot",
+    type: "plotly",
+    label: "Dynamic Plot",
+    idprefix: "dyn_plot",
+    max: 2,
+  });
+  ga.value.extra_resets("dynamic_html");
+  ga.value.extra_resets("dynamic_plot");
 
   const firstPlot = {
     data: [{ x: [1], y: [2], type: "scatter" }],
@@ -312,12 +343,48 @@ function runDataUpdateScenario(gaPath) {
   assert(h.element("log_text").value === "second line", "partial update should update existing textarea output");
   assert(h.element("output_contract_output_msgs").html === "", "declared-only update should clear previous unexpected output");
 
+  ga.data.update("output_contract", {
+    dynamic_html: {
+      items: [
+        { label: "First dynamic report", value: "<p>first</p>" },
+        { id: "dyn_html_named", label: "Named dynamic report", value: "<p>named</p>" },
+      ],
+    },
+    dynamic_plot: {
+      items: [
+        { value: { data: [{ x: [1], y: [1] }], layout: { title: "A" } } },
+        { value: { data: [{ x: [2], y: [4] }], layout: { title: "B" } } },
+        { value: { data: [{ x: [3], y: [9] }], layout: { title: "C" } } },
+      ],
+    },
+  });
+
+  assert(h.element("dyn_html_1").html === "<p>first</p>", "dynamic html output should create first generated id");
+  assert(h.element("dyn_html_named").html === "<p>named</p>", "dynamic html output should honor safe explicit id");
+  const newPlots = h.context.Plotly.calls.filter((call) => call.method === "newPlot");
+  assert(newPlots.length === 3, "dynamic plotly output should route max-limited plot instances");
+  assert(newPlots[1].id === "dyn_plot_1", "dynamic plotly output should create first generated plot id");
+  assert(newPlots[2].id === "dyn_plot_2", "dynamic plotly output should create second generated plot id");
+  assert(!h.elements.dyn_plot_3, "dynamic plotly output should not create instances past max");
+
+  ga.data.update("output_contract", {
+    dynamic_html: {
+      items: [
+        { label: "Only remaining report", value: "<p>remaining</p>" },
+      ],
+    },
+  });
+  assert(h.element("dyn_html_1").html === "<p>remaining</p>", "dynamic html replacement should update remaining instance");
+  assert(!h.elements.dyn_html_named, "dynamic html replacement should remove stale explicit instance");
+
   ga.value.resetDefaultValues("output_contract_output", false);
   assert(h.element("html_report").html === "", "reset should restore html output default");
   assert(
     $("#global_data").data("output_contract_output:#html_report:last_value") === "",
     "reset should update html output last-value storage"
   );
+  assert(!h.elements.dyn_html_1, "reset should remove dynamic html instances");
+  assert(!h.elements.dyn_plot_1, "reset should remove dynamic plot instances");
 }
 
 const command = process.argv[2];

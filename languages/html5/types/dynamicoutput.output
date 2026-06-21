@@ -1,0 +1,22 @@
+// -- dynamicoutput.output --
+
+ga.layout.fields[ "__fields:id__" ] = {};
+ga.layout.fields[ "__fields:id__" ].lhtml =
+  '<label for="__fields:id__" class="ga-g-__moduleid__-__fields:id____~fields:help{ help_link}">__fields:label__ </label>'
+  __~fields:help{+ '<span class="help">__fields:help__</span>'}
+  ;
+ga.layout.fields[ "__fields:id__" ].dhtml =
+  '<div name="__fields:id__" class="ga-dynamic-output-group ga-g-__moduleid__-__fields:id__" id="__fields:id__" type="dynamicoutput" data-dynamic-type="__fields:type__"></div>'
+  ;
+ga.layout.fields[ "__fields:id__" ].eval =
+  'ga.dynamicOutput.register( "__moduleid__", {'
+  + 'id: "__fields:id__",'
+  + 'type: "__fields:type__",'
+  + 'label: "__fields:label__",'
+  + 'idprefix: "__fields:idprefix__",'
+  + 'max: parseInt( "__fields:max__", 10 )'
+  + '} );'
+  + 'ga.value.extra_resets( "__fields:id__" );'
+  ;
+
+// -- end dynamicoutput.output --

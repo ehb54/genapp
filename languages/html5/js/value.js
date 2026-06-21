@@ -904,6 +904,11 @@ __~debug:values{                         console.log( "ga.value.resetDefaultValu
           case "div" :
           case "msgs" : t.html( $( "#global_data" ).data( pkg + ":" + tag + ":default_value" ) ); 
                         break;
+          case "dynamicoutput" :
+              if ( ga.dynamicOutput ) {
+                  ga.dynamicOutput.resetByPkgTag( pkg, tag );
+              }
+              break;
           case "filelink" :
           case "filelinkm" :
                         $( tag + "_filelink" ).html( " " );
