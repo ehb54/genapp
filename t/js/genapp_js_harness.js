@@ -387,7 +387,7 @@ function runDataUpdateScenario(gaPath) {
   };
   ga.value.nglshow = function nglshow(pkg, id, value) {
     ga.ngl.calls.push({ method: "show", pkg, id, value });
-    h.element(id).html = `ngl:${value.file || value}`;
+    h.element(id).html = `ngl:${value.loadname || value.file || value}`;
   };
 
   h.element("_state");
@@ -537,7 +537,7 @@ function runDataUpdateScenario(gaPath) {
     },
     dynamic_ngl: {
       items: [
-        { value: { file: "model.pdb" } },
+        { value: { loadname: "model.pdb", loadparams: { ext: "pdb" }, representation: "cartoon" } },
       ],
     },
     dynamic_structure: {
@@ -569,7 +569,20 @@ function runDataUpdateScenario(gaPath) {
   assert(h.element("dyn_matplotlib_1").attributes.src === "plots/mpl.html", "dynamic matplotlib output should update iframe src");
   assert(h.element("dyn_matplotlib_1").attributes.width === "640px", "dynamic matplotlib should preserve trusted width");
   assert(newPlots.some((call) => call.id === "dyn_plot3d_1"), "dynamic plot3d output should route to Plotly");
-  assert(ga.ngl.calls.some((call) => call.method === "show" && call.id === "dyn_ngl_1"), "dynamic ngl output should route to ngl renderer");
+  assert(
+    ga.ngl.calls.some(
+      (call) =>
+        call.method === "show" &&
+        call.id === "dyn_ngl_1" &&
+        call.value.loadname === "model.pdb" &&
+        call.value.loadparams.ext === "pdb" &&
+        call.value.representation === "cartoon"
+    ),
+    "dynamic ngl output should route canonical NGL payload to ngl renderer"
+  );
+  assert(h.elements.dyn_ngl_1_plot, "dynamic ngl output should create plot helper div");
+  assert(h.elements.dyn_ngl_1_buttons, "dynamic ngl output should create button helper div");
+  assert(h.element("dyn_ngl_1_plot").attributes.style === "width:300px;height:200px;", "dynamic ngl plot helper should preserve trusted size");
   assert(h.context.Jmol.calls.some((call) => call.name === "jmolAppletdyn_structure_1"), "dynamic atomicstructure output should route to JSmol");
 
   ga.data.update("output_contract", {
