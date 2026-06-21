@@ -185,6 +185,18 @@
         },
         {
             "role"          : "output",
+            "id"            : "dynamic_matplotlib",
+            "label"         : "Dynamic Matplotlib",
+            "type"          : "matplotlib",
+            "dynamicoutput" : "true",
+            "idprefix"      : "dyn_matplotlib",
+            "max"           : "2",
+            "width"         : "640",
+            "height"        : "480",
+            "border"        : "0"
+        },
+        {
+            "role"          : "output",
             "id"            : "dynamic_plot3d",
             "label"         : "Dynamic Plot3D",
             "type"          : "plot3d",

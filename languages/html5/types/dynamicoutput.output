@@ -17,6 +17,7 @@ ga.layout.fields[ "__fields:id__" ].eval =
   + 'max: parseInt( "__fields:max__", 10 )'
   __~fields:width{+ ',width: "__fields:width__"'}
   __~fields:height{+ ',height: "__fields:height__"'}
+  __~fields:border{+ ',border: "__fields:border__"'}
   __~fields:multiple{+ ',multiple: "__fields:multiple__"'}
   __~fields:append{+ ',append: "__fields:append__"'}
   __~fields:rows{+ ',rows: "__fields:rows__"'}

@@ -52,7 +52,7 @@ is( $dynamic_outputs{dynamic_html}, 'html',   'fixture covers dynamic html outpu
 is( $dynamic_outputs{dynamic_plot}, 'plotly', 'fixture covers dynamic plotly output declaration' );
 for my $dynamic_id (qw(
     dynamic_image dynamic_video dynamic_files dynamic_textarea dynamic_number
-    dynamic_progress dynamic_plot2d dynamic_bokeh dynamic_plot3d dynamic_ngl
+    dynamic_progress dynamic_plot2d dynamic_bokeh dynamic_matplotlib dynamic_plot3d dynamic_ngl
     dynamic_structure
 )) {
     ok( exists $dynamic_outputs{$dynamic_id}, "fixture covers $dynamic_id declaration" );

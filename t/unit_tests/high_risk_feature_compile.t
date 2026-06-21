@@ -64,6 +64,7 @@ for my $dynamic_check (
     [ dynamic_progress  => 'progress' ],
     [ dynamic_plot2d    => 'plot2d' ],
     [ dynamic_bokeh     => 'bokeh' ],
+    [ dynamic_matplotlib => 'matplotlib' ],
     [ dynamic_plot3d    => 'plot3d' ],
     [ dynamic_ngl       => 'ngl' ],
     [ dynamic_structure => 'atomicstructure' ],

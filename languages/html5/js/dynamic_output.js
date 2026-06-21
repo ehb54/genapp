@@ -89,6 +89,12 @@ ga.dynamicOutput.childHtml = function(config, id) {
             + ga.dynamicOutput.attr( "data-width", config.width )
             + ga.dynamicOutput.attr( "data-height", config.height )
             + '></div>';
+    case "matplotlib":
+        return '<iframe id="' + id + '" name="' + id + '" type="matplotlib" src=""'
+            + ga.dynamicOutput.attr( "frameborder", config.border )
+            + ga.dynamicOutput.attr( "height", config.height ? config.height + "px" : "" )
+            + ga.dynamicOutput.attr( "width", config.width ? config.width + "px" : "" )
+            + '></iframe>';
     case "ngl":
         style = ( config.width ? "width:" + config.width + ";" : "" )
             + ( config.height ? "height:" + config.height + ";" : "" );

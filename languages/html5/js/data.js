@@ -346,6 +346,10 @@ ga.data.update = function( mod, data, msging_f, msg_id ) {
                 ga.bokeh.render( mod, k, v );
                 break;
 
+            case "matplotlib" :
+                match.attr( "src", v );
+                break;
+
             case "ngl" : 
                 ga.value.nglshow( mod_out, k, v );
                 break;

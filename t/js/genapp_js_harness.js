@@ -408,6 +408,7 @@ function runDataUpdateScenario(gaPath) {
   h.element("dynamic_progress").attributes.type = "dynamicoutput";
   h.element("dynamic_plot2d").attributes.type = "dynamicoutput";
   h.element("dynamic_bokeh").attributes.type = "dynamicoutput";
+  h.element("dynamic_matplotlib").attributes.type = "dynamicoutput";
   h.element("dynamic_plot3d").attributes.type = "dynamicoutput";
   h.element("dynamic_ngl").attributes.type = "dynamicoutput";
   h.element("dynamic_structure").attributes.type = "dynamicoutput";
@@ -428,6 +429,7 @@ function runDataUpdateScenario(gaPath) {
   registerDynamic({ id: "dynamic_progress", type: "progress", label: "Dynamic Progress", idprefix: "dyn_progress", max: 2, maxvalue: "1.0" });
   registerDynamic({ id: "dynamic_plot2d", type: "plot2d", label: "Dynamic Plot2D", idprefix: "dyn_plot2d", max: 2, width: "320px", height: "240px", savetofile: "true" });
   registerDynamic({ id: "dynamic_bokeh", type: "bokeh", label: "Dynamic Bokeh", idprefix: "dyn_bokeh", max: 2 });
+  registerDynamic({ id: "dynamic_matplotlib", type: "matplotlib", label: "Dynamic Matplotlib", idprefix: "dyn_matplotlib", max: 2, width: "640", height: "480", border: "0" });
   registerDynamic({ id: "dynamic_plot3d", type: "plot3d", label: "Dynamic Plot3D", idprefix: "dyn_plot3d", max: 2 });
   registerDynamic({ id: "dynamic_ngl", type: "ngl", label: "Dynamic NGL", idprefix: "dyn_ngl", max: 2, width: "300px", height: "200px" });
   registerDynamic({ id: "dynamic_structure", type: "atomicstructure", label: "Dynamic Structure", idprefix: "dyn_structure", max: 2, width: "300", height: "200" });
@@ -523,6 +525,11 @@ function runDataUpdateScenario(gaPath) {
         { value: "bokeh payload" },
       ],
     },
+    dynamic_matplotlib: {
+      items: [
+        { value: "plots/mpl.html" },
+      ],
+    },
     dynamic_plot3d: {
       items: [
         { value: { data: [{ x: [1], y: [2], z: [3] }], layout: { title: "3D" } } },
@@ -559,6 +566,8 @@ function runDataUpdateScenario(gaPath) {
   assert(plot2dCalls.length >= 1, "dynamic plot2d output should route to $.plot");
   assert(h.elements.dyn_plot2d_1_savetofile, "dynamic plot2d output should create save helper ids");
   assert(ga.bokeh.calls.some((call) => call.method === "render" && call.id === "dyn_bokeh_1"), "dynamic bokeh output should route to bokeh renderer");
+  assert(h.element("dyn_matplotlib_1").attributes.src === "plots/mpl.html", "dynamic matplotlib output should update iframe src");
+  assert(h.element("dyn_matplotlib_1").attributes.width === "640px", "dynamic matplotlib should preserve trusted width");
   assert(newPlots.some((call) => call.id === "dyn_plot3d_1"), "dynamic plot3d output should route to Plotly");
   assert(ga.ngl.calls.some((call) => call.method === "show" && call.id === "dyn_ngl_1"), "dynamic ngl output should route to ngl renderer");
   assert(h.context.Jmol.calls.some((call) => call.name === "jmolAppletdyn_structure_1"), "dynamic atomicstructure output should route to JSmol");
@@ -585,6 +594,7 @@ function runDataUpdateScenario(gaPath) {
   assert(!h.elements.dyn_file_1_filelink, "reset should remove dynamic file helper instances");
   assert(!h.elements.dyn_plot2d_1_savetofile, "reset should remove dynamic plot2d helper instances");
   assert(!h.elements.dyn_bokeh_1, "reset should remove dynamic bokeh instances");
+  assert(!h.elements.dyn_matplotlib_1, "reset should remove dynamic matplotlib instances");
   assert(!h.elements.dyn_ngl_1_plot, "reset should remove dynamic ngl helper instances");
   assert(!h.context._jmol_info.dyn_structure_1, "reset should remove dynamic atomicstructure metadata");
 }
