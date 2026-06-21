@@ -75,6 +75,19 @@ repository and dispatch to `bin/genapp_run.pl`. `genapp_run.pl` validates the
 application directory, reads the language definitions, and assembles generated
 files from replacement templates.
 
+## GitHub Workflow Preference
+
+For this repository, do not use the Codex GitHub app/connector by default.
+
+Use:
+
+- local `git` for branch, status, history, and diff work
+- authenticated `gh` CLI for GitHub reads and writes, including issues, pull
+  requests, comments, labels, and API calls
+
+Treat the local checkout plus `gh` as the authoritative GitHub workflow for
+this repo unless the user explicitly asks to use the GitHub connector.
+
 ## Common Workflows
 
 When working on GenApp itself:
