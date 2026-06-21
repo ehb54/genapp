@@ -521,11 +521,11 @@ font-size: 2em;
 }
 
 .ga-highlight {
-    color: rgb( 255, 200, 0 );
+    color: rgb( 175, 100, 0 );
 }
 
 .ga-field-output-control.ga-highlight {
-    color: rgb( 255, 200, 0 );
+    color: rgb( 175, 100, 0 );
 }
 
 .ga-field-input-control.ga-highlight {

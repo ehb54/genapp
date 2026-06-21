@@ -464,7 +464,13 @@ sub layout_prep {
             "${moduleid}_output_textarea"
             );
 
-        push @toinsert, @specinserts;
+        # push @toinsert, @specinserts;
+
+        for my $k ( @specinserts ) {
+            if ( !exists $fieldnames{ $k } ) {
+                push @toinsert, $k;
+            }
+        }
 
         $insertjson{ "${moduleid}_progress" } =
             decode_json(

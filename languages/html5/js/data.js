@@ -175,6 +175,59 @@ ga.data.update = function( mod, data, msging_f, msg_id ) {
 		    //if(!ga.showcollapse3d)
 		    //{
                     if ( v.config ) {
+                        if ( v.config.genapp_chart_editor && v.config.genapp_chart_editor.enabled ) {
+                            var gaceOriginalConfig = JSON.stringify( v.config );
+                            v.config.modeBarButtonsToAdd = ( v.config.modeBarButtonsToAdd || [] ).concat([{
+                                name  : 'editInChartEditor',
+                                title : 'Edit in Chart Editor',
+                                icon  : Plotly.Icons.pencil,
+                                click : function ( gd ) {
+                                    var id = 'gace_' + Date.now() + '_' + Math.floor( Math.random() * 1e6 );
+                                    localStorage.setItem( id, JSON.stringify( { data: gd.data, layout: gd.layout, config: JSON.parse( gaceOriginalConfig ) } ) );
+                                    window.open(
+                                        v.config.genapp_chart_editor.url + '?id=' + encodeURIComponent( id ),
+                                        v.config.genapp_chart_editor.target || '_blank',
+                                        'noopener'
+                                    );
+                                }
+                            }]);
+                        }
+                        if ( v.config.genapp_plotly ) {
+                            ga.data.plotly._config[ k ] = v.config.genapp_plotly;
+                            var _gp = v.config.genapp_plotly;
+                            v.config.modeBarButtonsToAdd = ( v.config.modeBarButtonsToAdd || [] );
+
+                            if ( _gp.errorbars ) {
+                                v.config.modeBarButtonsToAdd.push({
+                                    name  : 'toggleErrorbars',
+                                    title : 'Toggle error bars',
+                                    icon  : ga.data.plotly._ebIcon,
+                                    click : (function( divId ) {
+                                        var _visible = true;
+                                        return function() {
+                                            _visible = !_visible;
+                                            ga.data.plotly.errorbars( divId, _visible );
+                                        };
+                                    })( k )
+                                });
+                            }
+
+                            if ( _gp.linewidth ) {
+                                var _lwVals = _gp.linewidth.values || [1, 2, 3];
+                                v.config.modeBarButtonsToAdd.push({
+                                    name  : 'cycleLinewidth',
+                                    title : 'Cycle line width',
+                                    icon  : ga.data.plotly._lwIcon,
+                                    click : (function( divId, vals ) {
+                                        var _idx = 0;
+                                        return function() {
+                                            _idx = ( _idx + 1 ) % vals.length;
+                                            ga.data.plotly.linewidth( divId, vals[ _idx ] );
+                                        };
+                                    })( k, _lwVals )
+                                });
+                            }
+                        }
 		        Plotly.newPlot(k, v.data, v.layout, v.config);
                     } else {
 		        Plotly.newPlot(k, v.data, v.layout );
@@ -704,3 +757,49 @@ ga.data.iframe = function( v ) {
     __~debug:ports{console.log( `src is now ${src}` );}
     document.getElementById( v.id ).src = `http://${window.location.hostname}:${v.port}`;
 }
+
+ga.data.plotly = {};
+ga.data.plotly._config = {};
+
+ga.data.plotly._ebIcon = {
+    width: 500, height: 500,
+    path: 'M150,0 H350 V30 H150 Z ' +
+          'M240,30 H260 V210 H240 Z ' +
+          'M210,250 A40,40 0 1,0 290,250 A40,40 0 1,0 210,250 Z ' +
+          'M240,290 H260 V470 H240 Z ' +
+          'M150,470 H350 V500 H150 Z'
+};
+
+ga.data.plotly._lwIcon = {
+    width: 500, height: 500,
+    path: 'M0,90 H500 V110 H0 Z ' +
+          'M0,230 H500 V270 H0 Z ' +
+          'M0,365 H500 V435 H0 Z'
+};
+
+ga.data.plotly._indices = function( divId, feature, defaultSlice ) {
+    var cfg = ga.data.plotly._config[ divId ];
+    var spec = ( cfg && cfg[ feature ] && cfg[ feature ].traces !== undefined )
+               ? cfg[ feature ].traces : defaultSlice;
+    return [ ...Array( document.getElementById( divId ).data.length ).keys() ].slice( ...spec );
+};
+
+ga.data.plotly.errorbars = function( divId, visible ) {
+    var gd = document.getElementById( divId );
+    if ( !gd || !gd.data ) { console.warn( `no plotly data for ${divId}` ); return; }
+    Plotly.restyle( divId, { 'error_y.visible': visible },
+                    ga.data.plotly._indices( divId, 'errorbars', [1, -1] ) );
+};
+
+ga.data.plotly.linewidth = function( divId, linewidth ) {
+    var gd = document.getElementById( divId );
+    if ( !gd || !gd.data ) { console.warn( `no plotly data for ${divId}` ); return; }
+    Plotly.restyle( divId, { 'line.width': linewidth },
+                    ga.data.plotly._indices( divId, 'linewidth', [0] ) );
+};
+
+ga.data.plotly.linename = function( divId, curvenumber, newlabel ) {
+    var gd = document.getElementById( divId );
+    if ( !gd || !gd.data ) { console.warn( `no plotly data for ${divId}` ); return; }
+    Plotly.restyle( divId, { 'name': newlabel }, curvenumber );
+};
