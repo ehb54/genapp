@@ -91,6 +91,12 @@ Treat the local checkout plus `gh` as the authoritative GitHub workflow for
 this repo. For issue or pull request comments, labels, edits, reviews, and other
 GitHub writes, go directly to `gh api` or another appropriate `gh` command.
 
+Local shorthand: `gacpu` means `gacp` for the intended GenApp changes, followed
+by `tools/zazzie3_update_genapp_core.sh` to update the Zazzie3 container's
+GenApp core checkout and regenerate the configured app. If the server core
+checkout is dirty, inspect the reported files; rerun with `--stash-dirty` only
+when preserving those server-side changes in a stash is acceptable.
+
 ## Common Workflows
 
 When working on GenApp itself:
