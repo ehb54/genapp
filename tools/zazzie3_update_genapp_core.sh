@@ -167,6 +167,19 @@ stamp "Generated runtime verification"
 test -f output/html5/js/ga.min.js
 grep -q 'ga.dynamicOutput' output/html5/js/ga.min.js
 
+stamp "Post-generate core cleanup"
+cd "$core_dir"
+core_dirty="$(git status --porcelain)"
+if [[ "$core_dirty" = " M languages/html5/add/js/ga.min.js" ]]; then
+    echo "Restoring generated ga.min.js drift in the GenApp core checkout."
+    git restore languages/html5/add/js/ga.min.js
+elif [[ -n "$core_dirty" ]]; then
+    echo "GenApp core checkout became dirty during generation:" >&2
+    git status --short >&2
+    exit 1
+fi
+
+cd "$gz_dir"
 mkdir -p output/html5/etc
 cat > output/html5/etc/genapp_core_version.json <<EOF
 {
