@@ -95,6 +95,7 @@ my $error;
 my $warn;
 my $notice;
 my $created;
+my $compiled_app;
 my $ref_directives = {};
 my $ref_menu       = {};
 #my $ref_config     = {};
@@ -119,6 +120,9 @@ print "menu start_json\n" if $debug_main;
 foreach my $l ( keys %langs )
 {
     my @post_cmds;
+    $compiled_app = $$directives{ "application" };
+    $compiled_app = $compiled_app ? $compiled_app : $toppath;
+
     print '-'x60 . "\n";
     print "processing language $l\n";
     print '-'x60 . "\n";
@@ -1247,3 +1251,8 @@ print '-'x60 . "\nCreated:\n$created" . '-'x60 . "\n" if $created;
 print '-'x60 . "\nNotices:\n$notice" . '-'x60 . "\n"  if $notice;
 print '-'x60 . "\nWarnings:\n$warn" . '-'x60 . "\n"   if $warn;
 print '-'x60 . "\nErrors:\n$error" . '-'x60 . "\n"    if $error;
+if ( !$error ) {
+    print '='x60 . "\n";
+    print "genapp compiled $compiled_app correctly\n";
+    print '='x60 . "\n";
+}
