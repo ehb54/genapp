@@ -115,6 +115,14 @@ ga.data.update = function( mod, data, msging_f, msg_id ) {
         __~debug:getinput{if ( /^_getinput/.test( k ) ) {console.log( "ga.data.update, found _getinput" );}}
 
         match = jqmod_out.find( "#" + k );
+        if ( !match.length &&
+             ga.dynamicOutput &&
+             ga.dynamicOutput.isRegistered &&
+             ga.dynamicOutput.isRegistered( mod, k ) )
+        {
+            ga.dynamicOutput.inactiveUpdate( mod, k, v );
+            return;
+        }
         if ( match.length )
         {
             if ( !output_msgs_cleared )

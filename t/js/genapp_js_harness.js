@@ -433,6 +433,7 @@ function runDataUpdateScenario(gaPath) {
   registerDynamic({ id: "dynamic_plot3d", type: "plot3d", label: "Dynamic Plot3D", idprefix: "dyn_plot3d", max: 2 });
   registerDynamic({ id: "dynamic_ngl", type: "ngl", label: "Dynamic NGL", idprefix: "dyn_ngl", max: 2, width: "300px", height: "200px" });
   registerDynamic({ id: "dynamic_structure", type: "atomicstructure", label: "Dynamic Structure", idprefix: "dyn_structure", max: 2, width: "300", height: "200" });
+  assert(h.element("dynamic_plot").visible === false, "dynamic groups should be hidden until they receive items");
 
   const firstPlot = {
     data: [{ x: [1], y: [2], type: "scatter" }],
@@ -548,6 +549,7 @@ function runDataUpdateScenario(gaPath) {
   });
 
   assert(h.element("dyn_html_1").html === "<p>first</p>", "dynamic html output should create first generated id");
+  assert(h.element("dynamic_plot").visible === true, "dynamic group should become visible after non-empty update");
   assert(h.element("dyn_html_named").html === "<p>named</p>", "dynamic html output should honor safe explicit id");
   const newPlots = h.context.Plotly.calls.filter((call) => call.method === "newPlot");
   assert(newPlots.some((call) => call.id === "dyn_plot_1"), "dynamic plotly output should create first generated plot id");
@@ -594,6 +596,25 @@ function runDataUpdateScenario(gaPath) {
   });
   assert(h.element("dyn_html_1").html === "<p>remaining</p>", "dynamic html replacement should update remaining instance");
   assert(!h.elements.dyn_html_named, "dynamic html replacement should remove stale explicit instance");
+  assert(h.elements.dyn_plot_1, "omitted dynamic group should preserve existing instances");
+
+  ga.data.update("output_contract", {
+    dynamic_plot: {
+      items: [],
+    },
+  });
+  assert(!h.elements.dyn_plot_1, "empty dynamic items should clear existing instances");
+  assert(h.element("dynamic_plot").visible === false, "empty dynamic items should hide the group");
+
+  delete h.elements.dynamic_image;
+  ga.data.update("output_contract", {
+    dynamic_image: {
+      items: [
+        { value: "hidden.png" },
+      ],
+    },
+  });
+  assert(h.element("output_contract_output_msgs").html === "", "inactive declared dynamic output should not become unexpected output");
 
   ga.value.resetDefaultValues("output_contract_output", false);
   assert(h.element("html_report").html === "", "reset should restore html output default");

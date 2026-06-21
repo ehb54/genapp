@@ -77,7 +77,9 @@ files from replacement templates.
 
 ## GitHub Workflow Preference
 
-For this repository, do not use the Codex GitHub app/connector by default.
+For this repository, do not use the Codex GitHub app/connector unless the user
+explicitly asks for that connector. Do not probe it first and then fall back to
+`gh`; that wastes context and can hit avoidable permission errors.
 
 Use:
 
@@ -86,7 +88,8 @@ Use:
   requests, comments, labels, and API calls
 
 Treat the local checkout plus `gh` as the authoritative GitHub workflow for
-this repo unless the user explicitly asks to use the GitHub connector.
+this repo. For issue or pull request comments, labels, edits, reviews, and other
+GitHub writes, go directly to `gh api` or another appropriate `gh` command.
 
 ## Common Workflows
 

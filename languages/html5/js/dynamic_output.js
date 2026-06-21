@@ -9,6 +9,7 @@ ga.dynamicOutput.register = function(mod, config) {
     ga.dynamicOutput.instances[ mod ] = ga.dynamicOutput.instances[ mod ] || {};
     ga.dynamicOutput.instances[ mod ][ config.id ] = ga.dynamicOutput.instances[ mod ][ config.id ] || {};
     ga.dynamicOutput.registry[ mod ][ config.id ] = config;
+    ga.dynamicOutput.hideGroup( mod, config.id );
 };
 
 ga.dynamicOutput.escape = function(value) {
@@ -33,6 +34,29 @@ ga.dynamicOutput.attr = function(name, value) {
         return "";
     }
     return " " + name + '="' + ga.dynamicOutput.escape( value ) + '"';
+};
+
+ga.dynamicOutput.showGroup = function(mod, groupId) {
+    $( "#" + groupId ).show();
+    $( ".ga-g-" + mod + "-" + groupId ).show();
+};
+
+ga.dynamicOutput.hideGroup = function(mod, groupId) {
+    $( "#" + groupId ).hide();
+    $( ".ga-g-" + mod + "-" + groupId ).hide();
+};
+
+ga.dynamicOutput.isRegistered = function(mod, groupId) {
+    return !!( ga.dynamicOutput.registry[ mod ] && ga.dynamicOutput.registry[ mod ][ groupId ] );
+};
+
+ga.dynamicOutput.inactiveUpdate = function(mod, groupId, payload) {
+    var items = ga.dynamicOutput.items( ga.dynamicOutput.registry[ mod ][ groupId ], payload );
+
+    ga.dynamicOutput.resetGroup( mod, groupId );
+    if ( items.length && typeof console !== "undefined" && console.warn ) {
+        console.warn( "Dynamic output '" + groupId + "' returned for module '" + mod + "' while its output field is inactive." );
+    }
 };
 
 ga.dynamicOutput.childType = function(config) {
@@ -364,6 +388,17 @@ ga.dynamicOutput.update = function(mod, groupId, payload) {
     items = ga.dynamicOutput.items( config, payload );
     replace = !payload || payload.replace !== false;
 
+    if ( !items.length ) {
+        if ( replace ) {
+            ga.dynamicOutput.resetGroup( mod, groupId );
+        } else {
+            ga.dynamicOutput.hideGroup( mod, groupId );
+        }
+        return;
+    }
+
+    ga.dynamicOutput.showGroup( mod, groupId );
+
     for ( i = 0; i < items.length; i++ ) {
         ga.dynamicOutput.create( mod, groupId, items[ i ] );
         active[ items[ i ].id ] = true;
@@ -400,6 +435,7 @@ ga.dynamicOutput.resetGroup = function(mod, groupId) {
     for ( i = 0; i < ids.length; i++ ) {
         ga.dynamicOutput.remove( mod, groupId, ids[ i ] );
     }
+    ga.dynamicOutput.hideGroup( mod, groupId );
 };
 
 ga.dynamicOutput.resetByPkgTag = function(pkg, tag) {
