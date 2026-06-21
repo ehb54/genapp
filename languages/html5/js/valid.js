@@ -18,6 +18,7 @@ ga.valid.checkText = function( tag ) {
     var fieldValue=t.val();
     var ok = 0;
     var pattern = t.attr("pattern");
+    var patternMessage = t.attr("data-pattern-message") || " wrong format";
     var reg = new RegExp(pattern);
     
     
@@ -28,7 +29,7 @@ ga.valid.checkText = function( tag ) {
 	{
 	    //t.val( t.prop( "defaultValue" ) );
             if ( fieldValue.length || t.prop( "required" ) ) {
-	        $( tag + "_msg" ).html( " wrong format" );
+	        $( tag + "_msg" ).html( patternMessage );
             } else {
                 ok = 1;
             }

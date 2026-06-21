@@ -65,6 +65,14 @@ TODO: {
     unlike( $module_html, qr/__~?[A-Za-z0-9:_-]+(?:__|\{)/, 'module html has no unresolved GenApp replacement tokens' );
 }
 
+my $project_name_message = 'Project names may contain only letters, numbers, and underscores. Dashes are not allowed; use an underscore instead.';
+my $sys_user_config_html = read_file( File::Spec->catfile( $app_dir, qw(output html5 etc sys_user_config.html) ) );
+like(
+    $sys_user_config_html,
+    qr/data-pattern-message="\Q$project_name_message\E"/,
+    'sys_user_config project name input carries explicit pattern guidance'
+);
+
 my $module_php = read_file( File::Spec->catfile( $app_dir, qw(output html5 ajax demo echo.php) ) );
 like( $module_php, qr/\$modjson = json_decode/,     'module php embeds module json decode' );
 like( $module_php, qr/\$_REQUEST\[ '_module' \]/,   'module php records module request metadata' );

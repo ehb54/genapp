@@ -318,6 +318,14 @@ function runValidationScenario(gaPath) {
   assert(ga.valid.checkText("#text_field") === 0, "text pattern mismatch should fail");
   assert(h.element("text_field_msg").html === " wrong format", "text error message should be set");
 
+  const projectNameMessage = "Project names may contain only letters, numbers, and underscores. Dashes are not allowed; use an underscore instead.";
+  h.element("project_name").value = "my-project";
+  h.element("project_name").attributes.pattern = "^[a-zA-Z0-9_]+$";
+  h.element("project_name").attributes["data-pattern-message"] = projectNameMessage;
+  h.element("project_name").required = true;
+  assert(ga.valid.checkText("#project_name") === 0, "custom text pattern mismatch should fail");
+  assert(h.element("project_name_msg").html === projectNameMessage, "custom text pattern message should be set");
+
   h.element("safe_file").value = "../bad";
   h.element("safe_file").defaultValue = "safe.txt";
   ga.valid.safeFile("#safe_file");

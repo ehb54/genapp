@@ -68,6 +68,7 @@
                    "label"    : "Project name",
                    "type"     : "text",
                    "pattern"  : "^[a-zA-Z0-9_]+$",
+                   "patternmessage" : "Project names may contain only letters, numbers, and underscores. Dashes are not allowed; use an underscore instead.",
                    "required" : "true",
                    "repeat"   : "newproject",
                    "size"     : "50",

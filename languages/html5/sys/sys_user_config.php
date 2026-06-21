@@ -108,7 +108,7 @@ if ( $doc =
    {
       if ( !preg_match( '/^[a-zA-Z0-9_]+$/', $_REQUEST[ 'newproject-newprojectname' ] ) )
       {
-          $results[ "error" ] .= "Invalid new project name.  It must contain only letters, numbers and underscores";
+          $results[ "error" ] .= "Project names may contain only letters, numbers, and underscores. Dashes are not allowed; use an underscore instead.";
       } else {
           # check for duplicate
           $addok = 1;

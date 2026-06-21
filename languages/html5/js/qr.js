@@ -284,6 +284,9 @@ ga.qr.question = function( mod, q, cb ) {
                     if ( tf.pattern ) {
                         qtext += ' pattern="' + tf.pattern + '"';
                     }
+                    if ( tf.patternmessage ) {
+                        qtext += ' data-pattern-message="' + tf.patternmessage + '"';
+                    }
                     if ( tf.maxlength ) {
                         qtext += ' maxlength="' + tf.maxlength + '"';
                     }
@@ -617,6 +620,9 @@ ga.qr.question = function( mod, q, cb ) {
                     }
                     if ( tf.pattern ) {
                         qtext += ' pattern="' + tf.pattern + '"';
+                    }
+                    if ( tf.patternmessage ) {
+                        qtext += ' data-pattern-message="' + tf.patternmessage + '"';
                     }
                     if ( tf.maxlength ) {
                         qtext += ' maxlength="' + tf.maxlength + '"';

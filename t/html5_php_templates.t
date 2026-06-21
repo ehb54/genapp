@@ -23,6 +23,8 @@ my $app_dir    = $generated->{app_dir};
 my $module_php = read_file( File::Spec->catfile( $app_dir, qw(output html5 ajax demo echo.php) ) );
 my $results_php = read_file( File::Spec->catfile( $app_dir, qw(output html5 ajax get_results.php) ) );
 my $jobrun_php  = read_file( File::Spec->catfile( $app_dir, qw(output html5 util jobrun.php) ) );
+my $sys_user_config_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_user_config.php) ) );
+my $project_name_message = 'Project names may contain only letters, numbers, and underscores. Dashes are not allowed; use an underscore instead.';
 
 like( $module_php, qr/require_once ".*ajax\/ga_filter\.php"/, 'module php includes request filter support' );
 like( $module_php, qr/\$GLOBALS\[ 'module'\s+\]\s+=\s+"echo"/, 'module php sets module global' );
@@ -43,5 +45,11 @@ like( $jobrun_php, qr/file_get_contents\( "\$\{logdir\}_cmds_\$id"/, 'jobrun rea
 like( $jobrun_php, qr/exec\( \$cmd \)/, 'jobrun executes recorded command' );
 like( $jobrun_php, qr/file_put_contents\( "\$\{logdir\}_stdout_"/, 'jobrun writes stdout payload' );
 like( $jobrun_php, qr/logjobupdate\( "finished"/, 'jobrun marks job finished' );
+
+like(
+    $sys_user_config_php,
+    qr/\Q$project_name_message\E/,
+    'sys_user_config server-side project-name validation uses explicit guidance'
+);
 
 done_testing();
