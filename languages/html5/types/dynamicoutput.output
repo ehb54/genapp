@@ -15,6 +15,25 @@ ga.layout.fields[ "__fields:id__" ].eval =
   + 'label: "__fields:label__",'
   + 'idprefix: "__fields:idprefix__",'
   + 'max: parseInt( "__fields:max__", 10 )'
+  __~fields:width{+ ',width: "__fields:width__"'}
+  __~fields:height{+ ',height: "__fields:height__"'}
+  __~fields:multiple{+ ',multiple: "__fields:multiple__"'}
+  __~fields:append{+ ',append: "__fields:append__"'}
+  __~fields:rows{+ ',rows: "__fields:rows__"'}
+  __~fields:cols{+ ',cols: "__fields:cols__"'}
+  __~fields:size{+ ',size: "__fields:size__"'}
+  __~fields:maxvalue{+ ',maxvalue: "__fields:maxvalue__"'}
+  __~fields:pan{+ ',pan: "__fields:pan__"'}
+  __~fields:zoom{+ ',zoom: "__fields:zoom__"'}
+  __~fields:hover{+ ',hover: "__fields:hover__"'}
+  __~fields:selzoom{+ ',selzoom: "__fields:selzoom__"'}
+  __~fields:backgroundcolor{+ ',backgroundcolor: "__fields:backgroundcolor__"'}
+  __~fields:savetofile{+ ',savetofile: "__fields:savetofile__"'}
+  __~fields:changescalex{+ ',changescalex: "__fields:changescalex__"'}
+  __~fields:changescaley{+ ',changescaley: "__fields:changescaley__"'}
+  __~fields:customtooltips{+ ',customtooltips: "__fields:customtooltips__"'}
+  __~fields:showcollapse{+ ',showcollapse: "__fields:showcollapse__"'}
+  __~fields:jsmoladd{+ ',jsmoladd: "__fields:jsmoladd__"'}
   + '} );'
   + 'ga.value.extra_resets( "__fields:id__" );'
   ;

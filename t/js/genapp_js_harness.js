@@ -12,18 +12,37 @@ function createDomHarness() {
 
   function element(id) {
     if (!elements[id]) {
-      elements[id] = {
+      const ele = {
         attributes: {},
         checked: false,
         defaultValue: "",
+        handlers: {},
         html: "",
         id,
         style: { display: "block" },
         value: "",
         visible: true,
       };
+      Object.defineProperty(ele, "innerHTML", {
+        get() {
+          return ele.html;
+        },
+        set(value) {
+          ele.html = value;
+        },
+      });
+      elements[id] = ele;
     }
     return elements[id];
+  }
+
+  function parseAttributes(markup) {
+    const attrs = {};
+    String(markup).replace(/([A-Za-z0-9_:-]+)="([^"]*)"/g, (match, name, value) => {
+      attrs[name] = value;
+      return match;
+    });
+    return attrs;
   }
 
   function wrapperFor(id) {
@@ -98,10 +117,14 @@ function createDomHarness() {
         ele.html += value;
         String(value).replace(/<[^>]*\sid="([^"]+)"[^>]*>/g, (match, childId) => {
           const child = element(childId);
-          const type = match.match(/\stype="([^"]+)"/);
-          if (type) {
-            child.attributes.type = type[1];
-          }
+          const attrs = parseAttributes(match);
+          Object.keys(attrs).forEach((name) => {
+            if (name === "style") {
+              child.attributes.style = attrs[name];
+            } else if (name !== "id") {
+              child.attributes[name] = attrs[name];
+            }
+          });
           return match;
         });
         return this;
@@ -110,12 +133,57 @@ function createDomHarness() {
         delete elements[id];
         return this;
       },
-      on() { return this; },
+      on(event, data, cb) {
+        ele.handlers[event] = { data, cb };
+        return this;
+      },
       off() { return this; },
+      bind(event, cb) {
+        ele.handlers[event] = { cb };
+        return this;
+      },
+      trigger(event) {
+        if (ele.handlers[event] && typeof ele.handlers[event].cb === "function") {
+          ele.handlers[event].cb.call(ele, { data: ele.handlers[event].data, preventDefault() {} });
+        }
+        return this;
+      },
       blur() { return this; },
       change() { return this; },
       keypress() { return this; },
-      click() { return this; },
+      click(cb) {
+        if (typeof cb === "function") {
+          ele.handlers.click = { cb };
+        } else if (ele.handlers.click && typeof ele.handlers.click.cb === "function") {
+          ele.handlers.click.cb.call(ele);
+        }
+        return this;
+      },
+      css(name, value) {
+        if (typeof name === "object") {
+          Object.assign(ele.style, name);
+          return this;
+        }
+        if (arguments.length > 1) {
+          ele.style[name] = value;
+          return this;
+        }
+        return ele.style[name] || "0";
+      },
+      height(value) {
+        if (arguments.length) {
+          ele.height = value;
+          return this;
+        }
+        return ele.height || 0;
+      },
+      scrollTop(value) {
+        if (arguments.length) {
+          ele.scrollTopValue = value;
+          return this;
+        }
+        return ele.scrollTopValue || 0;
+      },
       each(cb) {
         cb.call(ele, 0, ele);
         return this;
@@ -133,6 +201,9 @@ function createDomHarness() {
           return this;
         }
         return ele.html;
+      },
+      get(index) {
+        return index === 0 ? ele : undefined;
       },
     };
   }
@@ -156,13 +227,19 @@ function createDomHarness() {
       remove() { return this; },
       on() { return this; },
       off() { return this; },
+      bind() { return this; },
+      trigger() { return this; },
       blur() { return this; },
       change() { return this; },
       keypress() { return this; },
       click() { return this; },
+      css() { return undefined; },
+      height() { return 0; },
+      scrollTop() { return this; },
       each() { return this; },
       find() { return this; },
       text() { return undefined; },
+      get() { return undefined; },
     };
   }
 
@@ -275,6 +352,43 @@ function runDataUpdateScenario(gaPath) {
       this.calls.push({ method: "purge", id });
     },
   };
+  h.context.Jmol = {
+    calls: [],
+    getAppletHtml(name, info) {
+      this.calls.push({ name, info });
+      return `<jmol name="${name}"></jmol>`;
+    },
+  };
+  ga.bokeh = {
+    calls: [],
+    render(mod, id, value) {
+      this.calls.push({ method: "render", mod, id, value });
+      h.element(id).html = `bokeh:${value}`;
+    },
+    renderdata(pkg, id) {
+      this.calls.push({ method: "renderdata", pkg, id });
+    },
+    reset(pkg, id) {
+      this.calls.push({ method: "reset", pkg, id });
+      if (h.elements[id]) {
+        h.elements[id].html = "";
+      }
+    },
+  };
+  ga.ngl = {
+    calls: [],
+    clear(key, tag) {
+      this.calls.push({ method: "clear", key, tag });
+      const id = String(tag).replace(/^#/, "");
+      if (h.elements[id]) {
+        h.elements[id].html = "";
+      }
+    },
+  };
+  ga.value.nglshow = function nglshow(pkg, id, value) {
+    ga.ngl.calls.push({ method: "show", pkg, id, value });
+    h.element(id).html = `ngl:${value.file || value}`;
+  };
 
   h.element("_state");
   h.element("output_contract");
@@ -286,25 +400,37 @@ function runDataUpdateScenario(gaPath) {
   h.element("log_text").attributes.type = "textarea";
   h.element("dynamic_html").attributes.type = "dynamicoutput";
   h.element("dynamic_plot").attributes.type = "dynamicoutput";
+  h.element("dynamic_image").attributes.type = "dynamicoutput";
+  h.element("dynamic_video").attributes.type = "dynamicoutput";
+  h.element("dynamic_files").attributes.type = "dynamicoutput";
+  h.element("dynamic_textarea").attributes.type = "dynamicoutput";
+  h.element("dynamic_number").attributes.type = "dynamicoutput";
+  h.element("dynamic_progress").attributes.type = "dynamicoutput";
+  h.element("dynamic_plot2d").attributes.type = "dynamicoutput";
+  h.element("dynamic_bokeh").attributes.type = "dynamicoutput";
+  h.element("dynamic_plot3d").attributes.type = "dynamicoutput";
+  h.element("dynamic_ngl").attributes.type = "dynamicoutput";
+  h.element("dynamic_structure").attributes.type = "dynamicoutput";
 
   ga.value.setLastValue("output_contract_output", "#html_report");
   ga.value.extra_resets("html_report");
-  ga.dynamicOutput.register("output_contract", {
-    id: "dynamic_html",
-    type: "html",
-    label: "Dynamic HTML",
-    idprefix: "dyn_html",
-    max: 3,
-  });
-  ga.dynamicOutput.register("output_contract", {
-    id: "dynamic_plot",
-    type: "plotly",
-    label: "Dynamic Plot",
-    idprefix: "dyn_plot",
-    max: 2,
-  });
-  ga.value.extra_resets("dynamic_html");
-  ga.value.extra_resets("dynamic_plot");
+  function registerDynamic(config) {
+    ga.dynamicOutput.register("output_contract", config);
+    ga.value.extra_resets(config.id);
+  }
+  registerDynamic({ id: "dynamic_html", type: "html", label: "Dynamic HTML", idprefix: "dyn_html", max: 3 });
+  registerDynamic({ id: "dynamic_plot", type: "plotly", label: "Dynamic Plot", idprefix: "dyn_plot", max: 2 });
+  registerDynamic({ id: "dynamic_image", type: "image", label: "Dynamic Image", idprefix: "dyn_image", max: 2, width: "160", height: "120" });
+  registerDynamic({ id: "dynamic_video", type: "video", label: "Dynamic Video", idprefix: "dyn_video", max: 2, width: "320", height: "240" });
+  registerDynamic({ id: "dynamic_files", type: "file", label: "Dynamic Files", idprefix: "dyn_file", max: 2, multiple: "true" });
+  registerDynamic({ id: "dynamic_textarea", type: "textarea", label: "Dynamic Textarea", idprefix: "dyn_textarea", max: 2, append: "on", rows: "4", cols: "40" });
+  registerDynamic({ id: "dynamic_number", type: "float", label: "Dynamic Number", idprefix: "dyn_number", max: 2 });
+  registerDynamic({ id: "dynamic_progress", type: "progress", label: "Dynamic Progress", idprefix: "dyn_progress", max: 2, maxvalue: "1.0" });
+  registerDynamic({ id: "dynamic_plot2d", type: "plot2d", label: "Dynamic Plot2D", idprefix: "dyn_plot2d", max: 2, width: "320px", height: "240px", savetofile: "true" });
+  registerDynamic({ id: "dynamic_bokeh", type: "bokeh", label: "Dynamic Bokeh", idprefix: "dyn_bokeh", max: 2 });
+  registerDynamic({ id: "dynamic_plot3d", type: "plot3d", label: "Dynamic Plot3D", idprefix: "dyn_plot3d", max: 2 });
+  registerDynamic({ id: "dynamic_ngl", type: "ngl", label: "Dynamic NGL", idprefix: "dyn_ngl", max: 2, width: "300px", height: "200px" });
+  registerDynamic({ id: "dynamic_structure", type: "atomicstructure", label: "Dynamic Structure", idprefix: "dyn_structure", max: 2, width: "300", height: "200" });
 
   const firstPlot = {
     data: [{ x: [1], y: [2], type: "scatter" }],
@@ -357,15 +483,85 @@ function runDataUpdateScenario(gaPath) {
         { value: { data: [{ x: [3], y: [9] }], layout: { title: "C" } } },
       ],
     },
+    dynamic_image: {
+      items: [
+        { value: "first.png" },
+      ],
+    },
+    dynamic_video: {
+      items: [
+        { value: "movie" },
+      ],
+    },
+    dynamic_files: {
+      items: [
+        { value: ["a.dat", "b.dat"] },
+      ],
+    },
+    dynamic_textarea: {
+      items: [
+        { value: "log one" },
+      ],
+    },
+    dynamic_number: {
+      items: [
+        { value: "3.14" },
+      ],
+    },
+    dynamic_progress: {
+      items: [
+        { value: "0.5" },
+      ],
+    },
+    dynamic_plot2d: {
+      items: [
+        { value: { data: [[[1, 2]]], options: {} } },
+      ],
+    },
+    dynamic_bokeh: {
+      items: [
+        { value: "bokeh payload" },
+      ],
+    },
+    dynamic_plot3d: {
+      items: [
+        { value: { data: [{ x: [1], y: [2], z: [3] }], layout: { title: "3D" } } },
+      ],
+    },
+    dynamic_ngl: {
+      items: [
+        { value: { file: "model.pdb" } },
+      ],
+    },
+    dynamic_structure: {
+      items: [
+        { value: { file: "structure.pdb", script: "cartoons on" } },
+      ],
+    },
   });
 
   assert(h.element("dyn_html_1").html === "<p>first</p>", "dynamic html output should create first generated id");
   assert(h.element("dyn_html_named").html === "<p>named</p>", "dynamic html output should honor safe explicit id");
   const newPlots = h.context.Plotly.calls.filter((call) => call.method === "newPlot");
-  assert(newPlots.length === 3, "dynamic plotly output should route max-limited plot instances");
-  assert(newPlots[1].id === "dyn_plot_1", "dynamic plotly output should create first generated plot id");
-  assert(newPlots[2].id === "dyn_plot_2", "dynamic plotly output should create second generated plot id");
+  assert(newPlots.some((call) => call.id === "dyn_plot_1"), "dynamic plotly output should create first generated plot id");
+  assert(newPlots.some((call) => call.id === "dyn_plot_2"), "dynamic plotly output should create second generated plot id");
   assert(!h.elements.dyn_plot_3, "dynamic plotly output should not create instances past max");
+  assert(h.element("dyn_image_1").html.includes('src="first.png"'), "dynamic image output should render image tag");
+  assert(h.element("dyn_image_1").attributes["data-width"] === "160", "dynamic image should preserve trusted width");
+  assert(h.element("dyn_video_1").html.includes("movie.mp4"), "dynamic video output should render video sources");
+  assert(h.element("dyn_file_1_filelink").html.includes("a.dat") && h.element("dyn_file_1_filelink").html.includes("b.dat"), "dynamic file output should render multiple file links");
+  assert(h.element("dyn_textarea_1").value === "log one", "dynamic textarea output should receive text value");
+  assert(h.context.$("#global_data").data("_append:output_contract_output_dyn_textarea_1") === 1, "dynamic textarea should register append behavior");
+  assert(h.element("dyn_number_1").value === "3.14", "dynamic scalar output should receive value");
+  assert(h.element("dyn_progress_1").value === "0.5", "dynamic progress should receive value");
+  assert(h.element("dyn_progress_1").style.width === "50%", "dynamic progress should register layout handler");
+  const plot2dCalls = $.plot.calls.filter((call) => call.selector === "#dyn_plot2d_1");
+  assert(plot2dCalls.length >= 1, "dynamic plot2d output should route to $.plot");
+  assert(h.elements.dyn_plot2d_1_savetofile, "dynamic plot2d output should create save helper ids");
+  assert(ga.bokeh.calls.some((call) => call.method === "render" && call.id === "dyn_bokeh_1"), "dynamic bokeh output should route to bokeh renderer");
+  assert(newPlots.some((call) => call.id === "dyn_plot3d_1"), "dynamic plot3d output should route to Plotly");
+  assert(ga.ngl.calls.some((call) => call.method === "show" && call.id === "dyn_ngl_1"), "dynamic ngl output should route to ngl renderer");
+  assert(h.context.Jmol.calls.some((call) => call.name === "jmolAppletdyn_structure_1"), "dynamic atomicstructure output should route to JSmol");
 
   ga.data.update("output_contract", {
     dynamic_html: {
@@ -385,6 +581,12 @@ function runDataUpdateScenario(gaPath) {
   );
   assert(!h.elements.dyn_html_1, "reset should remove dynamic html instances");
   assert(!h.elements.dyn_plot_1, "reset should remove dynamic plot instances");
+  assert(!h.elements.dyn_image_1, "reset should remove dynamic image instances");
+  assert(!h.elements.dyn_file_1_filelink, "reset should remove dynamic file helper instances");
+  assert(!h.elements.dyn_plot2d_1_savetofile, "reset should remove dynamic plot2d helper instances");
+  assert(!h.elements.dyn_bokeh_1, "reset should remove dynamic bokeh instances");
+  assert(!h.elements.dyn_ngl_1_plot, "reset should remove dynamic ngl helper instances");
+  assert(!h.context._jmol_info.dyn_structure_1, "reset should remove dynamic atomicstructure metadata");
 }
 
 const command = process.argv[2];

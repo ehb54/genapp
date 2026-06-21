@@ -55,6 +55,23 @@ like( $output_html, qr/id="dynamic_html" type="dynamicoutput" data-dynamic-type=
 like( $output_html, qr/id="dynamic_plot" type="dynamicoutput" data-dynamic-type="plotly"/, 'dynamic plotly output group is generated' );
 like( $output_html, qr/ga\.layout\.fields\[ "dynamic_html" \]\.eval\s*=.*ga\.dynamicOutput\.register\( "output_contract", \{.*id: "dynamic_html".*type: "html".*idprefix: "dyn_html".*max: parseInt\( "3"/s, 'dynamic html output registers trusted metadata' );
 like( $output_html, qr/ga\.layout\.fields\[ "dynamic_plot" \]\.eval\s*=.*ga\.dynamicOutput\.register\( "output_contract", \{.*id: "dynamic_plot".*type: "plotly".*idprefix: "dyn_plot".*max: parseInt\( "2"/s, 'dynamic plotly output registers trusted metadata' );
+for my $dynamic_check (
+    [ dynamic_image     => 'image' ],
+    [ dynamic_video     => 'video' ],
+    [ dynamic_files     => 'file' ],
+    [ dynamic_textarea  => 'textarea' ],
+    [ dynamic_number    => 'float' ],
+    [ dynamic_progress  => 'progress' ],
+    [ dynamic_plot2d    => 'plot2d' ],
+    [ dynamic_bokeh     => 'bokeh' ],
+    [ dynamic_plot3d    => 'plot3d' ],
+    [ dynamic_ngl       => 'ngl' ],
+    [ dynamic_structure => 'atomicstructure' ],
+) {
+    my ( $id, $type ) = @{$dynamic_check};
+    like( $output_html, qr/id="\Q$id\E" type="dynamicoutput" data-dynamic-type="\Q$type\E"/, "$id dynamic output group is generated" );
+    like( $output_html, qr/ga\.layout\.fields\[ "\Q$id\E" \]\.eval\s*=.*ga\.dynamicOutput\.register\( "output_contract", \{.*id: "\Q$id\E".*type: "\Q$type\E"/s, "$id dynamic output registers trusted metadata" );
+}
 unlike( $output_html, qr/id="dyn_html_1"|id="dyn_plot_1"/, 'dynamic output instances are not generated statically' );
 unlike( $output_html, qr/ga\.value\.registerid\("output_contract","plot_main"/, 'output-only plot field does not receive input registration' );
 unlike( $output_html, qr/ga\.value\.setLastValue\( "output_contract_output", "#safe_name"/, 'input-only text field does not receive output last-value wiring' );

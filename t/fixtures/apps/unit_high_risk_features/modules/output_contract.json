@@ -98,6 +98,121 @@
             "dynamicoutput" : "true",
             "idprefix"      : "dyn_plot",
             "max"           : "2"
+        },
+        {
+            "role"          : "output",
+            "id"            : "dynamic_image",
+            "label"         : "Dynamic Image",
+            "type"          : "image",
+            "dynamicoutput" : "true",
+            "idprefix"      : "dyn_image",
+            "max"           : "2",
+            "width"         : "160",
+            "height"        : "120"
+        },
+        {
+            "role"          : "output",
+            "id"            : "dynamic_video",
+            "label"         : "Dynamic Video",
+            "type"          : "video",
+            "dynamicoutput" : "true",
+            "idprefix"      : "dyn_video",
+            "max"           : "2",
+            "width"         : "320",
+            "height"        : "240"
+        },
+        {
+            "role"          : "output",
+            "id"            : "dynamic_files",
+            "label"         : "Dynamic Files",
+            "type"          : "file",
+            "dynamicoutput" : "true",
+            "idprefix"      : "dyn_file",
+            "max"           : "2",
+            "multiple"      : "true"
+        },
+        {
+            "role"          : "output",
+            "id"            : "dynamic_textarea",
+            "label"         : "Dynamic Textarea",
+            "type"          : "textarea",
+            "dynamicoutput" : "true",
+            "idprefix"      : "dyn_textarea",
+            "max"           : "2",
+            "append"        : "on",
+            "rows"          : "4",
+            "cols"          : "40"
+        },
+        {
+            "role"          : "output",
+            "id"            : "dynamic_number",
+            "label"         : "Dynamic Number",
+            "type"          : "float",
+            "dynamicoutput" : "true",
+            "idprefix"      : "dyn_number",
+            "max"           : "2"
+        },
+        {
+            "role"          : "output",
+            "id"            : "dynamic_progress",
+            "label"         : "Dynamic Progress",
+            "type"          : "progress",
+            "dynamicoutput" : "true",
+            "idprefix"      : "dyn_progress",
+            "max"           : "2",
+            "maxvalue"      : "1.0"
+        },
+        {
+            "role"          : "output",
+            "id"            : "dynamic_plot2d",
+            "label"         : "Dynamic Plot2D",
+            "type"          : "plot2d",
+            "dynamicoutput" : "true",
+            "idprefix"      : "dyn_plot2d",
+            "max"           : "2",
+            "width"         : "320px",
+            "height"        : "240px",
+            "savetofile"    : "true"
+        },
+        {
+            "role"          : "output",
+            "id"            : "dynamic_bokeh",
+            "label"         : "Dynamic Bokeh",
+            "type"          : "bokeh",
+            "dynamicoutput" : "true",
+            "idprefix"      : "dyn_bokeh",
+            "max"           : "2"
+        },
+        {
+            "role"          : "output",
+            "id"            : "dynamic_plot3d",
+            "label"         : "Dynamic Plot3D",
+            "type"          : "plot3d",
+            "dynamicoutput" : "true",
+            "idprefix"      : "dyn_plot3d",
+            "max"           : "2"
+        },
+        {
+            "role"          : "output",
+            "id"            : "dynamic_ngl",
+            "label"         : "Dynamic NGL",
+            "type"          : "ngl",
+            "dynamicoutput" : "true",
+            "idprefix"      : "dyn_ngl",
+            "max"           : "2",
+            "width"         : "300px",
+            "height"        : "200px"
+        },
+        {
+            "role"          : "output",
+            "id"            : "dynamic_structure",
+            "label"         : "Dynamic Structure",
+            "type"          : "atomicstructure",
+            "dynamicoutput" : "true",
+            "idprefix"      : "dyn_structure",
+            "max"           : "2",
+            "width"         : "300",
+            "height"        : "200"
         }
     ]
 }

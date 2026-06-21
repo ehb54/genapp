@@ -169,11 +169,11 @@ _invalid_app(
         bad_dynamic_type => _module_json(
             moduleid => 'bad_dynamic_type',
             fields   => [
-                _output_field( 'dyn_textarea', type => 'textarea', dynamicoutput => 'true', idprefix => 'dyn_textarea', max => '2' ),
+                _output_field( 'dyn_button', type => 'button', dynamicoutput => 'true', idprefix => 'dyn_button', max => '2' ),
             ],
         ),
     },
-    pattern => qr/dynamicoutput|textarea|not supported/i,
+    pattern => qr/dynamicoutput|button|not supported/i,
 );
 
 _invalid_app(

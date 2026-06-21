@@ -50,6 +50,13 @@ for my $type (qw(plotly atomicstructure image file progress html textarea)) {
 
 is( $dynamic_outputs{dynamic_html}, 'html',   'fixture covers dynamic html output declaration' );
 is( $dynamic_outputs{dynamic_plot}, 'plotly', 'fixture covers dynamic plotly output declaration' );
+for my $dynamic_id (qw(
+    dynamic_image dynamic_video dynamic_files dynamic_textarea dynamic_number
+    dynamic_progress dynamic_plot2d dynamic_bokeh dynamic_plot3d dynamic_ngl
+    dynamic_structure
+)) {
+    ok( exists $dynamic_outputs{$dynamic_id}, "fixture covers $dynamic_id declaration" );
+}
 
 for my $repeater (qw(analysis_mode advanced_count nested_gate pair_grid)) {
     ok( exists $repeaters{$repeater}, "$repeater is declared as a repeater" );
