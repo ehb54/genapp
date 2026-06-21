@@ -793,8 +793,8 @@ __~debug:values{            console.log( "ga.value.setLastValue() default attrib
             __~debug:values{console.log( "ga.value.setLastValue() on plotly trying" );}
                      var ptly = gd.data( tl );
                      if ( ptly.data ) {
-                         if ( plty.config ) {
-                             Plotly.plot(tag.replace( /^#/, "" ), ptly.data, ptly.layout, plty.config );
+                         if ( ptly.config ) {
+                             Plotly.plot(tag.replace( /^#/, "" ), ptly.data, ptly.layout, ptly.config );
                          } else {
                              Plotly.plot(tag.replace( /^#/, "" ), ptly.data, ptly.layout);
                          }

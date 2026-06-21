@@ -465,6 +465,12 @@ function runDataUpdateScenario(gaPath) {
   assert(h.context.Plotly.calls.length === 1, "plotly output should call Plotly once");
   assert(h.context.Plotly.calls[0].id === "plot_main", "plotly output should target declared id");
   assert(h.context.Plotly.calls[0].data === firstPlot.data, "plotly output should receive declared data");
+  h.context.Plotly.calls = [];
+  $("#global_data").data("output_contract_output:#plot_main:last_value", firstPlot);
+  ga.value.setLastValue("output_contract_output", "#plot_main");
+  const restoredPlot = h.context.Plotly.calls.find((call) => call.method === "plot" && call.id === "plot_main");
+  assert(restoredPlot, "plotly restore should replot saved output");
+  assert(restoredPlot.config === firstPlot.config, "plotly restore should pass saved config");
   assert(
     h.element("output_contract_output_msgs").html.includes("Unexpected results:") &&
       h.element("output_contract_output_msgs").html.includes("rogue_result => not declared"),
