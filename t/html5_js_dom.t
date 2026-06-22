@@ -35,6 +35,16 @@ ok( $status == 0, 'generated ga.js validation/value behavior works in DOM harnes
     or diag("command failed ($status): $quoted\n$output");
 like( $output, qr/ok - validation/, 'DOM harness reports validation scenario success' );
 
+my ( $ngl_status, $ngl_output, $ngl_quoted ) = run_command(
+    cwd => $repo_root,
+    env => {},
+    cmd => [ $node, $harness, 'ngl-representations', $ga_js ],
+);
+
+ok( $ngl_status == 0, 'generated ga.js NGL representation params work in DOM harness' )
+    or diag("command failed ($ngl_status): $ngl_quoted\n$ngl_output");
+like( $ngl_output, qr/ok - ngl-representations/, 'DOM harness reports NGL representation scenario success' );
+
 done_testing();
 
 sub find_executable {

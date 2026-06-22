@@ -814,6 +814,96 @@ function runDataUpdateScenario(gaPath) {
   assert(!h.context._jmol_info.dyn_structure_1, "reset should remove dynamic atomicstructure metadata");
 }
 
+function runNglRepresentationScenario(gaPath) {
+  const h = loadGeneratedGa(gaPath);
+  const ga = h.context.ga;
+  const calls = [];
+
+  function makeComponent() {
+    return {
+      addRepresentation(type, params) {
+        const rep = { type, params };
+        calls.push({ method: "addRepresentation", type, params });
+        return rep;
+      },
+      removeRepresentation(rep) {
+        calls.push({ method: "removeRepresentation", rep });
+      },
+      autoView() {
+        calls.push({ method: "autoView" });
+      },
+    };
+  }
+
+  h.context.NGL = {
+    Stage: function Stage(id) {
+      calls.push({ method: "stage", id });
+      this.loadFile = function loadFile(loadname, loadparams) {
+        calls.push({ method: "loadFile", loadname, loadparams });
+        return {
+          then(cb) {
+            cb(makeComponent());
+          },
+        };
+      };
+      this.dispose = function dispose() {
+        calls.push({ method: "dispose", id });
+      };
+    },
+  };
+
+  h.element("structure_ngl").attributes.type = "ngl";
+  h.element("structure_ngl_plot");
+  h.element("structure_ngl_buttons");
+
+  ga.value.nglshow("module_output", "structure_ngl", {
+    loadname: "run_0/monomer_monte_carlo/monomer_monte_carlo_colored_movie.pdb",
+    loadparams: { ext: "pdb", asTrajectory: true },
+    representation: "cartoon",
+    representationParams: { colorScheme: "bfactor" },
+  });
+
+  assert(calls.some((call) => call.method === "stage" && call.id === "structure_ngl_plot"), "ngl show should create a stage for the plot div");
+  assert(
+    calls.some(
+      (call) =>
+        call.method === "loadFile" &&
+        call.loadname === "run_0/monomer_monte_carlo/monomer_monte_carlo_colored_movie.pdb" &&
+        call.loadparams.ext === "pdb" &&
+        call.loadparams.asTrajectory === true
+    ),
+    "ngl show should pass load params to NGL loadFile"
+  );
+  assert(
+    calls.some(
+      (call) =>
+        call.method === "addRepresentation" &&
+        call.type === "cartoon" &&
+        call.params.colorScheme === "bfactor"
+    ),
+    "ngl show should pass single representationParams to addRepresentation"
+  );
+  assert(ga.ngl["module_output:#structure_ngl:last_value"].reps.cartoon, "single ngl representation should keep the legacy representation key");
+
+  calls.length = 0;
+  ga.value.nglshow("module_output", "structure_ngl", {
+    loadname: "run_0/monomer_monte_carlo/monomer_monte_carlo_colored_movie.pdb",
+    loadparams: { ext: "pdb", asTrajectory: true },
+    representations: [
+      { type: "cartoon", params: { sele: "all", color: "blue" } },
+      { type: "cartoon", params: { sele: "bfactor > 0.5", color: "red" } },
+    ],
+  });
+
+  const added = calls.filter((call) => call.method === "addRepresentation");
+  assert(added.length === 2, "ngl show should add all requested representations");
+  assert(added[0].type === "cartoon" && added[0].params.sele === "all" && added[0].params.color === "blue", "ngl show should pass first selection-specific representation");
+  assert(added[1].type === "cartoon" && added[1].params.sele === "bfactor > 0.5" && added[1].params.color === "red", "ngl show should pass second selection-specific representation");
+  assert(calls.some((call) => call.method === "dispose"), "ngl show should dispose the previous stage before reloading");
+  assert(ga.ngl["module_output:#structure_ngl:last_value"].reps["cartoon:all:0"], "ngl show should retain the first representation handle");
+  assert(ga.ngl["module_output:#structure_ngl:last_value"].reps["cartoon:bfactor > 0.5:1"], "ngl show should retain the second representation handle");
+}
+
 function setupCalcDrivenIntegerpairReplay(h) {
   const ga = h.context.ga;
   const mod = "calc_replay";
@@ -899,6 +989,37 @@ function runRepeaterReplayScenario(gaPath, moduleHtmlPath) {
   assert(h.element("pair_grid-pair_payload-2-1").value === "r3c2", "new matrix row second value should be restored");
 }
 
+function runModuleSwitchReplayScenario(gaPath, moduleHtmlPath) {
+  const first = loadGeneratedGa(gaPath, moduleHtmlPath);
+  const firstGa = first.context.ga;
+  const saved = {};
+  let second;
+  let secondGa;
+
+  first.element("row_count").value = "3";
+  firstGa.repeat.change("repeat_demo", "row_count", true);
+  first.element("row_count-row_label-0").value = "alpha";
+  first.element("row_count-row_label-1").value = "beta";
+  first.element("row_count-row_label-2").value = "gamma";
+  firstGa.valuen.save("repeat_demo");
+
+  saved.data = JSON.parse(JSON.stringify(firstGa.valuen.data));
+  saved.html = JSON.parse(JSON.stringify(firstGa.valuen.html));
+
+  second = loadGeneratedGa(gaPath, moduleHtmlPath);
+  secondGa = second.context.ga;
+  secondGa.valuen.data = JSON.parse(JSON.stringify(saved.data));
+  secondGa.valuen.html = JSON.parse(JSON.stringify(saved.html));
+
+  secondGa.valuen.save("repeat_demo", true);
+  secondGa.valuen.restore("repeat_demo");
+
+  assert(second.element("row_count").value === "3", "module restore should keep repeater controller value in sync");
+  assert(second.element("row_count-row_label-0").value === "alpha", "module restore should rebuild first repeated field");
+  assert(second.element("row_count-row_label-1").value === "beta", "module restore should rebuild second repeated field");
+  assert(second.element("row_count-row_label-2").value === "gamma", "module restore should rebuild third repeated field");
+}
+
 const command = process.argv[2];
 const gaPath = process.argv[3];
 const moduleHtmlPath = process.argv[4];
@@ -914,11 +1035,20 @@ switch (command) {
   case "data-update":
     runDataUpdateScenario(gaPath);
     break;
+  case "ngl-representations":
+    runNglRepresentationScenario(gaPath);
+    break;
   case "repeater-replay":
     if (!moduleHtmlPath) {
       throw new Error("repeater-replay requires generated module HTML path");
     }
     runRepeaterReplayScenario(gaPath, moduleHtmlPath);
+    break;
+  case "module-switch-replay":
+    if (!moduleHtmlPath) {
+      throw new Error("module-switch-replay requires generated module HTML path");
+    }
+    runModuleSwitchReplayScenario(gaPath, moduleHtmlPath);
     break;
   default:
     throw new Error(`unknown command '${command}'`);

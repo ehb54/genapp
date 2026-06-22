@@ -1354,6 +1354,50 @@ ga.ngl.clear = function ( tl, tid ) {
     $( "#global_data" ).removeData( tl );
 }
 
+ga.ngl.representationSpecs = function( v ) {
+    var specs = [],
+        i,
+        rep;
+
+    if ( v.representations && Array.isArray( v.representations ) ) {
+        for ( i = 0; i < v.representations.length; ++i ) {
+            rep = v.representations[ i ] || {};
+            if ( rep.type ) {
+                specs.push( {
+                    type   : rep.type,
+                    params : rep.params || {}
+                } );
+            }
+        }
+    }
+
+    if ( !specs.length ) {
+        specs.push( {
+            type   : v.representation || "cartoon",
+            params : v.representationParams || {}
+        } );
+    }
+
+    return specs;
+}
+
+ga.ngl.representationKey = function( spec, index ) {
+    var key = spec.type || "representation";
+
+    if ( spec.params && spec.params.sele ) {
+        return key + ":" + spec.params.sele + ":" + index;
+    }
+
+    return index ? key + ":" + index : key;
+}
+
+ga.ngl.addRepresentation = function( savekey, component, spec, index ) {
+    var key = ga.ngl.representationKey( spec, index );
+
+    ga.ngl[ savekey ].reps[ key ] = component.addRepresentation( spec.type, spec.params || {} );
+    return key;
+}
+
 ga.value.nglshow = function( mod, id, v ) {
     __~debug:ngl{console.log( "ga.value.nglshow( " + mod + " , " + id  + " , " + JSON.stringify( v ) + " )" );}
     var tid = "#" + id;
@@ -1364,15 +1408,16 @@ ga.value.nglshow = function( mod, id, v ) {
         if ( !v.loadparams ) {
             v.loadparams = {};
         }
-        if ( !v.representation ) {
-            v.representation = "cartoon";
-        }
+        var specs = ga.ngl.representationSpecs( v );
         ga.ngl[ savekey ] = {};
         ga.ngl[ savekey ].stage = new NGL.Stage( id + "_plot" );
         ga.ngl[ savekey ].stage.loadFile( v.loadname, v.loadparams ).then( function (component) {
+            var key;
             ga.ngl[ savekey ].component = component;
             ga.ngl[ savekey ].reps = {};
-            ga.ngl[ savekey ].reps[ v.representation ] = component.addRepresentation( v.representation );
+            for ( var j = 0; j < specs.length; ++j ) {
+                ga.ngl.addRepresentation( savekey, component, specs[ j ], j );
+            }
             // provide a "good" view of the structure
             component.autoView();
             
@@ -1381,7 +1426,8 @@ ga.value.nglshow = function( mod, id, v ) {
             var evaladd = "";
             for ( var i = 0; i < al; ++i ) {
                 htmladd += '<button id="' + ga.ngl.types[ i ].replace( '+', '' ) + '">' + ga.ngl.types[ i ] + '</button>';
-                evaladd += '$("#' + ga.ngl.types[ i ].replace( '+', '' ) + '").on("click", function() { var sk = ga.ngl["' + savekey + '"]; var comp = sk.component; var crep = sk.reps["' + ga.ngl.types[ i ] + '"]; if ( comp && crep ) { comp.removeRepresentation( crep ); delete sk.reps["' + ga.ngl.types[ i ] + '"]; } else { sk.reps["' + ga.ngl.types[ i ] + '"] = comp.addRepresentation("' + ga.ngl.types[ i ] + '");} return false; });';
+                key = ga.ngl.types[ i ];
+                evaladd += '$("#' + key.replace( '+', '' ) + '").on("click", function() { var sk = ga.ngl["' + savekey + '"]; var comp = sk.component; var crep = sk.reps["' + key + '"]; if ( comp && crep ) { comp.removeRepresentation( crep ); delete sk.reps["' + key + '"]; } else { sk.reps["' + key + '"] = comp.addRepresentation("' + key + '", {});} return false; });';
             }
             $( tid + "_buttons" ).html( htmladd );
             __~debug:ngl{console.log( evaladd );}
