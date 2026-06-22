@@ -1179,21 +1179,11 @@ foreach my $l ( keys %langs )
             {
                 my $fo = "output/$l/$k";
                 $warn .= "duplicate output for $fo\n" if $created{ $fo }++;
-                my $docopy = 1;
-                if ( -e $fo ) {
-                    my $stime = stat( "$l/add/$k" )->mtime;
-                    my $dtime = stat( $fo )->mtime;
-                    $docopy = $dtime < $stime;
-                    # my $cmd = "cmp $l/add/$k $fo\n";
-                    # system( $cmd );
-                    # $docopy = $?;
-                }
-                if ( $docopy ) {
-                    mkdir_for_file( $fo );
-                    my $cmd = "cp $l/add/$k $fo\n";
-                    $created .= "$fo\n";
-                    print `$cmd`;
-                }
+                # Language-specific add files are the final application overlay.
+                mkdir_for_file( $fo );
+                my $cmd = "cp $l/add/$k $fo\n";
+                $created .= "$fo\n";
+                print `$cmd`;
             }
         }
     }

@@ -1542,11 +1542,11 @@ sub check_files {
     } # end module_files (per language)
     
     foreach my $l ( keys %langs ) {
-        # print "checking module to file for language $l\n";
-        if ( !$module_to_file{ $l } ) {
-            # print "no module_to_file for language $l\n";
-            $module_to_file{ $l } = { %{$module_to_file{ '' }} };
-        }
+        # Language-specific modules replace only matching base modules; they do
+        # not replace the full module lookup needed by system/config assembly.
+        my %base_modules = $module_to_file{ '' } ? %{ $module_to_file{ '' } } : ();
+        my %language_modules = $module_to_file{ $l } ? %{ $module_to_file{ $l } } : ();
+        $module_to_file{ $l } = { %base_modules, %language_modules };
     }
 
     # print "after fixup module_to_file:\n" . Dumper( \%module_to_file );
