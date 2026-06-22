@@ -9,6 +9,57 @@ ga.valuen.dflt.data = {};
 ga.valuen.dflt.html = {};
 ga.valuen.lastload = "";
 
+ga.valuen.hasData = function( data, name ) {
+    return !!( data && name && Object.prototype.hasOwnProperty.call( data, name ) );
+}
+
+ga.valuen.asArray = function( value ) {
+    if ( Object.prototype.toString.call( value ) !== '[object Array]' ) {
+        return [ value ];
+    }
+    return value;
+}
+
+ga.valuen.isRepeater = function( form, name, id, jqfield ) {
+    if ( jqfield && jqfield.attr( "data-repeater" ) ) {
+        return true;
+    }
+    return !!(
+        name &&
+        ga.repeat &&
+        ga.repeat.data &&
+        ga.repeat.data[ form ] &&
+        ga.repeat.data[ form ].repeater &&
+        ( ga.repeat.data[ form ].repeater[ name ] ||
+          ga.repeat.data[ form ].repeater[ id ] )
+    );
+}
+
+ga.valuen.processCalcRepeaters = function( form, data ) {
+    var calcs,
+        id;
+
+    if ( !ga.calc ||
+         !ga.calc.data ||
+         !ga.calc.data[ form ] ||
+         !ga.calc.data[ form ].calc ||
+         !ga.repeat ||
+         !ga.repeat.data ||
+         !ga.repeat.data[ form ] ||
+         !ga.repeat.data[ form ].repeater ) {
+        return;
+    }
+
+    calcs = ga.calc.data[ form ].calc;
+    for ( id in calcs ) {
+        if ( ga.repeat.data[ form ].repeater[ id ] &&
+             !ga.valuen.hasData( data, id ) ) {
+            __~debug:valuen{console.log( "ga.valuen.processCalcRepeaters() processing calc repeater " + id );}
+            ga.calc.process( form, id );
+        }
+    }
+}
+
 // restore data to form
 
 ga.valuen.restore = function( form, data, html ) {
@@ -47,13 +98,13 @@ ga.valuen.restore = function( form, data, html ) {
             found
             ;
 
-            if ( $this.attr( "data-repeater" ) &&
+            if ( ga.valuen.isRepeater( form, this.name, this.id, $this ) &&
                  !repeaters[ this.name ] ) {
                 __~debug:valuen{console.log( "ga.valuen.restore() repeater newly found: name " + this.name + "  nodename " + this.nodeName + " type " + this.type );}
                 repeaters[ this.name ] = true;
 
                 if ( this.name && 
-                     ( data[ this.name ] ||
+                    ( ga.valuen.hasData( data, this.name ) ||
                        /checkbox|radio/i.test( this.type ) )
                    ) {
                     names = data[ this.name ];
@@ -81,9 +132,9 @@ ga.valuen.restore = function( form, data, html ) {
                     els = jqhform.find(':input').get();
                     return false;  // "break" equivalent for jquery's $.each
                 } else {
-                    if ( !data[ this.name ] && 
+                    if ( !ga.valuen.hasData( data, this.name ) &&
                          !/checkbox|radio/i.test( this.type ) ) {
-                        console.warn( "ga.valuen.restore() no data found for repeater setting value on " + this.name + " type " + this.type + " to " + names[ 0 ] );
+                        console.warn( "ga.valuen.restore() no data found for repeater setting value on " + this.name + " type " + this.type );
                     }
                 }
             }
@@ -105,7 +156,7 @@ ga.valuen.restore = function( form, data, html ) {
         if ( this.name && 
              !repeaters[ this.name ] ) {
             $this = $( this );
-            if ( ( data[ this.name ] ||
+            if ( ( ga.valuen.hasData( data, this.name ) ||
                    /checkbox|radio/i.test( this.type ) ) &&
                  !/button/i.test( this.nodeName )
                ) {
@@ -250,6 +301,87 @@ ga.valuen.save = function( form, asdflt ) {
     }
 }
 
+ga.valuen.applyInputValues = function( form, data, repeaters, includeButtons ) {
+    var els = $( "#" + form ).find(':input').get();
+
+    $.each(els, function() {
+        var i,
+            names,
+            $this,
+            val,
+            found,
+            typetype,
+            typenames,
+            typenamesinput
+            ;
+        __~debug:valuen{console.log( "ga.valuen.applyInputValues() checking: name " + this.name + "  nodename " + this.nodeName + " type " + this.type + " id " + this.id);}
+        if ( this.name &&
+             !repeaters[ this.name ] ) {
+            $this = $( this );
+            if ( ( ga.valuen.hasData( data, this.name ) ||
+                   /checkbox|radio/i.test( this.type ) ) &&
+                 !/button/i.test( this.nodeName )
+               ) {
+                names = ga.valuen.asArray( data[ this.name ] );
+                if( /checkbox|radio/i.test( this.type ) ) {
+                    val = $this.val();
+                    found = false;
+                    if ( names ) {
+                        for( i = 0; i < names.length; i++ ) {
+                            if( names[ i ] == val ) {
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                    $this.prop( "checked", found );
+                    __~debug:valuen{console.log( "ga.valuen.applyInputValues() setting value on " + this.name + " type " + this.type + " to " + ( found ? "true" : "false" ) );}
+                } else {
+                    if ( this.type === "file" ) {
+                        if ( names[ 0 ] ) {
+                            $( "#" + this.id + "_msg" ).html( " " + names[ 0 ] + " please reload manually (programmatic setting of local files disallowed by browser security)" );
+                        }
+                    } else {
+                        $this.val( names[ 0 ] );
+                    }
+                    __~debug:valuen{console.log( "ga.valuen.applyInputValues() setting value on " + this.name + " type " + this.type + " to " + names[ 0 ] );}
+                }
+            } else if ( includeButtons ) {
+                if ( /button/i.test( this.nodeName ) &&
+                     ( typetype = $this.attr( "data-type" ) ) ) {
+                    __~debug:valuen{console.log( "ga.valuen.applyInputValues() found named button " + this.name + " data-type " + typetype );}
+                    typenames      = ga.altfile.button.getnames     ( this.id, typetype );
+                    typenamesinput = ga.altfile.button.getnamesinput( this.id, typetype );
+                    if ( typenames ) {
+                        for ( i = 0; i < typenames.length; ++i ) {
+                            __~debug:valuen{console.log( "ga.valuen.applyInputValues() type name " + typenames[ i ] );}
+                            if ( data[ typenamesinput[ i ] ] ) {
+                                __~debug:valuen{console.log( "ga.valuen.applyInputValues() type name " + typenames[ i ] + " found in data, now need to add html" );}
+                                ga.altfile.button.addhtml( form, this.id, typetype, data[ typenamesinput[ i ] ] );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+ga.valuen.applyInputHtmlValues = function( data ) {
+    $.each( data, function(k, v) {
+        var jqk;
+        if ( /^_html_/.test( k ) ) {
+            k = k.replace( /^_html_/, "" );
+            if ( jqk = $( "#" + k ) ) {
+                jqk.html( v );
+            }
+        }
+//        if ( k == "_datetime" ) {
+//            jqhform.prepend( "<span class='removeme'><p><i>Reattached from job submitted at " + v + " </i></p></span>" );
+//        }
+    });
+}
+
 // take input data and put on form
 
 ga.valuen.input = function( form, data ) {
@@ -284,19 +416,17 @@ ga.valuen.input = function( form, data ) {
             found
             ;
 
-            if ( $this.attr( "data-repeater" ) &&
+            if ( ga.valuen.isRepeater( form, this.name, this.id, $this ) &&
                  !repeaters[ this.name ] ) {
                 __~debug:valuen{console.log( "ga.valuen.input() repeater newly found: name " + this.name + "  nodename " + this.nodeName + " type " + this.type );}
                 repeaters[ this.name ] = true;
 
                 if ( this.name && 
-                     ( data[ this.name ] ||
+                    ( ga.valuen.hasData( data, this.name ) ||
                        /checkbox|radio/i.test( this.type ) )
                    ) {
                     names = data[ this.name ];
-                    if ( Object.prototype.toString.call(names) !== '[object Array]' ) {
-                        names = [ names ];
-                    }
+                    names = ga.valuen.asArray( names );
                     if( /checkbox|radio/i.test( this.type ) ) { 
                         val = $this.val();
                         found = false;
@@ -321,93 +451,20 @@ ga.valuen.input = function( form, data ) {
                     els = jqhform.find(':input').get();
                     return false;  // "break" equivalent for jquery's $.each
                 } else {
-                    if ( !data[ this.name ] && 
+                    if ( !ga.valuen.hasData( data, this.name ) &&
                          !/checkbox|radio/i.test( this.type ) ) {
-                        console.warn( "ga.valuen.input() no data found for repeater setting value on " + this.name + " type " + this.type + " to " + names[ 0 ] );
+                        console.warn( "ga.valuen.input() no data found for repeater setting value on " + this.name + " type " + this.type );
                     }
                 }
             }
         });
     } while ( repeaters_added );
 
-    // everything else
-
-    $.each(els, function() {
-        var i,
-            names,
-            $this,
-            val,
-            found,
-            typetype,
-            typenames
-            ;
-        __~debug:valuen{console.log( "ga.valuen.input() checking: name " + this.name + "  nodename " + this.nodeName + " type " + this.type + " id " + this.id);}
-        if ( this.name && 
-             !repeaters[ this.name ] ) {
-            $this = $( this );
-            if ( ( data[ this.name ] ||
-                   /checkbox|radio/i.test( this.type ) ) &&
-                 !/button/i.test( this.nodeName )
-               ) {
-                names = data[ this.name ];
-                if ( Object.prototype.toString.call(names) !== '[object Array]' ) {
-                    names = [ names ];
-                }
-                if( /checkbox|radio/i.test( this.type ) ) { 
-                    val = $this.val();
-                    found = false;
-                    if ( names ) {
-                        for( i = 0; i < names.length; i++ ) {
-                            if( names[ i ] == val ) {
-                                found = true;
-                                break;
-                            }
-                        }
-                    }
-                    $this.prop( "checked", found );
-                    __~debug:valuen{console.log( "ga.valuen.input() setting value on " + this.name + " type " + this.type + " to " + ( found ? "true" : "false" ) );}
-                } else {
-                    if ( this.type === "file" ) {
-                        if ( names[ 0 ] ) {
-                            $( "#" + this.id + "_msg" ).html( " " + names[ 0 ] + " please reload manually (programmatic setting of local files disallowed by browser security)" );
-                        }
-                    } else {
-                        $this.val( names[ 0 ] );
-                    }
-                    __~debug:valuen{console.log( "ga.valuen.input() setting value on " + this.name + " type " + this.type + " to " + names[ 0 ] );}
-                }
-            } else {
-                if ( /button/i.test( this.nodeName ) &&
-                     ( typetype = $this.attr( "data-type" ) ) ) {
-                    __~debug:valuen{console.log( "ga.valuen.input() found named button " + this.name + " data-type " + typetype );}
-                    typenames      = ga.altfile.button.getnames     ( this.id, typetype );
-                    typenamesinput = ga.altfile.button.getnamesinput( this.id, typetype );
-                    if ( typenames ) {
-                        for ( i = 0; i < typenames.length; ++i ) {
-                            __~debug:valuen{console.log( "ga.valuen.input() type name " + typenames[ i ] );}
-                            if ( data[ typenamesinput[ i ] ] ) {
-                                __~debug:valuen{console.log( "ga.valuen.input() type name " + typenames[ i ] + " found in data, now need to add html" );}
-                                ga.altfile.button.addhtml( form, this.id, typetype, data[ typenamesinput[ i ] ] );
-                            }
-                        }
-                    }   
-                }
-            }    
-        }
-    });
-
-    $.each( data, function(k, v) {
-        var jqk;
-        if ( /^_html_/.test( k ) ) {
-            k = k.replace( /^_html_/, "" );
-            if ( jqk = $( "#" + k ) ) {
-                jqk.html( v );
-            }
-        }
-//        if ( k == "_datetime" ) {
-//            jqhform.prepend( "<span class='removeme'><p><i>Reattached from job submitted at " + v + " </i></p></span>" );
-//        }
-    });
+    // everything else, then calculated repeaters whose dependencies were just restored.
+    ga.valuen.applyInputValues( form, data, repeaters, true );
+    ga.valuen.processCalcRepeaters( form, data );
+    ga.valuen.applyInputValues( form, data, repeaters, false );
+    ga.valuen.applyInputHtmlValues( data );
 }
 
 ga.valuen.addhtml = function( form ) {

@@ -15,11 +15,16 @@ function createDomHarness() {
       const ele = {
         attributes: {},
         checked: false,
+        children: [],
         defaultValue: "",
         handlers: {},
         html: "",
         id,
+        name: "",
+        nodeName: "DIV",
+        parentId: null,
         style: { display: "block" },
+        type: "",
         value: "",
         visible: true,
       };
@@ -31,18 +36,110 @@ function createDomHarness() {
           ele.html = value;
         },
       });
+      ele.getElementsByTagName = function getElementsByTagName(tagName) {
+        const requested = String(tagName).toUpperCase();
+        return descendantsOf(ele.id).filter((child) => child.nodeName === requested);
+      };
+      ele.querySelectorAll = function querySelectorAll(selector) {
+        const requested = String(selector).toUpperCase();
+        if (/^[A-Z0-9_:-]+$/.test(requested)) {
+          return descendantsOf(ele.id).filter((child) => child.nodeName === requested);
+        }
+        return [];
+      };
       elements[id] = ele;
     }
     return elements[id];
   }
 
+  function descendantsOf(parentId) {
+    const found = [];
+    Object.keys(elements).forEach((id) => {
+      let current = elements[id];
+      while (current && current.parentId) {
+        if (current.parentId === parentId) {
+          found.push(elements[id]);
+          return;
+        }
+        current = elements[current.parentId];
+      }
+    });
+    return found;
+  }
+
   function parseAttributes(markup) {
     const attrs = {};
-    String(markup).replace(/([A-Za-z0-9_:-]+)="([^"]*)"/g, (match, name, value) => {
-      attrs[name] = value;
+    const body = String(markup).replace(/^<\s*[A-Za-z0-9_:-]+/, "").replace(/\/?>$/, "");
+    body.replace(/([A-Za-z0-9_:-]+)(?:=(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g, (match, name, doubleQuoted, singleQuoted, bare) => {
+      attrs[name] = doubleQuoted !== undefined ? doubleQuoted : singleQuoted !== undefined ? singleQuoted : bare !== undefined ? bare : true;
       return match;
     });
     return attrs;
+  }
+
+  function parseMarkup(markup, parentId) {
+    const parent = parentId ? element(parentId) : null;
+    if (parent) {
+      parent.children = [];
+    }
+    String(markup).replace(/<\s*([A-Za-z0-9_:-]+)([^>]*)>/g, (match, tagName) => {
+      if (/^\/|^!/.test(tagName)) {
+        return match;
+      }
+      const attrs = parseAttributes(match);
+      if (!attrs.id) {
+        return match;
+      }
+      const child = element(attrs.id);
+      child.nodeName = String(tagName).toUpperCase();
+      child.attributes = {};
+      Object.keys(attrs).forEach((name) => {
+        if (name !== "id") {
+          child.attributes[name] = attrs[name];
+        }
+      });
+      child.name = attrs.name || "";
+      child.type = attrs.type || "";
+      child.value = attrs.value !== undefined && attrs.value !== true ? attrs.value : "";
+      child.checked = attrs.checked !== undefined;
+      child.required = attrs.required !== undefined;
+      child.parentId = parentId || null;
+      if (parent && !parent.children.includes(child.id)) {
+        parent.children.push(child.id);
+      }
+      return match;
+    });
+  }
+
+  function inputElementsUnder(id) {
+    return descendantsOf(id).filter((child) => ["INPUT", "SELECT", "TEXTAREA", "BUTTON"].includes(child.nodeName));
+  }
+
+  function collectionWrapper(items) {
+    const list = items.filter(Boolean);
+    return {
+      length: list.length,
+      each(cb) {
+        list.forEach((ele, index) => cb.call(ele, index, ele));
+        return this;
+      },
+      get(index) {
+        if (arguments.length === 0) {
+          return list.slice();
+        }
+        return list[index];
+      },
+      find(selector) {
+        if (selector === ":input") {
+          const inputs = [];
+          list.forEach((ele) => {
+            inputs.push(...inputElementsUnder(ele.id));
+          });
+          return collectionWrapper(inputs);
+        }
+        return emptyWrapper();
+      },
+    };
   }
 
   function wrapperFor(id) {
@@ -51,7 +148,7 @@ function createDomHarness() {
       length: 1,
       val(value) {
         if (arguments.length) {
-          ele.value = value;
+          ele.value = Array.isArray(value) ? value.join(",") : value;
           return this;
         }
         return ele.value;
@@ -73,6 +170,7 @@ function createDomHarness() {
       html(value) {
         if (arguments.length) {
           ele.html = value;
+          parseMarkup(value, ele.id);
           return this;
         }
         return ele.html;
@@ -115,18 +213,7 @@ function createDomHarness() {
       removeClass() { return this; },
       append(value) {
         ele.html += value;
-        String(value).replace(/<[^>]*\sid="([^"]+)"[^>]*>/g, (match, childId) => {
-          const child = element(childId);
-          const attrs = parseAttributes(match);
-          Object.keys(attrs).forEach((name) => {
-            if (name === "style") {
-              child.attributes.style = attrs[name];
-            } else if (name !== "id") {
-              child.attributes[name] = attrs[name];
-            }
-          });
-          return match;
-        });
+        parseMarkup(value, ele.id);
         return this;
       },
       remove() {
@@ -134,6 +221,10 @@ function createDomHarness() {
         return this;
       },
       on(event, data, cb) {
+        if (typeof data === "function") {
+          cb = data;
+          data = undefined;
+        }
         ele.handlers[event] = { data, cb };
         return this;
       },
@@ -149,8 +240,19 @@ function createDomHarness() {
         return this;
       },
       blur() { return this; },
-      change() { return this; },
-      keypress() { return this; },
+      change(cb) {
+        if (typeof cb === "function") {
+          ele.handlers.change = { cb };
+          return this;
+        }
+        return this.trigger("change");
+      },
+      keypress(cb) {
+        if (typeof cb === "function") {
+          ele.handlers.keypress = { cb };
+        }
+        return this;
+      },
       click(cb) {
         if (typeof cb === "function") {
           ele.handlers.click = { cb };
@@ -189,6 +291,9 @@ function createDomHarness() {
         return this;
       },
       find(selector) {
+        if (selector === ":input") {
+          return collectionWrapper(inputElementsUnder(id));
+        }
         if (typeof selector === "string" && selector.startsWith("#") && !selector.includes(" ")) {
           const id = selector.slice(1);
           return elements[id] ? wrapperFor(id) : emptyWrapper();
@@ -203,6 +308,9 @@ function createDomHarness() {
         return ele.html;
       },
       get(index) {
+        if (arguments.length === 0) {
+          return [ele];
+        }
         return index === 0 ? ele : undefined;
       },
     };
@@ -239,7 +347,7 @@ function createDomHarness() {
       each() { return this; },
       find() { return this; },
       text() { return undefined; },
-      get() { return undefined; },
+      get() { return []; },
     };
   }
 
@@ -247,8 +355,15 @@ function createDomHarness() {
     if (selector === global.document || selector === global.window) {
       return emptyWrapper();
     }
+    if (selector && typeof selector === "object" && selector.id) {
+      return wrapperFor(selector.id);
+    }
     if (typeof selector !== "string") {
       return emptyWrapper();
+    }
+    const inputMatch = selector.match(/^#([^ ]+)\s+:input$/);
+    if (inputMatch) {
+      return elements[inputMatch[1]] ? collectionWrapper(inputElementsUnder(inputMatch[1])) : emptyWrapper();
     }
     if (selector.startsWith("#") && !selector.includes(" ")) {
       return wrapperFor(selector.slice(1));
@@ -257,9 +372,27 @@ function createDomHarness() {
   }
 
   $.each = function each(obj, cb) {
-    Object.keys(obj || {}).forEach((key) => cb(key, obj[key]));
+    Object.keys(obj || {}).forEach((key) => cb.call(obj[key], key, obj[key]));
   };
-  $.extend = Object.assign;
+  $.extend = function extend() {
+    const args = Array.from(arguments);
+    const deep = args[0] === true;
+    const target = deep ? args[1] || {} : args[0] || {};
+    const sources = deep ? args.slice(2) : args.slice(1);
+    sources.forEach((source) => {
+      Object.keys(source || {}).forEach((key) => {
+        const value = source[key];
+        if (deep && value && typeof value === "object" && !Array.isArray(value)) {
+          target[key] = $.extend(true, target[key] || {}, value);
+        } else if (deep && Array.isArray(value)) {
+          target[key] = value.map((item) => (item && typeof item === "object" ? $.extend(true, Array.isArray(item) ? [] : {}, item) : item));
+        } else {
+          target[key] = value;
+        }
+      });
+    });
+    return target;
+  };
   $.jstree = { defaults: {}, plugins: {} };
   $.plot = function plot(selector, data, options) {
     $.plot.calls.push({ selector, data, options });
@@ -272,26 +405,60 @@ function createDomHarness() {
     jQuery: $,
     console,
     document: {
+      body: element("body"),
       getElementById(id) {
         return element(id);
       },
       styleSheets: [],
     },
-    window: { location: { search: "" }, name: "test_window" },
+    window: {
+      getComputedStyle() {
+        return { backgroundColor: "", getPropertyValue() { return ""; } };
+      },
+      location: { search: "" },
+      name: "test_window",
+    },
     setTimeout,
     clearTimeout,
   };
   context.global = context;
 
-  return { context, element, elements };
+  return { context, element, elements, parseMarkup };
 }
 
-function loadGeneratedGa(gaPath) {
+function loadGeneratedGa(gaPath, moduleHtmlPath) {
   const harness = createDomHarness();
   const source = fs.readFileSync(gaPath, "utf8");
   vm.createContext(harness.context);
   vm.runInContext(source, harness.context, { filename: gaPath });
+  harness.context.ga.color = harness.context.ga.color || {};
+  harness.context.ga.color.data = harness.context.ga.color.data || {};
+  harness.context.ga.color.data.body = harness.context.ga.color.data.body || { background: "" };
+  if (moduleHtmlPath) {
+    loadGeneratedModule(harness, moduleHtmlPath);
+  }
   return harness;
+}
+
+function loadGeneratedModule(harness, moduleHtmlPath) {
+  const html = fs.readFileSync(moduleHtmlPath, "utf8");
+  harness.parseMarkup(html, null);
+  html.replace(/<form[^>]*id="([^"]+)"/gi, (match, formId) => {
+    const inputAreaId = `${formId}_input_area`;
+    if (harness.elements[inputAreaId]) {
+      harness.elements[inputAreaId].parentId = formId;
+    }
+    return match;
+  });
+
+  const scripts = [];
+  html.replace(/<script[^>]*>([\s\S]*?)<\/script>/gi, (match, script) => {
+    scripts.push(script);
+    return match;
+  });
+  scripts.forEach((script, index) => {
+    vm.runInContext(script, harness.context, { filename: `${moduleHtmlPath}:script${index + 1}` });
+  });
 }
 
 function runValidationScenario(gaPath) {
@@ -647,8 +814,94 @@ function runDataUpdateScenario(gaPath) {
   assert(!h.context._jmol_info.dyn_structure_1, "reset should remove dynamic atomicstructure metadata");
 }
 
+function setupCalcDrivenIntegerpairReplay(h) {
+  const ga = h.context.ga;
+  const mod = "calc_replay";
+
+  h.parseMarkup(
+    [
+      '<form id="calc_replay">',
+      '<input type="number" id="pair_rows" name="pair_rows" value="2">',
+      '<input type="number" id="pair_cols" name="pair_cols" value="2">',
+      '<input type="text" id="pair_grid" name="pair_grid" value="2,2">',
+      '<div id="ga-repeater-pair_grid"></div>',
+      '</form>',
+    ].join(""),
+    null
+  );
+  ["pair_rows", "pair_cols", "pair_grid", "ga-repeater-pair_grid"].forEach((id) => {
+    h.elements[id].parentId = mod;
+  });
+
+  ga.layout.modules[mod] = {
+    fields: {
+      pair_grid: {},
+      pair_payload: {},
+    },
+    json: {
+      pair_rows: { id: "pair_rows", type: "integer" },
+      pair_cols: { id: "pair_cols", type: "integer" },
+      pair_grid: { id: "pair_grid", type: "integerpair", calc: "pair_rows,pair_cols", repeater: "true" },
+      pair_payload: { id: "pair_payload", type: "text", repeat: "pair_grid" },
+    },
+  };
+
+  ga.repeat.data[mod] = { repeat: {}, repeater: {} };
+  ga.repeat.data[mod].repeat.pair_payload = {
+    lhtmlr: '<label for="%%id%%">%%label%%</label>',
+    lhtmlrg: '<label id="%%id%%" style="grid-column:%%gridcol%%">%%label%%</label>',
+    lhtmls: '<label>Pair Payload</label>',
+    dhtmlr: '<input type="text" id="%%id%%" name="%%id%%" value="">',
+    dhtmlrg: '<input type="text" id="%%id%%" name="%%id%%" value="" style="grid-column:%%gridcol%%">',
+    evalr: "",
+  };
+
+  ga.repeat.repeater(mod, "pair_grid", "integerpair", "false");
+  ga.repeat.repeatOn(mod, "pair_payload", "pair_grid");
+  ga.calc.register(mod, "pair_grid", "pair_rows,pair_cols");
+  ga.repeat.change(mod, "pair_grid", true);
+}
+
+function runRepeaterReplayScenario(gaPath, moduleHtmlPath) {
+  const h = loadGeneratedGa(gaPath, moduleHtmlPath);
+  const ga = h.context.ga;
+
+  ga.valuen.input("repeat_demo", {
+    row_count: "3",
+    "row_count-row_label-0": "alpha",
+    "row_count-row_label-1": "beta",
+    "row_count-row_label-2": "gamma",
+  });
+
+  assert(h.element("row_count").value === "3", "integer repeater count should be restored");
+  assert(h.element("row_count-row_label-0").value === "alpha", "first repeated text input should be restored");
+  assert(h.element("row_count-row_label-1").value === "beta", "second repeated text input should be restored");
+  assert(h.element("row_count-row_label-2").value === "gamma", "third repeated text input should be restored");
+
+  setupCalcDrivenIntegerpairReplay(h);
+  ga.valuen.input("calc_replay", {
+    pair_rows: "3",
+    pair_cols: "2",
+    "pair_grid-pair_payload-0-0": "r1c1",
+    "pair_grid-pair_payload-0-1": "r1c2",
+    "pair_grid-pair_payload-1-0": "r2c1",
+    "pair_grid-pair_payload-1-1": "r2c2",
+    "pair_grid-pair_payload-2-0": "r3c1",
+    "pair_grid-pair_payload-2-1": "r3c2",
+  });
+
+  assert(h.element("pair_grid").value === "3,2", "calc-driven integerpair repeater should be recomputed");
+  assert(h.element("pair_grid-pair_payload-0-0").value === "r1c1", "first matrix value should be restored");
+  assert(h.element("pair_grid-pair_payload-0-1").value === "r1c2", "second matrix value should be restored");
+  assert(h.element("pair_grid-pair_payload-1-0").value === "r2c1", "third matrix value should be restored");
+  assert(h.element("pair_grid-pair_payload-1-1").value === "r2c2", "fourth matrix value should be restored");
+  assert(h.element("pair_grid-pair_payload-2-0").value === "r3c1", "new matrix row first value should be restored");
+  assert(h.element("pair_grid-pair_payload-2-1").value === "r3c2", "new matrix row second value should be restored");
+}
+
 const command = process.argv[2];
 const gaPath = process.argv[3];
+const moduleHtmlPath = process.argv[4];
 
 if (!command || !gaPath) {
   throw new Error("usage: node genapp_js_harness.js <command> <generated-ga.js>");
@@ -660,6 +913,12 @@ switch (command) {
     break;
   case "data-update":
     runDataUpdateScenario(gaPath);
+    break;
+  case "repeater-replay":
+    if (!moduleHtmlPath) {
+      throw new Error("repeater-replay requires generated module HTML path");
+    }
+    runRepeaterReplayScenario(gaPath, moduleHtmlPath);
     break;
   default:
     throw new Error(`unknown command '${command}'`);
