@@ -1,0 +1,15 @@
+{
+    "moduleid"   : "plain",
+    "label"      : "Plain UI2 Modules Fallback",
+    "executable" : "plain_ui2_modules",
+    "resource"   : "local",
+    "fields"     : [
+        {
+            "role"    : "input",
+            "id"      : "plain_ui2_modules_input",
+            "label"   : "Plain UI2 Modules Input",
+            "type"    : "text",
+            "default" : "plain ui2 modules"
+        }
+    ]
+}

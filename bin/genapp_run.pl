@@ -459,6 +459,10 @@ foreach my $l ( keys %langs )
                         }
                         grep s/__modulejson__/$enc_mod_json/g, @l;
                     }
+                    if ( grep /__viewjson__/, @l ) {
+                        my $enc_view_json = get_optional_view_json_encoded( $$rplc_menu{ 'menu:modules:id' }, $l );
+                        grep s/__viewjson__/$enc_view_json/g, @l;
+                    }
 
                     foreach my $sub ( keys %extra_subs ) {
                         print "doing extra sub $sub to $extra_subs{$sub}\n" if $debug_srplc;
@@ -681,6 +685,10 @@ foreach my $l ( keys %langs )
                                         close $fh;
                                     }
                                     grep s/__modulejson__/$enc_mod_json/g, @l;
+                                }
+                                if ( grep /__viewjson__/, @l ) {
+                                    my $enc_view_json = get_optional_view_json_encoded( $$rplc_menu2{ 'menu:modules:id' }, $l );
+                                    grep s/__viewjson__/$enc_view_json/g, @l;
                                 }
                                 foreach my $sub ( keys %extra_subs ) {
                                     print "doing extra sub $sub to $extra_subs{$sub}\n" if $debug_srplc;

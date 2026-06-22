@@ -70,6 +70,8 @@ An application directory is expected to provide:
 - `directives.json`: global app/generation data, including `languages`.
 - `menu.json`: menu hierarchy and menu-to-module references.
 - `modules/*.json`: module field definitions.
+- `views/*.json`: optional target-neutral view organization hints keyed by
+  module id. These are plain JSON files, not module files.
 - `bin/`: command-line executables used by module wrappers.
 - `add/`: files copied into generated output.
 - Optional `<language>/` overrides.
@@ -88,7 +90,26 @@ Language-specific override behavior:
 - `<language>/menu.json` replaces base `menu.json` for that target.
 - `<language>/modules/<module>.json` replaces the base module JSON for that
   module.
+- `<language>/module_overrides/<module>.json` is a clearer full module
+  replacement path and takes precedence over `<language>/modules/<module>.json`
+  when present.
+- `<language>/views/<module>.json` optionally refines the target-neutral
+  `views/<module>.json` for that target.
 - `<language>/add/` is copied after base `add/`, so it can overwrite files.
+
+Optional view lookup:
+
+```text
+{}
++ views/<module>.json
++ <language>/views/<module>.json
+-> __viewjson__
+```
+
+View JSON is exposed to templates with `__viewjson__`. Missing view files
+produce `{}`. Views are intended to organize presentation only; they should not
+redefine field types, repeat dependencies, executables, hook payloads, output
+ids, defaults, or backend request shape.
 
 ## JSON Loading And Traversal
 
@@ -101,8 +122,12 @@ Core functions in `etc/perl/genapp_util.pl`:
   `panels` into `%extra_subs`, calls `layout_expand()`, stores `__layout__`,
   and removes per-field `layout` from the module JSON before normal traversal.
 - `get_file_json_lang_specific($file, $language, $replace)`: prefers
-  `<language>/<file>` when present, either replacing or merging depending on
-  `$replace`.
+  `<language>/module_overrides/<module>.json` for module files when present,
+  then `<language>/<file>` when present, either replacing or merging depending
+  on `$replace`.
+- `get_optional_view_json($module_id, $language)`: reads optional plain JSON
+  view files without module/layout side effects and merges target-specific view
+  data over target-neutral view data.
 - `start_json($json, $ref)`: flattens nested JSON into an iterator of
   replacement maps.
 - `next_json($ref, $match)`: advances through flattened maps, optionally until
@@ -143,14 +168,15 @@ validator. It:
 - Validates duplicate field ids and some type-specific rules, such as listbox
   `values`.
 - Checks repeater dependency rules and can emit repeater graphs.
-- Checks every used type has both
-  `$GENAPP/languages/<language>/types/<type>.input` and
+- For targets that assemble per-field type templates, checks every used type
+  has both `$GENAPP/languages/<language>/types/<type>.input` and
   `$GENAPP/languages/<language>/types/<type>.output`.
 
 Important extension consequence: adding a new module field type requires
-input/output templates for every target language listed by the app, even if the
-new type is only meaningful for one target. If that is not desired, first adjust
-validation or target selection semantics deliberately.
+input/output templates for every target language listed by the app that uses
+per-field type templates. Manifest-oriented targets that do not expand
+`__fields:type__` templates can carry module field types without owning a
+parallel no-op type-template tree.
 
 ## Target Assembly Model
 
@@ -269,8 +295,8 @@ Minimum route of attack:
    both.
 2. Add `languages/html5/types/<type>.input`.
 3. Add `languages/html5/types/<type>.output`.
-4. If apps may generate other targets, add stubs or real templates under those
-   targets' `types/` directories, or intentionally adjust target validation.
+4. If apps may generate other template-expanded targets, add stubs or real
+   templates under those targets' `types/` directories.
 5. For input widgets, follow the `ga.layout.fields[id].lhtml/dhtml/eval`
    pattern.
 6. For required input validation, register with `ga.value.registerid()` and add
@@ -405,7 +431,8 @@ small fixture app plus browser/runtime verification.
   fragile, especially around `__modulejson__`, `__layout__`, and HTML/JS text.
 - `get_file_json()` has side effects beyond parsing: layout expansion,
   extraction of special substitutions, and layout removal from fields.
-- All used field types are checked against all app target languages.
+- All used field types are checked against all app target languages that
+  assemble per-field type templates.
 - Some code still calls `svn info` for revision labels; this is metadata only
   and should not revive SVN as a source of truth.
 - `base.php` builds shell command strings; feature work touching request values,
@@ -422,8 +449,8 @@ small fixture app plus browser/runtime verification.
 
 - Which target languages are actively maintained versus historical?
 - What is the preferred fixture app for generator/runtime regression tests?
-- Can field-type validation become target-aware so new HTML5-only widgets do
-  not require no-op templates for inactive targets?
+- Is scanning `languages/<target>.json` for `__fields:type__` sufficient as the
+  long-term marker for targets that need per-field type-template validation?
 - Which runtime paths are still used: Airavata, Abaco, OpenStack/oscluster,
   Docker, local, and nodeapi?
 - What is the intended architecture for modernizing widgets: continue with

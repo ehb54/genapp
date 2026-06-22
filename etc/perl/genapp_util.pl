@@ -778,6 +778,99 @@ sub get_file_json {
     $json;
 }
 
+sub get_plain_json {
+    my $f = $_[0];
+    my $description = $_[1] || 'file';
+
+    die "$0: get_plain_json error $f does not exist\n" if !-e $f;
+    my $fh;
+    open $fh, $f || die "$0: get_plain_json error file open $f $!\n";
+    my @ol = <$fh>;
+    close $fh;
+    my @l = grep !/^\s*#/, @ol;
+    my $l = join '', @l;
+
+    my $json;
+    eval {
+        $json = decode_json( $l );
+        1;
+    } || do {
+        my $e = $@;
+        die "JSON Error in $description $f: $e";
+    };
+
+    return $json;
+}
+
+sub module_override_file {
+    my ( $f, $l ) = @_;
+
+    return if !$l;
+    return if $f !~ /^modules\/([^\/]+\.json)$/;
+
+    my $override = "$l/module_overrides/$1";
+    return -e $override ? $override : undef;
+}
+
+sub get_optional_view_json {
+    my ( $module_id, $l ) = @_;
+
+    my $view = {};
+    foreach my $f ( "views/$module_id.json", ( $l ? "$l/views/$module_id.json" : () ) ) {
+        next if !-e $f;
+        $view = merge( $view, get_plain_json( $f, 'view file' ) );
+    }
+
+    return $view;
+}
+
+sub encode_json_for_single_quoted_template {
+    my $json = $_[0];
+    my $js = JSON->new;
+    $js->canonical(1);
+    my $encoded = $js->encode( $json );
+
+    # Match __modulejson__ escaping for JSON embedded in single-quoted JS/PHP.
+    $encoded =~ s/\\\\'/\\'/g;
+    $encoded =~ s/\\"/\\\\"/g;
+    return $encoded;
+}
+
+sub get_optional_view_json_encoded {
+    my ( $module_id, $l ) = @_;
+    return encode_json_for_single_quoted_template( get_optional_view_json( $module_id, $l ) );
+}
+
+sub ref_contains_fields_type_token {
+    my $arg = $_[0];
+
+    if ( ref( $arg ) eq 'HASH' ) {
+        foreach my $k ( keys %$arg ) {
+            return 1 if defined $k && $k =~ /__fields:type__/;
+            my $v = $$arg{ $k };
+            return 1 if ref_contains_fields_type_token( $v );
+        }
+        return 0;
+    }
+
+    if ( ref( $arg ) eq 'ARRAY' ) {
+        foreach my $v ( @$arg ) {
+            return 1 if ref_contains_fields_type_token( $v );
+        }
+        return 0;
+    }
+
+    return defined $arg && $arg =~ /__fields:type__/ ? 1 : 0;
+}
+
+sub language_uses_field_type_templates {
+    my $l = $_[0];
+    my $f = "$gap/languages/$l.json";
+
+    return 1 if !-e $f;
+    return ref_contains_fields_type_token( get_plain_json( $f, 'language file' ) );
+}
+
 
 sub remove_field_layout {
     my $json = shift;
@@ -827,6 +920,14 @@ sub get_file_json_lang_specific {
     my $r = $_[ 2 ];
 
     # print "get_file_json_lang_specific f='$f' l='$l' r='$r'\n";
+
+    if ( my $override = module_override_file( $f, $l ) ) {
+        $get_file_json_lang_specific_used++;
+        if ( $r || !-e $f ) {
+            return replace_file_json_walk( get_file_json( $override ), $l, $f );
+        }
+        return replace_file_json_walk( get_file_json( "$f", $override ), $l, $f );
+    }
 
     if ( $l && -e "$l/$f" ) {
         $get_file_json_lang_specific_used++;
@@ -995,6 +1096,7 @@ sub module_exists {
     return 1 if -e $f;
 
     foreach my $k ( keys %$langs ) {
+        return 1 if module_override_file( $f, $k );
         return 1 if -e "$k/$f";
     }
     return 0;
@@ -1624,6 +1726,10 @@ sub check_files {
 
     foreach my $l ( keys %langs )
     {
+        if ( !language_uses_field_type_templates( $l ) ) {
+            print "language $l does not use field type templates; skipping type template checks\n";
+            next;
+        }
         print "checking language types for language $l\n";
         foreach my $k ( keys %types )
         {

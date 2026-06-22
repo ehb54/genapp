@@ -1,0 +1,6 @@
+{
+    "title"       : "UI2 Invalid View Fixture",
+    "application" : "ui2_invalid_view",
+    "version"     : "0.01",
+    "languages"   : [ "ui2" ]
+}

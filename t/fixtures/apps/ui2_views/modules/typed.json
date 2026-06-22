@@ -1,0 +1,28 @@
+{
+    "moduleid"   : "typed",
+    "label"      : "Typed",
+    "executable" : "typed",
+    "resource"   : "local",
+    "fields"     : [
+        {
+            "role"    : "input",
+            "id"      : "count",
+            "label"   : "Count",
+            "type"    : "integer",
+            "default" : "2"
+        },
+        {
+            "role"    : "input",
+            "id"      : "enabled",
+            "label"   : "Enabled",
+            "type"    : "checkbox"
+        },
+        {
+            "role"    : "input",
+            "id"      : "ratio",
+            "label"   : "Ratio",
+            "type"    : "float",
+            "default" : "1.5"
+        }
+    ]
+}

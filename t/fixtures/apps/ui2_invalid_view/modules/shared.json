@@ -1,0 +1,15 @@
+{
+    "moduleid"   : "shared",
+    "label"      : "Shared",
+    "executable" : "shared",
+    "resource"   : "local",
+    "fields"     : [
+        {
+            "role"    : "input",
+            "id"      : "shared_input",
+            "label"   : "Shared Input",
+            "type"    : "text",
+            "default" : "shared"
+        }
+    ]
+}

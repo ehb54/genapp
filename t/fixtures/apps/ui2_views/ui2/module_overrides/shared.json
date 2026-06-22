@@ -1,0 +1,15 @@
+{
+    "moduleid"   : "shared",
+    "label"      : "UI2 Module Override",
+    "executable" : "ui2_module_override_shared",
+    "resource"   : "local",
+    "fields"     : [
+        {
+            "role"    : "input",
+            "id"      : "ui2_override_input",
+            "label"   : "UI2 Override Input",
+            "type"    : "text",
+            "default" : "ui2 override"
+        }
+    ]
+}

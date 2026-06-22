@@ -1,0 +1,6 @@
+{
+    "title"       : "UI2 Views Fixture",
+    "application" : "ui2_views",
+    "version"     : "0.01",
+    "languages"   : [ "ui2" ]
+}

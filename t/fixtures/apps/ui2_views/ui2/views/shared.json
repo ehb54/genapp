@@ -1,0 +1,8 @@
+{
+    "labels" : {
+        "title" : "UI2 View"
+    },
+    "renderers" : {
+        "shared_input" : "compact"
+    }
+}

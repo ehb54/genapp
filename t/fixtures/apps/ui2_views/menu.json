@@ -1,0 +1,23 @@
+{
+    "header" : "UI2 Views Fixture",
+    "menu"   : [
+        {
+            "id"      : "demo",
+            "label"   : "Demo",
+            "modules" : [
+                {
+                    "id"    : "shared",
+                    "label" : "Shared"
+                },
+                {
+                    "id"    : "plain",
+                    "label" : "Plain"
+                },
+                {
+                    "id"    : "typed",
+                    "label" : "Typed"
+                }
+            ]
+        }
+    ]
+}

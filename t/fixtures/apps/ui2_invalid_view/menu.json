@@ -1,0 +1,15 @@
+{
+    "header" : "UI2 Invalid View Fixture",
+    "menu"   : [
+        {
+            "id"      : "demo",
+            "label"   : "Demo",
+            "modules" : [
+                {
+                    "id"    : "shared",
+                    "label" : "Shared"
+                }
+            ]
+        }
+    ]
+}

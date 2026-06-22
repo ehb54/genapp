@@ -1,0 +1,15 @@
+{
+    "moduleid"   : "plain",
+    "label"      : "Plain",
+    "executable" : "plain",
+    "resource"   : "local",
+    "fields"     : [
+        {
+            "role"    : "input",
+            "id"      : "plain_input",
+            "label"   : "Plain Input",
+            "type"    : "text",
+            "default" : "plain"
+        }
+    ]
+}

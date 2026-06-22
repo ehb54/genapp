@@ -1,0 +1,22 @@
+# this is a language file, any language specific data should go here
+{
+  "id"          : "ui2",
+  "description" : "Experimental modern GenApp UI target",
+  "version"     : 1,
+  "assembly"    : [
+                   {
+                    "frequency"  : "once",
+                    "output"     : "index.html",
+                    "inputs"     : [
+                                    { "index.html" : "once" }
+                                  ]
+                   }
+                  ,{
+                    "frequency"  : "menu:modules:id",
+                    "output"     : "modules/__menu:modules:id__.json",
+                    "inputs"     : [
+                                    { "module-summary.json" : "once" }
+                                   ]
+                   }
+                  ]
+}

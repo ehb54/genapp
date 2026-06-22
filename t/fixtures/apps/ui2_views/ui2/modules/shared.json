@@ -1,0 +1,15 @@
+{
+    "moduleid"   : "shared",
+    "label"      : "Legacy UI2 Modules Override Should Lose",
+    "executable" : "legacy_ui2_modules_shared",
+    "resource"   : "local",
+    "fields"     : [
+        {
+            "role"    : "input",
+            "id"      : "legacy_ui2_modules_input",
+            "label"   : "Legacy UI2 Modules Input",
+            "type"    : "text",
+            "default" : "legacy ui2 modules"
+        }
+    ]
+}

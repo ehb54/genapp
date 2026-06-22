@@ -1,0 +1,14 @@
+{
+    "module" : "shared",
+    "sections" : [
+        {
+            "id"     : "general",
+            "title"  : "General Section",
+            "fields" : [ "shared_input" ]
+        }
+    ],
+    "labels" : {
+        "title" : "General View",
+        "basis" : "target neutral"
+    }
+}

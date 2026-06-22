@@ -39,10 +39,12 @@ unlike( $index, qr/Base footer/, 'base footer is replaced by html5 directives' )
 my $module_html = read_file( File::Spec->catfile( $html5, qw(ajax html5_menu shared.html) ) );
 like( $module_html, qr/html5_input/, 'html5 module replacement field appears in generated module html' );
 unlike( $module_html, qr/"id":"shared_input"|id="shared_input"|name="shared_input"/, 'base module field is replaced by html5 module override' );
+unlike( $module_html, qr/BASE_VIEW_SENTINEL_SHOULD_NOT_REACH_HTML5|HTML5_VIEW_SENTINEL_SHOULD_NOT_REACH_HTML5/, 'html5 module output ignores inert view files' );
 
 my $module_php = read_file( File::Spec->catfile( $html5, qw(ajax html5_menu shared.php) ) );
 like( $module_php, qr/html5_shared/, 'html5 module replacement executable appears in generated module php' );
 unlike( $module_php, qr/base_shared/, 'base module executable is replaced by html5 module override' );
+unlike( $module_php, qr/BASE_VIEW_SENTINEL_SHOULD_NOT_REACH_HTML5|HTML5_VIEW_SENTINEL_SHOULD_NOT_REACH_HTML5/, 'html5 php output ignores inert view files' );
 
 ok( -f File::Spec->catfile( $html5, qw(etc sys_user_config.html) ), 'html5 config module html was generated' );
 ok( -f File::Spec->catfile( $html5, qw(ajax sys_config sys_user_config.php) ), 'html5 config module php was generated' );
