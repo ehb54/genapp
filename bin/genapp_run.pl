@@ -132,6 +132,7 @@ my $warn;
 my $notice;
 my $created;
 my $compiled_app;
+my @compiled_languages;
 my $ref_directives = {};
 my $ref_menu       = {};
 #my $ref_config     = {};
@@ -162,6 +163,7 @@ foreach my $l ( keys %langs )
     print '-'x60 . "\n";
     print "processing language $l\n";
     print '-'x60 . "\n";
+    push @compiled_languages, $l;
 
     # reload for language specific content
     $directives = add_special_directives( get_file_json_lang_specific( "directives.json", $l, 0 ) );
@@ -1312,5 +1314,6 @@ print '-'x60 . "\nErrors:\n$error" . '-'x60 . "\n"    if $error;
 if ( !$error ) {
     print '='x60 . "\n";
     print "genapp compiled $compiled_app correctly\n";
+    print "compiled language" . ( @compiled_languages == 1 ? "" : "s" ) . ": " . join( ", ", @compiled_languages ) . "\n";
     print '='x60 . "\n";
 }

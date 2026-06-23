@@ -53,6 +53,26 @@ Executable wrappers must write valid JSON to stdout. Put diagnostics on stderr
 or in files, not stdout, unless the module contract explicitly expects them in
 the JSON output.
 
+## Legacy Target Prime Directive
+
+The existing `html5` generated application is production legacy behavior. New
+target work such as `ui2` must not silently change `html5` output, deployment
+directives, system modules, login/splash behavior, theme selection, Job Manager
+columns, or generated runtime assets.
+
+- Prefer target-filtered generation such as `genapp --language ui2` while
+  experimenting with `ui2`.
+- Regenerate `html5` only when the task explicitly calls for a legacy change or
+  legacy verification.
+- Treat ignored runtime files such as an app's `directives.json` as deploy
+  state; refresh them only from the tracked source intended for that app and
+  verify legacy-facing directives before regeneration.
+- For Zazzie3, keep `directives.json.docker` and its guardrail checker aligned
+  so theme selection, splash docs, Job Manager Details, and other legacy UI
+  expectations cannot drift unnoticed.
+- If a UI2 experiment needs shared GenApp core changes, add tests proving
+  target filtering and legacy generation behavior remain intact.
+
 ## Repository Map
 
 This repository is the GenApp generator/runtime source, not an application

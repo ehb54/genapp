@@ -317,11 +317,12 @@
     header.appendChild(el("h2", null, title));
     header.appendChild(el("span", "ui2-pill", `${fields.length}`));
     const body = el("div", "ui2-section-body");
+    const renderFields = orderFieldsByRepeater(fields);
 
     if (!fields.length) {
       body.appendChild(el("p", "ui2-help", `No ${title.toLowerCase()} declared.`));
     } else {
-      fields.forEach((field) => body.appendChild(renderField(field, role)));
+      renderFields.forEach((field) => body.appendChild(renderField(field, role)));
     }
 
     section.append(header, body);
@@ -353,6 +354,7 @@
     }
     if (devMode && field.repeat) {
       stack.appendChild(el("p", "ui2-help", `Visible when ${field.repeat}`));
+      stack.appendChild(el("p", "ui2-help ui2-repeat-debug"));
     }
     if (devMode && isRepeater(field)) {
       stack.appendChild(el("p", "ui2-help", "Repeater source"));
@@ -475,39 +477,101 @@
     if (!form) {
       return;
     }
-    state.values = {};
-    form.querySelectorAll("[data-field-id]").forEach((control) => {
-      const id = control.dataset.fieldId;
-      if (!id || control.type === "radio" && !control.checked) {
-        return;
-      }
-      state.values[id] = control.type === "checkbox" ? control.checked : control.value;
+    const rawValues = collectControlValues(form, () => true);
+    const activeRows = evaluateRepeatVisibility(form, rawValues);
+    updateRepeats(form, activeRows, rawValues);
+    state.values = collectControlValues(form, (control) => {
+      const row = control.closest(".ui2-field");
+      return !row || activeRows.get(row) !== false;
     });
-    updateRepeats(form);
     const preview = document.getElementById("ui2-preview");
     if (preview) {
       preview.textContent = JSON.stringify(state.values, null, 2);
     }
   }
 
-  function updateRepeats(scope) {
-    scope.querySelectorAll("[data-repeat]").forEach((row) => {
-      row.classList.toggle("ui2-hidden", !repeatIsActive(row.dataset.repeat));
+  function collectControlValues(scope, includeControl) {
+    const values = {};
+    scope.querySelectorAll("[data-field-id]").forEach((control) => {
+      const id = control.dataset.fieldId;
+      if (!id || control.type === "radio" && !control.checked || !includeControl(control)) {
+        return;
+      }
+      values[id] = control.type === "checkbox" ? control.checked : control.value;
+    });
+    return values;
+  }
+
+  function evaluateRepeatVisibility(scope, rawValues) {
+    const rows = Array.from(scope.querySelectorAll(".ui2-field"));
+    const rowsByFieldId = new Map();
+    rows.forEach((row) => {
+      if (row.dataset.fieldId && !rowsByFieldId.has(row.dataset.fieldId)) {
+        rowsByFieldId.set(row.dataset.fieldId, row);
+      }
+    });
+
+    const activeRows = new Map(rows.map((row) => [row, !row.dataset.repeat]));
+    for (let pass = 0; pass < rows.length + 1; pass += 1) {
+      let changed = false;
+      rows.forEach((row) => {
+        const active = row.dataset.repeat
+          ? repeatIsActive(row.dataset.repeat, rawValues, activeRows, rowsByFieldId)
+          : true;
+        if (activeRows.get(row) !== active) {
+          activeRows.set(row, active);
+          changed = true;
+        }
+      });
+      if (!changed) {
+        break;
+      }
+    }
+    return activeRows;
+  }
+
+  function updateRepeats(scope, activeRows, rawValues) {
+    scope.querySelectorAll(".ui2-field").forEach((row) => {
+      const active = activeRows.get(row) !== false;
+      row.classList.toggle("ui2-hidden", !active);
+      row.querySelectorAll("[data-field-id]").forEach((control) => {
+        control.disabled = !active;
+      });
+      updateRepeatDebug(row, active, rawValues, activeRows);
     });
   }
 
-  function repeatIsActive(expression) {
+  function repeatIsActive(expression, rawValues, activeRows, rowsByFieldId) {
     if (!expression) {
       return true;
     }
     const [rawId, rawValue] = expression.split(":");
     const id = rawId.trim();
     const expected = rawValue == null ? true : rawValue.trim();
-    const actual = state.values[id];
+    const controllerRow = rowsByFieldId.get(id);
+    const controllerActive = !controllerRow || activeRows.get(controllerRow) !== false;
+    const actual = controllerActive ? rawValues[id] : undefined;
     if (rawValue == null) {
       return Boolean(actual) && actual !== "false";
     }
     return String(actual) === expected;
+  }
+
+  function updateRepeatDebug(row, active, rawValues, activeRows) {
+    if (!devMode || !row.dataset.repeat) {
+      return;
+    }
+    const debug = row.querySelector(".ui2-repeat-debug");
+    if (!debug) {
+      return;
+    }
+    const [rawId, rawValue] = row.dataset.repeat.split(":");
+    const id = rawId.trim();
+    const controller = row.closest("form")?.querySelector(`.ui2-field[data-field-id="${cssEscape(id)}"]`);
+    const controllerActive = !controller || activeRows.get(controller) !== false;
+    const expected = rawValue == null ? "truthy" : rawValue.trim();
+    const actual = controllerActive ? rawValues[id] : "(inactive)";
+    debug.textContent = `Repeat ${active ? "active" : "hidden"}: ${id} is ${JSON.stringify(actual)}; expected ${expected}`;
   }
 
   function wireControl(control, field) {
@@ -524,6 +588,13 @@
 
   function sanitizeModuleId(value) {
     return String(value || "").trim().replace(/[^A-Za-z0-9_-]/g, "");
+  }
+
+  function cssEscape(value) {
+    if (window.CSS && typeof window.CSS.escape === "function") {
+      return window.CSS.escape(value);
+    }
+    return String(value).replace(/["\\]/g, "\\$&");
   }
 
   function moduleCandidates() {
@@ -556,6 +627,61 @@
       return type;
     }
     return "text";
+  }
+
+  function orderFieldsByRepeater(fields) {
+    const byId = new Map();
+    const children = new Map();
+    fields.forEach((field) => {
+      if (field.id) {
+        byId.set(field.id, field);
+      }
+    });
+    fields.forEach((field) => {
+      const parentId = repeatControllerId(field.repeat);
+      if (!parentId || !byId.has(parentId) || parentId === field.id) {
+        return;
+      }
+      if (!children.has(parentId)) {
+        children.set(parentId, []);
+      }
+      children.get(parentId).push(field);
+    });
+
+    const output = [];
+    const emitted = new Set();
+    const emit = (field, stack) => {
+      if (!field || emitted.has(field)) {
+        return;
+      }
+      emitted.add(field);
+      output.push(field);
+      const nested = children.get(field.id) || [];
+      nested.forEach((child) => {
+        if (!stack.has(child)) {
+          stack.add(child);
+          emit(child, stack);
+          stack.delete(child);
+        }
+      });
+    };
+
+    fields.forEach((field) => {
+      const parentId = repeatControllerId(field.repeat);
+      if (parentId && byId.has(parentId) && parentId !== field.id) {
+        return;
+      }
+      emit(field, new Set([field]));
+    });
+    fields.forEach((field) => emit(field, new Set([field])));
+    return output;
+  }
+
+  function repeatControllerId(expression) {
+    if (!expression) {
+      return "";
+    }
+    return String(expression).split(":")[0].trim();
   }
 
   function isRepeater(field) {
@@ -597,6 +723,9 @@
     }
 
     row.appendChild(el("h3", null, field.label || field.id || "Section"));
+    if (devMode && field.repeat) {
+      row.appendChild(el("p", "ui2-help ui2-repeat-debug"));
+    }
     return row;
   }
 
