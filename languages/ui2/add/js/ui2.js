@@ -691,13 +691,34 @@
 
     const tree = el("div", "ui2-file-tree");
     tree.appendChild(el("h3", null, "User file tree"));
-    const list = el("ul", null);
-    ["Project folders", "Input files", "Result archives"].forEach((item) => {
-      const li = document.createElement("li");
-      li.textContent = item;
-      list.appendChild(li);
+    const tableWrap = el("div", "ui2-data-table-wrap");
+    const table = el("table", "ui2-data-table ui2-file-table");
+    const thead = document.createElement("thead");
+    const head = document.createElement("tr");
+    ["", "Name", "Type", "Size", "Modified"].forEach((label) => head.appendChild(el("th", null, label)));
+    thead.appendChild(head);
+    const tbody = document.createElement("tbody");
+    [
+      ["folder", "Project folders", "", "loads from server"],
+      ["file", "Input files", "size", "modified time"],
+      ["folder", "Result archives", "", "loads from server"]
+    ].forEach(([type, name, size, modified]) => {
+      const row = document.createElement("tr");
+      const selected = document.createElement("td");
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.disabled = true;
+      selected.appendChild(checkbox);
+      row.appendChild(selected);
+      row.appendChild(el("td", null, name));
+      row.appendChild(el("td", null, type));
+      row.appendChild(el("td", null, size));
+      row.appendChild(el("td", null, modified));
+      tbody.appendChild(row);
     });
-    tree.appendChild(list);
+    table.append(thead, tbody);
+    tableWrap.appendChild(table);
+    tree.appendChild(tableWrap);
     body.appendChild(tree);
 
     const compression = fields.find((field) => field.id === "compression");

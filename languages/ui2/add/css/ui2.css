@@ -70,7 +70,7 @@ code {
 .ui2-shell {
   height: 100vh;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto 1fr auto;
   overflow: hidden;
 }
 
@@ -614,6 +614,10 @@ code {
   font-size: 0.86rem;
 }
 
+.ui2-file-table {
+  min-width: 38rem;
+}
+
 .ui2-table-empty {
   color: var(--ui2-muted);
 }
@@ -621,6 +625,53 @@ code {
 .ui2-tool-actions {
   display: flex;
   justify-content: flex-start;
+}
+
+.ui2-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  border-top: 1px solid var(--ui2-border);
+  background: color-mix(in srgb, var(--ui2-panel) 90%, var(--ui2-bg));
+  color: var(--ui2-muted);
+  font-size: 0.84rem;
+  padding: 0.45rem 1rem;
+  position: relative;
+}
+
+.ui2-ws-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--ui2-muted);
+  font-weight: 700;
+  position: absolute;
+  right: 1rem;
+}
+
+.ui2-ws-dot {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 999px;
+  background: var(--ui2-muted);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui2-muted) 20%, transparent);
+}
+
+.ui2-ws-indicator-ok {
+  color: #2f9e44;
+}
+
+.ui2-ws-indicator-ok .ui2-ws-dot {
+  background: #2f9e44;
+}
+
+.ui2-ws-indicator-error {
+  color: var(--ui2-danger);
+}
+
+.ui2-ws-indicator-error .ui2-ws-dot {
+  background: var(--ui2-danger);
 }
 
 .ui2-output {
