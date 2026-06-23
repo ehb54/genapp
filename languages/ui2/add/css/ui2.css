@@ -482,6 +482,33 @@ code {
   gap: 0.5rem;
 }
 
+.ui2-repeat-table-wrap {
+  overflow-x: auto;
+}
+
+.ui2-repeat-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 0.35rem;
+}
+
+.ui2-repeat-table th {
+  color: var(--ui2-muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+  text-align: left;
+  padding: 0 0.35rem;
+}
+
+.ui2-repeat-table td {
+  padding: 0 0.35rem;
+  min-width: 9rem;
+}
+
+.ui2-repeat-table-input {
+  min-width: 8rem;
+}
+
 .ui2-output {
   min-height: 4rem;
   border: 1px solid var(--ui2-border);

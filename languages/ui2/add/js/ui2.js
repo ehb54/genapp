@@ -317,12 +317,14 @@
     header.appendChild(el("h2", null, title));
     header.appendChild(el("span", "ui2-pill", `${fields.length}`));
     const body = el("div", "ui2-section-body");
-    const renderFields = orderFieldsByRepeater(fields);
+    const renderPlan = planFields(fields);
 
     if (!fields.length) {
       body.appendChild(el("p", "ui2-help", `No ${title.toLowerCase()} declared.`));
     } else {
-      renderFields.forEach((field) => body.appendChild(renderField(field, role)));
+      renderPlan.forEach((item) => {
+        body.appendChild(item.kind === "table" ? renderTableizedRepeater(item, role) : renderField(item.field, role));
+      });
     }
 
     section.append(header, body);
@@ -362,6 +364,73 @@
 
     row.append(label, stack);
     return row;
+  }
+
+  function renderTableizedRepeater(item, role) {
+    const controller = item.controller;
+    const row = renderField(controller, role);
+    row.classList.add("ui2-tableized-repeater");
+
+    const stack = row.querySelector(".ui2-control-stack");
+    const fields = item.fields || [];
+    if (!stack || !fields.length || role === "output") {
+      return row;
+    }
+    row._ui2RepeatTableController = controller;
+    row._ui2RepeatTableFields = fields;
+
+    const tableWrap = el("div", "ui2-repeat-table-wrap");
+    const table = el("table", "ui2-repeat-table");
+    const thead = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    fields.forEach((field) => {
+      headRow.appendChild(el("th", null, field.label || field.id || field.type || "field"));
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+    table.appendChild(renderRepeatTableBody(controller, fields));
+    tableWrap.appendChild(table);
+
+    if (devMode) {
+      tableWrap.appendChild(el("p", "ui2-help", `Tableized repeat: ${fields.map((field) => field.id).join(", ")}`));
+    }
+
+    stack.appendChild(tableWrap);
+    return row;
+  }
+
+  function renderRepeatTableBody(controller, fields) {
+    const tbody = document.createElement("tbody");
+    const rows = Math.max(1, integerValue(controller.default, 1));
+    for (let rowIndex = 0; rowIndex < rows; rowIndex += 1) {
+      tbody.appendChild(renderRepeatTableRow(fields, rowIndex));
+    }
+    return tbody;
+  }
+
+  function renderRepeatTableRow(fields, rowIndex) {
+    const tr = document.createElement("tr");
+    fields.forEach((field) => {
+      const td = document.createElement("td");
+      td.appendChild(renderRepeatTableControl(field, rowIndex));
+      tr.appendChild(td);
+    });
+    return tr;
+  }
+
+  function renderRepeatTableControl(field, rowIndex) {
+    const input = el("input", "ui2-input ui2-repeat-table-input");
+    const type = String(field.type || "text").toLowerCase();
+    input.type = inputType(type);
+    input.id = `${fieldId(field)}-${rowIndex}`;
+    input.dataset.fieldId = field.id || "";
+    input.dataset.repeatTableField = field.id || "";
+    input.dataset.repeatTableIndex = String(rowIndex);
+    if (field.required === "true" || field.required === true) {
+      input.required = true;
+    }
+    input.value = arrayDefaultValue(field.default, rowIndex);
+    return input;
   }
 
   function renderControl(field) {
@@ -480,6 +549,7 @@
     const rawValues = collectControlValues(form, () => true);
     const activeRows = evaluateRepeatVisibility(form, rawValues);
     updateRepeats(form, activeRows, rawValues);
+    updateRepeatTables(form, rawValues);
     state.values = collectControlValues(form, (control) => {
       const row = control.closest(".ui2-field");
       return !row || activeRows.get(row) !== false;
@@ -495,6 +565,13 @@
     scope.querySelectorAll("[data-field-id]").forEach((control) => {
       const id = control.dataset.fieldId;
       if (!id || control.type === "radio" && !control.checked || !includeControl(control)) {
+        return;
+      }
+      if (control.dataset.repeatTableField) {
+        if (!Array.isArray(values[id])) {
+          values[id] = [];
+        }
+        values[id][Number(control.dataset.repeatTableIndex || 0)] = control.value;
         return;
       }
       values[id] = control.type === "checkbox" ? control.checked : control.value;
@@ -538,6 +615,25 @@
         control.disabled = !active;
       });
       updateRepeatDebug(row, active, rawValues, activeRows);
+    });
+  }
+
+  function updateRepeatTables(scope, rawValues) {
+    scope.querySelectorAll(".ui2-tableized-repeater").forEach((row) => {
+      const controller = row._ui2RepeatTableController;
+      const fields = row._ui2RepeatTableFields || [];
+      const tbody = row.querySelector(".ui2-repeat-table tbody");
+      if (!controller || !fields.length || !tbody) {
+        return;
+      }
+      const fallback = integerValue(controller.default, 1);
+      const wanted = Math.max(1, integerValue(rawValues[controller.id], fallback));
+      while (tbody.rows.length < wanted) {
+        tbody.appendChild(renderRepeatTableRow(fields, tbody.rows.length));
+      }
+      while (tbody.rows.length > wanted) {
+        tbody.deleteRow(tbody.rows.length - 1);
+      }
     });
   }
 
@@ -629,6 +725,51 @@
     return "text";
   }
 
+  function planFields(fields) {
+    const ordered = orderFieldsByRepeater(fields);
+    const byId = new Map();
+    ordered.forEach((field) => {
+      if (field.id) {
+        byId.set(field.id, field);
+      }
+    });
+
+    const tableChildren = new Map();
+    ordered.forEach((field) => {
+      const parentId = repeatControllerId(field.repeat);
+      if (!parentId || !byId.has(parentId) || !isTableizedRepeater(byId.get(parentId))) {
+        return;
+      }
+      if (!tableChildren.has(parentId)) {
+        tableChildren.set(parentId, []);
+      }
+      tableChildren.get(parentId).push(field);
+    });
+
+    const consumed = new Set();
+    const plan = [];
+    ordered.forEach((field) => {
+      if (consumed.has(field)) {
+        return;
+      }
+      const fieldsForTable = tableChildren.get(field.id) || [];
+      if (isTableizedRepeater(field) && fieldsForTable.length) {
+        fieldsForTable.forEach((child) => consumed.add(child));
+        plan.push({
+          kind: "table",
+          controller: field,
+          fields: fieldsForTable
+        });
+        return;
+      }
+      plan.push({
+        kind: "field",
+        field
+      });
+    });
+    return plan;
+  }
+
   function orderFieldsByRepeater(fields) {
     const byId = new Map();
     const children = new Map();
@@ -686,6 +827,25 @@
 
   function isRepeater(field) {
     return String(field.repeater || "").toLowerCase() === "true" || String(field.repeater || "").toLowerCase() === "yes";
+  }
+
+  function isTableizedRepeater(field) {
+    return isRepeater(field) && String(field.tableize || "").toLowerCase() === "true";
+  }
+
+  function integerValue(value, fallback) {
+    if (Array.isArray(value)) {
+      return integerValue(value[0], fallback);
+    }
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+  }
+
+  function arrayDefaultValue(value, index) {
+    if (Array.isArray(value)) {
+      return value[index] == null ? value[0] || "" : value[index];
+    }
+    return value == null ? "" : value;
   }
 
   function visibleFields(fields) {
