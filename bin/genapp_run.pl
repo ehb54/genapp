@@ -4,6 +4,8 @@ $notes = "usage: $0 {-d{?}}
 checks the files
 note: env variable GENAPP must be defined
 options:
+--language LANG generate only one directives language target
+--languages LIST generate only comma-separated directives language targets
 -d debug mode
  -dr show replacements
  -dc conditional replacements
@@ -20,8 +22,42 @@ $gap = $ENV{ "GENAPP" } || die "$0: error env variable GENAPP must be defined\n"
 use File::Basename;
 use File::stat;
 
-while ( $ARGV[ 0 ] =~ /^-(\w{1,2})/ )
+our %compile_language_filter;
+
+sub add_compile_language_filter {
+    my ( $arg, $value ) = @_;
+
+    foreach my $language ( split /,/, $value )
+    {
+        $language =~ s/^\s+|\s+$//g;
+        die "$0: option '$arg' included an empty language name\n\n$notes"
+            if $language eq '';
+        $compile_language_filter{ $language } = 1;
+    }
+}
+
+while ( @ARGV && $ARGV[ 0 ] =~ /^-/ )
 {
+    if ( $ARGV[ 0 ] =~ /^--languages?=(.+)$/ )
+    {
+        my $arg = shift;
+        add_compile_language_filter( $arg, $1 );
+        next;
+    }
+    if ( $ARGV[ 0 ] =~ /^--languages?$/ )
+    {
+        my $arg = shift;
+        die "$0: option '$arg' requires a language name or comma-separated list\n\n$notes"
+            if !@ARGV;
+        add_compile_language_filter( $arg, shift );
+        next;
+    }
+    die "$0: unrecognized option '$ARGV[0]'\n\n$notes"
+        if $ARGV[ 0 ] =~ /^--/;
+
+    die "$0: unrecognized option '$ARGV[0]'\n\n$notes"
+        if $ARGV[ 0 ] !~ /^-(\w{1,2})/;
+
     my $arg = $1;
     print "arg is $arg\n";
     shift;

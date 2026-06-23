@@ -8,7 +8,8 @@ core_dir="${GENAPP_ZAZZIE_CORE_DIR:-/src/genapp}"
 gz_dir="${GENAPP_ZAZZIE_GZ_DIR:-/opt/genapp/sassie3}"
 branch="${GENAPP_ZAZZIE_CORE_BRANCH:-php7designer}"
 ref="${GENAPP_ZAZZIE_CORE_REF:-HEAD}"
-generate=1
+generate_mode=""
+generate_language=""
 stash_dirty=0
 
 usage() {
@@ -34,6 +35,9 @@ Options:
   --branch NAME        Core branch to update
   --ref REF            Local ref/commit to require, default HEAD
   --check-only         Check/update core but do not run genapp
+  --generate-all       Regenerate every language listed in app directives
+  --generate-language LANG
+                       Regenerate only one language target, e.g. ui2 or html5
   --stash-dirty        Stash dirty server core changes before updating
   -h, --help           Show this help
 
@@ -70,8 +74,21 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --check-only)
-            generate=0
+            generate_mode="check"
             shift
+            ;;
+        --generate-all)
+            generate_mode="all"
+            shift
+            ;;
+        --generate-language)
+            if [[ $# -lt 2 ]]; then
+                echo "--generate-language requires a language name" >&2
+                exit 2
+            fi
+            generate_mode="language"
+            generate_language="$2"
+            shift 2
             ;;
         --stash-dirty)
             stash_dirty=1
@@ -89,20 +106,37 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+if [[ -z "$generate_mode" ]]; then
+    cat >&2 <<EOF
+Choose an explicit generation mode:
+  --check-only
+  --generate-language ui2
+  --generate-language html5
+  --generate-all
+EOF
+    exit 2
+fi
+
+if [[ "$generate_mode" = "language" && -z "$generate_language" ]]; then
+    echo "--generate-language requires a language name" >&2
+    exit 2
+fi
+
 required_commit="$(git -C "$repo_root" rev-parse --verify "${ref}^{commit}")"
 
 echo "Updating $host:$container:$core_dir to $branch @ $required_commit"
 
 ssh "$host" docker exec -i "$container" bash -s -- \
-    "$core_dir" "$gz_dir" "$branch" "$required_commit" "$generate" "$stash_dirty" <<'REMOTE'
+    "$core_dir" "$gz_dir" "$branch" "$required_commit" "$generate_mode" "$generate_language" "$stash_dirty" <<'REMOTE'
 set -euo pipefail
 
 core_dir="$1"
 gz_dir="$2"
 branch="$3"
 required_commit="$4"
-generate="$5"
-stash_dirty="$6"
+generate_mode="$5"
+generate_language="$6"
+stash_dirty="$7"
 
 stamp() {
     printf '\n== %s ==\n' "$1"
@@ -153,7 +187,7 @@ test "$core_head" = "$required_commit"
 test -f languages/html5/js/dynamic_output.js
 grep -q 'ga.dynamicOutput' languages/html5/add/js/ga.min.js
 
-if [[ "$generate" = "0" ]]; then
+if [[ "$generate_mode" = "check" ]]; then
     echo "Check-only requested; not regenerating $gz_dir"
     exit 0
 fi
@@ -161,11 +195,53 @@ fi
 stamp "Generate"
 cd "$gz_dir"
 . /etc/profile
-GENAPP="$core_dir" genapp
+
+html5_index_before=""
+ui2_index_before=""
+if [[ "$generate_mode" = "language" && "$generate_language" != "html5" && -f output/html5/index.html ]]; then
+    html5_index_before="$(stat -c '%Y:%s' output/html5/index.html)"
+fi
+if [[ "$generate_mode" = "language" && "$generate_language" != "ui2" && -f output/ui2/index.html ]]; then
+    ui2_index_before="$(stat -c '%Y:%s' output/ui2/index.html)"
+fi
+
+case "$generate_mode" in
+    all)
+        GENAPP="$core_dir" genapp
+        ;;
+    language)
+        GENAPP="$core_dir" genapp --language "$generate_language"
+        ;;
+    *)
+        echo "Unsupported generation mode: $generate_mode" >&2
+        exit 2
+        ;;
+esac
 
 stamp "Generated runtime verification"
-test -f output/html5/js/ga.min.js
-grep -q 'ga.dynamicOutput' output/html5/js/ga.min.js
+if [[ "$generate_mode" = "all" || "$generate_language" = "html5" ]]; then
+    test -f output/html5/js/ga.min.js
+    grep -q 'ga.dynamicOutput' output/html5/js/ga.min.js
+fi
+if [[ "$generate_mode" = "all" || "$generate_language" = "ui2" ]]; then
+    test -f output/ui2/index.html
+    test -f output/ui2/js/ui2.js
+    test -f output/ui2/css/ui2.css
+fi
+if [[ -n "$html5_index_before" ]]; then
+    html5_index_after="$(stat -c '%Y:%s' output/html5/index.html)"
+    if [[ "$html5_index_after" != "$html5_index_before" ]]; then
+        echo "output/html5/index.html changed during $generate_language-only generation" >&2
+        exit 1
+    fi
+fi
+if [[ -n "$ui2_index_before" ]]; then
+    ui2_index_after="$(stat -c '%Y:%s' output/ui2/index.html)"
+    if [[ "$ui2_index_after" != "$ui2_index_before" ]]; then
+        echo "output/ui2/index.html changed during $generate_language-only generation" >&2
+        exit 1
+    fi
+fi
 
 stamp "Post-generate core cleanup"
 cd "$core_dir"
@@ -180,12 +256,18 @@ elif [[ -n "$core_dirty" ]]; then
 fi
 
 cd "$gz_dir"
-mkdir -p output/html5/etc
-cat > output/html5/etc/genapp_core_version.json <<EOF
+version_dir="output/$generate_language/etc"
+if [[ "$generate_mode" = "all" ]]; then
+    version_dir="output/html5/etc"
+fi
+mkdir -p "$version_dir"
+cat > "$version_dir/genapp_core_version.json" <<EOF
 {
   "core_dir": "$core_dir",
   "branch": "$branch",
   "commit": "$required_commit",
+  "generate_mode": "$generate_mode",
+  "generate_language": "$generate_language",
   "generated_at_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
 EOF

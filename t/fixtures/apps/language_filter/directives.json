@@ -1,0 +1,6 @@
+{
+    "title"       : "Language Filter Fixture",
+    "application" : "language_filter",
+    "version"     : "0.01",
+    "languages"   : [ "html5", "ui2" ]
+}

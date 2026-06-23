@@ -1,0 +1,21 @@
+{
+    "moduleid"   : "echo",
+    "label"      : "Echo",
+    "executable" : "echo",
+    "resource"   : "local",
+    "fields"     : [
+        {
+            "role"    : "input",
+            "id"      : "message",
+            "label"   : "Message",
+            "type"    : "text",
+            "default" : "hello world"
+        },
+        {
+            "role"  : "output",
+            "id"    : "reply",
+            "label" : "Reply",
+            "type"  : "text"
+        }
+    ]
+}

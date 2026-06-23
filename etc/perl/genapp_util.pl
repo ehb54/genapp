@@ -1199,6 +1199,7 @@ sub check_files {
             print "languages:\n\t" . ( join "\n\t", keys %$x ) . "\n" if keys %$x;
             foreach my $k ( keys %$x )
             {
+                next if %main::compile_language_filter && !$main::compile_language_filter{ $k };
                 $langs{ $k }++;
                 my $this_menu = -e "$k/menu.json" ? "$k/menu.json" : "menu.json";
                 print "language $k this menu $this_menu\n";
@@ -1318,6 +1319,13 @@ sub check_files {
             $configbase = $json;
         }
     } # end further_checks
+
+    if ( %main::compile_language_filter ) {
+        foreach my $k ( sort keys %main::compile_language_filter ) {
+            $error .= "requested language '$k' is not listed in directives.json languages\n"
+                if !$langs{ $k };
+        }
+    }
 
 #    print "modules_by_language:\n" . Dumper( \%modules_by_language );
 #    print "keys modules_by_language:\n" . Dumper( keys  \%modules_by_language );
