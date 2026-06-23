@@ -118,7 +118,7 @@
 
   function renderModule() {
     const module = state.module || {};
-    const fields = Array.isArray(module.fields) ? module.fields : [];
+    const fields = visibleFields(Array.isArray(module.fields) ? module.fields : []);
     const inputFields = fields.filter((field) => field.role !== "output");
     const outputFields = fields.filter((field) => field.role === "output");
 
@@ -506,6 +506,17 @@
 
   function isRepeater(field) {
     return String(field.repeater || "").toLowerCase() === "true" || String(field.repeater || "").toLowerCase() === "yes";
+  }
+
+  function visibleFields(fields) {
+    return fields.filter((field) => !isLegacyModuleHeader(field));
+  }
+
+  function isLegacyModuleHeader(field) {
+    return field
+      && field.id === "module_header"
+      && String(field.type || "").toLowerCase() === "label"
+      && /^header\d+$/.test(String(field.default || ""));
   }
 
   function parseValues(values) {

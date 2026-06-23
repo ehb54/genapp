@@ -23,6 +23,15 @@
             "label"   : "Ratio",
             "type"    : "float",
             "default" : "1.5"
+        },
+        {
+            "role"    : "input",
+            "id"      : "nested_json_default",
+            "label"   : "Nested JSON Default",
+            "type"    : "textarea",
+            "default" : [
+                "{\"rot\": [[[1.0, 0.0, 0.0]]], \"trans\": [[0.0, 0.0, 0.0]]}"
+            ]
         }
     ]
 }

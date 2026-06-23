@@ -445,6 +445,12 @@ foreach my $l ( keys %langs )
                         grep s/__${k}__/${v}/g, @l;
                     }
 
+                    if ( grep /__modulejson_raw__/, @l ) {
+                        my $js = JSON->new;
+                        $js->canonical(1);
+                        my $enc_mod_json = $js->encode( get_file_json_lang_specific( $module_to_file{ $l }{ $$rplc_menu{ 'menu:modules:id' } }, $l, 1 ) );
+                        grep s/__modulejson_raw__/$enc_mod_json/g, @l;
+                    }
                     if ( grep /__modulejson__/, @l ) {
                         my $js = JSON->new;
                         $js->canonical(1);
@@ -458,6 +464,12 @@ foreach my $l ( keys %langs )
                             close $fh;
                         }
                         grep s/__modulejson__/$enc_mod_json/g, @l;
+                    }
+                    if ( grep /__viewjson_raw__/, @l ) {
+                        my $js = JSON->new;
+                        $js->canonical(1);
+                        my $enc_view_json = $js->encode( get_optional_view_json( $$rplc_menu{ 'menu:modules:id' }, $l ) );
+                        grep s/__viewjson_raw__/$enc_view_json/g, @l;
                     }
                     if ( grep /__viewjson__/, @l ) {
                         my $enc_view_json = get_optional_view_json_encoded( $$rplc_menu{ 'menu:modules:id' }, $l );
@@ -672,6 +684,12 @@ foreach my $l ( keys %langs )
                             do {
                                 print "rplc menu:id " . $$rplc_menu2{ "menu:id" } . " " . $$rplc_menu{ 'menu:id' } . "\n" if $debug_srplc; 
                                 @l = @l_sav;
+                                if ( grep /__modulejson_raw__/, @l ) {
+                                    my $js = JSON->new;
+                                    $js->canonical(1);
+                                    my $enc_mod_json = $js->encode( get_file_json_lang_specific( $module_to_file{ $l }{ $$rplc_menu2{ 'menu:modules:id' } }, $l, 1 ) );
+                                    grep s/__modulejson_raw__/$enc_mod_json/g, @l;
+                                }
                                 if ( grep /__modulejson__/, @l ) {
                                     my $js = JSON->new;
                                     $js->canonical(1);
@@ -685,6 +703,12 @@ foreach my $l ( keys %langs )
                                         close $fh;
                                     }
                                     grep s/__modulejson__/$enc_mod_json/g, @l;
+                                }
+                                if ( grep /__viewjson_raw__/, @l ) {
+                                    my $js = JSON->new;
+                                    $js->canonical(1);
+                                    my $enc_view_json = $js->encode( get_optional_view_json( $$rplc_menu2{ 'menu:modules:id' }, $l ) );
+                                    grep s/__viewjson_raw__/$enc_view_json/g, @l;
                                 }
                                 if ( grep /__viewjson__/, @l ) {
                                     my $enc_view_json = get_optional_view_json_encoded( $$rplc_menu2{ 'menu:modules:id' }, $l );

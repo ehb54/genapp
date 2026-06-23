@@ -63,6 +63,7 @@ is( $typed->{module}, 'typed', 'typed summary records module id' );
 is( $typed->{modulejson}{fields}[0]{type}, 'integer', 'ui2 can carry integer fields without ui2 type templates' );
 is( $typed->{modulejson}{fields}[1]{type}, 'checkbox', 'ui2 can carry checkbox fields without ui2 type templates' );
 is( $typed->{modulejson}{fields}[2]{type}, 'float', 'ui2 can carry float fields without ui2 type templates' );
+is( $typed->{modulejson}{fields}[3]{default}[0], '{"rot": [[[1.0, 0.0, 0.0]]], "trans": [[0.0, 0.0, 0.0]]}', 'ui2 module summaries preserve nested JSON string defaults as valid JSON' );
 is_deeply( $typed->{viewjson}, {}, 'typed module missing view files produce an empty view object' );
 
 my $invalid = generate_fixture_app(

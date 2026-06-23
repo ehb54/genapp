@@ -27,6 +27,7 @@ body {
   font-size: 15px;
   line-height: 1.5;
   letter-spacing: 0;
+  overflow: hidden;
 }
 
 button,
@@ -45,9 +46,10 @@ code {
 }
 
 .ui2-shell {
-  min-height: 100vh;
+  height: 100vh;
   display: grid;
   grid-template-rows: auto 1fr;
+  overflow: hidden;
 }
 
 .ui2-topbar {
@@ -113,12 +115,15 @@ code {
   display: grid;
   grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr);
   min-height: 0;
+  overflow: hidden;
 }
 
 .ui2-sidebar {
   border-right: 1px solid var(--ui2-border);
   background: #fbfcfc;
   padding: 1rem;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .ui2-module-loader {
@@ -226,6 +231,8 @@ code {
 .ui2-stage {
   padding: 1rem;
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .ui2-empty,
@@ -457,6 +464,16 @@ code {
 }
 
 @media (max-width: 760px) {
+  body {
+    overflow: auto;
+  }
+
+  .ui2-shell {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
   .ui2-topbar,
   .ui2-module-header {
     align-items: stretch;
@@ -465,11 +482,17 @@ code {
 
   .ui2-workspace {
     grid-template-columns: 1fr;
+    overflow: visible;
   }
 
   .ui2-sidebar {
     border-right: 0;
     border-bottom: 1px solid var(--ui2-border);
+    overflow: visible;
+  }
+
+  .ui2-stage {
+    overflow: visible;
   }
 
   .ui2-field {
