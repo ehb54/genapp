@@ -35,7 +35,12 @@
     empty: document.getElementById("ui2-empty"),
     candidates: document.getElementById("ui2-module-candidates"),
     menuNav: document.getElementById("ui2-menu-nav"),
-    navToggle: document.getElementById("ui2-nav-toggle")
+    navToggle: document.getElementById("ui2-nav-toggle"),
+    jobs: document.getElementById("ui2-jobs"),
+    files: document.getElementById("ui2-files"),
+    settings: document.getElementById("ui2-settings"),
+    help: document.getElementById("ui2-help"),
+    logoff: document.getElementById("ui2-logoff")
   };
 
   function init() {
@@ -44,6 +49,11 @@
     nodes.navToggle?.addEventListener("click", () => {
       setSidebarCollapsed(!document.body.classList.contains("ui2-sidebar-collapsed"), true);
     });
+    nodes.jobs?.addEventListener("click", () => loadModule("sys_job_manager"));
+    nodes.files?.addEventListener("click", () => loadModule("sys_file_manager"));
+    nodes.settings?.addEventListener("click", () => loadModule("sys_user_config"));
+    nodes.help?.addEventListener("click", toggleHelp);
+    nodes.logoff?.addEventListener("click", () => loadModule("sys_logoff"));
 
     renderMenu();
     if (nodes.candidates) {
@@ -153,7 +163,7 @@
   function setSidebarCollapsed(collapsed, persist) {
     document.body.classList.toggle("ui2-sidebar-collapsed", collapsed);
     if (nodes.navToggle) {
-      nodes.navToggle.textContent = collapsed ? "Show Menu" : "Hide Menu";
+      nodes.navToggle.textContent = collapsed ? "Menu" : "Hide Menu";
       nodes.navToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
     }
     if (persist) {
@@ -209,14 +219,9 @@
       return;
     }
 
-    const utilityModules = [];
     appMap.menus.forEach((menu, index) => {
       const modules = (menu.modules || []).filter((module) => {
-        if (isUtilityModule(module.id)) {
-          utilityModules.push(module);
-          return false;
-        }
-        return true;
+        return !isUtilityModule(module.id);
       });
       if (!modules.length) {
         return;
@@ -250,37 +255,6 @@
       nodes.menuNav.appendChild(group);
     });
 
-    if (utilityModules.length) {
-      nodes.menuNav.appendChild(renderUtilityMenu(utilityModules));
-    }
-  }
-
-  function renderUtilityMenu(modules) {
-    const group = el("section", "ui2-menu-group ui2-utility-menu");
-    group.dataset.menuId = "utilities";
-    const button = el("button", "ui2-menu-button");
-    button.type = "button";
-    button.setAttribute("aria-expanded", "true");
-    button.appendChild(el("span", "ui2-menu-title", "Utilities"));
-    button.appendChild(el("span", "ui2-menu-count", String(modules.length)));
-
-    const list = el("div", "ui2-module-list");
-    modules.forEach((module) => {
-      const item = el("button", "ui2-module-button", utilityLabel(module));
-      item.type = "button";
-      item.dataset.moduleId = module.id || "";
-      item.addEventListener("click", () => loadModule(module.id));
-      list.appendChild(item);
-    });
-
-    button.addEventListener("click", () => {
-      const expanded = button.getAttribute("aria-expanded") === "true";
-      button.setAttribute("aria-expanded", expanded ? "false" : "true");
-      list.hidden = expanded;
-    });
-
-    group.append(button, list);
-    return group;
   }
 
   function menuTitle(menu) {
@@ -353,6 +327,15 @@
     }
     header.appendChild(titleWrap);
     return header;
+  }
+
+  function toggleHelp() {
+    const enabled = nodes.help?.getAttribute("aria-pressed") !== "true";
+    document.body.classList.toggle("ui2-help-enabled", enabled);
+    if (nodes.help) {
+      nodes.help.setAttribute("aria-pressed", enabled ? "true" : "false");
+      nodes.help.textContent = enabled ? "Help on" : "Help off";
+    }
   }
 
   function renderTabs(inputCount, outputCount) {
@@ -615,6 +598,12 @@
     if (moduleId === "sys_file_manager") {
       return renderFileManagerTool(fields);
     }
+    if (moduleId === "sys_user_config") {
+      return renderSimpleSystemTool("Settings", fields);
+    }
+    if (moduleId === "sys_logoff") {
+      return renderSimpleSystemTool("Logoff", fields);
+    }
     return null;
   }
 
@@ -728,6 +717,20 @@
       }
     });
 
+    section.appendChild(body);
+    return section;
+  }
+
+  function renderSimpleSystemTool(title, fields) {
+    const section = el("section", "ui2-section ui2-system-tool");
+    const body = el("div", "ui2-section-body ui2-tool-body");
+    const note = el("div", "ui2-tool-legend");
+    note.appendChild(el("h3", null, title));
+    note.appendChild(el("p", null, "This utility needs its dedicated ui2 runtime wiring; the generic module form is intentionally bypassed."));
+    body.appendChild(note);
+    fields.filter((field) => !isLayoutLabel(field)).forEach((field) => {
+      body.appendChild(renderField(field, field.role === "output" ? "output" : "input"));
+    });
     section.appendChild(body);
     return section;
   }

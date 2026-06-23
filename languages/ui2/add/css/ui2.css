@@ -103,10 +103,41 @@ code {
 }
 
 .ui2-actions,
-.ui2-button-row {
+.ui2-button-row,
+.ui2-topbar-utilities {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
+}
+
+.ui2-topbar-utilities {
+  justify-content: flex-end;
+}
+
+.ui2-project-chip,
+.ui2-utility-button {
+  min-height: 2.2rem;
+  border: 1px solid var(--ui2-border);
+  border-radius: 6px;
+  background: var(--ui2-panel);
+  color: var(--ui2-text);
+  padding: 0.36rem 0.65rem;
+}
+
+.ui2-project-chip {
+  color: var(--ui2-muted);
+}
+
+.ui2-utility-button {
+  cursor: pointer;
+}
+
+.ui2-utility-button:hover,
+.ui2-utility-button[aria-pressed="true"] {
+  border-color: var(--ui2-accent);
+  background: var(--ui2-accent-soft);
+  color: var(--ui2-accent-strong);
 }
 
 .ui2-button {
@@ -148,18 +179,32 @@ code {
   overflow-y: auto;
 }
 
+.ui2-sidebar-tools {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 0.75rem;
+}
+
 .ui2-sidebar-collapsed .ui2-workspace {
-  grid-template-columns: 0 minmax(0, 1fr);
+  grid-template-columns: 3.4rem minmax(0, 1fr);
 }
 
 .ui2-sidebar-collapsed .ui2-sidebar {
-  border-right: 0;
-  padding: 0;
+  padding: 0.5rem;
   overflow: hidden;
 }
 
 .ui2-sidebar-collapsed .ui2-menu-nav {
   display: none;
+}
+
+.ui2-sidebar-collapsed .ui2-sidebar-tools {
+  margin-bottom: 0;
+}
+
+.ui2-sidebar-collapsed #ui2-nav-toggle {
+  width: 100%;
+  padding-inline: 0.3rem;
 }
 
 .ui2-module-loader {
