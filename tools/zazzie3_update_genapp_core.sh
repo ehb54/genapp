@@ -127,7 +127,7 @@ required_commit="$(git -C "$repo_root" rev-parse --verify "${ref}^{commit}")"
 echo "Updating $host:$container:$core_dir to $branch @ $required_commit"
 
 ssh "$host" docker exec -i "$container" bash -s -- \
-    "$core_dir" "$gz_dir" "$branch" "$required_commit" "$generate_mode" "$generate_language" "$stash_dirty" <<'REMOTE'
+    "$core_dir" "$gz_dir" "$branch" "$required_commit" "$generate_mode" "$stash_dirty" "$generate_language" <<'REMOTE'
 set -euo pipefail
 
 core_dir="$1"
@@ -135,8 +135,8 @@ gz_dir="$2"
 branch="$3"
 required_commit="$4"
 generate_mode="$5"
-generate_language="$6"
-stash_dirty="$7"
+stash_dirty="$6"
+generate_language="${7:-}"
 
 stamp() {
     printf '\n== %s ==\n' "$1"
