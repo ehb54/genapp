@@ -115,7 +115,6 @@ code {
   justify-content: flex-end;
 }
 
-.ui2-project-chip,
 .ui2-utility-button {
   min-height: 2.2rem;
   border: 1px solid var(--ui2-border);
@@ -126,7 +125,11 @@ code {
 }
 
 .ui2-project-chip {
+  min-height: 2.2rem;
+  display: inline-flex;
+  align-items: center;
   color: var(--ui2-muted);
+  padding: 0.36rem 0.2rem;
 }
 
 .ui2-utility-button {
@@ -255,11 +258,6 @@ code {
   width: 1.35rem;
   height: 1.35rem;
   object-fit: contain;
-}
-
-.ui2-menu-count {
-  color: var(--ui2-muted);
-  font-size: 0.8rem;
 }
 
 .ui2-module-list {

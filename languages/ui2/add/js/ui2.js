@@ -233,12 +233,11 @@
       button.type = "button";
       button.setAttribute("aria-expanded", index === 0 ? "true" : "false");
       button.appendChild(menuTitle(menu));
-      button.appendChild(el("span", "ui2-menu-count", String(modules.length)));
 
       const list = el("div", "ui2-module-list");
       list.hidden = index !== 0;
       modules.forEach((module) => {
-        const item = el("button", "ui2-module-button", module.label || module.id);
+        const item = el("button", "ui2-module-button", displayLabel(module.label || module.id));
         item.type = "button";
         item.dataset.moduleId = module.id || "";
         item.addEventListener("click", () => loadModule(module.id));
@@ -266,7 +265,7 @@
       img.src = menu.icon;
       wrap.appendChild(img);
     }
-    wrap.appendChild(document.createTextNode(menu.label || menu.id || "Menu"));
+    wrap.appendChild(document.createTextNode(displayLabel(menu.label || menu.id || "Menu")));
     return wrap;
   }
 
@@ -294,7 +293,7 @@
   function renderHeader(module, fields) {
     const header = el("header", "ui2-module-header");
     const titleWrap = el("div");
-    const title = el("h2", "ui2-module-title", module.label || module.moduleid || state.moduleId);
+    const title = el("h2", "ui2-module-title", displayLabel(module.label || module.moduleid || state.moduleId));
 
     titleWrap.appendChild(title);
     if (devMode) {
@@ -318,7 +317,7 @@
   function renderToolHeader(module) {
     const header = el("header", "ui2-module-header ui2-tool-header");
     const titleWrap = el("div");
-    titleWrap.appendChild(el("h2", "ui2-module-title", utilityLabel({ id: module.moduleid || state.moduleId, label: module.label })));
+    titleWrap.appendChild(el("h2", "ui2-module-title", displayLabel(utilityLabel({ id: module.moduleid || state.moduleId, label: module.label }))));
     if (devMode) {
       const meta = el("div", "ui2-meta");
       meta.appendChild(el("span", "ui2-pill", module.moduleid || state.moduleId || "system"));
@@ -327,6 +326,17 @@
     }
     header.appendChild(titleWrap);
     return header;
+  }
+
+  function displayLabel(value) {
+    const text = String(value || "").trim();
+    if (!text) {
+      return "";
+    }
+    return text
+      .replace(/[_-]+/g, " ")
+      .replace(/\s+/g, " ")
+      .replace(/\b\w/g, (char) => char.toUpperCase());
   }
 
   function toggleHelp() {
