@@ -1,11 +1,54 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>__title__</title>
+  <link rel="stylesheet" href="css/ui2.css">
 </head>
 <body>
-  <h1>__title__</h1>
-  <p>Experimental GenApp ui2 target.</p>
+  <div class="ui2-shell" data-app-title="__title__">
+    <header class="ui2-topbar">
+      <div>
+        <p class="ui2-kicker">GenApp ui2</p>
+        <h1>__title__</h1>
+      </div>
+      <div class="ui2-actions" aria-label="Module actions">
+        <button class="ui2-button ui2-button-quiet" id="ui2-refresh" type="button">Refresh</button>
+        <button class="ui2-button" id="ui2-load" type="button">Load Module</button>
+      </div>
+    </header>
+
+    <main class="ui2-workspace">
+      <aside class="ui2-sidebar" aria-label="Module loader">
+        <label class="ui2-field-label" for="ui2-module-id">Module</label>
+        <div class="ui2-module-loader">
+          <input id="ui2-module-id" class="ui2-input" list="ui2-module-candidates" autocomplete="off" spellcheck="false">
+          <datalist id="ui2-module-candidates"></datalist>
+        </div>
+        <p class="ui2-help">Loads <code>modules/&lt;module&gt;.json</code>. Try a module id from the generated app, or pass <code>?module=align</code>.</p>
+
+        <div class="ui2-sidebar-section">
+          <p class="ui2-sidebar-title">Prototype Scope</p>
+          <ul class="ui2-plain-list">
+            <li>Plain HTML target</li>
+            <li>Modern field rendering</li>
+            <li>Basic repeat visibility</li>
+            <li>Runtime output placeholders</li>
+          </ul>
+        </div>
+      </aside>
+
+      <section class="ui2-stage" aria-live="polite">
+        <div class="ui2-empty" id="ui2-empty">
+          <p class="ui2-kicker">Ready</p>
+          <h2>Choose a module to inspect.</h2>
+          <p>This first ui2 pass renders GenApp module JSON with modern controls without changing the legacy html5 target.</p>
+        </div>
+        <div id="ui2-module-root" hidden></div>
+      </section>
+    </main>
+  </div>
+  <script src="js/ui2.js"></script>
 </body>
 </html>

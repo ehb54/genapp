@@ -23,9 +23,15 @@ my $app_dir = $generated->{app_dir};
 my $ui2     = File::Spec->catdir( $app_dir, qw(output ui2) );
 
 ok( -f File::Spec->catfile( $ui2, 'index.html' ), 'ui2 index was generated' );
+ok( -f File::Spec->catfile( $ui2, qw(css ui2.css) ), 'ui2 stylesheet was copied' );
+ok( -f File::Spec->catfile( $ui2, qw(js ui2.js) ), 'ui2 script was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(modules shared.json) ), 'ui2 shared module summary was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(modules plain.json) ), 'ui2 plain module summary was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(modules typed.json) ), 'ui2 typed module summary was generated without ui2 type templates' );
+
+my $index = read_file( File::Spec->catfile( $ui2, 'index.html' ) );
+like( $index, qr/js\/ui2\.js/, 'ui2 index loads the plain JavaScript playground' );
+like( $index, qr/css\/ui2\.css/, 'ui2 index loads the ui2 stylesheet' );
 
 my $shared = decode_json( read_file( File::Spec->catfile( $ui2, qw(modules shared.json) ) ) );
 is( $shared->{module}, 'shared', 'shared summary records module id' );
