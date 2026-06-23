@@ -345,6 +345,19 @@ code {
   padding-bottom: 0;
 }
 
+.ui2-field-heading {
+  display: block;
+  border-bottom: 0;
+  padding: 0.45rem 0 0.15rem;
+}
+
+.ui2-field-heading h3 {
+  margin: 0;
+  color: var(--ui2-text);
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
 .ui2-field-label {
   display: block;
   font-weight: 650;

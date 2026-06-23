@@ -279,6 +279,10 @@
   }
 
   function renderField(field, role) {
+    if (isLayoutLabel(field)) {
+      return renderLayoutLabel(field);
+    }
+
     const row = el("div", "ui2-field");
     row.dataset.fieldId = field.id || "";
     if (field.repeat) {
@@ -509,14 +513,41 @@
   }
 
   function visibleFields(fields) {
-    return fields.filter((field) => !isLegacyModuleHeader(field));
+    return fields.filter((field) => !isHiddenLayoutLabel(field));
   }
 
-  function isLegacyModuleHeader(field) {
+  function isHiddenLayoutLabel(field) {
     return field
-      && field.id === "module_header"
-      && String(field.type || "").toLowerCase() === "label"
-      && /^header\d+$/.test(String(field.default || ""));
+      && isLayoutLabel(field)
+      && (
+        field.id === "module_header"
+        || !meaningfulLayoutLabel(field)
+      );
+  }
+
+  function isLayoutLabel(field) {
+    return field
+      && String(field.type || "").toLowerCase() === "label";
+  }
+
+  function meaningfulLayoutLabel(field) {
+    const label = String(field.label || "").trim();
+    const id = String(field.id || "").trim();
+    if (!label || label === id || /^dum(?:my)?\d*$/i.test(label) || /^separator(?:[_-]|$)/i.test(label)) {
+      return false;
+    }
+    return true;
+  }
+
+  function renderLayoutLabel(field) {
+    const row = el("div", "ui2-field ui2-field-heading");
+    row.dataset.fieldId = field.id || "";
+    if (field.repeat) {
+      row.dataset.repeat = field.repeat;
+    }
+
+    row.appendChild(el("h3", null, field.label || field.id || "Section"));
+    return row;
   }
 
   function parseValues(values) {
