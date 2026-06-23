@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>__title__</title>
-  <link rel="stylesheet" href="css/ui2.css">
+  <link rel="stylesheet" href="css/ui2.css?v=__datetimeinseconds__">
 </head>
 <body>
   <div class="ui2-shell" data-app-title="__title__">
@@ -13,24 +13,11 @@
         <p class="ui2-kicker">GenApp ui2</p>
         <h1>__title__</h1>
       </div>
-      <div class="ui2-actions" aria-label="Module actions">
-        <button class="ui2-button ui2-button-quiet" id="ui2-refresh" type="button">Refresh</button>
-        <button class="ui2-button" id="ui2-load" type="button">Load Module</button>
-      </div>
     </header>
 
     <main class="ui2-workspace">
-      <aside class="ui2-sidebar" aria-label="Module loader">
+      <aside class="ui2-sidebar" aria-label="Modules">
         <nav class="ui2-menu-nav" id="ui2-menu-nav" aria-label="Application modules"></nav>
-
-        <div class="ui2-sidebar-section">
-          <label class="ui2-field-label" for="ui2-module-id">Load Module</label>
-          <div class="ui2-module-loader">
-            <input id="ui2-module-id" class="ui2-input" list="ui2-module-candidates" autocomplete="off" spellcheck="false">
-            <datalist id="ui2-module-candidates"></datalist>
-          </div>
-          <p class="ui2-help">Debug fallback. Loads <code>modules/&lt;module&gt;.json</code>, or pass <code>?module=align</code>.</p>
-        </div>
       </aside>
 
       <section class="ui2-stage" aria-live="polite">
@@ -43,7 +30,7 @@
       </section>
     </main>
   </div>
-  <script src="js/app-map.js"></script>
-  <script src="js/ui2.js"></script>
+  <script src="js/app-map.js?v=__datetimeinseconds__"></script>
+  <script src="js/ui2.js?v=__datetimeinseconds__"></script>
 </body>
 </html>

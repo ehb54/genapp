@@ -36,18 +36,22 @@
 
   function init() {
     renderMenu();
-    candidateModules.forEach((id) => {
-      const option = document.createElement("option");
-      option.value = id;
-      nodes.candidates.appendChild(option);
-    });
+    if (nodes.candidates) {
+      candidateModules.forEach((id) => {
+        const option = document.createElement("option");
+        option.value = id;
+        nodes.candidates.appendChild(option);
+      });
+    }
 
     const params = new URLSearchParams(window.location.search);
-    nodes.input.value = params.get("module") || candidateModules[0];
+    if (nodes.input) {
+      nodes.input.value = params.get("module") || candidateModules[0];
+    }
 
-    nodes.load.addEventListener("click", () => loadModule(nodes.input.value));
-    nodes.refresh.addEventListener("click", () => loadModule(state.moduleId || nodes.input.value));
-    nodes.input.addEventListener("keydown", (event) => {
+    nodes.load?.addEventListener("click", () => loadModule(nodes.input.value));
+    nodes.refresh?.addEventListener("click", () => loadModule(state.moduleId || nodes.input?.value));
+    nodes.input?.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
         event.preventDefault();
         loadModule(nodes.input.value);
@@ -69,7 +73,9 @@
       return;
     }
 
-    nodes.input.value = moduleId;
+    if (nodes.input) {
+      nodes.input.value = moduleId;
+    }
     nodes.root.hidden = true;
     nodes.empty.hidden = false;
     nodes.empty.innerHTML = `<p class="ui2-kicker">Loading</p><h2>${escapeHtml(moduleId)}</h2>`;
@@ -100,7 +106,9 @@
           continue;
         }
         const payload = await response.json();
-        nodes.input.value = moduleId;
+        if (nodes.input) {
+          nodes.input.value = moduleId;
+        }
         state.moduleId = moduleId;
         state.menuId = menuIdForModule(moduleId);
         state.module = payload.modulejson || payload;
@@ -113,7 +121,7 @@
         // Keep looking; this startup path is intentionally forgiving.
       }
     }
-    showError("No candidate modules could be loaded. Enter a module id manually.");
+    showError("No candidate modules could be loaded.");
   }
 
   function renderModule() {
