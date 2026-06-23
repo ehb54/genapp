@@ -12,6 +12,16 @@
                                   ]
                    }
                   ,{
+                    "frequency"  : "once",
+                    "output"     : "js/app-map.js",
+                    "inputs"     : [
+                                    { "app-map.header.js" : "once" },
+                                    { "app-map.menu.js"   : "menu:id" },
+                                    { "app-map.module.js" : "menu:modules:id" },
+                                    { "app-map.footer.js" : "once" }
+                                  ]
+                   }
+                  ,{
                     "frequency"  : "menu:modules:id",
                     "output"     : "modules/__menu:modules:id__.json",
                     "inputs"     : [

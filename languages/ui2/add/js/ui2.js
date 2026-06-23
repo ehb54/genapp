@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const candidateModules = [
+  const fallbackModules = [
     "data_interpolation",
     "align",
     "extract_utilities",
@@ -13,8 +13,12 @@
     "typed"
   ];
 
+  const appMap = window.GenAppUi2App || { menus: [] };
+  const candidateModules = moduleCandidates();
+
   const state = {
     moduleId: "",
+    menuId: "",
     module: null,
     view: {},
     values: {}
@@ -26,10 +30,12 @@
     refresh: document.getElementById("ui2-refresh"),
     root: document.getElementById("ui2-module-root"),
     empty: document.getElementById("ui2-empty"),
-    candidates: document.getElementById("ui2-module-candidates")
+    candidates: document.getElementById("ui2-module-candidates"),
+    menuNav: document.getElementById("ui2-menu-nav")
   };
 
   function init() {
+    renderMenu();
     candidateModules.forEach((id) => {
       const option = document.createElement("option");
       option.value = id;
@@ -75,10 +81,12 @@
       }
       const payload = await response.json();
       state.moduleId = moduleId;
+      state.menuId = menuIdForModule(moduleId);
       state.module = payload.modulejson || payload;
       state.view = payload.viewjson || {};
       state.values = {};
       renderModule();
+      updateSelectedNavigation();
     } catch (error) {
       showError(`Could not load ${moduleId}: ${error.message}`);
     }
@@ -94,10 +102,12 @@
         const payload = await response.json();
         nodes.input.value = moduleId;
         state.moduleId = moduleId;
+        state.menuId = menuIdForModule(moduleId);
         state.module = payload.modulejson || payload;
         state.view = payload.viewjson || {};
         state.values = {};
         renderModule();
+        updateSelectedNavigation();
         return;
       } catch (error) {
         // Keep looking; this startup path is intentionally forgiving.
@@ -131,6 +141,81 @@
     container.appendChild(form);
     nodes.root.appendChild(container);
     syncValues();
+  }
+
+  function renderMenu() {
+    if (!nodes.menuNav) {
+      return;
+    }
+    nodes.menuNav.innerHTML = "";
+    if (!Array.isArray(appMap.menus) || !appMap.menus.length) {
+      nodes.menuNav.appendChild(el("p", "ui2-help", "No menu map was generated."));
+      return;
+    }
+
+    appMap.menus.forEach((menu, index) => {
+      const group = el("section", "ui2-menu-group");
+      group.dataset.menuId = menu.id || "";
+
+      const button = el("button", "ui2-menu-button");
+      button.type = "button";
+      button.setAttribute("aria-expanded", index === 0 ? "true" : "false");
+      button.appendChild(menuTitle(menu));
+      button.appendChild(el("span", "ui2-menu-count", String((menu.modules || []).length)));
+
+      const list = el("div", "ui2-module-list");
+      list.hidden = index !== 0;
+      (menu.modules || []).forEach((module) => {
+        const item = el("button", "ui2-module-button", module.label || module.id);
+        item.type = "button";
+        item.dataset.moduleId = module.id || "";
+        item.addEventListener("click", () => loadModule(module.id));
+        list.appendChild(item);
+      });
+
+      button.addEventListener("click", () => {
+        const expanded = button.getAttribute("aria-expanded") === "true";
+        button.setAttribute("aria-expanded", expanded ? "false" : "true");
+        list.hidden = expanded;
+      });
+
+      group.append(button, list);
+      nodes.menuNav.appendChild(group);
+    });
+  }
+
+  function menuTitle(menu) {
+    const wrap = el("span", "ui2-menu-title");
+    if (menu.icon) {
+      const img = document.createElement("img");
+      img.className = "ui2-menu-icon";
+      img.alt = "";
+      img.src = menu.icon;
+      wrap.appendChild(img);
+    }
+    wrap.appendChild(document.createTextNode(menu.label || menu.id || "Menu"));
+    return wrap;
+  }
+
+  function updateSelectedNavigation() {
+    if (!nodes.menuNav) {
+      return;
+    }
+    nodes.menuNav.querySelectorAll(".ui2-module-button").forEach((button) => {
+      const selected = button.dataset.moduleId === state.moduleId;
+      if (selected) {
+        button.setAttribute("aria-current", "page");
+        const group = button.closest(".ui2-menu-group");
+        const groupButton = group?.querySelector(".ui2-menu-button");
+        const list = group?.querySelector(".ui2-module-list");
+        groupButton?.setAttribute("aria-expanded", "true");
+        if (list) {
+          list.hidden = false;
+        }
+      } else {
+        button.removeAttribute("aria-current");
+      }
+    });
   }
 
   function renderHeader(module, fields) {
@@ -385,6 +470,28 @@
 
   function sanitizeModuleId(value) {
     return String(value || "").trim().replace(/[^A-Za-z0-9_-]/g, "");
+  }
+
+  function moduleCandidates() {
+    const fromMap = [];
+    if (Array.isArray(appMap.menus)) {
+      appMap.menus.forEach((menu) => {
+        (menu.modules || []).forEach((module) => {
+          if (module.id && !fromMap.includes(module.id)) {
+            fromMap.push(module.id);
+          }
+        });
+      });
+    }
+    return fromMap.length ? fromMap : fallbackModules;
+  }
+
+  function menuIdForModule(moduleId) {
+    if (!Array.isArray(appMap.menus)) {
+      return "";
+    }
+    const menu = appMap.menus.find((entry) => (entry.modules || []).some((module) => module.id === moduleId));
+    return menu ? menu.id : "";
   }
 
   function inputType(type) {

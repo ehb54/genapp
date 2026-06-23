@@ -21,21 +21,15 @@
 
     <main class="ui2-workspace">
       <aside class="ui2-sidebar" aria-label="Module loader">
-        <label class="ui2-field-label" for="ui2-module-id">Module</label>
-        <div class="ui2-module-loader">
-          <input id="ui2-module-id" class="ui2-input" list="ui2-module-candidates" autocomplete="off" spellcheck="false">
-          <datalist id="ui2-module-candidates"></datalist>
-        </div>
-        <p class="ui2-help">Loads <code>modules/&lt;module&gt;.json</code>. Try a module id from the generated app, or pass <code>?module=align</code>.</p>
+        <nav class="ui2-menu-nav" id="ui2-menu-nav" aria-label="Application modules"></nav>
 
         <div class="ui2-sidebar-section">
-          <p class="ui2-sidebar-title">Prototype Scope</p>
-          <ul class="ui2-plain-list">
-            <li>Plain HTML target</li>
-            <li>Modern field rendering</li>
-            <li>Basic repeat visibility</li>
-            <li>Runtime output placeholders</li>
-          </ul>
+          <label class="ui2-field-label" for="ui2-module-id">Load Module</label>
+          <div class="ui2-module-loader">
+            <input id="ui2-module-id" class="ui2-input" list="ui2-module-candidates" autocomplete="off" spellcheck="false">
+            <datalist id="ui2-module-candidates"></datalist>
+          </div>
+          <p class="ui2-help">Debug fallback. Loads <code>modules/&lt;module&gt;.json</code>, or pass <code>?module=align</code>.</p>
         </div>
       </aside>
 
@@ -49,6 +43,7 @@
       </section>
     </main>
   </div>
+  <script src="js/app-map.js"></script>
   <script src="js/ui2.js"></script>
 </body>
 </html>

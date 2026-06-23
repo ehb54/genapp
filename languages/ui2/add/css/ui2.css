@@ -126,6 +126,86 @@ code {
   gap: 0.5rem;
 }
 
+.ui2-menu-nav {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.ui2-menu-group {
+  border: 1px solid var(--ui2-border);
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.ui2-menu-button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 0;
+  border-bottom: 1px solid var(--ui2-border);
+  background: #ffffff;
+  color: var(--ui2-text);
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ui2-menu-button[aria-expanded="true"] {
+  background: var(--ui2-panel-soft);
+}
+
+.ui2-menu-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.ui2-menu-icon {
+  width: 1.35rem;
+  height: 1.35rem;
+  object-fit: contain;
+}
+
+.ui2-menu-count {
+  color: var(--ui2-muted);
+  font-size: 0.8rem;
+}
+
+.ui2-module-list {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.35rem;
+}
+
+.ui2-module-button {
+  width: 100%;
+  min-height: 2.15rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ui2-muted);
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ui2-module-button:hover {
+  background: var(--ui2-panel-soft);
+  color: var(--ui2-text);
+}
+
+.ui2-module-button[aria-current="page"] {
+  border-color: var(--ui2-accent);
+  background: var(--ui2-accent-soft);
+  color: var(--ui2-accent-strong);
+  font-weight: 700;
+}
+
 .ui2-sidebar-section {
   margin-top: 1.25rem;
   border-top: 1px solid var(--ui2-border);
