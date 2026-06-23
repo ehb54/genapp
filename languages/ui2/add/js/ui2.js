@@ -15,6 +15,9 @@
 
   const appMap = window.GenAppUi2App || { menus: [] };
   const candidateModules = moduleCandidates();
+  const params = new URLSearchParams(window.location.search);
+  const prefs = loadPreferences();
+  const devMode = params.get("ui2dev") === "1" || prefs.devMode === true;
 
   const state = {
     moduleId: "",
@@ -31,10 +34,17 @@
     root: document.getElementById("ui2-module-root"),
     empty: document.getElementById("ui2-empty"),
     candidates: document.getElementById("ui2-module-candidates"),
-    menuNav: document.getElementById("ui2-menu-nav")
+    menuNav: document.getElementById("ui2-menu-nav"),
+    navToggle: document.getElementById("ui2-nav-toggle")
   };
 
   function init() {
+    document.body.classList.toggle("ui2-dev-mode", devMode);
+    setSidebarCollapsed(prefs.sidebarCollapsed === true);
+    nodes.navToggle?.addEventListener("click", () => {
+      setSidebarCollapsed(!document.body.classList.contains("ui2-sidebar-collapsed"), true);
+    });
+
     renderMenu();
     if (nodes.candidates) {
       candidateModules.forEach((id) => {
@@ -44,7 +54,6 @@
       });
     }
 
-    const params = new URLSearchParams(window.location.search);
     if (nodes.input) {
       nodes.input.value = params.get("module") || candidateModules[0];
     }
@@ -124,6 +133,34 @@
     showError("No candidate modules could be loaded.");
   }
 
+  function loadPreferences() {
+    try {
+      return JSON.parse(window.localStorage.getItem("genapp-ui2-preferences") || "{}");
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function savePreference(key, value) {
+    prefs[key] = value;
+    try {
+      window.localStorage.setItem("genapp-ui2-preferences", JSON.stringify(prefs));
+    } catch (error) {
+      // Local storage can be unavailable; preferences are convenience only.
+    }
+  }
+
+  function setSidebarCollapsed(collapsed, persist) {
+    document.body.classList.toggle("ui2-sidebar-collapsed", collapsed);
+    if (nodes.navToggle) {
+      nodes.navToggle.textContent = collapsed ? "Show Menu" : "Hide Menu";
+      nodes.navToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    }
+    if (persist) {
+      savePreference("sidebarCollapsed", collapsed);
+    }
+  }
+
   function renderModule() {
     const module = state.module || {};
     const fields = visibleFields(Array.isArray(module.fields) ? module.fields : []);
@@ -142,7 +179,9 @@
     form.id = "ui2-form";
     form.appendChild(renderSection("Inputs", inputFields, "input"));
     form.appendChild(renderSection("Outputs", outputFields, "output"));
-    form.appendChild(renderPreview());
+    if (devMode) {
+      form.appendChild(renderPreview());
+    }
     form.addEventListener("input", syncValues);
     form.addEventListener("change", syncValues);
 
@@ -231,18 +270,21 @@
     const titleWrap = el("div");
     const kicker = el("p", "ui2-kicker", module.moduleid || state.moduleId || "module");
     const title = el("h2", "ui2-module-title", module.label || module.moduleid || state.moduleId);
-    const meta = el("div", "ui2-meta");
 
-    meta.appendChild(el("span", "ui2-pill", `${fields.length} fields`));
-    meta.appendChild(el("span", "ui2-pill", `${fields.filter((field) => field.role === "output").length} outputs`));
-    if (module.executable) {
-      meta.appendChild(el("span", "ui2-pill", `exec: ${module.executable}`));
-    }
-    if (Object.keys(state.view || {}).length) {
-      meta.appendChild(el("span", "ui2-pill", "view metadata"));
+    titleWrap.append(kicker, title);
+    if (devMode) {
+      const meta = el("div", "ui2-meta");
+      meta.appendChild(el("span", "ui2-pill", `${fields.length} fields`));
+      meta.appendChild(el("span", "ui2-pill", `${fields.filter((field) => field.role === "output").length} outputs`));
+      if (module.executable) {
+        meta.appendChild(el("span", "ui2-pill", `exec: ${module.executable}`));
+      }
+      if (Object.keys(state.view || {}).length) {
+        meta.appendChild(el("span", "ui2-pill", "view metadata"));
+      }
+      titleWrap.appendChild(meta);
     }
 
-    titleWrap.append(kicker, title, meta);
     header.appendChild(titleWrap);
     return header;
   }
@@ -299,7 +341,7 @@
 
     const label = el("label", "ui2-field-label");
     label.textContent = field.label || field.id || field.type || "field";
-    if (field.id) {
+    if (devMode && field.id) {
       label.setAttribute("for", fieldId(field));
       label.appendChild(el("small", null, `${field.id} · ${field.type || "text"}`));
     }
@@ -309,10 +351,10 @@
     if (field.help) {
       stack.appendChild(el("p", "ui2-help", stripTags(field.help)));
     }
-    if (field.repeat) {
+    if (devMode && field.repeat) {
       stack.appendChild(el("p", "ui2-help", `Visible when ${field.repeat}`));
     }
-    if (isRepeater(field)) {
+    if (devMode && isRepeater(field)) {
       stack.appendChild(el("p", "ui2-help", "Repeater source"));
     }
 

@@ -119,6 +119,26 @@ shape.
 
 Missing view files are valid and mean "infer from the module and layout data."
 
+## App And User Configuration
+
+Some UI2 presentation choices should eventually be controllable from the
+generated application's runtime configuration, but they should not be confused
+with the module schema or the optional `views/` organization layer.
+
+Good candidates for app-level configuration include:
+
+- whether the login/registration splash is enabled for the UI2 target
+- which UI2 layout modes are allowed, such as tabs or collapsible sections
+- the default left-navigation mode, such as pinned, collapsed, or overlay
+- whether developer/admin metadata can be exposed
+- default help behavior, such as inline, hover, or both
+- allowed theme behavior, such as system theme only or user-selectable theme
+
+Per-user choices, such as a collapsed left menu or preferred density, can start
+as browser-local preferences while UI2 is being evaluated. If those preferences
+need to follow a registered user across browsers, they belong in the
+application/user configuration path rather than in module JSON.
+
 ## Module Overrides
 
 The preferred full replacement path for UI2 modules is:
