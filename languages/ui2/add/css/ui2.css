@@ -509,6 +509,75 @@ code {
   min-width: 8rem;
 }
 
+.ui2-system-tool .ui2-section-body {
+  gap: 1rem;
+}
+
+.ui2-tool-filters {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 64rem;
+}
+
+.ui2-tool-filter {
+  display: grid;
+  grid-template-columns: minmax(10rem, 16rem) minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.ui2-tool-legend,
+.ui2-file-tree {
+  border: 1px solid var(--ui2-border);
+  border-radius: 6px;
+  background: var(--ui2-panel-soft);
+  padding: 0.85rem;
+}
+
+.ui2-tool-legend h3,
+.ui2-file-tree h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+.ui2-tool-legend p,
+.ui2-file-tree ul {
+  margin: 0;
+  color: var(--ui2-muted);
+}
+
+.ui2-data-table-wrap {
+  overflow-x: auto;
+}
+
+.ui2-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 54rem;
+}
+
+.ui2-data-table th,
+.ui2-data-table td {
+  border-bottom: 1px solid var(--ui2-border);
+  padding: 0.55rem 0.65rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.ui2-data-table th {
+  color: var(--ui2-text);
+  font-size: 0.86rem;
+}
+
+.ui2-table-empty {
+  color: var(--ui2-muted);
+}
+
+.ui2-tool-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
 .ui2-output {
   min-height: 4rem;
   border: 1px solid var(--ui2-border);

@@ -173,6 +173,15 @@
 
     const container = el("div", "ui2-module");
     container.appendChild(renderHeader(module, fields));
+
+    const systemTool = renderSystemTool(module, fields);
+    if (systemTool) {
+      container.appendChild(systemTool);
+      nodes.root.appendChild(container);
+      syncValues();
+      return;
+    }
+
     container.appendChild(renderTabs(inputFields.length, outputFields.length));
 
     const form = el("form");
@@ -541,6 +550,140 @@
     return section;
   }
 
+  function renderSystemTool(module, fields) {
+    const moduleId = module.moduleid || state.moduleId;
+    if (moduleId === "sys_job_manager" || moduleId === "sys_job2_manager") {
+      return renderJobManagerTool(fields);
+    }
+    if (moduleId === "sys_file_manager") {
+      return renderFileManagerTool(fields);
+    }
+    return null;
+  }
+
+  function renderJobManagerTool(fields) {
+    const section = el("section", "ui2-section ui2-system-tool ui2-job-manager");
+    const header = el("div", "ui2-section-header");
+    header.appendChild(el("h2", null, "Jobs"));
+    header.appendChild(el("span", "ui2-pill", "system"));
+
+    const body = el("div", "ui2-section-body ui2-tool-body");
+    const filters = el("div", "ui2-tool-filters");
+    [
+      ["serverdate", "Server date", "loads from server"],
+      ["running", "Running", "Show running jobs"],
+      ["completed", "Completed in the last", "*all*"],
+      ["project", "Project", "*all*"],
+      ["module", "Module", "*all*"]
+    ].forEach(([id, label, value]) => {
+      filters.appendChild(renderToolFilter(id, label, value, id === "running"));
+    });
+    body.appendChild(filters);
+
+    const legend = el("div", "ui2-tool-legend");
+    legend.appendChild(el("h3", null, "Actions Legend"));
+    legend.appendChild(el("p", null, "Attach, attach in a new window, delete, cancel, and clear lock actions appear beside jobs."));
+    body.appendChild(legend);
+
+    const tableWrap = el("div", "ui2-data-table-wrap");
+    const table = el("table", "ui2-data-table");
+    const thead = document.createElement("thead");
+    const head = document.createElement("tr");
+    ["Actions", "Module", "Project", "Details", "Start", "End", "Duration"].forEach((label) => head.appendChild(el("th", null, label)));
+    thead.appendChild(head);
+    const tbody = document.createElement("tbody");
+    const placeholder = document.createElement("tr");
+    const cell = el("td", "ui2-table-empty", "Job rows will load from the Job Manager runtime service.");
+    cell.colSpan = 7;
+    placeholder.appendChild(cell);
+    tbody.appendChild(placeholder);
+    table.append(thead, tbody);
+    tableWrap.appendChild(table);
+    body.appendChild(tableWrap);
+
+    const messages = fields.find((field) => field.id === "messages");
+    if (messages) {
+      body.appendChild(renderToolOutput("Messages", messages));
+    }
+
+    section.append(header, body);
+    return section;
+  }
+
+  function renderFileManagerTool(fields) {
+    const section = el("section", "ui2-section ui2-system-tool ui2-file-manager");
+    const header = el("div", "ui2-section-header");
+    header.appendChild(el("h2", null, "Files"));
+    header.appendChild(el("span", "ui2-pill", "system"));
+
+    const body = el("div", "ui2-section-body ui2-tool-body");
+    body.appendChild(renderToolFilter("serverdate", "Server date", "loads from server", false));
+
+    const tree = el("div", "ui2-file-tree");
+    tree.appendChild(el("h3", null, "User file tree"));
+    const list = el("ul", null);
+    ["Project folders", "Input files", "Result archives"].forEach((item) => {
+      const li = document.createElement("li");
+      li.textContent = item;
+      list.appendChild(li);
+    });
+    tree.appendChild(list);
+    body.appendChild(tree);
+
+    const compression = fields.find((field) => field.id === "compression");
+    if (compression) {
+      body.appendChild(renderField(compression, "input"));
+    }
+
+    const actions = el("div", "ui2-tool-actions");
+    actions.appendChild(el("button", "ui2-button", "Download"));
+    actions.querySelector("button").type = "button";
+    body.appendChild(actions);
+
+    ["status", "outfiles"].forEach((id) => {
+      const field = fields.find((item) => item.id === id);
+      if (field) {
+        body.appendChild(renderToolOutput(field.label || id, field));
+      }
+    });
+
+    section.append(header, body);
+    return section;
+  }
+
+  function renderToolFilter(id, label, value, toggle) {
+    const row = el("div", "ui2-tool-filter");
+    row.dataset.fieldId = id;
+    row.appendChild(el("label", "ui2-field-label", label));
+    const stack = el("div", "ui2-control-stack");
+    if (toggle) {
+      const switchLabel = el("label", "ui2-switch");
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.dataset.fieldId = id;
+      switchLabel.append(input, document.createTextNode(value));
+      stack.appendChild(switchLabel);
+    } else {
+      const input = el("input", "ui2-input");
+      input.type = "text";
+      input.value = value;
+      input.dataset.fieldId = id;
+      stack.appendChild(input);
+    }
+    row.appendChild(stack);
+    return row;
+  }
+
+  function renderToolOutput(label, field) {
+    const row = el("div", "ui2-field");
+    row.dataset.fieldId = field.id || "";
+    row.appendChild(el("label", "ui2-field-label", label || field.id || "Output"));
+    const stack = el("div", "ui2-control-stack");
+    stack.appendChild(renderOutput(field));
+    row.appendChild(stack);
+    return row;
+  }
+
   function syncValues() {
     const form = document.getElementById("ui2-form");
     if (!form) {
@@ -737,7 +880,7 @@
     const tableChildren = new Map();
     ordered.forEach((field) => {
       const parentId = repeatControllerId(field.repeat);
-      if (!parentId || !byId.has(parentId) || !isTableizedRepeater(byId.get(parentId))) {
+      if (!parentId || !byId.has(parentId)) {
         return;
       }
       if (!tableChildren.has(parentId)) {
@@ -753,7 +896,7 @@
         return;
       }
       const fieldsForTable = tableChildren.get(field.id) || [];
-      if (isTableizedRepeater(field) && fieldsForTable.length) {
+      if (isTableizedRepeater(field, fieldsForTable)) {
         fieldsForTable.forEach((child) => consumed.add(child));
         plan.push({
           kind: "table",
@@ -829,8 +972,16 @@
     return String(field.repeater || "").toLowerCase() === "true" || String(field.repeater || "").toLowerCase() === "yes";
   }
 
-  function isTableizedRepeater(field) {
-    return isRepeater(field) && String(field.tableize || "").toLowerCase() === "true";
+  function isTableizedRepeater(field, childFields) {
+    const explicit = String(field.tableize || "").toLowerCase() === "true";
+    if (isRepeater(field) && explicit && childFields.length) {
+      return true;
+    }
+    const type = String(field.type || "").toLowerCase();
+    return isRepeater(field)
+      && type === "integer"
+      && childFields.length > 0
+      && childFields.every((child) => child.role !== "output" && !isRepeater(child));
   }
 
   function integerValue(value, fallback) {
