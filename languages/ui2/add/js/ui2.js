@@ -172,16 +172,16 @@
     nodes.root.innerHTML = "";
 
     const container = el("div", "ui2-module");
-    container.appendChild(renderHeader(module, fields));
-
     const systemTool = renderSystemTool(module, fields);
     if (systemTool) {
+      container.appendChild(renderToolHeader(module));
       container.appendChild(systemTool);
       nodes.root.appendChild(container);
       syncValues();
       return;
     }
 
+    container.appendChild(renderHeader(module, fields));
     container.appendChild(renderTabs(inputFields.length, outputFields.length));
 
     const form = el("form");
@@ -209,7 +209,18 @@
       return;
     }
 
+    const utilityModules = [];
     appMap.menus.forEach((menu, index) => {
+      const modules = (menu.modules || []).filter((module) => {
+        if (isUtilityModule(module.id)) {
+          utilityModules.push(module);
+          return false;
+        }
+        return true;
+      });
+      if (!modules.length) {
+        return;
+      }
       const group = el("section", "ui2-menu-group");
       group.dataset.menuId = menu.id || "";
 
@@ -217,11 +228,11 @@
       button.type = "button";
       button.setAttribute("aria-expanded", index === 0 ? "true" : "false");
       button.appendChild(menuTitle(menu));
-      button.appendChild(el("span", "ui2-menu-count", String((menu.modules || []).length)));
+      button.appendChild(el("span", "ui2-menu-count", String(modules.length)));
 
       const list = el("div", "ui2-module-list");
       list.hidden = index !== 0;
-      (menu.modules || []).forEach((module) => {
+      modules.forEach((module) => {
         const item = el("button", "ui2-module-button", module.label || module.id);
         item.type = "button";
         item.dataset.moduleId = module.id || "";
@@ -238,6 +249,38 @@
       group.append(button, list);
       nodes.menuNav.appendChild(group);
     });
+
+    if (utilityModules.length) {
+      nodes.menuNav.appendChild(renderUtilityMenu(utilityModules));
+    }
+  }
+
+  function renderUtilityMenu(modules) {
+    const group = el("section", "ui2-menu-group ui2-utility-menu");
+    group.dataset.menuId = "utilities";
+    const button = el("button", "ui2-menu-button");
+    button.type = "button";
+    button.setAttribute("aria-expanded", "true");
+    button.appendChild(el("span", "ui2-menu-title", "Utilities"));
+    button.appendChild(el("span", "ui2-menu-count", String(modules.length)));
+
+    const list = el("div", "ui2-module-list");
+    modules.forEach((module) => {
+      const item = el("button", "ui2-module-button", utilityLabel(module));
+      item.type = "button";
+      item.dataset.moduleId = module.id || "";
+      item.addEventListener("click", () => loadModule(module.id));
+      list.appendChild(item);
+    });
+
+    button.addEventListener("click", () => {
+      const expanded = button.getAttribute("aria-expanded") === "true";
+      button.setAttribute("aria-expanded", expanded ? "false" : "true");
+      list.hidden = expanded;
+    });
+
+    group.append(button, list);
+    return group;
   }
 
   function menuTitle(menu) {
@@ -277,12 +320,12 @@
   function renderHeader(module, fields) {
     const header = el("header", "ui2-module-header");
     const titleWrap = el("div");
-    const kicker = el("p", "ui2-kicker", module.moduleid || state.moduleId || "module");
     const title = el("h2", "ui2-module-title", module.label || module.moduleid || state.moduleId);
 
-    titleWrap.append(kicker, title);
+    titleWrap.appendChild(title);
     if (devMode) {
       const meta = el("div", "ui2-meta");
+      meta.appendChild(el("span", "ui2-pill", module.moduleid || state.moduleId || "module"));
       meta.appendChild(el("span", "ui2-pill", `${fields.length} fields`));
       meta.appendChild(el("span", "ui2-pill", `${fields.filter((field) => field.role === "output").length} outputs`));
       if (module.executable) {
@@ -294,6 +337,20 @@
       titleWrap.appendChild(meta);
     }
 
+    header.appendChild(titleWrap);
+    return header;
+  }
+
+  function renderToolHeader(module) {
+    const header = el("header", "ui2-module-header ui2-tool-header");
+    const titleWrap = el("div");
+    titleWrap.appendChild(el("h2", "ui2-module-title", utilityLabel({ id: module.moduleid || state.moduleId, label: module.label })));
+    if (devMode) {
+      const meta = el("div", "ui2-meta");
+      meta.appendChild(el("span", "ui2-pill", module.moduleid || state.moduleId || "system"));
+      meta.appendChild(el("span", "ui2-pill", "utility"));
+      titleWrap.appendChild(meta);
+    }
     header.appendChild(titleWrap);
     return header;
   }
@@ -561,12 +618,40 @@
     return null;
   }
 
+  function isUtilityModule(moduleId) {
+    return [
+      "sys_job_manager",
+      "sys_job2_manager",
+      "sys_file_manager",
+      "sys_user_config",
+      "sys_feedback",
+      "sys_feedback2",
+      "sys_logoff"
+    ].includes(moduleId);
+  }
+
+  function utilityLabel(module) {
+    const id = module.id || "";
+    if (id === "sys_file_manager") {
+      return "File Manager";
+    }
+    if (id === "sys_job_manager" || id === "sys_job2_manager") {
+      return "Job Manager";
+    }
+    if (id === "sys_user_config") {
+      return "Settings";
+    }
+    if (id === "sys_feedback" || id === "sys_feedback2") {
+      return "Feedback";
+    }
+    if (id === "sys_logoff") {
+      return "Logoff";
+    }
+    return module.label || id || "Utility";
+  }
+
   function renderJobManagerTool(fields) {
     const section = el("section", "ui2-section ui2-system-tool ui2-job-manager");
-    const header = el("div", "ui2-section-header");
-    header.appendChild(el("h2", null, "Jobs"));
-    header.appendChild(el("span", "ui2-pill", "system"));
-
     const body = el("div", "ui2-section-body ui2-tool-body");
     const filters = el("div", "ui2-tool-filters");
     [
@@ -606,16 +691,12 @@
       body.appendChild(renderToolOutput("Messages", messages));
     }
 
-    section.append(header, body);
+    section.appendChild(body);
     return section;
   }
 
   function renderFileManagerTool(fields) {
     const section = el("section", "ui2-section ui2-system-tool ui2-file-manager");
-    const header = el("div", "ui2-section-header");
-    header.appendChild(el("h2", null, "Files"));
-    header.appendChild(el("span", "ui2-pill", "system"));
-
     const body = el("div", "ui2-section-body ui2-tool-body");
     body.appendChild(renderToolFilter("serverdate", "Server date", "loads from server", false));
 
@@ -647,7 +728,7 @@
       }
     });
 
-    section.append(header, body);
+    section.appendChild(body);
     return section;
   }
 
