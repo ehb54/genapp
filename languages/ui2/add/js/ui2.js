@@ -1566,6 +1566,7 @@
       }
       removeServerSelection(id, picker.dataset.repeatTableIndex);
       formData.delete(`${id}_altval[]`);
+      formData.delete(`_selaltval_${id}`);
       formData.delete(`${id}[]`);
       formData.delete(`_decodepath_${id}`);
       if (picker.dataset.repeatTableIndex != null) {
@@ -1584,13 +1585,16 @@
     formData.delete(selection.id);
     formData.delete(`${selection.id}[]`);
     formData.delete(`${selection.id}_altval[]`);
+    formData.delete(`_selaltval_${selection.id}`);
     formData.delete(`_decodepath_${selection.id}`);
     if (selection.type === "rpath") {
       formData.append(`${selection.id}[]`, selection.encodedPath);
       formData.append(`_decodepath_${selection.id}`, "");
       return;
     }
+    formData.set(`_selaltval_${selection.id}`, `${selection.id}_altval`);
     formData.append(`${selection.id}_altval[]`, selection.encodedPath);
+    formData.set(`_html_${selection.id}_altval`, `<i>Server</i>: ${selection.path || "selected file"}`);
   }
 
   function removeServerSelection(id, repeatIndex) {
