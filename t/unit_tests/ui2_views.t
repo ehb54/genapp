@@ -34,13 +34,18 @@ my $index = read_file( File::Spec->catfile( $ui2, 'index.html' ) );
 like( $index, qr/js\/app-map\.js/, 'ui2 index loads the generated app map' );
 like( $index, qr/js\/ui2\.js/, 'ui2 index loads the plain JavaScript playground' );
 like( $index, qr/css\/ui2\.css/, 'ui2 index loads the ui2 stylesheet' );
+like( $index, qr/id="ui2-session-status"/, 'ui2 index exposes a session/project status target' );
 
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
 like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declares a module submit endpoint helper' );
 like( $ui2_js, qr/\.\.\/ajax/, 'ui2 runtime bridge defaults to sibling html5 ajax endpoints' );
+like( $ui2_js, qr/function refreshSessionState\(\)/, 'ui2 runtime bridge declares a legacy session status helper' );
+like( $ui2_js, qr/sys_status\.php/, 'ui2 runtime bridge checks legacy sys_status for logon/project state' );
 like( $ui2_js, qr/function buildSubmitFormData\(form\)/, 'ui2 runtime bridge builds GenApp submit FormData explicitly' );
 like( $ui2_js, qr/function appendSelectedFiles\(formData, form\)/, 'ui2 runtime bridge includes selected file payloads' );
 like( $ui2_js, qr/formData\.set\("_uuid"/, 'ui2 runtime bridge supplies uuid for generated backend submit path' );
+like( $ui2_js, qr/formData\.set\("_logon", state\.session\.logon/, 'ui2 submit uses the legacy session logon' );
+like( $ui2_js, qr/formData\.set\("_project", state\.session\.project/, 'ui2 submit uses the legacy session project' );
 like( $ui2_js, qr/type === "float"[\s\S]+input\.step = "any"/, 'ui2 float inputs allow decimal values' );
 like( $ui2_js, qr/type === "integer"[\s\S]+input\.step = "1"/, 'ui2 integer inputs keep whole-number stepping' );
 

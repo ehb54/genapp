@@ -25,7 +25,15 @@
     module: null,
     view: {},
     values: {},
-    submitResponse: null
+    submitResponse: null,
+    session: {
+      logon: "",
+      project: "",
+      groups: {},
+      usergroups: [],
+      theme: "",
+      loaded: false
+    }
   };
 
   const nodes = {
@@ -37,6 +45,7 @@
     candidates: document.getElementById("ui2-module-candidates"),
     menuNav: document.getElementById("ui2-menu-nav"),
     navToggle: document.getElementById("ui2-nav-toggle"),
+    sessionStatus: document.getElementById("ui2-session-status"),
     jobs: document.getElementById("ui2-jobs"),
     files: document.getElementById("ui2-files"),
     settings: document.getElementById("ui2-settings"),
@@ -45,6 +54,7 @@
   };
 
   function init() {
+    ensureWindowName();
     document.body.classList.toggle("ui2-dev-mode", devMode);
     setSidebarCollapsed(prefs.sidebarCollapsed === true);
     nodes.navToggle?.addEventListener("click", () => {
@@ -54,9 +64,10 @@
     nodes.files?.addEventListener("click", () => loadModule("sys_file_manager"));
     nodes.settings?.addEventListener("click", () => loadModule("sys_user_config"));
     nodes.help?.addEventListener("click", toggleHelp);
-    nodes.logoff?.addEventListener("click", () => loadModule("sys_logoff"));
+    nodes.logoff?.addEventListener("click", handleLogonAction);
 
     renderMenu();
+    refreshSessionState();
     if (nodes.candidates) {
       candidateModules.forEach((id) => {
         const option = document.createElement("option");
@@ -83,6 +94,90 @@
       loadModule(requested);
     } else {
       loadFirstAvailable();
+    }
+  }
+
+  function ensureWindowName() {
+    if (window.name && window.name.length) {
+      return;
+    }
+    window.name = createUuid();
+  }
+
+  async function refreshSessionState() {
+    const endpoint = params.get("statusBase") || "../ajax/sys_config/sys_status.php";
+    try {
+      const url = new URL(endpoint, window.location.href);
+      url.searchParams.set("tags", "_logon");
+      url.searchParams.set("tagmode", "any");
+      url.searchParams.set("format", "json");
+      url.searchParams.set("_window", window.name);
+      url.searchParams.set("_groups", "1");
+      const response = await fetch(url.toString(), {
+        cache: "no-cache",
+        credentials: "same-origin"
+      });
+      if (!response.ok) {
+        throw new Error(`session status returned ${response.status}`);
+      }
+      const payload = await response.json();
+      state.session.logon = stringValue(payload._logon);
+      state.session.project = stringValue(payload._project);
+      state.session.groups = payload._groups || {};
+      state.session.usergroups = Array.isArray(payload._usergroups) ? payload._usergroups : [];
+      state.session.theme = stringValue(payload._theme);
+      state.session.loaded = true;
+      renderSessionState();
+      return payload;
+    } catch (error) {
+      state.session.loaded = false;
+      renderSessionState(error);
+      return {};
+    }
+  }
+
+  function renderSessionState(error) {
+    const project = state.session.project && state.session.project !== "no_project_specified"
+      ? state.session.project
+      : "";
+    if (nodes.sessionStatus) {
+      nodes.sessionStatus.textContent = project ? `Project ${project}` : "Project";
+      nodes.sessionStatus.title = state.session.logon
+        ? `Logged on as ${state.session.logon}`
+        : (error ? `Session status unavailable: ${error.message}` : "Not logged on");
+    }
+    if (nodes.logoff) {
+      nodes.logoff.textContent = state.session.logon ? `Logoff ${state.session.logon}` : "Login";
+      nodes.logoff.dataset.mode = state.session.logon ? "logoff" : "login";
+    }
+  }
+
+  async function handleLogonAction() {
+    if (!state.session.logon) {
+      window.location.href = "../?_reqlogin=1";
+      return;
+    }
+    await logoffSession();
+  }
+
+  async function logoffSession() {
+    const endpoint = params.get("logoffBase") || "../ajax/sys_config/sys_logoff.php";
+    try {
+      const formData = new FormData();
+      formData.set("_window", window.name);
+      formData.set("_logon", state.session.logon);
+      const response = await fetch(endpoint, {
+        method: "POST",
+        body: formData,
+        credentials: "same-origin"
+      });
+      const payload = await response.json();
+      state.session.logon = stringValue(payload._logon);
+      state.session.project = stringValue(payload._project);
+      state.session.loaded = true;
+      renderSessionState();
+    } catch (error) {
+      renderSessionState(error);
     }
   }
 
@@ -150,6 +245,10 @@
     } catch (error) {
       return {};
     }
+  }
+
+  function stringValue(value) {
+    return value == null ? "" : String(value);
   }
 
   function savePreference(key, value) {
@@ -1078,9 +1177,14 @@
     setSubmitStatus(status, `Submitting to ${endpoint}`, "pending");
 
     try {
+      await refreshSessionState();
+      if (!state.session.logon) {
+        throw new Error("You must be logged on to submit");
+      }
       const response = await fetch(endpoint, {
         method: "POST",
-        body: buildSubmitFormData(form)
+        body: buildSubmitFormData(form),
+        credentials: "same-origin"
       });
       const text = await response.text();
       let payload;
@@ -1117,9 +1221,9 @@
     Object.entries(state.values || {}).forEach(([id, value]) => appendFormValue(formData, id, value));
     appendSelectedFiles(formData, form);
     formData.set("_uuid", createUuid());
-    formData.set("_window", window.name || "ui2");
-    formData.set("_project", params.get("project") || prefs.project || "");
-    formData.set("_logon", params.get("logon") || prefs.logon || "");
+    formData.set("_window", window.name);
+    formData.set("_project", state.session.project || "");
+    formData.set("_logon", state.session.logon || "");
     formData.set("_height", String(Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)));
     formData.set("_width", String(Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)));
     return formData;
