@@ -1489,6 +1489,14 @@ sub check_files {
                                 $repeattype{ $k } = $$mod_info{ 'fields:type' } . " choice " . ( 1 + ( ( $i - 1 ) / 2 ) );
                             }
                         }
+                        if ( $$mod_info{ 'fields:type' } eq 'checkbox' ) {
+                            foreach my $value ( qw(true false) ) {
+                                my $k = $$mod_info{ 'fields:id' } . ":" . $value;
+                                $repeater  { $k } = $$mod_info{ 'fields:type' } . " " . $value;
+                                $repeat    { $k } = $$mod_info{ 'fields:id' };
+                                $repeattype{ $k } = $$mod_info{ 'fields:type' } . " " . $value;
+                            }
+                        }
                     }
                     if ( $$mod_info{ 'fields:repeat' } )
                     {
