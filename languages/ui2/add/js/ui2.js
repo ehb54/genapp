@@ -197,10 +197,19 @@
     const form = el("form");
     form.id = "ui2-form";
     form.appendChild(renderSection("Inputs", inputFields, "input"));
+    if (module.executable) {
+      form.appendChild(renderActionBar());
+    }
     form.appendChild(renderSection("Outputs", outputFields, "output"));
     if (devMode) {
       form.appendChild(renderPreview());
     }
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+    });
+    form.addEventListener("reset", () => {
+      window.setTimeout(syncValues, 0);
+    });
     form.addEventListener("input", syncValues);
     form.addEventListener("change", syncValues);
 
@@ -391,6 +400,9 @@
   }
 
   function renderField(field, role) {
+    if (isHiddenField(field)) {
+      return renderHiddenField(field);
+    }
     if (isLayoutLabel(field)) {
       return renderLayoutLabel(field);
     }
@@ -403,6 +415,7 @@
 
     const label = el("label", "ui2-field-label");
     label.textContent = field.label || field.id || field.type || "field";
+    addHelpAffordance(label, field);
     if (devMode && field.id) {
       label.setAttribute("for", fieldId(field));
       label.appendChild(el("small", null, `${field.id} · ${field.type || "text"}`));
@@ -410,9 +423,6 @@
 
     const stack = el("div", "ui2-control-stack");
     stack.appendChild(role === "output" ? renderOutput(field) : renderControl(field));
-    if (field.help) {
-      stack.appendChild(el("p", "ui2-help", stripTags(field.help)));
-    }
     if (devMode && field.repeat) {
       stack.appendChild(el("p", "ui2-help", `Visible when ${field.repeat}`));
       stack.appendChild(el("p", "ui2-help ui2-repeat-debug"));
@@ -425,9 +435,23 @@
     return row;
   }
 
+  function renderHiddenField(field) {
+    const row = el("div", "ui2-field ui2-hidden-field");
+    row.dataset.fieldId = field.id || "";
+    if (field.repeat) {
+      row.dataset.repeat = field.repeat;
+    }
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.value = field.default == null ? "" : field.default;
+    wireControl(input, field);
+    row.appendChild(input);
+    return row;
+  }
+
   function renderTableizedRepeater(item, role) {
     const controller = item.controller;
-    const row = renderField(controller, role);
+    const row = isHiddenField(controller) ? renderHiddenTableRepeater(controller, item.fields || []) : renderField(controller, role);
     row.classList.add("ui2-tableized-repeater");
 
     const stack = row.querySelector(".ui2-control-stack");
@@ -458,6 +482,25 @@
     return row;
   }
 
+  function renderHiddenTableRepeater(controller, fields) {
+    const row = el("div", "ui2-field ui2-field-wide");
+    row.dataset.fieldId = controller.id || "";
+    if (controller.repeat) {
+      row.dataset.repeat = controller.repeat;
+    }
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.value = controller.default == null ? "" : controller.default;
+    wireControl(input, controller);
+    row.appendChild(input);
+
+    const label = el("label", "ui2-field-label", repeatedGroupLabel(controller, fields));
+    addHelpAffordance(label, controller);
+    const stack = el("div", "ui2-control-stack");
+    row.append(label, stack);
+    return row;
+  }
+
   function renderRepeatTableBody(controller, fields) {
     const tbody = document.createElement("tbody");
     const rows = Math.max(1, integerValue(controller.default, 1));
@@ -478,16 +521,41 @@
   }
 
   function renderRepeatTableControl(field, rowIndex) {
-    const input = el("input", "ui2-input ui2-repeat-table-input");
     const type = String(field.type || "text").toLowerCase();
-    input.type = inputType(type);
-    input.id = `${fieldId(field)}-${rowIndex}`;
-    input.dataset.fieldId = field.id || "";
-    input.dataset.repeatTableField = field.id || "";
-    input.dataset.repeatTableIndex = String(rowIndex);
-    if (field.required === "true" || field.required === true) {
-      input.required = true;
+    if (type === "listbox" || type === "select") {
+      const select = el("select", "ui2-select ui2-repeat-table-input");
+      parseValues(field.values).forEach((choice) => {
+        const option = document.createElement("option");
+        option.value = choice.value;
+        option.textContent = choice.label;
+        select.appendChild(option);
+      });
+      wireRepeatTableControl(select, field, rowIndex);
+      select.value = arrayDefaultValue(field.default, rowIndex) || select.value;
+      return select;
     }
+
+    if (type === "checkbox") {
+      const wrap = el("label", "ui2-repeat-table-checkbox");
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = checkboxDefault(field, rowIndex);
+      wireRepeatTableControl(input, field, rowIndex);
+      wrap.appendChild(input);
+      return wrap;
+    }
+
+    if (isFileLikeType(type)) {
+      return renderFileControl(field, {
+        compact: true,
+        idSuffix: `-${rowIndex}`,
+        repeatTableIndex: rowIndex
+      });
+    }
+
+    const input = el("input", "ui2-input ui2-repeat-table-input");
+    input.type = inputType(type);
+    wireRepeatTableControl(input, field, rowIndex);
     input.value = arrayDefaultValue(field.default, rowIndex);
     return input;
   }
@@ -565,15 +633,77 @@
     if (type === "grid" || type === "grid2") {
       return el("div", "ui2-output", `${type} field placeholder. A dedicated table/matrix widget belongs here.`);
     }
+    if (isFileLikeType(type)) {
+      return renderFileControl(field);
+    }
 
     const input = el("input", "ui2-input");
     input.type = inputType(type);
-    if (type === "lrfile" || type === "file" || type === "rpath") {
-      input.placeholder = type === "rpath" ? "Path" : "File";
-    }
     wireControl(input, field);
     input.value = field.default == null ? "" : field.default;
     return input;
+  }
+
+  function renderFileControl(field, options) {
+    const type = String(field.type || "").toLowerCase();
+    const compact = options?.compact === true;
+    const wrap = el("div", compact ? "ui2-file-control ui2-file-control-compact" : "ui2-file-control");
+    const input = el("input", compact ? "ui2-input ui2-repeat-table-input" : "ui2-input");
+    input.type = "text";
+    input.placeholder = type === "rpath" ? "Server path" : "No file selected";
+    if (options?.idSuffix) {
+      input.id = `${fieldId(field)}${options.idSuffix}`;
+    } else {
+      wireControl(input, field);
+    }
+    if (options?.repeatTableIndex != null) {
+      input.dataset.fieldId = field.id || "";
+      input.dataset.repeatTableField = field.id || "";
+      input.dataset.repeatTableIndex = String(options.repeatTableIndex);
+      if (field.required === "true" || field.required === true) {
+        input.required = true;
+      }
+    }
+    if (field.sync) {
+      input.dataset.sync = field.sync;
+    }
+    input.value = arrayDefaultValue(field.default, options?.repeatTableIndex || 0);
+
+    const localPicker = document.createElement("input");
+    localPicker.type = "file";
+    localPicker.className = "ui2-native-file";
+    localPicker.tabIndex = -1;
+    localPicker.addEventListener("change", () => {
+      input.value = localPicker.files && localPicker.files[0] ? localPicker.files[0].name : "";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    const actions = el("div", "ui2-file-actions");
+    if (fileModes(type).includes("local")) {
+      const local = el("button", "ui2-button ui2-button-quiet", compact ? "Local" : "Browse local files");
+      local.type = "button";
+      local.addEventListener("click", () => localPicker.click());
+      actions.appendChild(local);
+    }
+    if (fileModes(type).includes("server")) {
+      const server = el("button", "ui2-button ui2-button-quiet", compact ? "Server" : "Browse server");
+      server.type = "button";
+      server.title = "Server file picker wiring will attach here.";
+      actions.appendChild(server);
+    }
+
+    wrap.append(input, localPicker, actions);
+    return wrap;
+  }
+
+  function renderActionBar() {
+    const actions = el("div", "ui2-form-actions");
+    const submit = el("button", "ui2-button ui2-button-primary", "Submit");
+    submit.type = "submit";
+    const reset = el("button", "ui2-button ui2-button-quiet", "Reset");
+    reset.type = "reset";
+    actions.append(submit, reset);
+    return actions;
   }
 
   function renderOutput(field) {
@@ -804,6 +934,8 @@
     if (!form) {
       return;
     }
+    const initialValues = collectControlValues(form, () => true);
+    syncLinkedControls(form, initialValues);
     const rawValues = collectControlValues(form, () => true);
     const activeRows = evaluateRepeatVisibility(form, rawValues);
     updateRepeats(form, activeRows, rawValues);
@@ -829,12 +961,46 @@
         if (!Array.isArray(values[id])) {
           values[id] = [];
         }
-        values[id][Number(control.dataset.repeatTableIndex || 0)] = control.value;
+        values[id][Number(control.dataset.repeatTableIndex || 0)] = control.type === "checkbox" ? control.checked : control.value;
         return;
       }
       values[id] = control.type === "checkbox" ? control.checked : control.value;
     });
     return values;
+  }
+
+  function syncLinkedControls(scope, rawValues) {
+    const groups = new Map();
+    scope.querySelectorAll("[data-sync]").forEach((control) => {
+      const group = control.dataset.sync;
+      if (!group) {
+        return;
+      }
+      if (!groups.has(group)) {
+        groups.set(group, []);
+      }
+      groups.get(group).push(control);
+    });
+
+    groups.forEach((controls) => {
+      const source = controls.find((control) => {
+        return control.type !== "hidden" && !control.disabled && rawValues[control.dataset.fieldId] != null;
+      }) || controls.find((control) => rawValues[control.dataset.fieldId] != null);
+      if (!source) {
+        return;
+      }
+      const value = source.type === "checkbox" ? source.checked : source.value;
+      controls.forEach((control) => {
+        if (control === source || control.type === "radio") {
+          return;
+        }
+        if (control.type === "checkbox") {
+          control.checked = Boolean(value);
+        } else {
+          control.value = value;
+        }
+      });
+    });
   }
 
   function evaluateRepeatVisibility(scope, rawValues) {
@@ -931,6 +1097,19 @@
   function wireControl(control, field) {
     control.id = fieldId(field);
     control.dataset.fieldId = field.id || "";
+    if (field.sync) {
+      control.dataset.sync = field.sync;
+    }
+    if (field.required === "true" || field.required === true) {
+      control.required = true;
+    }
+  }
+
+  function wireRepeatTableControl(control, field, rowIndex) {
+    control.id = `${fieldId(field)}-${rowIndex}`;
+    control.dataset.fieldId = field.id || "";
+    control.dataset.repeatTableField = field.id || "";
+    control.dataset.repeatTableIndex = String(rowIndex);
     if (field.required === "true" || field.required === true) {
       control.required = true;
     }
@@ -1087,6 +1266,10 @@
     return String(field.repeater || "").toLowerCase() === "true" || String(field.repeater || "").toLowerCase() === "yes";
   }
 
+  function isHiddenField(field) {
+    return String(field.hidden || "").toLowerCase() === "true";
+  }
+
   function isTableizedRepeater(field, childFields) {
     const explicit = String(field.tableize || "").toLowerCase() === "true";
     if (isRepeater(field) && explicit && childFields.length) {
@@ -1112,6 +1295,52 @@
       return value[index] == null ? value[0] || "" : value[index];
     }
     return value == null ? "" : value;
+  }
+
+  function checkboxDefault(field, index) {
+    const value = arrayDefaultValue(field.checked == null ? field.default : field.checked, index);
+    return String(value || "").toLowerCase() === "true" || value === true;
+  }
+
+  function isFileLikeType(type) {
+    return ["file", "lrfile", "rfile", "ftree", "rpath"].includes(String(type || "").toLowerCase());
+  }
+
+  function fileModes(type) {
+    const normalized = String(type || "").toLowerCase();
+    if (normalized === "lrfile") {
+      return ["local", "server"];
+    }
+    if (normalized === "file") {
+      return ["local"];
+    }
+    return ["server"];
+  }
+
+  function repeatedGroupLabel(controller, fields) {
+    const label = String(controller.label || "").trim();
+    if (label) {
+      return displayLabel(label);
+    }
+    if (fields.length === 1) {
+      return fields[0].label || displayLabel(fields[0].id || "Repeated value");
+    }
+    return "Repeated values";
+  }
+
+  function addHelpAffordance(label, field) {
+    if (!field.help) {
+      return;
+    }
+    const text = stripTags(field.help).trim();
+    if (!text) {
+      return;
+    }
+    label.title = text;
+    const badge = el("span", "ui2-help-badge", "?");
+    badge.title = text;
+    badge.setAttribute("aria-label", text);
+    label.appendChild(badge);
   }
 
   function visibleFields(fields) {
