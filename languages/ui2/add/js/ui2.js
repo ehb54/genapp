@@ -510,7 +510,7 @@
     wireControl(input, controller);
     row.appendChild(input);
 
-    const label = el("label", "ui2-field-label", repeatedGroupLabel(controller, fields));
+    const label = el("label", "ui2-field-label", isIntegerPairMatrix(controller, fields) ? "" : repeatedGroupLabel(controller, fields));
     const stack = el("div", "ui2-control-stack");
     row.append(label, stack);
     return row;
