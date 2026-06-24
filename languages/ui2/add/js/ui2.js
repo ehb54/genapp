@@ -741,6 +741,11 @@
 
     const input = el("input", "ui2-input");
     input.type = inputType(type);
+    if (type === "float") {
+      input.step = "any";
+    } else if (type === "integer") {
+      input.step = "1";
+    }
     wireControl(input, field);
     input.value = field.default == null ? "" : field.default;
     return input;
