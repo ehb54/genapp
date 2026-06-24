@@ -1335,11 +1335,15 @@
       return params.get(paramName);
     }
     const cleanPath = String(path || "").replace(/^\/+/, "");
+    const appId = sanitizeModuleId(document.querySelector(".ui2-shell")?.dataset.appId || "");
     const pathname = window.location.pathname;
     const marker = "/ui2/";
     const markerIndex = pathname.indexOf(marker);
-    if (markerIndex >= 0) {
+    if (markerIndex > 0) {
       return `${pathname.slice(0, markerIndex + 1)}${cleanPath}`;
+    }
+    if (appId) {
+      return `/${appId}/${cleanPath}`;
     }
     return `../${cleanPath}`;
   }
