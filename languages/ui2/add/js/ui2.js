@@ -415,7 +415,6 @@
 
     const label = el("label", "ui2-field-label");
     label.textContent = field.label || field.id || field.type || "field";
-    addHelpAffordance(label, field);
     if (devMode && field.id) {
       label.setAttribute("for", fieldId(field));
       label.appendChild(el("small", null, `${field.id} · ${field.type || "text"}`));
@@ -506,7 +505,6 @@
     row.appendChild(input);
 
     const label = el("label", "ui2-field-label", repeatedGroupLabel(controller, fields));
-    addHelpAffordance(label, controller);
     const stack = el("div", "ui2-control-stack");
     row.append(label, stack);
     return row;
@@ -559,7 +557,6 @@
   function renderRepeatListRow(field, rowIndex) {
     const row = el("div", "ui2-repeat-list-row");
     const label = el("label", "ui2-field-label", `${field.label || field.id || field.type || "field"} [${rowIndex + 1}]`);
-    addHelpAffordance(label, field);
     row.appendChild(label);
     const stack = el("div", "ui2-control-stack");
     stack.appendChild(renderRepeatTableControl(field, rowIndex));
@@ -1387,21 +1384,6 @@
       return fields[0].label || displayLabel(fields[0].id || "Repeated value");
     }
     return "Repeated values";
-  }
-
-  function addHelpAffordance(label, field) {
-    if (!field.help) {
-      return;
-    }
-    const text = stripTags(field.help).trim();
-    if (!text) {
-      return;
-    }
-    label.title = text;
-    const badge = el("span", "ui2-help-badge", "?");
-    badge.title = text;
-    badge.setAttribute("aria-label", text);
-    label.appendChild(badge);
   }
 
   function visibleFields(fields) {
