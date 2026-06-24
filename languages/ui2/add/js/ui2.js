@@ -25,6 +25,7 @@
     module: null,
     view: {},
     values: {},
+    serverSelections: {},
     submitResponse: null,
     session: {
       logon: "",
@@ -1004,9 +1005,11 @@
       localPicker.dataset.repeatTableIndex = String(options.repeatTableIndex);
     }
     localPicker.addEventListener("change", () => {
+      clearServerSelection(field, options?.repeatTableIndex);
       input.value = localPicker.files && localPicker.files[0] ? localPicker.files[0].name : "";
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
+    input.addEventListener("input", () => clearServerSelection(field, options?.repeatTableIndex));
 
     const actions = el("div", "ui2-file-actions");
     if (fileModes(type).includes("local")) {
@@ -1018,12 +1021,175 @@
     if (fileModes(type).includes("server")) {
       const server = el("button", "ui2-button ui2-button-quiet", compact ? "Server" : "Browse server");
       server.type = "button";
-      server.title = "Server file picker wiring will attach here.";
+      server.addEventListener("click", () => openServerFileDialog(field, input, options));
       actions.appendChild(server);
     }
 
     wrap.append(input, localPicker, actions);
     return wrap;
+  }
+
+  function openServerFileDialog(field, targetInput, options) {
+    if (!state.session.logon) {
+      openLoginDialog();
+      return;
+    }
+
+    const overlay = el("div", "ui2-dialog-overlay");
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "ui2-server-file-title");
+
+    const panel = el("section", "ui2-dialog ui2-file-dialog");
+    const header = el("div", "ui2-dialog-header");
+    const title = el("h2", null, fileDialogTitle(field));
+    title.id = "ui2-server-file-title";
+    const close = el("button", "ui2-dialog-close", "Close");
+    close.type = "button";
+    close.addEventListener("click", () => overlay.remove());
+    header.append(title, close);
+
+    const path = el("div", "ui2-server-path", "User files");
+    const list = el("div", "ui2-server-file-list");
+    list.setAttribute("role", "listbox");
+    const status = el("div", "ui2-submit-status", "Loading server files...");
+    const actions = el("div", "ui2-dialog-actions");
+    const choose = el("button", "ui2-button", "Select");
+    choose.type = "button";
+    choose.disabled = true;
+    const cancel = el("button", "ui2-button ui2-button-quiet", "Cancel");
+    cancel.type = "button";
+    cancel.addEventListener("click", () => overlay.remove());
+    actions.append(choose, cancel);
+
+    let selected = null;
+    const load = async (dirId) => {
+      status.textContent = "Loading server files...";
+      status.dataset.status = "";
+      list.innerHTML = "";
+      choose.disabled = true;
+      selected = null;
+      try {
+        const entries = await fetchServerFileEntries(dirId);
+        path.textContent = dirId && dirId !== "#" ? `User files / ${decodeServerFileId(dirId)}` : "User files";
+        renderServerFileEntries(entries, list, field, load, (entry) => {
+          selected = entry;
+          choose.disabled = false;
+        });
+        status.textContent = entries.length ? "Choose a server file." : "No files found here.";
+      } catch (error) {
+        status.textContent = error.message;
+        status.dataset.status = "error";
+      }
+    };
+
+    choose.addEventListener("click", () => {
+      if (!selected) {
+        return;
+      }
+      setServerSelection(field, options?.repeatTableIndex, selected);
+      targetInput.value = decodeServerFileId(selected.id).replace(/^\.\//, "");
+      targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+      setServerSelection(field, options?.repeatTableIndex, selected);
+      overlay.remove();
+    });
+
+    panel.append(header, path, list, status, actions);
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+    load("#");
+  }
+
+  async function fetchServerFileEntries(dirId) {
+    const url = new URL(legacyEndpoint("filesBase", "ajax/sys_config/sys_files.php"), window.location.href);
+    url.searchParams.set("_window", window.name);
+    url.searchParams.set("_spec", "fc_cache");
+    url.searchParams.set("_spec_dir", dirId && dirId !== "#" ? dirId : "");
+    if (state.session.project && state.session.project !== "no_project_specified") {
+      url.searchParams.set("project", state.session.project);
+    }
+    const response = await fetch(url.toString(), {
+      credentials: "same-origin"
+    });
+    const payload = await parseJsonResponse(response, "Server file browser");
+    return Array.isArray(payload) ? payload : [];
+  }
+
+  function renderServerFileEntries(entries, list, field, load, selectEntry) {
+    entries.forEach((entry) => {
+      const isFolder = entry.children === true;
+      const allowed = isFolder ? serverFileType(field) === "rpath" : serverFileType(field) !== "rpath";
+      const row = el("button", `ui2-server-file-row${isFolder ? " ui2-server-file-folder" : ""}`, "");
+      row.type = "button";
+      row.dataset.id = entry.id || "";
+      row.setAttribute("role", "option");
+      row.textContent = `${isFolder ? "Folder" : "File"} ${stripHtml(entry.text) || decodeServerFileId(entry.id || "")}`;
+      row.addEventListener("click", () => {
+        if (isFolder && serverFileType(field) !== "rpath") {
+          load(entry.id);
+          return;
+        }
+        if (!allowed) {
+          return;
+        }
+        list.querySelectorAll(".ui2-server-file-row").forEach((item) => item.setAttribute("aria-selected", "false"));
+        row.setAttribute("aria-selected", "true");
+        selectEntry(entry);
+      });
+      if (isFolder) {
+        row.addEventListener("dblclick", () => load(entry.id));
+      }
+      list.appendChild(row);
+    });
+  }
+
+  function fileDialogTitle(field) {
+    return serverFileType(field) === "rpath" ? "Choose Server Folder" : "Choose Server File";
+  }
+
+  function serverFileType(field) {
+    return String(field.type || "").toLowerCase();
+  }
+
+  function serverSelectionKey(field, repeatIndex) {
+    return `${field.id || ""}:${repeatIndex == null ? "" : repeatIndex}`;
+  }
+
+  function setServerSelection(field, repeatIndex, entry) {
+    if (!field.id || !entry?.id) {
+      return;
+    }
+    state.serverSelections[serverSelectionKey(field, repeatIndex)] = {
+      id: field.id,
+      type: serverFileType(field),
+      repeatIndex: repeatIndex == null ? null : repeatIndex,
+      encodedPath: entry.id,
+      path: decodeServerFileId(entry.id).replace(/^\.\//, "")
+    };
+  }
+
+  function clearServerSelection(field, repeatIndex) {
+    if (!field?.id) {
+      return;
+    }
+    delete state.serverSelections[serverSelectionKey(field, repeatIndex)];
+  }
+
+  function decodeServerFileId(id) {
+    if (!id || id === "#") {
+      return "";
+    }
+    try {
+      return atob(id);
+    } catch (error) {
+      return id;
+    }
+  }
+
+  function stripHtml(value) {
+    const div = document.createElement("div");
+    div.innerHTML = String(value || "");
+    return div.textContent || "";
   }
 
   function renderActionBar() {
@@ -1378,17 +1544,47 @@
     if (!form) {
       return;
     }
+    Object.values(state.serverSelections || {}).forEach((selection) => appendServerSelection(formData, selection));
     form.querySelectorAll(".ui2-native-file[data-field-id]").forEach((picker) => {
       const id = picker.dataset.fieldId;
       if (!id || !picker.files || !picker.files.length) {
         return;
       }
+      removeServerSelection(id, picker.dataset.repeatTableIndex);
+      formData.delete(`${id}_altval[]`);
+      formData.delete(`${id}[]`);
+      formData.delete(`_decodepath_${id}`);
       if (picker.dataset.repeatTableIndex != null) {
         Array.from(picker.files).forEach((file) => formData.append(`${id}[]`, file));
         return;
       }
       formData.delete(id);
       Array.from(picker.files).forEach((file) => formData.append(id, file));
+    });
+  }
+
+  function appendServerSelection(formData, selection) {
+    if (!selection?.id || !selection.encodedPath) {
+      return;
+    }
+    formData.delete(selection.id);
+    formData.delete(`${selection.id}[]`);
+    formData.delete(`${selection.id}_altval[]`);
+    formData.delete(`_decodepath_${selection.id}`);
+    if (selection.type === "rpath") {
+      formData.append(`${selection.id}[]`, selection.encodedPath);
+      formData.append(`_decodepath_${selection.id}`, "");
+      return;
+    }
+    formData.append(`${selection.id}_altval[]`, selection.encodedPath);
+  }
+
+  function removeServerSelection(id, repeatIndex) {
+    Object.keys(state.serverSelections || {}).forEach((key) => {
+      const selection = state.serverSelections[key];
+      if (selection?.id === id && String(selection.repeatIndex ?? "") === String(repeatIndex ?? "")) {
+        delete state.serverSelections[key];
+      }
     });
   }
 

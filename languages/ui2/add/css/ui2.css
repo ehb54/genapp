@@ -693,6 +693,10 @@ code {
   padding: 1rem;
 }
 
+.ui2-file-dialog {
+  width: min(54rem, 100%);
+}
+
 .ui2-dialog-header,
 .ui2-dialog-actions {
   display: flex;
@@ -731,6 +735,45 @@ code {
 
 .ui2-login-forgot {
   justify-content: flex-start;
+}
+
+.ui2-server-path {
+  margin-bottom: 0.65rem;
+  color: var(--ui2-muted);
+  font-weight: 700;
+}
+
+.ui2-server-file-list {
+  display: grid;
+  gap: 0.35rem;
+  max-height: min(32rem, 58vh);
+  overflow: auto;
+  border: 1px solid var(--ui2-border);
+  border-radius: 6px;
+  background: var(--ui2-bg);
+  padding: 0.5rem;
+}
+
+.ui2-server-file-row {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ui2-text);
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ui2-server-file-row:hover,
+.ui2-server-file-row[aria-selected="true"] {
+  border-color: var(--ui2-accent);
+  background: var(--ui2-accent-soft);
+  color: var(--ui2-accent-strong);
+}
+
+.ui2-server-file-folder {
+  font-weight: 700;
 }
 
 .ui2-system-tool .ui2-section-body {
