@@ -38,11 +38,13 @@ like( $index, qr/id="ui2-session-status"/, 'ui2 index exposes a session/project 
 
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
 like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declares a module submit endpoint helper' );
-like( $ui2_js, qr/\.\.\/ajax/, 'ui2 runtime bridge defaults to sibling html5 ajax endpoints' );
 like( $ui2_js, qr/function refreshSessionState\(\)/, 'ui2 runtime bridge declares a legacy session status helper' );
+like( $ui2_js, qr/function legacyEndpoint\(paramName, path\)/, 'ui2 runtime bridge builds explicit legacy app-root endpoints' );
+like( $ui2_js, qr/legacyEndpoint\("", "ajax"\)/, 'ui2 runtime bridge defaults submit endpoints to the legacy ajax root' );
 like( $ui2_js, qr/sys_status\.php/, 'ui2 runtime bridge checks legacy sys_status for logon/project state' );
 like( $ui2_js, qr/function openLoginDialog\(\)/, 'ui2 runtime bridge keeps login on the ui2 page' );
 like( $ui2_js, qr/sys_login\.php/, 'ui2 runtime bridge posts login to the legacy login endpoint' );
+like( $ui2_js, qr/function parseJsonResponse\(response, label\)/, 'ui2 runtime bridge reports non-JSON backend responses with endpoint context' );
 like( $ui2_js, qr/function buildSubmitFormData\(form\)/, 'ui2 runtime bridge builds GenApp submit FormData explicitly' );
 like( $ui2_js, qr/function appendSelectedFiles\(formData, form\)/, 'ui2 runtime bridge includes selected file payloads' );
 like( $ui2_js, qr/formData\.set\("_uuid"/, 'ui2 runtime bridge supplies uuid for generated backend submit path' );

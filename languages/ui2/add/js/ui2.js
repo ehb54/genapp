@@ -105,7 +105,7 @@
   }
 
   async function refreshSessionState() {
-    const endpoint = params.get("statusBase") || "../ajax/sys_config/sys_status.php";
+    const endpoint = legacyEndpoint("statusBase", "ajax/sys_config/sys_status.php");
     try {
       const url = new URL(endpoint, window.location.href);
       url.searchParams.set("tags", "_logon");
@@ -245,7 +245,7 @@
     const form = event.currentTarget;
     const status = document.getElementById("ui2-login-status");
     const submit = form.querySelector('button[type="submit"]');
-    const endpoint = params.get("loginBase") || "../ajax/sys_config/sys_login.php";
+    const endpoint = legacyEndpoint("loginBase", "ajax/sys_config/sys_login.php");
     const formData = new FormData(form);
     formData.set("_window", window.name);
     if (!formData.has("forgotpassword")) {
@@ -259,7 +259,7 @@
         body: formData,
         credentials: "same-origin"
       });
-      const payload = await response.json();
+      const payload = await parseJsonResponse(response, "Login");
       if (!response.ok || payload.error) {
         throw new Error(payload.error || `Login returned HTTP ${response.status}`);
       }
@@ -281,7 +281,7 @@
   }
 
   async function logoffSession() {
-    const endpoint = params.get("logoffBase") || "../ajax/sys_config/sys_logoff.php";
+    const endpoint = legacyEndpoint("logoffBase", "ajax/sys_config/sys_logoff.php");
     try {
       const formData = new FormData();
       formData.set("_window", window.name);
@@ -1306,13 +1306,7 @@
         body: buildSubmitFormData(form),
         credentials: "same-origin"
       });
-      const text = await response.text();
-      let payload;
-      try {
-        payload = JSON.parse(text);
-      } catch (error) {
-        throw new Error(`Runtime returned non-JSON response (${response.status}): ${text.slice(0, 240)}`);
-      }
+      const payload = await parseJsonResponse(response, "Runtime");
       state.submitResponse = payload;
       if (!response.ok || payload.error || payload._status === "failed") {
         throw new Error(payload.error || `Runtime returned HTTP ${response.status}`);
@@ -1332,8 +1326,32 @@
     if (!state.menuId || !state.moduleId || !state.module?.executable) {
       return "";
     }
-    const base = params.get("submitBase") || "../ajax";
+    const base = params.get("submitBase") || legacyEndpoint("", "ajax");
     return `${base.replace(/\/+$/, "")}/${encodeURIComponent(state.menuId)}/${encodeURIComponent(state.moduleId)}.php`;
+  }
+
+  function legacyEndpoint(paramName, path) {
+    if (paramName && params.get(paramName)) {
+      return params.get(paramName);
+    }
+    const cleanPath = String(path || "").replace(/^\/+/, "");
+    const pathname = window.location.pathname;
+    const marker = "/ui2/";
+    const markerIndex = pathname.indexOf(marker);
+    if (markerIndex >= 0) {
+      return `${pathname.slice(0, markerIndex + 1)}${cleanPath}`;
+    }
+    return `../${cleanPath}`;
+  }
+
+  async function parseJsonResponse(response, label) {
+    const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch (error) {
+      const snippet = text.replace(/\s+/g, " ").slice(0, 180);
+      throw new Error(`${label} returned non-JSON response (${response.status}) from ${response.url}: ${snippet}`);
+    }
   }
 
   function buildSubmitFormData(form) {
