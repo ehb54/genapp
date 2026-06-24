@@ -154,10 +154,130 @@
 
   async function handleLogonAction() {
     if (!state.session.logon) {
-      window.location.href = "../?_reqlogin=1";
+      openLoginDialog();
       return;
     }
     await logoffSession();
+  }
+
+  function openLoginDialog() {
+    let overlay = document.getElementById("ui2-login-dialog");
+    if (overlay) {
+      overlay.hidden = false;
+      overlay.querySelector("input[name='userid']")?.focus();
+      return;
+    }
+
+    overlay = el("div", "ui2-dialog-overlay");
+    overlay.id = "ui2-login-dialog";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "ui2-login-title");
+
+    const panel = el("section", "ui2-dialog");
+    const header = el("div", "ui2-dialog-header");
+    const title = el("h2", null, "Login");
+    title.id = "ui2-login-title";
+    const close = el("button", "ui2-dialog-close", "Close");
+    close.type = "button";
+    close.addEventListener("click", () => {
+      overlay.hidden = true;
+    });
+    header.append(title, close);
+
+    const form = el("form", "ui2-login-form");
+    form.appendChild(renderLoginInput("userid", "User id", "text", "Enter user id"));
+    form.appendChild(renderLoginInput("password", "Password", "password", "Enter password"));
+
+    const forgot = el("label", "ui2-switch ui2-login-forgot");
+    const forgotInput = document.createElement("input");
+    forgotInput.type = "checkbox";
+    forgotInput.name = "forgotpassword";
+    forgot.append(forgotInput, document.createTextNode("Forgot password"));
+    form.appendChild(forgot);
+
+    const actions = el("div", "ui2-dialog-actions");
+    const submit = el("button", "ui2-button", "Login");
+    submit.type = "submit";
+    const cancel = el("button", "ui2-button ui2-button-quiet", "Cancel");
+    cancel.type = "button";
+    cancel.addEventListener("click", () => {
+      overlay.hidden = true;
+    });
+    actions.append(submit, cancel);
+    form.appendChild(actions);
+
+    const status = el("div", "ui2-submit-status");
+    status.id = "ui2-login-status";
+    form.appendChild(status);
+    form.addEventListener("submit", submitLogin);
+
+    panel.append(header, form);
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+    form.elements.userid?.focus();
+  }
+
+  function renderLoginInput(name, labelText, type, placeholder) {
+    const row = el("label", "ui2-login-row");
+    row.appendChild(el("span", "ui2-field-label", labelText));
+    const input = el("input", "ui2-input");
+    input.name = name;
+    input.type = type;
+    input.placeholder = placeholder;
+    input.required = true;
+    if (name === "userid") {
+      input.minLength = 3;
+      input.maxLength = 30;
+      input.pattern = "[A-Za-z][A-Za-z0-9_]+";
+      input.autocomplete = "username";
+    } else {
+      input.minLength = 10;
+      input.maxLength = 100;
+      input.autocomplete = "current-password";
+    }
+    row.appendChild(input);
+    return row;
+  }
+
+  async function submitLogin(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const status = document.getElementById("ui2-login-status");
+    const submit = form.querySelector('button[type="submit"]');
+    const endpoint = params.get("loginBase") || "../ajax/sys_config/sys_login.php";
+    const formData = new FormData(form);
+    formData.set("_window", window.name);
+    if (!formData.has("forgotpassword")) {
+      formData.delete("forgotpassword");
+    }
+    submit.disabled = true;
+    setSubmitStatus(status, "Logging in", "pending");
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        body: formData,
+        credentials: "same-origin"
+      });
+      const payload = await response.json();
+      if (!response.ok || payload.error) {
+        throw new Error(payload.error || `Login returned HTTP ${response.status}`);
+      }
+      state.session.logon = stringValue(payload._logon);
+      state.session.project = stringValue(payload._project);
+      state.session.usergroups = Array.isArray(payload._usergroups) ? payload._usergroups : [];
+      state.session.loaded = true;
+      renderSessionState();
+      setSubmitStatus(status, payload.status || "Login successful", "ok");
+      if (state.session.logon) {
+        document.getElementById("ui2-login-dialog").hidden = true;
+        await refreshSessionState();
+      }
+    } catch (error) {
+      setSubmitStatus(status, error.message, "error");
+    } finally {
+      submit.disabled = false;
+    }
   }
 
   async function logoffSession() {

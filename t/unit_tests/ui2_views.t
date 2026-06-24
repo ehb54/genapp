@@ -41,6 +41,8 @@ like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declar
 like( $ui2_js, qr/\.\.\/ajax/, 'ui2 runtime bridge defaults to sibling html5 ajax endpoints' );
 like( $ui2_js, qr/function refreshSessionState\(\)/, 'ui2 runtime bridge declares a legacy session status helper' );
 like( $ui2_js, qr/sys_status\.php/, 'ui2 runtime bridge checks legacy sys_status for logon/project state' );
+like( $ui2_js, qr/function openLoginDialog\(\)/, 'ui2 runtime bridge keeps login on the ui2 page' );
+like( $ui2_js, qr/sys_login\.php/, 'ui2 runtime bridge posts login to the legacy login endpoint' );
 like( $ui2_js, qr/function buildSubmitFormData\(form\)/, 'ui2 runtime bridge builds GenApp submit FormData explicitly' );
 like( $ui2_js, qr/function appendSelectedFiles\(formData, form\)/, 'ui2 runtime bridge includes selected file payloads' );
 like( $ui2_js, qr/formData\.set\("_uuid"/, 'ui2 runtime bridge supplies uuid for generated backend submit path' );
@@ -48,6 +50,9 @@ like( $ui2_js, qr/formData\.set\("_logon", state\.session\.logon/, 'ui2 submit u
 like( $ui2_js, qr/formData\.set\("_project", state\.session\.project/, 'ui2 submit uses the legacy session project' );
 like( $ui2_js, qr/type === "float"[\s\S]+input\.step = "any"/, 'ui2 float inputs allow decimal values' );
 like( $ui2_js, qr/type === "integer"[\s\S]+input\.step = "1"/, 'ui2 integer inputs keep whole-number stepping' );
+
+my $ui2_css = read_file( File::Spec->catfile( $ui2, qw(css ui2.css) ) );
+like( $ui2_css, qr/\.ui2-dialog-overlay/, 'ui2 stylesheet includes login dialog shell styles' );
 
 my $app_map = read_file( File::Spec->catfile( $ui2, qw(js app-map.js) ) );
 like( $app_map, qr/addMenuFromParts\("demo", "Demo", ""\)/, 'ui2 app map records menu groups' );
