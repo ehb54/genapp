@@ -1354,6 +1354,9 @@
       return JSON.parse(text);
     } catch (error) {
       const snippet = text.replace(/\s+/g, " ").slice(0, 180);
+      if (/^\s*<\?php\b/.test(text)) {
+        throw new Error(`${label} reached ${response.url}, but the server returned PHP source instead of executing it. Open UI2 from the PHP-enabled application host.`);
+      }
       throw new Error(`${label} returned non-JSON response (${response.status}) from ${response.url}: ${snippet}`);
     }
   }
