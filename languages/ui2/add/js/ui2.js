@@ -528,7 +528,7 @@
 
   function renderRepeatTableBody(controller, fields) {
     const tbody = document.createElement("tbody");
-    const rows = Math.max(1, integerValue(controller.default, 1));
+    const rows = repeatCount(controller, controller.default);
     for (let rowIndex = 0; rowIndex < rows; rowIndex += 1) {
       tbody.appendChild(renderRepeatTableRow(fields, rowIndex));
     }
@@ -547,7 +547,7 @@
 
   function renderRepeatListBody(controller, field) {
     const body = el("div", "ui2-repeat-list-body");
-    const rows = Math.max(1, integerValue(controller.default, 1));
+    const rows = repeatCount(controller, controller.default);
     for (let rowIndex = 0; rowIndex < rows; rowIndex += 1) {
       body.appendChild(renderRepeatListRow(field, rowIndex));
     }
@@ -1096,8 +1096,7 @@
       if (!controller || !fields.length) {
         return;
       }
-      const fallback = integerValue(controller.default, 1);
-      const wanted = Math.max(1, integerValue(rawValues[controller.id], fallback));
+      const wanted = repeatCount(controller, rawValues[controller.id]);
       if (listField && listBody) {
         while (listBody.children.length < wanted) {
           listBody.appendChild(renderRepeatListRow(listField, listBody.children.length));
@@ -1345,7 +1344,15 @@
       return integerValue(value[0], fallback);
     }
     const parsed = Number.parseInt(value, 10);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  function repeatCount(controller, value) {
+    const hasMin = controller.min != null && controller.min !== "";
+    const min = hasMin ? integerValue(controller.min, 0) : 1;
+    const fallback = integerValue(controller.default, min);
+    const parsed = integerValue(value, fallback);
+    return Math.max(min, parsed);
   }
 
   function arrayDefaultValue(value, index) {
