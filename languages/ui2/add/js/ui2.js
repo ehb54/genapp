@@ -27,6 +27,7 @@
     values: {},
     serverSelections: {},
     submitResponse: null,
+    activeJob: null,
     session: {
       logon: "",
       project: "",
@@ -308,6 +309,7 @@
       showError("Enter a module id.");
       return;
     }
+    stopJobPolling();
 
     if (nodes.input) {
       nodes.input.value = moduleId;
@@ -430,6 +432,7 @@
       await submitModule(form);
     });
     form.addEventListener("reset", () => {
+      stopJobPolling();
       window.setTimeout(syncValues, 0);
     });
     form.addEventListener("input", syncValues);
@@ -1211,9 +1214,14 @@
       const progress = el("progress", "ui2-progress");
       progress.max = field.max || 1;
       progress.value = 0;
+      progress.dataset.outputFieldId = field.id || "";
+      progress.dataset.outputType = type;
       return progress;
     }
-    return el("div", "ui2-output", `${field.type || "output"} output will appear here at runtime.`);
+    const output = el("div", "ui2-output", `${field.type || "output"} output will appear here at runtime.`);
+    output.dataset.outputFieldId = field.id || "";
+    output.dataset.outputType = type;
+    return output;
   }
 
   function renderPreview() {
@@ -1460,6 +1468,7 @@
 
     const submitButton = form.querySelector('button[type="submit"]');
     submitButton.disabled = true;
+    stopJobPolling();
     setSubmitStatus(status, `Submitting to ${endpoint}`, "pending");
 
     try {
@@ -1467,9 +1476,10 @@
       if (!state.session.logon) {
         throw new Error("You must be logged on to submit");
       }
+      const uuid = createUuid();
       const response = await fetch(endpoint, {
         method: "POST",
-        body: buildSubmitFormData(form),
+        body: buildSubmitFormData(form, uuid),
         credentials: "same-origin"
       });
       const payload = await parseJsonResponse(response, "Runtime");
@@ -1477,9 +1487,13 @@
       if (!response.ok || payload.error || payload._status === "failed") {
         throw new Error(payload.error || `Runtime returned HTTP ${response.status}`);
       }
-      const uuid = payload._uuid || state.values._uuid || "";
-      setSubmitStatus(status, `Started${uuid ? ` (${uuid})` : ""}`, "ok");
+      const jobUuid = payload._uuid || uuid;
+      applyRuntimePayload(payload);
+      setSubmitStatus(status, `Started${jobUuid ? ` (${jobUuid})` : ""}`, "ok");
       renderSubmitResponse(payload);
+      if (jobUuid && !isTerminalStatus(runtimeStatus(payload))) {
+        startJobPolling(jobUuid, form, status);
+      }
     } catch (error) {
       setSubmitStatus(status, error.message, "error");
       renderSubmitResponse({ error: error.message });
@@ -1527,11 +1541,11 @@
     }
   }
 
-  function buildSubmitFormData(form) {
+  function buildSubmitFormData(form, uuid) {
     const formData = new FormData();
     Object.entries(state.values || {}).forEach(([id, value]) => appendFormValue(formData, id, value));
     appendSelectedFiles(formData, form);
-    formData.set("_uuid", createUuid());
+    formData.set("_uuid", uuid || createUuid());
     formData.set("_window", window.name);
     formData.set("_project", state.session.project || "");
     formData.set("_logon", state.session.logon || "");
@@ -1609,6 +1623,183 @@
     }
     node.textContent = message;
     node.dataset.status = kind || "";
+  }
+
+  function startJobPolling(uuid, form, statusNode) {
+    stopJobPolling();
+    state.activeJob = {
+      uuid,
+      form,
+      statusNode,
+      delay: 2000,
+      timer: null
+    };
+    pollJobResults(uuid, form, statusNode, 0, true);
+  }
+
+  function stopJobPolling() {
+    if (state.activeJob?.timer) {
+      window.clearTimeout(state.activeJob.timer);
+    }
+    state.activeJob = null;
+  }
+
+  async function pollJobResults(uuid, form, statusNode, lastDelay, getLastMsg) {
+    if (!uuid || state.activeJob?.uuid !== uuid || !form?.isConnected) {
+      return;
+    }
+    const url = new URL(legacyEndpoint("resultsBase", "ajax/get_results.php"), window.location.href);
+    url.searchParams.set("tagmode", "any");
+    url.searchParams.set("format", "json");
+    url.searchParams.set("_window", window.name);
+    url.searchParams.set("_logon", state.session.logon || "");
+    url.searchParams.set("_uuid", uuid);
+    url.searchParams.set("_getlastmsg", getLastMsg ? "true" : "false");
+    url.searchParams.set("_getinput", "false");
+
+    try {
+      const response = await fetch(url.toString(), {
+        cache: "no-cache",
+        credentials: "same-origin"
+      });
+      const payload = await parseJsonResponse(response, "Job results");
+      state.submitResponse = payload;
+      applyRuntimePayload(payload);
+      renderSubmitResponse(payload);
+
+      const status = runtimeStatus(payload);
+      if (status) {
+        setSubmitStatus(statusNode, statusLabel(status), statusKind(status));
+      }
+      if (isTerminalStatus(status)) {
+        stopJobPolling();
+        return;
+      }
+
+      const nextDelay = nextPollDelay(lastDelay);
+      if (state.activeJob?.uuid === uuid) {
+        state.activeJob.delay = nextDelay;
+        state.activeJob.timer = window.setTimeout(
+          () => pollJobResults(uuid, form, statusNode, nextDelay, true),
+          nextDelay
+        );
+      }
+    } catch (error) {
+      setSubmitStatus(statusNode, error.message, "error");
+      if (state.activeJob?.uuid === uuid) {
+        const nextDelay = nextPollDelay(lastDelay);
+        state.activeJob.timer = window.setTimeout(
+          () => pollJobResults(uuid, form, statusNode, nextDelay, true),
+          nextDelay
+        );
+      }
+    }
+  }
+
+  function nextPollDelay(lastDelay) {
+    if (!lastDelay || lastDelay < 2000) {
+      return 2000;
+    }
+    return Math.min(lastDelay * 2, 16000);
+  }
+
+  function runtimeStatus(payload) {
+    return stringValue(payload?._status || payload?.status).toLowerCase();
+  }
+
+  function isTerminalStatus(status) {
+    return ["complete", "completed", "finished", "cancelled", "canceled", "failed", "error"].includes(stringValue(status).toLowerCase());
+  }
+
+  function statusLabel(status) {
+    const normalized = stringValue(status).toLowerCase();
+    if (normalized === "complete" || normalized === "completed" || normalized === "finished") {
+      return "Complete";
+    }
+    if (normalized === "cancelled" || normalized === "canceled") {
+      return "Cancelled";
+    }
+    if (normalized === "failed" || normalized === "error") {
+      return "Failed";
+    }
+    if (normalized === "started" || normalized === "running") {
+      return normalized[0].toUpperCase() + normalized.slice(1);
+    }
+    return status ? String(status) : "Running";
+  }
+
+  function statusKind(status) {
+    const normalized = stringValue(status).toLowerCase();
+    return ["failed", "error", "cancelled", "canceled"].includes(normalized) ? "error" : "ok";
+  }
+
+  function applyRuntimePayload(payload) {
+    if (!payload || typeof payload !== "object") {
+      return;
+    }
+    Object.entries(payload).forEach(([id, value]) => {
+      if (id === "_progress") {
+        updateProgressOutputs(value);
+        return;
+      }
+      if (id === "_textarea" || id === "_airavata") {
+        appendRuntimeMessage(value);
+        return;
+      }
+      if (id.startsWith("_")) {
+        return;
+      }
+      updateOutputField(id, value);
+    });
+  }
+
+  function updateProgressOutputs(value) {
+    document.querySelectorAll('[data-output-type="progress"]').forEach((progress) => {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) {
+        return;
+      }
+      if (numeric > Number(progress.max || 1)) {
+        progress.max = numeric > 1 ? 100 : 1;
+      }
+      progress.value = numeric;
+    });
+  }
+
+  function appendRuntimeMessage(value) {
+    const output = document.querySelector('[data-output-type="textarea"], [data-output-type="html"], [data-output-type="text"]');
+    if (!output) {
+      return;
+    }
+    const text = stringValue(value);
+    if (output.dataset.outputType === "html") {
+      output.insertAdjacentHTML("beforeend", text);
+      return;
+    }
+    output.textContent = output.textContent && !output.textContent.includes("output will appear here")
+      ? `${output.textContent}${text}`
+      : text;
+  }
+
+  function updateOutputField(id, value) {
+    const output = document.querySelector(`[data-output-field-id="${cssEscape(id)}"]`);
+    if (!output) {
+      return;
+    }
+    const type = output.dataset.outputType || "";
+    if (output instanceof HTMLProgressElement) {
+      updateProgressOutputs(value);
+      return;
+    }
+    if (type === "html") {
+      output.innerHTML = stringValue(value);
+      return;
+    }
+    if (type === "plotly" && window.Plotly && value && typeof value === "object" && Array.isArray(value.data)) {
+      window.Plotly.newPlot(output, value.data, value.layout || {}, value.config || {});
+      return;
+    }
+    output.textContent = typeof value === "string" ? value : JSON.stringify(value, null, 2);
   }
 
   function renderSubmitResponse(payload) {

@@ -48,13 +48,19 @@ like( $ui2_js, qr/function openLoginDialog\(\)/, 'ui2 runtime bridge keeps login
 like( $ui2_js, qr/sys_login\.php/, 'ui2 runtime bridge posts login to the legacy login endpoint' );
 like( $ui2_js, qr/function parseJsonResponse\(response, label\)/, 'ui2 runtime bridge reports non-JSON backend responses with endpoint context' );
 like( $ui2_js, qr/PHP source instead of executing it/, 'ui2 runtime bridge calls out PHP-disabled runtime hosts' );
-like( $ui2_js, qr/function buildSubmitFormData\(form\)/, 'ui2 runtime bridge builds GenApp submit FormData explicitly' );
+like( $ui2_js, qr/function buildSubmitFormData\(form, uuid\)/, 'ui2 runtime bridge builds GenApp submit FormData explicitly' );
 like( $ui2_js, qr/function appendSelectedFiles\(formData, form\)/, 'ui2 runtime bridge includes selected file payloads' );
 like( $ui2_js, qr/function appendServerSelection\(formData, selection\)/, 'ui2 runtime bridge includes server file selections' );
 like( $ui2_js, qr/sys_files\.php/, 'ui2 runtime bridge uses the legacy server file endpoint' );
-like( $ui2_js, qr/formData\.set\("_uuid"/, 'ui2 runtime bridge supplies uuid for generated backend submit path' );
+like( $ui2_js, qr/const uuid = createUuid\(\)/, 'ui2 runtime bridge keeps the submitted uuid for job polling' );
+like( $ui2_js, qr/formData\.set\("_uuid", uuid/, 'ui2 runtime bridge supplies uuid for generated backend submit path' );
 like( $ui2_js, qr/formData\.set\("_logon", state\.session\.logon/, 'ui2 submit uses the legacy session logon' );
 like( $ui2_js, qr/formData\.set\("_project", state\.session\.project/, 'ui2 submit uses the legacy session project' );
+like( $ui2_js, qr/function startJobPolling\(uuid, form, statusNode\)/, 'ui2 runtime bridge starts polling submitted jobs' );
+like( $ui2_js, qr/function pollJobResults\(uuid, form, statusNode, lastDelay, getLastMsg\)/, 'ui2 runtime bridge polls legacy job results' );
+like( $ui2_js, qr/ajax\/get_results\.php/, 'ui2 runtime bridge uses the legacy job results endpoint' );
+like( $ui2_js, qr/url\.searchParams\.set\("_getlastmsg"/, 'ui2 runtime bridge requests legacy last-message updates' );
+like( $ui2_js, qr/function applyRuntimePayload\(payload\)/, 'ui2 runtime bridge maps runtime payloads into rendered outputs' );
 like( $ui2_js, qr/type === "float"[\s\S]+input\.step = "any"/, 'ui2 float inputs allow decimal values' );
 like( $ui2_js, qr/type === "integer"[\s\S]+input\.step = "1"/, 'ui2 integer inputs keep whole-number stepping' );
 
