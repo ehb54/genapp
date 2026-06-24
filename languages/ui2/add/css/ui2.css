@@ -640,6 +640,7 @@ code {
 
 .ui2-form-actions {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
   padding: 1rem 0;
@@ -647,6 +648,26 @@ code {
 
 .ui2-form-actions .ui2-button {
   min-width: 7rem;
+}
+
+.ui2-submit-status {
+  flex: 1;
+  min-width: 12rem;
+  color: var(--ui2-muted);
+  font-size: 0.95rem;
+}
+
+.ui2-submit-status[data-status="ok"] {
+  color: var(--ui2-accent-strong);
+}
+
+.ui2-submit-status[data-status="error"] {
+  color: var(--ui2-danger);
+}
+
+.ui2-submit-response {
+  margin-top: 1rem;
+  white-space: pre-wrap;
 }
 
 .ui2-system-tool .ui2-section-body {

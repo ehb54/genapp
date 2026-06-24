@@ -24,7 +24,8 @@
     menuId: "",
     module: null,
     view: {},
-    values: {}
+    values: {},
+    submitResponse: null
   };
 
   const nodes = {
@@ -204,8 +205,9 @@
     if (devMode) {
       form.appendChild(renderPreview());
     }
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
+      await submitModule(form);
     });
     form.addEventListener("reset", () => {
       window.setTimeout(syncValues, 0);
@@ -773,6 +775,10 @@
     localPicker.type = "file";
     localPicker.className = "ui2-native-file";
     localPicker.tabIndex = -1;
+    localPicker.dataset.fieldId = field.id || "";
+    if (options?.repeatTableIndex != null) {
+      localPicker.dataset.repeatTableIndex = String(options.repeatTableIndex);
+    }
     localPicker.addEventListener("change", () => {
       input.value = localPicker.files && localPicker.files[0] ? localPicker.files[0].name : "";
       input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -802,7 +808,10 @@
     submit.type = "submit";
     const reset = el("button", "ui2-button ui2-button-quiet", "Reset");
     reset.type = "reset";
-    actions.append(submit, reset);
+    const status = el("div", "ui2-submit-status", "Not submitted");
+    status.id = "ui2-submit-status";
+    status.setAttribute("role", "status");
+    actions.append(submit, reset, status);
     return actions;
   }
 
@@ -1047,6 +1056,118 @@
     const preview = document.getElementById("ui2-preview");
     if (preview) {
       preview.textContent = JSON.stringify(state.values, null, 2);
+    }
+  }
+
+  async function submitModule(form) {
+    syncValues();
+    const endpoint = moduleSubmitEndpoint();
+    const status = document.getElementById("ui2-submit-status");
+    if (!endpoint) {
+      setSubmitStatus(status, "This module does not have a runtime endpoint yet.", "error");
+      return;
+    }
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    setSubmitStatus(status, `Submitting to ${endpoint}`, "pending");
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        body: buildSubmitFormData(form)
+      });
+      const text = await response.text();
+      let payload;
+      try {
+        payload = JSON.parse(text);
+      } catch (error) {
+        throw new Error(`Runtime returned non-JSON response (${response.status}): ${text.slice(0, 240)}`);
+      }
+      state.submitResponse = payload;
+      if (!response.ok || payload.error || payload._status === "failed") {
+        throw new Error(payload.error || `Runtime returned HTTP ${response.status}`);
+      }
+      const uuid = payload._uuid || state.values._uuid || "";
+      setSubmitStatus(status, `Started${uuid ? ` (${uuid})` : ""}`, "ok");
+      renderSubmitResponse(payload);
+    } catch (error) {
+      setSubmitStatus(status, error.message, "error");
+      renderSubmitResponse({ error: error.message });
+    } finally {
+      submitButton.disabled = false;
+    }
+  }
+
+  function moduleSubmitEndpoint() {
+    if (!state.menuId || !state.moduleId || !state.module?.executable) {
+      return "";
+    }
+    const base = params.get("submitBase") || "../ajax";
+    return `${base.replace(/\/+$/, "")}/${encodeURIComponent(state.menuId)}/${encodeURIComponent(state.moduleId)}.php`;
+  }
+
+  function buildSubmitFormData(form) {
+    const formData = new FormData();
+    Object.entries(state.values || {}).forEach(([id, value]) => appendFormValue(formData, id, value));
+    appendSelectedFiles(formData, form);
+    formData.set("_uuid", createUuid());
+    formData.set("_window", window.name || "ui2");
+    formData.set("_project", params.get("project") || prefs.project || "");
+    formData.set("_logon", params.get("logon") || prefs.logon || "");
+    formData.set("_height", String(Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)));
+    formData.set("_width", String(Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)));
+    return formData;
+  }
+
+  function appendSelectedFiles(formData, form) {
+    if (!form) {
+      return;
+    }
+    form.querySelectorAll(".ui2-native-file[data-field-id]").forEach((picker) => {
+      const id = picker.dataset.fieldId;
+      if (!id || !picker.files || !picker.files.length) {
+        return;
+      }
+      if (picker.dataset.repeatTableIndex != null) {
+        Array.from(picker.files).forEach((file) => formData.append(`${id}[]`, file));
+        return;
+      }
+      formData.delete(id);
+      Array.from(picker.files).forEach((file) => formData.append(id, file));
+    });
+  }
+
+  function appendFormValue(formData, id, value) {
+    if (Array.isArray(value)) {
+      value.forEach((item) => appendFormValue(formData, `${id}[]`, item));
+      return;
+    }
+    formData.append(id, value == null ? "" : value);
+  }
+
+  function createUuid() {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+      return window.crypto.randomUUID();
+    }
+    return `ui2-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
+  function setSubmitStatus(node, message, kind) {
+    if (!node) {
+      return;
+    }
+    node.textContent = message;
+    node.dataset.status = kind || "";
+  }
+
+  function renderSubmitResponse(payload) {
+    const existing = document.getElementById("ui2-submit-response");
+    const target = existing || el("pre", "ui2-output ui2-submit-response");
+    target.id = "ui2-submit-response";
+    target.textContent = JSON.stringify(payload, null, 2);
+    if (!existing) {
+      document.getElementById("ui2-form")?.appendChild(target);
     }
   }
 
