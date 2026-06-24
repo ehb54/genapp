@@ -430,6 +430,10 @@ code {
   padding: 0.45rem 0 0.15rem;
 }
 
+.ui2-field-wide {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .ui2-field-heading h3 {
   margin: 0;
   color: var(--ui2-text);
@@ -569,6 +573,18 @@ code {
 
 .ui2-repeat-table-input {
   min-width: 8rem;
+}
+
+.ui2-repeat-list-body {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.ui2-repeat-list-row {
+  display: grid;
+  grid-template-columns: minmax(10rem, 16rem) minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
 }
 
 .ui2-repeat-table-checkbox {

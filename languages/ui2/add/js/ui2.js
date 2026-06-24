@@ -462,6 +462,13 @@
     row._ui2RepeatTableController = controller;
     row._ui2RepeatTableFields = fields;
 
+    if (row._ui2RepeatListField) {
+      const list = el("div", "ui2-repeat-list");
+      list.appendChild(renderRepeatListBody(controller, row._ui2RepeatListField));
+      stack.appendChild(list);
+      return row;
+    }
+
     const tableWrap = el("div", "ui2-repeat-table-wrap");
     const table = el("table", "ui2-repeat-table");
     const thead = document.createElement("thead");
@@ -483,6 +490,10 @@
   }
 
   function renderHiddenTableRepeater(controller, fields) {
+    if (fields.length === 1) {
+      return renderHiddenRepeatList(controller, fields[0]);
+    }
+
     const row = el("div", "ui2-field ui2-field-wide");
     row.dataset.fieldId = controller.id || "";
     if (controller.repeat) {
@@ -498,6 +509,22 @@
     addHelpAffordance(label, controller);
     const stack = el("div", "ui2-control-stack");
     row.append(label, stack);
+    return row;
+  }
+
+  function renderHiddenRepeatList(controller, field) {
+    const row = el("div", "ui2-field ui2-field-wide ui2-hidden-repeat-controller");
+    row.dataset.fieldId = controller.id || "";
+    if (controller.repeat) {
+      row.dataset.repeat = controller.repeat;
+    }
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.value = controller.default == null ? "" : controller.default;
+    wireControl(input, controller);
+    row.appendChild(input);
+    row._ui2RepeatListField = field;
+    row.appendChild(el("div", "ui2-control-stack"));
     return row;
   }
 
@@ -518,6 +545,26 @@
       tr.appendChild(td);
     });
     return tr;
+  }
+
+  function renderRepeatListBody(controller, field) {
+    const body = el("div", "ui2-repeat-list-body");
+    const rows = Math.max(1, integerValue(controller.default, 1));
+    for (let rowIndex = 0; rowIndex < rows; rowIndex += 1) {
+      body.appendChild(renderRepeatListRow(field, rowIndex));
+    }
+    return body;
+  }
+
+  function renderRepeatListRow(field, rowIndex) {
+    const row = el("div", "ui2-repeat-list-row");
+    const label = el("label", "ui2-field-label", `${field.label || field.id || field.type || "field"} [${rowIndex + 1}]`);
+    addHelpAffordance(label, field);
+    row.appendChild(label);
+    const stack = el("div", "ui2-control-stack");
+    stack.appendChild(renderRepeatTableControl(field, rowIndex));
+    row.appendChild(stack);
+    return row;
   }
 
   function renderRepeatTableControl(field, rowIndex) {
@@ -1046,12 +1093,26 @@
     scope.querySelectorAll(".ui2-tableized-repeater").forEach((row) => {
       const controller = row._ui2RepeatTableController;
       const fields = row._ui2RepeatTableFields || [];
+      const listField = row._ui2RepeatListField;
       const tbody = row.querySelector(".ui2-repeat-table tbody");
-      if (!controller || !fields.length || !tbody) {
+      const listBody = row.querySelector(".ui2-repeat-list-body");
+      if (!controller || !fields.length) {
         return;
       }
       const fallback = integerValue(controller.default, 1);
       const wanted = Math.max(1, integerValue(rawValues[controller.id], fallback));
+      if (listField && listBody) {
+        while (listBody.children.length < wanted) {
+          listBody.appendChild(renderRepeatListRow(listField, listBody.children.length));
+        }
+        while (listBody.children.length > wanted) {
+          listBody.removeChild(listBody.lastElementChild);
+        }
+        return;
+      }
+      if (!tbody) {
+        return;
+      }
       while (tbody.rows.length < wanted) {
         tbody.appendChild(renderRepeatTableRow(fields, tbody.rows.length));
       }
