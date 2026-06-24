@@ -49,14 +49,6 @@
             "repeat"  : "nested_gate"
         },
         {
-            "role"    : "input",
-            "id"      : "nested_false_value",
-            "label"   : "Nested False Value",
-            "type"    : "text",
-            "default" : "nested false",
-            "repeat"  : "nested_gate:false"
-        },
-        {
             "role"     : "input",
             "id"       : "pair_grid",
             "label"    : "Pair Grid",

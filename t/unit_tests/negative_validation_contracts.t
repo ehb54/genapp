@@ -113,6 +113,27 @@ _invalid_app(
 );
 
 _invalid_app(
+    'checkbox false-qualified repeat is rejected',
+    menu_modules => [ 'bad_checkbox_false_repeat' ],
+    modules      => {
+        bad_checkbox_false_repeat => _module_json(
+            fields => [
+                {
+                    role     => 'input',
+                    id       => 'gate',
+                    label    => 'Gate',
+                    type     => 'checkbox',
+                    checked  => 'false',
+                    repeater => 'true',
+                },
+                _text_field( 'child', repeat => 'gate:false' ),
+            ],
+        ),
+    },
+    pattern => qr/gate:false|repeat/i,
+);
+
+_invalid_app(
     'listbox without values is rejected',
     menu_modules => [ 'bad_listbox' ],
     modules      => {
