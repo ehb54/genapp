@@ -1007,6 +1007,14 @@ sub layout_expand {
         return;
     } 
 
+    my %field_by_id;
+    my %repeater_field;
+    for my $field ( @{$$json{'fields'}} ) {
+        next if !exists $$field{'id'};
+        $field_by_id{ $$field{'id'} } = $field;
+        $repeater_field{ $$field{'id'} } = 1 if exists $$field{'repeater'};
+    }
+
     for ( my $i = 0; $i <  @{$$json{'fields'} }; ++$i ) {
         my $field  = $$json{'fields'}[$i];
         my $id     = $$field{'id'};
@@ -1016,10 +1024,22 @@ sub layout_expand {
         # set parent for repeat: to repeat value
 
         if ( $$field{'repeat'} ) {
+            my $repeat_parent = "r-$$field{'repeat'}";
+            if ( $$field{'repeat'} =~ /^([^:]+):true$/ ) {
+                my $gate = $field_by_id{$1};
+                if ( $gate &&
+                     ( $$gate{'type'} || '' ) eq 'checkbox' &&
+                     !$repeater_field{$1} )
+                {
+                    $repeat_parent = $$gate{'layout'} && $$gate{'layout'}{'parent'}
+                        ? $$gate{'layout'}{'parent'}
+                        : 'root';
+                }
+            }
             if ( !$layout ) {
-                $$field{'layout'} = decode_json( "{\"parent\":\"r-$$field{'repeat'}\"}" );
+                $$field{'layout'} = { parent => $repeat_parent };
             } else {
-                $$field{'layout'}{'parent'} = "r-$$field{'repeat'}";
+                $$field{'layout'}{'parent'} = $repeat_parent;
             }
             $$field{'layout'}{'parent'} =~ s/:.*//;
         } elsif ( !$layout ) {

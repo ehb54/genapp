@@ -1473,8 +1473,11 @@ sub check_files {
                 my %repeater;
                 my %repeat;
                 my %repeattype;
+                my %field_type;
                 my $modname = $f;
                 do {
+                    $field_type{ $$mod_info{ 'fields:id' } } = $$mod_info{ 'fields:type' }
+                        if $$mod_info{ 'fields:id' };
                     if ( $$mod_info{ 'fields:repeater' } ||
                          $$mod_info{ 'fields:reverserepeater' } )
                     {
@@ -1497,6 +1500,15 @@ sub check_files {
                         $repeattype{ $$mod_info{ 'fields:id' } } = $$mod_info{ 'fields:type' };
                     }
                 } while( $mod_info = next_json( $ref_mod, 'fields:id' ) );
+
+                foreach my $k ( keys %repeat )
+                {
+                    if ( $repeat{ $k } =~ /^([^:]+):true$/ &&
+                         ( $field_type{ $1 } || '' ) eq 'checkbox' )
+                    {
+                        $repeater{ $repeat{ $k } } = 'checkbox true gate';
+                    }
+                }
                 
                 if ( $graphviz && keys %repeater )
                 {

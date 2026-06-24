@@ -66,6 +66,32 @@
             "repeat"  : "pair_grid"
         },
         {
+            "role"    : "input",
+            "id"      : "checkbox_gate",
+            "label"   : "Checkbox Gate",
+            "type"    : "checkbox",
+            "checked" : "false"
+        },
+        {
+            "role"     : "input",
+            "id"       : "checkbox_gate_count",
+            "label"    : "Checkbox Gate Rows",
+            "type"     : "integer",
+            "default"  : "0",
+            "min"      : "0",
+            "max"      : "4",
+            "repeater" : "true",
+            "repeat"   : "checkbox_gate:true"
+        },
+        {
+            "role"    : "input",
+            "id"      : "checkbox_gate_value",
+            "label"   : "Checkbox Gate Value",
+            "type"    : "text",
+            "default" : "gated",
+            "repeat"  : "checkbox_gate_count"
+        },
+        {
             "role"  : "output",
             "id"    : "repeater_summary",
             "label" : "Repeater Summary",

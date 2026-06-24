@@ -30,6 +30,8 @@ if ( -f $report ) {
     like( $text, qr/nested_value\[text\] => nested_gate\[checkbox\]/, 'report records nested repeated child' );
     like( $text, qr/pair_grid\[integerpair\] => analysis_mode:pair\[listbox choice \d+\] => analysis_mode\[listbox\]/, 'report records option-qualified integerpair repeater' );
     like( $text, qr/pair_payload\[text\] => pair_grid\[integerpair\]/, 'report records integerpair repeated child' );
+    like( $text, qr/checkbox_gate_count\[integer\] => checkbox_gate:true\[checkbox true gate\]/, 'report records checkbox true gate' );
+    like( $text, qr/checkbox_gate_value\[text\] => checkbox_gate_count\[integer\]/, 'report records checkbox-gated integer repeated child' );
 }
 
 done_testing();
