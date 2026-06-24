@@ -461,6 +461,12 @@
     row._ui2RepeatTableController = controller;
     row._ui2RepeatTableFields = fields;
 
+    if (isIntegerPairMatrix(controller, fields)) {
+      const matrix = renderRepeatMatrix(controller, fields[0]);
+      stack.appendChild(matrix);
+      return row;
+    }
+
     if (row._ui2RepeatListField) {
       const list = el("div", "ui2-repeat-list");
       list.appendChild(renderRepeatListBody(controller, row._ui2RepeatListField));
@@ -489,7 +495,7 @@
   }
 
   function renderHiddenTableRepeater(controller, fields) {
-    if (fields.length === 1) {
+    if (fields.length === 1 && !isIntegerPairMatrix(controller, fields)) {
       return renderHiddenRepeatList(controller, fields[0]);
     }
 
@@ -562,6 +568,56 @@
     stack.appendChild(renderRepeatTableControl(field, rowIndex));
     row.appendChild(stack);
     return row;
+  }
+
+  function renderRepeatMatrix(controller, field) {
+    const wrap = el("div", "ui2-matrix-wrap");
+    wrap._ui2RepeatMatrixController = controller;
+    wrap._ui2RepeatMatrixField = field;
+    const table = el("table", "ui2-matrix-table");
+    wrap.appendChild(table);
+    renderRepeatMatrixTable(table, controller, field, {}, dimensionsFromController(controller, {}));
+    return wrap;
+  }
+
+  function renderRepeatMatrixTable(table, controller, field, rawValues, dimensions) {
+    table.innerHTML = "";
+    const [rowCount, columnCount] = dimensions;
+    const headerRow = document.createElement("tr");
+    headerRow.appendChild(el("th", "ui2-matrix-corner", matrixCornerLabel(controller)));
+    for (let columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
+      headerRow.appendChild(el("th", null, matrixHeaderValue(controller, "column", columnIndex, rawValues)));
+    }
+    table.appendChild(headerRow);
+
+    for (let rowIndex = 0; rowIndex < rowCount; rowIndex += 1) {
+      const tr = document.createElement("tr");
+      tr.appendChild(el("th", "ui2-matrix-row-header", matrixHeaderValue(controller, "row", rowIndex, rawValues)));
+      for (let columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
+        const td = document.createElement("td");
+        td.appendChild(renderMatrixControl(field, rowIndex, columnIndex, rawValues));
+        tr.appendChild(td);
+      }
+      table.appendChild(tr);
+    }
+  }
+
+  function renderMatrixControl(field, rowIndex, columnIndex, rawValues) {
+    const type = String(field.type || "text").toLowerCase();
+    const input = el("input", "ui2-input ui2-repeat-table-input ui2-matrix-input");
+    input.type = inputType(type);
+    input.dataset.fieldId = field.id || "";
+    input.dataset.repeatTableField = field.id || "";
+    input.dataset.matrixRow = String(rowIndex);
+    input.dataset.matrixColumn = String(columnIndex);
+    input.value = matrixCurrentValue(rawValues[field.id], field.default, rowIndex, columnIndex);
+    if (field.required === "true" || field.required === true) {
+      input.required = true;
+    }
+    if (field.sync) {
+      input.dataset.sync = field.sync;
+    }
+    return input;
   }
 
   function renderRepeatTableControl(field, rowIndex) {
@@ -1005,6 +1061,15 @@
         if (!Array.isArray(values[id])) {
           values[id] = [];
         }
+        if (control.dataset.matrixRow != null && control.dataset.matrixColumn != null) {
+          const rowIndex = Number(control.dataset.matrixRow || 0);
+          const columnIndex = Number(control.dataset.matrixColumn || 0);
+          if (!Array.isArray(values[id][rowIndex])) {
+            values[id][rowIndex] = [];
+          }
+          values[id][rowIndex][columnIndex] = control.type === "checkbox" ? control.checked : control.value;
+          return;
+        }
         values[id][Number(control.dataset.repeatTableIndex || 0)] = control.type === "checkbox" ? control.checked : control.value;
         return;
       }
@@ -1091,9 +1156,17 @@
       const controller = row._ui2RepeatTableController;
       const fields = row._ui2RepeatTableFields || [];
       const listField = row._ui2RepeatListField;
+      const matrix = row.querySelector(".ui2-matrix-wrap");
       const tbody = row.querySelector(".ui2-repeat-table tbody");
       const listBody = row.querySelector(".ui2-repeat-list-body");
       if (!controller || !fields.length) {
+        return;
+      }
+      if (matrix && matrix._ui2RepeatMatrixField) {
+        const table = matrix.querySelector(".ui2-matrix-table");
+        if (table) {
+          renderRepeatMatrixTable(table, controller, matrix._ui2RepeatMatrixField, rawValues, dimensionsFromController(controller, rawValues));
+        }
         return;
       }
       const wanted = repeatCount(controller, rawValues[controller.id]);
@@ -1334,9 +1407,13 @@
     }
     const type = String(field.type || "").toLowerCase();
     return isRepeater(field)
-      && type === "integer"
+      && (type === "integer" || type === "integerpair")
       && childFields.length > 0
       && childFields.every((child) => child.role !== "output" && !isRepeater(child));
+  }
+
+  function isIntegerPairMatrix(controller, fields) {
+    return String(controller.type || "").toLowerCase() === "integerpair" && fields.length === 1;
   }
 
   function integerValue(value, fallback) {
@@ -1355,11 +1432,70 @@
     return Math.max(min, parsed);
   }
 
+  function dimensionsFromController(controller, rawValues) {
+    const tokens = String(controller.calc || "").split(",").map((token) => token.trim()).filter(Boolean);
+    if (tokens.length >= 2) {
+      return [
+        Math.max(0, integerValue(rawValues[tokens[0]], 0)),
+        Math.max(0, integerValue(rawValues[tokens[1]], 0))
+      ];
+    }
+    if (Array.isArray(controller.default)) {
+      return [
+        Math.max(0, integerValue(controller.default[0], 0)),
+        Math.max(0, integerValue(controller.default[1], 0))
+      ];
+    }
+    const parsed = String(controller.default || "").split(/[,\s]+/).filter(Boolean);
+    if (parsed.length >= 2) {
+      return [
+        Math.max(0, integerValue(parsed[0], 0)),
+        Math.max(0, integerValue(parsed[1], 0))
+      ];
+    }
+    return [0, 0];
+  }
+
   function arrayDefaultValue(value, index) {
     if (Array.isArray(value)) {
       return value[index] == null ? value[0] || "" : value[index];
     }
     return value == null ? "" : value;
+  }
+
+  function matrixDefaultValue(value, rowIndex, columnIndex) {
+    if (Array.isArray(value)) {
+      const row = value[rowIndex];
+      if (Array.isArray(row)) {
+        return row[columnIndex] == null ? "" : row[columnIndex];
+      }
+      return row == null ? "" : row;
+    }
+    return value == null ? "" : value;
+  }
+
+  function matrixCurrentValue(current, fallback, rowIndex, columnIndex) {
+    const currentValue = matrixDefaultValue(current, rowIndex, columnIndex);
+    return currentValue === "" ? matrixDefaultValue(fallback, rowIndex, columnIndex) : currentValue;
+  }
+
+  function matrixCornerLabel(controller) {
+    return decodeHtml(controller.headers?.corner || "");
+  }
+
+  function matrixHeaderValue(controller, axis, index, rawValues) {
+    const sourceId = Array.isArray(controller.headers?.[axis]) ? controller.headers[axis][0] : "";
+    const values = sourceId ? rawValues[sourceId] : null;
+    if (Array.isArray(values)) {
+      return values[index] == null || values[index] === "" ? `${index + 1}` : values[index];
+    }
+    return `${index + 1}`;
+  }
+
+  function decodeHtml(value) {
+    const textarea = document.createElement("textarea");
+    textarea.innerHTML = String(value || "");
+    return textarea.value;
   }
 
   function checkboxDefault(field, index) {

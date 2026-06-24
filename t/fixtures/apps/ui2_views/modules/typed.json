@@ -32,6 +32,63 @@
             "default" : [
                 "{\"rot\": [[[1.0, 0.0, 0.0]]], \"trans\": [[0.0, 0.0, 0.0]]}"
             ]
+        },
+        {
+            "role"    : "input",
+            "id"      : "row_count",
+            "label"   : "Row Count",
+            "type"    : "integer",
+            "default" : "2",
+            "repeater": "true"
+        },
+        {
+            "role"    : "input",
+            "id"      : "column_count",
+            "label"   : "Column Count",
+            "type"    : "integer",
+            "default" : "2",
+            "repeater": "true"
+        },
+        {
+            "role"    : "input",
+            "id"      : "row_label",
+            "label"   : "Row Label",
+            "type"    : "text",
+            "default" : [ "r1", "r2" ],
+            "repeat"  : "row_count"
+        },
+        {
+            "role"    : "input",
+            "id"      : "column_label",
+            "label"   : "Column Label",
+            "type"    : "text",
+            "default" : [ "c1", "c2" ],
+            "repeat"  : "column_count"
+        },
+        {
+            "role"     : "input",
+            "id"       : "pair_grid",
+            "label"    : "Pair Grid",
+            "type"     : "integerpair",
+            "calc"     : "row_count,column_count",
+            "hidden"   : "true",
+            "repeater" : "true",
+            "headers"  : {
+                "corner" : "row",
+                "row"    : [ "row_label" ],
+                "column" : [ "column_label" ]
+            }
+        },
+        {
+            "role"    : "input",
+            "id"      : "matrix_value",
+            "label"   : "Matrix Value",
+            "type"    : "text",
+            "default" : [
+                [ "1", "2" ],
+                [ "3", "4" ]
+            ],
+            "repeat"  : "pair_grid"
         }
     ]
 }

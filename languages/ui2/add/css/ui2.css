@@ -560,6 +560,39 @@ code {
   min-width: 8rem;
 }
 
+.ui2-matrix-wrap {
+  overflow-x: auto;
+}
+
+.ui2-matrix-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 0.35rem;
+}
+
+.ui2-matrix-table th {
+  color: var(--ui2-muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+  text-align: left;
+  padding: 0 0.35rem;
+}
+
+.ui2-matrix-table td {
+  padding: 0 0.35rem;
+  min-width: 8rem;
+}
+
+.ui2-matrix-corner,
+.ui2-matrix-row-header {
+  min-width: 8rem;
+  white-space: nowrap;
+}
+
+.ui2-matrix-input {
+  min-width: 7rem;
+}
+
 .ui2-repeat-list-body {
   display: grid;
   gap: 0.65rem;

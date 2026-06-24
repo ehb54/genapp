@@ -64,6 +64,10 @@ is( $typed->{modulejson}{fields}[0]{type}, 'integer', 'ui2 can carry integer fie
 is( $typed->{modulejson}{fields}[1]{type}, 'checkbox', 'ui2 can carry checkbox fields without ui2 type templates' );
 is( $typed->{modulejson}{fields}[2]{type}, 'float', 'ui2 can carry float fields without ui2 type templates' );
 is( $typed->{modulejson}{fields}[3]{default}[0], '{"rot": [[[1.0, 0.0, 0.0]]], "trans": [[0.0, 0.0, 0.0]]}', 'ui2 module summaries preserve nested JSON string defaults as valid JSON' );
+is( $typed->{modulejson}{fields}[8]{type}, 'integerpair', 'ui2 can carry integerpair matrix controllers without ui2 type templates' );
+is( $typed->{modulejson}{fields}[8]{calc}, 'row_count,column_count', 'ui2 preserves integerpair matrix dimensions' );
+is( $typed->{modulejson}{fields}[8]{headers}{row}[0], 'row_label', 'ui2 preserves matrix row header metadata' );
+is( $typed->{modulejson}{fields}[9]{default}[1][1], '4', 'ui2 preserves matrix field two-dimensional defaults' );
 is_deeply( $typed->{viewjson}, {}, 'typed module missing view files produce an empty view object' );
 
 my $invalid = generate_fixture_app(
