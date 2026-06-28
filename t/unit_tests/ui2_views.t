@@ -70,9 +70,11 @@ like( $ui2_js, qr/ajax\/sys_config\/sys_jobs\.php/, 'ui2 Job Manager loads rows 
 like( $ui2_js, qr/function applyJobManagerFilters\(table\)/, 'ui2 Job Manager applies local table filters' );
 like( $ui2_js, qr/function updateJobFilterChoices\(table, rows\)/, 'ui2 Job Manager populates filter choices from loaded rows' );
 like( $ui2_js, qr/function renderJobSelectFilter\(id, label, options\)/, 'ui2 Job Manager renders select filters for job columns' );
+like( $ui2_js, qr/function toolFieldControl\(section, id, tagName\)/, 'ui2 Job Manager reads actual filter controls instead of wrapper rows' );
 like( $ui2_js, qr/ajax\/sys_config\/sys_managejob\.php/, 'ui2 Job Manager uses the legacy manage-job endpoint for row actions' );
 like( $ui2_js, qr/function submitSystemModuleAction\(action, jobIds\)/, 'ui2 Job Manager can submit legacy system-module actions' );
-like( $ui2_js, qr/startJobPolling\(jobId, form, status, false, true\)/, 'ui2 Job Manager reattach starts result polling and requests the saved input payload' );
+like( $ui2_js, qr/startJobPolling\(pollUuid, form, status, false, true\)/, 'ui2 Job Manager reattach polls the uuid from the legacy switch target' );
+like( $ui2_js, qr/function moduleIdFromSwitchParts\(parts\)/, 'ui2 Job Manager parses legacy switch targets without assuming one shape' );
 like( $ui2_js, qr/function applyInputPayload\(inputs\)/, 'ui2 Job Manager can hydrate form inputs from reattached job payloads' );
 like( $ui2_js, qr/function renderFileManagerTool\(fields\)/, 'ui2 has a dedicated File Manager shell' );
 like( $ui2_js, qr/function downloadFileManagerSelection\(table, status, links\)/, 'ui2 File Manager submits selected files for download and renders returned links' );

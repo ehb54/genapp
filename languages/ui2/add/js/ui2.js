@@ -1615,10 +1615,10 @@
   function collectJobFilters(table) {
     const section = table?.closest(".ui2-job-manager");
     return {
-      running: !!section?.querySelector('[data-field-id="running"]')?.checked,
-      completed: section?.querySelector('[data-field-id="completed"]')?.value || "*all*",
-      project: section?.querySelector('[data-field-id="project"]')?.value || "*all*",
-      module: section?.querySelector('[data-field-id="module"]')?.value || "*all*"
+      running: !!toolFieldControl(section, "running", "input")?.checked,
+      completed: toolFieldControl(section, "completed", "select")?.value || "*all*",
+      project: toolFieldControl(section, "project", "select")?.value || "*all*",
+      module: toolFieldControl(section, "module", "select")?.value || "*all*"
     };
   }
 
@@ -1670,8 +1670,12 @@
 
   function updateJobFilterChoices(table, rows) {
     const section = table?.closest(".ui2-job-manager");
-    updateSelectOptions(section?.querySelector('[data-field-id="project"]'), uniqueJobCellValues(rows, 1));
-    updateSelectOptions(section?.querySelector('[data-field-id="module"]'), uniqueJobCellValues(rows, 0));
+    updateSelectOptions(toolFieldControl(section, "project", "select"), uniqueJobCellValues(rows, 1));
+    updateSelectOptions(toolFieldControl(section, "module", "select"), uniqueJobCellValues(rows, 0));
+  }
+
+  function toolFieldControl(section, id, tagName) {
+    return section?.querySelector(`${tagName}[data-field-id="${cssEscape(id)}"]`) || null;
   }
 
   function uniqueJobCellValues(rows, cellIndex) {
@@ -1788,19 +1792,27 @@
         window.open(url.toString(), "_blank", "noopener");
         return;
       }
-      const parts = switchValue.split("/");
-      const moduleId = parts.length >= 2 ? parts[1] : parts[0];
+      const parts = switchValue.split("/").filter(Boolean);
+      const moduleId = moduleIdFromSwitchParts(parts);
+      const pollUuid = parts[parts.length - 1] || jobId;
       await refreshSessionState();
       await loadModule(moduleId);
       const form = document.querySelector(".ui2-module-form");
       const status = document.getElementById("ui2-submit-status");
       setSubmitStatus(status, `Attached (${jobId})`, "ok");
       if (form) {
-        startJobPolling(jobId, form, status, false, true);
+        startJobPolling(pollUuid, form, status, false, true);
       }
     } catch (error) {
       setSystemMessage("messages", error.message, true);
     }
+  }
+
+  function moduleIdFromSwitchParts(parts) {
+    if (!Array.isArray(parts) || !parts.length) {
+      return "";
+    }
+    return parts.length >= 4 ? parts[1] : parts[0];
   }
 
   async function manageJob(jobId, command, prompt) {
@@ -3488,6 +3500,7 @@
       payloadFileList,
       fileDownloadLinks,
       serverSelectionDisplayPath,
+      moduleIdFromSwitchParts,
       applyInputPayload,
       state
     };

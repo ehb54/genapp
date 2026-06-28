@@ -193,6 +193,18 @@ assert.deepStrictEqual(
 );
 
 assert.strictEqual(
+  hooks.moduleIdFromSwitchParts(["tools", "data_interpolation", "no_project_specified", "18a53955-2cca-4aa8-9783-1f31e46ba6ff"]),
+  "data_interpolation",
+  "legacy menu/module/project/job switch targets restore the module id"
+);
+
+assert.strictEqual(
+  hooks.moduleIdFromSwitchParts(["data_interpolation", "no_project_specified", "18a53955-2cca-4aa8-9783-1f31e46ba6ff"]),
+  "data_interpolation",
+  "legacy module/project/job switch targets restore the module id"
+);
+
+assert.strictEqual(
   JSON.stringify(hooks.normalizeFileList({ out: ["results/users/Joseph/min3.pdb"], extra: "results/users/Joseph/no_project_specified.tar" })),
   JSON.stringify(["results/users/Joseph/min3.pdb", "results/users/Joseph/no_project_specified.tar"]),
   "download file payloads can be object, array, or string shaped"
