@@ -115,6 +115,12 @@ const context = {
   console,
   document,
   window,
+  atob(value) {
+    return Buffer.from(String(value), "base64").toString("binary");
+  },
+  btoa(value) {
+    return Buffer.from(String(value), "binary").toString("base64");
+  },
   URL,
   URLSearchParams,
   Event: class Event {
@@ -198,6 +204,60 @@ assert(links.includes("min3.pdb"), "download link labels the selected file");
 
 const payloadFiles = hooks.payloadFileList({ outfile: "results/users/Joseph/min3.pdb" });
 assert.strictEqual(JSON.stringify(payloadFiles), JSON.stringify(["results/users/Joseph/min3.pdb"]), "single outfile payloads are accepted");
+
+const nestedPayloadFiles = hooks.payloadFileList({
+  _status: "complete",
+  output: {
+    fields: {
+      outfiles: ["results/users/Joseph/no_project_specified/min3.pdb"]
+    }
+  }
+});
+assert.strictEqual(
+  JSON.stringify(nestedPayloadFiles),
+  JSON.stringify(["results/users/Joseph/no_project_specified/min3.pdb"]),
+  "nested outfile payloads from async system jobs are accepted"
+);
+
+assert.strictEqual(
+  hooks.serverSelectionDisplayPath("Li9zYW5zX2RhdGEuc3Vi", "<i>Server</i>: sans_data.sub"),
+  "sans_data.sub",
+  "server file replay prefers the legacy html display label"
+);
+
+const replayControl = {
+  type: "text",
+  value: "",
+  dataset: { fieldId: "data_file_name" },
+  closest(selector) {
+    return selector === ".ui2-module-form" ? {} : null;
+  },
+  dispatchEvent(event) {
+    this.lastEvent = event.type;
+  }
+};
+document.querySelectorAll = (selector) => (
+  selector === "[data-field-id=\\"data_file_name\\"]" ? [replayControl] : []
+);
+document.getElementById = () => null;
+hooks.state.module = {
+  fields: [
+    { id: "data_file_name", type: "lrfile" }
+  ]
+};
+hooks.state.serverSelections = {};
+hooks.applyInputPayload({
+  run_name: "run_0",
+  _selaltval_data_file_name: "data_file_name_altval",
+  data_file_name_altval: ["Li9zYW5zX2RhdGEuc3Vi"],
+  _html_data_file_name_altval: "<i>Server</i>: sans_data.sub"
+});
+assert.strictEqual(replayControl.value, "sans_data.sub", "attach replay restores the visible server file label");
+assert.strictEqual(
+  hooks.state.serverSelections["data_file_name:"].encodedPath,
+  "Li9zYW5zX2RhdGEuc3Vi",
+  "attach replay restores the server selection payload for later submit"
+);
 JS
 close $fh;
 

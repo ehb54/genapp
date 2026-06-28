@@ -2026,7 +2026,8 @@
       formData.set("_window", window.name);
       formData.set("_logon", state.session.logon || "");
       formData.set("_project", state.session.project || "");
-      formData.set("_uuid", createUuid());
+      const uuid = createUuid();
+      formData.set("_uuid", uuid);
       formData.set("_height", String(Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)));
       formData.set("_width", String(Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)));
       if (state.module?.docrootexecutable) {
@@ -2039,17 +2040,22 @@
       if (payload.error) {
         throw new Error(payload.error);
       }
-      const linksHtml = fileDownloadLinks(payloadFileList(payload));
+      let finalPayload = payload;
+      let linksHtml = fileDownloadLinks(payloadFileList(finalPayload));
+      if (!linksHtml && runtimeStatus(payload) === "started") {
+        finalPayload = await waitForFileManagerResult(uuid, status);
+        linksHtml = fileDownloadLinks(payloadFileList(finalPayload));
+      }
       if (!linksHtml) {
-        throw new Error(payload.status
-          ? `${stripHtml(payload.status)}; no downloadable file link was returned.`
+        throw new Error(finalPayload?.status
+          ? `${stripHtml(finalPayload.status)}; no downloadable file link was returned.`
           : "Download completed, but no downloadable file link was returned.");
       }
-      setSubmitStatus(status, payload.status ? stripHtml(payload.status) : "Download ready.", "ok");
+      setSubmitStatus(status, finalPayload.status ? stripHtml(finalPayload.status) : "Download ready.", "ok");
       if (links) {
         links.innerHTML = linksHtml;
       }
-      updateOutputField("status", payload.status || "");
+      updateOutputField("status", finalPayload.status || "");
       updateOutputField("outfiles", linksHtml);
     } catch (error) {
       setSubmitStatus(status, error.message, "error");
@@ -2060,11 +2066,67 @@
     }
   }
 
+  async function waitForFileManagerResult(uuid, status) {
+    const url = new URL(legacyEndpoint("resultsBase", "ajax/get_results.php"), window.location.href);
+    url.searchParams.set("tagmode", "any");
+    url.searchParams.set("format", "json");
+    url.searchParams.set("_window", window.name);
+    url.searchParams.set("_logon", state.session.logon || "");
+    url.searchParams.set("_uuid", uuid);
+    url.searchParams.set("_getlastmsg", "1");
+    url.searchParams.set("_getinput", "false");
+
+    let lastPayload = null;
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      if (attempt > 0) {
+        setSubmitStatus(status, "Preparing download...", "pending");
+        await delay(Math.min(500 + attempt * 250, 2000));
+      }
+      const response = await fetch(url.toString(), {
+        cache: "no-cache",
+        credentials: "same-origin"
+      });
+      const payload = await parseJsonResponse(response, "File Manager result");
+      lastPayload = payload;
+      if (payloadFileList(payload).length || isTerminalStatus(runtimeStatus(payload))) {
+        return payload;
+      }
+    }
+    return lastPayload || {};
+  }
+
+  function delay(ms) {
+    return new Promise((resolve) => window.setTimeout(resolve, ms));
+  }
+
   function payloadFileList(payload) {
     if (!payload || typeof payload !== "object") {
       return [];
     }
-    return normalizeFileList(payload.outfiles ?? payload.outfile ?? payload.outfile_tag ?? payload.file ?? payload.files);
+    const direct = normalizeFileList(payload.outfiles ?? payload.outfile ?? payload.outfile_tag ?? payload.file ?? payload.files);
+    if (direct.length) {
+      return direct;
+    }
+    return normalizeFileList(findNestedValue(payload, ["outfiles", "outfile", "outfile_tag", "file", "files"]));
+  }
+
+  function findNestedValue(value, keys, seen = new Set()) {
+    if (!value || typeof value !== "object" || seen.has(value)) {
+      return null;
+    }
+    seen.add(value);
+    for (const key of keys) {
+      if (value[key] != null && value[key] !== "") {
+        return value[key];
+      }
+    }
+    for (const item of Object.values(value)) {
+      const found = findNestedValue(item, keys, seen);
+      if (found != null && found !== "") {
+        return found;
+      }
+    }
+    return null;
   }
 
   function normalizeFileList(value) {
@@ -2459,6 +2521,7 @@
     if (!inputs || typeof inputs !== "object") {
       return;
     }
+    restoreServerSelections(inputs);
     Object.entries(inputs).forEach(([id, value]) => {
       if (!id || id.startsWith("_")) {
         return;
@@ -2466,6 +2529,44 @@
       setInputControlValue(id, value);
     });
     syncValues();
+  }
+
+  function restoreServerSelections(inputs) {
+    Object.entries(inputs || {}).forEach(([key, altField]) => {
+      const match = /^_selaltval_(.+)$/.exec(key);
+      if (!match) {
+        return;
+      }
+      const id = match[1];
+      const altId = stringValue(firstValue(altField)) || `${id}_altval`;
+      const encodedPath = stringValue(firstValue(inputs[altId] ?? inputs[`${id}_altval`]));
+      if (!encodedPath) {
+        return;
+      }
+      const field = moduleFieldById(id) || { id, type: "file" };
+      const displayHtml = stringValue(inputs[`_html_${altId}`] ?? inputs[`_html_${id}_altval`]);
+      const path = serverSelectionDisplayPath(encodedPath, displayHtml);
+      setServerSelection(field, null, { id: encodedPath });
+      const keyName = serverSelectionKey(field, null);
+      if (state.serverSelections[keyName]) {
+        state.serverSelections[keyName].path = path;
+      }
+      setInputControlValue(id, path);
+    });
+  }
+
+  function moduleFieldById(id) {
+    const fields = Array.isArray(state.module?.fields) ? state.module.fields : [];
+    return fields.find((field) => field?.id === id) || null;
+  }
+
+  function firstValue(value) {
+    return Array.isArray(value) ? value[0] : value;
+  }
+
+  function serverSelectionDisplayPath(encodedPath, displayHtml) {
+    const display = stripHtml(displayHtml || "").replace(/^\s*Server\s*:\s*/i, "").trim();
+    return display || decodeServerFileId(encodedPath).replace(/^\.\//, "");
   }
 
   function setInputControlValue(id, value) {
@@ -3385,7 +3486,10 @@
       jobEndSeconds,
       normalizeFileList,
       payloadFileList,
-      fileDownloadLinks
+      fileDownloadLinks,
+      serverSelectionDisplayPath,
+      applyInputPayload,
+      state
     };
   }
 

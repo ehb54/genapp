@@ -77,7 +77,8 @@ like( $ui2_js, qr/function applyInputPayload\(inputs\)/, 'ui2 Job Manager can hy
 like( $ui2_js, qr/function renderFileManagerTool\(fields\)/, 'ui2 has a dedicated File Manager shell' );
 like( $ui2_js, qr/function downloadFileManagerSelection\(table, status, links\)/, 'ui2 File Manager submits selected files for download and renders returned links' );
 like( $ui2_js, qr/formData\.append\("selectedfiles\[\]", id\)/, 'ui2 File Manager sends legacy encoded selected file ids' );
-like( $ui2_js, qr/formData\.set\("_uuid", createUuid\(\)\)/, 'ui2 File Manager supplies uuid metadata to the generated wrapper' );
+like( $ui2_js, qr/const uuid = createUuid\(\);\s+formData\.set\("_uuid", uuid\)/s, 'ui2 File Manager supplies reusable uuid metadata to the generated wrapper' );
+like( $ui2_js, qr/waitForFileManagerResult\(uuid, status\)/, 'ui2 File Manager polls async system download jobs with the submitted uuid' );
 like( $ui2_js, qr/formData\.set\("_docrootexecutable", state\.module\.docrootexecutable\)/, 'ui2 File Manager sends docroot executable metadata for system downloads' );
 like( $ui2_js, qr/function normalizeFileList\(value\)/, 'ui2 File Manager normalizes backend download file payload shapes' );
 like( $ui2_js, qr/no downloadable file link was returned/, 'ui2 File Manager does not report success without a returned link' );
