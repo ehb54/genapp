@@ -903,6 +903,29 @@ code {
   background: color-mix(in srgb, var(--ui2-panel) 76%, var(--ui2-bg));
   padding: 0.75rem;
   color: var(--ui2-muted);
+  overflow: auto;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.ui2-output-html,
+.ui2-output-text {
+  max-height: 30rem;
+  line-height: 1.45;
+}
+
+.ui2-output-rendered {
+  color: var(--ui2-text);
+}
+
+.ui2-output-plotly {
+  min-height: 24rem;
+  white-space: normal;
+}
+
+.ui2-output-plotly-ready {
+  padding: 0.25rem;
+  background: var(--ui2-panel);
 }
 
 .ui2-progress {

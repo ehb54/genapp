@@ -32,6 +32,7 @@ ok( -f File::Spec->catfile( $ui2, qw(modules typed.json) ), 'ui2 typed module su
 
 my $index = read_file( File::Spec->catfile( $ui2, 'index.html' ) );
 like( $index, qr/js\/app-map\.js/, 'ui2 index loads the generated app map' );
+like( $index, qr/\.\.\/js\/plotly-2\.35\.2\.min\.js/, 'ui2 index preloads the existing generated Plotly bundle' );
 like( $index, qr/js\/ui2\.js/, 'ui2 index loads the plain JavaScript playground' );
 like( $index, qr/css\/ui2\.css/, 'ui2 index loads the ui2 stylesheet' );
 like( $index, qr/id="ui2-session-status"/, 'ui2 index exposes a session/project status target' );
@@ -63,11 +64,17 @@ like( $ui2_js, qr/function pollJobResults\(uuid, form, statusNode, lastDelay, ge
 like( $ui2_js, qr/ajax\/get_results\.php/, 'ui2 runtime bridge uses the legacy job results endpoint' );
 like( $ui2_js, qr/url\.searchParams\.set\("_getlastmsg"/, 'ui2 runtime bridge requests legacy last-message updates' );
 like( $ui2_js, qr/function applyRuntimePayload\(payload\)/, 'ui2 runtime bridge maps runtime payloads into rendered outputs' );
+like( $ui2_js, qr/function renderPlotlyOutput\(output, value\)/, 'ui2 runtime bridge has a dedicated Plotly output renderer' );
+like( $ui2_js, qr/function parsePlotlyFigure\(value\)/, 'ui2 runtime bridge parses Plotly JSON string payloads' );
+like( $ui2_js, qr/function ensurePlotlyLoaded\(\)/, 'ui2 runtime bridge can load the existing generated Plotly asset' );
+like( $ui2_js, qr/function normalizeProgressValue\(value\)/, 'ui2 runtime bridge normalizes progress payload values' );
 like( $ui2_js, qr/type === "float"[\s\S]+input\.step = "any"/, 'ui2 float inputs allow decimal values' );
 like( $ui2_js, qr/type === "integer"[\s\S]+input\.step = "1"/, 'ui2 integer inputs keep whole-number stepping' );
 
 my $ui2_css = read_file( File::Spec->catfile( $ui2, qw(css ui2.css) ) );
 like( $ui2_css, qr/\.ui2-dialog-overlay/, 'ui2 stylesheet includes login dialog shell styles' );
+like( $ui2_css, qr/\.ui2-output-plotly/, 'ui2 stylesheet includes a stable Plotly output surface' );
+like( $ui2_css, qr/\.ui2-output-rendered/, 'ui2 stylesheet distinguishes rendered runtime output from placeholders' );
 
 my $app_map = read_file( File::Spec->catfile( $ui2, qw(js app-map.js) ) );
 like( $app_map, qr/addMenuFromParts\("demo", "Demo", ""\)/, 'ui2 app map records menu groups' );

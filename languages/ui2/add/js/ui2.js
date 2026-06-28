@@ -18,6 +18,7 @@
   const params = new URLSearchParams(window.location.search);
   const prefs = loadPreferences();
   const devMode = params.get("ui2dev") === "1" || prefs.devMode === true;
+  let plotlyLoadPromise = null;
 
   const state = {
     moduleId: "",
@@ -1218,10 +1219,32 @@
       progress.dataset.outputType = type;
       return progress;
     }
-    const output = el("div", "ui2-output", `${field.type || "output"} output will appear here at runtime.`);
+    const output = el("div", outputClassForType(type), outputPlaceholderForType(type));
     output.dataset.outputFieldId = field.id || "";
     output.dataset.outputType = type;
     return output;
+  }
+
+  function outputClassForType(type) {
+    const classes = ["ui2-output"];
+    if (type === "plotly") {
+      classes.push("ui2-output-plotly");
+    } else if (type === "html") {
+      classes.push("ui2-output-html");
+    } else if (type === "textarea" || type === "text") {
+      classes.push("ui2-output-text");
+    }
+    return classes.join(" ");
+  }
+
+  function outputPlaceholderForType(type) {
+    if (type === "plotly") {
+      return "Plot will appear here at runtime.";
+    }
+    if (type === "html") {
+      return "Report output will appear here at runtime.";
+    }
+    return `${type || "output"} output will appear here at runtime.`;
   }
 
   function renderPreview() {
@@ -1759,15 +1782,22 @@
 
   function updateProgressOutputs(value) {
     document.querySelectorAll('[data-output-type="progress"]').forEach((progress) => {
-      const numeric = Number(value);
+      const numeric = normalizeProgressValue(value);
       if (!Number.isFinite(numeric)) {
         return;
       }
-      if (numeric > Number(progress.max || 1)) {
-        progress.max = numeric > 1 ? 100 : 1;
+      if (numeric > Number(progress.max || 1) || numeric > 1 && Number(progress.max || 1) <= 1) {
+        progress.max = 100;
       }
       progress.value = numeric;
     });
+  }
+
+  function normalizeProgressValue(value) {
+    if (value && typeof value === "object") {
+      return Number(value.value ?? value.progress ?? value.percent ?? value.percent_done ?? value._progress);
+    }
+    return Number(value);
   }
 
   function appendRuntimeMessage(value) {
@@ -1795,15 +1825,104 @@
       updateProgressOutputs(value);
       return;
     }
+    if (type === "progress") {
+      updateProgressOutputs(value);
+      return;
+    }
+    if (type === "plotly") {
+      renderPlotlyOutput(output, value);
+      return;
+    }
     if (type === "html") {
-      output.innerHTML = stringValue(value);
+      renderHtmlOutput(output, value);
       return;
     }
-    if (type === "plotly" && window.Plotly && value && typeof value === "object" && Array.isArray(value.data)) {
-      window.Plotly.newPlot(output, value.data, value.layout || {}, value.config || {});
-      return;
-    }
+    renderTextOutput(output, value);
+  }
+
+  function renderHtmlOutput(output, value) {
+    const html = stringValue(value);
+    output.classList.add("ui2-output-rendered");
+    output.innerHTML = html;
+  }
+
+  function renderTextOutput(output, value) {
+    output.classList.add("ui2-output-rendered");
     output.textContent = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+  }
+
+  function renderPlotlyOutput(output, value) {
+    const figure = parsePlotlyFigure(value);
+    if (!figure) {
+      renderTextOutput(output, value);
+      return;
+    }
+    output.classList.add("ui2-output-rendered", "ui2-output-plotly-ready");
+    output.textContent = "";
+    ensurePlotlyLoaded()
+      .then(() => {
+        const layout = Object.assign({ autosize: true }, figure.layout || {});
+        const config = Object.assign({ responsive: true }, figure.config || {});
+        window.Plotly.newPlot(output, figure.data, layout, config);
+      })
+      .catch((error) => {
+        output.classList.remove("ui2-output-plotly-ready");
+        output.textContent = `Could not render Plotly output: ${error.message}`;
+      });
+  }
+
+  function parsePlotlyFigure(value) {
+    let figure = value;
+    if (typeof figure === "string") {
+      const trimmed = figure.trim();
+      if (!trimmed || trimmed[0] !== "{") {
+        return null;
+      }
+      try {
+        figure = JSON.parse(trimmed);
+      } catch (error) {
+        return null;
+      }
+    }
+    if (!figure || typeof figure !== "object" || !Array.isArray(figure.data)) {
+      return null;
+    }
+    return figure;
+  }
+
+  function ensurePlotlyLoaded() {
+    if (window.Plotly?.newPlot) {
+      return Promise.resolve(window.Plotly);
+    }
+    if (plotlyLoadPromise) {
+      return plotlyLoadPromise;
+    }
+    plotlyLoadPromise = loadScript("../js/plotly-2.35.2.min.js")
+      .catch(() => loadScript("../js/plotly-latest.min.js"))
+      .then(() => {
+        if (!window.Plotly?.newPlot) {
+          throw new Error("Plotly did not initialize");
+        }
+        return window.Plotly;
+      });
+    return plotlyLoadPromise;
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const existing = Array.from(document.scripts).find((script) => script.getAttribute("src") === src);
+      if (existing) {
+        existing.addEventListener("load", resolve, { once: true });
+        existing.addEventListener("error", () => reject(new Error(`Failed to load ${src}`)), { once: true });
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = src;
+      script.async = true;
+      script.onload = resolve;
+      script.onerror = () => reject(new Error(`Failed to load ${src}`));
+      document.head.appendChild(script);
+    });
   }
 
   function renderSubmitResponse(payload) {
