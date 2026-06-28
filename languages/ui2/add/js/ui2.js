@@ -1485,15 +1485,16 @@
     const section = el("section", "ui2-section ui2-system-tool ui2-job-manager");
     const body = el("div", "ui2-section-body ui2-tool-body");
     const filters = el("div", "ui2-tool-filters");
-    [
-      ["serverdate", "Server date", "loads from server"],
-      ["running", "Running", "Show running jobs"],
-      ["completed", "Completed in the last", "*all*"],
-      ["project", "Project", "*all*"],
-      ["module", "Module", "*all*"]
-    ].forEach(([id, label, value]) => {
-      filters.appendChild(renderToolFilter(id, label, value, id === "running"));
-    });
+    filters.appendChild(renderToolFilter("serverdate", "Server date", "loads from server", false));
+    filters.appendChild(renderToolFilter("running", "Running", "Show running jobs", true));
+    filters.appendChild(renderJobSelectFilter("completed", "Completed in the last", [
+      ["*all*", "*all*"],
+      ["1", "1 day"],
+      ["7", "7 days"],
+      ["30", "30 days"]
+    ]));
+    filters.appendChild(renderJobSelectFilter("project", "Project", [["*all*", "*all*"]]));
+    filters.appendChild(renderJobSelectFilter("module", "Module", [["*all*", "*all*"]]));
     body.appendChild(filters);
 
     const actions = el("div", "ui2-tool-actions");
@@ -1521,6 +1522,7 @@
     section.appendChild(body);
     refresh.addEventListener("click", () => loadJobManagerRows(table));
     deleteMany.addEventListener("click", () => deleteSelectedJobs(table));
+    filters.addEventListener("change", () => applyJobManagerFilters(table));
     window.setTimeout(() => loadJobManagerRows(table), 0);
     return section;
   }
@@ -1589,10 +1591,85 @@
       const payload = await parseJsonResponse(response, "Job Manager");
       const rows = payload?.jobgrid?.outerwrapper?.innerwrapper?.rows || [];
       const columns = visibleJobColumns(payload?.colNames || [], payload?.colModel || []);
-      renderJobManagerTable(thead, tbody, columns, rows);
+      table._ui2JobColumns = columns;
+      table._ui2JobRows = rows;
+      updateJobFilterChoices(table, rows);
+      applyJobManagerFilters(table);
     } catch (error) {
       renderTableMessage(tbody, 1, error.message);
     }
+  }
+
+  function applyJobManagerFilters(table) {
+    const thead = table?.querySelector("thead");
+    const tbody = table?.querySelector("tbody");
+    const rows = table?._ui2JobRows || [];
+    const columns = table?._ui2JobColumns || visibleJobColumns([], []);
+    if (!thead || !tbody) {
+      return;
+    }
+    renderJobManagerTable(thead, tbody, columns, filterJobRows(rows, collectJobFilters(table)));
+  }
+
+  function collectJobFilters(table) {
+    const section = table?.closest(".ui2-job-manager");
+    return {
+      running: !!section?.querySelector('[data-field-id="running"]')?.checked,
+      completed: section?.querySelector('[data-field-id="completed"]')?.value || "*all*",
+      project: section?.querySelector('[data-field-id="project"]')?.value || "*all*",
+      module: section?.querySelector('[data-field-id="module"]')?.value || "*all*"
+    };
+  }
+
+  function filterJobRows(rows, filters) {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    return rows.filter((job) => {
+      const moduleValue = stripHtml(job?.cells?.[0]?.value || "");
+      const projectValue = stripHtml(job?.cells?.[1]?.value || "");
+      const endSeconds = Number(stripHtml(job?.cells?.[5]?.value || "0")) || 0;
+      const isRunning = !endSeconds || /active/i.test(stripHtml(job?.cells?.[6]?.value || ""));
+      if (filters.running && !isRunning) {
+        return false;
+      }
+      if (filters.project !== "*all*" && projectValue !== filters.project) {
+        return false;
+      }
+      if (filters.module !== "*all*" && moduleValue !== filters.module) {
+        return false;
+      }
+      const completedDays = Number(filters.completed);
+      if (completedDays > 0) {
+        if (isRunning || !endSeconds) {
+          return false;
+        }
+        return endSeconds >= nowSeconds - completedDays * 24 * 60 * 60;
+      }
+      return true;
+    });
+  }
+
+  function updateJobFilterChoices(table, rows) {
+    const section = table?.closest(".ui2-job-manager");
+    updateSelectOptions(section?.querySelector('[data-field-id="project"]'), uniqueJobCellValues(rows, 1));
+    updateSelectOptions(section?.querySelector('[data-field-id="module"]'), uniqueJobCellValues(rows, 0));
+  }
+
+  function uniqueJobCellValues(rows, cellIndex) {
+    return Array.from(new Set(
+      rows.map((job) => stripHtml(job?.cells?.[cellIndex]?.value || ""))
+        .filter(Boolean)
+    )).sort((a, b) => a.localeCompare(b));
+  }
+
+  function updateSelectOptions(select, values) {
+    if (!select) {
+      return;
+    }
+    const current = select.value || "*all*";
+    select.innerHTML = "";
+    select.appendChild(new Option("*all*", "*all*"));
+    values.forEach((value) => select.appendChild(new Option(value, value)));
+    select.value = values.includes(current) ? current : "*all*";
   }
 
   function visibleJobColumns(names, models) {
@@ -1695,7 +1772,12 @@
       const moduleId = parts.length >= 2 ? parts[1] : parts[0];
       await refreshSessionState();
       await loadModule(moduleId);
-      setSystemMessage("messages", `Reattached target: ${switchValue}`, false);
+      const form = document.querySelector(".ui2-module-form");
+      const status = document.getElementById("ui2-submit-status");
+      setSubmitStatus(status, `Attached (${jobId})`, "ok");
+      if (form) {
+        startJobPolling(jobId, form, status, false);
+      }
     } catch (error) {
       setSystemMessage("messages", error.message, true);
     }
@@ -1924,6 +2006,9 @@
       formData.set("_uuid", createUuid());
       formData.set("_height", String(Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)));
       formData.set("_width", String(Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)));
+      if (state.module?.docrootexecutable) {
+        formData.set("_docrootexecutable", state.module.docrootexecutable);
+      }
       formData.set("compression", document.querySelector('select[data-field-id="compression"], input[data-field-id="compression"]')?.value || "tar");
       selected.forEach((id) => formData.append("selectedfiles[]", id));
       const response = await fetch(endpoint, { method: "POST", body: formData, credentials: "same-origin" });
@@ -2012,6 +2097,21 @@
       input.dataset.fieldId = id;
       stack.appendChild(input);
     }
+    row.appendChild(stack);
+    return row;
+  }
+
+  function renderJobSelectFilter(id, label, options) {
+    const row = el("div", "ui2-tool-filter");
+    row.dataset.fieldId = id;
+    row.appendChild(el("label", "ui2-field-label", label));
+    const stack = el("div", "ui2-control-stack");
+    const select = el("select", "ui2-input");
+    select.dataset.fieldId = id;
+    (options || [["*all*", "*all*"]]).forEach(([value, text]) => {
+      select.appendChild(new Option(text, value));
+    });
+    stack.appendChild(select);
     row.appendChild(stack);
     return row;
   }
@@ -2219,7 +2319,7 @@
     node.dataset.status = kind || "";
   }
 
-  function startJobPolling(uuid, form, statusNode) {
+  function startJobPolling(uuid, form, statusNode, getLastMsg = true) {
     stopJobPolling();
     state.activeJob = {
       uuid,
@@ -2229,7 +2329,7 @@
       timer: null
     };
     subscribeRuntimeMessages(uuid);
-    pollJobResults(uuid, form, statusNode, 0, true);
+    pollJobResults(uuid, form, statusNode, 0, getLastMsg);
   }
 
   function stopJobPolling() {
