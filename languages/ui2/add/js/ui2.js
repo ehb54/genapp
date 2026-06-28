@@ -1559,7 +1559,8 @@
     download.type = "button";
     const status = el("div", "ui2-submit-status", "");
     status.id = "ui2-file-manager-status";
-    actions.append(refresh, download, status);
+    const links = el("div", "ui2-file-download-links");
+    actions.append(refresh, download, status, links);
     body.appendChild(actions);
 
     ["status", "outfiles"].forEach((id) => {
@@ -1571,7 +1572,7 @@
 
     section.appendChild(body);
     refresh.addEventListener("click", () => loadFileManagerRows(table));
-    download.addEventListener("click", () => downloadFileManagerSelection(table, status));
+    download.addEventListener("click", () => downloadFileManagerSelection(table, status, links));
     window.setTimeout(() => loadFileManagerRows(table), 0);
     return section;
   }
@@ -1621,13 +1622,12 @@
     };
   }
 
-  function filterJobRows(rows, filters) {
-    const nowSeconds = Math.floor(Date.now() / 1000);
+  function filterJobRows(rows, filters, nowSeconds = Math.floor(Date.now() / 1000)) {
     return rows.filter((job) => {
-      const moduleValue = stripHtml(job?.cells?.[0]?.value || "");
-      const projectValue = stripHtml(job?.cells?.[1]?.value || "");
-      const endSeconds = Number(stripHtml(job?.cells?.[5]?.value || "0")) || 0;
-      const isRunning = !endSeconds || /active/i.test(stripHtml(job?.cells?.[6]?.value || ""));
+      const moduleValue = jobCellText(job, 0);
+      const projectValue = jobCellText(job, 1);
+      const endSeconds = jobEndSeconds(job);
+      const isRunning = isRunningJob(job, endSeconds);
       if (filters.running && !isRunning) {
         return false;
       }
@@ -1636,6 +1636,9 @@
       }
       if (filters.module !== "*all*" && moduleValue !== filters.module) {
         return false;
+      }
+      if (filters.running) {
+        return true;
       }
       const completedDays = Number(filters.completed);
       if (completedDays > 0) {
@@ -1646,6 +1649,23 @@
       }
       return true;
     });
+  }
+
+  function jobCellText(job, index) {
+    return stripHtml(job?.cells?.[index]?.value || "");
+  }
+
+  function jobEndSeconds(job) {
+    const numeric = Number(jobCellText(job, 5));
+    if (Number.isFinite(numeric) && numeric > 0) {
+      return numeric;
+    }
+    const parsed = Date.parse(jobCellText(job, 4));
+    return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : 0;
+  }
+
+  function isRunningJob(job, endSeconds) {
+    return !endSeconds || /active|running/i.test(jobCellText(job, 6));
   }
 
   function updateJobFilterChoices(table, rows) {
@@ -1776,7 +1796,7 @@
       const status = document.getElementById("ui2-submit-status");
       setSubmitStatus(status, `Attached (${jobId})`, "ok");
       if (form) {
-        startJobPolling(jobId, form, status, false);
+        startJobPolling(jobId, form, status, false, true);
       }
     } catch (error) {
       setSystemMessage("messages", error.message, true);
@@ -1983,10 +2003,13 @@
     }
   }
 
-  async function downloadFileManagerSelection(table, status) {
+  async function downloadFileManagerSelection(table, status, links) {
     const selected = Array.from(table?.querySelectorAll("input[data-file-select]:checked") || [])
       .map((input) => input.closest("tr")?.dataset.fileId)
       .filter(Boolean);
+    if (links) {
+      links.innerHTML = "";
+    }
     if (!selected.length) {
       setSubmitStatus(status, "No files selected.", "error");
       return;
@@ -2016,20 +2039,53 @@
       if (payload.error) {
         throw new Error(payload.error);
       }
+      const linksHtml = fileDownloadLinks(payloadFileList(payload));
+      if (!linksHtml) {
+        throw new Error(payload.status
+          ? `${stripHtml(payload.status)}; no downloadable file link was returned.`
+          : "Download completed, but no downloadable file link was returned.");
+      }
       setSubmitStatus(status, payload.status ? stripHtml(payload.status) : "Download ready.", "ok");
+      if (links) {
+        links.innerHTML = linksHtml;
+      }
       updateOutputField("status", payload.status || "");
-      updateOutputField("outfiles", fileDownloadLinks(payload.outfiles || []));
+      updateOutputField("outfiles", linksHtml);
     } catch (error) {
       setSubmitStatus(status, error.message, "error");
+      if (links) {
+        links.innerHTML = "";
+      }
       updateOutputField("status", error.message);
     }
   }
 
+  function payloadFileList(payload) {
+    if (!payload || typeof payload !== "object") {
+      return [];
+    }
+    return normalizeFileList(payload.outfiles ?? payload.outfile ?? payload.outfile_tag ?? payload.file ?? payload.files);
+  }
+
+  function normalizeFileList(value) {
+    if (value == null || value === "") {
+      return [];
+    }
+    if (Array.isArray(value)) {
+      return value.flatMap((item) => normalizeFileList(item));
+    }
+    if (typeof value === "object") {
+      return Object.values(value).flatMap((item) => normalizeFileList(item));
+    }
+    return [String(value)];
+  }
+
   function fileDownloadLinks(files) {
-    if (!Array.isArray(files) || !files.length) {
+    const normalized = normalizeFileList(files);
+    if (!normalized.length) {
       return "";
     }
-    return files.map((file) => {
+    return normalized.map((file) => {
       const href = `../${String(file).replace(/^\/+/, "")}`;
       const label = String(file).split("/").pop() || file;
       return `<a href="${escapeHtml(href)}" download>${escapeHtml(label)}</a>`;
@@ -2319,17 +2375,18 @@
     node.dataset.status = kind || "";
   }
 
-  function startJobPolling(uuid, form, statusNode, getLastMsg = true) {
+  function startJobPolling(uuid, form, statusNode, getLastMsg = true, getInput = false) {
     stopJobPolling();
     state.activeJob = {
       uuid,
       form,
       statusNode,
       delay: 2000,
+      getInput,
       timer: null
     };
     subscribeRuntimeMessages(uuid);
-    pollJobResults(uuid, form, statusNode, 0, getLastMsg);
+    pollJobResults(uuid, form, statusNode, 0, getLastMsg, getInput);
   }
 
   function stopJobPolling() {
@@ -2340,7 +2397,7 @@
     state.activeJob = null;
   }
 
-  async function pollJobResults(uuid, form, statusNode, lastDelay, getLastMsg) {
+  async function pollJobResults(uuid, form, statusNode, lastDelay, getLastMsg, getInput = false) {
     if (!uuid || state.activeJob?.uuid !== uuid || !form?.isConnected) {
       return;
     }
@@ -2351,7 +2408,7 @@
     url.searchParams.set("_logon", state.session.logon || "");
     url.searchParams.set("_uuid", uuid);
     url.searchParams.set("_getlastmsg", getLastMsg ? "1" : "0");
-    url.searchParams.set("_getinput", "false");
+    url.searchParams.set("_getinput", getInput ? "true" : "false");
 
     try {
       const response = await fetch(url.toString(), {
@@ -2360,6 +2417,12 @@
       });
       const payload = await parseJsonResponse(response, "Job results");
       state.submitResponse = payload;
+      if (getInput && payload?._getinput) {
+        applyInputPayload(payload._getinput);
+        if (state.activeJob?.uuid === uuid) {
+          state.activeJob.getInput = false;
+        }
+      }
       applyRuntimePayload(payload);
       renderSubmitResponse(payload);
 
@@ -2376,7 +2439,7 @@
       if (state.activeJob?.uuid === uuid) {
         state.activeJob.delay = nextDelay;
         state.activeJob.timer = window.setTimeout(
-          () => pollJobResults(uuid, form, statusNode, nextDelay, true),
+          () => pollJobResults(uuid, form, statusNode, nextDelay, true, false),
           nextDelay
         );
       }
@@ -2385,11 +2448,44 @@
       if (state.activeJob?.uuid === uuid) {
         const nextDelay = nextPollDelay(lastDelay);
         state.activeJob.timer = window.setTimeout(
-          () => pollJobResults(uuid, form, statusNode, nextDelay, true),
+          () => pollJobResults(uuid, form, statusNode, nextDelay, true, false),
           nextDelay
         );
       }
     }
+  }
+
+  function applyInputPayload(inputs) {
+    if (!inputs || typeof inputs !== "object") {
+      return;
+    }
+    Object.entries(inputs).forEach(([id, value]) => {
+      if (!id || id.startsWith("_")) {
+        return;
+      }
+      setInputControlValue(id, value);
+    });
+    syncValues();
+  }
+
+  function setInputControlValue(id, value) {
+    const controls = Array.from(document.querySelectorAll(`[data-field-id="${cssEscape(id)}"]`))
+      .filter((control) => !control.dataset.outputFieldId && control.closest(".ui2-module-form"));
+    controls.forEach((control, index) => {
+      const controlValue = Array.isArray(value) ? value[index] ?? value[0] ?? "" : value;
+      if (control.type === "file") {
+        return;
+      }
+      if (control.type === "checkbox") {
+        control.checked = controlValue === true || String(controlValue).toLowerCase() === "true" || String(controlValue) === "1";
+      } else if (control.type === "radio") {
+        control.checked = String(control.value) === String(controlValue);
+      } else {
+        control.value = controlValue == null ? "" : String(controlValue);
+      }
+      control.dispatchEvent(new Event("input", { bubbles: true }));
+      control.dispatchEvent(new Event("change", { bubbles: true }));
+    });
   }
 
   function nextPollDelay(lastDelay) {
@@ -3281,6 +3377,16 @@
       node.textContent = text;
     }
     return node;
+  }
+
+  if (window.GenAppUi2ExposeTestHooks) {
+    window.GenAppUi2TestHooks = {
+      filterJobRows,
+      jobEndSeconds,
+      normalizeFileList,
+      payloadFileList,
+      fileDownloadLinks
+    };
   }
 
   init();

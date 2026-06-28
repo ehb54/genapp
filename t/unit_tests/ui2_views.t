@@ -72,20 +72,24 @@ like( $ui2_js, qr/function updateJobFilterChoices\(table, rows\)/, 'ui2 Job Mana
 like( $ui2_js, qr/function renderJobSelectFilter\(id, label, options\)/, 'ui2 Job Manager renders select filters for job columns' );
 like( $ui2_js, qr/ajax\/sys_config\/sys_managejob\.php/, 'ui2 Job Manager uses the legacy manage-job endpoint for row actions' );
 like( $ui2_js, qr/function submitSystemModuleAction\(action, jobIds\)/, 'ui2 Job Manager can submit legacy system-module actions' );
-like( $ui2_js, qr/startJobPolling\(jobId, form, status, false\)/, 'ui2 Job Manager reattach starts result polling for the selected job without last-message truncation' );
+like( $ui2_js, qr/startJobPolling\(jobId, form, status, false, true\)/, 'ui2 Job Manager reattach starts result polling and requests the saved input payload' );
+like( $ui2_js, qr/function applyInputPayload\(inputs\)/, 'ui2 Job Manager can hydrate form inputs from reattached job payloads' );
 like( $ui2_js, qr/function renderFileManagerTool\(fields\)/, 'ui2 has a dedicated File Manager shell' );
-like( $ui2_js, qr/function downloadFileManagerSelection\(table, status\)/, 'ui2 File Manager submits selected files for download' );
+like( $ui2_js, qr/function downloadFileManagerSelection\(table, status, links\)/, 'ui2 File Manager submits selected files for download and renders returned links' );
 like( $ui2_js, qr/formData\.append\("selectedfiles\[\]", id\)/, 'ui2 File Manager sends legacy encoded selected file ids' );
 like( $ui2_js, qr/formData\.set\("_uuid", createUuid\(\)\)/, 'ui2 File Manager supplies uuid metadata to the generated wrapper' );
 like( $ui2_js, qr/formData\.set\("_docrootexecutable", state\.module\.docrootexecutable\)/, 'ui2 File Manager sends docroot executable metadata for system downloads' );
+like( $ui2_js, qr/function normalizeFileList\(value\)/, 'ui2 File Manager normalizes backend download file payload shapes' );
+like( $ui2_js, qr/no downloadable file link was returned/, 'ui2 File Manager does not report success without a returned link' );
 like( $ui2_js, qr/const uuid = createUuid\(\)/, 'ui2 runtime bridge keeps the submitted uuid for job polling' );
 like( $ui2_js, qr/formData\.set\("_uuid", uuid/, 'ui2 runtime bridge supplies uuid for generated backend submit path' );
 like( $ui2_js, qr/formData\.set\("_logon", state\.session\.logon/, 'ui2 submit uses the legacy session logon' );
 like( $ui2_js, qr/formData\.set\("_project", state\.session\.project/, 'ui2 submit uses the legacy session project' );
-like( $ui2_js, qr/function startJobPolling\(uuid, form, statusNode, getLastMsg = true\)/, 'ui2 runtime bridge starts polling submitted jobs' );
-like( $ui2_js, qr/function pollJobResults\(uuid, form, statusNode, lastDelay, getLastMsg\)/, 'ui2 runtime bridge polls legacy job results' );
+like( $ui2_js, qr/function startJobPolling\(uuid, form, statusNode, getLastMsg = true, getInput = false\)/, 'ui2 runtime bridge starts polling submitted jobs' );
+like( $ui2_js, qr/function pollJobResults\(uuid, form, statusNode, lastDelay, getLastMsg, getInput = false\)/, 'ui2 runtime bridge polls legacy job results' );
 like( $ui2_js, qr/ajax\/get_results\.php/, 'ui2 runtime bridge uses the legacy job results endpoint' );
 like( $ui2_js, qr/url\.searchParams\.set\("_getlastmsg", getLastMsg \? "1" : "0"\)/, 'ui2 runtime bridge requests legacy last-message updates with the PHP-native flag' );
+like( $ui2_js, qr/url\.searchParams\.set\("_getinput", getInput \? "true" : "false"\)/, 'ui2 runtime bridge requests saved job inputs only when reattaching' );
 like( $ui2_js, qr/function applyRuntimePayload\(payload\)/, 'ui2 runtime bridge maps runtime payloads into rendered outputs' );
 like( $ui2_js, qr/function mergeRuntimeText\(existing, incoming\)/, 'ui2 runtime bridge preserves accumulated runtime text output' );
 like( $ui2_js, qr/function isCompleteRuntimeText\(text\)/, 'ui2 runtime bridge recognizes complete final textarea streams' );
@@ -102,6 +106,7 @@ like( $ui2_js, qr/function parsePlotlyFigure\(value\)/, 'ui2 runtime bridge pars
 like( $ui2_js, qr/function defaultPlotlyLayout\(\)/, 'ui2 runtime bridge supplies default Plotly layout polish' );
 like( $ui2_js, qr/function ensurePlotlyLoaded\(\)/, 'ui2 runtime bridge can load the existing generated Plotly asset' );
 like( $ui2_js, qr/function normalizeProgressValue\(value\)/, 'ui2 runtime bridge normalizes progress payload values' );
+like( $ui2_js, qr/window\.GenAppUi2TestHooks/, 'ui2 runtime exposes opt-in test hooks for behavior checks' );
 like( $ui2_js, qr/function renderSubmitResponse\(payload\) \{\s+if \(!devMode\) \{\s+return;/, 'ui2 hides raw submit payloads outside dev mode' );
 like( $ui2_js, qr/type === "float"[\s\S]+input\.step = "any"/, 'ui2 float inputs allow decimal values' );
 like( $ui2_js, qr/type === "integer"[\s\S]+input\.step = "1"/, 'ui2 integer inputs keep whole-number stepping' );
@@ -112,6 +117,7 @@ like( $ui2_css, qr/\.ui2-output-plotly/, 'ui2 stylesheet includes a stable Plotl
 like( $ui2_css, qr/\.ui2-output-rendered/, 'ui2 stylesheet distinguishes rendered runtime output from placeholders' );
 like( $ui2_css, qr/\.ui2-output-field/, 'ui2 stylesheet lets output rows use the full default width' );
 like( $ui2_css, qr/\.ui2-mini-button/, 'ui2 stylesheet includes compact system action buttons' );
+like( $ui2_css, qr/\.ui2-file-download-links/, 'ui2 stylesheet makes File Manager download links visible beside actions' );
 
 my $app_map = read_file( File::Spec->catfile( $ui2, qw(js app-map.js) ) );
 like( $app_map, qr/addMenuFromParts\("demo", "Demo", ""\)/, 'ui2 app map records menu groups' );

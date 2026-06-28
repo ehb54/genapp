@@ -673,6 +673,26 @@ code {
   color: var(--ui2-danger);
 }
 
+.ui2-file-download-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ui2-file-download-links a {
+  border: 1px solid var(--ui2-accent);
+  border-radius: 6px;
+  color: var(--ui2-accent-strong);
+  padding: 0.45rem 0.7rem;
+  text-decoration: none;
+}
+
+.ui2-file-download-links a:hover,
+.ui2-file-download-links a:focus-visible {
+  background: var(--ui2-accent-soft);
+  outline: none;
+}
+
 .ui2-submit-response {
   margin-top: 1rem;
   white-space: pre-wrap;
