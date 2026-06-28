@@ -1799,9 +1799,10 @@
       await loadModule(moduleId);
       const form = document.querySelector(".ui2-module-form");
       const status = document.getElementById("ui2-submit-status");
+      const restoredInput = form ? await applySavedJobInput(pollUuid) : false;
       setSubmitStatus(status, `Attached (${jobId})`, "ok");
       if (form) {
-        startJobPolling(pollUuid, form, status, false, true);
+        startJobPolling(pollUuid, form, status, false, !restoredInput);
       }
     } catch (error) {
       setSystemMessage("messages", error.message, true);
@@ -2527,6 +2528,31 @@
         );
       }
     }
+  }
+
+  async function applySavedJobInput(uuid) {
+    const payload = await fetchJobInputPayload(uuid);
+    if (!payload?._getinput) {
+      return false;
+    }
+    applyInputPayload(payload._getinput);
+    return true;
+  }
+
+  async function fetchJobInputPayload(uuid) {
+    const url = new URL(legacyEndpoint("resultsBase", "ajax/get_results.php"), window.location.href);
+    url.searchParams.set("tagmode", "any");
+    url.searchParams.set("format", "json");
+    url.searchParams.set("_window", window.name);
+    url.searchParams.set("_logon", state.session.logon || "");
+    url.searchParams.set("_uuid", uuid);
+    url.searchParams.set("_getlastmsg", "0");
+    url.searchParams.set("_getinput", "true");
+    const response = await fetch(url.toString(), {
+      cache: "no-cache",
+      credentials: "same-origin"
+    });
+    return parseJsonResponse(response, "Job input");
   }
 
   function applyInputPayload(inputs) {
@@ -3524,6 +3550,7 @@
       serverSelectionDisplayPath,
       moduleIdFromSwitchParts,
       applyInputPayload,
+      applySavedJobInput,
       state
     };
   }
