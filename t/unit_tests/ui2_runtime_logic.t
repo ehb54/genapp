@@ -270,6 +270,19 @@ assert.strictEqual(
   "Li9zYW5zX2RhdGEuc3Vi",
   "attach replay restores the server selection payload for later submit"
 );
+
+replayControl.value = "";
+hooks.state.serverSelections = {};
+hooks.applyInputPayload({
+  data_file_name_altval: ["Li9zYW5zX2RhdGEuc3Vi"],
+  _html_data_file_name_altval: "<i>Server</i>: sans_data.sub"
+});
+assert.strictEqual(replayControl.value, "sans_data.sub", "attach replay restores server file labels without the selected-alt marker");
+assert.strictEqual(
+  hooks.state.serverSelections["data_file_name:"].encodedPath,
+  "Li9zYW5zX2RhdGEuc3Vi",
+  "attach replay restores server selection payloads without the selected-alt marker"
+);
 JS
 close $fh;
 

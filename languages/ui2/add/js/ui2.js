@@ -2544,6 +2544,7 @@
   }
 
   function restoreServerSelections(inputs) {
+    const restored = new Set();
     Object.entries(inputs || {}).forEach(([key, altField]) => {
       const match = /^_selaltval_(.+)$/.exec(key);
       if (!match) {
@@ -2555,16 +2556,37 @@
       if (!encodedPath) {
         return;
       }
-      const field = moduleFieldById(id) || { id, type: "file" };
       const displayHtml = stringValue(inputs[`_html_${altId}`] ?? inputs[`_html_${id}_altval`]);
-      const path = serverSelectionDisplayPath(encodedPath, displayHtml);
-      setServerSelection(field, null, { id: encodedPath });
-      const keyName = serverSelectionKey(field, null);
-      if (state.serverSelections[keyName]) {
-        state.serverSelections[keyName].path = path;
-      }
-      setInputControlValue(id, path);
+      restoreServerSelection(id, encodedPath, displayHtml);
+      restored.add(id);
     });
+
+    Object.entries(inputs || {}).forEach(([key, value]) => {
+      const match = /^(.+)_altval$/.exec(key);
+      if (!match || key.startsWith("_html_")) {
+        return;
+      }
+      const id = match[1];
+      if (restored.has(id)) {
+        return;
+      }
+      const encodedPath = stringValue(firstValue(value));
+      if (!encodedPath || !moduleFieldById(id)) {
+        return;
+      }
+      restoreServerSelection(id, encodedPath, stringValue(inputs[`_html_${key}`]));
+    });
+  }
+
+  function restoreServerSelection(id, encodedPath, displayHtml) {
+    const field = moduleFieldById(id) || { id, type: "file" };
+    const path = serverSelectionDisplayPath(encodedPath, displayHtml);
+    setServerSelection(field, null, { id: encodedPath });
+    const keyName = serverSelectionKey(field, null);
+    if (state.serverSelections[keyName]) {
+      state.serverSelections[keyName].path = path;
+    }
+    setInputControlValue(id, path);
   }
 
   function moduleFieldById(id) {
