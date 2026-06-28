@@ -1806,13 +1806,41 @@
       return;
     }
     const text = stringValue(value);
-    if (output.dataset.outputType === "html") {
-      output.insertAdjacentHTML("beforeend", text);
+    if (!text) {
       return;
     }
-    output.textContent = output.textContent && !output.textContent.includes("output will appear here")
-      ? `${output.textContent}${text}`
-      : text;
+    const merged = mergeRuntimeText(output.dataset.runtimeText || visibleOutputText(output), text);
+    output.dataset.runtimeText = merged;
+    output.classList.add("ui2-output-rendered", "ui2-output-text");
+    if (output.dataset.outputType === "html") {
+      output.textContent = merged;
+      return;
+    }
+    output.textContent = merged;
+  }
+
+  function visibleOutputText(output) {
+    const text = output.textContent || "";
+    return text.includes("output will appear here") ? "" : text;
+  }
+
+  function mergeRuntimeText(existing, incoming) {
+    const prior = String(existing || "");
+    const next = String(incoming || "");
+    if (!prior) {
+      return next;
+    }
+    if (!next) {
+      return prior;
+    }
+    if (prior.includes(next)) {
+      return prior;
+    }
+    if (next.includes(prior)) {
+      return next;
+    }
+    const separator = prior.endsWith("\n") || next.startsWith("\n") ? "" : "\n";
+    return `${prior}${separator}${next}`;
   }
 
   function updateOutputField(id, value) {
@@ -1896,12 +1924,21 @@
           config: JSON.parse(originalConfig)
         }));
         window.open(
-          `${editor.url}?id=${encodeURIComponent(id)}`,
+          chartEditorUrl(editor.url, id),
           editor.target || "_blank",
           "noopener"
         );
       }
     }]);
+  }
+
+  function chartEditorUrl(editorUrl, id) {
+    const raw = String(editorUrl || "");
+    const url = /^[a-z][a-z0-9+.-]*:/i.test(raw) || raw.startsWith("//")
+      ? new URL(raw, window.location.href)
+      : new URL(legacyEndpoint("", raw), window.location.href);
+    url.searchParams.set("id", id);
+    return url.toString();
   }
 
   function defaultPlotlyLayout() {
