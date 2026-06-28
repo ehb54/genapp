@@ -62,9 +62,11 @@ like( $ui2_js, qr/formData\.set\("_project", state\.session\.project/, 'ui2 subm
 like( $ui2_js, qr/function startJobPolling\(uuid, form, statusNode\)/, 'ui2 runtime bridge starts polling submitted jobs' );
 like( $ui2_js, qr/function pollJobResults\(uuid, form, statusNode, lastDelay, getLastMsg\)/, 'ui2 runtime bridge polls legacy job results' );
 like( $ui2_js, qr/ajax\/get_results\.php/, 'ui2 runtime bridge uses the legacy job results endpoint' );
-like( $ui2_js, qr/url\.searchParams\.set\("_getlastmsg"/, 'ui2 runtime bridge requests legacy last-message updates' );
+like( $ui2_js, qr/url\.searchParams\.set\("_getlastmsg", getLastMsg \? "1" : "0"\)/, 'ui2 runtime bridge requests legacy last-message updates with the PHP-native flag' );
 like( $ui2_js, qr/function applyRuntimePayload\(payload\)/, 'ui2 runtime bridge maps runtime payloads into rendered outputs' );
 like( $ui2_js, qr/function renderPlotlyOutput\(output, value\)/, 'ui2 runtime bridge has a dedicated Plotly output renderer' );
+like( $ui2_js, qr/function applyPlotlyModebarHooks\(figure, config\)/, 'ui2 runtime bridge honors legacy Plotly Chart Editor config' );
+like( $ui2_js, qr/Edit in Chart Editor/, 'ui2 Plotly modebar exposes the Chart Editor action when configured' );
 like( $ui2_js, qr/function parsePlotlyFigure\(value\)/, 'ui2 runtime bridge parses Plotly JSON string payloads' );
 like( $ui2_js, qr/function defaultPlotlyLayout\(\)/, 'ui2 runtime bridge supplies default Plotly layout polish' );
 like( $ui2_js, qr/function ensurePlotlyLoaded\(\)/, 'ui2 runtime bridge can load the existing generated Plotly asset' );

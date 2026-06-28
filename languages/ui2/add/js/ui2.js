@@ -1681,7 +1681,7 @@
     url.searchParams.set("_window", window.name);
     url.searchParams.set("_logon", state.session.logon || "");
     url.searchParams.set("_uuid", uuid);
-    url.searchParams.set("_getlastmsg", getLastMsg ? "true" : "false");
+    url.searchParams.set("_getlastmsg", getLastMsg ? "1" : "0");
     url.searchParams.set("_getinput", "false");
 
     try {
@@ -1864,6 +1864,7 @@
         const layout = Object.assign(defaultPlotlyLayout(), figure.layout || {});
         layout.font = Object.assign(defaultPlotlyLayout().font, figure.layout?.font || {});
         const config = Object.assign({ responsive: true }, figure.config || {});
+        applyPlotlyModebarHooks(figure, config);
         return window.Plotly.newPlot(output, figure.data, layout, config);
       })
       .then(() => {
@@ -1875,6 +1876,32 @@
         output.classList.remove("ui2-output-plotly-ready");
         output.textContent = `Could not render Plotly output: ${error.message}`;
       });
+  }
+
+  function applyPlotlyModebarHooks(figure, config) {
+    const editor = config?.genapp_chart_editor;
+    if (!editor?.enabled || !editor.url || !window.Plotly?.Icons?.pencil) {
+      return;
+    }
+    const originalConfig = JSON.stringify(figure.config || {});
+    config.modeBarButtonsToAdd = (config.modeBarButtonsToAdd || []).concat([{
+      name: "editInChartEditor",
+      title: "Edit in Chart Editor",
+      icon: window.Plotly.Icons.pencil,
+      click: (graphDiv) => {
+        const id = `gace_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
+        window.localStorage.setItem(id, JSON.stringify({
+          data: graphDiv.data,
+          layout: graphDiv.layout,
+          config: JSON.parse(originalConfig)
+        }));
+        window.open(
+          `${editor.url}?id=${encodeURIComponent(id)}`,
+          editor.target || "_blank",
+          "noopener"
+        );
+      }
+    }]);
   }
 
   function defaultPlotlyLayout() {
