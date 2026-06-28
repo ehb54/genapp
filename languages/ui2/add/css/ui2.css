@@ -434,6 +434,14 @@ code {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.ui2-output-field {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.ui2-output-field .ui2-field-label {
+  font-size: 0.95rem;
+}
+
 .ui2-field-heading h3 {
   margin: 0;
   color: var(--ui2-text);
@@ -910,7 +918,7 @@ code {
 
 .ui2-output-html,
 .ui2-output-text {
-  max-height: 30rem;
+  max-height: 24rem;
   line-height: 1.45;
 }
 
@@ -919,13 +927,14 @@ code {
 }
 
 .ui2-output-plotly {
-  min-height: 24rem;
+  min-height: 28rem;
   white-space: normal;
 }
 
 .ui2-output-plotly-ready {
   padding: 0.25rem;
   background: var(--ui2-panel);
+  min-height: 30rem;
 }
 
 .ui2-progress {

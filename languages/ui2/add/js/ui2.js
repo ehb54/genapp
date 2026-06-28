@@ -633,7 +633,7 @@
       return renderLayoutLabel(field);
     }
 
-    const row = el("div", "ui2-field");
+    const row = el("div", role === "output" ? "ui2-field ui2-output-field" : "ui2-field");
     row.dataset.fieldId = field.id || "";
     if (field.repeat) {
       row.dataset.repeat = field.repeat;
@@ -1861,14 +1861,34 @@
     output.textContent = "";
     ensurePlotlyLoaded()
       .then(() => {
-        const layout = Object.assign({ autosize: true }, figure.layout || {});
+        const layout = Object.assign(defaultPlotlyLayout(), figure.layout || {});
+        layout.font = Object.assign(defaultPlotlyLayout().font, figure.layout?.font || {});
         const config = Object.assign({ responsive: true }, figure.config || {});
-        window.Plotly.newPlot(output, figure.data, layout, config);
+        return window.Plotly.newPlot(output, figure.data, layout, config);
+      })
+      .then(() => {
+        if (window.Plotly?.Plots?.resize) {
+          window.Plotly.Plots.resize(output);
+        }
       })
       .catch((error) => {
         output.classList.remove("ui2-output-plotly-ready");
         output.textContent = `Could not render Plotly output: ${error.message}`;
       });
+  }
+
+  function defaultPlotlyLayout() {
+    const styles = window.getComputedStyle(document.documentElement);
+    const panel = styles.getPropertyValue("--ui2-panel").trim() || "transparent";
+    const text = styles.getPropertyValue("--ui2-text").trim() || "#17201d";
+    return {
+      autosize: true,
+      height: 460,
+      margin: { l: 72, r: 32, t: 72, b: 72 },
+      paper_bgcolor: panel,
+      plot_bgcolor: panel,
+      font: { color: text }
+    };
   }
 
   function parsePlotlyFigure(value) {
@@ -1926,6 +1946,9 @@
   }
 
   function renderSubmitResponse(payload) {
+    if (!devMode) {
+      return;
+    }
     const existing = document.getElementById("ui2-submit-response");
     const target = existing || el("pre", "ui2-output ui2-submit-response");
     target.id = "ui2-submit-response";
