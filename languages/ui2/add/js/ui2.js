@@ -459,7 +459,18 @@
     try {
       const response = await fetch(`modules/${encodeURIComponent(moduleId)}.json`, { cache: "no-cache" });
       if (!response.ok) {
-        throw new Error(`modules/${moduleId}.json returned ${response.status}`);
+        const utilityModule = fallbackUtilityModule(moduleId);
+        if (!utilityModule) {
+          throw new Error(`modules/${moduleId}.json returned ${response.status}`);
+        }
+        state.moduleId = moduleId;
+        state.menuId = menuIdForModule(moduleId);
+        state.module = utilityModule;
+        state.view = {};
+        state.values = {};
+        renderModule();
+        updateSelectedNavigation();
+        return;
       }
       const payload = await response.json();
       state.moduleId = moduleId;
@@ -1446,6 +1457,30 @@
     return module.label || id || "Utility";
   }
 
+  function fallbackUtilityModule(moduleId) {
+    if (moduleId === "sys_job_manager" || moduleId === "sys_job2_manager") {
+      return {
+        moduleid: moduleId,
+        label: "Submitted Jobs",
+        executable: moduleId,
+        nojobcontrol: "true",
+        fields: [
+          { role: "output", id: "messages", label: "Messages", type: "textarea" }
+        ]
+      };
+    }
+    if (moduleId === "sys_user_config") {
+      return {
+        moduleid: moduleId,
+        label: "Settings",
+        executable: moduleId,
+        nojobcontrol: "true",
+        fields: []
+      };
+    }
+    return null;
+  }
+
   function renderJobManagerTool(fields) {
     const section = el("section", "ui2-section ui2-system-tool ui2-job-manager");
     const body = el("div", "ui2-section-body ui2-tool-body");
@@ -1886,6 +1921,9 @@
       formData.set("_window", window.name);
       formData.set("_logon", state.session.logon || "");
       formData.set("_project", state.session.project || "");
+      formData.set("_uuid", createUuid());
+      formData.set("_height", String(Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)));
+      formData.set("_width", String(Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)));
       formData.set("compression", document.querySelector('select[data-field-id="compression"], input[data-field-id="compression"]')?.value || "tar");
       selected.forEach((id) => formData.append("selectedfiles[]", id));
       const response = await fetch(endpoint, { method: "POST", body: formData, credentials: "same-origin" });
