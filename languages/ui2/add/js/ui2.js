@@ -1976,7 +1976,7 @@
       const prefix = prior.startsWith("starting job") ? "starting job\n" : "";
       return `${prefix}${next}`;
     }
-    if (prior.includes(next)) {
+    if (prior.includes(next) && !isRuntimeDividerText(next)) {
       return prior;
     }
     if (next.includes(prior)) {
@@ -1988,6 +1988,10 @@
 
   function isCompleteRuntimeText(text) {
     return text.includes("DATA FROM RUN:") && / IS DONE\b/.test(text);
+  }
+
+  function isRuntimeDividerText(text) {
+    return /^\s*=+\s*$/.test(String(text || ""));
   }
 
   function updateOutputField(id, value) {
