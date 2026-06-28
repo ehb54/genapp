@@ -1833,6 +1833,10 @@
     if (!next) {
       return prior;
     }
+    if (isCompleteRuntimeText(next)) {
+      const prefix = prior.startsWith("starting job") ? "starting job\n" : "";
+      return `${prefix}${next}`;
+    }
     if (prior.includes(next)) {
       return prior;
     }
@@ -1841,6 +1845,10 @@
     }
     const separator = prior.endsWith("\n") || next.startsWith("\n") ? "" : "\n";
     return `${prior}${separator}${next}`;
+  }
+
+  function isCompleteRuntimeText(text) {
+    return text.includes("DATA FROM RUN:") && / IS DONE\b/.test(text);
   }
 
   function updateOutputField(id, value) {
@@ -1920,7 +1928,7 @@
         const id = `gace_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
         window.localStorage.setItem(id, JSON.stringify({
           data: graphDiv.data,
-          layout: graphDiv.layout,
+          layout: chartEditorLayout(graphDiv.layout),
           config: JSON.parse(originalConfig)
         }));
         window.open(
@@ -1930,6 +1938,14 @@
         );
       }
     }]);
+  }
+
+  function chartEditorLayout(layout) {
+    const copy = JSON.parse(JSON.stringify(layout || {}));
+    copy.autosize = true;
+    delete copy.width;
+    delete copy.height;
+    return copy;
   }
 
   function chartEditorUrl(editorUrl, id) {

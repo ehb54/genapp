@@ -65,10 +65,12 @@ like( $ui2_js, qr/ajax\/get_results\.php/, 'ui2 runtime bridge uses the legacy j
 like( $ui2_js, qr/url\.searchParams\.set\("_getlastmsg", getLastMsg \? "1" : "0"\)/, 'ui2 runtime bridge requests legacy last-message updates with the PHP-native flag' );
 like( $ui2_js, qr/function applyRuntimePayload\(payload\)/, 'ui2 runtime bridge maps runtime payloads into rendered outputs' );
 like( $ui2_js, qr/function mergeRuntimeText\(existing, incoming\)/, 'ui2 runtime bridge preserves accumulated runtime text output' );
+like( $ui2_js, qr/function isCompleteRuntimeText\(text\)/, 'ui2 runtime bridge recognizes complete final textarea streams' );
 like( $ui2_js, qr/output\.dataset\.runtimeText = merged/, 'ui2 runtime bridge keeps runtime text across later output redraws' );
 like( $ui2_js, qr/function renderPlotlyOutput\(output, value\)/, 'ui2 runtime bridge has a dedicated Plotly output renderer' );
 like( $ui2_js, qr/function applyPlotlyModebarHooks\(figure, config\)/, 'ui2 runtime bridge honors legacy Plotly Chart Editor config' );
 like( $ui2_js, qr/Edit in Chart Editor/, 'ui2 Plotly modebar exposes the Chart Editor action when configured' );
+like( $ui2_js, qr/function chartEditorLayout\(layout\)/, 'ui2 Plotly Chart Editor receives an editor-friendly layout copy' );
 like( $ui2_js, qr/function chartEditorUrl\(editorUrl, id\)/, 'ui2 Plotly Chart Editor URLs resolve through the legacy app root' );
 like( $ui2_js, qr/new URL\(legacyEndpoint\("", raw\), window\.location\.href\)/, 'ui2 relative Chart Editor URLs do not resolve under the ui2 subdirectory' );
 like( $ui2_js, qr/function parsePlotlyFigure\(value\)/, 'ui2 runtime bridge parses Plotly JSON string payloads' );
