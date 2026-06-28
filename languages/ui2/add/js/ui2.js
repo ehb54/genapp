@@ -1366,7 +1366,7 @@
     const classes = ["ui2-output"];
     if (type === "plotly") {
       classes.push("ui2-output-plotly");
-    } else if (type === "html") {
+    } else if (type === "html" || type === "file") {
       classes.push("ui2-output-html");
     } else if (type === "textarea" || type === "text") {
       classes.push("ui2-output-text");
@@ -1461,23 +1461,19 @@
     });
     body.appendChild(filters);
 
-    const legend = el("div", "ui2-tool-legend");
-    legend.appendChild(el("h3", null, "Actions Legend"));
-    legend.appendChild(el("p", null, "Attach, attach in a new window, delete, cancel, and clear lock actions appear beside jobs."));
-    body.appendChild(legend);
+    const actions = el("div", "ui2-tool-actions");
+    const refresh = el("button", "ui2-button", "Refresh");
+    refresh.type = "button";
+    const deleteMany = el("button", "ui2-button ui2-button-quiet", "Delete selected");
+    deleteMany.type = "button";
+    actions.append(refresh, deleteMany);
+    body.appendChild(actions);
 
     const tableWrap = el("div", "ui2-data-table-wrap");
     const table = el("table", "ui2-data-table");
+    table.id = "ui2-job-table";
     const thead = document.createElement("thead");
-    const head = document.createElement("tr");
-    ["Actions", "Module", "Project", "Details", "Start", "End", "Duration"].forEach((label) => head.appendChild(el("th", null, label)));
-    thead.appendChild(head);
     const tbody = document.createElement("tbody");
-    const placeholder = document.createElement("tr");
-    const cell = el("td", "ui2-table-empty", "Job rows will load from the Job Manager runtime service.");
-    cell.colSpan = 7;
-    placeholder.appendChild(cell);
-    tbody.appendChild(placeholder);
     table.append(thead, tbody);
     tableWrap.appendChild(table);
     body.appendChild(tableWrap);
@@ -1488,6 +1484,9 @@
     }
 
     section.appendChild(body);
+    refresh.addEventListener("click", () => loadJobManagerRows(table));
+    deleteMany.addEventListener("click", () => deleteSelectedJobs(table));
+    window.setTimeout(() => loadJobManagerRows(table), 0);
     return section;
   }
 
@@ -1500,29 +1499,12 @@
     tree.appendChild(el("h3", null, "User file tree"));
     const tableWrap = el("div", "ui2-data-table-wrap");
     const table = el("table", "ui2-data-table ui2-file-table");
+    table.id = "ui2-file-manager-table";
     const thead = document.createElement("thead");
     const head = document.createElement("tr");
-    ["", "Name", "Type", "Size", "Modified"].forEach((label) => head.appendChild(el("th", null, label)));
+    ["", "Name", "Details"].forEach((label) => head.appendChild(el("th", null, label)));
     thead.appendChild(head);
     const tbody = document.createElement("tbody");
-    [
-      ["folder", "Project folders", "", "loads from server"],
-      ["file", "Input files", "size", "modified time"],
-      ["folder", "Result archives", "", "loads from server"]
-    ].forEach(([type, name, size, modified]) => {
-      const row = document.createElement("tr");
-      const selected = document.createElement("td");
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.disabled = true;
-      selected.appendChild(checkbox);
-      row.appendChild(selected);
-      row.appendChild(el("td", null, name));
-      row.appendChild(el("td", null, type));
-      row.appendChild(el("td", null, size));
-      row.appendChild(el("td", null, modified));
-      tbody.appendChild(row);
-    });
     table.append(thead, tbody);
     tableWrap.appendChild(table);
     tree.appendChild(tableWrap);
@@ -1534,8 +1516,13 @@
     }
 
     const actions = el("div", "ui2-tool-actions");
-    actions.appendChild(el("button", "ui2-button", "Download"));
-    actions.querySelector("button").type = "button";
+    const refresh = el("button", "ui2-button ui2-button-quiet", "Refresh files");
+    refresh.type = "button";
+    const download = el("button", "ui2-button", "Download");
+    download.type = "button";
+    const status = el("div", "ui2-submit-status", "");
+    status.id = "ui2-file-manager-status";
+    actions.append(refresh, download, status);
     body.appendChild(actions);
 
     ["status", "outfiles"].forEach((id) => {
@@ -1546,7 +1533,412 @@
     });
 
     section.appendChild(body);
+    refresh.addEventListener("click", () => loadFileManagerRows(table));
+    download.addEventListener("click", () => downloadFileManagerSelection(table, status));
+    window.setTimeout(() => loadFileManagerRows(table), 0);
     return section;
+  }
+
+  async function loadJobManagerRows(table) {
+    const thead = table?.querySelector("thead");
+    const tbody = table?.querySelector("tbody");
+    if (!thead || !tbody) {
+      return;
+    }
+    renderTableMessage(tbody, 1, "Loading jobs...");
+    try {
+      await refreshSessionState();
+      const url = new URL(legacyEndpoint("jobsBase", "ajax/sys_config/sys_jobs.php"), window.location.href);
+      url.searchParams.set("_window", window.name);
+      const response = await fetch(url.toString(), { cache: "no-cache", credentials: "same-origin" });
+      const payload = await parseJsonResponse(response, "Job Manager");
+      const rows = payload?.jobgrid?.outerwrapper?.innerwrapper?.rows || [];
+      const columns = visibleJobColumns(payload?.colNames || [], payload?.colModel || []);
+      renderJobManagerTable(thead, tbody, columns, rows);
+    } catch (error) {
+      renderTableMessage(tbody, 1, error.message);
+    }
+  }
+
+  function visibleJobColumns(names, models) {
+    const columns = [];
+    models.forEach((model, index) => {
+      if (model?.hidden) {
+        return;
+      }
+      columns.push({
+        index,
+        name: model.name || `col${index}`,
+        label: names[index] || model.name || `Column ${index + 1}`
+      });
+    });
+    return columns.length ? columns : [
+      { index: 0, name: "module", label: "Module" },
+      { index: 1, name: "project", label: "Project" },
+      { index: 2, name: "start", label: "Start" },
+      { index: 4, name: "end", label: "End" },
+      { index: 6, name: "duration", label: "Duration" }
+    ];
+  }
+
+  function renderJobManagerTable(thead, tbody, columns, rows) {
+    thead.innerHTML = "";
+    tbody.innerHTML = "";
+    const header = document.createElement("tr");
+    header.appendChild(el("th", null, ""));
+    header.appendChild(el("th", null, "Actions"));
+    columns.forEach((column) => header.appendChild(el("th", null, column.label)));
+    thead.appendChild(header);
+
+    if (!rows.length) {
+      renderTableMessage(tbody, columns.length + 2, state.session.logon ? "No jobs found." : "Log in to view jobs.");
+      return;
+    }
+
+    rows.forEach((job) => {
+      const row = document.createElement("tr");
+      row.dataset.jobId = job.id || "";
+      const selectCell = document.createElement("td");
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.dataset.jobSelect = "1";
+      selectCell.appendChild(checkbox);
+      row.appendChild(selectCell);
+
+      const actionCell = el("td", "ui2-job-actions");
+      [
+        ["Attach", () => reattachJob(job.id, false)],
+        ["New", () => reattachJob(job.id, true)],
+        ["Cancel", () => manageJob(job.id, "jobcancel", "Cancel this job?")],
+        ["Delete", () => manageJob(job.id, "jobdelete", "Delete this job record?")],
+        ["Unlock", () => manageJob(projectCellValue(job, columns), "clearlock", "Clear the lock for this job project?")]
+      ].forEach(([label, handler]) => {
+        const button = el("button", "ui2-mini-button", label);
+        button.type = "button";
+        button.addEventListener("click", handler);
+        actionCell.appendChild(button);
+      });
+      row.appendChild(actionCell);
+
+      columns.forEach((column) => {
+        const value = stripHtml(job?.cells?.[column.index]?.value || "");
+        const cell = el("td", null, value);
+        cell.title = value;
+        row.appendChild(cell);
+      });
+      tbody.appendChild(row);
+    });
+  }
+
+  function projectCellValue(job, columns) {
+    const projectColumn = columns.find((column) => column.name === "project");
+    return stripHtml(job?.cells?.[projectColumn?.index ?? 1]?.value || "");
+  }
+
+  async function reattachJob(jobId, newWindow) {
+    if (!jobId) {
+      setSystemMessage("messages", "No job id selected.", true);
+      return;
+    }
+    try {
+      const payload = await submitSystemModuleAction("reattach", [jobId]);
+      if (payload.error) {
+        throw new Error(payload.error);
+      }
+      const switchValue = stringValue(payload._switch);
+      if (!switchValue) {
+        throw new Error("Reattach returned no switch target.");
+      }
+      if (newWindow) {
+        const url = new URL("../index.html", window.location.href);
+        url.searchParams.set("_reqlogin", "1");
+        url.searchParams.set("_switch", switchValue);
+        window.open(url.toString(), "_blank", "noopener");
+        return;
+      }
+      const parts = switchValue.split("/");
+      const moduleId = parts.length >= 2 ? parts[1] : parts[0];
+      await refreshSessionState();
+      await loadModule(moduleId);
+      setSystemMessage("messages", `Reattached target: ${switchValue}`, false);
+    } catch (error) {
+      setSystemMessage("messages", error.message, true);
+    }
+  }
+
+  async function manageJob(jobId, command, prompt) {
+    if (!jobId) {
+      setSystemMessage("messages", "No job selected.", true);
+      return;
+    }
+    if (!window.confirm(prompt)) {
+      return;
+    }
+    try {
+      await refreshSessionState();
+      const url = new URL(legacyEndpoint("manageJobBase", "ajax/sys_config/sys_managejob.php"), window.location.href);
+      url.searchParams.set("tagmode", "any");
+      url.searchParams.set("format", "json");
+      url.searchParams.set("_window", window.name);
+      url.searchParams.set("_logon", state.session.logon || "");
+      url.searchParams.set("_cmd", command);
+      url.searchParams.set("_jid", jobId);
+      url.searchParams.set("_isadmin", "false");
+      const response = await fetch(url.toString(), { cache: "no-cache", credentials: "same-origin" });
+      const payload = await parseJsonResponse(response, "Job Manager action");
+      if (payload.success !== "true") {
+        throw new Error(payload.error || "Job Manager action failed.");
+      }
+      setSystemMessage("messages", payload.successtext || "Job Manager action completed.", false);
+      const table = document.getElementById("ui2-job-table");
+      if (table) {
+        await loadJobManagerRows(table);
+      }
+    } catch (error) {
+      setSystemMessage("messages", error.message, true);
+    }
+  }
+
+  async function deleteSelectedJobs(table) {
+    const ids = Array.from(table?.querySelectorAll("input[data-job-select]:checked") || [])
+      .map((input) => input.closest("tr")?.dataset.jobId)
+      .filter(Boolean);
+    if (!ids.length) {
+      setSystemMessage("messages", "No jobs selected.", true);
+      return;
+    }
+    if (!window.confirm(`Delete ${ids.length} selected job record(s)?`)) {
+      return;
+    }
+    try {
+      await refreshSessionState();
+      const url = new URL(legacyEndpoint("manageJobBase", "ajax/sys_config/sys_managejob.php"), window.location.href);
+      url.searchParams.set("tagmode", "any");
+      url.searchParams.set("format", "json");
+      url.searchParams.set("_window", window.name);
+      url.searchParams.set("_logon", state.session.logon || "");
+      url.searchParams.set("_cmd", "jobdeletemany");
+      url.searchParams.set("_isadmin", "false");
+      ids.forEach((id) => url.searchParams.append("_jid[]", id));
+      const response = await fetch(url.toString(), { cache: "no-cache", credentials: "same-origin" });
+      const payload = await parseJsonResponse(response, "Job Manager delete selected");
+      if (payload.success !== "true") {
+        throw new Error(payload.error || "Delete selected jobs failed.");
+      }
+      setSystemMessage("messages", payload.successtext || "Selected jobs deleted.", false);
+      await loadJobManagerRows(table);
+    } catch (error) {
+      setSystemMessage("messages", error.message, true);
+    }
+  }
+
+  async function submitSystemModuleAction(action, jobIds) {
+    const endpoint = legacyEndpoint("", `ajax/sys_config/${state.moduleId || "sys_job_manager"}.php`);
+    await refreshSessionState();
+    const formData = new FormData();
+    formData.set("_window", window.name);
+    formData.set("_logon", state.session.logon || "");
+    formData.set("_project", state.session.project || "");
+    formData.set("action", action);
+    (jobIds || []).forEach((id) => formData.set(`jqg_jobgrid_${id}`, "on"));
+    const response = await fetch(endpoint, { method: "POST", body: formData, credentials: "same-origin" });
+    return parseJsonResponse(response, "System module action");
+  }
+
+  async function loadFileManagerRows(table) {
+    const tbody = table?.querySelector("tbody");
+    if (!tbody) {
+      return;
+    }
+    renderTableMessage(tbody, 3, "Loading files...");
+    try {
+      await refreshSessionState();
+      const entries = await fetchServerFileEntries("#");
+      renderFileManagerRows(tbody, entries, 0);
+    } catch (error) {
+      renderTableMessage(tbody, 3, error.message);
+    }
+  }
+
+  function renderFileManagerRows(tbody, entries, depth) {
+    if (!depth) {
+      tbody.innerHTML = "";
+    }
+    if (!entries.length && !depth) {
+      renderTableMessage(tbody, 3, state.session.logon ? "No files found." : "Log in to view files.");
+      return;
+    }
+    entries.forEach((entry) => appendFileManagerRow(tbody, entry, depth || 0));
+  }
+
+  function appendFileManagerRow(tbody, entry, depth) {
+    const isFolder = entry.children === true;
+    const row = document.createElement("tr");
+    row.dataset.fileId = entry.id || "";
+    row.dataset.depth = String(depth);
+    const selectCell = document.createElement("td");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.dataset.fileSelect = "1";
+    selectCell.appendChild(checkbox);
+    row.appendChild(selectCell);
+
+    const nameCell = el("td", null, "");
+    nameCell.style.paddingLeft = `${0.65 + depth * 1.25}rem`;
+    if (isFolder) {
+      const expand = el("button", "ui2-mini-button", "Open");
+      expand.type = "button";
+      expand.addEventListener("click", () => toggleFileManagerFolder(row, entry, depth));
+      nameCell.append(expand, document.createTextNode(` ${fileEntryName(entry)}`));
+    } else {
+      nameCell.textContent = fileEntryName(entry);
+    }
+    row.appendChild(nameCell);
+    row.appendChild(el("td", null, fileEntryDetails(entry)));
+    tbody.appendChild(row);
+  }
+
+  async function toggleFileManagerFolder(row, entry, depth) {
+    const tbody = row.parentElement;
+    if (!tbody) {
+      return;
+    }
+    const expanded = row.dataset.expanded === "true";
+    removeFileManagerChildren(row);
+    if (expanded) {
+      row.dataset.expanded = "false";
+      row.querySelector("button")?.replaceChildren("Open");
+      return;
+    }
+    row.dataset.expanded = "true";
+    row.querySelector("button")?.replaceChildren("Close");
+    try {
+      const children = await fetchServerFileEntries(entry.id);
+      let anchor = row;
+      children.forEach((child) => {
+        const childRow = document.createElement("tr");
+        appendFileManagerRowAfter(tbody, childRow, child, depth + 1, anchor);
+        anchor = childRow;
+      });
+    } catch (error) {
+      const errorRow = document.createElement("tr");
+      const cell = el("td", "ui2-table-empty", error.message);
+      cell.colSpan = 3;
+      errorRow.dataset.parentId = entry.id || "";
+      errorRow.appendChild(cell);
+      row.after(errorRow);
+    }
+  }
+
+  function appendFileManagerRowAfter(tbody, row, entry, depth, anchor) {
+    row.dataset.fileId = entry.id || "";
+    row.dataset.parentId = anchor.closest("tr")?.dataset.fileId || "";
+    row.dataset.depth = String(depth);
+    const isFolder = entry.children === true;
+    const selectCell = document.createElement("td");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.dataset.fileSelect = "1";
+    selectCell.appendChild(checkbox);
+    row.appendChild(selectCell);
+    const nameCell = el("td", null, "");
+    nameCell.style.paddingLeft = `${0.65 + depth * 1.25}rem`;
+    if (isFolder) {
+      const expand = el("button", "ui2-mini-button", "Open");
+      expand.type = "button";
+      expand.addEventListener("click", () => toggleFileManagerFolder(row, entry, depth));
+      nameCell.append(expand, document.createTextNode(` ${fileEntryName(entry)}`));
+    } else {
+      nameCell.textContent = fileEntryName(entry);
+    }
+    row.appendChild(nameCell);
+    row.appendChild(el("td", null, fileEntryDetails(entry)));
+    anchor.after(row);
+  }
+
+  function removeFileManagerChildren(row) {
+    const depth = Number(row.dataset.depth || 0);
+    let current = row.nextElementSibling;
+    while (current && Number(current.dataset.depth || 0) > depth) {
+      const next = current.nextElementSibling;
+      current.remove();
+      current = next;
+    }
+  }
+
+  async function downloadFileManagerSelection(table, status) {
+    const selected = Array.from(table?.querySelectorAll("input[data-file-select]:checked") || [])
+      .map((input) => input.closest("tr")?.dataset.fileId)
+      .filter(Boolean);
+    if (!selected.length) {
+      setSubmitStatus(status, "No files selected.", "error");
+      return;
+    }
+    const endpoint = moduleSubmitEndpoint();
+    if (!endpoint) {
+      setSubmitStatus(status, "No generated File Manager endpoint.", "error");
+      return;
+    }
+    setSubmitStatus(status, "Preparing download...", "pending");
+    try {
+      await refreshSessionState();
+      const formData = new FormData();
+      formData.set("_window", window.name);
+      formData.set("_logon", state.session.logon || "");
+      formData.set("_project", state.session.project || "");
+      formData.set("compression", document.querySelector('select[data-field-id="compression"], input[data-field-id="compression"]')?.value || "tar");
+      selected.forEach((id) => formData.append("selectedfiles[]", id));
+      const response = await fetch(endpoint, { method: "POST", body: formData, credentials: "same-origin" });
+      const payload = await parseJsonResponse(response, "File Manager download");
+      if (payload.error) {
+        throw new Error(payload.error);
+      }
+      setSubmitStatus(status, payload.status ? stripHtml(payload.status) : "Download ready.", "ok");
+      updateOutputField("status", payload.status || "");
+      updateOutputField("outfiles", fileDownloadLinks(payload.outfiles || []));
+    } catch (error) {
+      setSubmitStatus(status, error.message, "error");
+      updateOutputField("status", error.message);
+    }
+  }
+
+  function fileDownloadLinks(files) {
+    if (!Array.isArray(files) || !files.length) {
+      return "";
+    }
+    return files.map((file) => {
+      const href = `../${String(file).replace(/^\/+/, "")}`;
+      const label = String(file).split("/").pop() || file;
+      return `<a href="${escapeHtml(href)}" download>${escapeHtml(label)}</a>`;
+    }).join("<br>");
+  }
+
+  function fileEntryName(entry) {
+    const text = stripHtml(entry?.text || "");
+    return text.split("|")[0].trim() || decodeServerFileId(entry?.id || "").replace(/^\.\//, "") || "file";
+  }
+
+  function fileEntryDetails(entry) {
+    const text = stripHtml(entry?.text || "");
+    return text.split("|").slice(1).map((part) => part.trim()).filter(Boolean).join(" | ");
+  }
+
+  function renderTableMessage(tbody, colSpan, message) {
+    tbody.innerHTML = "";
+    const row = document.createElement("tr");
+    const cell = el("td", "ui2-table-empty", message);
+    cell.colSpan = colSpan;
+    row.appendChild(cell);
+    tbody.appendChild(row);
+  }
+
+  function setSystemMessage(id, message, isError) {
+    const output = document.querySelector(`[data-output-field-id="${cssEscape(id)}"]`);
+    if (output) {
+      output.classList.add("ui2-output-rendered");
+      output.dataset.status = isError ? "error" : "ok";
+      output.textContent = message;
+    }
   }
 
   function renderSimpleSystemTool(title, fields) {
@@ -2015,7 +2407,7 @@
       renderPlotlyOutput(output, value);
       return;
     }
-    if (type === "html") {
+    if (type === "html" || type === "file") {
       renderHtmlOutput(output, value);
       return;
     }

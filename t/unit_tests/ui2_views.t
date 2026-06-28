@@ -64,6 +64,13 @@ like( $ui2_js, qr/function appendServerSelection\(formData, selection\)/, 'ui2 r
 like( $ui2_js, qr/sys_files\.php/, 'ui2 runtime bridge uses the legacy server file endpoint' );
 like( $ui2_js, qr/formData\.set\(`_selaltval_\$\{selection\.id\}`/, 'ui2 server file selections include the legacy selected-alt marker' );
 like( $ui2_js, qr/\$\{selection\.id\}_altval\[\]/, 'ui2 server file selections include legacy encoded alt values' );
+like( $ui2_js, qr/function renderJobManagerTool\(fields\)/, 'ui2 has a dedicated Job Manager shell' );
+like( $ui2_js, qr/ajax\/sys_config\/sys_jobs\.php/, 'ui2 Job Manager loads rows from the legacy jobs endpoint' );
+like( $ui2_js, qr/ajax\/sys_config\/sys_managejob\.php/, 'ui2 Job Manager uses the legacy manage-job endpoint for row actions' );
+like( $ui2_js, qr/function submitSystemModuleAction\(action, jobIds\)/, 'ui2 Job Manager can submit legacy system-module actions' );
+like( $ui2_js, qr/function renderFileManagerTool\(fields\)/, 'ui2 has a dedicated File Manager shell' );
+like( $ui2_js, qr/function downloadFileManagerSelection\(table, status\)/, 'ui2 File Manager submits selected files for download' );
+like( $ui2_js, qr/formData\.append\("selectedfiles\[\]", id\)/, 'ui2 File Manager sends legacy encoded selected file ids' );
 like( $ui2_js, qr/const uuid = createUuid\(\)/, 'ui2 runtime bridge keeps the submitted uuid for job polling' );
 like( $ui2_js, qr/formData\.set\("_uuid", uuid/, 'ui2 runtime bridge supplies uuid for generated backend submit path' );
 like( $ui2_js, qr/formData\.set\("_logon", state\.session\.logon/, 'ui2 submit uses the legacy session logon' );
@@ -97,6 +104,7 @@ like( $ui2_css, qr/\.ui2-dialog-overlay/, 'ui2 stylesheet includes login dialog 
 like( $ui2_css, qr/\.ui2-output-plotly/, 'ui2 stylesheet includes a stable Plotly output surface' );
 like( $ui2_css, qr/\.ui2-output-rendered/, 'ui2 stylesheet distinguishes rendered runtime output from placeholders' );
 like( $ui2_css, qr/\.ui2-output-field/, 'ui2 stylesheet lets output rows use the full default width' );
+like( $ui2_css, qr/\.ui2-mini-button/, 'ui2 stylesheet includes compact system action buttons' );
 
 my $app_map = read_file( File::Spec->catfile( $ui2, qw(js app-map.js) ) );
 like( $app_map, qr/addMenuFromParts\("demo", "Demo", ""\)/, 'ui2 app map records menu groups' );

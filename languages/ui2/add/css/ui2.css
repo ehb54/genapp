@@ -852,8 +852,36 @@ code {
   color: var(--ui2-muted);
 }
 
+.ui2-job-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-width: 13rem;
+}
+
+.ui2-mini-button {
+  appearance: none;
+  border: 1px solid var(--ui2-border);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--ui2-panel) 86%, var(--ui2-bg));
+  color: var(--ui2-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 0.28rem 0.45rem;
+}
+
+.ui2-mini-button:hover,
+.ui2-mini-button:focus-visible {
+  border-color: var(--ui2-accent);
+  color: var(--ui2-accent-strong);
+  outline: none;
+}
+
 .ui2-tool-actions {
   display: flex;
+  align-items: center;
+  gap: 0.75rem;
   justify-content: flex-start;
 }
 
