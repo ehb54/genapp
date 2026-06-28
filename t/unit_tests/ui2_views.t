@@ -32,6 +32,7 @@ ok( -f File::Spec->catfile( $ui2, qw(modules typed.json) ), 'ui2 typed module su
 
 my $index = read_file( File::Spec->catfile( $ui2, 'index.html' ) );
 like( $index, qr/js\/app-map\.js/, 'ui2 index loads the generated app map' );
+like( $index, qr/\.\.\/js\/autobahn\.min\.js/, 'ui2 index preloads the existing legacy Autobahn websocket client' );
 like( $index, qr/\.\.\/js\/plotly-2\.35\.2\.min\.js/, 'ui2 index preloads the existing generated Plotly bundle' );
 like( $index, qr/js\/ui2\.js/, 'ui2 index loads the plain JavaScript playground' );
 like( $index, qr/css\/ui2\.css/, 'ui2 index loads the ui2 stylesheet' );
@@ -49,6 +50,14 @@ like( $ui2_js, qr/function openLoginDialog\(\)/, 'ui2 runtime bridge keeps login
 like( $ui2_js, qr/sys_login\.php/, 'ui2 runtime bridge posts login to the legacy login endpoint' );
 like( $ui2_js, qr/function parseJsonResponse\(response, label\)/, 'ui2 runtime bridge reports non-JSON backend responses with endpoint context' );
 like( $ui2_js, qr/PHP source instead of executing it/, 'ui2 runtime bridge calls out PHP-disabled runtime hosts' );
+like( $ui2_js, qr/function initWebSocket\(\)/, 'ui2 runtime bridge initializes the legacy websocket channel' );
+like( $ui2_js, qr/ajax\/sys_uid\.php/, 'ui2 runtime bridge uses the legacy sys_uid endpoint for websocket discovery' );
+like( $ui2_js, qr/new window\.ab\.Session/, 'ui2 runtime bridge uses the legacy Autobahn websocket session' );
+like( $ui2_js, qr/function subscribeRuntimeMessages\(uuid\)/, 'ui2 runtime bridge can subscribe to a submitted job uuid' );
+like( $ui2_js, qr/state\.ws\.conn\.subscribe\(uuid, handleWebSocketMessage\)/, 'ui2 runtime bridge wires websocket messages into the runtime handler' );
+like( $ui2_js, qr/function handleWebSocketMessage\(topic, data\)/, 'ui2 runtime bridge receives websocket runtime chunks' );
+like( $ui2_js, qr/applyRuntimePayload\(payload\)/, 'ui2 websocket chunks flow through the same output rendering path as polling' );
+like( $ui2_js, qr/ui2-ws-indicator-ok/, 'ui2 runtime bridge updates the websocket footer indicator' );
 like( $ui2_js, qr/function buildSubmitFormData\(form, uuid\)/, 'ui2 runtime bridge builds GenApp submit FormData explicitly' );
 like( $ui2_js, qr/function appendSelectedFiles\(formData, form\)/, 'ui2 runtime bridge includes selected file payloads' );
 like( $ui2_js, qr/function appendServerSelection\(formData, selection\)/, 'ui2 runtime bridge includes server file selections' );

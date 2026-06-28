@@ -29,6 +29,12 @@
     serverSelections: {},
     submitResponse: null,
     activeJob: null,
+    ws: {
+      conn: null,
+      url: "",
+      ready: false,
+      subscribedUuid: ""
+    },
     session: {
       logon: "",
       project: "",
@@ -53,7 +59,8 @@
     files: document.getElementById("ui2-files"),
     settings: document.getElementById("ui2-settings"),
     help: document.getElementById("ui2-help"),
-    logoff: document.getElementById("ui2-logoff")
+    logoff: document.getElementById("ui2-logoff"),
+    wsIndicator: document.querySelector(".ui2-ws-indicator")
   };
 
   function init() {
@@ -71,6 +78,7 @@
 
     renderMenu();
     refreshSessionState();
+    initWebSocket();
     if (nodes.candidates) {
       candidateModules.forEach((id) => {
         const option = document.createElement("option");
@@ -105,6 +113,135 @@
       return;
     }
     window.name = createUuid();
+  }
+
+  async function initWebSocket() {
+    setWebSocketStatus("pending", "WebSocket status pending");
+    if (!window.ab || typeof window.ab.Session !== "function") {
+      setWebSocketStatus("error", "Autobahn WebSocket client is unavailable");
+      return;
+    }
+    try {
+      const response = await fetch(legacyEndpoint("sidBase", "ajax/sys_uid.php"), {
+        cache: "no-cache",
+        credentials: "same-origin"
+      });
+      const payload = await parseJsonResponse(response, "WebSocket setup");
+      const wsUrl = stringValue(payload._ws);
+      if (!wsUrl) {
+        setWebSocketStatus("error", "WebSocket endpoint was not returned by sys_uid");
+        return;
+      }
+      openWebSocketSession(wsUrl);
+    } catch (error) {
+      setWebSocketStatus("error", `WebSocket unavailable: ${error.message}`);
+    }
+  }
+
+  function openWebSocketSession(wsUrl) {
+    if (state.ws.conn?.isOpen) {
+      return;
+    }
+    state.ws.url = wsUrl;
+    state.ws.conn = new window.ab.Session(
+      wsUrl,
+      () => {
+        state.ws.ready = true;
+        setWebSocketStatus("ok", "WebSocket connected");
+        subscribeRuntimeMessages("keepalive");
+        if (state.activeJob?.uuid) {
+          subscribeRuntimeMessages(state.activeJob.uuid);
+        }
+      },
+      () => {
+        state.ws.ready = false;
+        state.ws.conn = null;
+        state.ws.subscribedUuid = "";
+        setWebSocketStatus("error", "WebSocket disconnected; polling is still active");
+      },
+      {
+        skipSubprotocolCheck: true,
+        maxRetries: 60,
+        retryDelay: 2000
+      }
+    );
+  }
+
+  function setWebSocketStatus(kind, title) {
+    if (!nodes.wsIndicator) {
+      return;
+    }
+    nodes.wsIndicator.classList.remove(
+      "ui2-ws-indicator-ok",
+      "ui2-ws-indicator-error",
+      "ui2-ws-indicator-pending"
+    );
+    nodes.wsIndicator.classList.add(`ui2-ws-indicator-${kind || "pending"}`);
+    nodes.wsIndicator.title = title || "WebSocket status pending";
+  }
+
+  function subscribeRuntimeMessages(uuid) {
+    if (!uuid || !state.ws.conn || !state.ws.ready) {
+      return;
+    }
+    if (uuid !== "keepalive") {
+      unsubscribeRuntimeMessages();
+      state.ws.subscribedUuid = uuid;
+    }
+    state.ws.conn.subscribe(uuid, handleWebSocketMessage);
+  }
+
+  function unsubscribeRuntimeMessages() {
+    if (!state.ws.conn || !state.ws.ready || !state.ws.subscribedUuid) {
+      state.ws.subscribedUuid = "";
+      return;
+    }
+    try {
+      state.ws.conn.unsubscribe(state.ws.subscribedUuid);
+    } catch (error) {
+      // Keep polling as the authoritative fallback if unsubscribe races a close.
+    }
+    state.ws.subscribedUuid = "";
+  }
+
+  function handleWebSocketMessage(topic, data) {
+    if (topic === "keepalive" || data === "keepalive") {
+      return;
+    }
+    const payload = parseWebSocketPayload(data === undefined ? topic : data);
+    if (!payload) {
+      return;
+    }
+    state.submitResponse = Object.assign({}, state.submitResponse || {}, payload);
+    applyRuntimePayload(payload);
+    const status = runtimeStatus(payload);
+    if (status && state.activeJob?.statusNode) {
+      setSubmitStatus(state.activeJob.statusNode, statusLabel(status), statusKind(status));
+    }
+  }
+
+  function parseWebSocketPayload(data) {
+    if (!data) {
+      return null;
+    }
+    if (typeof data === "string") {
+      try {
+        return JSON.parse(data);
+      } catch (error) {
+        return { _textarea: data };
+      }
+    }
+    if (typeof data.json === "string") {
+      try {
+        return JSON.parse(data.json);
+      } catch (error) {
+        return { _textarea: data.json };
+      }
+    }
+    if (typeof data === "object") {
+      return data;
+    }
+    return null;
   }
 
   async function refreshSessionState() {
@@ -1661,6 +1798,7 @@
       delay: 2000,
       timer: null
     };
+    subscribeRuntimeMessages(uuid);
     pollJobResults(uuid, form, statusNode, 0, true);
   }
 
@@ -1668,6 +1806,7 @@
     if (state.activeJob?.timer) {
       window.clearTimeout(state.activeJob.timer);
     }
+    unsubscribeRuntimeMessages();
     state.activeJob = null;
   }
 
