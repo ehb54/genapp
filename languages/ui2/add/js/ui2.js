@@ -1964,8 +1964,8 @@
   }
 
   function mergeRuntimeText(existing, incoming) {
-    const prior = String(existing || "");
-    const next = String(incoming || "");
+    const prior = stripUi2RuntimeStatus(String(existing || ""));
+    const next = stripUi2RuntimeStatus(String(incoming || ""));
     if (!prior) {
       return next;
     }
@@ -1973,8 +1973,7 @@
       return prior;
     }
     if (isCompleteRuntimeText(next)) {
-      const prefix = prior.startsWith("starting job") ? "starting job\n" : "";
-      return `${prefix}${next}`;
+      return next;
     }
     if (prior.includes(next) && !isRuntimeDividerText(next)) {
       return prior;
@@ -1988,6 +1987,10 @@
 
   function isCompleteRuntimeText(text) {
     return text.includes("DATA FROM RUN:") && / IS DONE\b/.test(text);
+  }
+
+  function stripUi2RuntimeStatus(text) {
+    return String(text || "").replace(/^\s*starting job\s*\n*/i, "");
   }
 
   function isRuntimeDividerText(text) {
