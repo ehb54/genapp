@@ -1161,7 +1161,11 @@
       input.value = localPicker.files && localPicker.files[0] ? localPicker.files[0].name : "";
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
-    input.addEventListener("input", () => clearServerSelection(field, options?.repeatTableIndex));
+    input.addEventListener("input", (event) => {
+      if (event.isTrusted) {
+        clearServerSelection(field, options?.repeatTableIndex);
+      }
+    });
 
     const actions = el("div", "ui2-file-actions");
     if (fileModes(type).includes("local")) {
@@ -2552,7 +2556,25 @@
       cache: "no-cache",
       credentials: "same-origin"
     });
-    return parseJsonResponse(response, "Job input");
+    const payload = await parseJsonResponse(response, "Job input");
+    if (payload?._getinput) {
+      return payload;
+    }
+    return fetchUi2JobInputPayload(uuid);
+  }
+
+  async function fetchUi2JobInputPayload(uuid) {
+    const url = new URL("ajax/ui2_job_input.php", window.location.href);
+    url.searchParams.set("tagmode", "any");
+    url.searchParams.set("format", "json");
+    url.searchParams.set("_window", window.name);
+    url.searchParams.set("_logon", state.session.logon || "");
+    url.searchParams.set("_uuid", uuid);
+    const response = await fetch(url.toString(), {
+      cache: "no-cache",
+      credentials: "same-origin"
+    });
+    return parseJsonResponse(response, "UI2 job input");
   }
 
   function applyInputPayload(inputs) {

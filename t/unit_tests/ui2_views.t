@@ -64,6 +64,7 @@ like( $ui2_js, qr/function appendServerSelection\(formData, selection\)/, 'ui2 r
 like( $ui2_js, qr/sys_files\.php/, 'ui2 runtime bridge uses the legacy server file endpoint' );
 like( $ui2_js, qr/formData\.set\(`_selaltval_\$\{selection\.id\}`/, 'ui2 server file selections include the legacy selected-alt marker' );
 like( $ui2_js, qr/\$\{selection\.id\}_altval\[\]/, 'ui2 server file selections include legacy encoded alt values' );
+like( $ui2_js, qr/event\.isTrusted/, 'ui2 server file replay does not clear restored selections with synthetic events' );
 like( $ui2_js, qr/function renderJobManagerTool\(fields\)/, 'ui2 has a dedicated Job Manager shell' );
 like( $ui2_js, qr/function fallbackUtilityModule\(moduleId\)/, 'ui2 can synthesize topbar utility modules not emitted into modules/' );
 like( $ui2_js, qr/ajax\/sys_config\/sys_jobs\.php/, 'ui2 Job Manager loads rows from the legacy jobs endpoint' );
@@ -75,6 +76,7 @@ like( $ui2_js, qr/ajax\/sys_config\/sys_managejob\.php/, 'ui2 Job Manager uses t
 like( $ui2_js, qr/function submitSystemModuleAction\(action, jobIds\)/, 'ui2 Job Manager can submit legacy system-module actions' );
 like( $ui2_js, qr/applySavedJobInput\(pollUuid\)/, 'ui2 Job Manager explicitly restores saved inputs from the legacy switch target' );
 like( $ui2_js, qr/startJobPolling\(pollUuid, form, status, false, !restoredInput\)/, 'ui2 Job Manager polls the uuid from the legacy switch target after input restore' );
+like( $ui2_js, qr/ajax\/ui2_job_input\.php/, 'ui2 Job Manager has a target-local saved input fallback endpoint' );
 like( $ui2_js, qr/function moduleIdFromSwitchParts\(parts\)/, 'ui2 Job Manager parses legacy switch targets without assuming one shape' );
 like( $ui2_js, qr/function applyInputPayload\(inputs\)/, 'ui2 Job Manager can hydrate form inputs from reattached job payloads' );
 like( $ui2_js, qr/function renderFileManagerTool\(fields\)/, 'ui2 has a dedicated File Manager shell' );
