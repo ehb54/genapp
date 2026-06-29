@@ -1801,7 +1801,7 @@
       const pollUuid = parts[parts.length - 1] || jobId;
       await refreshSessionState();
       await loadModule(moduleId);
-      const form = document.querySelector(".ui2-module-form");
+      const form = document.getElementById("ui2-form");
       const status = document.getElementById("ui2-submit-status");
       const restoredInput = form ? await applySavedJobInput(pollUuid) : false;
       setSubmitStatus(status, `Attached (${jobId})`, "ok");
@@ -2670,7 +2670,7 @@
 
   function setInputControlValue(id, value) {
     const controls = Array.from(document.querySelectorAll(`[data-field-id="${cssEscape(id)}"]`))
-      .filter((control) => !control.dataset.outputFieldId && control.closest(".ui2-module-form"));
+      .filter((control) => !control.dataset.outputFieldId && control.closest("#ui2-form"));
     controls.forEach((control, index) => {
       const controlValue = Array.isArray(value) ? value[index] ?? value[0] ?? "" : value;
       if (control.type === "file") {

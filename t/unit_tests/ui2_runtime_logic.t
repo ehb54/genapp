@@ -263,7 +263,7 @@ const replayControl = {
   value: "",
   dataset: { fieldId: "data_file_name" },
   closest(selector) {
-    return selector === ".ui2-module-form" ? {} : null;
+    return selector === "#ui2-form" ? {} : null;
   },
   dispatchEvent(event) {
     this.lastEvent = event.type;
