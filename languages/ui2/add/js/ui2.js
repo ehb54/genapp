@@ -2557,10 +2557,15 @@
       credentials: "same-origin"
     });
     const payload = await parseJsonResponse(response, "Job input");
-    if (payload?._getinput) {
-      return payload;
+    try {
+      const savedPayload = await fetchUi2JobInputPayload(uuid);
+      return mergeSavedInputPayloads(payload, savedPayload);
+    } catch (error) {
+      if (payload?._getinput) {
+        return payload;
+      }
+      throw error;
     }
-    return fetchUi2JobInputPayload(uuid);
   }
 
   async function fetchUi2JobInputPayload(uuid) {
@@ -2589,6 +2594,18 @@
       setInputControlValue(id, value);
     });
     syncValues();
+  }
+
+  function mergeSavedInputPayloads(primary, saved) {
+    if (!primary?._getinput) {
+      return saved?._getinput ? saved : primary;
+    }
+    if (!saved?._getinput) {
+      return primary;
+    }
+    return Object.assign({}, primary, {
+      _getinput: Object.assign({}, primary._getinput, saved._getinput)
+    });
   }
 
   function restoreServerSelections(inputs) {
@@ -3570,6 +3587,7 @@
       payloadFileList,
       fileDownloadLinks,
       serverSelectionDisplayPath,
+      mergeSavedInputPayloads,
       moduleIdFromSwitchParts,
       applyInputPayload,
       applySavedJobInput,

@@ -237,6 +237,27 @@ assert.strictEqual(
   "server file replay prefers the legacy html display label"
 );
 
+const mergedInputPayload = hooks.mergeSavedInputPayloads(
+  { _getinput: { run_name: "run_0" } },
+  {
+    _getinput: {
+      _selaltval_data_file_name: "data_file_name_altval",
+      data_file_name_altval: ["Li9zYW5zX2RhdGEuc3Vi"],
+      _html_data_file_name_altval: "<i>Server</i>: sans_data.sub"
+    }
+  }
+);
+assert.strictEqual(
+  JSON.stringify(mergedInputPayload._getinput),
+  JSON.stringify({
+    run_name: "run_0",
+    _selaltval_data_file_name: "data_file_name_altval",
+    data_file_name_altval: ["Li9zYW5zX2RhdGEuc3Vi"],
+    _html_data_file_name_altval: "<i>Server</i>: sans_data.sub"
+  }),
+  "attach replay merges direct saved-input logs over incomplete get_results input"
+);
+
 const replayControl = {
   type: "text",
   value: "",
