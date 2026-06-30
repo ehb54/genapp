@@ -166,6 +166,22 @@ assert(
   source.includes('closeUtilityOverlay();\\n      await loadModule(moduleId);'),
   "reattach closes the utility overlay before switching to the attached module"
 );
+assert(
+  source.includes('function openSplashDialog()'),
+  "ui2 provides a splash/login dialog helper"
+);
+assert(
+  source.includes('function stopSessionRuntime()'),
+  "ui2 centralizes session-runtime cleanup"
+);
+assert(
+  source.includes('stopSessionRuntime();\\n      openSplashDialog();'),
+  "logoff stops active runtime polling and opens the splash dialog"
+);
+assert(
+  source.includes('hideSplashDialog();\\n        await refreshSessionState();'),
+  "successful login hides the splash dialog before refreshing session state"
+);
 
 function job(id, moduleName, project, endSeconds, endText, duration) {
   return {

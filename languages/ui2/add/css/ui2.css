@@ -757,6 +757,50 @@ code {
   font-size: 1.4rem;
 }
 
+.ui2-splash-dialog {
+  width: min(56rem, calc(100vw - 2rem));
+  display: grid;
+  gap: 2rem;
+  justify-items: center;
+  padding: clamp(2rem, 6vw, 4rem);
+  text-align: center;
+}
+
+.ui2-splash-dialog h2 {
+  margin: 0;
+  color: var(--ui2-muted);
+  font-size: clamp(2rem, 5vw, 3.4rem);
+}
+
+.ui2-splash-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.ui2-splash-action,
+.ui2-splash-docs {
+  border: 1px solid var(--ui2-border);
+  border-radius: 6px;
+  background: var(--ui2-panel-soft);
+  color: var(--ui2-text);
+  padding: 0.75rem 1.25rem;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ui2-splash-action:hover,
+.ui2-splash-action:focus-visible,
+.ui2-splash-docs:hover,
+.ui2-splash-docs:focus-visible {
+  border-color: var(--ui2-accent);
+  color: var(--ui2-accent-strong);
+  outline: none;
+}
+
 .ui2-dialog-close {
   border: 1px solid var(--ui2-border);
   border-radius: 999px;

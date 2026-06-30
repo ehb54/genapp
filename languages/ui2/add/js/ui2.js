@@ -411,6 +411,7 @@
       setSubmitStatus(status, payload.status || "Login successful", "ok");
       if (state.session.logon) {
         document.getElementById("ui2-login-dialog").hidden = true;
+        hideSplashDialog();
         await refreshSessionState();
       }
     } catch (error) {
@@ -436,8 +437,65 @@
       state.session.project = stringValue(payload._project);
       state.session.loaded = true;
       renderSessionState();
+      stopSessionRuntime();
+      openSplashDialog();
     } catch (error) {
       renderSessionState(error);
+    }
+  }
+
+  function stopSessionRuntime() {
+    stopJobPolling();
+    closeUtilityOverlay();
+  }
+
+  function openSplashDialog() {
+    let overlay = document.getElementById("ui2-splash-dialog");
+    if (overlay) {
+      overlay.hidden = false;
+      return;
+    }
+
+    overlay = el("div", "ui2-dialog-overlay ui2-splash-overlay");
+    overlay.id = "ui2-splash-dialog";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "ui2-splash-title");
+
+    const panel = el("section", "ui2-dialog ui2-splash-dialog");
+    const title = el("h2", null, document.querySelector(".ui2-title")?.textContent || "GenApp");
+    title.id = "ui2-splash-title";
+
+    const actions = el("div", "ui2-splash-actions");
+    const login = el("button", "ui2-splash-action", "Login");
+    login.type = "button";
+    login.addEventListener("click", () => {
+      overlay.hidden = true;
+      openLoginDialog();
+    });
+
+    const register = el("button", "ui2-splash-action", "Register");
+    register.type = "button";
+    register.addEventListener("click", () => {
+      overlay.hidden = true;
+      openLoginDialog();
+    });
+    actions.append(login, register);
+
+    const docs = el("a", "ui2-splash-docs", "View the documentation");
+    docs.href = "docs";
+    docs.target = "_blank";
+    docs.rel = "noopener";
+
+    panel.append(title, actions, docs);
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+  }
+
+  function hideSplashDialog() {
+    const overlay = document.getElementById("ui2-splash-dialog");
+    if (overlay) {
+      overlay.hidden = true;
     }
   }
 
