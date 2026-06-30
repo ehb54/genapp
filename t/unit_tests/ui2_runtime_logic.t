@@ -175,12 +175,24 @@ assert(
   "ui2 centralizes session-runtime cleanup"
 );
 assert(
-  source.includes('stopSessionRuntime();\\n      openSplashDialog();'),
+  source.indexOf("stopSessionRuntime();") >= 0 &&
+    source.indexOf("state.freshLoginAfterLogoff = true;", source.indexOf("stopSessionRuntime();")) >
+      source.indexOf("stopSessionRuntime();") &&
+    source.indexOf("openSplashDialog();", source.indexOf("state.freshLoginAfterLogoff = true;")) >
+      source.indexOf("state.freshLoginAfterLogoff = true;"),
   "logoff stops active runtime polling and opens the splash dialog"
 );
 assert(
   source.includes('hideSplashDialog();\\n        await refreshSessionState();'),
   "successful login hides the splash dialog before refreshing session state"
+);
+assert(
+  source.includes('state.freshLoginAfterLogoff = true;\\n      openSplashDialog();'),
+  "logoff marks the next login as a fresh session"
+);
+assert(
+  source.includes('state.freshLoginAfterLogoff = false;\\n          await loadStartupModule();'),
+  "login after logoff returns to the startup module instead of the old attached job"
 );
 
 function job(id, moduleName, project, endSeconds, endText, duration) {

@@ -29,6 +29,7 @@
     serverSelections: {},
     submitResponse: null,
     activeJob: null,
+    freshLoginAfterLogoff: false,
     ws: {
       conn: null,
       url: "",
@@ -100,12 +101,15 @@
       }
     });
 
+    loadStartupModule();
+  }
+
+  function loadStartupModule() {
     const requested = params.get("module");
     if (requested) {
-      loadModule(requested);
-    } else {
-      loadFirstAvailable();
+      return loadModule(requested);
     }
+    return loadFirstAvailable();
   }
 
   function ensureWindowName() {
@@ -413,6 +417,10 @@
         document.getElementById("ui2-login-dialog").hidden = true;
         hideSplashDialog();
         await refreshSessionState();
+        if (state.freshLoginAfterLogoff) {
+          state.freshLoginAfterLogoff = false;
+          await loadStartupModule();
+        }
       }
     } catch (error) {
       setSubmitStatus(status, error.message, "error");
@@ -438,6 +446,7 @@
       state.session.loaded = true;
       renderSessionState();
       stopSessionRuntime();
+      state.freshLoginAfterLogoff = true;
       openSplashDialog();
     } catch (error) {
       renderSessionState(error);
