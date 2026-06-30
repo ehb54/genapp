@@ -725,6 +725,21 @@ code {
   width: min(54rem, 100%);
 }
 
+.ui2-utility-dialog {
+  width: min(92rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+}
+
+.ui2-utility-body {
+  display: grid;
+  gap: 1rem;
+}
+
+.ui2-utility-body .ui2-system-tool {
+  margin: 0;
+}
+
 .ui2-dialog-header,
 .ui2-dialog-actions {
   display: flex;

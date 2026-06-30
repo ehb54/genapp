@@ -70,9 +70,9 @@
     nodes.navToggle?.addEventListener("click", () => {
       setSidebarCollapsed(!document.body.classList.contains("ui2-sidebar-collapsed"), true);
     });
-    nodes.jobs?.addEventListener("click", () => loadModule("sys_job_manager"));
-    nodes.files?.addEventListener("click", () => loadModule("sys_file_manager"));
-    nodes.settings?.addEventListener("click", () => loadModule("sys_user_config"));
+    nodes.jobs?.addEventListener("click", () => openUtilityModule("sys_job_manager"));
+    nodes.files?.addEventListener("click", () => openUtilityModule("sys_file_manager"));
+    nodes.settings?.addEventListener("click", () => openUtilityModule("sys_user_config"));
     nodes.help?.addEventListener("click", toggleHelp);
     nodes.logoff?.addEventListener("click", handleLogonAction);
 
@@ -457,25 +457,10 @@
     nodes.empty.innerHTML = `<p class="ui2-kicker">Loading</p><h2>${escapeHtml(moduleId)}</h2>`;
 
     try {
-      const response = await fetch(`modules/${encodeURIComponent(moduleId)}.json`, { cache: "no-cache" });
-      if (!response.ok) {
-        const utilityModule = fallbackUtilityModule(moduleId);
-        if (!utilityModule) {
-          throw new Error(`modules/${moduleId}.json returned ${response.status}`);
-        }
-        state.moduleId = moduleId;
-        state.menuId = menuIdForModule(moduleId);
-        state.module = utilityModule;
-        state.view = {};
-        state.values = {};
-        renderModule();
-        updateSelectedNavigation();
-        return;
-      }
-      const payload = await response.json();
+      const payload = await fetchModuleDefinition(moduleId);
       state.moduleId = moduleId;
       state.menuId = menuIdForModule(moduleId);
-      state.module = payload.modulejson || payload;
+      state.module = payload.module;
       state.view = payload.viewjson || {};
       state.values = {};
       renderModule();
@@ -509,6 +494,78 @@
       }
     }
     showError("No candidate modules could be loaded.");
+  }
+
+  async function fetchModuleDefinition(moduleId) {
+    const response = await fetch(`modules/${encodeURIComponent(moduleId)}.json`, { cache: "no-cache" });
+    if (!response.ok) {
+      const utilityModule = fallbackUtilityModule(moduleId);
+      if (!utilityModule) {
+        throw new Error(`modules/${moduleId}.json returned ${response.status}`);
+      }
+      return { module: utilityModule, viewjson: {} };
+    }
+    const payload = await response.json();
+    return {
+      module: payload.modulejson || payload,
+      viewjson: payload.viewjson || {}
+    };
+  }
+
+  async function openUtilityModule(rawId) {
+    const moduleId = sanitizeModuleId(rawId);
+    if (!moduleId) {
+      return;
+    }
+    try {
+      await refreshSessionState();
+      const payload = await fetchModuleDefinition(moduleId);
+      const module = payload.module || {};
+      const fields = visibleFields(Array.isArray(module.fields) ? module.fields : []);
+      const content = renderSystemTool(module, fields);
+      if (!content) {
+        throw new Error(`${moduleId} is not wired as a UI2 utility.`);
+      }
+      showUtilityOverlay(utilityLabel(module), content);
+    } catch (error) {
+      const message = el("div", "ui2-error", `Could not load ${moduleId}: ${error.message}`);
+      showUtilityOverlay("Utility", message);
+    }
+  }
+
+  function showUtilityOverlay(titleText, content) {
+    closeUtilityOverlay();
+    const overlay = el("div", "ui2-dialog-overlay ui2-utility-overlay");
+    overlay.id = "ui2-utility-overlay";
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) {
+        closeUtilityOverlay();
+      }
+    });
+    const dialog = el("section", "ui2-dialog ui2-utility-dialog");
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute("aria-labelledby", "ui2-utility-title");
+    const header = el("div", "ui2-dialog-header");
+    const title = el("h2", null, titleText || "Utility");
+    title.id = "ui2-utility-title";
+    const close = el("button", "ui2-dialog-close", "Close");
+    close.type = "button";
+    close.addEventListener("click", closeUtilityOverlay);
+    header.append(title, close);
+    const body = el("div", "ui2-utility-body");
+    body.appendChild(content);
+    dialog.append(header, body);
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    close.focus();
+  }
+
+  function closeUtilityOverlay() {
+    const overlay = document.getElementById("ui2-utility-overlay");
+    if (overlay) {
+      overlay.remove();
+    }
   }
 
   function loadPreferences() {
@@ -1413,12 +1470,12 @@
   }
 
   function renderSystemTool(module, fields) {
-    const moduleId = module.moduleid || state.moduleId;
+    const moduleId = module.moduleid || module.id || state.moduleId;
     if (moduleId === "sys_job_manager" || moduleId === "sys_job2_manager") {
-      return renderJobManagerTool(fields);
+      return renderJobManagerTool(fields, moduleId);
     }
     if (moduleId === "sys_file_manager") {
-      return renderFileManagerTool(fields);
+      return renderFileManagerTool(module, fields);
     }
     if (moduleId === "sys_user_config") {
       return renderSimpleSystemTool("Settings", fields);
@@ -1442,7 +1499,7 @@
   }
 
   function utilityLabel(module) {
-    const id = module.id || "";
+    const id = module.id || module.moduleid || "";
     if (id === "sys_file_manager") {
       return "File Manager";
     }
@@ -1485,7 +1542,7 @@
     return null;
   }
 
-  function renderJobManagerTool(fields) {
+  function renderJobManagerTool(fields, moduleId = "sys_job_manager") {
     const section = el("section", "ui2-section ui2-system-tool ui2-job-manager");
     const body = el("div", "ui2-section-body ui2-tool-body");
     const filters = el("div", "ui2-tool-filters");
@@ -1524,6 +1581,7 @@
     }
 
     section.appendChild(body);
+    table._ui2UtilityModuleId = moduleId;
     refresh.addEventListener("click", () => loadJobManagerRows(table));
     deleteMany.addEventListener("click", () => deleteSelectedJobs(table));
     filters.addEventListener("change", () => applyJobManagerFilters(table));
@@ -1531,7 +1589,7 @@
     return section;
   }
 
-  function renderFileManagerTool(fields) {
+  function renderFileManagerTool(module, fields) {
     const section = el("section", "ui2-section ui2-system-tool ui2-file-manager");
     const body = el("div", "ui2-section-body ui2-tool-body");
     body.appendChild(renderToolFilter("serverdate", "Server date", "loads from server", false));
@@ -1575,8 +1633,9 @@
     });
 
     section.appendChild(body);
+    table._ui2UtilityModule = module || {};
     refresh.addEventListener("click", () => loadFileManagerRows(table));
-    download.addEventListener("click", () => downloadFileManagerSelection(table, status, links));
+    download.addEventListener("click", () => downloadFileManagerSelection(table, status, links, module || {}));
     window.setTimeout(() => loadFileManagerRows(table), 0);
     return section;
   }
@@ -1781,7 +1840,7 @@
       return;
     }
     try {
-      const payload = await submitSystemModuleAction("reattach", [jobId]);
+      const payload = await submitSystemModuleAction("reattach", [jobId], "sys_job_manager");
       if (payload.error) {
         throw new Error(payload.error);
       }
@@ -1800,6 +1859,7 @@
       const moduleId = moduleIdFromSwitchParts(parts);
       const pollUuid = parts[parts.length - 1] || jobId;
       await refreshSessionState();
+      closeUtilityOverlay();
       await loadModule(moduleId);
       const form = document.getElementById("ui2-form");
       const status = document.getElementById("ui2-submit-status");
@@ -1886,8 +1946,8 @@
     }
   }
 
-  async function submitSystemModuleAction(action, jobIds) {
-    const endpoint = legacyEndpoint("", `ajax/sys_config/${state.moduleId || "sys_job_manager"}.php`);
+  async function submitSystemModuleAction(action, jobIds, moduleId = "sys_job_manager") {
+    const endpoint = legacyEndpoint("", `ajax/sys_config/${sanitizeModuleId(moduleId) || "sys_job_manager"}.php`);
     await refreshSessionState();
     const formData = new FormData();
     formData.set("_window", window.name);
@@ -2020,7 +2080,7 @@
     }
   }
 
-  async function downloadFileManagerSelection(table, status, links) {
+  async function downloadFileManagerSelection(table, status, links, module) {
     const selected = Array.from(table?.querySelectorAll("input[data-file-select]:checked") || [])
       .map((input) => input.closest("tr")?.dataset.fileId)
       .filter(Boolean);
@@ -2031,7 +2091,8 @@
       setSubmitStatus(status, "No files selected.", "error");
       return;
     }
-    const endpoint = moduleSubmitEndpoint();
+    const fileManagerModule = module || table?._ui2UtilityModule || {};
+    const endpoint = moduleSubmitEndpointFor(fileManagerModule, menuIdForModule("sys_file_manager"), "sys_file_manager");
     if (!endpoint) {
       setSubmitStatus(status, "No generated File Manager endpoint.", "error");
       return;
@@ -2047,10 +2108,11 @@
       formData.set("_uuid", uuid);
       formData.set("_height", String(Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)));
       formData.set("_width", String(Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)));
-      if (state.module?.docrootexecutable) {
-        formData.set("_docrootexecutable", state.module.docrootexecutable);
+      if (fileManagerModule.docrootexecutable) {
+        formData.set("_docrootexecutable", fileManagerModule.docrootexecutable);
       }
-      formData.set("compression", document.querySelector('select[data-field-id="compression"], input[data-field-id="compression"]')?.value || "tar");
+      const compressionControl = table.closest(".ui2-file-manager")?.querySelector('select[data-field-id="compression"], input[data-field-id="compression"]');
+      formData.set("compression", compressionControl?.value || "tar");
       selected.forEach((id) => formData.append("selectedfiles[]", id));
       const response = await fetch(endpoint, { method: "POST", body: formData, credentials: "same-origin" });
       const payload = await parseJsonResponse(response, "File Manager download");
@@ -2328,11 +2390,15 @@
   }
 
   function moduleSubmitEndpoint() {
-    if (!state.menuId || !state.moduleId || !state.module?.executable) {
+    return moduleSubmitEndpointFor(state.module, state.menuId, state.moduleId);
+  }
+
+  function moduleSubmitEndpointFor(module, menuId, moduleId) {
+    if (!menuId || !moduleId || !module?.executable) {
       return "";
     }
     const base = params.get("submitBase") || legacyEndpoint("", "ajax");
-    return `${base.replace(/\/+$/, "")}/${encodeURIComponent(state.menuId)}/${encodeURIComponent(state.moduleId)}.php`;
+    return `${base.replace(/\/+$/, "")}/${encodeURIComponent(menuId)}/${encodeURIComponent(moduleId)}.php`;
   }
 
   function legacyEndpoint(paramName, path) {
@@ -3586,6 +3652,7 @@
       normalizeFileList,
       payloadFileList,
       fileDownloadLinks,
+      moduleSubmitEndpointFor,
       serverSelectionDisplayPath,
       mergeSavedInputPayloads,
       moduleIdFromSwitchParts,

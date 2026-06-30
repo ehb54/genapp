@@ -146,6 +146,27 @@ vm.runInContext(source, context, { filename: "ui2.js" });
 const hooks = context.window.GenAppUi2TestHooks;
 assert(hooks, "test hooks were exposed");
 
+assert(
+  source.includes('nodes.jobs?.addEventListener("click", () => openUtilityModule("sys_job_manager"));'),
+  "top bar opens Job Manager as a utility overlay"
+);
+assert(
+  source.includes('nodes.files?.addEventListener("click", () => openUtilityModule("sys_file_manager"));'),
+  "top bar opens File Manager as a utility overlay"
+);
+assert(
+  !source.includes('nodes.jobs?.addEventListener("click", () => loadModule("sys_job_manager"));'),
+  "top bar no longer replaces the active module with Job Manager"
+);
+assert(
+  source.includes('submitSystemModuleAction("reattach", [jobId], "sys_job_manager")'),
+  "reattach uses the explicit Job Manager endpoint"
+);
+assert(
+  source.includes('closeUtilityOverlay();\\n      await loadModule(moduleId);'),
+  "reattach closes the utility overlay before switching to the attached module"
+);
+
 function job(id, moduleName, project, endSeconds, endText, duration) {
   return {
     id,
@@ -213,6 +234,12 @@ assert.strictEqual(
 const links = hooks.fileDownloadLinks("results/users/Joseph/min3.pdb");
 assert(links.includes("../results/users/Joseph/min3.pdb"), "download link targets the generated app path");
 assert(links.includes("min3.pdb"), "download link labels the selected file");
+
+assert.strictEqual(
+  hooks.moduleSubmitEndpointFor({ executable: "sys_file_manager" }, "etc", "sys_file_manager"),
+  "/sassie3/ajax/etc/sys_file_manager.php",
+  "system utility submit endpoints can be computed without replacing the active module"
+);
 
 const payloadFiles = hooks.payloadFileList({ outfile: "results/users/Joseph/min3.pdb" });
 assert.strictEqual(JSON.stringify(payloadFiles), JSON.stringify(["results/users/Joseph/min3.pdb"]), "single outfile payloads are accepted");
