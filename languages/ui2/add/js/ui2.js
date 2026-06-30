@@ -1721,10 +1721,10 @@
       const response = await fetch(url.toString(), { cache: "no-cache", credentials: "same-origin" });
       const payload = await parseJsonResponse(response, "Job Manager");
       const rows = payload?.jobgrid?.outerwrapper?.innerwrapper?.rows || [];
-      const columns = visibleJobColumns(payload?.colNames || [], payload?.colModel || []);
+      const columns = jobColumns(payload?.colNames || [], payload?.colModel || []);
       table._ui2JobColumns = columns;
       table._ui2JobRows = rows;
-      updateJobFilterChoices(table, rows);
+      updateJobFilterChoices(table, rows, columns);
       applyJobManagerFilters(table);
     } catch (error) {
       renderTableMessage(tbody, 1, error.message);
@@ -1735,11 +1735,11 @@
     const thead = table?.querySelector("thead");
     const tbody = table?.querySelector("tbody");
     const rows = table?._ui2JobRows || [];
-    const columns = table?._ui2JobColumns || visibleJobColumns([], []);
+    const columns = table?._ui2JobColumns || jobColumns([], []);
     if (!thead || !tbody) {
       return;
     }
-    renderJobManagerTable(thead, tbody, columns, filterJobRows(rows, collectJobFilters(table)));
+    renderJobManagerTable(thead, tbody, columns, filterJobRows(rows, collectJobFilters(table), columns));
   }
 
   function collectJobFilters(table) {
@@ -1752,12 +1752,16 @@
     };
   }
 
-  function filterJobRows(rows, filters, nowSeconds = Math.floor(Date.now() / 1000)) {
+  function filterJobRows(rows, filters, columnsOrNowSeconds, maybeNowSeconds) {
+    const columns = Array.isArray(columnsOrNowSeconds) ? columnsOrNowSeconds : jobColumns([], []);
+    const nowSeconds = Array.isArray(columnsOrNowSeconds)
+      ? (maybeNowSeconds || Math.floor(Date.now() / 1000))
+      : (columnsOrNowSeconds || Math.floor(Date.now() / 1000));
     return rows.filter((job) => {
-      const moduleValue = jobCellText(job, 0);
-      const projectValue = jobCellText(job, 1);
-      const endSeconds = jobEndSeconds(job);
-      const isRunning = isRunningJob(job, endSeconds);
+      const moduleValue = jobCellTextByName(job, columns, "module", 0);
+      const projectValue = jobCellTextByName(job, columns, "project", 1);
+      const endSeconds = jobEndSeconds(job, columns);
+      const isRunning = isRunningJob(job, columns, endSeconds);
       if (filters.running && !isRunning) {
         return false;
       }
@@ -1782,35 +1786,51 @@
   }
 
   function jobCellText(job, index) {
-    return stripHtml(job?.cells?.[index]?.value || "");
+    return stripHtml(jobCellHtml(job, index));
   }
 
-  function jobEndSeconds(job) {
-    const numeric = Number(jobCellText(job, 5));
+  function jobCellHtml(job, index) {
+    return String(job?.cells?.[index]?.value || "");
+  }
+
+  function jobColumn(columns, name, fallbackIndex) {
+    return (columns || []).find((column) => column.name === name) || { index: fallbackIndex, name };
+  }
+
+  function jobCellTextByName(job, columns, name, fallbackIndex) {
+    return jobCellText(job, jobColumn(columns, name, fallbackIndex).index);
+  }
+
+  function jobCellHtmlByName(job, columns, name, fallbackIndex) {
+    return jobCellHtml(job, jobColumn(columns, name, fallbackIndex).index);
+  }
+
+  function jobEndSeconds(job, columns) {
+    const numeric = Number(jobCellTextByName(job, columns, "endnumeric", 5));
     if (Number.isFinite(numeric) && numeric > 0) {
       return numeric;
     }
-    const parsed = Date.parse(jobCellText(job, 4));
+    const parsed = Date.parse(jobCellTextByName(job, columns, "end", 4));
     return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : 0;
   }
 
-  function isRunningJob(job, endSeconds) {
-    return !endSeconds || /active|running/i.test(jobCellText(job, 6));
+  function isRunningJob(job, columns, endSeconds) {
+    return !endSeconds || /active|running/i.test(jobCellTextByName(job, columns, "duration", 6));
   }
 
-  function updateJobFilterChoices(table, rows) {
+  function updateJobFilterChoices(table, rows, columns) {
     const section = table?.closest(".ui2-job-manager");
-    updateSelectOptions(toolFieldControl(section, "project", "select"), uniqueJobCellValues(rows, 1));
-    updateSelectOptions(toolFieldControl(section, "module", "select"), uniqueJobCellValues(rows, 0));
+    updateSelectOptions(toolFieldControl(section, "project", "select"), uniqueJobCellValues(rows, columns, "project", 1));
+    updateSelectOptions(toolFieldControl(section, "module", "select"), uniqueJobCellValues(rows, columns, "module", 0));
   }
 
   function toolFieldControl(section, id, tagName) {
     return section?.querySelector(`${tagName}[data-field-id="${cssEscape(id)}"]`) || null;
   }
 
-  function uniqueJobCellValues(rows, cellIndex) {
+  function uniqueJobCellValues(rows, columns, name, fallbackIndex) {
     return Array.from(new Set(
-      rows.map((job) => stripHtml(job?.cells?.[cellIndex]?.value || ""))
+      rows.map((job) => jobCellTextByName(job, columns, name, fallbackIndex))
         .filter(Boolean)
     )).sort((a, b) => a.localeCompare(b));
   }
@@ -1826,43 +1846,82 @@
     select.value = values.includes(current) ? current : "*all*";
   }
 
-  function visibleJobColumns(names, models) {
+  const JOB_HIDDEN_COLUMNS = new Set(["startnumeric", "endnumeric", "durationnumeric", "remoteip", "resource", "recent"]);
+
+  function jobColumns(names, models) {
     const columns = [];
     models.forEach((model, index) => {
-      if (model?.hidden) {
-        return;
-      }
       columns.push({
         index,
         name: model.name || `col${index}`,
-        label: names[index] || model.name || `Column ${index + 1}`
+        label: stripHtml(names[index] || model.name || `Column ${index + 1}`),
+        hidden: !!model.hidden
       });
     });
     return columns.length ? columns : [
-      { index: 0, name: "module", label: "Module" },
-      { index: 1, name: "project", label: "Project" },
-      { index: 2, name: "start", label: "Start" },
-      { index: 4, name: "end", label: "End" },
-      { index: 6, name: "duration", label: "Duration" }
+      { index: 0, name: "module", label: "Module", hidden: false },
+      { index: 1, name: "project", label: "Project", hidden: false },
+      { index: 2, name: "start", label: "Start", hidden: false },
+      { index: 4, name: "end", label: "End", hidden: false },
+      { index: 5, name: "endnumeric", label: "End numeric", hidden: true },
+      { index: 6, name: "duration", label: "Duration", hidden: false }
     ];
   }
 
+  function jobDisplayColumns(columns) {
+    return (columns || []).filter((column) => (
+      !column.hidden && column.name !== "actions" && !JOB_HIDDEN_COLUMNS.has(column.name)
+    ));
+  }
+
+  function visibleJobColumns(names, models) {
+    return jobDisplayColumns(jobColumns(names, models));
+  }
+
+  function jobVisualState(job, columns) {
+    const projectHtml = jobCellHtmlByName(job, columns, "project", 1);
+    const actionsHtml = jobCellHtmlByName(job, columns, "actions", -1);
+    const endSeconds = jobEndSeconds(job, columns);
+    const running = isRunningJob(job, columns, endSeconds);
+    const locked = /(?:&#x1f512;|&#128274;|🔒|lock)/i.test(actionsHtml);
+    let projectColor = "";
+    const colorMatch = projectHtml.match(/color\s*=\s*["']?([^"'>\s]+)/i);
+    if (colorMatch) {
+      projectColor = colorMatch[1].toLowerCase();
+    } else if (running && locked) {
+      projectColor = "red";
+    } else if (locked) {
+      projectColor = "yellow";
+    } else if (running) {
+      projectColor = "green";
+    }
+    return { running, locked, projectColor };
+  }
+
   function renderJobManagerTable(thead, tbody, columns, rows) {
+    const displayColumns = jobDisplayColumns(columns);
     thead.innerHTML = "";
     tbody.innerHTML = "";
     const header = document.createElement("tr");
     header.appendChild(el("th", null, ""));
     header.appendChild(el("th", null, "Actions"));
-    columns.forEach((column) => header.appendChild(el("th", null, column.label)));
+    displayColumns.forEach((column) => header.appendChild(el("th", null, column.label)));
     thead.appendChild(header);
 
     if (!rows.length) {
-      renderTableMessage(tbody, columns.length + 2, state.session.logon ? "No jobs found." : "Log in to view jobs.");
+      renderTableMessage(tbody, displayColumns.length + 2, state.session.logon ? "No jobs found." : "Log in to view jobs.");
       return;
     }
 
     rows.forEach((job) => {
       const row = document.createElement("tr");
+      const visual = jobVisualState(job, columns);
+      if (visual.running) {
+        row.classList.add("ui2-job-row-running");
+      }
+      if (visual.locked) {
+        row.classList.add("ui2-job-row-locked");
+      }
       row.dataset.jobId = job.id || "";
       const selectCell = document.createElement("td");
       const checkbox = document.createElement("input");
@@ -1872,23 +1931,39 @@
       row.appendChild(selectCell);
 
       const actionCell = el("td", "ui2-job-actions");
-      [
-        ["Attach", () => reattachJob(job.id, false)],
-        ["New", () => reattachJob(job.id, true)],
-        ["Cancel", () => manageJob(job.id, "jobcancel", "Cancel this job?")],
-        ["Delete", () => manageJob(job.id, "jobdelete", "Delete this job record?")],
-        ["Unlock", () => manageJob(projectCellValue(job, columns), "clearlock", "Clear the lock for this job project?")]
-      ].forEach(([label, handler]) => {
-        const button = el("button", "ui2-mini-button", label);
+      const actionDefinitions = [
+        ["Attach", "→", "ui2-job-action-attach", () => reattachJob(job.id, false)],
+        ["Attach in new window", "⇒", "ui2-job-action-attach", () => reattachJob(job.id, true)],
+        visual.running
+          ? ["Cancel job", "⊗", "ui2-job-action-danger", () => manageJob(job.id, "jobcancel", "Cancel this job?")]
+          : ["Delete job", "⇓", "ui2-job-action-danger", () => manageJob(job.id, "jobdelete", "Delete this job record?")]
+      ];
+      if (visual.locked) {
+        actionDefinitions.push(["Clear project lock", "🔒", "ui2-job-action-lock", () => manageJob(projectCellValue(job, columns), "clearlock", "Clear the lock for this job project?")]);
+      }
+      actionDefinitions.forEach(([label, glyph, className, handler]) => {
+        const button = el("button", `ui2-mini-button ui2-job-action-icon ${className}`, glyph);
         button.type = "button";
+        button.title = label;
+        button.setAttribute("aria-label", label);
         button.addEventListener("click", handler);
         actionCell.appendChild(button);
       });
       row.appendChild(actionCell);
 
-      columns.forEach((column) => {
+      displayColumns.forEach((column) => {
         const value = stripHtml(job?.cells?.[column.index]?.value || "");
-        const cell = el("td", null, value);
+        const cellClasses = [];
+        if (column.name === "project") {
+          cellClasses.push("ui2-job-project");
+          if (visual.projectColor) {
+            cellClasses.push(`ui2-job-project-${visual.projectColor}`);
+          }
+        }
+        const cell = el("td", cellClasses.join(" ") || null, value);
+        if (column.name === "details") {
+          cell.classList.add("ui2-job-details");
+        }
         cell.title = value;
         row.appendChild(cell);
       });
@@ -3715,7 +3790,11 @@
   if (window.GenAppUi2ExposeTestHooks) {
     window.GenAppUi2TestHooks = {
       filterJobRows,
+      jobColumns,
+      jobDisplayColumns,
       jobEndSeconds,
+      jobVisualState,
+      renderJobManagerTable,
       normalizeFileList,
       payloadFileList,
       fileDownloadLinks,

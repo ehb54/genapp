@@ -23,17 +23,33 @@ let source = fs.readFileSync(path.join(repoRoot, "languages/ui2/add/js/ui2.js"),
 source = source.replace(/\\n  init\\(\\);\\n\\}\\(\\)\\);\\s*\$/, "\\n}());\\n");
 
 function createNode(tag) {
+  const classes = new Set();
   const node = {
     tagName: String(tag || "div").toUpperCase(),
+    attributes: {},
     dataset: {},
     style: {},
     children: [],
     className: "",
     isConnected: true,
     classList: {
-      add() {},
-      remove() {},
-      toggle() {}
+      add(...names) {
+        names.filter(Boolean).forEach((name) => classes.add(name));
+        node.className = Array.from(classes).join(" ");
+      },
+      remove(...names) {
+        names.forEach((name) => classes.delete(name));
+        node.className = Array.from(classes).join(" ");
+      },
+      toggle(name, force) {
+        if (force === true || (force == null && !classes.has(name))) {
+          classes.add(name);
+        } else {
+          classes.delete(name);
+        }
+        node.className = Array.from(classes).join(" ");
+        return classes.has(name);
+      }
     },
     appendChild(child) {
       this.children.push(child);
@@ -53,6 +69,12 @@ function createNode(tag) {
     },
     closest() {
       return null;
+    },
+    setAttribute(name, value) {
+      this.attributes[name] = String(value);
+    },
+    getAttribute(name) {
+      return Object.prototype.hasOwnProperty.call(this.attributes, name) ? this.attributes[name] : null;
     },
     set innerHTML(value) {
       this._html = String(value || "");
@@ -210,6 +232,39 @@ function job(id, moduleName, project, endSeconds, endText, duration) {
   };
 }
 
+const legacyJobColumns = [
+  { index: 0, name: "actions", label: "Actions", hidden: false },
+  { index: 1, name: "module", label: "Module", hidden: false },
+  { index: 2, name: "project", label: "Project", hidden: false },
+  { index: 3, name: "details", label: "Details", hidden: false },
+  { index: 4, name: "start", label: "Start", hidden: false },
+  { index: 5, name: "startnumeric", label: "Start numeric", hidden: true },
+  { index: 6, name: "end", label: "End", hidden: false },
+  { index: 7, name: "endnumeric", label: "End numeric", hidden: true },
+  { index: 8, name: "duration", label: "Duration", hidden: false },
+  { index: 9, name: "remoteip", label: "Remote IP", hidden: true },
+  { index: 10, name: "resource", label: "Resource", hidden: true }
+];
+
+function legacyJob(id, moduleName, project, endSeconds, endText, duration, details, actions) {
+  return {
+    id,
+    cells: [
+      { value: actions || "→⇒⇓" },
+      { value: moduleName },
+      { value: project },
+      { value: details || "" },
+      { value: "2026 Jun 28 10:00:00 UTC" },
+      { value: "1000" },
+      { value: endText || "" },
+      { value: String(endSeconds || 0) },
+      { value: duration || "0.5s" },
+      { value: "127.0.0.1" },
+      { value: "host" }
+    ]
+  };
+}
+
 const now = 2000000;
 const rows = [
   job("recent", "tools/data_interpolation", "hello", now - 3600, "", "0.7s"),
@@ -239,6 +294,59 @@ assert.deepStrictEqual(
   hooks.filterJobRows(rows, { running: false, completed: "*all*", project: "hello", module: "tools/data_interpolation" }, now).map((row) => row.id),
   ["recent", "old", "running"],
   "project and module filters match loaded row values"
+);
+
+const legacyRows = [
+  legacyJob(
+    "active-job",
+    "simulate/monomer_monte_carlo",
+    "<font color='red'>no_project_specified</font>",
+    0,
+    "18.2% (e.c. 1m 51.19s)",
+    "active",
+    "run_0/monomer_monte_carlo/",
+    "→⇒⊗&#x1F512;"
+  )
+];
+assert.deepStrictEqual(
+  hooks.jobDisplayColumns(legacyJobColumns).map((column) => column.name),
+  ["module", "project", "details", "start", "end", "duration"],
+  "Job Manager displays Details while hiding legacy technical columns"
+);
+
+const jobThead = createNode("thead");
+const jobTbody = createNode("tbody");
+hooks.renderJobManagerTable(jobThead, jobTbody, legacyJobColumns, legacyRows);
+assert(
+  jobThead.children[0].children.map((cell) => cell.textContent).includes("Details"),
+  "Job Manager renders the Details header"
+);
+assert(
+  jobTbody.children[0].className.includes("ui2-job-row-running"),
+  "running jobs get a row marker"
+);
+assert(
+  jobTbody.children[0].className.includes("ui2-job-row-locked"),
+  "locked jobs get a row marker"
+);
+assert(
+  jobTbody.children[0].children.map((cell) => cell.textContent).includes("run_0/monomer_monte_carlo/"),
+  "Job Manager renders Details values"
+);
+const projectCell = jobTbody.children[0].children.find((cell) => cell.textContent === "no_project_specified");
+assert(projectCell, "Job Manager renders the project cell");
+assert(
+  projectCell.className.includes("ui2-job-project-red"),
+  "locked running project is rendered in red"
+);
+const actionText = jobTbody.children[0].children[1].children.map((button) => button.textContent).join("");
+assert(
+  actionText.includes("⊗"),
+  "running job renders the cancel action"
+);
+assert(
+  actionText.includes("🔒"),
+  "locked job renders the clear-lock action"
 );
 
 assert.strictEqual(

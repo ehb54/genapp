@@ -935,7 +935,57 @@ code {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
-  min-width: 13rem;
+  min-width: 7rem;
+}
+
+.ui2-job-action-icon {
+  min-width: 2rem;
+  padding: 0.28rem 0.4rem;
+  text-align: center;
+}
+
+.ui2-job-action-attach {
+  border-color: color-mix(in srgb, #4ade80 45%, var(--ui2-border));
+  color: #4ade80;
+}
+
+.ui2-job-action-danger {
+  border-color: color-mix(in srgb, #ff5f6d 45%, var(--ui2-border));
+  color: #ff5f6d;
+}
+
+.ui2-job-action-lock {
+  border-color: color-mix(in srgb, #f2d36b 45%, var(--ui2-border));
+  color: #f2d36b;
+}
+
+.ui2-job-row-running {
+  background: rgba(255, 95, 109, 0.05);
+}
+
+.ui2-job-row-locked {
+  box-shadow: inset 3px 0 rgba(242, 211, 107, 0.55);
+}
+
+.ui2-job-project {
+  font-weight: 700;
+}
+
+.ui2-job-project-red {
+  color: #ff5f6d;
+}
+
+.ui2-job-project-yellow {
+  color: #f2d36b;
+}
+
+.ui2-job-project-green {
+  color: #4ade80;
+}
+
+.ui2-job-details {
+  color: var(--ui2-muted);
+  white-space: nowrap;
 }
 
 .ui2-mini-button {
