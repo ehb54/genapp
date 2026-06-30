@@ -177,6 +177,12 @@ assert(
   "top bar opens File Manager as a utility overlay"
 );
 assert(
+  source.includes('legacyEndpoint("", "ajax/sys_config/sys_pull.php")') &&
+    source.includes('url.searchParams.set("datetime", "0")') &&
+    source.includes('input.value = payload.datetime'),
+  "system utility serverdate fields use the legacy datetime pull endpoint"
+);
+assert(
   !source.includes('nodes.jobs?.addEventListener("click", () => loadModule("sys_job_manager"));'),
   "top bar no longer replaces the active module with Job Manager"
 );

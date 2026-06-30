@@ -14,6 +14,16 @@ Related notes:
 - `doc/UI2-Shared-Change-Review-ROA.md`
 - `doc/UI2-Renderer-ROA.md`
 
+Zazzie UI2 deployment contract:
+
+- Canonical executable UI2 entry point: `https://zazzie3.genapp.rocks/sassie3/ui2/`.
+- `https://zazzie.genapp.rocks/sassie3/ui2/` may serve static UI2 files, but
+  it does not execute the legacy PHP AJAX endpoints.
+- Do not rely on `/sassie3/output/ui2/` compatibility paths for UI2.
+- Do not add host-level Apache routing as a workaround for UI2 endpoint bugs.
+  UI2 should derive legacy backend endpoints from the generated application
+  contract, and Zazzie deploys should flow through the normal update path.
+
 Useful wiki entry points:
 
 - `../genapp.wiki/Reference-Jobs.md`

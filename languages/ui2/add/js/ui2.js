@@ -1546,7 +1546,7 @@
       return renderFileManagerTool(module, fields);
     }
     if (moduleId === "sys_user_config") {
-      return renderSimpleSystemTool("Settings", fields);
+      return renderUserConfigTool(module, fields);
     }
     if (moduleId === "sys_logoff") {
       return renderSimpleSystemTool("Logoff", fields);
@@ -1653,6 +1653,7 @@
     refresh.addEventListener("click", () => loadJobManagerRows(table));
     deleteMany.addEventListener("click", () => deleteSelectedJobs(table));
     filters.addEventListener("change", () => applyJobManagerFilters(table));
+    refreshServerDate(section);
     window.setTimeout(() => loadJobManagerRows(table), 0);
     return section;
   }
@@ -1704,8 +1705,188 @@
     table._ui2UtilityModule = module || {};
     refresh.addEventListener("click", () => loadFileManagerRows(table));
     download.addEventListener("click", () => downloadFileManagerSelection(table, status, links, module || {}));
+    refreshServerDate(section);
     window.setTimeout(() => loadFileManagerRows(table), 0);
     return section;
+  }
+
+  function renderUserConfigTool(module, fields) {
+    const section = el("section", "ui2-section ui2-system-tool ui2-user-config");
+    const form = el("form", "ui2-utility-form");
+    const inputFields = fields.filter((field) => field.role !== "output");
+    const outputFields = fields.filter((field) => field.role === "output");
+    form.appendChild(renderUtilitySection("Settings", inputFields, "input"));
+    form.appendChild(renderUtilityActions("Update settings"));
+    if (outputFields.length) {
+      form.appendChild(renderUtilitySection("Status", outputFields, "output"));
+    }
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      await submitUtilityModule(form, module, "ajax/sys_config/sys_user_config.php");
+    });
+    form.addEventListener("reset", () => window.setTimeout(() => syncFormValues(form), 0));
+    form.addEventListener("input", () => syncFormValues(form));
+    form.addEventListener("change", () => syncFormValues(form));
+    section.appendChild(form);
+    window.setTimeout(() => {
+      syncFormValues(form);
+      pullUtilityFieldValues(form);
+    }, 0);
+    return section;
+  }
+
+  function renderUtilitySection(title, fields, role) {
+    const section = el("section", "ui2-section");
+    const header = el("div", "ui2-section-header");
+    header.appendChild(el("h2", null, title));
+    header.appendChild(el("span", "ui2-pill", `${fields.length}`));
+    const body = el("div", "ui2-section-body");
+    const renderPlan = planFields(fields);
+    if (!fields.length) {
+      body.appendChild(el("p", "ui2-help", `No ${title.toLowerCase()} declared.`));
+    } else {
+      renderPlan.forEach((item) => {
+        body.appendChild(item.kind === "table" ? renderTableizedRepeater(item, role) : renderField(item.field, role));
+      });
+    }
+    section.append(header, body);
+    return section;
+  }
+
+  function renderUtilityActions(submitLabel) {
+    const actions = el("div", "ui2-form-actions");
+    const submit = el("button", "ui2-button ui2-button-primary", submitLabel || "Submit");
+    submit.type = "submit";
+    const reset = el("button", "ui2-button ui2-button-quiet", "Reset");
+    reset.type = "reset";
+    const status = el("div", "ui2-submit-status", "");
+    status.setAttribute("role", "status");
+    actions.append(submit, reset, status);
+    return actions;
+  }
+
+  function syncFormValues(form) {
+    const initialValues = collectControlValues(form, () => true);
+    syncLinkedControls(form, initialValues);
+    const rawValues = collectControlValues(form, () => true);
+    const activeRows = evaluateRepeatVisibility(form, rawValues);
+    updateRepeats(form, activeRows, rawValues);
+    updateRepeatTables(form, rawValues);
+    return collectControlValues(form, (control) => {
+      const row = control.closest(".ui2-field");
+      return !row || activeRows.get(row) !== false;
+    });
+  }
+
+  async function pullUtilityFieldValues(form) {
+    const requested = Array.from(form.querySelectorAll("[data-field-id]"))
+      .map((control) => control.dataset.fieldId)
+      .filter(Boolean);
+    if (!requested.length) {
+      return;
+    }
+    try {
+      await refreshSessionState();
+      const url = new URL(legacyEndpoint("pullBase", "ajax/sys_config/sys_pull.php"), window.location.href);
+      url.searchParams.set("_window", window.name);
+      url.searchParams.set("_logon", state.session.logon || "");
+      requested.forEach((id) => url.searchParams.set(id, "0"));
+      const response = await fetch(url.toString(), { cache: "no-cache", credentials: "same-origin" });
+      const payload = await parseJsonResponse(response, "Settings defaults");
+      applyPulledValues(form, payload || {});
+      syncFormValues(form);
+    } catch (error) {
+      const status = form.querySelector(".ui2-submit-status");
+      setSubmitStatus(status, `Could not load current settings: ${error.message}`, "error");
+    }
+  }
+
+  function applyPulledValues(form, payload) {
+    form.querySelectorAll("[data-field-id]").forEach((control) => {
+      const id = control.dataset.fieldId;
+      if (!id || payload[id] == null || control.type === "password") {
+        return;
+      }
+      const value = payload[id];
+      if (control.type === "checkbox") {
+        control.checked = value === true || String(value).toLowerCase() === "on" || String(value).toLowerCase() === "true";
+      } else if (Array.isArray(value)) {
+        control.value = value[Number(control.dataset.repeatTableIndex || 0)] || control.value;
+      } else {
+        control.value = value;
+      }
+    });
+  }
+
+  async function submitUtilityModule(form, module, endpointPath) {
+    const status = form.querySelector(".ui2-submit-status");
+    const submitButton = form.querySelector('button[type="submit"]');
+    syncFormValues(form);
+    submitButton.disabled = true;
+    setSubmitStatus(status, "Submitting settings", "pending");
+    try {
+      await refreshSessionState();
+      if (!state.session.logon) {
+        throw new Error("You must be logged on to update settings");
+      }
+      const endpoint = legacyEndpoint("", endpointPath);
+      const response = await fetch(endpoint, {
+        method: "POST",
+        body: buildUtilityFormData(form, module),
+        credentials: "same-origin"
+      });
+      const payload = await parseJsonResponse(response, module?.label || "Settings");
+      if (!response.ok || payload.error || payload._status === "failed") {
+        throw new Error(payload.error || `Settings returned HTTP ${response.status}`);
+      }
+      setSubmitStatus(status, payload.status || "Settings updated", "ok");
+      applyUtilityOutputs(form, payload);
+      await refreshSessionState();
+    } catch (error) {
+      setSubmitStatus(status, error.message, "error");
+      applyUtilityOutputs(form, { status: error.message });
+    } finally {
+      submitButton.disabled = false;
+    }
+  }
+
+  function buildUtilityFormData(form, module) {
+    const formData = new FormData();
+    form.querySelectorAll("[data-field-id]").forEach((control) => {
+      if (control.disabled || control.type === "radio" && !control.checked) {
+        return;
+      }
+      const name = legacyUtilityFieldName(control);
+      if (!name || control.closest(".ui2-output-field")) {
+        return;
+      }
+      appendFormValue(formData, name, control.type === "checkbox" ? (control.checked ? "on" : "") : control.value);
+    });
+    formData.set("_uuid", createUuid());
+    formData.set("_window", window.name);
+    formData.set("_project", state.session.project || "");
+    formData.set("_logon", state.session.logon || "");
+    if (module?.executable) {
+      formData.set("_docrootexecutable", module.executable);
+    }
+    return formData;
+  }
+
+  function legacyUtilityFieldName(control) {
+    const id = control.dataset.fieldId || "";
+    const row = control.closest(".ui2-field");
+    const repeat = row?.dataset.repeat || "";
+    const parent = repeatControllerId(repeat);
+    return parent && parent !== id ? `${parent}-${id}` : id;
+  }
+
+  function applyUtilityOutputs(form, payload) {
+    form.querySelectorAll("[data-output-field-id]").forEach((output) => {
+      const id = output.dataset.outputFieldId;
+      if (id && payload[id] != null) {
+        output.textContent = Array.isArray(payload[id]) ? payload[id].join("\n") : String(payload[id]);
+      }
+    });
   }
 
   async function loadJobManagerRows(table) {
@@ -2435,10 +2616,35 @@
       input.type = "text";
       input.value = value;
       input.dataset.fieldId = id;
+      if (id === "serverdate") {
+        input.readOnly = true;
+      }
       stack.appendChild(input);
     }
     row.appendChild(stack);
     return row;
+  }
+
+  async function refreshServerDate(section) {
+    const input = toolFieldControl(section, "serverdate", "input");
+    if (!input) {
+      return;
+    }
+    try {
+      await refreshSessionState();
+      const url = new URL(legacyEndpoint("", "ajax/sys_config/sys_pull.php"), window.location.href);
+      url.searchParams.set("_window", window.name);
+      url.searchParams.set("_logon", state.session.logon || "");
+      url.searchParams.set("datetime", "0");
+      const response = await fetch(url.toString(), { cache: "no-cache", credentials: "same-origin" });
+      const payload = await parseJsonResponse(response, "Server date");
+      if (payload?.datetime) {
+        input.value = payload.datetime;
+      }
+    } catch (error) {
+      input.value = "Server date unavailable";
+      input.title = error.message;
+    }
   }
 
   function renderJobSelectFilter(id, label, options) {
@@ -3797,6 +4003,7 @@
       jobEndSeconds,
       jobVisualState,
       renderJobManagerTable,
+      refreshServerDate,
       normalizeFileList,
       payloadFileList,
       fileDownloadLinks,
