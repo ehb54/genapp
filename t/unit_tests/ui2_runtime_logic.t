@@ -184,6 +184,11 @@ assert(
   source.includes('submitSystemModuleAction("reattach", [jobId], "sys_job_manager")'),
   "reattach uses the explicit Job Manager endpoint"
 );
+assert.strictEqual(
+  hooks.jobManagerEndpoint,
+  "ajax/sys_config/sys_jobs2.php",
+  "Job Manager uses the legacy details-capable job feed"
+);
 assert(
   source.includes('closeUtilityOverlay();\\n      await loadModule(moduleId);'),
   "reattach closes the utility overlay before switching to the attached module"

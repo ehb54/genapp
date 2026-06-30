@@ -18,6 +18,7 @@
   const params = new URLSearchParams(window.location.search);
   const prefs = loadPreferences();
   const devMode = params.get("ui2dev") === "1" || prefs.devMode === true;
+  const JOB_MANAGER_ENDPOINT = "ajax/sys_config/sys_jobs2.php";
   let plotlyLoadPromise = null;
 
   const state = {
@@ -1716,7 +1717,7 @@
     renderTableMessage(tbody, 1, "Loading jobs...");
     try {
       await refreshSessionState();
-      const url = new URL(legacyEndpoint("jobsBase", "ajax/sys_config/sys_jobs.php"), window.location.href);
+      const url = new URL(legacyEndpoint("jobsBase", JOB_MANAGER_ENDPOINT), window.location.href);
       url.searchParams.set("_window", window.name);
       const response = await fetch(url.toString(), { cache: "no-cache", credentials: "same-origin" });
       const payload = await parseJsonResponse(response, "Job Manager");
@@ -3790,6 +3791,7 @@
   if (window.GenAppUi2ExposeTestHooks) {
     window.GenAppUi2TestHooks = {
       filterJobRows,
+      jobManagerEndpoint: JOB_MANAGER_ENDPOINT,
       jobColumns,
       jobDisplayColumns,
       jobEndSeconds,
