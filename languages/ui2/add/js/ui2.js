@@ -111,7 +111,8 @@
     if (requested) {
       return loadModule(requested);
     }
-    return loadFirstAvailable();
+    showStartupShell();
+    return Promise.resolve();
   }
 
   function ensureWindowName() {
@@ -539,32 +540,6 @@
     }
   }
 
-  async function loadFirstAvailable() {
-    for (const moduleId of candidateModules) {
-      try {
-        const response = await fetch(`modules/${encodeURIComponent(moduleId)}.json`, { cache: "no-cache" });
-        if (!response.ok) {
-          continue;
-        }
-        const payload = await response.json();
-        if (nodes.input) {
-          nodes.input.value = moduleId;
-        }
-        state.moduleId = moduleId;
-        state.menuId = menuIdForModule(moduleId);
-        state.module = payload.modulejson || payload;
-        state.view = payload.viewjson || {};
-        state.values = {};
-        renderModule();
-        updateSelectedNavigation();
-        return;
-      } catch (error) {
-        // Keep looking; this startup path is intentionally forgiving.
-      }
-    }
-    showError("No candidate modules could be loaded.");
-  }
-
   async function fetchModuleDefinition(moduleId) {
     const response = await fetch(`modules/${encodeURIComponent(moduleId)}.json`, { cache: "no-cache" });
     if (!response.ok) {
@@ -669,6 +644,26 @@
     }
   }
 
+  function showStartupShell() {
+    stopJobPolling();
+    closeUtilityOverlay();
+    setSidebarCollapsed(false, false);
+    state.moduleId = "";
+    state.menuId = "";
+    state.module = null;
+    state.view = {};
+    state.values = {};
+    nodes.root.hidden = true;
+    nodes.root.innerHTML = "";
+    nodes.empty.hidden = false;
+    nodes.empty.innerHTML = [
+      '<p class="ui2-kicker">Ready</p>',
+      '<h2>Choose a module from the menu.</h2>',
+      '<p>Select a menu group, then choose the tool you want to run.</p>'
+    ].join("");
+    updateSelectedNavigation();
+  }
+
   function renderModule() {
     const module = state.module || {};
     const fields = visibleFields(Array.isArray(module.fields) ? module.fields : []);
@@ -749,7 +744,7 @@
         const item = el("button", "ui2-module-button", displayLabel(module.label || module.id));
         item.type = "button";
         item.dataset.moduleId = module.id || "";
-        item.addEventListener("click", () => loadModule(module.id));
+        item.addEventListener("click", () => chooseMenuModule(module.id));
         list.appendChild(item);
       });
 
@@ -763,6 +758,13 @@
       nodes.menuNav.appendChild(group);
     });
 
+  }
+
+  async function chooseMenuModule(moduleId) {
+    await loadModule(moduleId);
+    if (state.moduleId === sanitizeModuleId(moduleId)) {
+      setSidebarCollapsed(true, false);
+    }
   }
 
   function menuTitle(menu) {

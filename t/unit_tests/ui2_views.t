@@ -40,6 +40,7 @@ like( $index, qr/js\/ui2\.js/, 'ui2 index loads the plain JavaScript playground'
 like( $index, qr/css\/ui2\.css/, 'ui2 index loads the ui2 stylesheet' );
 like( $index, qr/id="ui2-session-status"/, 'ui2 index exposes a session/project status target' );
 like( $index, qr/data-app-id="ui2_views"/, 'ui2 index exposes the generated application id' );
+like( $index, qr/Choose a module from the menu/, 'ui2 index opens at a neutral menu-first shell' );
 
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
 like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declares a module submit endpoint helper' );
@@ -52,6 +53,11 @@ like( $ui2_js, qr/function openLoginDialog\(\)/, 'ui2 runtime bridge keeps login
 like( $ui2_js, qr/sys_login\.php/, 'ui2 runtime bridge posts login to the legacy login endpoint' );
 like( $ui2_js, qr/function parseJsonResponse\(response, label\)/, 'ui2 runtime bridge reports non-JSON backend responses with endpoint context' );
 like( $ui2_js, qr/PHP source instead of executing it/, 'ui2 runtime bridge calls out PHP-disabled runtime hosts' );
+like( $ui2_js, qr/function showStartupShell\(\)/, 'ui2 startup can show the application shell without loading a module' );
+like( $ui2_js, qr/showStartupShell\(\);\s+return Promise\.resolve\(\);/s, 'ui2 startup does not auto-load the first generated module' );
+unlike( $ui2_js, qr/function loadFirstAvailable\(\)/, 'ui2 no longer has a first-available-module startup path' );
+like( $ui2_js, qr/function chooseMenuModule\(moduleId\)/, 'ui2 menu module selection uses a dedicated transition path' );
+like( $ui2_js, qr/setSidebarCollapsed\(true, false\)/, 'ui2 collapses the menu only after a module is selected without persisting that state' );
 like( $ui2_js, qr/function initWebSocket\(\)/, 'ui2 runtime bridge initializes the legacy websocket channel' );
 like( $ui2_js, qr/ajax\/sys_uid\.php/, 'ui2 runtime bridge uses the legacy sys_uid endpoint for websocket discovery' );
 like( $ui2_js, qr/new window\.ab\.Session/, 'ui2 runtime bridge uses the legacy Autobahn websocket session' );
