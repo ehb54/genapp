@@ -52,9 +52,13 @@ like( $ui2_js, qr/legacyEndpoint\("", "ajax"\)/, 'ui2 runtime bridge defaults su
 like( $ui2_js, qr/dataset\.appId/, 'ui2 runtime bridge can fall back to the generated application id' );
 like( $ui2_js, qr/sys_status\.php/, 'ui2 runtime bridge checks legacy sys_status for logon/project state' );
 like( $ui2_js, qr/function openLoginDialog\(\)/, 'ui2 runtime bridge keeps login on the ui2 page' );
+like( $ui2_js, qr/function openLogoffDialog\(\)/, 'ui2 logoff opens a confirmation dialog before calling the backend' );
+like( $ui2_js, qr/el\("button", "ui2-button ui2-logoff-confirm", "Logoff"\)/, 'ui2 logoff confirmation includes an explicit Logoff button' );
 like( $ui2_js, qr/sys_login\.php/, 'ui2 runtime bridge posts login to the legacy login endpoint' );
 like( $ui2_js, qr/function parseJsonResponse\(response, label\)/, 'ui2 runtime bridge reports non-JSON backend responses with endpoint context' );
 like( $ui2_js, qr/PHP source instead of executing it/, 'ui2 runtime bridge calls out PHP-disabled runtime hosts' );
+like( $ui2_js, qr/function appTitle\(\)/, 'ui2 splash resolves the generated application title' );
+like( $ui2_js, qr/docs\.href = "\.\.\/docs\/"/, 'ui2 splash documentation link resolves to the legacy app docs directory' );
 like( $ui2_js, qr/function showStartupShell\(\)/, 'ui2 startup can show the application shell without loading a module' );
 like( $ui2_js, qr/showStartupShell\(\);\s+return Promise\.resolve\(\);/s, 'ui2 startup does not auto-load the first generated module' );
 unlike( $ui2_js, qr/function loadFirstAvailable\(\)/, 'ui2 no longer has a first-available-module startup path' );

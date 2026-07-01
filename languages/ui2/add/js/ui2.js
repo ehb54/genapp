@@ -337,7 +337,49 @@
       openLoginDialog();
       return;
     }
-    await logoffSession();
+    openLogoffDialog();
+  }
+
+  function openLogoffDialog() {
+    let overlay = document.getElementById("ui2-logoff-dialog");
+    if (overlay) {
+      overlay.hidden = false;
+      overlay.querySelector(".ui2-logoff-confirm")?.focus();
+      return;
+    }
+
+    overlay = el("div", "ui2-dialog-overlay");
+    overlay.id = "ui2-logoff-dialog";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "ui2-logoff-title");
+
+    const panel = el("section", "ui2-dialog ui2-logoff-dialog");
+    const header = el("div", "ui2-dialog-header");
+    const title = el("h2", null, "Logoff");
+    title.id = "ui2-logoff-title";
+    const close = el("button", "ui2-dialog-close", "Close");
+    close.type = "button";
+    close.addEventListener("click", () => {
+      overlay.hidden = true;
+    });
+    header.append(title, close);
+
+    const actions = el("div", "ui2-dialog-actions");
+    const confirm = el("button", "ui2-button ui2-logoff-confirm", "Logoff");
+    confirm.type = "button";
+    confirm.addEventListener("click", async () => {
+      confirm.disabled = true;
+      await logoffSession();
+      confirm.disabled = false;
+      overlay.hidden = true;
+    });
+    actions.appendChild(confirm);
+
+    panel.append(header, actions);
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+    confirm.focus();
   }
 
   function openLoginDialog() {
@@ -510,7 +552,7 @@
     overlay.setAttribute("aria-labelledby", "ui2-splash-title");
 
     const panel = el("section", "ui2-dialog ui2-splash-dialog");
-    const title = el("h2", null, document.querySelector(".ui2-title")?.textContent || "GenApp");
+    const title = el("h2", null, appTitle());
     title.id = "ui2-splash-title";
 
     const actions = el("div", "ui2-splash-actions");
@@ -530,13 +572,20 @@
     actions.append(login, register);
 
     const docs = el("a", "ui2-splash-docs", "View the documentation");
-    docs.href = "docs";
+    docs.href = "../docs/";
     docs.target = "_blank";
     docs.rel = "noopener";
 
     panel.append(title, actions, docs);
     overlay.appendChild(panel);
     document.body.appendChild(overlay);
+  }
+
+  function appTitle() {
+    return stringValue(appMap.title) ||
+      stringValue(document.querySelector(".ui2-topbar h1")?.textContent) ||
+      stringValue(document.querySelector(".ui2-shell")?.dataset.appTitle) ||
+      "GenApp";
   }
 
   function hideSplashDialog() {
