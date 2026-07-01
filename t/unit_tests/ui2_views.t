@@ -96,6 +96,8 @@ like( $ui2_js, qr/parts\.unshift\(expected\)[\s\S]+parts\.unshift\(parent\)/, 'u
 like( $ui2_js, qr/form\.noValidate = true/, 'ui2 Settings uses inline validation inside the modal instead of browser-native validation bubbles' );
 like( $ui2_js, qr/function validateUtilityForm\(form\)/, 'ui2 Settings validates active utility controls before submit' );
 like( $ui2_js, qr/await refreshSessionState\(\);\s+await pullUtilityFieldValues\(form\);/s, 'ui2 Settings refreshes pulled project choices after a successful update' );
+like( $ui2_js, qr/function normalizeUserConfigField\(field\)/, 'ui2 Settings can apply legacy system-tool field exceptions' );
+like( $ui2_js, qr/id === "newprojectdesc"[\s\S]+required: "false"/, 'ui2 Settings keeps new project descriptions optional like legacy' );
 like( $ui2_js, qr/control\.pattern = field\.pattern/, 'ui2 Settings carries module regex patterns onto generated controls' );
 unlike( $ui2_js, qr/document\.createTextNode\([^)]*Optional/, 'ui2 switches do not render generic Optional text' );
 like( $ui2_js, qr/formData\.append\("selectedfiles\[\]", id\)/, 'ui2 File Manager sends legacy encoded selected file ids' );

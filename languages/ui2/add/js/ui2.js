@@ -1747,7 +1747,8 @@
     const section = el("section", "ui2-section ui2-system-tool ui2-user-config");
     const form = el("form", "ui2-utility-form");
     form.noValidate = true;
-    const inputFields = userConfigFields(fields.filter((field) => field.role !== "output"));
+    const inputFields = userConfigFields(fields.filter((field) => field.role !== "output"))
+      .map(normalizeUserConfigField);
     const outputFields = fields.filter((field) => field.role === "output");
     form.appendChild(renderUtilitySection("Settings", inputFields, "input"));
     form.appendChild(renderUtilityActions("Update settings"));
@@ -1783,6 +1784,13 @@
       const controller = repeatControllerId(field.repeat || "");
       return !controller || visibleIds.has(controller);
     });
+  }
+
+  function normalizeUserConfigField(field) {
+    if (field?.id === "newprojectdesc") {
+      return { ...field, required: "false" };
+    }
+    return field;
   }
 
   function userConfigFieldVisible(field) {
