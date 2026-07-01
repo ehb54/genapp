@@ -42,6 +42,7 @@ like( $index, qr/id="ui2-session-status"/, 'ui2 index exposes a session/project 
 like( $index, qr/data-app-id="ui2_views"/, 'ui2 index exposes the generated application id' );
 like( $index, qr/Choose a module from the menu/, 'ui2 index opens at a neutral menu-first shell' );
 like( $index, qr/class="ui2-nav-icon-button" id="ui2-nav-toggle"/, 'ui2 menu toggle lives in the topbar instead of the collapsed sidebar column' );
+like( $index, qr/id="ui2-module-strip"/, 'ui2 index exposes a legacy-style selected menu module strip' );
 
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
 like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declares a module submit endpoint helper' );
@@ -58,11 +59,11 @@ like( $ui2_js, qr/function showStartupShell\(\)/, 'ui2 startup can show the appl
 like( $ui2_js, qr/showStartupShell\(\);\s+return Promise\.resolve\(\);/s, 'ui2 startup does not auto-load the first generated module' );
 unlike( $ui2_js, qr/function loadFirstAvailable\(\)/, 'ui2 no longer has a first-available-module startup path' );
 like( $ui2_js, qr/function collapseMenuGroups\(\)/, 'ui2 startup can leave all menu groups closed' );
-like( $ui2_js, qr/button\.setAttribute\("aria-expanded", "false"\)/, 'ui2 menu groups are rendered closed by default' );
-like( $ui2_js, qr/list\.hidden = true/, 'ui2 module lists are hidden by default' );
+like( $ui2_js, qr/activeMenuId/, 'ui2 tracks the visible menu category separately from the loaded module' );
+like( $ui2_js, qr/function renderModuleStrip\(\)/, 'ui2 renders selected menu modules outside the sidebar group cards' );
 unlike( $ui2_js, qr/index === 0 \? "true" : "false"/, 'ui2 startup does not privilege the first menu group' );
 like( $ui2_js, qr/function chooseMenuModule\(moduleId\)/, 'ui2 menu module selection uses a dedicated transition path' );
-like( $ui2_js, qr/function expandMenuGroup\(targetGroup\)/, 'ui2 menu group selection opens the clicked group and closes the others' );
+like( $ui2_js, qr/function selectMenuGroup\(menuId\)/, 'ui2 menu group selection changes module choices without replacing the loaded module' );
 like( $ui2_js, qr/setSidebarCollapsed\(true, false\)/, 'ui2 collapses the menu only after a module is selected without persisting that state' );
 like( $ui2_js, qr/function menuVisibleForSession\(menu\)/, 'ui2 menu rendering filters restricted menu groups using session state' );
 like( $ui2_js, qr/function userConfigGroupVisible\(groupId, group\)/, 'ui2 Settings can hide deprecated user-configurable groups' );
@@ -160,7 +161,8 @@ like( $ui2_css, qr/\.ui2-output-rendered/, 'ui2 stylesheet distinguishes rendere
 like( $ui2_css, qr/\.ui2-output-field/, 'ui2 stylesheet lets output rows use the full default width' );
 like( $ui2_css, qr/\.ui2-mini-button/, 'ui2 stylesheet includes compact system action buttons' );
 like( $ui2_css, qr/\.ui2-file-download-links/, 'ui2 stylesheet makes File Manager download links visible beside actions' );
-like( $ui2_css, qr/\.ui2-module-list\[hidden\]\s*\{\s*display:\s*none;/s, 'ui2 stylesheet honors hidden menu module lists' );
+like( $ui2_css, qr/\.ui2-module-strip\[hidden\]\s*\{\s*display:\s*none;/s, 'ui2 stylesheet honors hidden module choice strips' );
+like( $ui2_css, qr/\.ui2-strip-module-button/, 'ui2 stylesheet includes selected menu module strip buttons' );
 
 my $app_map = read_file( File::Spec->catfile( $ui2, qw(js app-map.js) ) );
 like( $app_map, qr/addMenuFromParts\("demo", "Demo", ""\)/, 'ui2 app map records menu groups' );

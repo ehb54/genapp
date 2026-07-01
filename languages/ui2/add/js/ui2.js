@@ -25,6 +25,7 @@
   const state = {
     moduleId: "",
     menuId: "",
+    activeMenuId: "",
     module: null,
     view: {},
     values: {},
@@ -57,6 +58,7 @@
     empty: document.getElementById("ui2-empty"),
     candidates: document.getElementById("ui2-module-candidates"),
     menuNav: document.getElementById("ui2-menu-nav"),
+    moduleStrip: document.getElementById("ui2-module-strip"),
     navToggle: document.getElementById("ui2-nav-toggle"),
     sessionStatus: document.getElementById("ui2-session-status"),
     jobs: document.getElementById("ui2-jobs"),
@@ -563,6 +565,7 @@
       const payload = await fetchModuleDefinition(moduleId);
       state.moduleId = moduleId;
       state.menuId = menuIdForModule(moduleId);
+      state.activeMenuId = state.menuId;
       state.module = payload.module;
       state.view = payload.viewjson || {};
       state.values = {};
@@ -685,6 +688,7 @@
     setSidebarCollapsed(false, false);
     state.moduleId = "";
     state.menuId = "";
+    state.activeMenuId = "";
     state.module = null;
     state.view = {};
     state.values = {};
@@ -697,6 +701,7 @@
       '<p>Select a menu group, then choose the tool you want to run.</p>'
     ].join("");
     collapseMenuGroups();
+    renderModuleStrip();
     updateSelectedNavigation();
   }
 
@@ -774,27 +779,18 @@
 
       const button = el("button", "ui2-menu-button");
       button.type = "button";
-      button.setAttribute("aria-expanded", "false");
+      button.setAttribute("aria-pressed", state.activeMenuId === menu.id ? "true" : "false");
       button.appendChild(menuTitle(menu));
 
-      const list = el("div", "ui2-module-list");
-      list.hidden = true;
-      modules.forEach((module) => {
-        const item = el("button", "ui2-module-button", displayLabel(module.label || module.id));
-        item.type = "button";
-        item.dataset.moduleId = module.id || "";
-        item.addEventListener("click", () => chooseMenuModule(module.id));
-        list.appendChild(item);
-      });
-
       button.addEventListener("click", () => {
-        expandMenuGroup(group);
+        selectMenuGroup(menu.id);
       });
 
-      group.append(button, list);
+      group.appendChild(button);
       nodes.menuNav.appendChild(group);
     });
 
+    renderModuleStrip();
   }
 
   function menuVisibleForSession(menu) {
@@ -810,26 +806,37 @@
       return;
     }
     nodes.menuNav.querySelectorAll(".ui2-menu-group").forEach((group) => {
-      group.querySelector(".ui2-menu-button")?.setAttribute("aria-expanded", "false");
-      const list = group.querySelector(".ui2-module-list");
-      if (list) {
-        list.hidden = true;
-      }
+      group.querySelector(".ui2-menu-button")?.setAttribute("aria-pressed", "false");
     });
   }
 
-  function expandMenuGroup(targetGroup) {
-    if (!nodes.menuNav || !targetGroup) {
+  function selectMenuGroup(menuId) {
+    state.activeMenuId = stringValue(menuId);
+    renderMenu();
+  }
+
+  function renderModuleStrip() {
+    if (!nodes.moduleStrip) {
       return;
     }
-    nodes.menuNav.querySelectorAll(".ui2-menu-group").forEach((group) => {
-      const expanded = group === targetGroup;
-      group.querySelector(".ui2-menu-button")?.setAttribute("aria-expanded", expanded ? "true" : "false");
-      const list = group.querySelector(".ui2-module-list");
-      if (list) {
-        list.hidden = !expanded;
+    nodes.moduleStrip.innerHTML = "";
+    const menu = (appMap.menus || []).find((entry) => entry.id === state.activeMenuId && menuVisibleForSession(entry));
+    const modules = (menu?.modules || []).filter((module) => !isUtilityModule(module.id));
+    if (!modules.length) {
+      nodes.moduleStrip.hidden = true;
+      return;
+    }
+    modules.forEach((module) => {
+      const item = el("button", "ui2-strip-module-button", displayLabel(module.label || module.id));
+      item.type = "button";
+      item.dataset.moduleId = module.id || "";
+      if (module.id === state.moduleId) {
+        item.setAttribute("aria-current", "page");
       }
+      item.addEventListener("click", () => chooseMenuModule(module.id));
+      nodes.moduleStrip.appendChild(item);
     });
+    nodes.moduleStrip.hidden = false;
   }
 
   async function chooseMenuModule(moduleId) {
@@ -856,21 +863,11 @@
     if (!nodes.menuNav) {
       return;
     }
-    nodes.menuNav.querySelectorAll(".ui2-module-button").forEach((button) => {
-      const selected = button.dataset.moduleId === state.moduleId;
-      if (selected) {
-        button.setAttribute("aria-current", "page");
-        const group = button.closest(".ui2-menu-group");
-        const groupButton = group?.querySelector(".ui2-menu-button");
-        const list = group?.querySelector(".ui2-module-list");
-        groupButton?.setAttribute("aria-expanded", "true");
-        if (list) {
-          list.hidden = false;
-        }
-      } else {
-        button.removeAttribute("aria-current");
-      }
+    nodes.menuNav.querySelectorAll(".ui2-menu-group").forEach((group) => {
+      const active = group.dataset.menuId === state.activeMenuId;
+      group.querySelector(".ui2-menu-button")?.setAttribute("aria-pressed", active ? "true" : "false");
     });
+    renderModuleStrip();
   }
 
   function renderHeader(module, fields) {
