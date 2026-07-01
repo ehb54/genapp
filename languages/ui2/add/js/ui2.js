@@ -636,7 +636,7 @@
   function setSidebarCollapsed(collapsed, persist) {
     document.body.classList.toggle("ui2-sidebar-collapsed", collapsed);
     if (nodes.navToggle) {
-      nodes.navToggle.textContent = collapsed ? "Menu" : "Hide Menu";
+      nodes.navToggle.textContent = collapsed ? "Expand\nMenu" : "Hide Menu";
       nodes.navToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
     }
     if (persist) {
@@ -749,15 +749,27 @@
       });
 
       button.addEventListener("click", () => {
-        const expanded = button.getAttribute("aria-expanded") === "true";
-        button.setAttribute("aria-expanded", expanded ? "false" : "true");
-        list.hidden = expanded;
+        expandMenuGroup(group);
       });
 
       group.append(button, list);
       nodes.menuNav.appendChild(group);
     });
 
+  }
+
+  function expandMenuGroup(targetGroup) {
+    if (!nodes.menuNav || !targetGroup) {
+      return;
+    }
+    nodes.menuNav.querySelectorAll(".ui2-menu-group").forEach((group) => {
+      const expanded = group === targetGroup;
+      group.querySelector(".ui2-menu-button")?.setAttribute("aria-expanded", expanded ? "true" : "false");
+      const list = group.querySelector(".ui2-module-list");
+      if (list) {
+        list.hidden = !expanded;
+      }
+    });
   }
 
   async function chooseMenuModule(moduleId) {

@@ -57,7 +57,9 @@ like( $ui2_js, qr/function showStartupShell\(\)/, 'ui2 startup can show the appl
 like( $ui2_js, qr/showStartupShell\(\);\s+return Promise\.resolve\(\);/s, 'ui2 startup does not auto-load the first generated module' );
 unlike( $ui2_js, qr/function loadFirstAvailable\(\)/, 'ui2 no longer has a first-available-module startup path' );
 like( $ui2_js, qr/function chooseMenuModule\(moduleId\)/, 'ui2 menu module selection uses a dedicated transition path' );
+like( $ui2_js, qr/function expandMenuGroup\(targetGroup\)/, 'ui2 menu group selection opens the clicked group and closes the others' );
 like( $ui2_js, qr/setSidebarCollapsed\(true, false\)/, 'ui2 collapses the menu only after a module is selected without persisting that state' );
+like( $ui2_js, qr/collapsed \? "Expand\\nMenu" : "Hide Menu"/, 'ui2 collapsed menu button uses a two-line Expand Menu label' );
 like( $ui2_js, qr/function initWebSocket\(\)/, 'ui2 runtime bridge initializes the legacy websocket channel' );
 like( $ui2_js, qr/ajax\/sys_uid\.php/, 'ui2 runtime bridge uses the legacy sys_uid endpoint for websocket discovery' );
 like( $ui2_js, qr/new window\.ab\.Session/, 'ui2 runtime bridge uses the legacy Autobahn websocket session' );
@@ -150,6 +152,7 @@ like( $ui2_css, qr/\.ui2-output-rendered/, 'ui2 stylesheet distinguishes rendere
 like( $ui2_css, qr/\.ui2-output-field/, 'ui2 stylesheet lets output rows use the full default width' );
 like( $ui2_css, qr/\.ui2-mini-button/, 'ui2 stylesheet includes compact system action buttons' );
 like( $ui2_css, qr/\.ui2-file-download-links/, 'ui2 stylesheet makes File Manager download links visible beside actions' );
+like( $ui2_css, qr/\.ui2-module-list\[hidden\]\s*\{\s*display:\s*none;/s, 'ui2 stylesheet honors hidden menu module lists' );
 
 my $app_map = read_file( File::Spec->catfile( $ui2, qw(js app-map.js) ) );
 like( $app_map, qr/addMenuFromParts\("demo", "Demo", ""\)/, 'ui2 app map records menu groups' );

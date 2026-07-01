@@ -208,6 +208,7 @@ code {
 .ui2-sidebar-collapsed #ui2-nav-toggle {
   width: 100%;
   padding-inline: 0.3rem;
+  white-space: pre-line;
 }
 
 .ui2-module-loader {
@@ -264,6 +265,10 @@ code {
   display: grid;
   gap: 0.2rem;
   padding: 0.35rem;
+}
+
+.ui2-module-list[hidden] {
+  display: none;
 }
 
 .ui2-module-button {
