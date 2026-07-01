@@ -152,7 +152,32 @@ const context = {
       this.bubbles = !!options?.bubbles;
     }
   },
-  FormData: class FormData {},
+  FormData: class FormData {
+    constructor() {
+      this.values = new Map();
+    }
+    set(key, value) {
+      this.values.set(key, String(value));
+    }
+    append(key, value) {
+      const current = this.values.get(key);
+      if (current === undefined) {
+        this.values.set(key, [String(value)]);
+        return;
+      }
+      if (Array.isArray(current)) {
+        current.push(String(value));
+        return;
+      }
+      this.values.set(key, [current, String(value)]);
+    }
+    delete(key) {
+      this.values.delete(key);
+    }
+    get(key) {
+      return this.values.get(key);
+    }
+  },
   HTMLProgressElement: class HTMLProgressElement {},
   Option: class Option {
     constructor(text, value) {
@@ -640,6 +665,29 @@ assert.strictEqual(
   hooks.moduleSubmitEndpointFor({ executable: "sys_file_manager" }, "etc", "sys_file_manager"),
   "/sassie3/ajax/etc/sys_file_manager.php",
   "system utility submit endpoints can be computed without replacing the active module"
+);
+assert.strictEqual(
+  hooks.moduleSubmitEndpointFor({ executable: "jobmonitor" }, "admin", "jobmonitor"),
+  "/sassie3/ajax/admin/jobmonitor.php",
+  "admin system module submit endpoints resolve through the generated admin wrapper"
+);
+
+hooks.state.values = { interval: 5 };
+hooks.state.session = { logon: "Joseph", project: "no_project_specified" };
+hooks.state.serverSelections = {};
+hooks.state.module = {
+  executable: "jobmonitor",
+  docrootexecutable: "ajax/sys_config/sys_jobmonitor.php"
+};
+const adminFormData = hooks.buildSubmitFormData({
+  querySelectorAll() {
+    return [];
+  }
+}, "admin-test-uuid");
+assert.strictEqual(
+  adminFormData.get("_docrootexecutable"),
+  "ajax/sys_config/sys_jobmonitor.php",
+  "admin system module submits carry the legacy docroot executable to the generated wrapper"
 );
 
 const payloadFiles = hooks.payloadFileList({ outfile: "results/users/Joseph/min3.pdb" });

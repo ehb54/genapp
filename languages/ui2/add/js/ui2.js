@@ -3408,6 +3408,9 @@
     formData.set("_window", window.name);
     formData.set("_project", state.session.project || "");
     formData.set("_logon", state.session.logon || "");
+    if (state.module?.docrootexecutable) {
+      formData.set("_docrootexecutable", state.module.docrootexecutable);
+    }
     formData.set("_height", String(Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)));
     formData.set("_width", String(Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)));
     return formData;
@@ -5030,6 +5033,7 @@
       payloadFileList,
       fileDownloadLinks,
       moduleSubmitEndpointFor,
+      buildSubmitFormData,
       serverSelectionDisplayPath,
       dynamicOutputItems,
       mergeSavedInputPayloads,
