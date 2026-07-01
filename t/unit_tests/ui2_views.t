@@ -190,6 +190,7 @@ like( $ui2_js, qr/new URL\(legacyEndpoint\("", raw\), window\.location\.href\)/,
 like( $ui2_js, qr/function parsePlotlyFigure\(value\)/, 'ui2 runtime bridge parses Plotly JSON string payloads' );
 like( $ui2_js, qr/function defaultPlotlyLayout\(\)/, 'ui2 runtime bridge supplies default Plotly layout polish' );
 like( $ui2_js, qr/function applyPlotlyTheme\(layout\).*?plotlyLegendKeys\(layout\)\.forEach.*?contrastTextColor\(legendBackground\)/s, 'ui2 runtime bridge applies theme-aware Plotly legend contrast polish across multiple legend slots' );
+like( $ui2_js, qr/function applyPlotlyTheme\(layout\).*?layout\.annotations = layout\.annotations\.map.*?contrastTextColor\(annotation\.bgcolor\)/s, 'ui2 runtime bridge applies theme-aware Plotly contrast to annotation legends' );
 like( $ui2_js, qr/function plotlyThemeColors\(\).*?legendBackground: dark \? "rgba\(26, 32, 31, 0\.88\)" : "rgba\(255, 255, 255, 0\.88\)"/s, 'ui2 runtime bridge derives dark and light Plotly legend backgrounds' );
 like( $ui2_js, qr/function contrastTextColor\(background\)/, 'ui2 runtime bridge derives readable Plotly legend text from the legend background' );
 like( $ui2_js, qr/function plotlyLegendKeys\(layout\).*?\^legend\\d\*\$/s, 'ui2 runtime bridge detects legend, legend2, legend3, and later Plotly legend keys' );

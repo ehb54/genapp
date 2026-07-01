@@ -208,7 +208,12 @@ window.__styleVars = {
 };
 const darkLayout = hooks.applyPlotlyTheme({
   legend: { bgcolor: "#ffffff", font: { color: "#ffffff" } },
-  legend2: { bgcolor: "#ffffff", font: { color: "#ffffff" } }
+  legend2: { bgcolor: "#ffffff", font: { color: "#ffffff" } },
+  annotations: [{
+    bgcolor: "rgba(255, 255, 255, 0.75)",
+    font: { color: "#ffffff" },
+    text: '<span style="color:rgb(55, 128, 191);">&#9679;</span> occupied convergence cells<br><span style="color:rgb(128, 0, 128);">&#9670;</span> new cells'
+  }]
 });
 assert.strictEqual(
   darkLayout.legend.bgcolor,
@@ -224,6 +229,11 @@ assert.strictEqual(
   darkLayout.legend2.font.color,
   "#17201d",
   "UI2 also fixes subplot legend text when a figure uses legend2"
+);
+assert.strictEqual(
+  darkLayout.annotations[0].font.color,
+  "#17201d",
+  "UI2 fixes legacy Plotly annotation legends that use light backgrounds on dark themes"
 );
 window.__styleVars = {
   "--ui2-panel": "#ffffff",

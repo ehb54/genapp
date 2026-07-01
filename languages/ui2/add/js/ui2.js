@@ -4245,6 +4245,16 @@
         font: Object.assign({}, currentLegend.font || {}, { color: contrastTextColor(legendBackground) })
       });
     });
+    if (Array.isArray(layout.annotations)) {
+      layout.annotations = layout.annotations.map((annotation) => {
+        if (!annotation?.bgcolor) {
+          return annotation;
+        }
+        return Object.assign({}, annotation, {
+          font: Object.assign({}, annotation.font || {}, { color: contrastTextColor(annotation.bgcolor) })
+        });
+      });
+    }
     ["xaxis", "yaxis", "xaxis2", "yaxis2", "xaxis3", "yaxis3"].forEach((axisName) => {
       if (!layout[axisName]) {
         return;
