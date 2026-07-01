@@ -1746,6 +1746,7 @@
   function renderUserConfigTool(module, fields) {
     const section = el("section", "ui2-section ui2-system-tool ui2-user-config");
     const form = el("form", "ui2-utility-form");
+    form.noValidate = true;
     const inputFields = userConfigFields(fields.filter((field) => field.role !== "output"));
     const outputFields = fields.filter((field) => field.role === "output");
     form.appendChild(renderUtilitySection("Settings", inputFields, "input"));
@@ -1895,7 +1896,13 @@
   async function submitUtilityModule(form, module, endpointPath) {
     const status = form.querySelector(".ui2-submit-status");
     const submitButton = form.querySelector('button[type="submit"]');
-    syncFormValues(form);
+    const invalid = validateUtilityForm(form);
+    if (invalid) {
+      setSubmitStatus(status, invalid.message, "error");
+      applyUtilityOutputs(form, { status: invalid.message });
+      invalid.control?.focus();
+      return;
+    }
     submitButton.disabled = true;
     setSubmitStatus(status, "Submitting settings", "pending");
     try {
@@ -1916,12 +1923,37 @@
       setSubmitStatus(status, payload.status || "Settings updated", "ok");
       applyUtilityOutputs(form, payload);
       await refreshSessionState();
+      await pullUtilityFieldValues(form);
     } catch (error) {
       setSubmitStatus(status, error.message, "error");
       applyUtilityOutputs(form, { status: error.message });
     } finally {
       submitButton.disabled = false;
     }
+  }
+
+  function validateUtilityForm(form) {
+    syncFormValues(form);
+    const invalid = fieldControls(form).find((control) => (
+      !control.disabled
+        && !control.closest(".ui2-output-field")
+        && !control.closest(".ui2-hidden")
+        && typeof control.checkValidity === "function"
+        && !control.checkValidity()
+    ));
+    if (!invalid) {
+      return null;
+    }
+    return {
+      control: invalid,
+      message: `${fieldLabelForControl(invalid)}: ${invalid.validationMessage || "Invalid value."}`
+    };
+  }
+
+  function fieldLabelForControl(control) {
+    const row = control.closest(".ui2-field");
+    const label = row?.querySelector(".ui2-field-label");
+    return label?.textContent?.trim() || control.dataset.fieldId || "Field";
   }
 
   function buildUtilityFormData(form, module) {
@@ -3708,6 +3740,12 @@
     if (field.required === "true" || field.required === true) {
       control.required = true;
     }
+    if (field.pattern) {
+      control.pattern = field.pattern;
+      if (field.patternmessage) {
+        control.title = field.patternmessage;
+      }
+    }
   }
 
   function wireRepeatTableControl(control, field, rowIndex) {
@@ -3720,6 +3758,12 @@
     }
     if (field.required === "true" || field.required === true) {
       control.required = true;
+    }
+    if (field.pattern) {
+      control.pattern = field.pattern;
+      if (field.patternmessage) {
+        control.title = field.patternmessage;
+      }
     }
   }
 

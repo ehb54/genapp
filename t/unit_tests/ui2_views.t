@@ -93,6 +93,10 @@ like( $ui2_js, qr/function replaceSelectOptions\(select, values\)/, 'ui2 Setting
 like( $ui2_js, qr/fieldControls\(form\)[\s\S]+dataset\.pullKey[\s\S]+sys_pull\.php/s, 'ui2 Settings pulls only fields declared with legacy pull metadata' );
 like( $ui2_js, qr/function fieldControls\(scope\)/, 'ui2 runtime scans actual form controls instead of field wrapper rows' );
 like( $ui2_js, qr/parts\.unshift\(expected\)[\s\S]+parts\.unshift\(parent\)/, 'ui2 Settings preserves legacy nested repeat field names' );
+like( $ui2_js, qr/form\.noValidate = true/, 'ui2 Settings uses inline validation inside the modal instead of browser-native validation bubbles' );
+like( $ui2_js, qr/function validateUtilityForm\(form\)/, 'ui2 Settings validates active utility controls before submit' );
+like( $ui2_js, qr/await refreshSessionState\(\);\s+await pullUtilityFieldValues\(form\);/s, 'ui2 Settings refreshes pulled project choices after a successful update' );
+like( $ui2_js, qr/control\.pattern = field\.pattern/, 'ui2 Settings carries module regex patterns onto generated controls' );
 unlike( $ui2_js, qr/document\.createTextNode\([^)]*Optional/, 'ui2 switches do not render generic Optional text' );
 like( $ui2_js, qr/formData\.append\("selectedfiles\[\]", id\)/, 'ui2 File Manager sends legacy encoded selected file ids' );
 like( $ui2_js, qr/const uuid = createUuid\(\);\s+formData\.set\("_uuid", uuid\)/s, 'ui2 File Manager supplies reusable uuid metadata to the generated wrapper' );
