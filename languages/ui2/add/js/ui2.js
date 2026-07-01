@@ -19,6 +19,7 @@
   const prefs = loadPreferences();
   const devMode = params.get("ui2dev") === "1" || prefs.devMode === true;
   const JOB_MANAGER_ENDPOINT = "ajax/sys_config/sys_jobs2.php";
+  const FIELD_CONTROL_SELECTOR = "input[data-field-id], select[data-field-id], textarea[data-field-id]";
   let plotlyLoadPromise = null;
 
   const state = {
@@ -954,7 +955,7 @@
       input.type = "checkbox";
       input.dataset.fieldId = `_setgroup_${field.id || "groups"}_${groupId}`;
       input.checked = userGroups.has(groupId);
-      control.append(input, document.createTextNode("Optional"));
+      control.append(input);
       if (group.help) {
         control.title = group.help;
       }
@@ -1213,7 +1214,7 @@
       input.type = "checkbox";
       input.checked = String(field.checked || field.default || "").toLowerCase() === "true";
       wireControl(input, field);
-      label.append(input, document.createTextNode(field.checked ? "Enabled" : "Optional"));
+      label.append(input);
       return label;
     }
     if (type === "listbox" || type === "select") {
@@ -1837,10 +1838,11 @@
   }
 
   async function pullUtilityFieldValues(form) {
-    const requested = Array.from(form.querySelectorAll("[data-field-id]"))
-      .map((control) => control.dataset.fieldId)
+    const requested = fieldControls(form)
+      .map((control) => control.dataset.pullKey)
       .filter(Boolean);
-    if (!requested.length) {
+    const uniqueRequested = Array.from(new Set(requested));
+    if (!uniqueRequested.length) {
       return;
     }
     try {
@@ -1848,7 +1850,7 @@
       const url = new URL(legacyEndpoint("pullBase", "ajax/sys_config/sys_pull.php"), window.location.href);
       url.searchParams.set("_window", window.name);
       url.searchParams.set("_logon", state.session.logon || "");
-      requested.forEach((id) => url.searchParams.set(id, "0"));
+      uniqueRequested.forEach((id) => url.searchParams.set(id, "0"));
       const response = await fetch(url.toString(), { cache: "no-cache", credentials: "same-origin" });
       const payload = await parseJsonResponse(response, "Settings defaults");
       applyPulledValues(form, payload || {});
@@ -1860,20 +1862,34 @@
   }
 
   function applyPulledValues(form, payload) {
-    form.querySelectorAll("[data-field-id]").forEach((control) => {
+    fieldControls(form).forEach((control) => {
       const id = control.dataset.fieldId;
-      if (!id || payload[id] == null || control.type === "password") {
+      const pullKey = control.dataset.pullKey || id;
+      if (!id || payload[pullKey] == null || control.type === "password") {
         return;
       }
-      const value = payload[id];
+      const value = payload[pullKey];
       if (control.type === "checkbox") {
         control.checked = value === true || String(value).toLowerCase() === "on" || String(value).toLowerCase() === "true";
+      } else if (control.tagName === "SELECT" && Array.isArray(value)) {
+        replaceSelectOptions(control, value);
       } else if (Array.isArray(value)) {
-        control.value = value[Number(control.dataset.repeatTableIndex || 0)] || control.value;
+        control.value = value[Number(control.dataset.repeatTableIndex || 0)] ?? control.value;
       } else {
         control.value = value;
       }
     });
+  }
+
+  function replaceSelectOptions(select, values) {
+    const current = select.value || (select.dataset.pullKey === "project" ? state.session.project : "");
+    select.innerHTML = "";
+    values.forEach((value) => {
+      select.appendChild(new Option(String(value), String(value)));
+    });
+    if (values.map(String).includes(current)) {
+      select.value = current;
+    }
   }
 
   async function submitUtilityModule(form, module, endpointPath) {
@@ -1909,16 +1925,21 @@
   }
 
   function buildUtilityFormData(form, module) {
+    const activeValues = syncFormValues(form);
     const formData = new FormData();
-    form.querySelectorAll("[data-field-id]").forEach((control) => {
+    fieldControls(form).forEach((control) => {
       if (control.disabled || control.type === "radio" && !control.checked) {
         return;
       }
       if (control.type === "checkbox" && !control.checked) {
         return;
       }
+      const id = control.dataset.fieldId || "";
+      if (id && !Object.prototype.hasOwnProperty.call(activeValues, id)) {
+        return;
+      }
       const name = legacyUtilityFieldName(control);
-      if (!name || control.closest(".ui2-output-field")) {
+      if (!name || control.closest(".ui2-output-field") || control.closest(".ui2-hidden")) {
         return;
       }
       appendFormValue(formData, name, control.type === "checkbox" ? "on" : control.value);
@@ -1936,9 +1957,24 @@
   function legacyUtilityFieldName(control) {
     const id = control.dataset.fieldId || "";
     const row = control.closest(".ui2-field");
-    const repeat = row?.dataset.repeat || "";
-    const parent = repeatControllerId(repeat);
-    return parent && parent !== id ? `${parent}-${id}` : id;
+    const parts = [id];
+    let repeat = row?.dataset.repeat || "";
+    const form = control.closest("form");
+    while (repeat) {
+      const [rawParent, rawValue] = repeat.split(":");
+      const parent = (rawParent || "").trim();
+      const expected = rawValue == null ? "" : rawValue.trim();
+      if (!parent) {
+        break;
+      }
+      if (expected) {
+        parts.unshift(expected);
+      }
+      parts.unshift(parent);
+      const parentRow = form?.querySelector(`.ui2-field[data-field-id="${cssEscape(parent)}"]`);
+      repeat = parentRow?.dataset.repeat || "";
+    }
+    return parts.join("-");
   }
 
   function applyUtilityOutputs(form, payload) {
@@ -3488,7 +3524,7 @@
 
   function collectControlValues(scope, includeControl) {
     const values = {};
-    scope.querySelectorAll("[data-field-id]").forEach((control) => {
+    fieldControls(scope).forEach((control) => {
       const id = control.dataset.fieldId;
       if (!id || control.type === "radio" && !control.checked || !includeControl(control)) {
         return;
@@ -3580,7 +3616,7 @@
     scope.querySelectorAll(".ui2-field").forEach((row) => {
       const active = activeRows.get(row) !== false;
       row.classList.toggle("ui2-hidden", !active);
-      row.querySelectorAll("[data-field-id]").forEach((control) => {
+      fieldControls(row).forEach((control) => {
         control.disabled = !active;
       });
       updateRepeatDebug(row, active, rawValues, activeRows);
@@ -3663,6 +3699,9 @@
   function wireControl(control, field) {
     control.id = fieldId(field);
     control.dataset.fieldId = field.id || "";
+    if (field.pull) {
+      control.dataset.pullKey = field.pull;
+    }
     if (field.sync) {
       control.dataset.sync = field.sync;
     }
@@ -3676,9 +3715,16 @@
     control.dataset.fieldId = field.id || "";
     control.dataset.repeatTableField = field.id || "";
     control.dataset.repeatTableIndex = String(rowIndex);
+    if (field.pull) {
+      control.dataset.pullKey = field.pull;
+    }
     if (field.required === "true" || field.required === true) {
       control.required = true;
     }
+  }
+
+  function fieldControls(scope) {
+    return Array.from(scope.querySelectorAll(FIELD_CONTROL_SELECTOR));
   }
 
   function fieldId(field) {
@@ -4072,6 +4118,8 @@
       serverSelectionDisplayPath,
       mergeSavedInputPayloads,
       moduleIdFromSwitchParts,
+      legacyUtilityFieldName,
+      replaceSelectOptions,
       applyInputPayload,
       applySavedJobInput,
       state

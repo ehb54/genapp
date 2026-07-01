@@ -88,6 +88,12 @@ like( $ui2_js, qr/function legacyUtilityFieldName\(control\)/, 'ui2 Settings sub
 like( $ui2_js, qr/function userConfigFields\(fields\)/, 'ui2 Settings filters fields through legacy directive visibility' );
 like( $ui2_js, qr/function renderGroupField\(field\)/, 'ui2 Settings renders legacy group fields as configured checkboxes' );
 like( $ui2_js, qr/control\.type === "checkbox" && !control\.checked[\s\S]+return;/, 'ui2 utility submit skips unchecked checkboxes like native legacy forms' );
+like( $ui2_js, qr/dataset\.pullKey = field\.pull/, 'ui2 Settings records legacy pull keys separately from field ids' );
+like( $ui2_js, qr/function replaceSelectOptions\(select, values\)/, 'ui2 Settings rebuilds pulled listbox options from legacy array payloads' );
+like( $ui2_js, qr/fieldControls\(form\)[\s\S]+dataset\.pullKey[\s\S]+sys_pull\.php/s, 'ui2 Settings pulls only fields declared with legacy pull metadata' );
+like( $ui2_js, qr/function fieldControls\(scope\)/, 'ui2 runtime scans actual form controls instead of field wrapper rows' );
+like( $ui2_js, qr/parts\.unshift\(expected\)[\s\S]+parts\.unshift\(parent\)/, 'ui2 Settings preserves legacy nested repeat field names' );
+unlike( $ui2_js, qr/document\.createTextNode\([^)]*Optional/, 'ui2 switches do not render generic Optional text' );
 like( $ui2_js, qr/formData\.append\("selectedfiles\[\]", id\)/, 'ui2 File Manager sends legacy encoded selected file ids' );
 like( $ui2_js, qr/const uuid = createUuid\(\);\s+formData\.set\("_uuid", uuid\)/s, 'ui2 File Manager supplies reusable uuid metadata to the generated wrapper' );
 like( $ui2_js, qr/waitForFileManagerResult\(uuid, status\)/, 'ui2 File Manager polls async system download jobs with the submitted uuid' );

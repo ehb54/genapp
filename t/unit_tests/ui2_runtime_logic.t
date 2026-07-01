@@ -372,6 +372,78 @@ assert.strictEqual(
   "legacy module/project/job switch targets restore the module id"
 );
 
+const parentRows = {
+  themetype: { dataset: { fieldId: "themetype", repeat: "changetheme" } },
+  changetheme: { dataset: { fieldId: "changetheme" } }
+};
+const themeControl = {
+  dataset: { fieldId: "themelight" },
+  closest(selector) {
+    if (selector === ".ui2-field") {
+      return { dataset: { fieldId: "themelight", repeat: "themetype:light" } };
+    }
+    if (selector === "form") {
+      return {
+        querySelector(selectorText) {
+          if (selectorText.includes('data-field-id="themetype"')) {
+            return parentRows.themetype;
+          }
+          if (selectorText.includes('data-field-id="changetheme"')) {
+            return parentRows.changetheme;
+          }
+          return null;
+        }
+      };
+    }
+    return null;
+  }
+};
+assert.strictEqual(
+  hooks.legacyUtilityFieldName(themeControl),
+  "changetheme-themetype-light-themelight",
+  "Settings submits nested theme repeat fields using the legacy PHP field name"
+);
+
+const passwordControl = {
+  dataset: { fieldId: "password1" },
+  closest(selector) {
+    if (selector === ".ui2-field") {
+      return { dataset: { fieldId: "password1", repeat: "changepassword" } };
+    }
+    if (selector === "form") {
+      return { querySelector() { return { dataset: { fieldId: "changepassword" } }; } };
+    }
+    return null;
+  }
+};
+assert.strictEqual(
+  hooks.legacyUtilityFieldName(passwordControl),
+  "changepassword-password1",
+  "Settings submits direct repeat fields using the legacy PHP field name"
+);
+
+const selectControl = {
+  dataset: { fieldId: "project", pullKey: "project" },
+  value: "",
+  children: [],
+  appendChild(child) {
+    this.children.push(child);
+    return child;
+  },
+  set innerHTML(value) {
+    this.children = [];
+    this._html = String(value || "");
+  }
+};
+hooks.state.session.project = "hello";
+hooks.replaceSelectOptions(selectControl, ["alpha", "hello", "no_project_specified"]);
+assert.deepStrictEqual(
+  selectControl.children.map((option) => [option.value, option.text]),
+  [["alpha", "alpha"], ["hello", "hello"], ["no_project_specified", "no_project_specified"]],
+  "Settings rebuilds pulled project listbox options from the legacy array payload"
+);
+assert.strictEqual(selectControl.value, "hello", "Settings selects the current session project after pulling projects");
+
 assert.strictEqual(
   JSON.stringify(hooks.normalizeFileList({ out: ["results/users/Joseph/min3.pdb"], extra: "results/users/Joseph/no_project_specified.tar" })),
   JSON.stringify(["results/users/Joseph/min3.pdb", "results/users/Joseph/no_project_specified.tar"]),
