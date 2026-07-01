@@ -343,7 +343,7 @@
 
   async function handleLogonAction() {
     if (!state.session.logon) {
-      openLoginDialog();
+      openLoginDialog({ mandatory: true });
       return;
     }
     openLogoffDialog();
@@ -391,9 +391,11 @@
     confirm.focus();
   }
 
-  function openLoginDialog() {
+  function openLoginDialog(options = {}) {
+    const mandatory = options.mandatory !== false && !state.session.logon;
     let overlay = document.getElementById("ui2-login-dialog");
     if (overlay) {
+      applyLoginDialogMode(overlay, mandatory);
       overlay.hidden = false;
       overlay.querySelector("input[name='userid']")?.focus();
       return;
@@ -446,7 +448,20 @@
     panel.append(header, form);
     overlay.appendChild(panel);
     document.body.appendChild(overlay);
+    applyLoginDialogMode(overlay, mandatory);
     form.elements.userid?.focus();
+  }
+
+  function applyLoginDialogMode(overlay, mandatory) {
+    overlay.dataset.mandatory = mandatory ? "true" : "false";
+    const close = overlay.querySelector(".ui2-dialog-close");
+    const cancel = overlay.querySelector(".ui2-button-quiet");
+    if (close) {
+      close.hidden = mandatory;
+    }
+    if (cancel) {
+      cancel.hidden = mandatory;
+    }
   }
 
   function renderLoginInput(name, labelText, type, placeholder) {

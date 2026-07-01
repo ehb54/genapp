@@ -242,6 +242,19 @@ assert(
   "ui2 splash footer reads legacy generated-on and revision metadata"
 );
 assert(
+  source.includes('openLoginDialog({ mandatory: true });'),
+  "logged-out login actions open a mandatory login dialog"
+);
+assert(
+  source.includes('function applyLoginDialogMode(overlay, mandatory)'),
+  "ui2 has a dedicated helper for mandatory login dialog state"
+);
+assert(
+  source.includes('close.hidden = mandatory;') &&
+    source.includes('cancel.hidden = mandatory;'),
+  "mandatory login hides both close and cancel controls"
+);
+assert(
   source.includes('function syncSplashForSession()'),
   "ui2 reconciles splash visibility from session status"
 );

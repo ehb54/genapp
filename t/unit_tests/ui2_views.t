@@ -56,7 +56,11 @@ like( $ui2_js, qr/function legacyEndpoint\(paramName, path\)/, 'ui2 runtime brid
 like( $ui2_js, qr/legacyEndpoint\("", "ajax"\)/, 'ui2 runtime bridge defaults submit endpoints to the legacy ajax root' );
 like( $ui2_js, qr/dataset\.appId/, 'ui2 runtime bridge can fall back to the generated application id' );
 like( $ui2_js, qr/sys_status\.php/, 'ui2 runtime bridge checks legacy sys_status for logon/project state' );
-like( $ui2_js, qr/function openLoginDialog\(\)/, 'ui2 runtime bridge keeps login on the ui2 page' );
+like( $ui2_js, qr/function openLoginDialog\(options = \{\}\)/, 'ui2 runtime bridge keeps login on the ui2 page' );
+like( $ui2_js, qr/function applyLoginDialogMode\(overlay, mandatory\)/, 'ui2 login dialog can switch between mandatory and dismissible modes' );
+like( $ui2_js, qr/openLoginDialog\(\{ mandatory: true \}\)/, 'ui2 logged-out login action opens a mandatory login dialog' );
+like( $ui2_js, qr/close\.hidden = mandatory/, 'ui2 mandatory login hides the dialog close control' );
+like( $ui2_js, qr/cancel\.hidden = mandatory/, 'ui2 mandatory login hides the dialog cancel control' );
 like( $ui2_js, qr/function openLogoffDialog\(\)/, 'ui2 logoff opens a confirmation dialog before calling the backend' );
 like( $ui2_js, qr/el\("button", "ui2-button ui2-logoff-confirm", "Logoff"\)/, 'ui2 logoff confirmation includes an explicit Logoff button' );
 like( $ui2_js, qr/sys_login\.php/, 'ui2 runtime bridge posts login to the legacy login endpoint' );
