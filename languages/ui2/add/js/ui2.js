@@ -43,6 +43,7 @@
       project: "",
       groups: {},
       usergroups: [],
+      restricted: [],
       theme: "",
       loaded: false
     }
@@ -274,12 +275,42 @@
       state.session.usergroups = Array.isArray(payload._usergroups) ? payload._usergroups : [];
       state.session.theme = stringValue(payload._theme);
       state.session.loaded = true;
+      await refreshRestrictedState();
+      renderMenu();
       renderSessionState();
       return payload;
     } catch (error) {
       state.session.loaded = false;
+      state.session.restricted = [];
+      renderMenu();
       renderSessionState(error);
       return {};
+    }
+  }
+
+  async function refreshRestrictedState() {
+    if (!state.session.logon) {
+      state.session.restricted = [];
+      return [];
+    }
+    const endpoint = legacyEndpoint("licenseBase", "ajax/sys_config/sys_license.php");
+    try {
+      const url = new URL(endpoint, window.location.href);
+      url.searchParams.set("_window", window.name);
+      url.searchParams.set("_logon", state.session.logon);
+      const response = await fetch(url.toString(), {
+        cache: "no-cache",
+        credentials: "same-origin"
+      });
+      if (!response.ok) {
+        throw new Error(`restricted status returned ${response.status}`);
+      }
+      const payload = await response.json();
+      state.session.restricted = Array.isArray(payload.restricted) ? payload.restricted.map(stringValue) : [];
+      return state.session.restricted;
+    } catch (error) {
+      state.session.restricted = [];
+      return [];
     }
   }
 
@@ -447,6 +478,8 @@
       state.session.logon = stringValue(payload._logon);
       state.session.project = stringValue(payload._project);
       state.session.loaded = true;
+      state.session.restricted = [];
+      renderMenu();
       renderSessionState();
       stopSessionRuntime();
       state.freshLoginAfterLogoff = true;
@@ -636,7 +669,9 @@
   function setSidebarCollapsed(collapsed, persist) {
     document.body.classList.toggle("ui2-sidebar-collapsed", collapsed);
     if (nodes.navToggle) {
-      nodes.navToggle.textContent = collapsed ? "Expand\nMenu" : "Hide Menu";
+      const label = collapsed ? "Expand menu" : "Hide menu";
+      nodes.navToggle.setAttribute("aria-label", label);
+      nodes.navToggle.title = label;
       nodes.navToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
     }
     if (persist) {
@@ -725,6 +760,9 @@
     }
 
     appMap.menus.forEach((menu) => {
+      if (!menuVisibleForSession(menu)) {
+        return;
+      }
       const modules = (menu.modules || []).filter((module) => {
         return !isUtilityModule(module.id);
       });
@@ -757,6 +795,14 @@
       nodes.menuNav.appendChild(group);
     });
 
+  }
+
+  function menuVisibleForSession(menu) {
+    const restricted = stringValue(menu?.restricted);
+    if (!restricted) {
+      return true;
+    }
+    return (state.session.restricted || []).includes(restricted);
   }
 
   function collapseMenuGroups() {
@@ -971,7 +1017,7 @@
     const userGroups = new Set(Array.isArray(state.session.usergroups) ? state.session.usergroups : []);
     Object.keys(groups).sort().forEach((groupId) => {
       const group = groups[groupId] || {};
-      if (!group.userconfig) {
+      if (!userConfigGroupVisible(groupId, group)) {
         return;
       }
       const row = el("div", "ui2-field");
@@ -992,6 +1038,13 @@
       wrap.appendChild(row);
     });
     return wrap;
+  }
+
+  function userConfigGroupVisible(groupId, group) {
+    if (groupId === "beta") {
+      return false;
+    }
+    return !!group.userconfig;
   }
 
   function renderHiddenField(field) {
@@ -4197,9 +4250,11 @@
       moduleSubmitEndpointFor,
       serverSelectionDisplayPath,
       mergeSavedInputPayloads,
+      menuVisibleForSession,
       moduleIdFromSwitchParts,
       legacyUtilityFieldName,
       replaceSelectOptions,
+      userConfigGroupVisible,
       applyInputPayload,
       applySavedJobInput,
       state

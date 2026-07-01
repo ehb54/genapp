@@ -9,9 +9,16 @@
 <body>
   <div class="ui2-shell" data-app-title="__title__" data-app-id="__application__">
     <header class="ui2-topbar">
-      <div>
+      <div class="ui2-titlebar">
+        <button class="ui2-nav-icon-button" id="ui2-nav-toggle" type="button" aria-controls="ui2-sidebar" aria-expanded="true" aria-label="Hide menu" title="Hide menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div>
         <p class="ui2-kicker">GenApp ui2</p>
         <h1>__title__</h1>
+        </div>
       </div>
       <div class="ui2-topbar-utilities" aria-label="Application utilities">
         <span class="ui2-project-chip" id="ui2-session-status">Project</span>
@@ -25,9 +32,6 @@
 
     <main class="ui2-workspace">
       <aside class="ui2-sidebar" id="ui2-sidebar" aria-label="Modules">
-        <div class="ui2-sidebar-tools">
-          <button class="ui2-button ui2-button-quiet" id="ui2-nav-toggle" type="button" aria-controls="ui2-sidebar" aria-expanded="true">Hide Menu</button>
-        </div>
         <nav class="ui2-menu-nav" id="ui2-menu-nav" aria-label="Application modules"></nav>
       </aside>
 

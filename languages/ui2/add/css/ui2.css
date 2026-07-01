@@ -94,6 +94,41 @@ code {
   line-height: 1.2;
 }
 
+.ui2-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.ui2-nav-icon-button {
+  width: 2.3rem;
+  height: 2.3rem;
+  display: inline-grid;
+  align-content: center;
+  justify-content: center;
+  gap: 0.26rem;
+  flex: 0 0 auto;
+  border: 1px solid var(--ui2-border);
+  border-radius: 6px;
+  background: var(--ui2-panel);
+  color: var(--ui2-text);
+  cursor: pointer;
+}
+
+.ui2-nav-icon-button span {
+  width: 1.2rem;
+  height: 0.15rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.ui2-nav-icon-button:hover {
+  border-color: var(--ui2-accent);
+  background: var(--ui2-accent-soft);
+  color: var(--ui2-accent-strong);
+}
+
 .ui2-kicker {
   margin: 0;
   color: var(--ui2-accent);
@@ -182,33 +217,18 @@ code {
   overflow-y: auto;
 }
 
-.ui2-sidebar-tools {
-  display: flex;
-  justify-content: flex-start;
-  margin-bottom: 0.75rem;
-}
-
 .ui2-sidebar-collapsed .ui2-workspace {
-  grid-template-columns: 3.4rem minmax(0, 1fr);
+  grid-template-columns: 0 minmax(0, 1fr);
 }
 
 .ui2-sidebar-collapsed .ui2-sidebar {
-  padding: 0.5rem;
+  padding: 0;
+  border-right: 0;
   overflow: hidden;
 }
 
 .ui2-sidebar-collapsed .ui2-menu-nav {
   display: none;
-}
-
-.ui2-sidebar-collapsed .ui2-sidebar-tools {
-  margin-bottom: 0;
-}
-
-.ui2-sidebar-collapsed #ui2-nav-toggle {
-  width: 100%;
-  padding-inline: 0.3rem;
-  white-space: pre-line;
 }
 
 .ui2-module-loader {

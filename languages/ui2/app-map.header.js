@@ -37,6 +37,12 @@ __~usercolors{app.directives.usercolors = "__usercolors__";}
     }
   };
 
+  app.setMenuRestricted = function (id, restricted) {
+    if (app.menuById[id]) {
+      app.menuById[id].restricted = restricted || "";
+    }
+  };
+
   app.addModule = function (menuId, module) {
     if (!app.menuById[menuId]) {
       app.addMenu({ id: menuId, label: menuId });

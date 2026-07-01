@@ -168,6 +168,34 @@ vm.runInContext(source, context, { filename: "ui2.js" });
 const hooks = context.window.GenAppUi2TestHooks;
 assert(hooks, "test hooks were exposed");
 
+assert.strictEqual(
+  hooks.menuVisibleForSession({ id: "tools" }),
+  true,
+  "unrestricted UI2 menu groups are visible without session buckets"
+);
+assert.strictEqual(
+  hooks.menuVisibleForSession({ id: "admin", restricted: "admin" }),
+  false,
+  "restricted UI2 menu groups are hidden until the current user is authorized"
+);
+hooks.state.session.restricted = ["admin"];
+assert.strictEqual(
+  hooks.menuVisibleForSession({ id: "admin", restricted: "admin" }),
+  true,
+  "restricted UI2 menu groups appear for matching appconfig restricted buckets"
+);
+assert.strictEqual(
+  hooks.userConfigGroupVisible("beta", { userconfig: 1 }),
+  false,
+  "UI2 Settings hides the deprecated beta group even when appconfig marks it user configurable"
+);
+assert.strictEqual(
+  hooks.userConfigGroupVisible("staff", { userconfig: 1 }),
+  true,
+  "UI2 Settings still shows other user configurable groups"
+);
+hooks.state.session.restricted = [];
+
 assert(
   source.includes('nodes.jobs?.addEventListener("click", () => openUtilityModule("sys_job_manager"));'),
   "top bar opens Job Manager as a utility overlay"

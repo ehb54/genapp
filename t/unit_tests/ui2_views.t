@@ -41,6 +41,7 @@ like( $index, qr/css\/ui2\.css/, 'ui2 index loads the ui2 stylesheet' );
 like( $index, qr/id="ui2-session-status"/, 'ui2 index exposes a session/project status target' );
 like( $index, qr/data-app-id="ui2_views"/, 'ui2 index exposes the generated application id' );
 like( $index, qr/Choose a module from the menu/, 'ui2 index opens at a neutral menu-first shell' );
+like( $index, qr/class="ui2-nav-icon-button" id="ui2-nav-toggle"/, 'ui2 menu toggle lives in the topbar instead of the collapsed sidebar column' );
 
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
 like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declares a module submit endpoint helper' );
@@ -63,7 +64,10 @@ unlike( $ui2_js, qr/index === 0 \? "true" : "false"/, 'ui2 startup does not priv
 like( $ui2_js, qr/function chooseMenuModule\(moduleId\)/, 'ui2 menu module selection uses a dedicated transition path' );
 like( $ui2_js, qr/function expandMenuGroup\(targetGroup\)/, 'ui2 menu group selection opens the clicked group and closes the others' );
 like( $ui2_js, qr/setSidebarCollapsed\(true, false\)/, 'ui2 collapses the menu only after a module is selected without persisting that state' );
-like( $ui2_js, qr/collapsed \? "Expand\\nMenu" : "Hide Menu"/, 'ui2 collapsed menu button uses a two-line Expand Menu label' );
+like( $ui2_js, qr/function menuVisibleForSession\(menu\)/, 'ui2 menu rendering filters restricted menu groups using session state' );
+like( $ui2_js, qr/function userConfigGroupVisible\(groupId, group\)/, 'ui2 Settings can hide deprecated user-configurable groups' );
+like( $ui2_js, qr/groupId === "beta"/, 'ui2 Settings hides the legacy beta group checkbox' );
+like( $ui2_js, qr/nodes\.navToggle\.setAttribute\("aria-label", label\)/, 'ui2 collapsed menu toggle updates accessible label without occupying the sidebar' );
 like( $ui2_js, qr/function initWebSocket\(\)/, 'ui2 runtime bridge initializes the legacy websocket channel' );
 like( $ui2_js, qr/ajax\/sys_uid\.php/, 'ui2 runtime bridge uses the legacy sys_uid endpoint for websocket discovery' );
 like( $ui2_js, qr/new window\.ab\.Session/, 'ui2 runtime bridge uses the legacy Autobahn websocket session' );
@@ -160,6 +164,7 @@ like( $ui2_css, qr/\.ui2-module-list\[hidden\]\s*\{\s*display:\s*none;/s, 'ui2 s
 
 my $app_map = read_file( File::Spec->catfile( $ui2, qw(js app-map.js) ) );
 like( $app_map, qr/addMenuFromParts\("demo", "Demo", ""\)/, 'ui2 app map records menu groups' );
+like( $app_map, qr/setMenuRestricted\("demo", "admin"\)/, 'ui2 app map records restricted menu groups' );
 like( $app_map, qr/addModule\("demo", \{\s+id: "shared",\s+label: "Shared"/, 'ui2 app map records menu modules' );
 like( $app_map, qr/directives: \{\}/, 'ui2 app map initializes the legacy directive registry' );
 like( $app_map, qr/directives\.usertheme = "true"/, 'ui2 app map records enabled legacy directives for hideifnot fields' );
