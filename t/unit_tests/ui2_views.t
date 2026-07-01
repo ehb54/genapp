@@ -56,6 +56,10 @@ like( $ui2_js, qr/PHP source instead of executing it/, 'ui2 runtime bridge calls
 like( $ui2_js, qr/function showStartupShell\(\)/, 'ui2 startup can show the application shell without loading a module' );
 like( $ui2_js, qr/showStartupShell\(\);\s+return Promise\.resolve\(\);/s, 'ui2 startup does not auto-load the first generated module' );
 unlike( $ui2_js, qr/function loadFirstAvailable\(\)/, 'ui2 no longer has a first-available-module startup path' );
+like( $ui2_js, qr/function collapseMenuGroups\(\)/, 'ui2 startup can leave all menu groups closed' );
+like( $ui2_js, qr/button\.setAttribute\("aria-expanded", "false"\)/, 'ui2 menu groups are rendered closed by default' );
+like( $ui2_js, qr/list\.hidden = true/, 'ui2 module lists are hidden by default' );
+unlike( $ui2_js, qr/index === 0 \? "true" : "false"/, 'ui2 startup does not privilege the first menu group' );
 like( $ui2_js, qr/function chooseMenuModule\(moduleId\)/, 'ui2 menu module selection uses a dedicated transition path' );
 like( $ui2_js, qr/function expandMenuGroup\(targetGroup\)/, 'ui2 menu group selection opens the clicked group and closes the others' );
 like( $ui2_js, qr/setSidebarCollapsed\(true, false\)/, 'ui2 collapses the menu only after a module is selected without persisting that state' );

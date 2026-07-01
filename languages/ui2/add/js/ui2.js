@@ -661,6 +661,7 @@
       '<h2>Choose a module from the menu.</h2>',
       '<p>Select a menu group, then choose the tool you want to run.</p>'
     ].join("");
+    collapseMenuGroups();
     updateSelectedNavigation();
   }
 
@@ -723,7 +724,7 @@
       return;
     }
 
-    appMap.menus.forEach((menu, index) => {
+    appMap.menus.forEach((menu) => {
       const modules = (menu.modules || []).filter((module) => {
         return !isUtilityModule(module.id);
       });
@@ -735,11 +736,11 @@
 
       const button = el("button", "ui2-menu-button");
       button.type = "button";
-      button.setAttribute("aria-expanded", index === 0 ? "true" : "false");
+      button.setAttribute("aria-expanded", "false");
       button.appendChild(menuTitle(menu));
 
       const list = el("div", "ui2-module-list");
-      list.hidden = index !== 0;
+      list.hidden = true;
       modules.forEach((module) => {
         const item = el("button", "ui2-module-button", displayLabel(module.label || module.id));
         item.type = "button";
@@ -756,6 +757,19 @@
       nodes.menuNav.appendChild(group);
     });
 
+  }
+
+  function collapseMenuGroups() {
+    if (!nodes.menuNav) {
+      return;
+    }
+    nodes.menuNav.querySelectorAll(".ui2-menu-group").forEach((group) => {
+      group.querySelector(".ui2-menu-button")?.setAttribute("aria-expanded", "false");
+      const list = group.querySelector(".ui2-module-list");
+      if (list) {
+        list.hidden = true;
+      }
+    });
   }
 
   function expandMenuGroup(targetGroup) {
