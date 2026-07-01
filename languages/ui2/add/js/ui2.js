@@ -584,14 +584,14 @@
     login.type = "button";
     login.addEventListener("click", () => {
       overlay.hidden = true;
-      openLoginDialog();
+      openLoginDialog({ mandatory: true });
     });
 
     const register = el("button", "ui2-splash-action", "Register");
     register.type = "button";
-    register.addEventListener("click", () => {
+    register.addEventListener("click", async () => {
       overlay.hidden = true;
-      openLoginDialog();
+      await openRegisterDialog();
     });
     actions.append(login, register);
 
@@ -640,6 +640,24 @@
     const overlay = document.getElementById("ui2-splash-dialog");
     if (overlay) {
       overlay.hidden = true;
+    }
+  }
+
+  async function openRegisterDialog() {
+    try {
+      const payload = await fetchModuleDefinition("sys_register");
+      const module = payload.module || {};
+      const fields = visibleFields(Array.isArray(module.fields) ? module.fields : []);
+      const content = renderRegisterTool(module, fields);
+      showUtilityOverlay("Register", content, {
+        allowBackdropClose: false,
+        onClose: () => {
+          syncSplashForSession();
+        }
+      });
+    } catch (error) {
+      showError(`Could not load registration: ${error.message}`);
+      syncSplashForSession();
     }
   }
 
@@ -710,12 +728,13 @@
     }
   }
 
-  function showUtilityOverlay(titleText, content) {
+  function showUtilityOverlay(titleText, content, options = {}) {
     closeUtilityOverlay();
     const overlay = el("div", "ui2-dialog-overlay ui2-utility-overlay");
     overlay.id = "ui2-utility-overlay";
+    overlay._ui2OnClose = typeof options.onClose === "function" ? options.onClose : null;
     overlay.addEventListener("click", (event) => {
-      if (event.target === overlay) {
+      if (event.target === overlay && options.allowBackdropClose !== false) {
         closeUtilityOverlay();
       }
     });
@@ -729,6 +748,7 @@
     const close = el("button", "ui2-dialog-close", "Close");
     close.type = "button";
     close.addEventListener("click", closeUtilityOverlay);
+    close.hidden = options.hideClose === true;
     header.append(title, close);
     const body = el("div", "ui2-utility-body");
     body.appendChild(content);
@@ -741,7 +761,11 @@
   function closeUtilityOverlay() {
     const overlay = document.getElementById("ui2-utility-overlay");
     if (overlay) {
+      const onClose = overlay._ui2OnClose;
       overlay.remove();
+      if (typeof onClose === "function") {
+        onClose();
+      }
     }
   }
 
@@ -1775,6 +1799,9 @@
     if (moduleId === "sys_logoff") {
       return renderSimpleSystemTool("Logoff", fields);
     }
+    if (moduleId === "sys_register") {
+      return renderRegisterTool(module, fields);
+    }
     return null;
   }
 
@@ -1792,6 +1819,9 @@
 
   function utilityLabel(module) {
     const id = module.id || module.moduleid || "";
+    if (id === "sys_register") {
+      return "Register";
+    }
     if (id === "sys_file_manager") {
       return "File Manager";
     }
@@ -1961,6 +1991,31 @@
     return section;
   }
 
+  function renderRegisterTool(module, fields) {
+    const section = el("section", "ui2-section ui2-system-tool ui2-register-tool");
+    const form = el("form", "ui2-utility-form");
+    form.noValidate = true;
+    const inputFields = fields.filter((field) => field.role !== "output");
+    const outputFields = fields.filter((field) => field.role === "output");
+    form.appendChild(renderUtilitySection("Register", inputFields, "input"));
+    form.appendChild(renderUtilityActions(module.submit_label || "Register", { includeReset: false }));
+    if (outputFields.length) {
+      form.appendChild(renderUtilitySection("Status", outputFields, "output"));
+    }
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      await submitUtilityModule(form, module, "ajax/sys_config/sys_register.php", {
+        pendingMessage: "Submitting registration",
+        successMessage: "Registration submitted"
+      });
+    });
+    form.addEventListener("input", () => syncFormValues(form));
+    form.addEventListener("change", () => syncFormValues(form));
+    section.appendChild(form);
+    window.setTimeout(() => syncFormValues(form), 0);
+    return section;
+  }
+
   function userConfigFields(fields) {
     const visibleIds = new Set();
     fields.forEach((field) => {
@@ -2012,15 +2067,19 @@
     return section;
   }
 
-  function renderUtilityActions(submitLabel) {
+  function renderUtilityActions(submitLabel, options = {}) {
     const actions = el("div", "ui2-form-actions");
     const submit = el("button", "ui2-button ui2-button-primary", submitLabel || "Submit");
     submit.type = "submit";
-    const reset = el("button", "ui2-button ui2-button-quiet", "Reset");
-    reset.type = "reset";
     const status = el("div", "ui2-submit-status", "");
     status.setAttribute("role", "status");
-    actions.append(submit, reset, status);
+    actions.appendChild(submit);
+    if (options.includeReset !== false) {
+      const reset = el("button", "ui2-button ui2-button-quiet", "Reset");
+      reset.type = "reset";
+      actions.appendChild(reset);
+    }
+    actions.appendChild(status);
     return actions;
   }
 
@@ -2092,7 +2151,7 @@
     }
   }
 
-  async function submitUtilityModule(form, module, endpointPath) {
+  async function submitUtilityModule(form, module, endpointPath, options = {}) {
     const status = form.querySelector(".ui2-submit-status");
     const submitButton = form.querySelector('button[type="submit"]');
     const invalid = validateUtilityForm(form);
@@ -2103,10 +2162,10 @@
       return;
     }
     submitButton.disabled = true;
-    setSubmitStatus(status, "Submitting settings", "pending");
+    setSubmitStatus(status, options.pendingMessage || "Submitting settings", "pending");
     try {
       await refreshSessionState();
-      if (!state.session.logon) {
+      if (!state.session.logon && module?.moduleid !== "sys_register") {
         throw new Error("You must be logged on to update settings");
       }
       const endpoint = legacyEndpoint("", endpointPath);
@@ -2119,10 +2178,12 @@
       if (!response.ok || payload.error || payload._status === "failed") {
         throw new Error(payload.error || `Settings returned HTTP ${response.status}`);
       }
-      setSubmitStatus(status, payload.status || "Settings updated", "ok");
+      setSubmitStatus(status, payload.status || options.successMessage || "Settings updated", "ok");
       applyUtilityOutputs(form, payload);
-      await refreshSessionState();
-      await pullUtilityFieldValues(form);
+      if (module?.moduleid !== "sys_register") {
+        await refreshSessionState();
+        await pullUtilityFieldValues(form);
+      }
     } catch (error) {
       setSubmitStatus(status, error.message, "error");
       applyUtilityOutputs(form, { status: error.message });
@@ -2141,11 +2202,36 @@
         && !control.checkValidity()
     ));
     if (!invalid) {
-      return null;
+      return validateMatchedUtilityControls(form);
     }
     return {
       control: invalid,
       message: `${fieldLabelForControl(invalid)}: ${invalid.validationMessage || "Invalid value."}`
+    };
+  }
+
+  function validateMatchedUtilityControls(form) {
+    const controlsById = new Map();
+    fieldControls(form).forEach((control) => {
+      const id = control.dataset.fieldId || "";
+      if (id) {
+        controlsById.set(id, control);
+      }
+    });
+    const invalid = fieldControls(form).find((control) => {
+      const matchId = control.dataset.matchField || "";
+      if (!matchId || control.disabled) {
+        return false;
+      }
+      const other = controlsById.get(matchId);
+      return !!other && control.value !== other.value;
+    });
+    if (!invalid) {
+      return null;
+    }
+    return {
+      control: invalid,
+      message: `${fieldLabelForControl(invalid)} must match ${displayLabel(invalid.dataset.matchField || "the matching field")}.`
     };
   }
 
@@ -3930,6 +4016,9 @@
   function wireControl(control, field) {
     control.id = fieldId(field);
     control.dataset.fieldId = field.id || "";
+    if (field.match) {
+      control.dataset.matchField = field.match;
+    }
     if (field.pull) {
       control.dataset.pullKey = field.pull;
     }
@@ -3952,6 +4041,9 @@
     control.dataset.fieldId = field.id || "";
     control.dataset.repeatTableField = field.id || "";
     control.dataset.repeatTableIndex = String(rowIndex);
+    if (field.match) {
+      control.dataset.matchField = field.match;
+    }
     if (field.pull) {
       control.dataset.pullKey = field.pull;
     }

@@ -57,8 +57,11 @@ like( $ui2_js, qr/legacyEndpoint\("", "ajax"\)/, 'ui2 runtime bridge defaults su
 like( $ui2_js, qr/dataset\.appId/, 'ui2 runtime bridge can fall back to the generated application id' );
 like( $ui2_js, qr/sys_status\.php/, 'ui2 runtime bridge checks legacy sys_status for logon/project state' );
 like( $ui2_js, qr/function openLoginDialog\(options = \{\}\)/, 'ui2 runtime bridge keeps login on the ui2 page' );
+like( $ui2_js, qr/function openRegisterDialog\(\)/, 'ui2 runtime bridge keeps register on the ui2 page through the legacy sys_register module' );
 like( $ui2_js, qr/function applyLoginDialogMode\(overlay, mandatory\)/, 'ui2 login dialog can switch between mandatory and dismissible modes' );
 like( $ui2_js, qr/openLoginDialog\(\{ mandatory: true \}\)/, 'ui2 logged-out login action opens a mandatory login dialog' );
+like( $ui2_js, qr/await openRegisterDialog\(\);/, 'ui2 splash register action opens a dedicated register dialog' );
+like( $ui2_js, qr/await submitUtilityModule\(form, module, "ajax\/sys_config\/sys_register\.php"/, 'ui2 register dialog submits to the legacy register endpoint' );
 like( $ui2_js, qr/close\.hidden = mandatory/, 'ui2 mandatory login hides the dialog close control' );
 like( $ui2_js, qr/cancel\.hidden = mandatory/, 'ui2 mandatory login hides the dialog cancel control' );
 like( $ui2_js, qr/function openLogoffDialog\(\)/, 'ui2 logoff opens a confirmation dialog before calling the backend' );
@@ -122,6 +125,7 @@ like( $ui2_js, qr/function applyInputPayload\(inputs\)/, 'ui2 Job Manager can hy
 like( $ui2_js, qr/function renderFileManagerTool\(module, fields\)/, 'ui2 has a dedicated File Manager shell' );
 like( $ui2_js, qr/function downloadFileManagerSelection\(table, status, links, module\)/, 'ui2 File Manager submits selected files for download and renders returned links' );
 like( $ui2_js, qr/function renderUserConfigTool\(module, fields\)/, 'ui2 has a dedicated Settings shell' );
+like( $ui2_js, qr/function renderRegisterTool\(module, fields\)/, 'ui2 has a dedicated Register shell' );
 like( $ui2_js, qr/function legacyUtilityFieldName\(control\)/, 'ui2 Settings submits legacy repeat-prefixed field names' );
 like( $ui2_js, qr/function userConfigFields\(fields\)/, 'ui2 Settings filters fields through legacy directive visibility' );
 like( $ui2_js, qr/function renderGroupField\(field\)/, 'ui2 Settings renders legacy group fields as configured checkboxes' );
@@ -133,6 +137,7 @@ like( $ui2_js, qr/function fieldControls\(scope\)/, 'ui2 runtime scans actual fo
 like( $ui2_js, qr/parts\.unshift\(expected\)[\s\S]+parts\.unshift\(parent\)/, 'ui2 Settings preserves legacy nested repeat field names' );
 like( $ui2_js, qr/form\.noValidate = true/, 'ui2 Settings uses inline validation inside the modal instead of browser-native validation bubbles' );
 like( $ui2_js, qr/function validateUtilityForm\(form\)/, 'ui2 Settings validates active utility controls before submit' );
+like( $ui2_js, qr/function validateMatchedUtilityControls\(form\)/, 'ui2 utility validation checks repeated email and password fields that must match' );
 like( $ui2_js, qr/await refreshSessionState\(\);\s+await pullUtilityFieldValues\(form\);/s, 'ui2 Settings refreshes pulled project choices after a successful update' );
 like( $ui2_js, qr/function normalizeUserConfigField\(field\)/, 'ui2 Settings can apply legacy system-tool field exceptions' );
 like( $ui2_js, qr/id === "newprojectdesc"[\s\S]+required: "false"/, 'ui2 Settings keeps new project descriptions optional like legacy' );

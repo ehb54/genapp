@@ -246,6 +246,21 @@ assert(
   "logged-out login actions open a mandatory login dialog"
 );
 assert(
+  source.includes('async function openRegisterDialog()'),
+  "ui2 exposes a dedicated register dialog helper"
+);
+assert(
+  source.includes('await fetchModuleDefinition("sys_register")') &&
+    source.includes('await openRegisterDialog();'),
+  "ui2 splash register loads the legacy sys_register module instead of reusing login"
+);
+assert(
+  source.includes('allowBackdropClose: false') &&
+    source.includes('onClose: () => {') &&
+    source.includes('syncSplashForSession();'),
+  "ui2 register dialog returns the user to the splash flow when it closes"
+);
+assert(
   source.includes('function applyLoginDialogMode(overlay, mandatory)'),
   "ui2 has a dedicated helper for mandatory login dialog state"
 );
