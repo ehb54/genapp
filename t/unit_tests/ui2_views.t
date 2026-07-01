@@ -40,7 +40,9 @@ like( $index, qr/js\/ui2\.js/, 'ui2 index loads the plain JavaScript playground'
 like( $index, qr/css\/ui2\.css/, 'ui2 index loads the ui2 stylesheet' );
 like( $index, qr/id="ui2-session-status"/, 'ui2 index exposes a session/project status target' );
 like( $index, qr/data-app-id="ui2_views"/, 'ui2 index exposes the generated application id' );
-like( $index, qr/Choose a module from the menu/, 'ui2 index opens at a neutral menu-first shell' );
+like( $index, qr/Choose a menu group from the menu/, 'ui2 index opens at a neutral menu-group-first shell' );
+like( $index, qr/module from the list that appears at the top of the page/, 'ui2 index describes the selected-menu module strip' );
+unlike( $index, qr/<p class="ui2-kicker">Ready<\/p>/, 'ui2 empty shell does not show a Ready kicker' );
 like( $index, qr/class="ui2-nav-icon-button" id="ui2-nav-toggle"/, 'ui2 menu toggle lives in the topbar instead of the collapsed sidebar column' );
 like( $index, qr/id="ui2-module-strip"/, 'ui2 index exposes a legacy-style selected menu module strip' );
 
@@ -62,6 +64,8 @@ like( $ui2_js, qr/docs\.href = "\.\.\/docs\/"/, 'ui2 splash documentation link r
 like( $ui2_js, qr/function syncSplashForSession\(\)/, 'ui2 syncs the splash dialog from legacy session state' );
 like( $ui2_js, qr/renderSessionState\(\);\s+syncSplashForSession\(\);/s, 'ui2 checks splash visibility after refreshing legacy session status' );
 like( $ui2_js, qr/function showStartupShell\(\)/, 'ui2 startup can show the application shell without loading a module' );
+like( $ui2_js, qr/Choose a menu group from the menu/, 'ui2 runtime reset uses the menu-group-first shell copy' );
+unlike( $ui2_js, qr/<p class="ui2-kicker">Ready<\/p>/, 'ui2 runtime reset does not restore the Ready kicker' );
 like( $ui2_js, qr/showStartupShell\(\);\s+return Promise\.resolve\(\);/s, 'ui2 startup does not auto-load the first generated module' );
 unlike( $ui2_js, qr/function loadFirstAvailable\(\)/, 'ui2 no longer has a first-available-module startup path' );
 like( $ui2_js, qr/function collapseMenuGroups\(\)/, 'ui2 startup can leave all menu groups closed' );

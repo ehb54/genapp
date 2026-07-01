@@ -754,9 +754,8 @@
     nodes.root.innerHTML = "";
     nodes.empty.hidden = false;
     nodes.empty.innerHTML = [
-      '<p class="ui2-kicker">Ready</p>',
-      '<h2>Choose a module from the menu.</h2>',
-      '<p>Select a menu group, then choose the tool you want to run.</p>'
+      '<h2>Choose a menu group from the menu.</h2>',
+      '<p>Then choose a module from the list that appears at the top of the page.</p>'
     ].join("");
     collapseMenuGroups();
     renderModuleStrip();
