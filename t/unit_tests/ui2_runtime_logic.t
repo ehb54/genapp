@@ -639,6 +639,32 @@ assert.strictEqual(
   "Li9zYW5zX2RhdGEuc3Vi",
   "attach replay restores server selection payloads without the selected-alt marker"
 );
+
+const dynamicGroup = {
+  dataset: {
+    outputFieldId: "dynamic_plots",
+    outputType: "plotly",
+    dynamicIdPrefix: "sascalc_dyn_plot",
+    dynamicMax: "2",
+    dynamicLabel: "Additional plots"
+  }
+};
+const dynamicItems = hooks.dynamicOutputItems(dynamicGroup, {
+  items: [
+    { label: "First plot", value: { data: [] } },
+    { id: "custom_plot", label: "Custom plot", data: { data: [] } },
+    { id: "ignored_plot", value: { data: [] } }
+  ]
+});
+assert.strictEqual(dynamicItems.length, 2, "dynamic output items honor the declared max");
+assert.strictEqual(dynamicItems[0].id, "sascalc_dyn_plot_1", "dynamic output items generate ids from idprefix");
+assert.strictEqual(dynamicItems[1].id, "custom_plot", "dynamic output items honor explicit safe ids");
+assert.deepStrictEqual(dynamicItems[1].value, { data: [] }, "dynamic output items accept legacy data payload values");
+
+const unsafeDynamicItems = hooks.dynamicOutputItems(dynamicGroup, [
+  { id: "../bad id", value: "clean me" }
+]);
+assert.strictEqual(unsafeDynamicItems[0].id, "badid", "dynamic output explicit ids are sanitized");
 JS
 close $fh;
 

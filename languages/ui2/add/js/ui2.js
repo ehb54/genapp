@@ -1091,7 +1091,6 @@
     section.id = role === "output" ? "ui2-output-section" : "ui2-input-section";
     const header = el("div", "ui2-section-header");
     header.appendChild(el("h2", null, title));
-    header.appendChild(el("span", "ui2-pill", `${fields.length}`));
     const body = el("div", "ui2-section-body");
     const renderPlan = planFields(fields);
 
@@ -1122,6 +1121,10 @@
     row.dataset.fieldId = field.id || "";
     if (field.repeat) {
       row.dataset.repeat = field.repeat;
+    }
+    if (role === "output" && isDynamicOutputField(field)) {
+      row.classList.add("ui2-dynamic-output-row");
+      row.hidden = true;
     }
 
     const label = el("label", "ui2-field-label");
@@ -1736,6 +1739,9 @@
 
   function renderOutput(field) {
     const type = String(field.type || "html").toLowerCase();
+    if (isDynamicOutputField(field)) {
+      return renderDynamicOutputGroup(field, type);
+    }
     if (type === "progress") {
       const progress = el("progress", "ui2-progress");
       progress.max = field.max || 1;
@@ -1748,6 +1754,25 @@
     output.dataset.outputFieldId = field.id || "";
     output.dataset.outputType = type;
     return output;
+  }
+
+  function renderDynamicOutputGroup(field, type) {
+    const output = el("div", `${outputClassForType(type)} ui2-dynamic-output`, dynamicOutputPlaceholder(field));
+    output.dataset.outputFieldId = field.id || "";
+    output.dataset.outputType = type;
+    output.dataset.dynamicOutput = "true";
+    output.dataset.dynamicIdPrefix = field.idprefix || "";
+    output.dataset.dynamicMax = field.max || "";
+    output.dataset.dynamicLabel = field.label || field.id || "Dynamic output";
+    return output;
+  }
+
+  function isDynamicOutputField(field) {
+    return String(field?.dynamicoutput || "").toLowerCase() === "true";
+  }
+
+  function dynamicOutputPlaceholder(field) {
+    return `${field.label || "Dynamic output"} will appear when the run creates it.`;
   }
 
   function outputClassForType(type) {
@@ -2202,7 +2227,6 @@
     const section = el("section", "ui2-section");
     const header = el("div", "ui2-section-header");
     header.appendChild(el("h2", null, title));
-    header.appendChild(el("span", "ui2-pill", `${fields.length}`));
     const body = el("div", "ui2-section-body");
     const renderPlan = planFields(fields);
     if (!fields.length) {
@@ -3806,6 +3830,14 @@
     if (!output) {
       return;
     }
+    if (output.dataset.dynamicOutput === "true") {
+      updateDynamicOutput(output, value);
+      return;
+    }
+    updateOutputElement(output, value);
+  }
+
+  function updateOutputElement(output, value) {
     const type = output.dataset.outputType || "";
     if (output instanceof HTMLProgressElement) {
       updateProgressOutputs(value);
@@ -3824,6 +3856,60 @@
       return;
     }
     renderTextOutput(output, value);
+  }
+
+  function updateDynamicOutput(group, payload) {
+    const parentRow = group.closest(".ui2-dynamic-output-row");
+    const items = dynamicOutputItems(group, payload);
+    group.querySelectorAll(".ui2-dynamic-output-instance").forEach((node) => node.remove());
+    group.classList.remove("ui2-output-rendered");
+    group.textContent = "";
+    if (!items.length) {
+      if (parentRow) {
+        parentRow.hidden = true;
+      }
+      group.textContent = dynamicOutputPlaceholder({
+        label: group.dataset.dynamicLabel,
+        id: group.dataset.outputFieldId
+      });
+      return;
+    }
+    if (parentRow) {
+      parentRow.hidden = false;
+    }
+    group.classList.add("ui2-output-rendered");
+    items.forEach((item) => {
+      const instance = el("div", "ui2-dynamic-output-instance");
+      const label = el("h3", "ui2-dynamic-output-label", item.label);
+      const output = renderOutput({
+        id: item.id,
+        type: group.dataset.outputType || "html"
+      });
+      output.dataset.dynamicChild = "true";
+      instance.append(label, output);
+      group.appendChild(instance);
+      updateOutputElement(output, item.value);
+    });
+  }
+
+  function dynamicOutputItems(group, payload) {
+    const rawItems = Array.isArray(payload) ? payload : Array.isArray(payload?.items) ? payload.items : [];
+    const max = Math.max(0, parseInt(group.dataset.dynamicMax || "0", 10) || rawItems.length);
+    const prefix = safeDynamicId(group.dataset.dynamicIdPrefix || group.dataset.outputFieldId || "dynamic_output");
+    const label = group.dataset.dynamicLabel || "Dynamic output";
+    return rawItems.slice(0, max).map((raw, index) => {
+      const item = raw && typeof raw === "object" ? raw : { value: raw };
+      const generatedId = `${prefix}_${index + 1}`;
+      return {
+        id: safeDynamicId(item.id) || generatedId,
+        label: item.label || `${label} ${index + 1}`,
+        value: item.value ?? item.data ?? ""
+      };
+    });
+  }
+
+  function safeDynamicId(value) {
+    return String(value || "").replace(/[^A-Za-z0-9_-]/g, "");
   }
 
   function renderHtmlOutput(output, value) {
@@ -4600,6 +4686,7 @@
       fileDownloadLinks,
       moduleSubmitEndpointFor,
       serverSelectionDisplayPath,
+      dynamicOutputItems,
       mergeSavedInputPayloads,
       menuVisibleForSession,
       moduleIdFromSwitchParts,

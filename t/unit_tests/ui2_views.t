@@ -51,6 +51,12 @@ like( $app_map_js, qr/genappRevision:\s*"GenApp /, 'ui2 app map carries the GenA
 
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
 like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declares a module submit endpoint helper' );
+like( $ui2_js, qr/function renderTabs\(inputCount, outputCount\)/, 'ui2 runtime keeps input/output jump tabs with counts' );
+like( $ui2_js, qr/tabButton\("Inputs", inputCount, true, "ui2-input-section"\)/, 'ui2 input jump tab keeps its field count' );
+unlike( $ui2_js, qr/header\.appendChild\(el\("span", "ui2-pill", `\$\{fields\.length\}`\)\)/, 'ui2 section headers do not duplicate input/output count pills' );
+like( $ui2_js, qr/function isDynamicOutputField\(field\)/, 'ui2 runtime detects legacy dynamic output declarations' );
+like( $ui2_js, qr/role === "output" && isDynamicOutputField\(field\).*?row\.hidden = true/s, 'ui2 dynamic output rows are hidden until runtime data arrives' );
+like( $ui2_js, qr/function updateDynamicOutput\(group, payload\).*?updateOutputElement\(output, item\.value\)/s, 'ui2 dynamic output children reuse normal output rendering' );
 like( $ui2_js, qr/function refreshSessionState\(\)/, 'ui2 runtime bridge declares a legacy session status helper' );
 like( $ui2_js, qr/function legacyEndpoint\(paramName, path\)/, 'ui2 runtime bridge builds explicit legacy app-root endpoints' );
 like( $ui2_js, qr/legacyEndpoint\("", "ajax"\)/, 'ui2 runtime bridge defaults submit endpoints to the legacy ajax root' );
@@ -188,6 +194,7 @@ like( $ui2_css, qr/\.ui2-dialog-overlay/, 'ui2 stylesheet includes login dialog 
 like( $ui2_css, qr/\.ui2-captcha-dialog/, 'ui2 stylesheet includes a dedicated captcha dialog shell' );
 like( $ui2_css, qr/\.ui2-splash-footer/, 'ui2 stylesheet includes splash footer metadata styles' );
 like( $ui2_css, qr/\.ui2-output-plotly/, 'ui2 stylesheet includes a stable Plotly output surface' );
+like( $ui2_css, qr/\.ui2-dynamic-output\s*\{[^}]*display:\s*grid/s, 'ui2 stylesheet stacks dynamic output instances' );
 like( $ui2_css, qr/\.ui2-output-rendered/, 'ui2 stylesheet distinguishes rendered runtime output from placeholders' );
 like( $ui2_css, qr/\.ui2-output-field/, 'ui2 stylesheet lets output rows use the full default width' );
 like( $ui2_css, qr/\.ui2-mini-button/, 'ui2 stylesheet includes compact system action buttons' );

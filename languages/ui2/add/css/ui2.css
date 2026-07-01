@@ -1140,6 +1140,22 @@ code {
   min-height: 30rem;
 }
 
+.ui2-dynamic-output {
+  display: grid;
+  gap: 1rem;
+  min-height: 0;
+  white-space: normal;
+}
+
+.ui2-dynamic-output.ui2-output-plotly {
+  min-height: 0;
+}
+
+.ui2-dynamic-output-label {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
 .ui2-progress {
   width: 100%;
   accent-color: var(--ui2-accent);
