@@ -4,6 +4,9 @@
   const app = {
     title: "__title__",
     application: "__application__",
+    generatedOn: "__generatedon__",
+    appRevision: "__apprevision__",
+    genappRevision: "__revision__",
     directives: {},
     menus: [],
     menuById: {}

@@ -232,6 +232,16 @@ assert(
   "ui2 provides a splash/login dialog helper"
 );
 assert(
+  source.includes('function splashFooterLines()'),
+  "ui2 splash builds footer metadata from generated app details"
+);
+assert(
+  source.includes('appMap.generatedOn') &&
+    source.includes('appMap.appRevision') &&
+    source.includes('appMap.genappRevision'),
+  "ui2 splash footer reads legacy generated-on and revision metadata"
+);
+assert(
   source.includes('function syncSplashForSession()'),
   "ui2 reconciles splash visibility from session status"
 );

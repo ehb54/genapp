@@ -585,9 +585,33 @@
     docs.target = "_blank";
     docs.rel = "noopener";
 
-    panel.append(title, actions, docs);
+    const footer = el("div", "ui2-splash-footer");
+    splashFooterLines().forEach((line) => {
+      footer.appendChild(el("p", "ui2-splash-meta", line));
+    });
+
+    panel.append(title, actions, docs, footer);
     overlay.appendChild(panel);
     document.body.appendChild(overlay);
+  }
+
+  function splashFooterLines() {
+    const lines = [];
+    const generatedOn = stringValue(appMap.generatedOn);
+    const appRevision = stringValue(appMap.appRevision);
+    const genappRevision = stringValue(appMap.genappRevision);
+    if (generatedOn) {
+      lines.push(generatedOn);
+    }
+    if (appRevision) {
+      lines.push(appRevision);
+    }
+    if (genappRevision) {
+      lines.push(genappRevision);
+    } else {
+      lines.push("GenApp");
+    }
+    return lines;
   }
 
   function appTitle() {
@@ -754,7 +778,7 @@
     nodes.root.innerHTML = "";
     nodes.empty.hidden = false;
     nodes.empty.innerHTML = [
-      '<h2>Choose a menu group from the menu.</h2>',
+      '<h2>Choose a menu group from the options on the left.</h2>',
       '<p>Then choose a module from the list that appears at the top of the page.</p>'
     ].join("");
     collapseMenuGroups();

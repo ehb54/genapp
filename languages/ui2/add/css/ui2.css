@@ -822,6 +822,19 @@ code {
   outline: none;
 }
 
+.ui2-splash-footer {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: center;
+}
+
+.ui2-splash-meta {
+  margin: 0;
+  color: var(--ui2-muted);
+  font-size: 0.95rem;
+  font-style: italic;
+}
+
 .ui2-dialog-close {
   border: 1px solid var(--ui2-border);
   border-radius: 999px;
