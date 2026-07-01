@@ -207,7 +207,8 @@ window.__styleVars = {
   "--ui2-border": "#33403d"
 };
 const darkLayout = hooks.applyPlotlyTheme({
-  legend: { bgcolor: "#ffffff", font: { color: "#ffffff" } }
+  legend: { bgcolor: "#ffffff", font: { color: "#ffffff" } },
+  legend2: { bgcolor: "#ffffff", font: { color: "#ffffff" } }
 });
 assert.strictEqual(
   darkLayout.legend.bgcolor,
@@ -219,6 +220,11 @@ assert.strictEqual(
   "#17201d",
   "UI2 forces dark legend text when the legend background is light"
 );
+assert.strictEqual(
+  darkLayout.legend2.font.color,
+  "#17201d",
+  "UI2 also fixes subplot legend text when a figure uses legend2"
+);
 window.__styleVars = {
   "--ui2-panel": "#ffffff",
   "--ui2-bg": "#f7f8fa",
@@ -226,7 +232,8 @@ window.__styleVars = {
   "--ui2-border": "#d8dfdc"
 };
 const lightLayout = hooks.applyPlotlyTheme({
-  legend: { bgcolor: "#1a201f" }
+  legend: { bgcolor: "#1a201f" },
+  legend3: { bgcolor: "#1a201f" }
 });
 assert.strictEqual(
   lightLayout.legend.bgcolor,
@@ -237,6 +244,11 @@ assert.strictEqual(
   lightLayout.legend.font.color,
   "#eef4f1",
   "UI2 forces light legend text when the legend background is dark"
+);
+assert.strictEqual(
+  lightLayout.legend3.font.color,
+  "#eef4f1",
+  "UI2 also fixes subplot legend text when a figure uses legend3"
 );
 
 assert.strictEqual(

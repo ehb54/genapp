@@ -4236,11 +4236,14 @@
     layout.paper_bgcolor = layout.paper_bgcolor || colors.panel;
     layout.plot_bgcolor = layout.plot_bgcolor || colors.panel;
     layout.font = Object.assign({ color: colors.text }, layout.font || {});
-    const legendBackground = layout.legend?.bgcolor || colors.legendBackground;
-    layout.legend = Object.assign({}, layout.legend || {}, {
-      bgcolor: legendBackground,
-      bordercolor: colors.border,
-      font: Object.assign({}, layout.legend?.font || {}, { color: contrastTextColor(legendBackground) })
+    plotlyLegendKeys(layout).forEach((legendKey) => {
+      const currentLegend = layout[legendKey] || {};
+      const legendBackground = currentLegend.bgcolor || colors.legendBackground;
+      layout[legendKey] = Object.assign({}, currentLegend, {
+        bgcolor: legendBackground,
+        bordercolor: colors.border,
+        font: Object.assign({}, currentLegend.font || {}, { color: contrastTextColor(legendBackground) })
+      });
     });
     ["xaxis", "yaxis", "xaxis2", "yaxis2", "xaxis3", "yaxis3"].forEach((axisName) => {
       if (!layout[axisName]) {
@@ -4254,6 +4257,11 @@
       }, layout[axisName]);
     });
     return layout;
+  }
+
+  function plotlyLegendKeys(layout) {
+    const keys = Object.keys(layout || {}).filter((key) => /^legend\d*$/.test(key));
+    return keys.length ? keys : ["legend"];
   }
 
   function plotlyThemeColors() {
