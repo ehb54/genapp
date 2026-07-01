@@ -179,6 +179,16 @@ assert.strictEqual(
   "UI2 parses legacy NGL JSON payloads without falling back to raw text"
 );
 assert.strictEqual(
+  hooks.normalizeNglLoadName(nglPayload.loadname),
+  "../results/users/Joseph/no_project_specified/run_0/monomer_monte_carlo/movie.pdb",
+  "UI2 rebases legacy result-relative NGL paths out of the ui2 subdirectory"
+);
+assert.strictEqual(
+  hooks.normalizeNglLoadName("../results/users/Joseph/model.pdb"),
+  "../results/users/Joseph/model.pdb",
+  "UI2 does not double-prefix already rebased NGL paths"
+);
+assert.strictEqual(
   JSON.stringify(hooks.nglRepresentationSpecs(nglPayload)),
   JSON.stringify([{ type: "cartoon", params: { color: "blue" } }]),
   "UI2 preserves legacy NGL representation specs"

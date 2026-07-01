@@ -60,8 +60,10 @@ like( $ui2_js, qr/role === "output" && isDynamicOutputField\(field\).*?row\.hidd
 like( $ui2_js, qr/function updateDynamicOutput\(group, payload\).*?updateOutputElement\(output, item\.value\)/s, 'ui2 dynamic output children reuse normal output rendering' );
 like( $ui2_js, qr/function clearRuntimeOutputs\(scope\).*?updateDynamicOutput\(output, \{ items: \[\] \}\).*?delete output\.dataset\.runtimeText/s, 'ui2 clears dynamic and textarea output state before a new submit' );
 like( $ui2_js, qr/function renderNglOutputShell\(field, type\).*?_plot.*?_buttons/s, 'ui2 NGL outputs render the legacy plot and buttons shell' );
-like( $ui2_js, qr/function renderNglOutput\(output, value\).*?new window\.NGL\.Stage\(plot\.id\).*?stage\.loadFile\(payload\.loadname, payload\.loadparams/s, 'ui2 NGL outputs load legacy NGL payloads into a stage' );
+like( $ui2_js, qr/function renderNglOutput\(output, value\).*?new window\.NGL\.Stage\(plot\.id\).*?stage\.loadFile\(normalizeNglLoadName\(payload\.loadname\), payload\.loadparams/s, 'ui2 NGL outputs load rebased legacy NGL payloads into a stage' );
+like( $ui2_js, qr/function normalizeNglLoadName\(loadname\).*?value\.startsWith\("results\/"\).*?`\.\.\/\$\{value\}`/s, 'ui2 NGL renderer rebases legacy result-relative paths from the ui2 directory' );
 like( $ui2_js, qr/function ensureNglLoaded\(\).*?loadScript\("\.\.\/js\/ngl\.js"\)/s, 'ui2 NGL renderer reuses the generated legacy NGL bundle' );
+like( $ui2_js, qr/const NGL_REPRESENTATION_TYPES = \[[\s\S]*"backbone"[\s\S]*"ball\+stick"[\s\S]*"cartoon"[\s\S]*"tube"[\s\S]*\]/, 'ui2 NGL renderer uses the legacy representation button list' );
 like( $ui2_js, qr/function refreshSessionState\(\)/, 'ui2 runtime bridge declares a legacy session status helper' );
 like( $ui2_js, qr/function legacyEndpoint\(paramName, path\)/, 'ui2 runtime bridge builds explicit legacy app-root endpoints' );
 like( $ui2_js, qr/legacyEndpoint\("", "ajax"\)/, 'ui2 runtime bridge defaults submit endpoints to the legacy ajax root' );

@@ -20,6 +20,25 @@
   const devMode = params.get("ui2dev") === "1" || prefs.devMode === true;
   const JOB_MANAGER_ENDPOINT = "ajax/sys_config/sys_jobs2.php";
   const FIELD_CONTROL_SELECTOR = "input[data-field-id], select[data-field-id], textarea[data-field-id]";
+  const NGL_REPRESENTATION_TYPES = [
+    "backbone",
+    "ball+stick",
+    "cartoon",
+    "contact",
+    "helixorient",
+    "hyperball",
+    "label",
+    "licorice",
+    "line",
+    "point",
+    "ribbon",
+    "rocket",
+    "rope",
+    "spacefill",
+    "surface",
+    "trace",
+    "tube"
+  ];
   let plotlyLoadPromise = null;
   let nglLoadPromise = null;
 
@@ -3996,6 +4015,7 @@
     }
     output._ui2NglStage = null;
     output._ui2NglComponent = null;
+    output._ui2NglReps = null;
     const plot = output.querySelector(".ui2-ngl-plot");
     const buttons = output.querySelector(".ui2-ngl-buttons");
     const placeholder = output.querySelector(".ui2-ngl-placeholder");
@@ -4037,15 +4057,19 @@
       .then(() => {
         const stage = new window.NGL.Stage(plot.id);
         output._ui2NglStage = stage;
-        return stage.loadFile(payload.loadname, payload.loadparams || {}).then((component) => {
+        return stage.loadFile(normalizeNglLoadName(payload.loadname), payload.loadparams || {}).then((component) => {
           output._ui2NglComponent = component;
+          output._ui2NglReps = {};
           nglRepresentationSpecs(payload).forEach((spec) => {
-            component.addRepresentation(spec.type, spec.params || {});
+            output._ui2NglReps[spec.type] = component.addRepresentation(spec.type, spec.params || {});
           });
           if (component.autoView) {
             component.autoView();
           }
-          renderNglButtons(buttons, component);
+          if (stage.handleResize) {
+            stage.handleResize();
+          }
+          renderNglButtons(buttons, component, output._ui2NglReps);
         });
       })
       .catch((error) => {
@@ -4076,6 +4100,17 @@
     }
   }
 
+  function normalizeNglLoadName(loadname) {
+    const value = String(loadname || "");
+    if (!value || /^(?:[a-z]+:|\/|\.\.\/|\.\/)/i.test(value)) {
+      return value;
+    }
+    if (value.startsWith("results/")) {
+      return `../${value}`;
+    }
+    return value;
+  }
+
   function nglRepresentationSpecs(payload) {
     const reps = Array.isArray(payload?.representations) ? payload.representations : [];
     const specs = reps
@@ -4093,13 +4128,22 @@
     }];
   }
 
-  function renderNglButtons(container, component) {
-    const types = ["cartoon", "backbone", "ball+stick", "surface"];
+  function renderNglButtons(container, component, reps) {
     container.textContent = "";
-    types.forEach((type) => {
+    NGL_REPRESENTATION_TYPES.forEach((type) => {
       const button = el("button", "ui2-button ui2-button-quiet ui2-ngl-button", type);
       button.type = "button";
-      button.addEventListener("click", () => component.addRepresentation(type, {}));
+      button.setAttribute("aria-pressed", reps[type] ? "true" : "false");
+      button.addEventListener("click", () => {
+        if (reps[type] && component.removeRepresentation) {
+          component.removeRepresentation(reps[type]);
+          delete reps[type];
+          button.setAttribute("aria-pressed", "false");
+          return;
+        }
+        reps[type] = component.addRepresentation(type, {});
+        button.setAttribute("aria-pressed", "true");
+      });
       container.appendChild(button);
     });
   }
@@ -4892,6 +4936,7 @@
       replaceSelectOptions,
       userConfigGroupVisible,
       parseNglPayload,
+      normalizeNglLoadName,
       nglRepresentationSpecs,
       applyInputPayload,
       applySavedJobInput,
