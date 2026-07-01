@@ -1,0 +1,5 @@
+{
+  "module": "__modules:id__",
+  "modulejson": __modulejson_raw__,
+  "viewjson": __viewjson_raw__
+}

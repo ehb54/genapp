@@ -29,6 +29,8 @@ ok( -f File::Spec->catfile( $ui2, qw(js ui2.js) ), 'ui2 script was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(modules shared.json) ), 'ui2 shared module summary was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(modules plain.json) ), 'ui2 plain module summary was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(modules typed.json) ), 'ui2 typed module summary was generated without ui2 type templates' );
+ok( -f File::Spec->catfile( $ui2, qw(modules sys_user_config.json) ), 'ui2 config system module summary was generated' );
+ok( -f File::Spec->catfile( $ui2, qw(modules sys_file_manager.json) ), 'ui2 configbase system module summary was generated' );
 
 my $index = read_file( File::Spec->catfile( $ui2, 'index.html' ) );
 like( $index, qr/js\/app-map\.js/, 'ui2 index loads the generated app map' );
@@ -150,6 +152,14 @@ is( $plain->{module}, 'plain', 'plain summary records module id' );
 is( $plain->{modulejson}{label}, 'Plain UI2 Modules Fallback', 'ui2/modules remains a fallback module override path' );
 is( $plain->{modulejson}{fields}[0]{id}, 'plain_ui2_modules_input', 'ui2/modules fallback field is used when module_overrides is absent' );
 is_deeply( $plain->{viewjson}, {}, 'missing view files produce an empty view object' );
+
+my $settings = decode_json( read_file( File::Spec->catfile( $ui2, qw(modules sys_user_config.json) ) ) );
+is( $settings->{module}, 'sys_user_config', 'settings summary records system module id' );
+ok( scalar @{ $settings->{modulejson}{fields} || [] }, 'settings summary preserves system module fields' );
+
+my $file_manager = decode_json( read_file( File::Spec->catfile( $ui2, qw(modules sys_file_manager.json) ) ) );
+is( $file_manager->{module}, 'sys_file_manager', 'file manager summary records configbase module id' );
+ok( scalar @{ $file_manager->{modulejson}{fields} || [] }, 'file manager summary preserves configbase module fields' );
 
 my $typed = decode_json( read_file( File::Spec->catfile( $ui2, qw(modules typed.json) ) ) );
 is( $typed->{module}, 'typed', 'typed summary records module id' );

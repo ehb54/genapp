@@ -269,11 +269,9 @@ foreach my $l ( keys %langs )
         if ( $freq eq 'menu:modules:id' )
         {
             $rplc_menu = start_json( $menu, $ref_menu );
-            my $mod  = $$rplc_menu{ $freq };
-            my $mod_f = $module_to_file{ $l }{ $mod };
-# this should probably be loaded once in check_files()
-            $mod_json = get_file_json_lang_specific( $mod_f, $l, 1 );
-            $rplc_mod = start_json( $mod_json, $ref_mod );
+            while ( $rplc_menu && !$$rplc_menu{ $freq } ) {
+                $rplc_menu = next_json( $ref_menu );
+            }
 ##           $rplc_menu = rewind_json( $ref_menu );
 #            do {
 #                print "menu:modules:id " . $$rplc_menu{ $freq } . "\n";
@@ -283,36 +281,16 @@ foreach my $l ( keys %langs )
         if ( $freq eq 'config:modules:id' )
         {
             $rplc_menu = start_json( $config, $ref_menu );
-            my $mod  = $$rplc_menu{ 'menu:modules:id' };
-            print "mod = $mod\n";
-            my $mod_f = $module_to_file{ $l }{ $mod };
-            print "mod_f = $mod_f\n";
-# this should probably be loaded once in check_files()
-            $mod_json = get_file_json_lang_specific( $mod_f, $l, 1 );
-            $rplc_mod = start_json( $mod_json, $ref_mod );
         }
 
         if ( $freq eq 'configbase:modules:id' )
         {
             $rplc_menu = start_json( $configbase, $ref_menu );
-            my $mod  = $$rplc_menu{ 'menu:modules:id' };
-            print "mod = $mod\n";
-            my $mod_f = $module_to_file{ $l }{ $mod };
-            print "mod_f = $mod_f\n";
-# this should probably be loaded once in check_files()
-            $mod_json = get_file_json_lang_specific( $mod_f, $l, 1 );
-            $rplc_mod = start_json( $mod_json, $ref_mod );
         }
 
         if ( $freq =~ /^(menu:id|once)$/ )
         {
             $rplc_menu = start_json( $menu, $ref_menu );
-#            print Dumper( $rplc_menu );
-            my $mod  = $$rplc_menu{ 'menu:modules:id' };
-            my $mod_f = $module_to_file{ $l }{ $mod };
-# this should probably be loaded once in check_files()
-            $mod_json = get_file_json_lang_specific( $mod_f, $l, 1 );
-            $rplc_mod = start_json( $mod_json, $ref_mod );
 ##           $rplc_menu = rewind_json( $ref_menu );
 #            do {
 #                print "menu:modules:id " . $$rplc_menu{ $freq } . "\n";
@@ -321,7 +299,31 @@ foreach my $l ( keys %langs )
 
         do {
             my $outdata;
-            print "->-> module is now " . $$rplc_menu{ "menu:modules:id" } . "\n" if $debug_main;
+            my $module_id_key = $freq =~ /^(config|configbase):modules:id$/ ? 'modules:id' : 'menu:modules:id';
+            my $module_id_match_key = $freq =~ /^(config|configbase):modules:id$/
+                ? 'modules:id|menu:modules:id'
+                : $module_id_key;
+            my $current_module_id = $freq =~ /^(config|configbase):modules:id$/
+                ? ( $$rplc_menu{ 'modules:id' } || $$rplc_menu{ 'menu:modules:id' } || "" )
+                : ( $$rplc_menu{ $module_id_key } || "" );
+            my $module_id_iter_key = $freq =~ /^(config|configbase):modules:id$/
+                ? ( $$rplc_menu{ 'modules:id' } ? 'modules:id' : ( $$rplc_menu{ 'menu:modules:id' } ? 'menu:modules:id' : $module_id_match_key ) )
+                : $module_id_key;
+            if ( $freq =~ /^(menu|config|configbase):modules:id$/ && !$current_module_id ) {
+                $rplc_menu = next_json( $ref_menu, $module_id_match_key );
+                next;
+            }
+            $$rplc_menu{ 'modules:id' } = $current_module_id
+                if $freq =~ /^(config|configbase):modules:id$/ && !$$rplc_menu{ 'modules:id' };
+            my $current_module_file = $freq =~ /^(menu|config|configbase):modules:id$/
+                ? ( $module_to_file{ $l }{ $current_module_id } || "" )
+                : "";
+            if ( $freq =~ /^(menu|config|configbase):modules:id$/ && !$current_module_file ) {
+                my $next_key = $freq =~ /^(config|configbase):modules:id$/ ? $module_id_match_key : $freq;
+                $rplc_menu = next_json( $ref_menu, $next_key );
+                next;
+            }
+            print "->-> module is now " . $current_module_id . "\n" if $debug_main;
             print "->-> menu:id is now " . $$rplc_menu{ "menu:id" } . "\n" if $debug_main;
 
             for ( my $i = 0; $i < @$inputs; ++$i )
@@ -334,7 +336,7 @@ foreach my $l ( keys %langs )
                     if ( $freq =~ /^(menu|config|configbase):modules:id$/ )
                     {
 # this should probably be loaded once in check_files()
-                        $mod_json = get_file_json_lang_specific( $module_to_file{ $l }{ $$rplc_menu{ 'menu:modules:id' } }, $l, 1 );
+                        $mod_json = get_file_json_lang_specific( $current_module_file, $l, 1 );
                         $rplc_mod = start_json( $mod_json, $ref_mod );
 #                       $rplc_mod = rewind_json( $ref_mod );
                         print "--------- input module rplc ---------\n" if $debug_srplc;
@@ -483,16 +485,16 @@ foreach my $l ( keys %langs )
                         grep s/__${k}__/${v}/g, @l;
                     }
 
-                    if ( grep /__modulejson_raw__/, @l ) {
+                    if ( $freq =~ /^(menu|config|configbase):modules:id$/ && grep /__modulejson_raw__/, @l ) {
                         my $js = JSON->new;
                         $js->canonical(1);
-                        my $enc_mod_json = $js->encode( get_file_json_lang_specific( $module_to_file{ $l }{ $$rplc_menu{ 'menu:modules:id' } }, $l, 1 ) );
+                        my $enc_mod_json = $js->encode( get_file_json_lang_specific( $current_module_file, $l, 1 ) );
                         grep s/__modulejson_raw__/$enc_mod_json/g, @l;
                     }
-                    if ( grep /__modulejson__/, @l ) {
+                    if ( $freq =~ /^(menu|config|configbase):modules:id$/ && grep /__modulejson__/, @l ) {
                         my $js = JSON->new;
                         $js->canonical(1);
-                        my $enc_mod_json = $js->encode( get_file_json_lang_specific( $module_to_file{ $l }{ $$rplc_menu{ 'menu:modules:id' } }, $l, 1 ) );
+                        my $enc_mod_json = $js->encode( get_file_json_lang_specific( $current_module_file, $l, 1 ) );
                         # fix for embedded html with quotes
                         $enc_mod_json =~ s/\\\\'/\\'/g;
                         $enc_mod_json =~ s/\\"/\\\\"/g;
@@ -503,14 +505,14 @@ foreach my $l ( keys %langs )
                         }
                         grep s/__modulejson__/$enc_mod_json/g, @l;
                     }
-                    if ( grep /__viewjson_raw__/, @l ) {
+                    if ( $freq =~ /^(menu|config|configbase):modules:id$/ && grep /__viewjson_raw__/, @l ) {
                         my $js = JSON->new;
                         $js->canonical(1);
-                        my $enc_view_json = $js->encode( get_optional_view_json( $$rplc_menu{ 'menu:modules:id' }, $l ) );
+                        my $enc_view_json = $js->encode( get_optional_view_json( $current_module_id, $l ) );
                         grep s/__viewjson_raw__/$enc_view_json/g, @l;
                     }
-                    if ( grep /__viewjson__/, @l ) {
-                        my $enc_view_json = get_optional_view_json_encoded( $$rplc_menu{ 'menu:modules:id' }, $l );
+                    if ( $freq =~ /^(menu|config|configbase):modules:id$/ && grep /__viewjson__/, @l ) {
+                        my $enc_view_json = get_optional_view_json_encoded( $current_module_id, $l );
                         grep s/__viewjson__/$enc_view_json/g, @l;
                     }
 
@@ -519,10 +521,10 @@ foreach my $l ( keys %langs )
                         grep s/$sub/$extra_subs{$sub}/g, @l;
                     }
 
-                    if ( $$rplc_menu{ "menu:modules:id" } )
+                    if ( $freq =~ /^(menu|config|configbase):modules:id$/ && $current_module_id )
                     {
-                        print "mod_f is " . $$rplc_menu{ "menu:modules:id" } . "\n" if $debug_srplc;
-                        my $mod_json = get_file_json_lang_specific( $module_to_file{ $l }{ $$rplc_menu{ "menu:modules:id" } }, $l, 1 );
+                        print "mod_f is " . $current_module_id . "\n" if $debug_srplc;
+                        my $mod_json = get_file_json_lang_specific( $current_module_file, $l, 1 );
                         my $ref_mod = {};
                         my $rplc_mod = start_json( $mod_json, $ref_mod );
 #                        while ( my ( $k, $v ) = each %$rplc_menu )
@@ -535,7 +537,7 @@ foreach my $l ( keys %langs )
 #                        }
                         {
                             print "get cond rplc2\n" if $debug_crplc;
-                            my $check_style_name = "modules/" . $$rplc_menu{ "menu:modules:id" } . ".json";
+                            my $check_style_name = "modules/" . $current_module_id . ".json";
                             undef $check_style_name if !$global_file_replace_cache_style{ $check_style_name };
                             
                             for ( my $sp = 0; $sp < @l; ++$sp )
@@ -706,20 +708,27 @@ foreach my $l ( keys %langs )
                             $outdata .= join '', @l;
                         } while( $rplc_menu2 = next_json( $ref_menu2, $v ) );
                     } else {
-                        if ( $v =~ /^(menu|config|configbase):modules:id$/ )
+                        if ( $v eq 'menu:modules:id' )
                         {
                             print "hello menu:modules:id\n" if $debug_main;
                             my $ref_menu2 = {};
                             my $rplc_menu2 = start_json( $menu, $ref_menu2 );
-                            while ( $rplc_menu2 && $$rplc_menu2{ 'menu:id' } ne $$rplc_menu{ 'menu:id' } )
+                            while ( $rplc_menu2 && (
+                                    $$rplc_menu2{ 'menu:id' } ne $$rplc_menu{ 'menu:id' } ||
+                                    !$$rplc_menu2{ 'menu:modules:id' }
+                                  ) )
                             {
-                                $rplc_menu2 = next_json( $ref_menu2, 'menu:id' );
+                                $rplc_menu2 = next_json( $ref_menu2, 'menu:modules:id' );
                             }
-                            if ( $$rplc_menu2{ 'menu:id' } ne $$rplc_menu{ 'menu:id' } )
+                            if ( !$rplc_menu2 || $$rplc_menu2{ 'menu:id' } ne $$rplc_menu{ 'menu:id' } )
                             {
                                 $error .= "menu lookup error in $l $v\n";
                             }
                             do {
+                                if ( !$$rplc_menu2{ 'menu:modules:id' } ||
+                                     !$module_to_file{ $l }{ $$rplc_menu2{ 'menu:modules:id' } } ) {
+                                    next;
+                                }
                                 print "rplc menu:id " . $$rplc_menu2{ "menu:id" } . " " . $$rplc_menu{ 'menu:id' } . "\n" if $debug_srplc; 
                                 @l = @l_sav;
                                 if ( grep /__modulejson_raw__/, @l ) {
@@ -1139,7 +1148,7 @@ foreach my $l ( keys %langs )
             if ( $freq eq 'config:modules:id' ||
                  $freq eq 'configbase:modules:id' ) 
             {
-                $rplc_menu = next_json( $ref_menu, 'menu:modules:id' );
+                $rplc_menu = next_json( $ref_menu, $module_id_iter_key );
             } else {
                 $rplc_menu = next_json( $ref_menu, $freq ) if $freq =~ /^(menu:modules:id|menu:id)$/;
             }

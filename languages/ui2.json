@@ -28,5 +28,21 @@
                                     { "module-summary.json" : "once" }
                                    ]
                    }
+                  ,{
+                    "frequency"  : "config:modules:id",
+                    "output"     : "modules/__modules:id__.json",
+                    "clobber"    : "true",
+                    "inputs"     : [
+                                    { "module-summary.config.json" : "once" }
+                                   ]
+                   }
+                  ,{
+                    "frequency"  : "configbase:modules:id",
+                    "output"     : "modules/__modules:id__.json",
+                    "clobber"    : "true",
+                    "inputs"     : [
+                                    { "module-summary.configbase.json" : "once" }
+                                   ]
+                   }
                   ]
 }
