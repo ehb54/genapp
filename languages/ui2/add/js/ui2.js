@@ -812,7 +812,24 @@
 
   function selectMenuGroup(menuId) {
     state.activeMenuId = stringValue(menuId);
+    clearLoadedModule();
     renderMenu();
+  }
+
+  function clearLoadedModule() {
+    stopJobPolling();
+    closeUtilityOverlay();
+    state.moduleId = "";
+    state.menuId = "";
+    state.module = null;
+    state.view = {};
+    state.values = {};
+    state.submitResponse = null;
+    state.activeJob = null;
+    nodes.root.hidden = true;
+    nodes.root.innerHTML = "";
+    nodes.empty.hidden = true;
+    nodes.empty.innerHTML = "";
   }
 
   function renderModuleStrip() {

@@ -63,7 +63,8 @@ like( $ui2_js, qr/activeMenuId/, 'ui2 tracks the visible menu category separatel
 like( $ui2_js, qr/function renderModuleStrip\(\)/, 'ui2 renders selected menu modules outside the sidebar group cards' );
 unlike( $ui2_js, qr/index === 0 \? "true" : "false"/, 'ui2 startup does not privilege the first menu group' );
 like( $ui2_js, qr/function chooseMenuModule\(moduleId\)/, 'ui2 menu module selection uses a dedicated transition path' );
-like( $ui2_js, qr/function selectMenuGroup\(menuId\)/, 'ui2 menu group selection changes module choices without replacing the loaded module' );
+like( $ui2_js, qr/function selectMenuGroup\(menuId\)[\s\S]+clearLoadedModule\(\);[\s\S]+renderMenu\(\);/, 'ui2 menu group selection clears the loaded module while showing that group choices' );
+like( $ui2_js, qr/function clearLoadedModule\(\)/, 'ui2 can blank the work area without returning to startup help' );
 like( $ui2_js, qr/setSidebarCollapsed\(true, false\)/, 'ui2 collapses the menu only after a module is selected without persisting that state' );
 like( $ui2_js, qr/function menuVisibleForSession\(menu\)/, 'ui2 menu rendering filters restricted menu groups using session state' );
 like( $ui2_js, qr/function userConfigGroupVisible\(groupId, group\)/, 'ui2 Settings can hide deprecated user-configurable groups' );
