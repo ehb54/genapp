@@ -59,6 +59,8 @@ like( $ui2_js, qr/function parseJsonResponse\(response, label\)/, 'ui2 runtime b
 like( $ui2_js, qr/PHP source instead of executing it/, 'ui2 runtime bridge calls out PHP-disabled runtime hosts' );
 like( $ui2_js, qr/function appTitle\(\)/, 'ui2 splash resolves the generated application title' );
 like( $ui2_js, qr/docs\.href = "\.\.\/docs\/"/, 'ui2 splash documentation link resolves to the legacy app docs directory' );
+like( $ui2_js, qr/function syncSplashForSession\(\)/, 'ui2 syncs the splash dialog from legacy session state' );
+like( $ui2_js, qr/renderSessionState\(\);\s+syncSplashForSession\(\);/s, 'ui2 checks splash visibility after refreshing legacy session status' );
 like( $ui2_js, qr/function showStartupShell\(\)/, 'ui2 startup can show the application shell without loading a module' );
 like( $ui2_js, qr/showStartupShell\(\);\s+return Promise\.resolve\(\);/s, 'ui2 startup does not auto-load the first generated module' );
 unlike( $ui2_js, qr/function loadFirstAvailable\(\)/, 'ui2 no longer has a first-available-module startup path' );

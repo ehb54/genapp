@@ -280,6 +280,7 @@
       await refreshRestrictedState();
       renderMenu();
       renderSessionState();
+      syncSplashForSession();
       return payload;
     } catch (error) {
       state.session.loaded = false;
@@ -330,6 +331,14 @@
       nodes.logoff.textContent = state.session.logon ? `Logoff ${state.session.logon}` : "Login";
       nodes.logoff.dataset.mode = state.session.logon ? "logoff" : "login";
     }
+  }
+
+  function syncSplashForSession() {
+    if (state.session.logon) {
+      hideSplashDialog();
+      return;
+    }
+    openSplashDialog();
   }
 
   async function handleLogonAction() {

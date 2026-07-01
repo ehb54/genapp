@@ -232,6 +232,18 @@ assert(
   "ui2 provides a splash/login dialog helper"
 );
 assert(
+  source.includes('function syncSplashForSession()'),
+  "ui2 reconciles splash visibility from session status"
+);
+assert(
+  source.includes('renderSessionState();\\n      syncSplashForSession();'),
+  "session refresh opens the splash for logged-out users"
+);
+assert(
+  source.includes('if (state.session.logon) {\\n      hideSplashDialog();'),
+  "session refresh hides the splash for logged-in users"
+);
+assert(
   source.includes('function stopSessionRuntime()'),
   "ui2 centralizes session-runtime cleanup"
 );
