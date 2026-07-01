@@ -168,6 +168,27 @@ vm.runInContext(source, context, { filename: "ui2.js" });
 const hooks = context.window.GenAppUi2TestHooks;
 assert(hooks, "test hooks were exposed");
 
+const nglPayload = hooks.parseNglPayload(JSON.stringify({
+  loadname: "results/users/Joseph/no_project_specified/run_0/monomer_monte_carlo/movie.pdb",
+  loadparams: { ext: "pdb" },
+  representations: [{ type: "cartoon", params: { color: "blue" } }]
+}));
+assert.strictEqual(
+  nglPayload.loadname,
+  "results/users/Joseph/no_project_specified/run_0/monomer_monte_carlo/movie.pdb",
+  "UI2 parses legacy NGL JSON payloads without falling back to raw text"
+);
+assert.strictEqual(
+  JSON.stringify(hooks.nglRepresentationSpecs(nglPayload)),
+  JSON.stringify([{ type: "cartoon", params: { color: "blue" } }]),
+  "UI2 preserves legacy NGL representation specs"
+);
+assert.strictEqual(
+  JSON.stringify(hooks.nglRepresentationSpecs({ loadname: "model.pdb" })),
+  JSON.stringify([{ type: "cartoon", params: {} }]),
+  "UI2 defaults NGL payloads to the legacy cartoon representation"
+);
+
 assert.strictEqual(
   hooks.menuVisibleForSession({ id: "tools" }),
   true,

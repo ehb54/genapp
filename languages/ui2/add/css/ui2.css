@@ -440,6 +440,11 @@ code {
   padding-bottom: 0.75rem;
 }
 
+.ui2-field[hidden],
+.ui2-dynamic-output-row[hidden] {
+  display: none !important;
+}
+
 .ui2-field:last-child {
   border-bottom: 0;
   padding-bottom: 0;
@@ -1138,6 +1143,30 @@ code {
   padding: 0.25rem;
   background: var(--ui2-panel);
   min-height: 30rem;
+}
+
+.ui2-output-ngl {
+  display: grid;
+  gap: 0.75rem;
+  white-space: normal;
+}
+
+.ui2-ngl-plot {
+  width: 100%;
+  min-height: 24rem;
+  border: 1px solid var(--ui2-border);
+  border-radius: 4px;
+  background: var(--ui2-bg);
+}
+
+.ui2-ngl-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ui2-ngl-placeholder {
+  color: var(--ui2-muted);
 }
 
 .ui2-dynamic-output {

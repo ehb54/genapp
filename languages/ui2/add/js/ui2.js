@@ -21,6 +21,7 @@
   const JOB_MANAGER_ENDPOINT = "ajax/sys_config/sys_jobs2.php";
   const FIELD_CONTROL_SELECTOR = "input[data-field-id], select[data-field-id], textarea[data-field-id]";
   let plotlyLoadPromise = null;
+  let nglLoadPromise = null;
 
   const state = {
     moduleId: "",
@@ -1074,10 +1075,11 @@
   }
 
   function tabButton(label, count, selected, targetId) {
-    const button = el("button", "ui2-tab", `${label} ${count}`);
+    const button = el("button", "ui2-tab", label);
     button.type = "button";
     button.setAttribute("role", "tab");
     button.setAttribute("aria-selected", selected ? "true" : "false");
+    button.setAttribute("aria-label", `${label} ${count}`);
     button.addEventListener("click", () => {
       document.querySelectorAll(".ui2-tab").forEach((node) => node.setAttribute("aria-selected", "false"));
       button.setAttribute("aria-selected", "true");
@@ -1750,6 +1752,9 @@
       progress.dataset.outputType = type;
       return progress;
     }
+    if (type === "ngl") {
+      return renderNglOutputShell(field, type);
+    }
     const output = el("div", outputClassForType(type), outputPlaceholderForType(type));
     output.dataset.outputFieldId = field.id || "";
     output.dataset.outputType = type;
@@ -1764,6 +1769,8 @@
     output.dataset.dynamicIdPrefix = field.idprefix || "";
     output.dataset.dynamicMax = field.max || "";
     output.dataset.dynamicLabel = field.label || field.id || "Dynamic output";
+    output.dataset.dynamicWidth = field.width || "";
+    output.dataset.dynamicHeight = field.height || "";
     return output;
   }
 
@@ -1783,6 +1790,8 @@
       classes.push("ui2-output-html");
     } else if (type === "textarea" || type === "text") {
       classes.push("ui2-output-text");
+    } else if (type === "ngl") {
+      classes.push("ui2-output-ngl");
     }
     return classes.join(" ");
   }
@@ -1793,6 +1802,9 @@
     }
     if (type === "html") {
       return "Report output will appear here at runtime.";
+    }
+    if (type === "ngl") {
+      return "Structure will appear here at runtime.";
     }
     return `${type || "output"} output will appear here at runtime.`;
   }
@@ -3292,6 +3304,7 @@
     const submitButton = form.querySelector('button[type="submit"]');
     submitButton.disabled = true;
     stopJobPolling();
+    clearRuntimeOutputs(form);
     setSubmitStatus(status, `Submitting to ${endpoint}`, "pending");
 
     try {
@@ -3454,6 +3467,30 @@
     }
     node.textContent = message;
     node.dataset.status = kind || "";
+  }
+
+  function clearRuntimeOutputs(scope) {
+    (scope || document).querySelectorAll("[data-output-field-id]").forEach((output) => {
+      if (output.dataset.dynamicOutput === "true") {
+        updateDynamicOutput(output, { items: [] });
+        return;
+      }
+      delete output.dataset.runtimeText;
+      output.classList.remove("ui2-output-rendered", "ui2-output-plotly-ready");
+      output.dataset.status = "";
+      if (window.Plotly?.purge && output.dataset.outputType === "plotly") {
+        window.Plotly.purge(output);
+      }
+      if (output.dataset.outputType === "ngl") {
+        clearNglOutput(output);
+        return;
+      }
+      if (output instanceof HTMLProgressElement || output.dataset.outputType === "progress") {
+        output.value = 0;
+        return;
+      }
+      output.textContent = outputPlaceholderForType(output.dataset.outputType || "");
+    });
   }
 
   function startJobPolling(uuid, form, statusNode, getLastMsg = true, getInput = false) {
@@ -3851,6 +3888,10 @@
       renderPlotlyOutput(output, value);
       return;
     }
+    if (type === "ngl") {
+      renderNglOutput(output, value);
+      return;
+    }
     if (type === "html" || type === "file") {
       renderHtmlOutput(output, value);
       return;
@@ -3883,7 +3924,9 @@
       const label = el("h3", "ui2-dynamic-output-label", item.label);
       const output = renderOutput({
         id: item.id,
-        type: group.dataset.outputType || "html"
+        type: group.dataset.outputType || "html",
+        width: group.dataset.dynamicWidth || "",
+        height: group.dataset.dynamicHeight || ""
       });
       output.dataset.dynamicChild = "true";
       instance.append(label, output);
@@ -3921,6 +3964,144 @@
   function renderTextOutput(output, value) {
     output.classList.add("ui2-output-rendered");
     output.textContent = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+  }
+
+  function renderNglOutputShell(field, type) {
+    const output = el("div", outputClassForType(type));
+    output.dataset.outputFieldId = field.id || "";
+    output.dataset.outputType = type;
+
+    const plot = el("div", "ui2-ngl-plot");
+    plot.id = `${field.id || "ngl_output"}_plot`;
+    plot.hidden = true;
+    if (field.width) {
+      plot.style.width = field.width;
+    }
+    if (field.height) {
+      plot.style.height = field.height;
+    }
+
+    const buttons = el("div", "ui2-ngl-buttons");
+    buttons.id = `${field.id || "ngl_output"}_buttons`;
+    buttons.hidden = true;
+
+    const placeholder = el("div", "ui2-ngl-placeholder", outputPlaceholderForType(type));
+    output.append(plot, buttons, placeholder);
+    return output;
+  }
+
+  function clearNglOutput(output) {
+    if (output._ui2NglStage?.dispose) {
+      output._ui2NglStage.dispose();
+    }
+    output._ui2NglStage = null;
+    output._ui2NglComponent = null;
+    const plot = output.querySelector(".ui2-ngl-plot");
+    const buttons = output.querySelector(".ui2-ngl-buttons");
+    const placeholder = output.querySelector(".ui2-ngl-placeholder");
+    if (plot) {
+      plot.textContent = "";
+      plot.hidden = true;
+    }
+    if (buttons) {
+      buttons.textContent = "";
+      buttons.hidden = true;
+    }
+    if (placeholder) {
+      placeholder.hidden = false;
+      placeholder.textContent = outputPlaceholderForType("ngl");
+    }
+  }
+
+  function renderNglOutput(output, value) {
+    const payload = parseNglPayload(value);
+    if (!payload?.loadname) {
+      renderTextOutput(output, value);
+      return;
+    }
+    output.classList.add("ui2-output-rendered");
+    const plot = output.querySelector(".ui2-ngl-plot");
+    const buttons = output.querySelector(".ui2-ngl-buttons");
+    const placeholder = output.querySelector(".ui2-ngl-placeholder");
+    if (!plot || !buttons) {
+      renderTextOutput(output, value);
+      return;
+    }
+    clearNglOutput(output);
+    plot.hidden = false;
+    buttons.hidden = false;
+    if (placeholder) {
+      placeholder.hidden = true;
+    }
+    ensureNglLoaded()
+      .then(() => {
+        const stage = new window.NGL.Stage(plot.id);
+        output._ui2NglStage = stage;
+        return stage.loadFile(payload.loadname, payload.loadparams || {}).then((component) => {
+          output._ui2NglComponent = component;
+          nglRepresentationSpecs(payload).forEach((spec) => {
+            component.addRepresentation(spec.type, spec.params || {});
+          });
+          if (component.autoView) {
+            component.autoView();
+          }
+          renderNglButtons(buttons, component);
+        });
+      })
+      .catch((error) => {
+        clearNglOutput(output);
+        const message = output.querySelector(".ui2-ngl-placeholder");
+        if (message) {
+          message.textContent = `Could not render structure output: ${error.message}`;
+        }
+      });
+  }
+
+  function parseNglPayload(value) {
+    if (value && typeof value === "object") {
+      return value;
+    }
+    if (typeof value !== "string") {
+      return null;
+    }
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+    try {
+      const parsed = JSON.parse(trimmed);
+      return parsed && typeof parsed === "object" ? parsed : { loadname: trimmed };
+    } catch (_error) {
+      return { loadname: trimmed };
+    }
+  }
+
+  function nglRepresentationSpecs(payload) {
+    const reps = Array.isArray(payload?.representations) ? payload.representations : [];
+    const specs = reps
+      .map((rep) => ({
+        type: rep?.type || rep?.representation || "",
+        params: rep?.params || rep?.representationParams || {}
+      }))
+      .filter((rep) => rep.type);
+    if (specs.length) {
+      return specs;
+    }
+    return [{
+      type: payload?.representation || "cartoon",
+      params: payload?.representationParams || {}
+    }];
+  }
+
+  function renderNglButtons(container, component) {
+    const types = ["cartoon", "backbone", "ball+stick", "surface"];
+    container.textContent = "";
+    types.forEach((type) => {
+      const button = el("button", "ui2-button ui2-button-quiet ui2-ngl-button", type);
+      button.type = "button";
+      button.addEventListener("click", () => component.addRepresentation(type, {}));
+      container.appendChild(button);
+    });
   }
 
   function renderPlotlyOutput(output, value) {
@@ -4042,6 +4223,23 @@
         return window.Plotly;
       });
     return plotlyLoadPromise;
+  }
+
+  function ensureNglLoaded() {
+    if (window.NGL?.Stage) {
+      return Promise.resolve(window.NGL);
+    }
+    if (nglLoadPromise) {
+      return nglLoadPromise;
+    }
+    nglLoadPromise = loadScript("../js/ngl.js")
+      .then(() => {
+        if (!window.NGL?.Stage) {
+          throw new Error("NGL did not initialize");
+        }
+        return window.NGL;
+      });
+    return nglLoadPromise;
   }
 
   function loadScript(src) {
@@ -4693,6 +4891,8 @@
       legacyUtilityFieldName,
       replaceSelectOptions,
       userConfigGroupVisible,
+      parseNglPayload,
+      nglRepresentationSpecs,
       applyInputPayload,
       applySavedJobInput,
       state
