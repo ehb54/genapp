@@ -261,6 +261,17 @@ assert(
   "ui2 register dialog returns the user to the splash flow when it closes"
 );
 assert(
+  source.includes('async function runLegacyCaptchaGate()') &&
+    source.includes('ajax/sys_config/sys_captcha.php') &&
+    source.includes('ajax/sys_config/sys_captcha_verify.php'),
+  "ui2 register flow uses the legacy captcha challenge and verify endpoints"
+);
+assert(
+  source.includes('if (String(module.captcha || "").toLowerCase() === "true")') &&
+    source.includes('const verified = await runLegacyCaptchaGate();'),
+  "ui2 register checks legacy captcha before submitting the real register request"
+);
+assert(
   source.includes('function applyLoginDialogMode(overlay, mandatory)'),
   "ui2 has a dedicated helper for mandatory login dialog state"
 );

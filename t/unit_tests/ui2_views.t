@@ -62,6 +62,9 @@ like( $ui2_js, qr/function applyLoginDialogMode\(overlay, mandatory\)/, 'ui2 log
 like( $ui2_js, qr/openLoginDialog\(\{ mandatory: true \}\)/, 'ui2 logged-out login action opens a mandatory login dialog' );
 like( $ui2_js, qr/await openRegisterDialog\(\);/, 'ui2 splash register action opens a dedicated register dialog' );
 like( $ui2_js, qr/await submitUtilityModule\(form, module, "ajax\/sys_config\/sys_register\.php"/, 'ui2 register dialog submits to the legacy register endpoint' );
+like( $ui2_js, qr/function runLegacyCaptchaGate\(\)/, 'ui2 register dialog has a legacy captcha gate helper' );
+like( $ui2_js, qr/ajax\/sys_config\/sys_captcha\.php/, 'ui2 register dialog requests legacy captcha challenges' );
+like( $ui2_js, qr/ajax\/sys_config\/sys_captcha_verify\.php/, 'ui2 register dialog verifies captcha codes through the legacy endpoint' );
 like( $ui2_js, qr/close\.hidden = mandatory/, 'ui2 mandatory login hides the dialog close control' );
 like( $ui2_js, qr/cancel\.hidden = mandatory/, 'ui2 mandatory login hides the dialog cancel control' );
 like( $ui2_js, qr/function openLogoffDialog\(\)/, 'ui2 logoff opens a confirmation dialog before calling the backend' );
@@ -182,6 +185,7 @@ like( $ui2_js, qr/type === "integer"[\s\S]+input\.step = "1"/, 'ui2 integer inpu
 
 my $ui2_css = read_file( File::Spec->catfile( $ui2, qw(css ui2.css) ) );
 like( $ui2_css, qr/\.ui2-dialog-overlay/, 'ui2 stylesheet includes login dialog shell styles' );
+like( $ui2_css, qr/\.ui2-captcha-dialog/, 'ui2 stylesheet includes a dedicated captcha dialog shell' );
 like( $ui2_css, qr/\.ui2-splash-footer/, 'ui2 stylesheet includes splash footer metadata styles' );
 like( $ui2_css, qr/\.ui2-output-plotly/, 'ui2 stylesheet includes a stable Plotly output surface' );
 like( $ui2_css, qr/\.ui2-output-rendered/, 'ui2 stylesheet distinguishes rendered runtime output from placeholders' );

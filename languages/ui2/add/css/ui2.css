@@ -849,6 +849,18 @@ code {
   gap: 0.9rem;
 }
 
+.ui2-captcha-dialog {
+  width: min(28rem, 100%);
+}
+
+.ui2-captcha-image {
+  width: min(20rem, 100%);
+  justify-self: center;
+  border: 1px solid var(--ui2-border);
+  border-radius: 6px;
+  background: #fff;
+}
+
 .ui2-login-row {
   display: grid;
   gap: 0.35rem;

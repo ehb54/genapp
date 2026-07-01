@@ -2004,6 +2004,20 @@
     }
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
+      const invalid = validateUtilityForm(form);
+      if (invalid) {
+        const status = form.querySelector(".ui2-submit-status");
+        setSubmitStatus(status, invalid.message, "error");
+        applyUtilityOutputs(form, { status: invalid.message });
+        invalid.control?.focus();
+        return;
+      }
+      if (String(module.captcha || "").toLowerCase() === "true") {
+        const verified = await runLegacyCaptchaGate();
+        if (!verified) {
+          return;
+        }
+      }
       await submitUtilityModule(form, module, "ajax/sys_config/sys_register.php", {
         pendingMessage: "Submitting registration",
         successMessage: "Registration submitted"
@@ -2014,6 +2028,141 @@
     section.appendChild(form);
     window.setTimeout(() => syncFormValues(form), 0);
     return section;
+  }
+
+  async function runLegacyCaptchaGate() {
+    try {
+      const challenge = await fetchCaptchaChallenge();
+      return await openCaptchaDialog(challenge);
+    } catch (error) {
+      showError(`Could not load captcha: ${error.message}`);
+      return false;
+    }
+  }
+
+  async function fetchCaptchaChallenge() {
+    const url = new URL(legacyEndpoint("", "ajax/sys_config/sys_captcha.php"), window.location.href);
+    url.searchParams.set("_window", window.name);
+    const response = await fetch(url.toString(), {
+      cache: "no-cache",
+      credentials: "same-origin"
+    });
+    const payload = await parseJsonResponse(response, "Captcha");
+    if (!response.ok || payload.error) {
+      throw new Error(payload.error || `Captcha returned HTTP ${response.status}`);
+    }
+    return payload;
+  }
+
+  async function verifyCaptchaChallenge(challengeId, captchaText) {
+    const url = new URL(legacyEndpoint("", "ajax/sys_config/sys_captcha_verify.php"), window.location.href);
+    url.searchParams.set("_window", window.name);
+    url.searchParams.set("id", challengeId || "");
+    url.searchParams.set("captcha", String(captchaText || "").trim().toLowerCase());
+    const response = await fetch(url.toString(), {
+      cache: "no-cache",
+      credentials: "same-origin"
+    });
+    const payload = await parseJsonResponse(response, "Captcha verification");
+    if (!response.ok || payload.error) {
+      throw new Error(payload.error || `Captcha verification returned HTTP ${response.status}`);
+    }
+    return payload;
+  }
+
+  function openCaptchaDialog(initialChallenge) {
+    return new Promise((resolve) => {
+      let overlay = document.getElementById("ui2-captcha-dialog");
+      if (overlay) {
+        overlay.remove();
+      }
+
+      overlay = el("div", "ui2-dialog-overlay");
+      overlay.id = "ui2-captcha-dialog";
+      overlay.setAttribute("role", "dialog");
+      overlay.setAttribute("aria-modal", "true");
+      overlay.setAttribute("aria-labelledby", "ui2-captcha-title");
+
+      const panel = el("section", "ui2-dialog ui2-captcha-dialog");
+      const header = el("div", "ui2-dialog-header");
+      const title = el("h2", null, "Verify");
+      title.id = "ui2-captcha-title";
+      header.appendChild(title);
+
+      const body = el("div", "ui2-login-form");
+      const image = document.createElement("img");
+      image.className = "ui2-captcha-image";
+      image.alt = "Captcha challenge";
+
+      const row = el("label", "ui2-login-row");
+      row.appendChild(el("span", "ui2-field-label", "Verification code"));
+      const input = el("input", "ui2-input");
+      input.type = "text";
+      input.maxLength = 6;
+      input.required = true;
+      input.autocapitalize = "none";
+      input.autocomplete = "off";
+      input.spellcheck = false;
+      row.appendChild(input);
+
+      const help = el("p", "ui2-help", "Enter the 6 character code shown in the image.");
+      const status = el("div", "ui2-submit-status", "");
+      status.setAttribute("role", "status");
+      const actions = el("div", "ui2-dialog-actions");
+      const submit = el("button", "ui2-button", "Submit");
+      submit.type = "button";
+      actions.appendChild(submit);
+
+      let currentChallenge = initialChallenge || {};
+      const renderChallenge = (challenge) => {
+        currentChallenge = challenge || {};
+        image.src = `data:image/png;base64,${currentChallenge.captcha || ""}`;
+        input.value = "";
+        input.focus();
+      };
+
+      const closeDialog = (result) => {
+        overlay.remove();
+        resolve(result);
+      };
+
+      submit.addEventListener("click", async () => {
+        if (!input.value.trim()) {
+          setSubmitStatus(status, "Enter the captcha code shown in the image.", "error");
+          input.focus();
+          return;
+        }
+        submit.disabled = true;
+        setSubmitStatus(status, "Verifying code", "pending");
+        try {
+          const payload = await verifyCaptchaChallenge(currentChallenge.id, input.value);
+          if (payload.success) {
+            closeDialog(true);
+            return;
+          }
+          const nextChallenge = await fetchCaptchaChallenge();
+          renderChallenge(nextChallenge);
+          setSubmitStatus(status, "Verification failed. Please try the new code.", "error");
+        } catch (error) {
+          setSubmitStatus(status, error.message, "error");
+        } finally {
+          submit.disabled = false;
+        }
+      });
+
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          submit.click();
+        }
+      });
+
+      body.append(image, row, help, actions, status);
+      panel.append(header, body);
+      overlay.appendChild(panel);
+      document.body.appendChild(overlay);
+      renderChallenge(currentChallenge);
+    });
   }
 
   function userConfigFields(fields) {
