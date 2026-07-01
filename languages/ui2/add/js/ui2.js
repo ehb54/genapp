@@ -4160,6 +4160,7 @@
       .then(() => {
         const layout = Object.assign(defaultPlotlyLayout(), figure.layout || {});
         layout.font = Object.assign(defaultPlotlyLayout().font, figure.layout?.font || {});
+        applyPlotlyTheme(layout);
         const config = Object.assign({ responsive: true }, figure.config || {});
         applyPlotlyModebarHooks(figure, config);
         return window.Plotly.newPlot(output, figure.data, layout, config);
@@ -4219,16 +4220,95 @@
   }
 
   function defaultPlotlyLayout() {
-    const styles = window.getComputedStyle(document.documentElement);
-    const panel = styles.getPropertyValue("--ui2-panel").trim() || "transparent";
-    const text = styles.getPropertyValue("--ui2-text").trim() || "#17201d";
+    const colors = plotlyThemeColors();
     return {
       autosize: true,
       height: 460,
       margin: { l: 72, r: 32, t: 72, b: 72 },
-      paper_bgcolor: panel,
-      plot_bgcolor: panel,
-      font: { color: text }
+      paper_bgcolor: colors.panel,
+      plot_bgcolor: colors.panel,
+      font: { color: colors.text }
+    };
+  }
+
+  function applyPlotlyTheme(layout) {
+    const colors = plotlyThemeColors();
+    layout.paper_bgcolor = layout.paper_bgcolor || colors.panel;
+    layout.plot_bgcolor = layout.plot_bgcolor || colors.panel;
+    layout.font = Object.assign({ color: colors.text }, layout.font || {});
+    layout.legend = Object.assign({}, layout.legend || {}, {
+      bgcolor: colors.legendBackground,
+      bordercolor: colors.border,
+      font: Object.assign({}, layout.legend?.font || {}, { color: colors.text })
+    });
+    ["xaxis", "yaxis", "xaxis2", "yaxis2", "xaxis3", "yaxis3"].forEach((axisName) => {
+      if (!layout[axisName]) {
+        return;
+      }
+      layout[axisName] = Object.assign({
+        color: colors.text,
+        gridcolor: colors.grid,
+        linecolor: colors.border,
+        zerolinecolor: colors.border
+      }, layout[axisName]);
+    });
+    return layout;
+  }
+
+  function plotlyThemeColors() {
+    const styles = window.getComputedStyle(document.documentElement);
+    const panel = styles.getPropertyValue("--ui2-panel").trim() || "#ffffff";
+    const background = styles.getPropertyValue("--ui2-bg").trim() || panel;
+    const text = styles.getPropertyValue("--ui2-text").trim() || "#17201d";
+    const border = styles.getPropertyValue("--ui2-border").trim() || "#d8dfdc";
+    const dark = isDarkCssColor(panel) || isDarkCssColor(background);
+    return {
+      panel,
+      text,
+      border,
+      grid: dark ? "rgba(238, 244, 241, 0.12)" : "rgba(23, 32, 29, 0.12)",
+      legendBackground: dark ? "rgba(26, 32, 31, 0.88)" : "rgba(255, 255, 255, 0.88)"
+    };
+  }
+
+  function isDarkCssColor(value) {
+    const rgb = parseCssColor(value);
+    if (!rgb) {
+      return false;
+    }
+    const channel = (v) => {
+      const c = v / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    };
+    const luminance = 0.2126 * channel(rgb.r) + 0.7152 * channel(rgb.g) + 0.0722 * channel(rgb.b);
+    return luminance < 0.45;
+  }
+
+  function parseCssColor(value) {
+    const raw = String(value || "").trim();
+    const hex = raw.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (hex) {
+      const token = hex[1].length === 3
+        ? hex[1].split("").map((char) => char + char).join("")
+        : hex[1];
+      return {
+        r: parseInt(token.slice(0, 2), 16),
+        g: parseInt(token.slice(2, 4), 16),
+        b: parseInt(token.slice(4, 6), 16)
+      };
+    }
+    const rgb = raw.match(/^rgba?\(([^)]+)\)$/i);
+    if (!rgb) {
+      return null;
+    }
+    const parts = rgb[1].split(",").map((part) => Number.parseFloat(part.trim()));
+    if (parts.length < 3 || parts.slice(0, 3).some((part) => !Number.isFinite(part))) {
+      return null;
+    }
+    return {
+      r: Math.max(0, Math.min(255, parts[0])),
+      g: Math.max(0, Math.min(255, parts[1])),
+      b: Math.max(0, Math.min(255, parts[2]))
     };
   }
 
@@ -4938,6 +5018,8 @@
       parseNglPayload,
       normalizeNglLoadName,
       nglRepresentationSpecs,
+      applyPlotlyTheme,
+      plotlyThemeColors,
       applyInputPayload,
       applySavedJobInput,
       state

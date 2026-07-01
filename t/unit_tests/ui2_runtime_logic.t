@@ -118,13 +118,14 @@ const document = {
 const window = {
   GenAppUi2App: { menus: [] },
   GenAppUi2ExposeTestHooks: true,
+  __styleVars: {},
   CSS: { escape(value) { return String(value); } },
   crypto: { randomUUID() { return "uuid-for-test"; } },
   localStorage: { getItem() { return "{}"; }, setItem() {} },
   location: { href: "https://example.test/sassie3/ui2/", pathname: "/sassie3/ui2/", search: "" },
   name: "ui2-test",
   getComputedStyle() {
-    return { getPropertyValue() { return ""; } };
+    return { getPropertyValue(name) { return window.__styleVars[name] || ""; } };
   },
   setTimeout() {},
   clearTimeout() {}
@@ -197,6 +198,40 @@ assert.strictEqual(
   JSON.stringify(hooks.nglRepresentationSpecs({ loadname: "model.pdb" })),
   JSON.stringify([{ type: "cartoon", params: {} }]),
   "UI2 defaults NGL payloads to the legacy cartoon representation"
+);
+
+window.__styleVars = {
+  "--ui2-panel": "#1a201f",
+  "--ui2-bg": "#111615",
+  "--ui2-text": "#eef4f1",
+  "--ui2-border": "#33403d"
+};
+const darkLayout = hooks.applyPlotlyTheme({
+  legend: { bgcolor: "#ffffff", font: { color: "#ffffff" } }
+});
+assert.strictEqual(
+  darkLayout.legend.bgcolor,
+  "rgba(26, 32, 31, 0.88)",
+  "UI2 replaces legacy white Plotly legend boxes on dark themes"
+);
+assert.strictEqual(
+  darkLayout.legend.font.color,
+  "#eef4f1",
+  "UI2 uses dark-theme text color for Plotly legend labels"
+);
+window.__styleVars = {
+  "--ui2-panel": "#ffffff",
+  "--ui2-bg": "#f7f8fa",
+  "--ui2-text": "#17201d",
+  "--ui2-border": "#d8dfdc"
+};
+const lightLayout = hooks.applyPlotlyTheme({
+  legend: { bgcolor: "#1a201f" }
+});
+assert.strictEqual(
+  lightLayout.legend.bgcolor,
+  "rgba(255, 255, 255, 0.88)",
+  "UI2 uses light Plotly legend boxes on light themes"
 );
 
 assert.strictEqual(
