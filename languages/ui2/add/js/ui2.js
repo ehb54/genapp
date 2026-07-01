@@ -905,6 +905,9 @@
     if (isLayoutLabel(field)) {
       return renderLayoutLabel(field);
     }
+    if (role !== "output" && String(field.type || "").toLowerCase() === "group") {
+      return renderGroupField(field);
+    }
 
     const row = el("div", role === "output" ? "ui2-field ui2-output-field" : "ui2-field");
     row.dataset.fieldId = field.id || "";
@@ -931,6 +934,35 @@
 
     row.append(label, stack);
     return row;
+  }
+
+  function renderGroupField(field) {
+    const wrap = el("div", "ui2-group-field");
+    const groups = state.session.groups || {};
+    const userGroups = new Set(Array.isArray(state.session.usergroups) ? state.session.usergroups : []);
+    Object.keys(groups).sort().forEach((groupId) => {
+      const group = groups[groupId] || {};
+      if (!group.userconfig) {
+        return;
+      }
+      const row = el("div", "ui2-field");
+      row.dataset.fieldId = `_setgroup_${field.id || "groups"}_${groupId}`;
+      const label = el("label", "ui2-field-label", group.label || groupId);
+      const stack = el("div", "ui2-control-stack");
+      const control = el("label", "ui2-switch");
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.dataset.fieldId = `_setgroup_${field.id || "groups"}_${groupId}`;
+      input.checked = userGroups.has(groupId);
+      control.append(input, document.createTextNode("Optional"));
+      if (group.help) {
+        control.title = group.help;
+      }
+      stack.appendChild(control);
+      row.append(label, stack);
+      wrap.appendChild(row);
+    });
+    return wrap;
   }
 
   function renderHiddenField(field) {
@@ -1713,7 +1745,7 @@
   function renderUserConfigTool(module, fields) {
     const section = el("section", "ui2-section ui2-system-tool ui2-user-config");
     const form = el("form", "ui2-utility-form");
-    const inputFields = fields.filter((field) => field.role !== "output");
+    const inputFields = userConfigFields(fields.filter((field) => field.role !== "output"));
     const outputFields = fields.filter((field) => field.role === "output");
     form.appendChild(renderUtilitySection("Settings", inputFields, "input"));
     form.appendChild(renderUtilityActions("Update settings"));
@@ -1733,6 +1765,32 @@
       pullUtilityFieldValues(form);
     }, 0);
     return section;
+  }
+
+  function userConfigFields(fields) {
+    const visibleIds = new Set();
+    fields.forEach((field) => {
+      if (userConfigFieldVisible(field)) {
+        visibleIds.add(field.id || "");
+      }
+    });
+    return fields.filter((field) => {
+      if (!userConfigFieldVisible(field)) {
+        return false;
+      }
+      const controller = repeatControllerId(field.repeat || "");
+      return !controller || visibleIds.has(controller);
+    });
+  }
+
+  function userConfigFieldVisible(field) {
+    return !field.hideifnot || directiveEnabled(field.hideifnot);
+  }
+
+  function directiveEnabled(name) {
+    const directives = appMap.directives || {};
+    const value = directives[name];
+    return value != null && !/^(off|false|0)$/i.test(String(value));
   }
 
   function renderUtilitySection(title, fields, role) {
@@ -1856,11 +1914,14 @@
       if (control.disabled || control.type === "radio" && !control.checked) {
         return;
       }
+      if (control.type === "checkbox" && !control.checked) {
+        return;
+      }
       const name = legacyUtilityFieldName(control);
       if (!name || control.closest(".ui2-output-field")) {
         return;
       }
-      appendFormValue(formData, name, control.type === "checkbox" ? (control.checked ? "on" : "") : control.value);
+      appendFormValue(formData, name, control.type === "checkbox" ? "on" : control.value);
     });
     formData.set("_uuid", createUuid());
     formData.set("_window", window.name);

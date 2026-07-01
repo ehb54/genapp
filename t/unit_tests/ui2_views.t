@@ -85,6 +85,9 @@ like( $ui2_js, qr/function renderFileManagerTool\(module, fields\)/, 'ui2 has a 
 like( $ui2_js, qr/function downloadFileManagerSelection\(table, status, links, module\)/, 'ui2 File Manager submits selected files for download and renders returned links' );
 like( $ui2_js, qr/function renderUserConfigTool\(module, fields\)/, 'ui2 has a dedicated Settings shell' );
 like( $ui2_js, qr/function legacyUtilityFieldName\(control\)/, 'ui2 Settings submits legacy repeat-prefixed field names' );
+like( $ui2_js, qr/function userConfigFields\(fields\)/, 'ui2 Settings filters fields through legacy directive visibility' );
+like( $ui2_js, qr/function renderGroupField\(field\)/, 'ui2 Settings renders legacy group fields as configured checkboxes' );
+like( $ui2_js, qr/control\.type === "checkbox" && !control\.checked[\s\S]+return;/, 'ui2 utility submit skips unchecked checkboxes like native legacy forms' );
 like( $ui2_js, qr/formData\.append\("selectedfiles\[\]", id\)/, 'ui2 File Manager sends legacy encoded selected file ids' );
 like( $ui2_js, qr/const uuid = createUuid\(\);\s+formData\.set\("_uuid", uuid\)/s, 'ui2 File Manager supplies reusable uuid metadata to the generated wrapper' );
 like( $ui2_js, qr/waitForFileManagerResult\(uuid, status\)/, 'ui2 File Manager polls async system download jobs with the submitted uuid' );
@@ -133,6 +136,8 @@ like( $ui2_css, qr/\.ui2-file-download-links/, 'ui2 stylesheet makes File Manage
 my $app_map = read_file( File::Spec->catfile( $ui2, qw(js app-map.js) ) );
 like( $app_map, qr/addMenuFromParts\("demo", "Demo", ""\)/, 'ui2 app map records menu groups' );
 like( $app_map, qr/addModule\("demo", \{\s+id: "shared",\s+label: "Shared"/, 'ui2 app map records menu modules' );
+like( $app_map, qr/directives: \{\}/, 'ui2 app map initializes the legacy directive registry' );
+like( $app_map, qr/directives\.usertheme = "true"/, 'ui2 app map records enabled legacy directives for hideifnot fields' );
 
 my $shared = decode_json( read_file( File::Spec->catfile( $ui2, qw(modules shared.json) ) ) );
 is( $shared->{module}, 'shared', 'shared summary records module id' );

@@ -4,9 +4,15 @@
   const app = {
     title: "__title__",
     application: "__application__",
+    directives: {},
     menus: [],
     menuById: {}
   };
+
+__~xsedeproject{app.directives.xsedeproject = "__xsedeproject__";}
+__~sharing{app.directives.sharing = "__sharing__";}
+__~usertheme{app.directives.usertheme = "__usertheme__";}
+__~usercolors{app.directives.usercolors = "__usercolors__";}
 
   app.addMenu = function (menu) {
     if (!menu || !menu.id || app.menuById[menu.id]) {

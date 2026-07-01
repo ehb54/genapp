@@ -2,5 +2,6 @@
     "title"       : "UI2 Views Fixture",
     "application" : "ui2_views",
     "version"     : "0.01",
+    "usertheme"   : "true",
     "languages"   : [ "ui2" ]
 }
