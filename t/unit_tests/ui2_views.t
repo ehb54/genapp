@@ -189,8 +189,9 @@ like( $ui2_js, qr/function chartEditorUrl\(editorUrl, id\)/, 'ui2 Plotly Chart E
 like( $ui2_js, qr/new URL\(legacyEndpoint\("", raw\), window\.location\.href\)/, 'ui2 relative Chart Editor URLs do not resolve under the ui2 subdirectory' );
 like( $ui2_js, qr/function parsePlotlyFigure\(value\)/, 'ui2 runtime bridge parses Plotly JSON string payloads' );
 like( $ui2_js, qr/function defaultPlotlyLayout\(\)/, 'ui2 runtime bridge supplies default Plotly layout polish' );
-like( $ui2_js, qr/function applyPlotlyTheme\(layout\).*?layout\.legend = Object\.assign/s, 'ui2 runtime bridge applies theme-aware Plotly legend polish' );
+like( $ui2_js, qr/function applyPlotlyTheme\(layout\).*?const legendBackground = layout\.legend\?\.bgcolor \|\| colors\.legendBackground.*?contrastTextColor\(legendBackground\)/s, 'ui2 runtime bridge applies theme-aware Plotly legend contrast polish' );
 like( $ui2_js, qr/function plotlyThemeColors\(\).*?legendBackground: dark \? "rgba\(26, 32, 31, 0\.88\)" : "rgba\(255, 255, 255, 0\.88\)"/s, 'ui2 runtime bridge derives dark and light Plotly legend backgrounds' );
+like( $ui2_js, qr/function contrastTextColor\(background\)/, 'ui2 runtime bridge derives readable Plotly legend text from the legend background' );
 like( $ui2_js, qr/function ensurePlotlyLoaded\(\)/, 'ui2 runtime bridge can load the existing generated Plotly asset' );
 like( $ui2_js, qr/function normalizeProgressValue\(value\)/, 'ui2 runtime bridge normalizes progress payload values' );
 like( $ui2_js, qr/window\.GenAppUi2TestHooks/, 'ui2 runtime exposes opt-in test hooks for behavior checks' );

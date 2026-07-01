@@ -4236,10 +4236,11 @@
     layout.paper_bgcolor = layout.paper_bgcolor || colors.panel;
     layout.plot_bgcolor = layout.plot_bgcolor || colors.panel;
     layout.font = Object.assign({ color: colors.text }, layout.font || {});
+    const legendBackground = layout.legend?.bgcolor || colors.legendBackground;
     layout.legend = Object.assign({}, layout.legend || {}, {
-      bgcolor: colors.legendBackground,
+      bgcolor: legendBackground,
       bordercolor: colors.border,
-      font: Object.assign({}, layout.legend?.font || {}, { color: colors.text })
+      font: Object.assign({}, layout.legend?.font || {}, { color: contrastTextColor(legendBackground) })
     });
     ["xaxis", "yaxis", "xaxis2", "yaxis2", "xaxis3", "yaxis3"].forEach((axisName) => {
       if (!layout[axisName]) {
@@ -4282,6 +4283,10 @@
     };
     const luminance = 0.2126 * channel(rgb.r) + 0.7152 * channel(rgb.g) + 0.0722 * channel(rgb.b);
     return luminance < 0.45;
+  }
+
+  function contrastTextColor(background) {
+    return isDarkCssColor(background) ? "#eef4f1" : "#17201d";
   }
 
   function parseCssColor(value) {

@@ -211,13 +211,13 @@ const darkLayout = hooks.applyPlotlyTheme({
 });
 assert.strictEqual(
   darkLayout.legend.bgcolor,
-  "rgba(26, 32, 31, 0.88)",
-  "UI2 replaces legacy white Plotly legend boxes on dark themes"
+  "#ffffff",
+  "UI2 preserves explicit Plotly legend backgrounds from the figure"
 );
 assert.strictEqual(
   darkLayout.legend.font.color,
-  "#eef4f1",
-  "UI2 uses dark-theme text color for Plotly legend labels"
+  "#17201d",
+  "UI2 forces dark legend text when the legend background is light"
 );
 window.__styleVars = {
   "--ui2-panel": "#ffffff",
@@ -230,8 +230,13 @@ const lightLayout = hooks.applyPlotlyTheme({
 });
 assert.strictEqual(
   lightLayout.legend.bgcolor,
-  "rgba(255, 255, 255, 0.88)",
-  "UI2 uses light Plotly legend boxes on light themes"
+  "#1a201f",
+  "UI2 preserves explicit dark Plotly legend backgrounds on light themes"
+);
+assert.strictEqual(
+  lightLayout.legend.font.color,
+  "#eef4f1",
+  "UI2 forces light legend text when the legend background is dark"
 );
 
 assert.strictEqual(
