@@ -60,6 +60,7 @@
       ready: false,
       subscribedUuid: ""
     },
+    lastLegacyMessageKey: "",
     session: {
       logon: "",
       project: "",
@@ -250,6 +251,7 @@
       return;
     }
     state.submitResponse = Object.assign({}, state.submitResponse || {}, payload);
+    showLegacyMessagePayload(payload);
     applyRuntimePayload(payload);
     const status = runtimeStatus(payload);
     if (status && state.activeJob?.statusNode) {
@@ -304,6 +306,7 @@
       state.session.usergroups = Array.isArray(payload._usergroups) ? payload._usergroups : [];
       state.session.theme = stringValue(payload._theme);
       state.session.loaded = true;
+      showLegacyMessagePayload(payload);
       await refreshRestrictedState();
       renderMenu();
       renderSessionState();
@@ -2615,6 +2618,7 @@
         credentials: "same-origin"
       });
       const payload = await parseJsonResponse(response, module?.label || "Settings");
+      showLegacyMessagePayload(payload);
       if (!response.ok || payload.error || payload._status === "failed") {
         throw new Error(payload.error || `Settings returned HTTP ${response.status}`);
       }
@@ -3528,6 +3532,7 @@
       selected.forEach((id) => formData.append("selectedfiles[]", id));
       const response = await fetch(endpoint, { method: "POST", body: formData, credentials: "same-origin" });
       const payload = await parseJsonResponse(response, "File Manager download");
+      showLegacyMessagePayload(payload);
       if (payload.error) {
         throw new Error(payload.error);
       }
@@ -3535,6 +3540,7 @@
       let linksHtml = fileDownloadLinks(payloadFileList(finalPayload));
       if (!linksHtml && runtimeStatus(payload) === "started") {
         finalPayload = await waitForFileManagerResult(uuid, status);
+        showLegacyMessagePayload(finalPayload);
         linksHtml = fileDownloadLinks(payloadFileList(finalPayload));
       }
       if (!linksHtml) {
@@ -3809,6 +3815,7 @@
       });
       const payload = await parseJsonResponse(response, "Runtime");
       state.submitResponse = payload;
+      showLegacyMessagePayload(payload);
       if (!response.ok || payload.error || payload._status === "failed") {
         throw new Error(payload.error || `Runtime returned HTTP ${response.status}`);
       }
@@ -3961,6 +3968,118 @@
     node.dataset.status = kind || "";
   }
 
+  function showLegacyMessagePayload(payload, options = {}) {
+    const message = legacyMessageFromPayload(payload);
+    if (!message) {
+      return false;
+    }
+    const key = `${message.icon || ""}\n${message.text || ""}\n${message.ptext || ""}`;
+    if (!options.force && key && state.lastLegacyMessageKey === key) {
+      return false;
+    }
+    state.lastLegacyMessageKey = key;
+    showLegacyMessageDialog(message);
+    return true;
+  }
+
+  function legacyMessageFromPayload(payload) {
+    if (!payload || typeof payload !== "object") {
+      return null;
+    }
+    if (payload._message) {
+      if (typeof payload._message === "string") {
+        return { icon: "information.png", text: payload._message };
+      }
+      if (typeof payload._message === "object") {
+        return {
+          icon: payload._message.icon || legacyMessageIcon(payload),
+          text: payload._message.text || payload._message.message || payload._message.status || "",
+          ptext: payload._message.ptext || ""
+        };
+      }
+    }
+    if (payload.error) {
+      return { icon: "warning.png", text: payload.error };
+    }
+    return null;
+  }
+
+  function legacyMessageIcon(payload) {
+    const status = runtimeStatus(payload);
+    if (status === "failed" || status === "error") {
+      return "warning.png";
+    }
+    return "information.png";
+  }
+
+  function showLegacyMessageDialog(message) {
+    let overlay = document.getElementById("ui2-legacy-message-dialog");
+    if (overlay) {
+      overlay.remove();
+    }
+    overlay = el("div", "ui2-dialog-overlay ui2-legacy-message-overlay");
+    overlay.id = "ui2-legacy-message-dialog";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "ui2-legacy-message-title");
+
+    const panel = el("section", "ui2-dialog ui2-legacy-message-dialog");
+    const icon = legacyMessageIconElement(message.icon || "information.png");
+    const body = el("div", "ui2-legacy-message-body");
+    const title = el("h2", "ui2-legacy-message-title", legacyMessageTitle(message.icon));
+    title.id = "ui2-legacy-message-title";
+    const text = el("div", "ui2-legacy-message-text");
+    text.innerHTML = sanitizeLegacyMessageHtml(message.text || "");
+    body.append(title, text);
+    if (message.ptext) {
+      const detail = el("pre", "ui2-legacy-message-detail");
+      detail.textContent = stripHtml(message.ptext);
+      body.appendChild(detail);
+    }
+
+    const close = el("button", "ui2-dialog-close ui2-legacy-message-close", "Close");
+    close.type = "button";
+    close.addEventListener("click", () => overlay.remove());
+    panel.append(icon, body, close);
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+    close.focus();
+  }
+
+  function legacyMessageIconElement(iconName) {
+    const img = document.createElement("img");
+    img.className = "ui2-legacy-message-icon";
+    img.alt = "";
+    img.src = `../pngs/${sanitizeLegacyIconName(iconName)}`;
+    img.addEventListener("error", () => {
+      img.replaceWith(el("span", "ui2-legacy-message-fallback-icon", "!"));
+    }, { once: true });
+    return img;
+  }
+
+  function sanitizeLegacyIconName(iconName) {
+    const value = String(iconName || "information.png").split("/").pop();
+    return /^[A-Za-z0-9_.-]+$/.test(value) ? value : "information.png";
+  }
+
+  function legacyMessageTitle(iconName) {
+    return /warn|error|toast/i.test(String(iconName || "")) ? "Warning" : "Message";
+  }
+
+  function sanitizeLegacyMessageHtml(html) {
+    const template = document.createElement("template");
+    template.innerHTML = String(html || "");
+    template.content.querySelectorAll("script, style, iframe, object, embed").forEach((node) => node.remove());
+    template.content.querySelectorAll("*").forEach((node) => {
+      Array.from(node.attributes).forEach((attr) => {
+        if (/^on/i.test(attr.name) || attr.name === "style") {
+          node.removeAttribute(attr.name);
+        }
+      });
+    });
+    return template.innerHTML || escapeHtml(stripHtml(html));
+  }
+
   function clearRuntimeOutputs(scope) {
     (scope || document).querySelectorAll("[data-output-field-id]").forEach((output) => {
       if (output.dataset.dynamicOutput === "true") {
@@ -4027,6 +4146,7 @@
       });
       const payload = await parseJsonResponse(response, "Job results");
       state.submitResponse = payload;
+      showLegacyMessagePayload(payload);
       if (getInput && payload?._getinput) {
         applyInputPayload(payload._getinput);
         if (state.activeJob?.uuid === uuid) {
@@ -4260,6 +4380,7 @@
     if (!payload || typeof payload !== "object") {
       return;
     }
+    showLegacyMessagePayload(payload);
     Object.entries(payload).forEach(([id, value]) => {
       if (id === "_progress") {
         updateProgressOutputs(value);

@@ -75,6 +75,10 @@ like( $ui2_js, qr/dialogClass: \(moduleId === "sys_feedback" \|\| moduleId === "
 like( $ui2_js, qr/function renderFeedbackTool\(module, fields\)/, 'ui2 runtime has a dedicated Feedback utility renderer' );
 like( $ui2_js, qr/await submitUtilityModule\(form, module, `ajax\/sys_config\/\$\{moduleId\}\.php`/, 'ui2 feedback submits through the generated legacy feedback endpoint' );
 like( $ui2_js, qr/function utilityAllowsAnonymous\(module\).*?sys_feedback/s, 'ui2 feedback can be submitted before login like legacy' );
+like( $ui2_js, qr/function showLegacyMessagePayload\(payload, options = \{\}\)/, 'ui2 runtime handles legacy backend _message payloads' );
+like( $ui2_js, qr/function legacyMessageFromPayload\(payload\).*?payload\._message/s, 'ui2 runtime maps legacy _message payloads into dialogs' );
+like( $ui2_js, qr/function showLegacyMessageDialog\(message\).*?ui2-legacy-message-dialog/s, 'ui2 runtime renders backend messages as modal warnings' );
+like( $ui2_js, qr/function sanitizeLegacyMessageHtml\(html\).*?querySelectorAll\("script, style, iframe, object, embed"\)/s, 'ui2 sanitizes legacy message HTML before rendering' );
 like( $ui2_js, qr/if \(!choices\.length\).*?input\.name = field\.name \|\| field\.id/s, 'ui2 supports legacy individual radio fields without values arrays' );
 like( $ui2_js, qr/input\.name = field\.name \|\| field\.id;\s+input\.value = choice\.value/s, 'ui2 grouped radio choices use the legacy field name when present' );
 like( $ui2_js, qr/control\.type === "radio" && control\.dataset\.fieldName[\s\S]+return control\.dataset\.fieldName/s, 'ui2 utility radio submits use the legacy radio group name' );
@@ -203,12 +207,15 @@ like( $ui2_js, qr/formData\.set\("_uuid", uuid/, 'ui2 runtime bridge supplies uu
 like( $ui2_js, qr/formData\.set\("_logon", state\.session\.logon/, 'ui2 submit uses the legacy session logon' );
 like( $ui2_js, qr/formData\.set\("_project", state\.session\.project/, 'ui2 submit uses the legacy session project' );
 like( $ui2_js, qr/if \(state\.module\?\.docrootexecutable\).*?formData\.set\("_docrootexecutable", state\.module\.docrootexecutable\)/s, 'ui2 runtime bridge sends legacy docroot executable metadata for system module submits' );
+like( $ui2_js, qr/const payload = await parseJsonResponse\(response, "Runtime"\);\s+state\.submitResponse = payload;\s+showLegacyMessagePayload\(payload\);/s, 'ui2 shows legacy submit messages before failed runtime responses become inline errors' );
 like( $ui2_js, qr/function startJobPolling\(uuid, form, statusNode, getLastMsg = true, getInput = false\)/, 'ui2 runtime bridge starts polling submitted jobs' );
 like( $ui2_js, qr/function pollJobResults\(uuid, form, statusNode, lastDelay, getLastMsg, getInput = false\)/, 'ui2 runtime bridge polls legacy job results' );
 like( $ui2_js, qr/ajax\/get_results\.php/, 'ui2 runtime bridge uses the legacy job results endpoint' );
 like( $ui2_js, qr/url\.searchParams\.set\("_getlastmsg", getLastMsg \? "1" : "0"\)/, 'ui2 runtime bridge requests legacy last-message updates with the PHP-native flag' );
 like( $ui2_js, qr/url\.searchParams\.set\("_getinput", getInput \? "true" : "false"\)/, 'ui2 runtime bridge requests saved job inputs only when reattaching' );
+like( $ui2_js, qr/const payload = await parseJsonResponse\(response, "Job results"\);\s+state\.submitResponse = payload;\s+showLegacyMessagePayload\(payload\);/s, 'ui2 shows legacy polling messages from job result payloads' );
 like( $ui2_js, qr/function applyRuntimePayload\(payload\)/, 'ui2 runtime bridge maps runtime payloads into rendered outputs' );
+like( $ui2_js, qr/function applyRuntimePayload\(payload\).*?showLegacyMessagePayload\(payload\);/s, 'ui2 runtime payload rendering preserves legacy backend message popups' );
 like( $ui2_js, qr/function mergeRuntimeText\(existing, incoming\)/, 'ui2 runtime bridge preserves accumulated runtime text output' );
 like( $ui2_js, qr/function isCompleteRuntimeText\(text\)/, 'ui2 runtime bridge recognizes complete final textarea streams' );
 like( $ui2_js, qr/function stripUi2RuntimeStatus\(text\)/, 'ui2 runtime bridge strips ui2-only runtime status text from canonical output' );
@@ -236,6 +243,8 @@ like( $ui2_js, qr/type === "integer"[\s\S]+input\.step = "1"/, 'ui2 integer inpu
 
 my $ui2_css = read_file( File::Spec->catfile( $ui2, qw(css ui2.css) ) );
 like( $ui2_css, qr/\.ui2-dialog-overlay/, 'ui2 stylesheet includes login dialog shell styles' );
+like( $ui2_css, qr/\.ui2-legacy-message-dialog/, 'ui2 stylesheet includes legacy backend message dialog styles' );
+like( $ui2_css, qr/\.ui2-legacy-message-icon/, 'ui2 stylesheet includes legacy backend message icon styling' );
 like( $ui2_css, qr/\.ui2-captcha-dialog/, 'ui2 stylesheet includes a dedicated captcha dialog shell' );
 like( $ui2_css, qr/\.ui2-splash-footer/, 'ui2 stylesheet includes splash footer metadata styles' );
 like( $ui2_css, qr/\.ui2-output-plotly/, 'ui2 stylesheet includes a stable Plotly output surface' );
