@@ -1628,7 +1628,7 @@
         const item = el("label", "ui2-radio");
         const input = document.createElement("input");
         input.type = "radio";
-        input.name = field.id;
+        input.name = field.name || field.id;
         input.value = choice.value;
         input.checked = String(field.default || "") === choice.value || (!field.default && index === 0);
         wireControl(input, field);
@@ -2727,6 +2727,9 @@
 
   function legacyUtilityFieldName(control) {
     const id = control.dataset.fieldId || "";
+    if (control.type === "radio" && control.dataset.fieldName) {
+      return control.dataset.fieldName;
+    }
     const row = control.closest(".ui2-field");
     const parts = [id];
     let repeat = row?.dataset.repeat || "";
@@ -5112,6 +5115,9 @@
   function wireControl(control, field) {
     control.id = fieldId(field);
     control.dataset.fieldId = field.id || "";
+    if (field.name) {
+      control.dataset.fieldName = field.name;
+    }
     if (field.match) {
       control.dataset.matchField = field.match;
     }

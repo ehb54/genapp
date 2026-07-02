@@ -76,6 +76,8 @@ like( $ui2_js, qr/function renderFeedbackTool\(module, fields\)/, 'ui2 runtime h
 like( $ui2_js, qr/await submitUtilityModule\(form, module, `ajax\/sys_config\/\$\{moduleId\}\.php`/, 'ui2 feedback submits through the generated legacy feedback endpoint' );
 like( $ui2_js, qr/function utilityAllowsAnonymous\(module\).*?sys_feedback/s, 'ui2 feedback can be submitted before login like legacy' );
 like( $ui2_js, qr/if \(!choices\.length\).*?input\.name = field\.name \|\| field\.id/s, 'ui2 supports legacy individual radio fields without values arrays' );
+like( $ui2_js, qr/input\.name = field\.name \|\| field\.id;\s+input\.value = choice\.value/s, 'ui2 grouped radio choices use the legacy field name when present' );
+like( $ui2_js, qr/control\.type === "radio" && control\.dataset\.fieldName[\s\S]+return control\.dataset\.fieldName/s, 'ui2 utility radio submits use the legacy radio group name' );
 like( $ui2_js, qr/if \(type === "job"\) \{\s*return renderJobReferenceControl\(field\);/s, 'ui2 renders legacy job reference fields with a dedicated control' );
 like( $ui2_js, qr/function openJobReferenceDialog\(field, targetControl\)/, 'ui2 runtime opens a second modal chooser for reference jobs' );
 like( $ui2_js, qr/function groupJobReferenceRows\(rows, columns\)/, 'ui2 reference job chooser groups jobs into a legacy-style tree' );
