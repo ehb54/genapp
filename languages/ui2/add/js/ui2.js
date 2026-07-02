@@ -3827,7 +3827,8 @@
   }
 
   function appendRuntimeMessage(value) {
-    const output = document.querySelector('[data-output-type="textarea"], [data-output-type="html"], [data-output-type="text"]');
+    const output = document.querySelector('[data-output-type="textarea"], [data-output-type="html"], [data-output-type="text"]') ||
+      ensureRuntimeOutputField("_textarea", "Runtime output", "textarea");
     if (!output) {
       return;
     }
@@ -3885,7 +3886,8 @@
   }
 
   function updateOutputField(id, value) {
-    const output = document.querySelector(`[data-output-field-id="${cssEscape(id)}"]`);
+    const output = document.querySelector(`[data-output-field-id="${cssEscape(id)}"]`) ||
+      ensureRuntimeOutputField(id, displayLabel(id), runtimeOutputTypeForValue(value));
     if (!output) {
       return;
     }
@@ -3894,6 +3896,50 @@
       return;
     }
     updateOutputElement(output, value);
+  }
+
+  function ensureRuntimeOutputField(id, label, type) {
+    if (!id) {
+      return null;
+    }
+    const existing = document.querySelector(`[data-output-field-id="${cssEscape(id)}"]`);
+    if (existing) {
+      return existing;
+    }
+
+    let section = document.getElementById("ui2-output-section");
+    if (!section) {
+      section = renderSection("Outputs", [], "output");
+      const form = document.getElementById("ui2-form");
+      form?.appendChild(section);
+    }
+    const body = section?.querySelector(".ui2-section-body");
+    if (!body) {
+      return null;
+    }
+
+    body.querySelectorAll(".ui2-help").forEach((node) => {
+      if (String(node.textContent || "").trim() === "No outputs declared.") {
+        node.remove();
+      }
+    });
+
+    const field = {
+      id,
+      label: label || displayLabel(id),
+      type: type || "textarea"
+    };
+    const row = renderField(field, "output");
+    row.classList.add("ui2-runtime-output-field");
+    body.appendChild(row);
+    return row.querySelector(`[data-output-field-id="${cssEscape(id)}"]`);
+  }
+
+  function runtimeOutputTypeForValue(value) {
+    if (typeof value === "string" && value.indexOf("<") >= 0 && value.indexOf(">") > value.indexOf("<")) {
+      return "html";
+    }
+    return "textarea";
   }
 
   function updateOutputElement(output, value) {
@@ -5047,6 +5093,7 @@
       nglRepresentationSpecs,
       applyPlotlyTheme,
       plotlyThemeColors,
+      applyRuntimePayload,
       applyInputPayload,
       applySavedJobInput,
       state

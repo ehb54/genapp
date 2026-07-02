@@ -24,6 +24,9 @@ source = source.replace(/\\n  init\\(\\);\\n\\}\\(\\)\\);\\s*\$/, "\\n}());\\n")
 
 function createNode(tag) {
   const classes = new Set();
+  function syncClassesFromName() {
+    String(node.className || "").split(/\\s+/).filter(Boolean).forEach((name) => classes.add(name));
+  }
   const node = {
     tagName: String(tag || "div").toUpperCase(),
     attributes: {},
@@ -34,14 +37,17 @@ function createNode(tag) {
     isConnected: true,
     classList: {
       add(...names) {
+        syncClassesFromName();
         names.filter(Boolean).forEach((name) => classes.add(name));
         node.className = Array.from(classes).join(" ");
       },
       remove(...names) {
+        syncClassesFromName();
         names.forEach((name) => classes.delete(name));
         node.className = Array.from(classes).join(" ");
       },
       toggle(name, force) {
+        syncClassesFromName();
         if (force === true || (force == null && !classes.has(name))) {
           classes.add(name);
         } else {
@@ -52,20 +58,31 @@ function createNode(tag) {
       }
     },
     appendChild(child) {
+      child.parentNode = this;
       this.children.push(child);
       return child;
     },
     append(...children) {
-      this.children.push(...children);
+      children.forEach((child) => {
+        child.parentNode = this;
+        this.children.push(child);
+      });
+    },
+    remove() {
+      if (!this.parentNode) {
+        return;
+      }
+      this.parentNode.children = this.parentNode.children.filter((child) => child !== this);
+      this.parentNode = null;
     },
     addEventListener() {},
     removeEventListener() {},
     dispatchEvent() {},
-    querySelector() {
-      return null;
+    querySelector(selector) {
+      return querySelectorFrom(this, selector);
     },
-    querySelectorAll() {
-      return [];
+    querySelectorAll(selector) {
+      return querySelectorAllFrom(this, selector);
     },
     closest() {
       return null;
@@ -98,20 +115,66 @@ function createNode(tag) {
   return node;
 }
 
+function querySelectorFrom(root, selector) {
+  return querySelectorAllFrom(root, selector)[0] || null;
+}
+
+function querySelectorAllFrom(root, selector) {
+  const selectors = String(selector || "").split(",").map((item) => item.trim()).filter(Boolean);
+  const results = [];
+  function walk(node) {
+    (node.children || []).forEach((child) => {
+      if (selectors.some((item) => matchesSelector(child, item))) {
+        results.push(child);
+      }
+      walk(child);
+    });
+  }
+  walk(root);
+  return results;
+}
+
+function matchesSelector(node, selector) {
+  if (!node || !selector) {
+    return false;
+  }
+  if (selector.startsWith("#")) {
+    return node.id === selector.slice(1);
+  }
+  if (selector.startsWith(".")) {
+    return String(node.className || "").split(/\\s+/).includes(selector.slice(1));
+  }
+  if (selector.startsWith("[data-") && selector.endsWith("]")) {
+    const body = selector.slice(6, -1);
+    const equalAt = body.indexOf("=");
+    const name = equalAt >= 0 ? body.slice(0, equalAt) : body;
+    let expected = equalAt >= 0 ? body.slice(equalAt + 1) : null;
+    if (expected && expected.startsWith('"') && expected.endsWith('"')) {
+      expected = expected.slice(1, -1);
+    }
+    const key = name.replace(/-([a-z])/g, (_, char) => char.toUpperCase());
+    if (!Object.prototype.hasOwnProperty.call(node.dataset || {}, key)) {
+      return false;
+    }
+    return expected == null || String(node.dataset[key]) === expected;
+  }
+  return node.tagName === selector.toUpperCase();
+}
+
 const document = {
   documentElement: { clientHeight: 800, clientWidth: 1200 },
   body: createNode("body"),
   head: createNode("head"),
   scripts: [],
   createElement: createNode,
-  getElementById() {
-    return null;
+  getElementById(id) {
+    return querySelectorFrom(this.body, `#\${id}`) || querySelectorFrom(this.head, `#\${id}`);
   },
-  querySelector() {
-    return null;
+  querySelector(selector) {
+    return querySelectorFrom(this.body, selector) || querySelectorFrom(this.head, selector);
   },
-  querySelectorAll() {
-    return [];
+  querySelectorAll(selector) {
+    return [...querySelectorAllFrom(this.body, selector), ...querySelectorAllFrom(this.head, selector)];
   }
 };
 
@@ -193,6 +256,37 @@ vm.runInContext(source, context, { filename: "ui2.js" });
 
 const hooks = context.window.GenAppUi2TestHooks;
 assert(hooks, "test hooks were exposed");
+
+const outputSection = createNode("section");
+outputSection.id = "ui2-output-section";
+const outputBody = createNode("div");
+outputBody.className = "ui2-section-body";
+const emptyOutputMessage = createNode("p");
+emptyOutputMessage.className = "ui2-help";
+emptyOutputMessage.textContent = "No outputs declared.";
+outputBody.appendChild(emptyOutputMessage);
+outputSection.appendChild(outputBody);
+document.body.appendChild(outputSection);
+hooks.applyRuntimePayload({
+  _textarea: "apps sassie3\\nCommand line fixes possible",
+  jobintegrityreport: "Errors present.\\n\\n"
+});
+assert.strictEqual(
+  document.querySelector('[data-output-field-id="_textarea"]').textContent,
+  "apps sassie3\\nCommand line fixes possible",
+  "UI2 renders backend _textarea payloads even when the module declares no outputs"
+);
+assert.strictEqual(
+  document.querySelector('[data-output-field-id="jobintegrityreport"]').textContent,
+  "Errors present.\\n\\n",
+  "UI2 creates a fallback output row for undeclared backend result keys"
+);
+assert.strictEqual(
+  outputBody.querySelectorAll(".ui2-help").length,
+  0,
+  "UI2 removes the no-outputs placeholder when backend output arrives"
+);
+document.body.children = [];
 
 const nglPayload = hooks.parseNglPayload(JSON.stringify({
   loadname: "results/users/Joseph/no_project_specified/run_0/monomer_monte_carlo/movie.pdb",
