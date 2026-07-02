@@ -757,6 +757,10 @@ code {
   overflow: auto;
 }
 
+.ui2-feedback-dialog {
+  width: min(78rem, calc(100vw - 2rem));
+}
+
 .ui2-utility-body {
   display: grid;
   gap: 1rem;
@@ -856,6 +860,73 @@ code {
 
 .ui2-captcha-dialog {
   width: min(28rem, 100%);
+}
+
+.ui2-job-reference-control {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.ui2-job-reference-summary {
+  color: var(--ui2-muted);
+}
+
+.ui2-job-reference-table {
+  border-collapse: collapse;
+}
+
+.ui2-job-reference-table td {
+  border-bottom: 1px solid var(--ui2-border);
+  padding: 0.25rem 0;
+}
+
+.ui2-job-reference-hidden {
+  display: none;
+}
+
+.ui2-job-reference-dialog {
+  width: min(78rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+}
+
+.ui2-job-reference-body {
+  display: grid;
+  gap: 1rem;
+}
+
+.ui2-job-reference-tree {
+  min-height: 18rem;
+  max-height: min(58vh, 42rem);
+  overflow: auto;
+  border: 1px solid var(--ui2-border);
+  border-radius: 6px;
+  background: var(--ui2-panel-soft);
+  padding: 0.75rem;
+}
+
+.ui2-job-reference-group {
+  margin: 0.25rem 0;
+}
+
+.ui2-job-reference-group summary {
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0.3rem 0.4rem;
+}
+
+.ui2-job-reference-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.25rem 0.4rem 0.25rem 1.35rem;
+  color: var(--ui2-muted);
+}
+
+.ui2-job-reference-item:hover,
+.ui2-job-reference-item:focus-within {
+  background: var(--ui2-accent-soft);
+  color: var(--ui2-text);
 }
 
 .ui2-captcha-image {

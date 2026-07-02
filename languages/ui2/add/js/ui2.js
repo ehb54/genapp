@@ -50,6 +50,7 @@
     view: {},
     values: {},
     serverSelections: {},
+    jobSelections: {},
     submitResponse: null,
     activeJob: null,
     freshLoginAfterLogoff: false,
@@ -747,7 +748,9 @@
       if (!content) {
         throw new Error(`${moduleId} is not wired as a UI2 utility.`);
       }
-      showUtilityOverlay(utilityLabel(module), content);
+      showUtilityOverlay(utilityLabel(module), content, {
+        dialogClass: (moduleId === "sys_feedback" || moduleId === "sys_feedback2") ? "ui2-feedback-dialog" : ""
+      });
     } catch (error) {
       const message = el("div", "ui2-error", `Could not load ${moduleId}: ${error.message}`);
       showUtilityOverlay("Utility", message);
@@ -764,7 +767,7 @@
         closeUtilityOverlay();
       }
     });
-    const dialog = el("section", "ui2-dialog ui2-utility-dialog");
+    const dialog = el("section", ["ui2-dialog", "ui2-utility-dialog", options.dialogClass || ""].filter(Boolean).join(" "));
     dialog.setAttribute("role", "dialog");
     dialog.setAttribute("aria-modal", "true");
     dialog.setAttribute("aria-labelledby", "ui2-utility-title");
@@ -1640,6 +1643,9 @@
       button.id = fieldId(field);
       return button;
     }
+    if (type === "job") {
+      return renderJobReferenceControl(field);
+    }
     if (type === "integerpair") {
       const pair = el("div", "ui2-pair");
       ["First", "Second"].forEach((labelText, index) => {
@@ -1669,6 +1675,53 @@
     wireControl(input, field);
     input.value = field.default == null ? "" : field.default;
     return input;
+  }
+
+  function renderJobReferenceControl(field) {
+    const wrap = el("div", "ui2-job-reference-control");
+    wrap.dataset.fieldId = field.id || "";
+    const button = el("button", "ui2-button ui2-button-quiet", "Select a job or jobs");
+    button.type = "button";
+    const summary = el("div", "ui2-job-reference-summary");
+    summary.id = `${fieldId(field)}-altval`;
+    summary.textContent = "No reference jobs selected.";
+    const hidden = el("div", "ui2-job-reference-hidden");
+    button.addEventListener("click", () => openJobReferenceDialog(field, wrap));
+    wrap.append(button, summary, hidden);
+    return wrap;
+  }
+
+  function updateJobReferenceControl(wrap, field, selections) {
+    const id = field.id || "";
+    const selected = Array.isArray(selections) ? selections : [];
+    state.jobSelections[id] = selected;
+    const summary = wrap.querySelector(".ui2-job-reference-summary");
+    const hidden = wrap.querySelector(".ui2-job-reference-hidden");
+    if (summary) {
+      summary.innerHTML = "";
+      if (!selected.length) {
+        summary.textContent = "No reference jobs selected.";
+      } else {
+        const table = el("table", "ui2-job-reference-table");
+        selected.forEach((job) => {
+          const row = document.createElement("tr");
+          row.appendChild(el("td", null, job.display || job.id || "Selected job"));
+          table.appendChild(row);
+        });
+        summary.appendChild(table);
+      }
+    }
+    if (hidden) {
+      hidden.innerHTML = "";
+      selected.forEach((job) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = `${id}_altval[]`;
+        input.value = job.id || "";
+        input.dataset.jobReferenceValue = id;
+        hidden.appendChild(input);
+      });
+    }
   }
 
   function renderFileControl(field, options) {
@@ -2660,7 +2713,16 @@
     if (module?.executable) {
       formData.set("_docrootexecutable", module.executable);
     }
+    appendJobReferenceSelections(formData, form);
     return formData;
+  }
+
+  function appendJobReferenceSelections(formData, form) {
+    form.querySelectorAll("input[data-job-reference-value][name]").forEach((input) => {
+      if (input.value) {
+        formData.append(input.name, input.value);
+      }
+    });
   }
 
   function legacyUtilityFieldName(control) {
@@ -2693,6 +2755,122 @@
         output.textContent = Array.isArray(payload[id]) ? payload[id].join("\n") : String(payload[id]);
       }
     });
+  }
+
+  async function openJobReferenceDialog(field, targetControl) {
+    if (!state.session.logon) {
+      openLoginDialog();
+      return;
+    }
+
+    const overlay = el("div", "ui2-dialog-overlay ui2-job-reference-overlay");
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "ui2-job-reference-title");
+
+    const panel = el("section", "ui2-dialog ui2-job-reference-dialog");
+    const header = el("div", "ui2-dialog-header");
+    const title = el("h2", null, "Choose a job");
+    title.id = "ui2-job-reference-title";
+    const close = el("button", "ui2-dialog-close", "Close");
+    close.type = "button";
+    close.addEventListener("click", () => overlay.remove());
+    header.append(title, close);
+
+    const body = el("div", "ui2-job-reference-body");
+    const serverDateRow = renderToolFilter("serverdate", "Server date", "loads from server", false);
+    const tree = el("div", "ui2-job-reference-tree", "Loading jobs...");
+    body.append(serverDateRow, tree);
+
+    const actions = el("div", "ui2-dialog-actions");
+    const cancel = el("button", "ui2-button ui2-button-quiet", "Cancel");
+    cancel.type = "button";
+    cancel.addEventListener("click", () => overlay.remove());
+    const apply = el("button", "ui2-button", "OK");
+    apply.type = "button";
+    apply.addEventListener("click", () => {
+      const selected = Array.from(tree.querySelectorAll("input[data-job-reference-row]:checked")).map((input) => ({
+        id: input.value,
+        display: input.dataset.jobDisplay || input.value
+      }));
+      updateJobReferenceControl(targetControl, field, selected);
+      targetControl.dispatchEvent(new Event("change", { bubbles: true }));
+      overlay.remove();
+    });
+    actions.append(cancel, apply);
+
+    panel.append(header, body, actions);
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+    close.focus();
+    refreshServerDate(panel);
+
+    try {
+      const payload = await fetchJobReferenceRows();
+      renderJobReferenceTree(tree, payload.rows, payload.columns, state.jobSelections[field.id || ""] || []);
+    } catch (error) {
+      tree.textContent = error.message;
+    }
+  }
+
+  async function fetchJobReferenceRows() {
+    await refreshSessionState();
+    const url = new URL(legacyEndpoint("jobsBase", JOB_MANAGER_ENDPOINT), window.location.href);
+    url.searchParams.set("_window", window.name);
+    const response = await fetch(url.toString(), { cache: "no-cache", credentials: "same-origin" });
+    const payload = await parseJsonResponse(response, "Job chooser");
+    return {
+      rows: payload?.jobgrid?.outerwrapper?.innerwrapper?.rows || [],
+      columns: jobColumns(payload?.colNames || [], payload?.colModel || [])
+    };
+  }
+
+  function renderJobReferenceTree(tree, rows, columns, currentSelections) {
+    tree.innerHTML = "";
+    if (!rows.length) {
+      tree.textContent = "No jobs found.";
+      return;
+    }
+    const selectedIds = new Set((currentSelections || []).map((job) => job.id));
+    const grouped = new Map();
+    rows.forEach((job) => {
+      const groupKey = jobReferenceGroup(job, columns);
+      if (!grouped.has(groupKey)) {
+        grouped.set(groupKey, []);
+      }
+      grouped.get(groupKey).push(job);
+    });
+    grouped.forEach((groupRows, groupKey) => {
+      const details = el("details", "ui2-job-reference-group");
+      details.open = true;
+      details.appendChild(el("summary", null, groupKey));
+      groupRows.forEach((job) => {
+        const item = el("label", "ui2-job-reference-item");
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.value = job.id || "";
+        input.checked = selectedIds.has(job.id || "");
+        input.dataset.jobReferenceRow = "1";
+        input.dataset.jobDisplay = jobReferenceDisplay(job, columns);
+        item.append(input, document.createTextNode(input.dataset.jobDisplay));
+        details.appendChild(item);
+      });
+      tree.appendChild(details);
+    });
+  }
+
+  function jobReferenceGroup(job, columns) {
+    const moduleName = jobCellTextByName(job, columns, "module", 0) || "Jobs";
+    const start = jobCellTextByName(job, columns, "start", 2);
+    const date = start.match(/\d{4}[-/]\d{2}(?:[-/]\d{2})?/)?.[0] || "Recent";
+    return `${date} / ${moduleName}`;
+  }
+
+  function jobReferenceDisplay(job, columns) {
+    const project = jobCellTextByName(job, columns, "project", 1) || "no_project_specified";
+    const start = jobCellTextByName(job, columns, "start", 2);
+    const duration = jobCellTextByName(job, columns, "duration", 6);
+    return `${project}${start ? ` start: ${start}` : ""}${duration ? ` duration: ${duration}` : ""}`;
   }
 
   async function loadJobManagerRows(table) {

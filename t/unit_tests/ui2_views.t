@@ -71,10 +71,14 @@ like( $ui2_js, qr/event\.target\?\.closest\?\.\("\[data-ui2-help\]"\)/, 'ui2 hov
 like( $ui2_js, qr/function syncDocsLink\(\)/, 'ui2 runtime syncs the docs button from generated docsbaseurl' );
 like( $ui2_js, qr/`\.\.\/\$\{base\}\/`/, 'ui2 runtime rebases relative docsbaseurl out of the ui2 directory' );
 like( $ui2_js, qr/nodes\.feedback\?\.addEventListener\("click", \(\) => openUtilityModule\("sys_feedback"\)\)/, 'ui2 feedback button opens the legacy feedback utility' );
+like( $ui2_js, qr/dialogClass: \(moduleId === "sys_feedback" \|\| moduleId === "sys_feedback2"\) \? "ui2-feedback-dialog"/, 'ui2 feedback opens in a modal-sized utility dialog' );
 like( $ui2_js, qr/function renderFeedbackTool\(module, fields\)/, 'ui2 runtime has a dedicated Feedback utility renderer' );
 like( $ui2_js, qr/await submitUtilityModule\(form, module, `ajax\/sys_config\/\$\{moduleId\}\.php`/, 'ui2 feedback submits through the generated legacy feedback endpoint' );
 like( $ui2_js, qr/function utilityAllowsAnonymous\(module\).*?sys_feedback/s, 'ui2 feedback can be submitted before login like legacy' );
 like( $ui2_js, qr/if \(!choices\.length\).*?input\.name = field\.name \|\| field\.id/s, 'ui2 supports legacy individual radio fields without values arrays' );
+like( $ui2_js, qr/if \(type === "job"\) \{\s*return renderJobReferenceControl\(field\);/s, 'ui2 renders legacy job reference fields with a dedicated control' );
+like( $ui2_js, qr/function openJobReferenceDialog\(field, targetControl\)/, 'ui2 runtime opens a second modal chooser for reference jobs' );
+like( $ui2_js, qr/formData\.append\(input\.name, input\.value\)/, 'ui2 submits selected reference jobs through legacy *_altval array fields' );
 like( $ui2_js, qr/function isDynamicOutputField\(field\)/, 'ui2 runtime detects legacy dynamic output declarations' );
 like( $ui2_js, qr/role === "output" && isDynamicOutputField\(field\).*?row\.hidden = true/s, 'ui2 dynamic output rows are hidden until runtime data arrives' );
 like( $ui2_js, qr/function updateDynamicOutput\(group, payload\).*?updateOutputElement\(output, item\.value\)/s, 'ui2 dynamic output children reuse normal output rendering' );
