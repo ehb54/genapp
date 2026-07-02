@@ -8,6 +8,7 @@
             "role"    : "input",
             "id"      : "plain_input",
             "label"   : "Plain Input",
+            "help"    : "Plain input help",
             "type"    : "text",
             "default" : "plain"
         }

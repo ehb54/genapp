@@ -1206,6 +1206,28 @@ code {
   display: none !important;
 }
 
+.ui2-hover-help {
+  position: fixed;
+  z-index: 4000;
+  max-width: min(28rem, calc(100vw - 1rem));
+  border: 1px solid var(--ui2-border-strong);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ui2-panel) 96%, var(--ui2-bg));
+  box-shadow: var(--ui2-shadow);
+  color: var(--ui2-text);
+  padding: 0.55rem 0.7rem;
+  pointer-events: none;
+}
+
+.ui2-hover-help[hidden],
+body:not(.ui2-help-enabled) .ui2-hover-help {
+  display: none !important;
+}
+
+.ui2-help-enabled [data-ui2-help] {
+  cursor: help;
+}
+
 @media (max-width: 760px) {
   body {
     overflow: auto;

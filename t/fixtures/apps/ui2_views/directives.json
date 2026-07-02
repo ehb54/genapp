@@ -2,6 +2,11 @@
     "title"       : "UI2 Views Fixture",
     "application" : "ui2_views",
     "version"     : "0.01",
+    "docsbaseurl" : "docs",
     "usertheme"   : "true",
+    "help"        : {
+        "docs"     : "Docs help",
+        "feedback" : "Feedback help"
+    },
     "languages"   : [ "ui2" ]
 }

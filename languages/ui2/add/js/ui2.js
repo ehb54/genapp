@@ -84,6 +84,8 @@
     jobs: document.getElementById("ui2-jobs"),
     files: document.getElementById("ui2-files"),
     settings: document.getElementById("ui2-settings"),
+    feedback: document.getElementById("ui2-feedback"),
+    docs: document.getElementById("ui2-docs"),
     help: document.getElementById("ui2-help"),
     logoff: document.getElementById("ui2-logoff"),
     wsIndicator: document.querySelector(".ui2-ws-indicator")
@@ -99,8 +101,12 @@
     nodes.jobs?.addEventListener("click", () => openUtilityModule("sys_job_manager"));
     nodes.files?.addEventListener("click", () => openUtilityModule("sys_file_manager"));
     nodes.settings?.addEventListener("click", () => openUtilityModule("sys_user_config"));
+    nodes.feedback?.addEventListener("click", () => openUtilityModule("sys_feedback"));
     nodes.help?.addEventListener("click", toggleHelp);
     nodes.logoff?.addEventListener("click", handleLogonAction);
+    initHoverHelp();
+    applyGlobalHelpBindings();
+    syncDocsLink();
 
     renderMenu();
     refreshSessionState();
@@ -921,6 +927,7 @@
       button.type = "button";
       button.setAttribute("aria-pressed", state.activeMenuId === menu.id ? "true" : "false");
       button.appendChild(menuTitle(menu));
+      setHoverHelp(button, menu.help);
 
       button.addEventListener("click", () => {
         selectMenuGroup(menu.id);
@@ -987,6 +994,7 @@
       const item = el("button", "ui2-strip-module-button", displayLabel(module.label || module.id));
       item.type = "button";
       item.dataset.moduleId = module.id || "";
+      setHoverHelp(item, module.help);
       if (module.id === state.moduleId) {
         item.setAttribute("aria-current", "page");
       }
@@ -1083,6 +1091,129 @@
       nodes.help.setAttribute("aria-pressed", enabled ? "true" : "false");
       nodes.help.textContent = enabled ? "Help on" : "Help off";
     }
+    hideHoverHelp();
+  }
+
+  function applyGlobalHelpBindings() {
+    const help = appMap.help || appMap.directives?.help || {};
+    setHoverHelp(nodes.navToggle, help.menu || "Show or hide the module menu.");
+    setHoverHelp(nodes.sessionStatus, help.project);
+    setHoverHelp(nodes.jobs, help.jobs || "Open the Job Manager.");
+    setHoverHelp(nodes.files, help.files || "Open the File Manager.");
+    setHoverHelp(nodes.settings, help.user_config || help.register || "Open user settings.");
+    setHoverHelp(nodes.feedback, help.feedback || "Send feedback about this application.");
+    setHoverHelp(nodes.docs, help.docs || "Open the application documentation.");
+    setHoverHelp(nodes.help, help.help || "Toggle hover help on and off.");
+    setHoverHelp(nodes.logoff, help.logoff || help.login);
+  }
+
+  function syncDocsLink() {
+    if (!nodes.docs) {
+      return;
+    }
+    const docsbase = stringValue(appMap.directives?.docsbaseurl || "").trim();
+    if (!docsbase) {
+      nodes.docs.hidden = true;
+      return;
+    }
+    nodes.docs.hidden = false;
+    const base = docsbase.replace(/\/+$/, "");
+    nodes.docs.href = /^(?:[a-z]+:|\/)/i.test(base) ? `${base}/` : `../${base}/`;
+  }
+
+  function setHoverHelp(node, help) {
+    const text = stringValue(help).trim();
+    if (!node || !text) {
+      return node;
+    }
+    node.dataset.ui2Help = text;
+    node.setAttribute("aria-describedby", "ui2-hover-help");
+    return node;
+  }
+
+  function initHoverHelp() {
+    if (document.getElementById("ui2-hover-help")) {
+      return;
+    }
+    const tooltip = el("div", "ui2-hover-help");
+    tooltip.id = "ui2-hover-help";
+    tooltip.setAttribute("role", "tooltip");
+    tooltip.hidden = true;
+    document.body.appendChild(tooltip);
+    document.addEventListener("mouseover", handleHoverHelpEnter);
+    document.addEventListener("mousemove", handleHoverHelpMove);
+    document.addEventListener("mouseout", handleHoverHelpLeave);
+    document.addEventListener("focusin", handleHoverHelpEnter);
+    document.addEventListener("focusout", handleHoverHelpLeave);
+  }
+
+  function hoverHelpEnabled() {
+    return document.body.classList.contains("ui2-help-enabled");
+  }
+
+  function handleHoverHelpEnter(event) {
+    if (!hoverHelpEnabled()) {
+      return;
+    }
+    const target = event.target?.closest?.("[data-ui2-help]");
+    if (!target) {
+      return;
+    }
+    showHoverHelp(target.dataset.ui2Help || "", event);
+  }
+
+  function handleHoverHelpMove(event) {
+    if (!hoverHelpEnabled()) {
+      hideHoverHelp();
+      return;
+    }
+    const tooltip = document.getElementById("ui2-hover-help");
+    if (!tooltip || tooltip.hidden) {
+      return;
+    }
+    positionHoverHelp(tooltip, event);
+  }
+
+  function handleHoverHelpLeave(event) {
+    const target = event.target?.closest?.("[data-ui2-help]");
+    if (!target) {
+      return;
+    }
+    if (event.relatedTarget && target.contains(event.relatedTarget)) {
+      return;
+    }
+    hideHoverHelp();
+  }
+
+  function showHoverHelp(help, event) {
+    const tooltip = document.getElementById("ui2-hover-help");
+    if (!tooltip || !help) {
+      return;
+    }
+    tooltip.innerHTML = help;
+    tooltip.hidden = false;
+    positionHoverHelp(tooltip, event);
+  }
+
+  function hideHoverHelp() {
+    const tooltip = document.getElementById("ui2-hover-help");
+    if (!tooltip) {
+      return;
+    }
+    tooltip.hidden = true;
+    tooltip.textContent = "";
+  }
+
+  function positionHoverHelp(tooltip, event) {
+    const pad = 14;
+    const fallback = event.target?.getBoundingClientRect?.() || { left: 0, bottom: 0 };
+    const pointerX = Number.isFinite(event.clientX) ? event.clientX : fallback.left;
+    const pointerY = Number.isFinite(event.clientY) ? event.clientY : fallback.bottom;
+    const rect = tooltip.getBoundingClientRect();
+    const maxLeft = Math.max(8, window.innerWidth - rect.width - 8);
+    const maxTop = Math.max(8, window.innerHeight - rect.height - 8);
+    tooltip.style.left = `${Math.min(maxLeft, Math.max(8, pointerX + pad))}px`;
+    tooltip.style.top = `${Math.min(maxTop, Math.max(8, pointerY + pad))}px`;
   }
 
   function renderTabs(inputCount, outputCount) {
@@ -1150,13 +1281,14 @@
 
     const label = el("label", "ui2-field-label");
     label.textContent = field.label || field.id || field.type || "field";
+    setHoverHelp(label, field.help);
     if (devMode && field.id) {
       label.setAttribute("for", fieldId(field));
       label.appendChild(el("small", null, `${field.id} · ${field.type || "text"}`));
     }
 
     const stack = el("div", "ui2-control-stack");
-    stack.appendChild(role === "output" ? renderOutput(field) : renderControl(field));
+    stack.appendChild(setHoverHelp(role === "output" ? renderOutput(field) : renderControl(field), field.help));
     if (devMode && field.repeat) {
       stack.appendChild(el("p", "ui2-help", `Visible when ${field.repeat}`));
       stack.appendChild(el("p", "ui2-help ui2-repeat-debug"));
@@ -1181,6 +1313,7 @@
       const row = el("div", "ui2-field");
       row.dataset.fieldId = `_setgroup_${field.id || "groups"}_${groupId}`;
       const label = el("label", "ui2-field-label", group.label || groupId);
+      setHoverHelp(label, group.help);
       const stack = el("div", "ui2-control-stack");
       const control = el("label", "ui2-switch");
       const input = document.createElement("input");
@@ -1189,7 +1322,7 @@
       input.checked = userGroups.has(groupId);
       control.append(input);
       if (group.help) {
-        control.title = group.help;
+        setHoverHelp(control, group.help);
       }
       stack.appendChild(control);
       row.append(label, stack);
@@ -1282,6 +1415,7 @@
     row.appendChild(input);
 
     const label = el("label", "ui2-field-label", isIntegerPairMatrix(controller, fields) ? "" : repeatedGroupLabel(controller, fields));
+    setHoverHelp(label, controller.help);
     const stack = el("div", "ui2-control-stack");
     row.append(label, stack);
     return row;
@@ -1334,6 +1468,7 @@
   function renderRepeatListRow(field, rowIndex) {
     const row = el("div", "ui2-repeat-list-row");
     const label = el("label", "ui2-field-label", `${field.label || field.id || field.type || "field"} [${rowIndex + 1}]`);
+    setHoverHelp(label, field.help);
     row.appendChild(label);
     const stack = el("div", "ui2-control-stack");
     stack.appendChild(renderRepeatTableControl(field, rowIndex));
@@ -1388,6 +1523,7 @@
     if (field.sync) {
       input.dataset.sync = field.sync;
     }
+    setHoverHelp(input, field.help);
     return input;
   }
 
@@ -1403,6 +1539,7 @@
       });
       wireRepeatTableControl(select, field, rowIndex);
       select.value = arrayDefaultValue(field.default, rowIndex) || select.value;
+      setHoverHelp(select, field.help);
       return select;
     }
 
@@ -1413,21 +1550,23 @@
       input.checked = checkboxDefault(field, rowIndex);
       wireRepeatTableControl(input, field, rowIndex);
       wrap.appendChild(input);
+      setHoverHelp(wrap, field.help);
       return wrap;
     }
 
     if (isFileLikeType(type)) {
-      return renderFileControl(field, {
+      return setHoverHelp(renderFileControl(field, {
         compact: true,
         idSuffix: `-${rowIndex}`,
         repeatTableIndex: rowIndex
-      });
+      }), field.help);
     }
 
     const input = el("input", "ui2-input ui2-repeat-table-input");
     input.type = inputType(type);
     wireRepeatTableControl(input, field, rowIndex);
     input.value = arrayDefaultValue(field.default, rowIndex);
+    setHoverHelp(input, field.help);
     return input;
   }
 
@@ -1469,8 +1608,20 @@
       return select;
     }
     if (type === "radio") {
+      const choices = parseValues(field.values);
+      if (!choices.length) {
+        const item = el("label", "ui2-radio");
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = field.name || field.id;
+        input.value = field.id || field.value || "on";
+        input.checked = String(field.checked || field.default || "").toLowerCase() === "true";
+        wireControl(input, field);
+        item.append(input);
+        return item;
+      }
       const group = el("div", "ui2-radio-group");
-      parseValues(field.values).forEach((choice, index) => {
+      choices.forEach((choice, index) => {
         const item = el("label", "ui2-radio");
         const input = document.createElement("input");
         input.type = "radio";
@@ -1858,6 +2009,9 @@
     if (moduleId === "sys_register") {
       return renderRegisterTool(module, fields);
     }
+    if (moduleId === "sys_feedback" || moduleId === "sys_feedback2") {
+      return renderFeedbackTool(module, fields);
+    }
     return null;
   }
 
@@ -2083,6 +2237,35 @@
     form.addEventListener("change", () => syncFormValues(form));
     section.appendChild(form);
     window.setTimeout(() => syncFormValues(form), 0);
+    return section;
+  }
+
+  function renderFeedbackTool(module, fields) {
+    const moduleId = module.moduleid || module.id || "sys_feedback";
+    const section = el("section", "ui2-section ui2-system-tool ui2-feedback-tool");
+    const form = el("form", "ui2-utility-form");
+    form.noValidate = true;
+    const inputFields = fields.filter((field) => field.role !== "output");
+    const outputFields = fields.filter((field) => field.role === "output");
+    form.appendChild(renderUtilitySection("Feedback", inputFields, "input"));
+    form.appendChild(renderUtilityActions(module.submit_label || "Send feedback", { includeReset: false }));
+    if (outputFields.length) {
+      form.appendChild(renderUtilitySection("Status", outputFields, "output"));
+    }
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      await submitUtilityModule(form, module, `ajax/sys_config/${moduleId}.php`, {
+        pendingMessage: "Sending feedback",
+        successMessage: "Feedback sent"
+      });
+    });
+    form.addEventListener("input", () => syncFormValues(form));
+    form.addEventListener("change", () => syncFormValues(form));
+    section.appendChild(form);
+    window.setTimeout(() => {
+      syncFormValues(form);
+      pullUtilityFieldValues(form);
+    }, 0);
     return section;
   }
 
@@ -2369,7 +2552,7 @@
     setSubmitStatus(status, options.pendingMessage || "Submitting settings", "pending");
     try {
       await refreshSessionState();
-      if (!state.session.logon && module?.moduleid !== "sys_register") {
+      if (!state.session.logon && !utilityAllowsAnonymous(module)) {
         throw new Error("You must be logged on to update settings");
       }
       const endpoint = legacyEndpoint("", endpointPath);
@@ -2394,6 +2577,11 @@
     } finally {
       submitButton.disabled = false;
     }
+  }
+
+  function utilityAllowsAnonymous(module) {
+    const moduleId = module?.moduleid || module?.id || "";
+    return moduleId === "sys_register" || moduleId === "sys_feedback" || moduleId === "sys_feedback2";
   }
 
   function validateUtilityForm(form) {

@@ -8,6 +8,7 @@
             "role"    : "input",
             "id"      : "plain_ui2_modules_input",
             "label"   : "Plain UI2 Modules Input",
+            "help"    : "Plain input help",
             "type"    : "text",
             "default" : "plain ui2 modules"
         }

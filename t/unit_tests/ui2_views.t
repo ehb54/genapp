@@ -31,6 +31,7 @@ ok( -f File::Spec->catfile( $ui2, qw(modules plain.json) ), 'ui2 plain module su
 ok( -f File::Spec->catfile( $ui2, qw(modules typed.json) ), 'ui2 typed module summary was generated without ui2 type templates' );
 ok( -f File::Spec->catfile( $ui2, qw(modules sys_user_config.json) ), 'ui2 config system module summary was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(modules sys_file_manager.json) ), 'ui2 configbase system module summary was generated' );
+ok( -f File::Spec->catfile( $ui2, qw(modules sys_feedback.json) ), 'ui2 feedback system module summary was generated' );
 
 my $index      = read_file( File::Spec->catfile( $ui2, 'index.html' ) );
 my $app_map_js = read_file( File::Spec->catfile( $ui2, qw(js app-map.js) ) );
@@ -46,8 +47,12 @@ like( $index, qr/module from the list that appears at the top of the page/, 'ui2
 unlike( $index, qr/<p class="ui2-kicker">Ready<\/p>/, 'ui2 empty shell does not show a Ready kicker' );
 like( $index, qr/class="ui2-nav-icon-button" id="ui2-nav-toggle"/, 'ui2 menu toggle lives in the topbar instead of the collapsed sidebar column' );
 like( $index, qr/id="ui2-module-strip"/, 'ui2 index exposes a legacy-style selected menu module strip' );
+like( $index, qr/id="ui2-feedback"/, 'ui2 index exposes the legacy feedback utility entry point' );
+like( $index, qr/id="ui2-docs"/, 'ui2 index exposes the legacy docs entry point' );
 like( $app_map_js, qr/generatedOn:\s*"Generated on /, 'ui2 app map carries the legacy generated-on splash metadata' );
 like( $app_map_js, qr/genappRevision:\s*"GenApp /, 'ui2 app map carries the GenApp revision splash metadata' );
+like( $app_map_js, qr/directives\.docsbaseurl = "docs"/, 'ui2 app map records docsbaseurl for the docs entry point' );
+like( $app_map_js, qr/app\.help\.feedback = "Feedback help"/, 'ui2 app map records legacy feedback help text' );
 
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
 like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declares a module submit endpoint helper' );
@@ -55,6 +60,21 @@ like( $ui2_js, qr/function renderTabs\(inputCount, outputCount\)/, 'ui2 runtime 
 like( $ui2_js, qr/tabButton\("Inputs", inputCount, true, "ui2-input-section"\)/, 'ui2 input jump tab keeps its field count for accessibility' );
 like( $ui2_js, qr/const button = el\("button", "ui2-tab", label\)/, 'ui2 jump tabs display labels without count text' );
 unlike( $ui2_js, qr/header\.appendChild\(el\("span", "ui2-pill", `\$\{fields\.length\}`\)\)/, 'ui2 section headers do not duplicate input/output count pills' );
+like( $ui2_js, qr/function initHoverHelp\(\)/, 'ui2 runtime initializes legacy hover help tooltips' );
+like( $ui2_js, qr/function setHoverHelp\(node, help\)/, 'ui2 runtime records generated help text on hover targets' );
+like( $ui2_js, qr/setHoverHelp\(button, menu\.help\)/, 'ui2 menu group buttons expose generated menu help' );
+like( $ui2_js, qr/setHoverHelp\(item, module\.help\)/, 'ui2 module strip buttons expose generated module help' );
+like( $ui2_js, qr/setHoverHelp\(label, field\.help\)/, 'ui2 field labels expose generated field help' );
+like( $ui2_js, qr/setHoverHelp\(nodes\.feedback, help\.feedback/, 'ui2 feedback button exposes generated global help' );
+like( $ui2_js, qr/setHoverHelp\(nodes\.docs, help\.docs/, 'ui2 docs button exposes generated global help' );
+like( $ui2_js, qr/event\.target\?\.closest\?\.\("\[data-ui2-help\]"\)/, 'ui2 hover help delegates to generated help targets' );
+like( $ui2_js, qr/function syncDocsLink\(\)/, 'ui2 runtime syncs the docs button from generated docsbaseurl' );
+like( $ui2_js, qr/`\.\.\/\$\{base\}\/`/, 'ui2 runtime rebases relative docsbaseurl out of the ui2 directory' );
+like( $ui2_js, qr/nodes\.feedback\?\.addEventListener\("click", \(\) => openUtilityModule\("sys_feedback"\)\)/, 'ui2 feedback button opens the legacy feedback utility' );
+like( $ui2_js, qr/function renderFeedbackTool\(module, fields\)/, 'ui2 runtime has a dedicated Feedback utility renderer' );
+like( $ui2_js, qr/await submitUtilityModule\(form, module, `ajax\/sys_config\/\$\{moduleId\}\.php`/, 'ui2 feedback submits through the generated legacy feedback endpoint' );
+like( $ui2_js, qr/function utilityAllowsAnonymous\(module\).*?sys_feedback/s, 'ui2 feedback can be submitted before login like legacy' );
+like( $ui2_js, qr/if \(!choices\.length\).*?input\.name = field\.name \|\| field\.id/s, 'ui2 supports legacy individual radio fields without values arrays' );
 like( $ui2_js, qr/function isDynamicOutputField\(field\)/, 'ui2 runtime detects legacy dynamic output declarations' );
 like( $ui2_js, qr/role === "output" && isDynamicOutputField\(field\).*?row\.hidden = true/s, 'ui2 dynamic output rows are hidden until runtime data arrives' );
 like( $ui2_js, qr/function updateDynamicOutput\(group, payload\).*?updateOutputElement\(output, item\.value\)/s, 'ui2 dynamic output children reuse normal output rendering' );
@@ -216,11 +236,15 @@ like( $ui2_css, qr/\.ui2-mini-button/, 'ui2 stylesheet includes compact system a
 like( $ui2_css, qr/\.ui2-file-download-links/, 'ui2 stylesheet makes File Manager download links visible beside actions' );
 like( $ui2_css, qr/\.ui2-module-strip\[hidden\]\s*\{\s*display:\s*none;/s, 'ui2 stylesheet honors hidden module choice strips' );
 like( $ui2_css, qr/\.ui2-strip-module-button/, 'ui2 stylesheet includes selected menu module strip buttons' );
+like( $ui2_css, qr/\.ui2-hover-help/, 'ui2 stylesheet includes hover help tooltip styling' );
+like( $ui2_css, qr/body:not\(\.ui2-help-enabled\) \.ui2-hover-help/, 'ui2 stylesheet hides hover help while help mode is off' );
+like( $ui2_css, qr/\.ui2-help-enabled \[data-ui2-help\]/, 'ui2 stylesheet marks generated hover help targets when help mode is on' );
 
 my $app_map = read_file( File::Spec->catfile( $ui2, qw(js app-map.js) ) );
 like( $app_map, qr/addMenuFromParts\("demo", "Demo", ""\)/, 'ui2 app map records menu groups' );
+like( $app_map, qr/setMenuHelp\("demo", "Demo menu help"\)/, 'ui2 app map records menu group help' );
 like( $app_map, qr/setMenuRestricted\("demo", "admin"\)/, 'ui2 app map records restricted menu groups' );
-like( $app_map, qr/addModule\("demo", \{\s+id: "shared",\s+label: "Shared"/, 'ui2 app map records menu modules' );
+like( $app_map, qr/addModule\("demo", \{\s+id: "shared",\s+label: "Shared"\s+,help: "Shared module help"/, 'ui2 app map records menu module help' );
 like( $app_map, qr/directives: \{\}/, 'ui2 app map initializes the legacy directive registry' );
 like( $app_map, qr/directives\.usertheme = "true"/, 'ui2 app map records enabled legacy directives for hideifnot fields' );
 
@@ -241,6 +265,7 @@ my $plain = decode_json( read_file( File::Spec->catfile( $ui2, qw(modules plain.
 is( $plain->{module}, 'plain', 'plain summary records module id' );
 is( $plain->{modulejson}{label}, 'Plain UI2 Modules Fallback', 'ui2/modules remains a fallback module override path' );
 is( $plain->{modulejson}{fields}[0]{id}, 'plain_ui2_modules_input', 'ui2/modules fallback field is used when module_overrides is absent' );
+is( $plain->{modulejson}{fields}[0]{help}, 'Plain input help', 'ui2 module summaries preserve legacy field help text' );
 is_deeply( $plain->{viewjson}, {}, 'missing view files produce an empty view object' );
 
 my $settings = decode_json( read_file( File::Spec->catfile( $ui2, qw(modules sys_user_config.json) ) ) );
@@ -250,6 +275,11 @@ ok( scalar @{ $settings->{modulejson}{fields} || [] }, 'settings summary preserv
 my $file_manager = decode_json( read_file( File::Spec->catfile( $ui2, qw(modules sys_file_manager.json) ) ) );
 is( $file_manager->{module}, 'sys_file_manager', 'file manager summary records configbase module id' );
 ok( scalar @{ $file_manager->{modulejson}{fields} || [] }, 'file manager summary preserves configbase module fields' );
+
+my $feedback = decode_json( read_file( File::Spec->catfile( $ui2, qw(modules sys_feedback.json) ) ) );
+is( $feedback->{module}, 'sys_feedback', 'feedback summary records system module id' );
+ok( scalar @{ $feedback->{modulejson}{fields} || [] }, 'feedback summary preserves system module fields' );
+ok( scalar( grep { ($_->{type} || '') eq 'radio' && ($_->{name} || '') eq 'level' } @{ $feedback->{modulejson}{fields} || [] } ), 'feedback summary preserves legacy individual radio field group names' );
 
 my $typed = decode_json( read_file( File::Spec->catfile( $ui2, qw(modules typed.json) ) ) );
 is( $typed->{module}, 'typed', 'typed summary records module id' );
