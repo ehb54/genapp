@@ -107,6 +107,7 @@
     nodes.help?.addEventListener("click", toggleHelp);
     nodes.logoff?.addEventListener("click", handleLogonAction);
     initHoverHelp();
+    setHelpEnabled(true);
     applyGlobalHelpBindings();
     syncDocsLink();
 
@@ -1092,6 +1093,10 @@
 
   function toggleHelp() {
     const enabled = nodes.help?.getAttribute("aria-pressed") !== "true";
+    setHelpEnabled(enabled);
+  }
+
+  function setHelpEnabled(enabled) {
     document.body.classList.toggle("ui2-help-enabled", enabled);
     if (nodes.help) {
       nodes.help.setAttribute("aria-pressed", enabled ? "true" : "false");

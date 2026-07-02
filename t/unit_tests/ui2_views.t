@@ -61,6 +61,8 @@ like( $ui2_js, qr/tabButton\("Inputs", inputCount, true, "ui2-input-section"\)/,
 like( $ui2_js, qr/const button = el\("button", "ui2-tab", label\)/, 'ui2 jump tabs display labels without count text' );
 unlike( $ui2_js, qr/header\.appendChild\(el\("span", "ui2-pill", `\$\{fields\.length\}`\)\)/, 'ui2 section headers do not duplicate input/output count pills' );
 like( $ui2_js, qr/function initHoverHelp\(\)/, 'ui2 runtime initializes legacy hover help tooltips' );
+like( $ui2_js, qr/initHoverHelp\(\);\s+setHelpEnabled\(true\);/s, 'ui2 runtime enables legacy hover help by default' );
+like( $ui2_js, qr/function setHelpEnabled\(enabled\)/, 'ui2 runtime keeps hover help state explicit' );
 like( $ui2_js, qr/function setHoverHelp\(node, help\)/, 'ui2 runtime records generated help text on hover targets' );
 like( $ui2_js, qr/setHoverHelp\(button, menu\.help\)/, 'ui2 menu group buttons expose generated menu help' );
 like( $ui2_js, qr/setHoverHelp\(item, module\.help\)/, 'ui2 module strip buttons expose generated module help' );
