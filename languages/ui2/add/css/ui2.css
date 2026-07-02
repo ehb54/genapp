@@ -909,10 +909,23 @@ code {
   margin: 0.25rem 0;
 }
 
+.ui2-job-reference-group .ui2-job-reference-group {
+  margin-left: 1.1rem;
+}
+
 .ui2-job-reference-group summary {
   cursor: pointer;
   font-weight: 700;
   padding: 0.3rem 0.4rem;
+}
+
+.ui2-job-reference-month > summary {
+  font-size: 1.02rem;
+}
+
+.ui2-job-reference-day > summary,
+.ui2-job-reference-module > summary {
+  color: var(--ui2-muted);
 }
 
 .ui2-job-reference-item {

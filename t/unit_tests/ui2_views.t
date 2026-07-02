@@ -78,6 +78,12 @@ like( $ui2_js, qr/function utilityAllowsAnonymous\(module\).*?sys_feedback/s, 'u
 like( $ui2_js, qr/if \(!choices\.length\).*?input\.name = field\.name \|\| field\.id/s, 'ui2 supports legacy individual radio fields without values arrays' );
 like( $ui2_js, qr/if \(type === "job"\) \{\s*return renderJobReferenceControl\(field\);/s, 'ui2 renders legacy job reference fields with a dedicated control' );
 like( $ui2_js, qr/function openJobReferenceDialog\(field, targetControl\)/, 'ui2 runtime opens a second modal chooser for reference jobs' );
+like( $ui2_js, qr/function groupJobReferenceRows\(rows, columns\)/, 'ui2 reference job chooser groups jobs into a legacy-style tree' );
+like( $ui2_js, qr/monthKey:\s*`\$\{year\}-\$\{month\}`/, 'ui2 reference job chooser groups top-level folders by year-month' );
+like( $ui2_js, qr/dayKey:\s*`\$\{year\}-\$\{month\}-\$\{day\}`/, 'ui2 reference job chooser groups nested folders by day' );
+like( $ui2_js, qr/function jobReferenceModule\(job, columns\)/, 'ui2 reference job chooser groups day folders by module' );
+like( $ui2_js, qr/sort\(\(left, right\) => jobReferenceStartSeconds\(right, columns\) - jobReferenceStartSeconds\(left, columns\)\)/, 'ui2 reference job chooser sorts jobs newest first like legacy jstree' );
+like( $ui2_js, qr/function jobReferenceTimeLabel\(job, columns\).*?getUTCHours\(\).*?UTC/s, 'ui2 reference job leaf labels use legacy UTC time-of-day text' );
 like( $ui2_js, qr/formData\.append\(input\.name, input\.value\)/, 'ui2 submits selected reference jobs through legacy *_altval array fields' );
 like( $ui2_js, qr/function isDynamicOutputField\(field\)/, 'ui2 runtime detects legacy dynamic output declarations' );
 like( $ui2_js, qr/role === "output" && isDynamicOutputField\(field\).*?row\.hidden = true/s, 'ui2 dynamic output rows are hidden until runtime data arrives' );

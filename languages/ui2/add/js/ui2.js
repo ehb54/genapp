@@ -2832,45 +2832,146 @@
       return;
     }
     const selectedIds = new Set((currentSelections || []).map((job) => job.id));
-    const grouped = new Map();
-    rows.forEach((job) => {
-      const groupKey = jobReferenceGroup(job, columns);
-      if (!grouped.has(groupKey)) {
-        grouped.set(groupKey, []);
-      }
-      grouped.get(groupKey).push(job);
-    });
-    grouped.forEach((groupRows, groupKey) => {
-      const details = el("details", "ui2-job-reference-group");
-      details.open = true;
-      details.appendChild(el("summary", null, groupKey));
-      groupRows.forEach((job) => {
-        const item = el("label", "ui2-job-reference-item");
-        const input = document.createElement("input");
-        input.type = "checkbox";
-        input.value = job.id || "";
-        input.checked = selectedIds.has(job.id || "");
-        input.dataset.jobReferenceRow = "1";
-        input.dataset.jobDisplay = jobReferenceDisplay(job, columns);
-        item.append(input, document.createTextNode(input.dataset.jobDisplay));
-        details.appendChild(item);
+    const grouped = groupJobReferenceRows(rows, columns);
+    let firstMonth = true;
+    grouped.forEach((monthGroup) => {
+      const monthDetails = renderJobReferenceBranch(monthGroup.label, "month", firstMonth);
+      firstMonth = false;
+      let firstDay = true;
+      monthGroup.days.forEach((dayGroup) => {
+        const dayDetails = renderJobReferenceBranch(dayGroup.label, "day", monthDetails.open && firstDay);
+        firstDay = false;
+        let firstModule = true;
+        dayGroup.modules.forEach((moduleGroup) => {
+          const moduleDetails = renderJobReferenceBranch(moduleGroup.label, "module", dayDetails.open && firstModule);
+          firstModule = false;
+          moduleGroup.jobs.forEach((job) => {
+            const item = el("label", "ui2-job-reference-item");
+            const input = document.createElement("input");
+            input.type = "checkbox";
+            input.value = job.id || "";
+            input.checked = selectedIds.has(job.id || "");
+            input.dataset.jobReferenceRow = "1";
+            input.dataset.jobDisplay = jobReferenceDisplay(job, columns);
+            item.append(input, document.createTextNode(input.dataset.jobDisplay));
+            moduleDetails.appendChild(item);
+          });
+          dayDetails.appendChild(moduleDetails);
+        });
+        monthDetails.appendChild(dayDetails);
       });
-      tree.appendChild(details);
+      tree.appendChild(monthDetails);
     });
   }
 
-  function jobReferenceGroup(job, columns) {
+  function renderJobReferenceBranch(label, level, open) {
+    const details = el("details", `ui2-job-reference-group ui2-job-reference-${level}`);
+    details.open = !!open;
+    details.appendChild(el("summary", null, label));
+    return details;
+  }
+
+  function groupJobReferenceRows(rows, columns) {
+    const months = new Map();
+    rows
+      .slice()
+      .sort((left, right) => jobReferenceStartSeconds(right, columns) - jobReferenceStartSeconds(left, columns))
+      .forEach((job) => {
+        const parts = jobReferenceDateParts(job, columns);
+        const moduleName = jobReferenceModule(job, columns);
+        if (!months.has(parts.monthKey)) {
+          months.set(parts.monthKey, { label: parts.monthLabel, time: parts.time, days: new Map() });
+        }
+        const month = months.get(parts.monthKey);
+        month.time = Math.max(month.time, parts.time);
+        if (!month.days.has(parts.dayKey)) {
+          month.days.set(parts.dayKey, { label: parts.dayLabel, time: parts.time, modules: new Map() });
+        }
+        const day = month.days.get(parts.dayKey);
+        day.time = Math.max(day.time, parts.time);
+        if (!day.modules.has(moduleName)) {
+          day.modules.set(moduleName, { label: moduleName, time: parts.time, jobs: [] });
+        }
+        const moduleGroup = day.modules.get(moduleName);
+        moduleGroup.time = Math.max(moduleGroup.time, parts.time);
+        moduleGroup.jobs.push(job);
+      });
+
+    return Array.from(months.values())
+      .sort((left, right) => right.time - left.time)
+      .map((month) => ({
+        ...month,
+        days: Array.from(month.days.values())
+          .sort((left, right) => right.time - left.time)
+          .map((day) => ({
+            ...day,
+            modules: Array.from(day.modules.values())
+              .sort((left, right) => right.time - left.time || left.label.localeCompare(right.label))
+              .map((moduleGroup) => ({
+                ...moduleGroup,
+                jobs: moduleGroup.jobs
+                  .slice()
+                  .sort((left, right) => jobReferenceStartSeconds(right, columns) - jobReferenceStartSeconds(left, columns))
+              }))
+          }))
+      }));
+  }
+
+  function jobReferenceDateParts(job, columns) {
+    const time = jobReferenceStartSeconds(job, columns);
+    if (!time) {
+      return {
+        time: 0,
+        monthKey: "unknown",
+        monthLabel: "unknown",
+        dayKey: "unknown",
+        dayLabel: "unknown"
+      };
+    }
+    const date = new Date(time * 1000);
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(date.getUTCDate()).padStart(2, "0");
+    return {
+      time,
+      monthKey: `${year}-${month}`,
+      monthLabel: `${year}-${month}`,
+      dayKey: `${year}-${month}-${day}`,
+      dayLabel: day
+    };
+  }
+
+  function jobReferenceStartSeconds(job, columns) {
+    const numeric = Number(jobCellTextByName(job, columns, "startnumeric", 5));
+    if (Number.isFinite(numeric) && numeric > 0) {
+      return numeric;
+    }
+    const parsed = Date.parse(jobCellTextByName(job, columns, "start", 2));
+    return Number.isFinite(parsed) ? Math.floor(parsed / 1000) : 0;
+  }
+
+  function jobReferenceModule(job, columns) {
     const moduleName = jobCellTextByName(job, columns, "module", 0) || "Jobs";
-    const start = jobCellTextByName(job, columns, "start", 2);
-    const date = start.match(/\d{4}[-/]\d{2}(?:[-/]\d{2})?/)?.[0] || "Recent";
-    return `${date} / ${moduleName}`;
+    const parts = moduleName.split("/").filter(Boolean);
+    return parts[parts.length - 1] || moduleName;
   }
 
   function jobReferenceDisplay(job, columns) {
     const project = jobCellTextByName(job, columns, "project", 1) || "no_project_specified";
-    const start = jobCellTextByName(job, columns, "start", 2);
+    const start = jobReferenceTimeLabel(job, columns);
     const duration = jobCellTextByName(job, columns, "duration", 6);
     return `${project}${start ? ` start: ${start}` : ""}${duration ? ` duration: ${duration}` : ""}`;
+  }
+
+  function jobReferenceTimeLabel(job, columns) {
+    const seconds = jobReferenceStartSeconds(job, columns);
+    if (seconds > 0) {
+      const date = new Date(seconds * 1000);
+      return `${String(date.getUTCHours()).padStart(2, "0")}:`
+        + `${String(date.getUTCMinutes()).padStart(2, "0")}:`
+        + `${String(date.getUTCSeconds()).padStart(2, "0")} UTC`;
+    }
+    return jobCellTextByName(job, columns, "start", 2);
   }
 
   async function loadJobManagerRows(table) {
