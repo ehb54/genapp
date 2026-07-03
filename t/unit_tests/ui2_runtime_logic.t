@@ -436,6 +436,122 @@ assert.strictEqual(
   "UI2 clears repeated file rows when the compound controller becomes inactive"
 );
 
+function ui2FormControl(form, fieldId, value, repeatIndex) {
+  const control = createNode("input");
+  control.type = "text";
+  control.dataset.fieldId = fieldId;
+  control.value = value == null ? "" : String(value);
+  if (repeatIndex !== undefined) {
+    control.dataset.repeatTableField = fieldId;
+    control.dataset.repeatTableIndex = String(repeatIndex);
+  }
+  control.closest = function(selector) {
+    if (selector === "#ui2-form") {
+      return form;
+    }
+    return null;
+  };
+  form.appendChild(control);
+  return control;
+}
+
+function ui2IntegerpairMatrixRow() {
+  const matrixField = {
+    id: "matrix_value",
+    type: "text",
+    default: [
+      ["default 11", "default 12"],
+      ["default 21", "default 22"],
+      ["default 31", "default 32"]
+    ]
+  };
+  const matrixRow = createNode("div");
+  matrixRow.className = "ui2-field ui2-tableized-repeater";
+  matrixRow.dataset.fieldId = "pair_grid";
+  matrixRow._ui2RepeatTableController = {
+    id: "pair_grid",
+    type: "integerpair",
+    calc: "row_count,column_count",
+    headers: {
+      corner: "row",
+      row: ["row_label"],
+      column: ["column_label"]
+    }
+  };
+  matrixRow._ui2RepeatTableFields = [matrixField];
+  const matrixWrap = createNode("div");
+  matrixWrap.className = "ui2-matrix-wrap";
+  matrixWrap._ui2RepeatMatrixField = matrixField;
+  const matrixTable = createNode("table");
+  matrixTable.className = "ui2-matrix-table";
+  matrixWrap.appendChild(matrixTable);
+  matrixRow.appendChild(matrixWrap);
+  return { matrixRow, matrixTable };
+}
+
+const matrixReplayScope = createNode("form");
+const matrixReplay = ui2IntegerpairMatrixRow();
+matrixReplayScope.appendChild(matrixReplay.matrixRow);
+hooks.updateRepeatTables(
+  matrixReplayScope,
+  {
+    row_count: "3",
+    column_count: "2",
+    row_label: ["sample A", "sample B", "sample C"],
+    column_label: ["component alpha", "component beta"],
+    matrix_value: [
+      ["A alpha", "A beta"],
+      ["B alpha", "B beta"],
+      ["C alpha", "C beta"]
+    ]
+  },
+  new Map([[matrixReplay.matrixRow, true]])
+);
+assert.strictEqual(
+  matrixReplay.matrixTable.children[0].children[1].textContent,
+  "component alpha",
+  "UI2 renders integerpair column headers from saved source arrays"
+);
+assert.strictEqual(
+  matrixReplay.matrixTable.children[3].children[0].textContent,
+  "sample C",
+  "UI2 renders integerpair row headers from saved source arrays"
+);
+assert.strictEqual(
+  matrixReplay.matrixTable.children[2].children[2].children[0].value,
+  "B beta",
+  "UI2 renders integerpair cell values from saved nested arrays"
+);
+
+const savedJobForm = createNode("form");
+savedJobForm.id = "ui2-form";
+document.body.appendChild(savedJobForm);
+ui2FormControl(savedJobForm, "row_count", "1");
+ui2FormControl(savedJobForm, "column_count", "1");
+ui2FormControl(savedJobForm, "row_label", "", 0);
+ui2FormControl(savedJobForm, "row_label", "", 1);
+ui2FormControl(savedJobForm, "row_label", "", 2);
+ui2FormControl(savedJobForm, "column_label", "", 0);
+ui2FormControl(savedJobForm, "column_label", "", 1);
+const savedJobMatrix = ui2IntegerpairMatrixRow();
+savedJobForm.appendChild(savedJobMatrix.matrixRow);
+hooks.applyInputPayload({
+  row_count: "3",
+  column_count: "2",
+  row_label: ["saved row 1", "saved row 2", "saved row 3"],
+  column_label: ["saved column 1", "saved column 2"]
+});
+assert.strictEqual(
+  savedJobMatrix.matrixTable.children[0].children[1].textContent,
+  "saved column 1",
+  "UI2 reattach replay refreshes integerpair column labels"
+);
+assert.strictEqual(
+  savedJobMatrix.matrixTable.children[2].children[0].textContent,
+  "saved row 2",
+  "UI2 reattach replay refreshes integerpair row labels"
+);
+
 const outputSection = createNode("section");
 outputSection.id = "ui2-output-section";
 const outputBody = createNode("div");
