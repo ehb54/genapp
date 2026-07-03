@@ -144,6 +144,21 @@ function matchesSelector(node, selector) {
   if (selector.startsWith(".")) {
     return String(node.className || "").split(/\\s+/).includes(selector.slice(1));
   }
+  const compound = new RegExp('^([A-Za-z][A-Za-z0-9_-]*)?(\\\\.[A-Za-z0-9_-]+)?\\\\[data-([A-Za-z0-9_-]+)(?:="([^"]*)")?\\\\]\$').exec(selector);
+  if (compound) {
+    const [, tag, className, dataName, expected] = compound;
+    if (tag && node.tagName !== tag.toUpperCase()) {
+      return false;
+    }
+    if (className && !String(node.className || "").split(/\\s+/).includes(className.slice(1))) {
+      return false;
+    }
+    const key = dataName.replace(/-([a-z])/g, (_, char) => char.toUpperCase());
+    if (!Object.prototype.hasOwnProperty.call(node.dataset || {}, key)) {
+      return false;
+    }
+    return expected == null || String(node.dataset[key]) === expected;
+  }
   if (selector.startsWith("[data-") && selector.endsWith("]")) {
     const body = selector.slice(6, -1);
     const equalAt = body.indexOf("=");
@@ -256,6 +271,107 @@ vm.runInContext(source, context, { filename: "ui2.js" });
 
 const hooks = context.window.GenAppUi2TestHooks;
 assert(hooks, "test hooks were exposed");
+
+function conditionRow(id, type, value) {
+  const row = createNode("div");
+  row.className = "ui2-field";
+  row.dataset.fieldId = id;
+  const input = createNode(type === "textarea" ? "textarea" : type === "select" ? "select" : "input");
+  input.type = type;
+  input.dataset.fieldId = id;
+  input.value = value == null ? "" : String(value);
+  input.checked = value === true;
+  row.appendChild(input);
+  return row;
+}
+
+assert.strictEqual(hooks.repeatIsCondition("field"), false, "legacy repeat field refs are not condition expressions");
+assert.strictEqual(hooks.repeatIsCondition("field:choice"), false, "legacy repeat choice refs are not condition expressions");
+assert.strictEqual(hooks.repeatIsCondition("!use_experimental_data"), true, "negated repeats are condition expressions");
+assert.strictEqual(hooks.repeatIsCondition("use_experimental_data && neutron_checkbox"), true, "compound repeats are condition expressions");
+assert.deepStrictEqual(
+  Array.from(hooks.repeatConditionTokens("use_experimental_data && (neutron_checkbox || xray_checkbox)")),
+  ["use_experimental_data", "&&", "(", "neutron_checkbox", "||", "xray_checkbox", ")"],
+  "UI2 tokenizes nested repeat condition expressions"
+);
+assert.deepStrictEqual(
+  Array.from(hooks.repeatConditionDeps("mode:advanced && use_experimental_data")),
+  ["mode", "use_experimental_data"],
+  "UI2 extracts repeat condition dependencies without choice suffixes"
+);
+assert.strictEqual(
+  hooks.repeatControllerId("mode:advanced && use_experimental_data"),
+  "",
+  "UI2 does not treat repeat condition expressions as repeater controller ids"
+);
+assert.strictEqual(
+  hooks.repeatControllerId("mode:advanced"),
+  "mode",
+  "UI2 keeps legacy repeat choice controller ids"
+);
+
+const useExperimentalRow = conditionRow("use_experimental_data", "checkbox", true);
+const neutronRow = conditionRow("neutron_checkbox", "checkbox", false);
+const xrayRow = conditionRow("xray_checkbox", "checkbox", true);
+const modeRow = conditionRow("mode", "select-one", "advanced");
+const titleRow = conditionRow("title", "text", "hello");
+const conditionRowsById = new Map([
+  ["use_experimental_data", useExperimentalRow],
+  ["neutron_checkbox", neutronRow],
+  ["xray_checkbox", xrayRow],
+  ["mode", modeRow],
+  ["title", titleRow]
+]);
+const activeConditionRows = new Map(Array.from(conditionRowsById.values()).map((row) => [row, true]));
+const conditionValues = {
+  use_experimental_data: true,
+  neutron_checkbox: false,
+  xray_checkbox: true,
+  mode: "advanced",
+  title: "hello"
+};
+assert.strictEqual(
+  hooks.repeatConditionValue("use_experimental_data && (neutron_checkbox || xray_checkbox)", conditionValues, activeConditionRows, conditionRowsById),
+  true,
+  "UI2 evaluates checkbox OR/AND repeat condition gates"
+);
+assert.strictEqual(
+  hooks.repeatConditionValue("mode:advanced && use_experimental_data", conditionValues, activeConditionRows, conditionRowsById),
+  true,
+  "UI2 evaluates list-like repeat conditions with field:choice atoms"
+);
+assert.strictEqual(
+  hooks.repeatConditionValue("!neutron_checkbox", conditionValues, activeConditionRows, conditionRowsById),
+  true,
+  "UI2 evaluates negated checkbox repeat conditions"
+);
+assert.strictEqual(
+  hooks.repeatConditionValue("use_experimental_data:false", conditionValues, activeConditionRows, conditionRowsById),
+  false,
+  "UI2 rejects checkbox:false at runtime instead of treating it as a valid gate"
+);
+assert.strictEqual(
+  hooks.repeatConditionValue("title", conditionValues, activeConditionRows, conditionRowsById),
+  false,
+  "UI2 bare repeat condition atoms only pass for checkboxes"
+);
+assert.strictEqual(
+  hooks.repeatConditionValue("missing_checkbox", conditionValues, activeConditionRows, conditionRowsById),
+  false,
+  "UI2 fails closed when repeat condition dependencies are missing"
+);
+activeConditionRows.set(useExperimentalRow, false);
+assert.strictEqual(
+  hooks.repeatConditionValue("use_experimental_data && xray_checkbox", conditionValues, activeConditionRows, conditionRowsById),
+  false,
+  "UI2 fails closed when a repeat condition dependency is itself hidden"
+);
+activeConditionRows.set(useExperimentalRow, true);
+assert.strictEqual(
+  hooks.repeatConditionValue("use_experimental_data && (xray_checkbox", conditionValues, activeConditionRows, conditionRowsById),
+  false,
+  "UI2 fails closed on malformed repeat condition expressions"
+);
 
 const outputSection = createNode("section");
 outputSection.id = "ui2-output-section";

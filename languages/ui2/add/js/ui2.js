@@ -4243,8 +4243,21 @@
       return;
     }
     restoreServerSelections(inputs);
-    Object.entries(inputs).forEach(([id, value]) => {
-      if (!id || id.startsWith("_")) {
+    const entries = Object.entries(inputs).filter(([id]) => id && !id.startsWith("_"));
+    const dependencyIds = conditionalRepeatDependencyIds(document.getElementById("ui2-form"));
+    const restored = new Set();
+    entries.forEach(([id, value]) => {
+      if (!dependencyIds.has(id)) {
+        return;
+      }
+      setInputControlValue(id, value);
+      restored.add(id);
+    });
+    if (restored.size) {
+      syncValues();
+    }
+    entries.forEach(([id, value]) => {
+      if (restored.has(id)) {
         return;
       }
       setInputControlValue(id, value);
@@ -5209,6 +5222,9 @@
     if (!expression) {
       return true;
     }
+    if (repeatIsCondition(expression)) {
+      return repeatConditionValue(expression, rawValues, activeRows, rowsByFieldId);
+    }
     const [rawId, rawValue] = expression.split(":");
     const id = rawId.trim();
     const expected = rawValue == null ? true : rawValue.trim();
@@ -5221,6 +5237,130 @@
     return String(actual) === expected;
   }
 
+  function repeatIsCondition(expression) {
+    return typeof expression === "string" && /(^|[^A-Za-z0-9_:])!|&&|\|\||[()]/.test(expression);
+  }
+
+  function repeatConditionTokens(expression) {
+    const tokens = [];
+    const rx = /\s*(&&|\|\||!|\(|\)|[A-Za-z_][A-Za-z0-9_]*(?::[A-Za-z0-9_.-]+)?)/g;
+    let match;
+    let pos = 0;
+    while ((match = rx.exec(String(expression || ""))) !== null) {
+      if (match.index !== pos && /\S/.test(String(expression).slice(pos, match.index))) {
+        return null;
+      }
+      tokens.push(match[1]);
+      pos = rx.lastIndex;
+    }
+    if (/\S/.test(String(expression || "").slice(pos))) {
+      return null;
+    }
+    return tokens;
+  }
+
+  function repeatConditionDeps(expression) {
+    const tokens = repeatConditionTokens(expression);
+    const deps = new Set();
+    if (!tokens) {
+      return [];
+    }
+    tokens.forEach((token) => {
+      if (/^[A-Za-z_]/.test(token)) {
+        deps.add(token.replace(/:.*/, ""));
+      }
+    });
+    return Array.from(deps);
+  }
+
+  function conditionalRepeatDependencyIds(scope) {
+    const deps = new Set();
+    if (!scope) {
+      return deps;
+    }
+    scope.querySelectorAll(".ui2-field[data-repeat]").forEach((row) => {
+      const expression = row.dataset.repeat || "";
+      if (repeatIsCondition(expression)) {
+        repeatConditionDeps(expression).forEach((id) => deps.add(id));
+      }
+    });
+    return deps;
+  }
+
+  function repeatConditionValue(expression, rawValues, activeRows, rowsByFieldId) {
+    const tokens = repeatConditionTokens(expression);
+    let pos = 0;
+    if (!tokens || !tokens.length) {
+      return false;
+    }
+
+    const peek = () => tokens[pos];
+    const take = (token) => {
+      if (tokens[pos] === token) {
+        pos += 1;
+        return true;
+      }
+      return false;
+    };
+
+    const primary = () => {
+      if (take("!")) {
+        return !primary();
+      }
+      if (take("(")) {
+        const value = orExpr();
+        return take(")") ? value : false;
+      }
+      const token = peek();
+      if (token && /^[A-Za-z_]/.test(token)) {
+        pos += 1;
+        return repeatConditionAtom(token, rawValues, activeRows, rowsByFieldId);
+      }
+      return false;
+    };
+
+    const andExpr = () => {
+      let value = primary();
+      while (take("&&")) {
+        value = primary() && value;
+      }
+      return value;
+    };
+
+    const orExpr = () => {
+      let value = andExpr();
+      while (take("||")) {
+        value = andExpr() || value;
+      }
+      return value;
+    };
+
+    const result = orExpr();
+    return pos === tokens.length ? result : false;
+  }
+
+  function repeatConditionAtom(atom, rawValues, activeRows, rowsByFieldId) {
+    const parts = String(atom || "").split(":");
+    const id = parts[0].trim();
+    const choice = parts.length > 1 ? parts.slice(1).join(":") : null;
+    const controllerRow = rowsByFieldId?.get(id);
+    if (!id || !controllerRow || activeRows?.get(controllerRow) === false) {
+      return false;
+    }
+    const control = fieldControls(controllerRow)[0];
+    const actual = rawValues ? rawValues[id] : undefined;
+    if (choice !== null) {
+      if (control && control.type === "checkbox") {
+        return choice === "true" ? Boolean(actual) : false;
+      }
+      return String(actual) === choice;
+    }
+    if (control && control.type === "checkbox") {
+      return Boolean(actual);
+    }
+    return false;
+  }
+
   function updateRepeatDebug(row, active, rawValues, activeRows) {
     if (!devMode || !row.dataset.repeat) {
       return;
@@ -5231,6 +5371,10 @@
     }
     const [rawId, rawValue] = row.dataset.repeat.split(":");
     const id = rawId.trim();
+    if (repeatIsCondition(row.dataset.repeat)) {
+      debug.textContent = `Repeat ${active ? "active" : "hidden"}: ${row.dataset.repeat}`;
+      return;
+    }
     const controller = row.closest("form")?.querySelector(`.ui2-field[data-field-id="${cssEscape(id)}"]`);
     const controllerActive = !controller || activeRows.get(controller) !== false;
     const expected = rawValue == null ? "truthy" : rawValue.trim();
@@ -5432,6 +5576,9 @@
 
   function repeatControllerId(expression) {
     if (!expression) {
+      return "";
+    }
+    if (repeatIsCondition(String(expression))) {
       return "";
     }
     return String(expression).split(":")[0].trim();
@@ -5692,6 +5839,11 @@
       nglRepresentationSpecs,
       applyPlotlyTheme,
       plotlyThemeColors,
+      repeatIsCondition,
+      repeatConditionTokens,
+      repeatConditionDeps,
+      repeatConditionValue,
+      repeatControllerId,
       applyRuntimePayload,
       applyInputPayload,
       applySavedJobInput,
