@@ -495,6 +495,9 @@ ga.valuen.input = function( form, data ) {
         ga.repeat.updateConditions( form );
     }
     ga.valuen.applyInputValues( form, data, repeaters, false );
+    if ( ga.repeat && ga.repeat.headers && ga.repeat.headers.updateall ) {
+        ga.repeat.headers.updateall();
+    }
     ga.valuen.applyInputHtmlValues( data );
 }
 

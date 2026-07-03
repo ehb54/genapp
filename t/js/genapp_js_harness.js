@@ -47,6 +47,9 @@ function createDomHarness() {
         }
         return [];
       };
+      ele.addEventListener = function addEventListener(event, cb) {
+        ele.handlers[event] = { cb };
+      };
       elements[id] = ele;
     }
     return elements[id];
@@ -930,13 +933,28 @@ function setupCalcDrivenIntegerpairReplay(h) {
       '<form id="calc_replay">',
       '<input type="number" id="pair_rows" name="pair_rows" value="2">',
       '<input type="number" id="pair_cols" name="pair_cols" value="2">',
+      '<input type="text" id="pair_rows-row_label-0" name="pair_rows-row_label-0" value="default row 1">',
+      '<input type="text" id="pair_rows-row_label-1" name="pair_rows-row_label-1" value="default row 2">',
+      '<input type="text" id="pair_rows-row_label-2" name="pair_rows-row_label-2" value="default row 3">',
+      '<input type="text" id="pair_cols-column_label-0" name="pair_cols-column_label-0" value="default column 1">',
+      '<input type="text" id="pair_cols-column_label-1" name="pair_cols-column_label-1" value="default column 2">',
       '<input type="text" id="pair_grid" name="pair_grid" value="2,2">',
       '<div id="ga-repeater-pair_grid"></div>',
       '</form>',
     ].join(""),
     null
   );
-  ["pair_rows", "pair_cols", "pair_grid", "ga-repeater-pair_grid"].forEach((id) => {
+  [
+    "pair_rows",
+    "pair_cols",
+    "pair_rows-row_label-0",
+    "pair_rows-row_label-1",
+    "pair_rows-row_label-2",
+    "pair_cols-column_label-0",
+    "pair_cols-column_label-1",
+    "pair_grid",
+    "ga-repeater-pair_grid",
+  ].forEach((id) => {
     h.elements[id].parentId = mod;
   });
 
@@ -948,7 +966,19 @@ function setupCalcDrivenIntegerpairReplay(h) {
     json: {
       pair_rows: { id: "pair_rows", type: "integer" },
       pair_cols: { id: "pair_cols", type: "integer" },
-      pair_grid: { id: "pair_grid", type: "integerpair", calc: "pair_rows,pair_cols", repeater: "true" },
+      row_label: { id: "row_label", type: "text", repeat: "pair_rows" },
+      column_label: { id: "column_label", type: "text", repeat: "pair_cols" },
+      pair_grid: {
+        id: "pair_grid",
+        type: "integerpair",
+        calc: "pair_rows,pair_cols",
+        repeater: "true",
+        headers: {
+          corner: "row / column",
+          row: ["row_label"],
+          column: ["column_label"],
+        },
+      },
       pair_payload: { id: "pair_payload", type: "text", repeat: "pair_grid" },
     },
   };
@@ -989,6 +1019,11 @@ function runRepeaterReplayScenario(gaPath, moduleHtmlPath) {
   ga.valuen.input("calc_replay", {
     pair_rows: "3",
     pair_cols: "2",
+    "pair_rows-row_label-0": "sample A",
+    "pair_rows-row_label-1": "sample B",
+    "pair_rows-row_label-2": "sample C",
+    "pair_cols-column_label-0": "component alpha",
+    "pair_cols-column_label-1": "component beta",
     "pair_grid-pair_payload-0-0": "r1c1",
     "pair_grid-pair_payload-0-1": "r1c2",
     "pair_grid-pair_payload-1-0": "r2c1",
@@ -1004,6 +1039,11 @@ function runRepeaterReplayScenario(gaPath, moduleHtmlPath) {
   assert(h.element("pair_grid-pair_payload-1-1").value === "r2c2", "fourth matrix value should be restored");
   assert(h.element("pair_grid-pair_payload-2-0").value === "r3c1", "new matrix row first value should be restored");
   assert(h.element("pair_grid-pair_payload-2-1").value === "r3c2", "new matrix row second value should be restored");
+  assert(h.element("pair_grid-pair_payload-colh-0-0").html === "component alpha", "first matrix column header should use restored label source value");
+  assert(h.element("pair_grid-pair_payload-colh-0-1").html === "component beta", "second matrix column header should use restored label source value");
+  assert(h.element("pair_grid-pair_payload-rowh-0-2").html === "sample A", "first matrix row header should use restored label source value");
+  assert(h.element("pair_grid-pair_payload-rowh-1-2").html === "sample B", "second matrix row header should use restored label source value");
+  assert(h.element("pair_grid-pair_payload-rowh-2-2").html === "sample C", "third matrix row header should use restored label source value");
 }
 
 function runModuleSwitchReplayScenario(gaPath, moduleHtmlPath) {
