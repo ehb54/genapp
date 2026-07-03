@@ -1041,6 +1041,10 @@ function runRepeatConditionScenario(gaPath, moduleHtmlPath) {
   const h = loadGeneratedGa(gaPath, moduleHtmlPath);
   const ga = h.context.ga;
   const $ = h.context.$;
+  let processAllCalls = 0;
+  ga.calc.processall = function processall() {
+    processAllCalls += 1;
+  };
   const attachedId = (id) => {
     const mapped = ga.repeat && ga.repeat.map ? ga.repeat.map[id] : null;
     if (mapped && Object.prototype.hasOwnProperty.call(h.elements, mapped) && h.elements[mapped].parentId !== null) {
@@ -1068,14 +1072,18 @@ function runRepeatConditionScenario(gaPath, moduleHtmlPath) {
   ga.valuen.save("repeater_contract");
   assert(ga.valuen.data.repeater_contract.prediction_q[0] === "0.25", "visible inverse condition field should submit with its original id");
 
+  let callsBefore = processAllCalls;
   $("#use_experimental_data").prop("checked", true).trigger("change");
+  assert(processAllCalls - callsBefore === 1, "experimental checkbox should trigger one processall refresh");
   assert(!hasAttached("prediction_q"), "inverse condition field should hide when experimental mode is active");
   assert(!hasAttached("neutron_exp_file"), "neutron file should still wait for neutron checkbox");
   assert(hasAttached("experimental_file_type"), "file type chooser should appear when experimental mode is active");
   assert(!hasAttached("experimental_interpolation_method"), "interpolation method should wait for reduced file type");
 
+  callsBefore = processAllCalls;
   field("experimental_file_type").value = "reduced_experimental";
   triggerField("experimental_file_type", "change");
+  assert(processAllCalls - callsBefore === 1, "nested file type listbox should trigger one processall refresh");
   assert(hasAttached("experimental_interpolation_method"), "compound condition should notice a late-created listbox dependency");
   field("experimental_interpolation_method").value = "linear_I";
   ga.valuen.save("repeater_contract");

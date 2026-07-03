@@ -6,6 +6,7 @@ ga.repeat.data          = {};
 ga.repeat.map           = {};
 ga.repeat.pairupdateids = {};
 ga.repeat.valuestore    = {};
+ga.repeat.conditionProcessTimer = {};
 
 ga.repeat.isCondition = function( refid ) {
     return typeof refid === 'string' && /(^|[^A-Za-z0-9_:])!|&&|\|\||[()]/.test( refid );
@@ -43,6 +44,24 @@ ga.repeat.conditionDeps = function( expr ) {
         }
     });
     return Object.keys( deps );
+}
+
+ga.repeat.conditionProcessAll = function( mod, dep ) {
+    if ( ga.repeat.data[ mod ] &&
+         ga.repeat.data[ mod ].repeater &&
+         ga.repeat.data[ mod ].repeater[ dep ] ) {
+        return;
+    }
+    if ( !ga.calc || !ga.calc.processall ) {
+        return;
+    }
+    if ( ga.repeat.conditionProcessTimer[ mod ] ) {
+        clearTimeout( ga.repeat.conditionProcessTimer[ mod ] );
+    }
+    ga.repeat.conditionProcessTimer[ mod ] = setTimeout( function() {
+        delete ga.repeat.conditionProcessTimer[ mod ];
+        ga.calc.processall( mod );
+    }, 0 );
 }
 
 ga.repeat.conditionAtom = function( ref ) {
@@ -438,7 +457,7 @@ ga.repeat.conditionOn = function( mod, id, expr ) {
     deps.map( function( dep ) {
         $( '#' + dep ).on( 'change.ga-repeat-condition-' + mod + '-' + id, function() {
             ga.repeat.conditionChange( mod, id );
-            ga.calc.processall( mod );
+            ga.repeat.conditionProcessAll( mod, dep );
         });
     });
     ga.repeat.conditionChange( mod, id, true );
@@ -495,6 +514,7 @@ ga.repeat.conditionChange = function( mod, id, init ) {
     }
 
     ga.repeat.conditionSaveValues( mod, id );
+    condition.visible = show;
     if ( show ) {
         $( '#' + id + '-label-span' ).html( ga.repeat.data[ mod ].repeat[ id ].lhtml );
         html = ga.repeat.data[ mod ].repeat[ id ].dhtml;
@@ -512,7 +532,6 @@ ga.repeat.conditionChange = function( mod, id, init ) {
         $( '#' + id + '-span' ).html( '' );
     }
     ga.repeat.map[ id ] = id;
-    condition.visible = show;
     ga.hhelp.reset();
     return true;
 }
