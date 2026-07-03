@@ -49,9 +49,13 @@ ga.repeat.conditionAtom = function( ref ) {
     var parts = ref.split( ':' ),
         id = parts[ 0 ],
         choice = parts.length > 1 ? parts.slice( 1 ).join( ':' ) : null,
-        jq = $( '#' + id ),
+        mapped = ga.repeat.map[ id ],
+        jq = ( mapped && mapped !== id ) ? $( '#' + mapped ) : $( '#' + id ),
         ele;
 
+    if ( !jq.length && mapped && mapped !== id ) {
+        jq = $( '#' + id );
+    }
     if ( !jq.length ) {
         return false;
     }
@@ -886,6 +890,7 @@ ga.repeat.change = function( mod, id, init ) {
     ga.hhelp.reset();
 
     ga.repeat.restorevalues( mod, id );
+    ga.repeat.updateConditions( mod );
 }
 
 ga.repeat.map.convert = function( ids_array ) {

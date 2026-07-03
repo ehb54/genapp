@@ -35,6 +35,23 @@ ga.valuen.isRepeater = function( form, name, id, jqfield ) {
     );
 }
 
+ga.valuen.mappedDataName = function( form, data, name ) {
+    var base;
+    if ( ga.valuen.hasData( data, name ) ||
+         !ga.repeat ||
+         !ga.repeat.map ||
+         !ga.repeat.lastid ) {
+        return name;
+    }
+    base = ga.repeat.lastid( name );
+    if ( base !== name &&
+         ga.repeat.map[ base ] === name &&
+         ga.valuen.hasData( data, base ) ) {
+        return base;
+    }
+    return name;
+}
+
 ga.valuen.processCalcRepeaters = function( form, data ) {
     var calcs,
         id;
@@ -95,7 +112,8 @@ ga.valuen.restore = function( form, data, html ) {
             names,
             $this = $( this ),
             val,
-            found
+            found,
+            dataname
             ;
 
             if ( ga.valuen.isRepeater( form, this.name, this.id, $this ) &&
@@ -103,11 +121,12 @@ ga.valuen.restore = function( form, data, html ) {
                 __~debug:valuen{console.log( "ga.valuen.restore() repeater newly found: name " + this.name + "  nodename " + this.nodeName + " type " + this.type );}
                 repeaters[ this.name ] = true;
 
+                dataname = ga.valuen.mappedDataName( form, data, this.name );
                 if ( this.name && 
-                    ( ga.valuen.hasData( data, this.name ) ||
+                    ( ga.valuen.hasData( data, dataname ) ||
                        /checkbox|radio/i.test( this.type ) )
                    ) {
-                    names = data[ this.name ];
+                    names = data[ dataname ];
                     if( /checkbox|radio/i.test( this.type ) ) { 
                         val = $this.val();
                         found = false;
@@ -132,7 +151,7 @@ ga.valuen.restore = function( form, data, html ) {
                     els = jqhform.find(':input').get();
                     return false;  // "break" equivalent for jquery's $.each
                 } else {
-                    if ( !ga.valuen.hasData( data, this.name ) &&
+                    if ( !ga.valuen.hasData( data, dataname ) &&
                          !/checkbox|radio/i.test( this.type ) ) {
                         console.warn( "ga.valuen.restore() no data found for repeater setting value on " + this.name + " type " + this.type );
                     }
@@ -417,7 +436,8 @@ ga.valuen.input = function( form, data ) {
             names,
             $this = $( this ),
             val,
-            found
+            found,
+            dataname
             ;
 
             if ( ga.valuen.isRepeater( form, this.name, this.id, $this ) &&
@@ -425,11 +445,12 @@ ga.valuen.input = function( form, data ) {
                 __~debug:valuen{console.log( "ga.valuen.input() repeater newly found: name " + this.name + "  nodename " + this.nodeName + " type " + this.type );}
                 repeaters[ this.name ] = true;
 
+                dataname = ga.valuen.mappedDataName( form, data, this.name );
                 if ( this.name && 
-                    ( ga.valuen.hasData( data, this.name ) ||
+                    ( ga.valuen.hasData( data, dataname ) ||
                        /checkbox|radio/i.test( this.type ) )
                    ) {
-                    names = data[ this.name ];
+                    names = data[ dataname ];
                     names = ga.valuen.asArray( names );
                     if( /checkbox|radio/i.test( this.type ) ) { 
                         val = $this.val();
@@ -455,7 +476,7 @@ ga.valuen.input = function( form, data ) {
                     els = jqhform.find(':input').get();
                     return false;  // "break" equivalent for jquery's $.each
                 } else {
-                    if ( !ga.valuen.hasData( data, this.name ) &&
+                    if ( !ga.valuen.hasData( data, dataname ) &&
                          !/checkbox|radio/i.test( this.type ) ) {
                         console.warn( "ga.valuen.input() no data found for repeater setting value on " + this.name + " type " + this.type );
                     }

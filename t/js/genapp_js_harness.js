@@ -1041,23 +1041,53 @@ function runRepeatConditionScenario(gaPath, moduleHtmlPath) {
   const h = loadGeneratedGa(gaPath, moduleHtmlPath);
   const ga = h.context.ga;
   const $ = h.context.$;
-  const hasAttached = (id) => Object.prototype.hasOwnProperty.call(h.elements, id) && h.elements[id].parentId !== null;
+  const attachedId = (id) => {
+    const mapped = ga.repeat && ga.repeat.map ? ga.repeat.map[id] : null;
+    if (mapped && Object.prototype.hasOwnProperty.call(h.elements, mapped) && h.elements[mapped].parentId !== null) {
+      return mapped;
+    }
+    if (Object.prototype.hasOwnProperty.call(h.elements, id) && h.elements[id].parentId !== null) {
+      return id;
+    }
+    return null;
+  };
+  const hasAttached = (id) => attachedId(id) !== null;
+  const field = (id) => h.element(attachedId(id) || id);
+  const triggerField = (id, event) => {
+    const rendered = attachedId(id) || id;
+    $(`#${rendered}`).trigger(event);
+  };
 
   assert(hasAttached("prediction_q"), "inverse condition field should be visible when experimental mode is off");
   assert(!hasAttached("neutron_exp_file"), "neutron file should be hidden until both experimental and neutron are active");
   assert(!hasAttached("xray_exp_file"), "x-ray file should be hidden until both experimental and x-ray are active");
+  assert(!hasAttached("experimental_file_type"), "file type chooser should be hidden until experimental mode is active");
+  assert(!hasAttached("experimental_interpolation_method"), "interpolation method should be hidden until reduced data is selected");
 
-  h.element("prediction_q").value = "0.25";
+  field("prediction_q").value = "0.25";
   ga.valuen.save("repeater_contract");
   assert(ga.valuen.data.repeater_contract.prediction_q[0] === "0.25", "visible inverse condition field should submit with its original id");
 
   $("#use_experimental_data").prop("checked", true).trigger("change");
   assert(!hasAttached("prediction_q"), "inverse condition field should hide when experimental mode is active");
   assert(!hasAttached("neutron_exp_file"), "neutron file should still wait for neutron checkbox");
+  assert(hasAttached("experimental_file_type"), "file type chooser should appear when experimental mode is active");
+  assert(!hasAttached("experimental_interpolation_method"), "interpolation method should wait for reduced file type");
+
+  field("experimental_file_type").value = "reduced_experimental";
+  triggerField("experimental_file_type", "change");
+  assert(hasAttached("experimental_interpolation_method"), "compound condition should notice a late-created listbox dependency");
+  field("experimental_interpolation_method").value = "linear_I";
+  ga.valuen.save("repeater_contract");
+  assert(ga.valuen.data.repeater_contract.experimental_interpolation_method[0] === "linear_I", "late-created listbox condition field should submit with its original id");
+
+  field("experimental_file_type").value = "sassie_interpolated";
+  triggerField("experimental_file_type", "change");
+  assert(!hasAttached("experimental_interpolation_method"), "interpolation method should hide again when reduced file type is cleared");
 
   $("#neutron_checkbox").prop("checked", true).trigger("change");
   assert(hasAttached("neutron_exp_file"), "compound neutron condition should show when both checkboxes are active");
-  h.element("neutron_exp_file").value = "neutron_loaded.dat";
+  field("neutron_exp_file").value = "neutron_loaded.dat";
   ga.valuen.save("repeater_contract");
   assert(ga.valuen.data.repeater_contract.neutron_exp_file[0] === "neutron_loaded.dat", "compound condition field should submit with its original id");
 
@@ -1071,13 +1101,17 @@ function runRepeatConditionScenario(gaPath, moduleHtmlPath) {
 
   ga.valuen.input("repeater_contract", {
     use_experimental_data: [""],
+    experimental_file_type: ["reduced_experimental"],
+    experimental_interpolation_method: ["pchip_logI"],
     neutron_checkbox: [""],
     neutron_exp_file: ["restored_neutron.dat"],
   });
   assert(h.element("use_experimental_data").checked === true, "input replay should restore experimental checkbox");
   assert(h.element("neutron_checkbox").checked === true, "input replay should restore neutron checkbox");
+  assert(hasAttached("experimental_interpolation_method"), "input replay should show late-created listbox condition field");
+  assert(field("experimental_interpolation_method").value === "pchip_logI", "input replay should restore late-created listbox condition value");
   assert(hasAttached("neutron_exp_file"), "input replay should show compound condition field after restoring dependencies");
-  assert(h.element("neutron_exp_file").value === "restored_neutron.dat", "input replay should restore compound condition field value");
+  assert(field("neutron_exp_file").value === "restored_neutron.dat", "input replay should restore compound condition field value");
 }
 
 const command = process.argv[2];

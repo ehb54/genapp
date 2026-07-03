@@ -70,7 +70,8 @@
             "id"      : "use_experimental_data",
             "label"   : "Use Experimental Data",
             "type"    : "checkbox",
-            "checked" : "false"
+            "checked" : "false",
+            "repeater" : "true"
         },
         {
             "role"    : "input",
@@ -109,6 +110,25 @@
             "type"    : "text",
             "default" : "xray.dat",
             "repeat"  : "use_experimental_data && xray_checkbox"
+        },
+        {
+            "role"     : "input",
+            "id"       : "experimental_file_type",
+            "label"    : "Experimental File Type",
+            "type"     : "listbox",
+            "values"   : "Interpolated~sassie_interpolated~Reduced~reduced_experimental",
+            "default"  : "sassie_interpolated",
+            "repeater" : "true",
+            "repeat"   : "use_experimental_data"
+        },
+        {
+            "role"    : "input",
+            "id"      : "experimental_interpolation_method",
+            "label"   : "Experimental Interpolation Method",
+            "type"    : "listbox",
+            "values"  : "PCHIP log I~pchip_logI~Linear I~linear_I",
+            "default" : "pchip_logI",
+            "repeat"  : "use_experimental_data && experimental_file_type:reduced_experimental"
         },
         {
             "role"    : "input",
