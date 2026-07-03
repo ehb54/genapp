@@ -1039,7 +1039,8 @@ code {
   font-weight: 700;
 }
 
-.ui2-server-file-list {
+.ui2-server-file-list,
+.ui2-server-file-tree {
   display: grid;
   gap: 0.35rem;
   max-height: min(32rem, 58vh);
@@ -1070,6 +1071,130 @@ code {
 
 .ui2-server-file-folder {
   font-weight: 700;
+}
+
+.ui2-server-tree-group,
+.ui2-server-tree-children {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.ui2-server-tree-children {
+  margin-top: 0.18rem;
+}
+
+.ui2-server-tree-item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1.25rem 1rem 1.25rem minmax(10rem, max-content) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ui2-text);
+  cursor: pointer;
+  font: inherit;
+  padding: 0.38rem 0.5rem;
+  text-align: left;
+}
+
+.ui2-server-tree-item:hover,
+.ui2-server-tree-node[aria-selected="true"] > .ui2-server-tree-item {
+  border-color: var(--ui2-accent);
+  background: var(--ui2-accent-soft);
+  color: var(--ui2-accent-strong);
+}
+
+.ui2-server-tree-disclosure,
+.ui2-file-disclosure {
+  color: var(--ui2-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  text-align: center;
+}
+
+.ui2-server-tree-checkbox {
+  width: 0.82rem;
+  height: 0.82rem;
+  border: 1px solid var(--ui2-border-strong);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--ui2-bg) 80%, white);
+}
+
+.ui2-server-tree-unselectable > .ui2-server-tree-item .ui2-server-tree-checkbox {
+  opacity: 0;
+}
+
+.ui2-server-tree-node[aria-selected="true"] > .ui2-server-tree-item .ui2-server-tree-checkbox {
+  border-color: var(--ui2-accent);
+  background: var(--ui2-accent);
+  box-shadow: inset 0 0 0 2px var(--ui2-bg);
+}
+
+.ui2-server-tree-folder {
+  font-weight: 700;
+}
+
+.ui2-server-tree-icon,
+.ui2-file-icon {
+  position: relative;
+  display: inline-block;
+  width: 1.05rem;
+  height: 0.9rem;
+  border: 1px solid var(--ui2-border-strong);
+  background: color-mix(in srgb, var(--ui2-muted) 26%, var(--ui2-panel));
+}
+
+.ui2-server-tree-icon-folder,
+.ui2-file-icon-folder {
+  border-radius: 2px;
+}
+
+.ui2-server-tree-icon-folder::before,
+.ui2-file-icon-folder::before {
+  content: "";
+  position: absolute;
+  left: 0.08rem;
+  top: -0.22rem;
+  width: 0.46rem;
+  height: 0.22rem;
+  border: 1px solid var(--ui2-border-strong);
+  border-bottom: 0;
+  border-radius: 2px 2px 0 0;
+  background: inherit;
+}
+
+.ui2-server-tree-icon-file,
+.ui2-file-icon-file {
+  border-radius: 1px;
+}
+
+.ui2-server-tree-icon-file::before,
+.ui2-file-icon-file::before {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: -1px;
+  width: 0.32rem;
+  height: 0.32rem;
+  border-left: 1px solid var(--ui2-border-strong);
+  border-bottom: 1px solid var(--ui2-border-strong);
+  background: var(--ui2-panel-soft);
+}
+
+.ui2-server-tree-details {
+  color: var(--ui2-muted);
+  font-size: 0.92em;
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui2-server-tree-empty {
+  color: var(--ui2-muted);
+  padding: 0.35rem 0.5rem 0.35rem 3.6rem;
 }
 
 .ui2-system-tool .ui2-section-body {
@@ -1214,6 +1339,36 @@ code {
   border-color: var(--ui2-accent);
   color: var(--ui2-accent-strong);
   outline: none;
+}
+
+.ui2-file-manager-name {
+  white-space: nowrap;
+}
+
+.ui2-file-disclosure {
+  appearance: none;
+  width: 1.25rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  margin-right: 0.25rem;
+  padding: 0;
+}
+
+.ui2-file-disclosure:hover,
+.ui2-file-disclosure:focus-visible {
+  color: var(--ui2-accent-strong);
+  outline: none;
+}
+
+.ui2-file-disclosure-spacer {
+  display: inline-block;
+}
+
+.ui2-file-icon {
+  margin-right: 0.45rem;
+  vertical-align: -0.08rem;
 }
 
 .ui2-tool-actions {

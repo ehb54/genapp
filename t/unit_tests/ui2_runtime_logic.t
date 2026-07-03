@@ -272,6 +272,17 @@ vm.runInContext(source, context, { filename: "ui2.js" });
 const hooks = context.window.GenAppUi2TestHooks;
 assert(hooks, "test hooks were exposed");
 
+const folderEntry = { id: btoa("./project"), text: "project", children: true };
+const fileEntry = { id: btoa("./project/input.pdb"), text: "input.pdb | 1.2Mb | 2026 Jul 03 12:00:00 UTC" };
+assert.strictEqual(hooks.serverFileEntryIsFolder(folderEntry), true, "UI2 recognizes server folder entries");
+assert.strictEqual(hooks.serverFileEntryIsFolder(fileEntry), false, "UI2 recognizes server file entries");
+assert.strictEqual(hooks.serverFileTreeSelectable(folderEntry, "lrfile"), false, "UI2 lrfile chooser does not select folders");
+assert.strictEqual(hooks.serverFileTreeSelectable(fileEntry, "lrfile"), true, "UI2 lrfile chooser selects file leaves");
+assert.strictEqual(hooks.serverFileTreeSelectable(folderEntry, "rpath"), true, "UI2 rpath chooser selects folders");
+assert.strictEqual(hooks.serverFileTreeSelectable(fileEntry, "rpath"), false, "UI2 rpath chooser does not select file leaves");
+assert.strictEqual(hooks.fileEntryName(fileEntry), "input.pdb", "UI2 server file tree strips metadata from the visible file name");
+assert.strictEqual(hooks.fileEntryDetails(fileEntry), "1.2Mb | 2026 Jul 03 12:00:00 UTC", "UI2 server file tree preserves file metadata separately");
+
 function conditionRow(id, type, value) {
   const row = createNode("div");
   row.className = "ui2-field";

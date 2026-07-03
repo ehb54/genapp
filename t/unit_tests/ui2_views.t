@@ -93,6 +93,10 @@ like( $ui2_js, qr/function jobReferenceModule\(job, columns\)/, 'ui2 reference j
 like( $ui2_js, qr/sort\(\(left, right\) => jobReferenceStartSeconds\(right, columns\) - jobReferenceStartSeconds\(left, columns\)\)/, 'ui2 reference job chooser sorts jobs newest first like legacy jstree' );
 like( $ui2_js, qr/function jobReferenceTimeLabel\(job, columns\).*?getUTCHours\(\).*?UTC/s, 'ui2 reference job leaf labels use legacy UTC time-of-day text' );
 like( $ui2_js, qr/formData\.append\(input\.name, input\.value\)/, 'ui2 submits selected reference jobs through legacy *_altval array fields' );
+like( $ui2_js, qr/function renderServerFileTree\(entries, container, options\)/, 'ui2 server file chooser uses a tree renderer' );
+like( $ui2_js, qr/function renderServerFileTreeNode\(entry, options, depth\)/, 'ui2 server file chooser renders folder and file tree nodes' );
+like( $ui2_js, qr/function serverFileTreeSelectable\(entry, mode\)/, 'ui2 server file chooser centralizes rfile/lrfile/rpath selectability' );
+like( $ui2_js, qr/function renderFileManagerNameCell\(row, entry, depth, isFolder\)/, 'ui2 File Manager shares legacy-style file and folder row labeling' );
 like( $ui2_js, qr/function isDynamicOutputField\(field\)/, 'ui2 runtime detects legacy dynamic output declarations' );
 like( $ui2_js, qr/role === "output" && isDynamicOutputField\(field\).*?row\.hidden = true/s, 'ui2 dynamic output rows are hidden until runtime data arrives' );
 like( $ui2_js, qr/function updateDynamicOutput\(group, payload\).*?updateOutputElement\(output, item\.value\)/s, 'ui2 dynamic output children reuse normal output rendering' );
@@ -262,6 +266,10 @@ like( $ui2_css, qr/\.ui2-field\[hidden\],[\s\n]*\.ui2-dynamic-output-row\[hidden
 like( $ui2_css, qr/\.ui2-output-rendered/, 'ui2 stylesheet distinguishes rendered runtime output from placeholders' );
 like( $ui2_css, qr/\.ui2-output-field/, 'ui2 stylesheet lets output rows use the full default width' );
 like( $ui2_css, qr/\.ui2-mini-button/, 'ui2 stylesheet includes compact system action buttons' );
+like( $ui2_css, qr/\.ui2-server-file-tree/, 'ui2 stylesheet includes a legacy-style server file tree' );
+like( $ui2_css, qr/\.ui2-server-tree-checkbox/, 'ui2 stylesheet includes selectable server tree checkbox affordances' );
+like( $ui2_css, qr/\.ui2-server-tree-icon-folder/, 'ui2 stylesheet distinguishes server folders from files' );
+like( $ui2_css, qr/\.ui2-file-disclosure/, 'ui2 stylesheet includes File Manager disclosure controls' );
 like( $ui2_css, qr/\.ui2-file-download-links/, 'ui2 stylesheet makes File Manager download links visible beside actions' );
 like( $ui2_css, qr/\.ui2-module-strip\[hidden\]\s*\{\s*display:\s*none;/s, 'ui2 stylesheet honors hidden module choice strips' );
 like( $ui2_css, qr/\.ui2-strip-module-button/, 'ui2 stylesheet includes selected menu module strip buttons' );

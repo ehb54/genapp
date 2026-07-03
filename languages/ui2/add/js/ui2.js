@@ -1815,8 +1815,8 @@
     header.append(title, close);
 
     const path = el("div", "ui2-server-path", "User files");
-    const list = el("div", "ui2-server-file-list");
-    list.setAttribute("role", "listbox");
+    const list = el("div", "ui2-server-file-tree");
+    list.setAttribute("role", "tree");
     const status = el("div", "ui2-submit-status", "Loading server files...");
     const actions = el("div", "ui2-dialog-actions");
     const choose = el("button", "ui2-button", "Select");
@@ -1828,7 +1828,10 @@
     actions.append(choose, cancel);
 
     let selected = null;
-    const load = async (dirId) => {
+    const load = async (dirId, loadOptions) => {
+      if (loadOptions?.inline) {
+        return fetchServerFileEntries(dirId);
+      }
       status.textContent = "Loading server files...";
       status.dataset.status = "";
       list.innerHTML = "";
@@ -1837,14 +1840,20 @@
       try {
         const entries = await fetchServerFileEntries(dirId);
         path.textContent = dirId && dirId !== "#" ? `User files / ${decodeServerFileId(dirId)}` : "User files";
-        renderServerFileEntries(entries, list, field, load, (entry) => {
-          selected = entry;
-          choose.disabled = false;
+        renderServerFileTree(entries, list, {
+          mode: serverFileType(field),
+          load,
+          selectEntry: (entry) => {
+            selected = entry;
+            choose.disabled = false;
+          }
         });
         status.textContent = entries.length ? "Choose a server file." : "No files found here.";
+        return entries;
       } catch (error) {
         status.textContent = error.message;
         status.dataset.status = "error";
+        return [];
       }
     };
 
@@ -1880,32 +1889,106 @@
     return Array.isArray(payload) ? payload : [];
   }
 
-  function renderServerFileEntries(entries, list, field, load, selectEntry) {
-    entries.forEach((entry) => {
-      const isFolder = entry.children === true;
-      const allowed = isFolder ? serverFileType(field) === "rpath" : serverFileType(field) !== "rpath";
-      const row = el("button", `ui2-server-file-row${isFolder ? " ui2-server-file-folder" : ""}`, "");
-      row.type = "button";
-      row.dataset.id = entry.id || "";
-      row.setAttribute("role", "option");
-      row.textContent = `${isFolder ? "Folder" : "File"} ${stripHtml(entry.text) || decodeServerFileId(entry.id || "")}`;
-      row.addEventListener("click", () => {
-        if (isFolder && serverFileType(field) !== "rpath") {
-          load(entry.id);
-          return;
-        }
-        if (!allowed) {
-          return;
-        }
-        list.querySelectorAll(".ui2-server-file-row").forEach((item) => item.setAttribute("aria-selected", "false"));
+  function renderServerFileTree(entries, container, options) {
+    container.innerHTML = "";
+    const group = el("div", "ui2-server-tree-group");
+    group.setAttribute("role", "group");
+    entries.forEach((entry) => group.appendChild(renderServerFileTreeNode(entry, options, 0)));
+    container.appendChild(group);
+  }
+
+  function renderServerFileTreeNode(entry, options, depth) {
+    const isFolder = serverFileEntryIsFolder(entry);
+    const mode = String(options?.mode || "rfile").toLowerCase();
+    const selectable = serverFileTreeSelectable(entry, mode);
+    const row = el("div", `ui2-server-tree-node${isFolder ? " ui2-server-tree-folder" : " ui2-server-tree-file"}`);
+    row.dataset.id = entry.id || "";
+    row.dataset.depth = String(depth || 0);
+    row.setAttribute("role", "treeitem");
+    row.setAttribute("aria-selected", "false");
+    if (isFolder) {
+      row.setAttribute("aria-expanded", "false");
+    }
+    if (!selectable) {
+      row.classList.add("ui2-server-tree-unselectable");
+    }
+
+    const item = el("button", "ui2-server-tree-item", "");
+    item.type = "button";
+    item.style.paddingLeft = `${0.3 + depth * 1.15}rem`;
+
+    const disclosure = el("span", "ui2-server-tree-disclosure", isFolder ? ">" : "");
+    disclosure.setAttribute("aria-hidden", "true");
+    const checkbox = document.createElement("span");
+    checkbox.className = "ui2-server-tree-checkbox";
+    checkbox.setAttribute("aria-hidden", "true");
+    const icon = el("span", `ui2-server-tree-icon ${isFolder ? "ui2-server-tree-icon-folder" : "ui2-server-tree-icon-file"}`, "");
+    icon.setAttribute("aria-hidden", "true");
+    const name = el("span", "ui2-server-tree-name", fileEntryName(entry));
+    const details = el("span", "ui2-server-tree-details", fileEntryDetails(entry));
+    item.append(disclosure, checkbox, icon, name);
+    if (details.textContent) {
+      item.append(details);
+    }
+
+    const children = el("div", "ui2-server-tree-children");
+    children.setAttribute("role", "group");
+    children.hidden = true;
+
+    item.addEventListener("click", async () => {
+      if (selectable) {
+        const root = row.closest(".ui2-server-file-tree");
+        root?.querySelectorAll(".ui2-server-tree-node[aria-selected='true']").forEach((selected) => selected.setAttribute("aria-selected", "false"));
         row.setAttribute("aria-selected", "true");
-        selectEntry(entry);
-      });
-      if (isFolder) {
-        row.addEventListener("dblclick", () => load(entry.id));
+        options?.selectEntry?.(entry);
       }
-      list.appendChild(row);
+      if (isFolder) {
+        await toggleServerFileTreeNode(row, entry, options, depth, children, disclosure);
+      }
     });
+
+    row.append(item, children);
+    return row;
+  }
+
+  async function toggleServerFileTreeNode(row, entry, options, depth, children, disclosure) {
+    const expanded = row.getAttribute("aria-expanded") === "true";
+    if (expanded) {
+      row.setAttribute("aria-expanded", "false");
+      disclosure.textContent = ">";
+      children.hidden = true;
+      return;
+    }
+    row.setAttribute("aria-expanded", "true");
+    disclosure.textContent = "v";
+    children.hidden = false;
+    if (children.dataset.loaded === "true") {
+      return;
+    }
+    children.textContent = "Loading...";
+    try {
+      const childEntries = await options?.load?.(entry.id, { inline: true });
+      children.innerHTML = "";
+      (childEntries || []).forEach((child) => children.appendChild(renderServerFileTreeNode(child, options, depth + 1)));
+      if (!childEntries?.length) {
+        children.appendChild(el("div", "ui2-server-tree-empty", "No files found here."));
+      }
+      children.dataset.loaded = "true";
+    } catch (error) {
+      children.textContent = error.message;
+    }
+  }
+
+  function serverFileTreeSelectable(entry, mode) {
+    const isFolder = serverFileEntryIsFolder(entry);
+    if (mode === "rpath") {
+      return isFolder;
+    }
+    return !isFolder;
+  }
+
+  function serverFileEntryIsFolder(entry) {
+    return entry?.children === true;
   }
 
   function fileDialogTitle(field) {
@@ -3418,16 +3501,7 @@
     selectCell.appendChild(checkbox);
     row.appendChild(selectCell);
 
-    const nameCell = el("td", null, "");
-    nameCell.style.paddingLeft = `${0.65 + depth * 1.25}rem`;
-    if (isFolder) {
-      const expand = el("button", "ui2-mini-button", "Open");
-      expand.type = "button";
-      expand.addEventListener("click", () => toggleFileManagerFolder(row, entry, depth));
-      nameCell.append(expand, document.createTextNode(` ${fileEntryName(entry)}`));
-    } else {
-      nameCell.textContent = fileEntryName(entry);
-    }
+    const nameCell = renderFileManagerNameCell(row, entry, depth, isFolder);
     row.appendChild(nameCell);
     row.appendChild(el("td", null, fileEntryDetails(entry)));
     tbody.appendChild(row);
@@ -3442,11 +3516,15 @@
     removeFileManagerChildren(row);
     if (expanded) {
       row.dataset.expanded = "false";
-      row.querySelector("button")?.replaceChildren("Open");
+      const button = row.querySelector(".ui2-file-disclosure");
+      button?.replaceChildren(">");
+      button?.setAttribute("aria-label", `Open ${fileEntryName(entry)}`);
       return;
     }
     row.dataset.expanded = "true";
-    row.querySelector("button")?.replaceChildren("Close");
+    const button = row.querySelector(".ui2-file-disclosure");
+    button?.replaceChildren("v");
+    button?.setAttribute("aria-label", `Close ${fileEntryName(entry)}`);
     try {
       const children = await fetchServerFileEntries(entry.id);
       let anchor = row;
@@ -3476,19 +3554,25 @@
     checkbox.dataset.fileSelect = "1";
     selectCell.appendChild(checkbox);
     row.appendChild(selectCell);
-    const nameCell = el("td", null, "");
-    nameCell.style.paddingLeft = `${0.65 + depth * 1.25}rem`;
-    if (isFolder) {
-      const expand = el("button", "ui2-mini-button", "Open");
-      expand.type = "button";
-      expand.addEventListener("click", () => toggleFileManagerFolder(row, entry, depth));
-      nameCell.append(expand, document.createTextNode(` ${fileEntryName(entry)}`));
-    } else {
-      nameCell.textContent = fileEntryName(entry);
-    }
+    const nameCell = renderFileManagerNameCell(row, entry, depth, isFolder);
     row.appendChild(nameCell);
     row.appendChild(el("td", null, fileEntryDetails(entry)));
     anchor.after(row);
+  }
+
+  function renderFileManagerNameCell(row, entry, depth, isFolder) {
+    const nameCell = el("td", "ui2-file-manager-name", "");
+    nameCell.style.paddingLeft = `${0.65 + depth * 1.25}rem`;
+    if (isFolder) {
+      const expand = el("button", "ui2-file-disclosure", ">");
+      expand.type = "button";
+      expand.setAttribute("aria-label", `Open ${fileEntryName(entry)}`);
+      expand.addEventListener("click", () => toggleFileManagerFolder(row, entry, depth));
+      nameCell.append(expand, el("span", "ui2-file-icon ui2-file-icon-folder", ""), el("span", null, fileEntryName(entry)));
+    } else {
+      nameCell.append(el("span", "ui2-file-disclosure ui2-file-disclosure-spacer", ""), el("span", "ui2-file-icon ui2-file-icon-file", ""), el("span", null, fileEntryName(entry)));
+    }
+    return nameCell;
   }
 
   function removeFileManagerChildren(row) {
@@ -5827,6 +5911,10 @@
       moduleSubmitEndpointFor,
       buildSubmitFormData,
       serverSelectionDisplayPath,
+      serverFileTreeSelectable,
+      serverFileEntryIsFolder,
+      fileEntryName,
+      fileEntryDetails,
       dynamicOutputItems,
       mergeSavedInputPayloads,
       menuVisibleForSession,
