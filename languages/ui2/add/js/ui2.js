@@ -2620,7 +2620,7 @@
     const rawValues = collectControlValues(form, () => true);
     const activeRows = evaluateRepeatVisibility(form, rawValues);
     updateRepeats(form, activeRows, rawValues);
-    updateRepeatTables(form, rawValues);
+    updateRepeatTables(form, rawValues, activeRows);
     return collectControlValues(form, (control) => {
       const row = control.closest(".ui2-field");
       return !row || activeRows.get(row) !== false;
@@ -3865,7 +3865,7 @@
     const rawValues = collectControlValues(form, () => true);
     const activeRows = evaluateRepeatVisibility(form, rawValues);
     updateRepeats(form, activeRows, rawValues);
-    updateRepeatTables(form, rawValues);
+    updateRepeatTables(form, rawValues, activeRows);
     state.values = collectControlValues(form, (control) => {
       const row = control.closest(".ui2-field");
       return !row || activeRows.get(row) !== false;
@@ -5270,7 +5270,7 @@
     });
   }
 
-  function updateRepeatTables(scope, rawValues) {
+  function updateRepeatTables(scope, rawValues, activeRows) {
     scope.querySelectorAll(".ui2-tableized-repeater").forEach((row) => {
       const controller = row._ui2RepeatTableController;
       const fields = row._ui2RepeatTableFields || [];
@@ -5281,14 +5281,15 @@
       if (!controller || !fields.length) {
         return;
       }
+      const controllerActive = !activeRows || activeRows.get(row) !== false;
       if (matrix && matrix._ui2RepeatMatrixField) {
         const table = matrix.querySelector(".ui2-matrix-table");
         if (table) {
-          renderRepeatMatrixTable(table, controller, matrix._ui2RepeatMatrixField, rawValues, dimensionsFromController(controller, rawValues));
+          renderRepeatMatrixTable(table, controller, matrix._ui2RepeatMatrixField, rawValues, controllerActive ? dimensionsFromController(controller, rawValues) : [0, 0]);
         }
         return;
       }
-      const wanted = repeatCount(controller, rawValues[controller.id]);
+      const wanted = controllerActive ? repeatCount(controller, rawValues[controller.id]) : 0;
       if (listField && listBody) {
         while (listBody.children.length < wanted) {
           listBody.appendChild(renderRepeatListRow(listField, listBody.children.length));
@@ -5492,6 +5493,12 @@
     if (field.required === "true" || field.required === true) {
       control.required = true;
     }
+    if (field.min != null && field.min !== "") {
+      control.min = field.min;
+    }
+    if (field.max != null && field.max !== "") {
+      control.max = field.max;
+    }
     if (field.pattern) {
       control.pattern = field.pattern;
       if (field.patternmessage) {
@@ -5513,6 +5520,12 @@
     }
     if (field.required === "true" || field.required === true) {
       control.required = true;
+    }
+    if (field.min != null && field.min !== "") {
+      control.min = field.min;
+    }
+    if (field.max != null && field.max !== "") {
+      control.max = field.max;
     }
     if (field.pattern) {
       control.pattern = field.pattern;
@@ -5710,10 +5723,13 @@
 
   function repeatCount(controller, value) {
     const hasMin = controller.min != null && controller.min !== "";
+    const hasMax = controller.max != null && controller.max !== "";
     const min = hasMin ? integerValue(controller.min, 0) : 1;
+    const max = hasMax ? Math.max(min, integerValue(controller.max, min)) : null;
     const fallback = integerValue(controller.default, min);
     const parsed = integerValue(value, fallback);
-    return Math.max(min, parsed);
+    const bounded = Math.max(min, parsed);
+    return max == null ? bounded : Math.min(max, bounded);
   }
 
   function dimensionsFromController(controller, rawValues) {
@@ -5944,6 +5960,8 @@
       repeatConditionDeps,
       repeatConditionValue,
       repeatControllerId,
+      repeatCount,
+      updateRepeatTables,
       applyRuntimePayload,
       applyInputPayload,
       applySavedJobInput,

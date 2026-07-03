@@ -62,6 +62,14 @@ function createNode(tag) {
       this.children.push(child);
       return child;
     },
+    removeChild(child) {
+      const index = this.children.indexOf(child);
+      if (index >= 0) {
+        this.children.splice(index, 1);
+        child.parentNode = null;
+      }
+      return child;
+    },
     append(...children) {
       children.forEach((child) => {
         child.parentNode = this;
@@ -110,6 +118,9 @@ function createNode(tag) {
     },
     get innerText() {
       return this.textContent;
+    },
+    get lastElementChild() {
+      return this.children.length ? this.children[this.children.length - 1] : null;
     }
   };
   return node;
@@ -320,6 +331,16 @@ assert.strictEqual(
   "mode",
   "UI2 keeps legacy repeat choice controller ids"
 );
+assert.strictEqual(
+  hooks.repeatCount({ min: 1, max: 2, default: 1 }, 5),
+  2,
+  "UI2 repeat counts honor a controller max when one is declared"
+);
+assert.strictEqual(
+  hooks.repeatCount({ min: 1, default: 1 }, 5),
+  5,
+  "UI2 repeat counts remain open-ended when a controller max is not declared"
+);
 
 const useExperimentalRow = conditionRow("use_experimental_data", "checkbox", true);
 const neutronRow = conditionRow("neutron_checkbox", "checkbox", false);
@@ -382,6 +403,37 @@ assert.strictEqual(
   hooks.repeatConditionValue("use_experimental_data && (xray_checkbox", conditionValues, activeConditionRows, conditionRowsById),
   false,
   "UI2 fails closed on malformed repeat condition expressions"
+);
+
+const repeatScope = createNode("form");
+const repeatRow = createNode("div");
+repeatRow.className = "ui2-field ui2-tableized-repeater";
+repeatRow._ui2RepeatTableController = { id: "xray_experimental_number_contrast_points", min: 1, default: 1 };
+repeatRow._ui2RepeatTableFields = [{ id: "xray_experimental_data_file_array", type: "text", label: "X-ray experimental data file" }];
+repeatRow._ui2RepeatListField = repeatRow._ui2RepeatTableFields[0];
+const repeatListBody = createNode("div");
+repeatListBody.className = "ui2-repeat-list-body";
+repeatRow.appendChild(repeatListBody);
+repeatScope.appendChild(repeatRow);
+hooks.updateRepeatTables(
+  repeatScope,
+  { xray_experimental_number_contrast_points: 2 },
+  new Map([[repeatRow, true]])
+);
+assert.strictEqual(
+  repeatListBody.children.length,
+  2,
+  "UI2 builds repeated file rows while the compound controller is active"
+);
+hooks.updateRepeatTables(
+  repeatScope,
+  { xray_experimental_number_contrast_points: 2 },
+  new Map([[repeatRow, false]])
+);
+assert.strictEqual(
+  repeatListBody.children.length,
+  0,
+  "UI2 clears repeated file rows when the compound controller becomes inactive"
 );
 
 const outputSection = createNode("section");
