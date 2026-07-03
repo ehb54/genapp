@@ -4007,7 +4007,8 @@
   }
 
   function appendServerSelection(formData, selection) {
-    if (!selection?.id || !selection.encodedPath) {
+    const field = moduleFieldById(selection?.id);
+    if (!selection?.id || !selection.encodedPath || !fieldIsFileLike(field)) {
       return;
     }
     formData.delete(selection.id);
@@ -4369,6 +4370,10 @@
         return;
       }
       const id = match[1];
+      const field = moduleFieldById(id);
+      if (!fieldIsFileLike(field)) {
+        return;
+      }
       const altId = stringValue(firstValue(altField)) || `${id}_altval`;
       const encodedPath = stringValue(firstValue(inputs[altId] ?? inputs[`${id}_altval`]));
       if (!encodedPath) {
@@ -4389,7 +4394,7 @@
         return;
       }
       const encodedPath = stringValue(firstValue(value));
-      if (!encodedPath || !moduleFieldById(id)) {
+      if (!encodedPath || !fieldIsFileLike(moduleFieldById(id))) {
         return;
       }
       restoreServerSelection(id, encodedPath, stringValue(inputs[`_html_${key}`]));
@@ -4397,7 +4402,10 @@
   }
 
   function restoreServerSelection(id, encodedPath, displayHtml) {
-    const field = moduleFieldById(id) || { id, type: "file" };
+    const field = moduleFieldById(id);
+    if (!fieldIsFileLike(field)) {
+      return;
+    }
     const path = serverSelectionDisplayPath(encodedPath, displayHtml);
     setServerSelection(field, null, { id: encodedPath });
     const keyName = serverSelectionKey(field, null);
@@ -5781,6 +5789,10 @@
 
   function isFileLikeType(type) {
     return ["file", "lrfile", "rfile", "ftree", "rpath"].includes(String(type || "").toLowerCase());
+  }
+
+  function fieldIsFileLike(field) {
+    return Boolean(field?.id) && isFileLikeType(field.type);
   }
 
   function fileModes(type) {

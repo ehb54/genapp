@@ -1002,6 +1002,58 @@ assert.strictEqual(
   "attach replay restores server selection payloads without the selected-alt marker"
 );
 
+const dcdTextControl = {
+  type: "text",
+  value: "run_0.dcd",
+  dataset: { fieldId: "dcdfile" },
+  closest(selector) {
+    return selector === "#ui2-form" ? {} : null;
+  },
+  dispatchEvent(event) {
+    this.lastEvent = event.type;
+  }
+};
+document.querySelectorAll = (selector) => (
+  selector === "[data-field-id=\\"dcdfile\\"]" ? [dcdTextControl] : []
+);
+hooks.state.module = {
+  fields: [
+    { id: "dcdfile", type: "text" }
+  ]
+};
+hooks.state.serverSelections = {};
+hooks.applyInputPayload({
+  dcdfile: "run_0.dcd",
+  _selaltval_dcdfile: "dcdfile_altval",
+  dcdfile_altval: ["Li9oaXYxX2dhZ19jaGFybW0yNy5wZGI="],
+  _html_dcdfile_altval: "<i>Server</i>: hiv1_gag_charmm27.pdb"
+});
+assert.strictEqual(dcdTextControl.value, "run_0.dcd", "attach replay leaves MMC dcdfile text outputs as plain text");
+assert.strictEqual(
+  hooks.state.serverSelections["dcdfile:"],
+  undefined,
+  "attach replay does not restore server selections for non-file fields"
+);
+
+hooks.state.values = { dcdfile: "run_0.dcd" };
+hooks.state.serverSelections = {
+  "dcdfile:": {
+    id: "dcdfile",
+    type: "text",
+    repeatIndex: null,
+    encodedPath: "Li9oaXYxX2dhZ19jaGFybW0yNy5wZGI=",
+    path: "hiv1_gag_charmm27.pdb"
+  }
+};
+const dcdFormData = hooks.buildSubmitFormData({
+  querySelectorAll() {
+    return [];
+  }
+}, "dcd-test-uuid");
+assert.deepStrictEqual(dcdFormData.get("dcdfile"), ["run_0.dcd"], "submit keeps MMC dcdfile as the text output name");
+assert.strictEqual(dcdFormData.get("_selaltval_dcdfile"), undefined, "submit ignores stale server selections for non-file fields");
+assert.strictEqual(dcdFormData.get("dcdfile_altval[]"), undefined, "submit omits stale non-file alt values");
+
 const dynamicGroup = {
   dataset: {
     outputFieldId: "dynamic_plots",
