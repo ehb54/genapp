@@ -142,6 +142,10 @@ ga.valuen.restore = function( form, data, html ) {
     } while ( repeaters_added );
 
     // everything else
+    if ( ga.repeat && ga.repeat.updateConditions ) {
+        ga.repeat.updateConditions( form );
+        els = jqhform.find(':input').get();
+    }
 
     $.each(els, function() {
         var i,
@@ -462,7 +466,13 @@ ga.valuen.input = function( form, data ) {
 
     // everything else, then calculated repeaters whose dependencies were just restored.
     ga.valuen.applyInputValues( form, data, repeaters, true );
+    if ( ga.repeat && ga.repeat.updateConditions ) {
+        ga.repeat.updateConditions( form );
+    }
     ga.valuen.processCalcRepeaters( form, data );
+    if ( ga.repeat && ga.repeat.updateConditions ) {
+        ga.repeat.updateConditions( form );
+    }
     ga.valuen.applyInputValues( form, data, repeaters, false );
     ga.valuen.applyInputHtmlValues( data );
 }

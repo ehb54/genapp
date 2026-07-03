@@ -67,6 +67,51 @@
         },
         {
             "role"    : "input",
+            "id"      : "use_experimental_data",
+            "label"   : "Use Experimental Data",
+            "type"    : "checkbox",
+            "checked" : "false"
+        },
+        {
+            "role"    : "input",
+            "id"      : "neutron_checkbox",
+            "label"   : "Neutron Data",
+            "type"    : "checkbox",
+            "checked" : "false"
+        },
+        {
+            "role"    : "input",
+            "id"      : "xray_checkbox",
+            "label"   : "X-ray Data",
+            "type"    : "checkbox",
+            "checked" : "false"
+        },
+        {
+            "role"    : "input",
+            "id"      : "prediction_q",
+            "label"   : "Prediction Q",
+            "type"    : "text",
+            "default" : "0.1",
+            "repeat"  : "!use_experimental_data"
+        },
+        {
+            "role"    : "input",
+            "id"      : "neutron_exp_file",
+            "label"   : "Neutron Experimental File",
+            "type"    : "text",
+            "default" : "neutron.dat",
+            "repeat"  : "use_experimental_data && neutron_checkbox"
+        },
+        {
+            "role"    : "input",
+            "id"      : "xray_exp_file",
+            "label"   : "X-ray Experimental File",
+            "type"    : "text",
+            "default" : "xray.dat",
+            "repeat"  : "use_experimental_data && xray_checkbox"
+        },
+        {
+            "role"    : "input",
             "id"      : "checkbox_gate",
             "label"   : "Checkbox Gate",
             "type"    : "checkbox",

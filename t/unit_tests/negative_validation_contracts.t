@@ -134,6 +134,80 @@ _invalid_app(
 );
 
 _invalid_app(
+    'unknown compound repeat dependency is rejected',
+    menu_modules => [ 'bad_repeat_condition_unknown' ],
+    modules      => {
+        bad_repeat_condition_unknown => _module_json(
+            fields => [
+                {
+                    role     => 'input',
+                    id       => 'gate',
+                    label    => 'Gate',
+                    type     => 'checkbox',
+                    checked  => 'false',
+                },
+                _text_field( 'child', repeat => 'gate && missing_gate' ),
+            ],
+        ),
+    },
+    pattern => qr/missing_gate|repeat condition/i,
+);
+
+_invalid_app(
+    'malformed compound repeat condition is rejected',
+    menu_modules => [ 'bad_repeat_condition_syntax' ],
+    modules      => {
+        bad_repeat_condition_syntax => _module_json(
+            fields => [
+                {
+                    role     => 'input',
+                    id       => 'gate',
+                    label    => 'Gate',
+                    type     => 'checkbox',
+                    checked  => 'false',
+                },
+                _text_field( 'child', repeat => 'gate &&' ),
+            ],
+        ),
+    },
+    pattern => qr/invalid syntax|repeat condition/i,
+);
+
+_invalid_app(
+    'bare non-checkbox repeat condition atom is rejected',
+    menu_modules => [ 'bad_repeat_condition_bare_text' ],
+    modules      => {
+        bad_repeat_condition_bare_text => _module_json(
+            fields => [
+                _text_field('mode'),
+                _text_field( 'child', repeat => '!mode' ),
+            ],
+        ),
+    },
+    pattern => qr/bare non-checkbox|repeat condition/i,
+);
+
+_invalid_app(
+    'checkbox false atom inside repeat condition is rejected',
+    menu_modules => [ 'bad_repeat_condition_checkbox_false' ],
+    modules      => {
+        bad_repeat_condition_checkbox_false => _module_json(
+            fields => [
+                {
+                    role     => 'input',
+                    id       => 'gate',
+                    label    => 'Gate',
+                    type     => 'checkbox',
+                    checked  => 'false',
+                },
+                _text_field( 'child', repeat => 'gate:false && gate' ),
+            ],
+        ),
+    },
+    pattern => qr/unsupported choice 'false'|repeat condition/i,
+);
+
+_invalid_app(
     'listbox without values is rejected',
     menu_modules => [ 'bad_listbox' ],
     modules      => {

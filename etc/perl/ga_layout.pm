@@ -39,6 +39,11 @@ sub typeof {
     return ref( \$expr );
 }
 
+sub repeat_condition_is_expression {
+    my $expr = shift;
+    return defined $expr && $expr =~ /(^|[^A-Za-z0-9_:])!|&&|\|\||[()]/;
+}
+
 sub increment_cursor_column {
     my $cursor_r   = shift;
     my $cursor_c   = shift;
@@ -1025,7 +1030,11 @@ sub layout_expand {
 
         if ( $$field{'repeat'} ) {
             my $repeat_parent = "r-$$field{'repeat'}";
-            if ( $$field{'repeat'} =~ /^([^:]+):true$/ ) {
+            if ( repeat_condition_is_expression( $$field{'repeat'} ) ) {
+                $repeat_parent = $$field{'layout'} && $$field{'layout'}{'parent'}
+                    ? $$field{'layout'}{'parent'}
+                    : 'root';
+            } elsif ( $$field{'repeat'} =~ /^([^:]+):true$/ ) {
                 my $gate = $field_by_id{$1};
                 if ( $gate &&
                      ( $$gate{'type'} || '' ) eq 'checkbox' &&

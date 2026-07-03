@@ -1067,6 +1067,75 @@ sub valid_name {
     $error;
 }
 
+sub repeat_condition_is_expression {
+    my $expr = shift;
+    return defined $expr && $expr =~ /(^|[^A-Za-z0-9_:])!|&&|\|\||[()]/;
+}
+
+sub repeat_condition_tokens {
+    my $expr = shift;
+    my @tokens;
+    pos( $expr ) = 0;
+    while ( pos( $expr ) < length( $expr ) ) {
+        if ( $expr =~ /\G\s*(&&|\|\||!|\(|\)|[A-Za-z_][A-Za-z0-9_]*(?::[A-Za-z0-9_.-]+)?)/gc ) {
+            push @tokens, $1;
+            next;
+        }
+        return;
+    }
+    return @tokens;
+}
+
+sub repeat_condition_atoms {
+    my $expr = shift;
+    my @tokens = repeat_condition_tokens( $expr );
+    return ( "repeat condition '$expr' has invalid syntax" ) if !@tokens;
+
+    my @atoms;
+    my $pos = 0;
+    my ( $parse_or, $parse_and, $parse_primary );
+
+    $parse_primary = sub {
+        return 1 if $tokens[$pos] && $tokens[$pos] eq '!' && do { $pos++; $parse_primary->() };
+        if ( $tokens[$pos] && $tokens[$pos] eq '(' ) {
+            $pos++;
+            return if !$parse_or->();
+            return if !$tokens[$pos] || $tokens[$pos] ne ')';
+            $pos++;
+            return 1;
+        }
+        if ( $tokens[$pos] && $tokens[$pos] =~ /^[A-Za-z_]/ ) {
+            push @atoms, $tokens[$pos];
+            $pos++;
+            return 1;
+        }
+        return;
+    };
+
+    $parse_and = sub {
+        return if !$parse_primary->();
+        while ( $tokens[$pos] && $tokens[$pos] eq '&&' ) {
+            $pos++;
+            return if !$parse_primary->();
+        }
+        return 1;
+    };
+
+    $parse_or = sub {
+        return if !$parse_and->();
+        while ( $tokens[$pos] && $tokens[$pos] eq '||' ) {
+            $pos++;
+            return if !$parse_and->();
+        }
+        return 1;
+    };
+
+    return ( "repeat condition '$expr' has invalid syntax" )
+        if !$parse_or->() || $pos != @tokens;
+
+    return ( undef, @atoms );
+}
+
 
 #** @function public svninfo ( path )
 #
@@ -1472,8 +1541,10 @@ sub check_files {
                 my $mod_info = start_json( $json, $ref_mod );
                 my %repeater;
                 my %repeat;
+                my %repeat_condition;
                 my %repeattype;
                 my %field_type;
+                my %listbox_choice;
                 my $modname = $f;
                 do {
                     $field_type{ $$mod_info{ 'fields:id' } } = $$mod_info{ 'fields:type' }
@@ -1487,6 +1558,7 @@ sub check_files {
                             $error .= "Module $f field " . $$mod_info{ 'fields:id' } . " is a listbox but the values are incorrect.  They must contain an even number of ~ separated words\n" if @lbvalues % 2;
                             for ( my $i = 1; $i < @lbvalues; $i += 2 ) {
                                 my $k = $$mod_info{ 'fields:id' } . ":" . $lbvalues[ $i ];
+                                $listbox_choice{ $$mod_info{ 'fields:id' } }{ $lbvalues[ $i ] } = 1;
                                 $repeater  { $k } = $$mod_info{ 'fields:type' } . " choice " . ( 1 + ( ( $i - 1 ) / 2 ) );
                                 $repeat    { $k } = $$mod_info{ 'fields:id' };
                                 $repeattype{ $k } = $$mod_info{ 'fields:type' } . " choice " . ( 1 + ( ( $i - 1 ) / 2 ) );
@@ -1495,7 +1567,11 @@ sub check_files {
                     }
                     if ( $$mod_info{ 'fields:repeat' } )
                     {
-                        $repeat{ $$mod_info{ 'fields:id' } } = $$mod_info{ 'fields:repeat' };
+                        if ( repeat_condition_is_expression( $$mod_info{ 'fields:repeat' } ) ) {
+                            $repeat_condition{ $$mod_info{ 'fields:id' } } = $$mod_info{ 'fields:repeat' };
+                        } else {
+                            $repeat{ $$mod_info{ 'fields:id' } } = $$mod_info{ 'fields:repeat' };
+                        }
 #                        $repeat{ $$mod_info{ 'fields:id' } } =~ s/:.*$//;
                         $repeattype{ $$mod_info{ 'fields:id' } } = $$mod_info{ 'fields:type' };
                     }
@@ -1507,6 +1583,35 @@ sub check_files {
                          ( $field_type{ $1 } || '' ) eq 'checkbox' )
                     {
                         $repeater{ $repeat{ $k } } = 'checkbox true gate';
+                    }
+                }
+
+                foreach my $k ( keys %repeat_condition )
+                {
+                    my ( $condition_error, @atoms ) = repeat_condition_atoms( $repeat_condition{ $k } );
+                    if ( $condition_error ) {
+                        $error .= "Module $f field '$k' repeat condition '$repeat_condition{ $k }' : $condition_error\n";
+                        next;
+                    }
+                    foreach my $atom ( @atoms ) {
+                        my ( $base, $choice ) = split /:/, $atom, 2;
+                        if ( !$field_type{ $base } ) {
+                            $error .= "Module $f field '$k' repeat condition '$repeat_condition{ $k }' references missing field '$base'\n";
+                            next;
+                        }
+                        if ( defined $choice ) {
+                            if ( $field_type{ $base } eq 'checkbox' ) {
+                                $error .= "Module $f field '$k' repeat condition '$repeat_condition{ $k }' uses checkbox field '$base' with unsupported choice '$choice'; use '$base' or '!$base'\n"
+                                    if $choice ne 'true';
+                            } elsif ( $field_type{ $base } eq 'listbox' ) {
+                                $error .= "Module $f field '$k' repeat condition '$repeat_condition{ $k }' references missing listbox choice '$atom'\n"
+                                    if !$listbox_choice{ $base }{ $choice };
+                            } else {
+                                $error .= "Module $f field '$k' repeat condition '$repeat_condition{ $k }' uses choice syntax on non-listbox/non-checkbox field '$base'\n";
+                            }
+                        } elsif ( $field_type{ $base } ne 'checkbox' ) {
+                            $error .= "Module $f field '$k' repeat condition '$repeat_condition{ $k }' uses bare non-checkbox field '$base'; use checkbox fields or listbox_id:choice atoms\n";
+                        }
                     }
                 }
                 

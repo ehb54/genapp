@@ -77,9 +77,12 @@ function createDomHarness() {
     return attrs;
   }
 
-  function parseMarkup(markup, parentId) {
+  function parseMarkup(markup, parentId, replaceChildren) {
     const parent = parentId ? element(parentId) : null;
-    if (parent) {
+    if (parent && replaceChildren) {
+      descendantsOf(parentId).forEach((child) => {
+        child.parentId = null;
+      });
       parent.children = [];
     }
     String(markup).replace(/<\s*([A-Za-z0-9_:-]+)([^>]*)>/g, (match, tagName) => {
@@ -170,7 +173,7 @@ function createDomHarness() {
       html(value) {
         if (arguments.length) {
           ele.html = value;
-          parseMarkup(value, ele.id);
+          parseMarkup(value, ele.id, true);
           return this;
         }
         return ele.html;
@@ -213,7 +216,7 @@ function createDomHarness() {
       removeClass() { return this; },
       append(value) {
         ele.html += value;
-        parseMarkup(value, ele.id);
+        parseMarkup(value, ele.id, false);
         return this;
       },
       remove() {
@@ -225,7 +228,13 @@ function createDomHarness() {
           cb = data;
           data = undefined;
         }
-        ele.handlers[event] = { data, cb };
+        if (!ele.handlers[event]) {
+          ele.handlers[event] = [];
+        }
+        if (!Array.isArray(ele.handlers[event])) {
+          ele.handlers[event] = [ele.handlers[event]];
+        }
+        ele.handlers[event].push({ data, cb });
         return this;
       },
       off() { return this; },
@@ -234,9 +243,17 @@ function createDomHarness() {
         return this;
       },
       trigger(event) {
-        if (ele.handlers[event] && typeof ele.handlers[event].cb === "function") {
-          ele.handlers[event].cb.call(ele, { data: ele.handlers[event].data, preventDefault() {} });
-        }
+        Object.keys(ele.handlers).forEach((name) => {
+          if (name !== event && !name.startsWith(`${event}.`)) {
+            return;
+          }
+          const handlers = Array.isArray(ele.handlers[name]) ? ele.handlers[name] : [ele.handlers[name]];
+          handlers.forEach((handler) => {
+            if (handler && typeof handler.cb === "function") {
+              handler.cb.call(ele, { data: handler.data, preventDefault() {} });
+            }
+          });
+        });
         return this;
       },
       blur() { return this; },
@@ -1020,6 +1037,49 @@ function runModuleSwitchReplayScenario(gaPath, moduleHtmlPath) {
   assert(second.element("row_count-row_label-2").value === "gamma", "module restore should rebuild third repeated field");
 }
 
+function runRepeatConditionScenario(gaPath, moduleHtmlPath) {
+  const h = loadGeneratedGa(gaPath, moduleHtmlPath);
+  const ga = h.context.ga;
+  const $ = h.context.$;
+  const hasAttached = (id) => Object.prototype.hasOwnProperty.call(h.elements, id) && h.elements[id].parentId !== null;
+
+  assert(hasAttached("prediction_q"), "inverse condition field should be visible when experimental mode is off");
+  assert(!hasAttached("neutron_exp_file"), "neutron file should be hidden until both experimental and neutron are active");
+  assert(!hasAttached("xray_exp_file"), "x-ray file should be hidden until both experimental and x-ray are active");
+
+  h.element("prediction_q").value = "0.25";
+  ga.valuen.save("repeater_contract");
+  assert(ga.valuen.data.repeater_contract.prediction_q[0] === "0.25", "visible inverse condition field should submit with its original id");
+
+  $("#use_experimental_data").prop("checked", true).trigger("change");
+  assert(!hasAttached("prediction_q"), "inverse condition field should hide when experimental mode is active");
+  assert(!hasAttached("neutron_exp_file"), "neutron file should still wait for neutron checkbox");
+
+  $("#neutron_checkbox").prop("checked", true).trigger("change");
+  assert(hasAttached("neutron_exp_file"), "compound neutron condition should show when both checkboxes are active");
+  h.element("neutron_exp_file").value = "neutron_loaded.dat";
+  ga.valuen.save("repeater_contract");
+  assert(ga.valuen.data.repeater_contract.neutron_exp_file[0] === "neutron_loaded.dat", "compound condition field should submit with its original id");
+
+  $("#xray_checkbox").prop("checked", true).trigger("change");
+  assert(hasAttached("xray_exp_file"), "compound x-ray condition should show when both checkboxes are active");
+
+  $("#use_experimental_data").prop("checked", false).trigger("change");
+  assert(hasAttached("prediction_q"), "prediction field should return when experimental mode is disabled");
+  assert(!hasAttached("neutron_exp_file"), "neutron file should hide when experimental mode is disabled");
+  assert(!hasAttached("xray_exp_file"), "x-ray file should hide when experimental mode is disabled");
+
+  ga.valuen.input("repeater_contract", {
+    use_experimental_data: [""],
+    neutron_checkbox: [""],
+    neutron_exp_file: ["restored_neutron.dat"],
+  });
+  assert(h.element("use_experimental_data").checked === true, "input replay should restore experimental checkbox");
+  assert(h.element("neutron_checkbox").checked === true, "input replay should restore neutron checkbox");
+  assert(hasAttached("neutron_exp_file"), "input replay should show compound condition field after restoring dependencies");
+  assert(h.element("neutron_exp_file").value === "restored_neutron.dat", "input replay should restore compound condition field value");
+}
+
 const command = process.argv[2];
 const gaPath = process.argv[3];
 const moduleHtmlPath = process.argv[4];
@@ -1049,6 +1109,12 @@ switch (command) {
       throw new Error("module-switch-replay requires generated module HTML path");
     }
     runModuleSwitchReplayScenario(gaPath, moduleHtmlPath);
+    break;
+  case "repeat-condition":
+    if (!moduleHtmlPath) {
+      throw new Error("repeat-condition requires generated module HTML path");
+    }
+    runRepeatConditionScenario(gaPath, moduleHtmlPath);
     break;
   default:
     throw new Error(`unknown command '${command}'`);

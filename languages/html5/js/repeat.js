@@ -7,6 +7,126 @@ ga.repeat.map           = {};
 ga.repeat.pairupdateids = {};
 ga.repeat.valuestore    = {};
 
+ga.repeat.isCondition = function( refid ) {
+    return typeof refid === 'string' && /(^|[^A-Za-z0-9_:])!|&&|\|\||[()]/.test( refid );
+}
+
+ga.repeat.conditionTokens = function( expr ) {
+    var tokens = [],
+        rx = /\s*(&&|\|\||!|\(|\)|[A-Za-z_][A-Za-z0-9_]*(?::[A-Za-z0-9_.-]+)?)/g,
+        match,
+        pos = 0;
+
+    while ( ( match = rx.exec( expr ) ) !== null ) {
+        if ( match.index !== pos && /\S/.test( expr.slice( pos, match.index ) ) ) {
+            return null;
+        }
+        tokens.push( match[ 1 ] );
+        pos = rx.lastIndex;
+    }
+    if ( /\S/.test( expr.slice( pos ) ) ) {
+        return null;
+    }
+    return tokens;
+}
+
+ga.repeat.conditionDeps = function( expr ) {
+    var tokens = ga.repeat.conditionTokens( expr ),
+        deps = {};
+
+    if ( !tokens ) {
+        return [];
+    }
+    tokens.map( function( token ) {
+        if ( /^[A-Za-z_]/.test( token ) ) {
+            deps[ token.replace( /:.*/, '' ) ] = true;
+        }
+    });
+    return Object.keys( deps );
+}
+
+ga.repeat.conditionAtom = function( ref ) {
+    var parts = ref.split( ':' ),
+        id = parts[ 0 ],
+        choice = parts.length > 1 ? parts.slice( 1 ).join( ':' ) : null,
+        jq = $( '#' + id ),
+        ele;
+
+    if ( !jq.length ) {
+        return false;
+    }
+    ele = jq.get( 0 );
+    if ( choice !== null ) {
+        if ( /checkbox/i.test( ele.type || '' ) ) {
+            return choice === 'true' ? jq.prop( 'checked' ) : false;
+        }
+        return jq.val() == choice;
+    }
+    if ( /checkbox/i.test( ele.type || '' ) ) {
+        return jq.prop( 'checked' );
+    }
+    return !!jq.val();
+}
+
+ga.repeat.conditionValue = function( expr ) {
+    var tokens = ga.repeat.conditionTokens( expr ),
+        pos = 0;
+
+    function peek() {
+        return tokens[ pos ];
+    }
+
+    function take( token ) {
+        if ( tokens[ pos ] === token ) {
+            pos++;
+            return true;
+        }
+        return false;
+    }
+
+    function primary() {
+        var token;
+        if ( take( '!' ) ) {
+            return !primary();
+        }
+        if ( take( '(' ) ) {
+            var value = orExpr();
+            if ( !take( ')' ) ) {
+                return false;
+            }
+            return value;
+        }
+        token = peek();
+        if ( token && /^[A-Za-z_]/.test( token ) ) {
+            pos++;
+            return ga.repeat.conditionAtom( token );
+        }
+        return false;
+    }
+
+    function andExpr() {
+        var value = primary();
+        while ( take( '&&' ) ) {
+            value = primary() && value;
+        }
+        return value;
+    }
+
+    function orExpr() {
+        var value = andExpr();
+        while ( take( '||' ) ) {
+            value = andExpr() || value;
+        }
+        return value;
+    }
+
+    if ( !tokens || !tokens.length ) {
+        return false;
+    }
+    var result = orExpr();
+    return pos === tokens.length ? result : false;
+}
+
 // ----------------------------------------------------------------------------------------------------------
 // background
 // ----------------------------------------------------------------------------------------------------------
@@ -274,6 +394,11 @@ ga.repeat.repeatOn = function( mod, id, refid ) {
         refchoice
     ;
 
+    if ( ga.repeat.isCondition( refid ) ) {
+        ga.repeat.conditionOn( mod, id, refid );
+        return;
+    }
+
     refid = refid.replace( ':', '-' );
 
     ga.repeat.data[ mod ].repeater = ga.repeat.data[ mod ].repeater || {};
@@ -294,6 +419,107 @@ ga.repeat.repeatOn = function( mod, id, refid ) {
         ga.repeat.data[ mod ].repeater[ refbase ].choice.push( refchoice );
     }
         
+}
+
+ga.repeat.conditionOn = function( mod, id, expr ) {
+    var deps = ga.repeat.conditionDeps( expr );
+
+    ga.repeat.data[ mod ].condition = ga.repeat.data[ mod ].condition || {};
+    ga.repeat.data[ mod ].condition[ id ] = ga.repeat.data[ mod ].condition[ id ] || {};
+    ga.repeat.data[ mod ].condition[ id ].expr = expr;
+    ga.repeat.data[ mod ].condition[ id ].deps = deps;
+    ga.repeat.data[ mod ].condition[ id ].visible = null;
+    ga.repeat.data[ mod ].repeat[ id ].refid = expr;
+
+    deps.map( function( dep ) {
+        $( '#' + dep ).on( 'change.ga-repeat-condition-' + mod + '-' + id, function() {
+            ga.repeat.conditionChange( mod, id );
+            ga.calc.processall( mod );
+        });
+    });
+    ga.repeat.conditionChange( mod, id, true );
+}
+
+ga.repeat.conditionSaveValues = function( mod, id ) {
+    var key = 'condition-' + id,
+        span = document.getElementById( id + '-span' );
+    ga.repeat.valuestore[ mod ] = ga.repeat.valuestore[ mod ] || {};
+    ga.repeat.valuestore[ mod ][ key ] = {};
+    if ( !span ) {
+        return;
+    }
+    Object.values( span.getElementsByTagName( 'input' ) ).map( function( x ) {
+        ga.repeat.valuestore[ mod ][ key ][ x.id ] = {
+            value : x.value,
+            checked : x.checked
+        };
+    });
+}
+
+ga.repeat.conditionRestoreValues = function( mod, id ) {
+    var key = 'condition-' + id;
+    if ( !ga.repeat.valuestore[ mod ] ||
+         !ga.repeat.valuestore[ mod ][ key ] ) {
+        return;
+    }
+    Object.keys( ga.repeat.valuestore[ mod ][ key ] ).map( function( x ) {
+        var e = document.getElementById( x );
+        if ( e ) {
+            e.value = ga.repeat.valuestore[ mod ][ key ][ x ].value;
+            e.checked = ga.repeat.valuestore[ mod ][ key ][ x ].checked;
+        }
+    });
+}
+
+ga.repeat.conditionChange = function( mod, id, init ) {
+    var condition,
+        show,
+        html;
+
+    if ( !ga.repeat.data[ mod ] ||
+         !ga.repeat.data[ mod ].condition ||
+         !ga.repeat.data[ mod ].condition[ id ] ||
+         !ga.repeat.data[ mod ].repeat ||
+         !ga.repeat.data[ mod ].repeat[ id ] ) {
+        return false;
+    }
+
+    condition = ga.repeat.data[ mod ].condition[ id ];
+    show = ga.repeat.conditionValue( condition.expr );
+    if ( !init && condition.visible === show ) {
+        return false;
+    }
+
+    ga.repeat.conditionSaveValues( mod, id );
+    if ( show ) {
+        $( '#' + id + '-label-span' ).html( ga.repeat.data[ mod ].repeat[ id ].lhtml );
+        html = ga.repeat.data[ mod ].repeat[ id ].dhtml;
+        if ( ga.repeat.data[ mod ].repeat[ id ].rhtml ) {
+            html += ga.repeat.data[ mod ].repeat[ id ].rhtml;
+        }
+        $( '#' + id + '-span' ).html( html );
+        eval( ga.repeat.data[ mod ].repeat[ id ].eval );
+        if ( ga.repeat.data[ mod ].repeater && ga.repeat.data[ mod ].repeater[ id ] ) {
+            ga.repeat.change( mod, id, true );
+        }
+        ga.repeat.conditionRestoreValues( mod, id );
+    } else {
+        $( '#' + id + '-label-span' ).html( '' );
+        $( '#' + id + '-span' ).html( '' );
+    }
+    ga.repeat.map[ id ] = id;
+    condition.visible = show;
+    ga.hhelp.reset();
+    return true;
+}
+
+ga.repeat.updateConditions = function( mod ) {
+    if ( !ga.repeat.data[ mod ] || !ga.repeat.data[ mod ].condition ) {
+        return;
+    }
+    Object.keys( ga.repeat.data[ mod ].condition ).map( function( id ) {
+        ga.repeat.conditionChange( mod, id );
+    });
 }
 
 // add a repeater
