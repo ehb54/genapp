@@ -171,6 +171,65 @@ code {
   cursor: pointer;
 }
 
+.ui2-docs-control {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.ui2-docs-control[hidden] {
+  display: none;
+}
+
+.ui2-docs-control.ui2-docs-context .ui2-utility-link {
+  border-bottom-right-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.ui2-docs-toggle {
+  min-width: 2.2rem;
+  border-bottom-left-radius: 0;
+  border-left: 0;
+  border-top-left-radius: 0;
+  padding-left: 0.45rem;
+  padding-right: 0.45rem;
+}
+
+.ui2-docs-toggle[hidden] {
+  display: none;
+}
+
+.ui2-docs-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  z-index: 30;
+  min-width: 12rem;
+  border: 1px solid var(--ui2-border);
+  border-radius: 6px;
+  background: var(--ui2-panel);
+  box-shadow: 0 0.75rem 1.75rem rgba(14, 33, 48, 0.18);
+  padding: 0.35rem;
+}
+
+.ui2-docs-menu[hidden] {
+  display: none;
+}
+
+.ui2-docs-menu a {
+  display: block;
+  border-radius: 4px;
+  color: var(--ui2-text);
+  padding: 0.45rem 0.55rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ui2-docs-menu a:hover {
+  background: var(--ui2-accent-soft);
+  color: var(--ui2-accent-strong);
+}
+
 .ui2-utility-button:hover,
 .ui2-utility-button[aria-pressed="true"] {
   border-color: var(--ui2-accent);

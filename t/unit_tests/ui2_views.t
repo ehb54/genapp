@@ -49,6 +49,7 @@ like( $index, qr/class="ui2-nav-icon-button" id="ui2-nav-toggle"/, 'ui2 menu tog
 like( $index, qr/id="ui2-module-strip"/, 'ui2 index exposes a legacy-style selected menu module strip' );
 like( $index, qr/id="ui2-feedback"/, 'ui2 index exposes the legacy feedback utility entry point' );
 like( $index, qr/id="ui2-docs"/, 'ui2 index exposes the legacy docs entry point' );
+like( $index, qr/id="ui2-docs-menu"/, 'ui2 index exposes a docs menu for contextual module documentation' );
 like( $app_map_js, qr/generatedOn:\s*"Generated on /, 'ui2 app map carries the legacy generated-on splash metadata' );
 like( $app_map_js, qr/genappRevision:\s*"GenApp /, 'ui2 app map carries the GenApp revision splash metadata' );
 like( $app_map_js, qr/directives\.docsbaseurl = "docs"/, 'ui2 app map records docsbaseurl for the docs entry point' );
@@ -71,7 +72,9 @@ like( $ui2_js, qr/setHoverHelp\(nodes\.feedback, help\.feedback/, 'ui2 feedback 
 like( $ui2_js, qr/setHoverHelp\(nodes\.docs, help\.docs/, 'ui2 docs button exposes generated global help' );
 like( $ui2_js, qr/event\.target\?\.closest\?\.\("\[data-ui2-help\]"\)/, 'ui2 hover help delegates to generated help targets' );
 like( $ui2_js, qr/function syncDocsLink\(\)/, 'ui2 runtime syncs the docs button from generated docsbaseurl' );
+like( $ui2_js, qr/function docsModuleUrl\(/, 'ui2 runtime builds legacy-style per-module docs links' );
 like( $ui2_js, qr/`\.\.\/\$\{base\}\/`/, 'ui2 runtime rebases relative docsbaseurl out of the ui2 directory' );
+like( $ui2_js, qr/`\$\{mainUrl\}\$\{id\}\/\$\{id\}\.html`/, 'ui2 runtime mirrors legacy module docs path convention' );
 like( $ui2_js, qr/nodes\.feedback\?\.addEventListener\("click", \(\) => openUtilityModule\("sys_feedback"\)\)/, 'ui2 feedback button opens the legacy feedback utility' );
 like( $ui2_js, qr/dialogClass: \(moduleId === "sys_feedback" \|\| moduleId === "sys_feedback2"\) \? "ui2-feedback-dialog"/, 'ui2 feedback opens in a modal-sized utility dialog' );
 like( $ui2_js, qr/function renderFeedbackTool\(module, fields\)/, 'ui2 runtime has a dedicated Feedback utility renderer' );

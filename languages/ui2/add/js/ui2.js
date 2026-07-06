@@ -87,7 +87,12 @@
     files: document.getElementById("ui2-files"),
     settings: document.getElementById("ui2-settings"),
     feedback: document.getElementById("ui2-feedback"),
+    docsControl: document.getElementById("ui2-docs-control"),
     docs: document.getElementById("ui2-docs"),
+    docsToggle: document.getElementById("ui2-docs-toggle"),
+    docsMenu: document.getElementById("ui2-docs-menu"),
+    docsModule: document.getElementById("ui2-docs-module"),
+    docsMain: document.getElementById("ui2-docs-main"),
     help: document.getElementById("ui2-help"),
     logoff: document.getElementById("ui2-logoff"),
     wsIndicator: document.querySelector(".ui2-ws-indicator")
@@ -104,6 +109,11 @@
     nodes.files?.addEventListener("click", () => openUtilityModule("sys_file_manager"));
     nodes.settings?.addEventListener("click", () => openUtilityModule("sys_user_config"));
     nodes.feedback?.addEventListener("click", () => openUtilityModule("sys_feedback"));
+    nodes.docsToggle?.addEventListener("click", toggleDocsMenu);
+    nodes.docsMain?.addEventListener("click", closeDocsMenu);
+    nodes.docsModule?.addEventListener("click", closeDocsMenu);
+    document.addEventListener("click", closeDocsMenuOnOutsideClick);
+    document.addEventListener("keydown", closeDocsMenuOnEscape);
     nodes.help?.addEventListener("click", toggleHelp);
     nodes.logoff?.addEventListener("click", handleLogonAction);
     initHoverHelp();
@@ -717,6 +727,7 @@
       state.values = {};
       renderModule();
       updateSelectedNavigation();
+      syncDocsLink();
     } catch (error) {
       showError(`Could not load ${moduleId}: ${error.message}`);
     }
@@ -856,6 +867,7 @@
     collapseMenuGroups();
     renderModuleStrip();
     updateSelectedNavigation();
+    syncDocsLink();
   }
 
   function renderModule() {
@@ -984,6 +996,7 @@
     nodes.root.innerHTML = "";
     nodes.empty.hidden = true;
     nodes.empty.innerHTML = "";
+    syncDocsLink();
   }
 
   function renderModuleStrip() {
@@ -1124,12 +1137,83 @@
     }
     const docsbase = stringValue(appMap.directives?.docsbaseurl || "").trim();
     if (!docsbase) {
-      nodes.docs.hidden = true;
+      if (nodes.docsControl) {
+        nodes.docsControl.hidden = true;
+      } else {
+        nodes.docs.hidden = true;
+      }
       return;
     }
+    if (nodes.docsControl) {
+      nodes.docsControl.hidden = false;
+    }
     nodes.docs.hidden = false;
-    const base = docsbase.replace(/\/+$/, "");
-    nodes.docs.href = /^(?:[a-z]+:|\/)/i.test(base) ? `${base}/` : `../${base}/`;
+
+    const mainUrl = docsMainUrl(docsbase);
+    const moduleUrl = state.moduleId ? docsModuleUrl(docsbase, state.moduleId) : "";
+    nodes.docsControl?.classList.toggle("ui2-docs-context", Boolean(moduleUrl));
+    nodes.docs.href = moduleUrl || mainUrl;
+    nodes.docs.textContent = moduleUrl ? "Module docs" : "Docs";
+
+    if (nodes.docsMain) {
+      nodes.docsMain.href = mainUrl;
+    }
+    if (nodes.docsModule) {
+      nodes.docsModule.href = moduleUrl || mainUrl;
+      nodes.docsModule.hidden = !moduleUrl;
+    }
+    if (nodes.docsToggle) {
+      nodes.docsToggle.hidden = !moduleUrl;
+      nodes.docsToggle.setAttribute("aria-expanded", "false");
+    }
+    if (nodes.docsMenu) {
+      nodes.docsMenu.hidden = true;
+    }
+  }
+
+  function docsMainUrl(docsbase) {
+    const base = stringValue(docsbase).trim().replace(/\/+$/, "");
+    if (!base) {
+      return "";
+    }
+    return /^(?:[a-z]+:|\/)/i.test(base) ? `${base}/` : `../${base}/`;
+  }
+
+  function docsModuleUrl(docsbase, moduleId) {
+    const mainUrl = docsMainUrl(docsbase);
+    const id = sanitizeModuleId(moduleId);
+    return mainUrl && id ? `${mainUrl}${id}/${id}.html` : "";
+  }
+
+  function toggleDocsMenu(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!nodes.docsMenu || !nodes.docsToggle || nodes.docsToggle.hidden) {
+      return;
+    }
+    const expanded = nodes.docsToggle.getAttribute("aria-expanded") === "true";
+    nodes.docsMenu.hidden = expanded;
+    nodes.docsToggle.setAttribute("aria-expanded", expanded ? "false" : "true");
+  }
+
+  function closeDocsMenu() {
+    if (nodes.docsMenu) {
+      nodes.docsMenu.hidden = true;
+    }
+    nodes.docsToggle?.setAttribute("aria-expanded", "false");
+  }
+
+  function closeDocsMenuOnOutsideClick(event) {
+    if (nodes.docsControl?.contains(event.target)) {
+      return;
+    }
+    closeDocsMenu();
+  }
+
+  function closeDocsMenuOnEscape(event) {
+    if (event.key === "Escape") {
+      closeDocsMenu();
+    }
   }
 
   function setHoverHelp(node, help) {
