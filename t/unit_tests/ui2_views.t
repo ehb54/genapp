@@ -74,7 +74,7 @@ like( $ui2_js, qr/event\.target\?\.closest\?\.\("\[data-ui2-help\]"\)/, 'ui2 hov
 like( $ui2_js, qr/function syncDocsLink\(\)/, 'ui2 runtime syncs the docs button from generated docsbaseurl' );
 like( $ui2_js, qr/function docsModuleUrl\(/, 'ui2 runtime builds legacy-style per-module docs links' );
 like( $ui2_js, qr/`\.\.\/\$\{base\}\/`/, 'ui2 runtime rebases relative docsbaseurl out of the ui2 directory' );
-like( $ui2_js, qr/`\$\{mainUrl\}\$\{id\}\/\$\{id\}\.html`/, 'ui2 runtime mirrors legacy module docs path convention' );
+like( $ui2_js, qr/`\$\{mainUrl\}\$\{menu\}\/\$\{id\}\/\$\{id\}\.html`/, 'ui2 runtime mirrors SASSIE menu-scoped module docs path convention' );
 like( $ui2_js, qr/nodes\.feedback\?\.addEventListener\("click", \(\) => openUtilityModule\("sys_feedback"\)\)/, 'ui2 feedback button opens the legacy feedback utility' );
 like( $ui2_js, qr/dialogClass: \(moduleId === "sys_feedback" \|\| moduleId === "sys_feedback2"\) \? "ui2-feedback-dialog"/, 'ui2 feedback opens in a modal-sized utility dialog' );
 like( $ui2_js, qr/function renderFeedbackTool\(module, fields\)/, 'ui2 runtime has a dedicated Feedback utility renderer' );

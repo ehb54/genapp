@@ -1150,7 +1150,7 @@
     nodes.docs.hidden = false;
 
     const mainUrl = docsMainUrl(docsbase);
-    const moduleUrl = state.moduleId ? docsModuleUrl(docsbase, state.moduleId) : "";
+    const moduleUrl = state.moduleId ? docsModuleUrl(docsbase, state.moduleId, state.menuId) : "";
     nodes.docsControl?.classList.toggle("ui2-docs-context", Boolean(moduleUrl));
     nodes.docs.href = moduleUrl || mainUrl;
     nodes.docs.textContent = moduleUrl ? "Module docs" : "Docs";
@@ -1179,10 +1179,11 @@
     return /^(?:[a-z]+:|\/)/i.test(base) ? `${base}/` : `../${base}/`;
   }
 
-  function docsModuleUrl(docsbase, moduleId) {
+  function docsModuleUrl(docsbase, moduleId, menuId) {
     const mainUrl = docsMainUrl(docsbase);
     const id = sanitizeModuleId(moduleId);
-    return mainUrl && id ? `${mainUrl}${id}/${id}.html` : "";
+    const menu = sanitizeModuleId(menuId);
+    return mainUrl && id && menu ? `${mainUrl}${menu}/${id}/${id}.html` : "";
   }
 
   function toggleDocsMenu(event) {
