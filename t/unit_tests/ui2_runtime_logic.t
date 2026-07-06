@@ -435,6 +435,15 @@ assert.strictEqual(
   0,
   "UI2 clears repeated file rows when the compound controller becomes inactive"
 );
+assert.deepStrictEqual(
+  hooks.repeatTableFields([
+    { id: "region_label", type: "label", label: "Region", repeat: "number_flexible_regions" },
+    { id: "move_type", type: "listbox", label: "move type", repeat: "number_flexible_regions" },
+    { id: "flexible_region", type: "text", label: "flexible region", repeat: "number_flexible_regions" }
+  ]).map((field) => field.id),
+  ["move_type", "flexible_region"],
+  "UI2 excludes layout labels from tableized repeat columns"
+);
 
 function ui2FormControl(form, fieldId, value, repeatIndex) {
   const control = createNode("input");

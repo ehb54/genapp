@@ -1454,7 +1454,7 @@
     row.classList.add("ui2-tableized-repeater");
 
     const stack = row.querySelector(".ui2-control-stack");
-    const fields = item.fields || [];
+    const fields = repeatTableFields(item.fields || []);
     if (!stack || !fields.length || role === "output") {
       return row;
     }
@@ -5358,7 +5358,7 @@
   function updateRepeatTables(scope, rawValues, activeRows) {
     scope.querySelectorAll(".ui2-tableized-repeater").forEach((row) => {
       const controller = row._ui2RepeatTableController;
-      const fields = row._ui2RepeatTableFields || [];
+      const fields = repeatTableFields(row._ui2RepeatTableFields || []);
       const listField = row._ui2RepeatListField;
       const matrix = row.querySelector(".ui2-matrix-wrap");
       const tbody = row.querySelector(".ui2-repeat-table tbody");
@@ -5783,15 +5783,22 @@
   }
 
   function isTableizedRepeater(field, childFields) {
+    const tableFields = repeatTableFields(childFields);
     const explicit = String(field.tableize || "").toLowerCase() === "true";
-    if (isRepeater(field) && explicit && childFields.length) {
+    if (isRepeater(field) && explicit && tableFields.length) {
       return true;
     }
     const type = String(field.type || "").toLowerCase();
     return isRepeater(field)
       && (type === "integer" || type === "integerpair")
-      && childFields.length > 0
-      && childFields.every((child) => child.role !== "output" && !isRepeater(child));
+      && tableFields.length > 0
+      && tableFields.every((child) => child.role !== "output" && !isRepeater(child));
+  }
+
+  function repeatTableFields(fields) {
+    return (Array.isArray(fields) ? fields : []).filter((field) => {
+      return !isLayoutLabel(field);
+    });
   }
 
   function isIntegerPairMatrix(controller, fields) {
@@ -6045,6 +6052,7 @@
       repeatConditionDeps,
       repeatConditionValue,
       repeatControllerId,
+      repeatTableFields,
       repeatCount,
       updateRepeatTables,
       applyRuntimePayload,
