@@ -2417,7 +2417,9 @@
     }
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
-      await submitUtilityModule(form, module, "ajax/sys_config/sys_user_config.php");
+      await submitUtilityModule(form, module, "ajax/sys_config/sys_user_config.php", {
+        afterSuccess: () => setSessionProjectFromSettings(form)
+      });
     });
     form.addEventListener("reset", () => window.setTimeout(() => syncFormValues(form), 0));
     form.addEventListener("input", () => syncFormValues(form));
@@ -2797,6 +2799,9 @@
       }
       setSubmitStatus(status, payload.status || options.successMessage || "Settings updated", "ok");
       applyUtilityOutputs(form, payload);
+      if (typeof options.afterSuccess === "function") {
+        await options.afterSuccess(payload);
+      }
       if (module?.moduleid !== "sys_register") {
         await refreshSessionState();
         await pullUtilityFieldValues(form);
@@ -2812,6 +2817,36 @@
   function utilityAllowsAnonymous(module) {
     const moduleId = module?.moduleid || module?.id || "";
     return moduleId === "sys_register" || moduleId === "sys_feedback" || moduleId === "sys_feedback2";
+  }
+
+  async function setSessionProjectFromSettings(form) {
+    const projectControl = fieldControls(form).find((control) => {
+      return control.dataset.fieldId === "project" && control.dataset.pullKey === "project";
+    });
+    const project = stringValue(projectControl?.value).trim();
+    if (!project) {
+      return null;
+    }
+    return setLegacyProject(project);
+  }
+
+  async function setLegacyProject(project) {
+    const selected = stringValue(project).trim() || "no_project_specified";
+    const url = new URL(legacyEndpoint("", "ajax/sys_config/sys_project.php"), window.location.href);
+    url.searchParams.set("_window", window.name);
+    url.searchParams.set("_logon", state.session.logon || "");
+    url.searchParams.set("_project", selected);
+    const response = await fetch(url.toString(), {
+      cache: "no-cache",
+      credentials: "same-origin"
+    });
+    const payload = await parseJsonResponse(response, "Project selection");
+    if (!response.ok || payload.error) {
+      throw new Error(payload.error || `Project selection returned HTTP ${response.status}`);
+    }
+    state.session.project = selected;
+    renderSessionState();
+    return payload;
   }
 
   function validateUtilityForm(form) {
