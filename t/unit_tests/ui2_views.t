@@ -95,6 +95,10 @@ like( $ui2_js, qr/dayKey:\s*`\$\{year\}-\$\{month\}-\$\{day\}`/, 'ui2 reference 
 like( $ui2_js, qr/function jobReferenceModule\(job, columns\)/, 'ui2 reference job chooser groups day folders by module' );
 like( $ui2_js, qr/sort\(\(left, right\) => jobReferenceStartSeconds\(right, columns\) - jobReferenceStartSeconds\(left, columns\)\)/, 'ui2 reference job chooser sorts jobs newest first like legacy jstree' );
 like( $ui2_js, qr/function jobReferenceTimeLabel\(job, columns\).*?getUTCHours\(\).*?UTC/s, 'ui2 reference job leaf labels use legacy UTC time-of-day text' );
+like( $ui2_js, qr/\["hour", "Hour"\].*?\["day", "Day"\].*?\["week", "Week"\].*?\["month", "Month"\]/s, 'ui2 Job Manager completed filter offers legacy Hour Day Week Month windows' );
+like( $ui2_js, qr/function completedFilterSeconds\(value\).*?hour:\s*60 \* 60.*?month:\s*30 \* 24 \* 60 \* 60/s, 'ui2 Job Manager maps completed windows to legacy time ranges' );
+like( $ui2_js, qr/function completedFilterSeconds\(value\).*?legacyDays \* 24 \* 60 \* 60/s, 'ui2 Job Manager keeps old numeric day filters compatible' );
+like( $ui2_js, qr/function renderJobActionsLegend\(\).*?Actions Legend.*?attach to job.*?attach to job in a new window.*?delete job.*?cancel job.*?clear lock/s, 'ui2 Job Manager renders a legacy-style actions legend' );
 like( $ui2_js, qr/formData\.append\(input\.name, input\.value\)/, 'ui2 submits selected reference jobs through legacy *_altval array fields' );
 like( $ui2_js, qr/function renderServerFileTree\(entries, container, options\)/, 'ui2 server file chooser uses a tree renderer' );
 like( $ui2_js, qr/function renderServerFileTreeNode\(entry, options, depth\)/, 'ui2 server file chooser renders folder and file tree nodes' );
@@ -272,6 +276,7 @@ like( $ui2_css, qr/\.ui2-field\[hidden\],[\s\n]*\.ui2-dynamic-output-row\[hidden
 like( $ui2_css, qr/\.ui2-output-rendered/, 'ui2 stylesheet distinguishes rendered runtime output from placeholders' );
 like( $ui2_css, qr/\.ui2-output-field/, 'ui2 stylesheet lets output rows use the full default width' );
 like( $ui2_css, qr/\.ui2-mini-button/, 'ui2 stylesheet includes compact system action buttons' );
+like( $ui2_css, qr/\.ui2-job-actions-legend/, 'ui2 stylesheet includes Job Manager actions legend styling' );
 like( $ui2_css, qr/\.ui2-server-file-tree/, 'ui2 stylesheet includes a legacy-style server file tree' );
 like( $ui2_css, qr/\.ui2-server-tree-checkbox/, 'ui2 stylesheet includes selectable server tree checkbox affordances' );
 like( $ui2_css, qr/\.ui2-server-tree-icon-folder/, 'ui2 stylesheet distinguishes server folders from files' );

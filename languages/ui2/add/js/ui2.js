@@ -2420,9 +2420,10 @@
     filters.appendChild(renderToolFilter("running", "Running", "Show running jobs", true));
     filters.appendChild(renderJobSelectFilter("completed", "Completed in the last", [
       ["*all*", "*all*"],
-      ["1", "1 day"],
-      ["7", "7 days"],
-      ["30", "30 days"]
+      ["hour", "Hour"],
+      ["day", "Day"],
+      ["week", "Week"],
+      ["month", "Month"]
     ]));
     filters.appendChild(renderJobSelectFilter("project", "Project", [["*all*", "*all*"]]));
     filters.appendChild(renderJobSelectFilter("module", "Module", [["*all*", "*all*"]]));
@@ -2435,6 +2436,7 @@
     deleteMany.type = "button";
     actions.append(refresh, deleteMany);
     body.appendChild(actions);
+    body.appendChild(renderJobActionsLegend());
 
     const tableWrap = el("div", "ui2-data-table-wrap");
     const table = el("table", "ui2-data-table");
@@ -3365,15 +3367,29 @@
       if (filters.running) {
         return true;
       }
-      const completedDays = Number(filters.completed);
-      if (completedDays > 0) {
+      const completedSeconds = completedFilterSeconds(filters.completed);
+      if (completedSeconds > 0) {
         if (isRunning || !endSeconds) {
           return false;
         }
-        return endSeconds >= nowSeconds - completedDays * 24 * 60 * 60;
+        return endSeconds >= nowSeconds - completedSeconds;
       }
       return true;
     });
+  }
+
+  function completedFilterSeconds(value) {
+    const completedWindows = {
+      hour: 60 * 60,
+      day: 24 * 60 * 60,
+      week: 7 * 24 * 60 * 60,
+      month: 30 * 24 * 60 * 60
+    };
+    if (Object.prototype.hasOwnProperty.call(completedWindows, value)) {
+      return completedWindows[value];
+    }
+    const legacyDays = Number(value);
+    return legacyDays > 0 ? legacyDays * 24 * 60 * 60 : 0;
   }
 
   function jobCellText(job, index) {
@@ -4072,6 +4088,31 @@
     stack.appendChild(select);
     row.appendChild(stack);
     return row;
+  }
+
+  function renderJobActionsLegend() {
+    const legend = el("div", "ui2-tool-legend ui2-job-actions-legend");
+    legend.appendChild(el("strong", "ui2-job-legend-title", "Actions Legend"));
+    const items = el("div", "ui2-job-legend-list");
+    [
+      ["Attach", "→", "ui2-job-action-attach", "attach to job"],
+      ["Attach in new window", "⇒", "ui2-job-action-attach", "attach to job in a new window"],
+      ["Delete job", "⇓", "ui2-job-action-danger", "delete job"],
+      ["Cancel job", "⊗", "ui2-job-action-danger", "cancel job"],
+      ["Clear project lock", "🔒", "ui2-job-action-lock", "clear lock"]
+    ].forEach(([label, glyph, className, text], index) => {
+      const item = el("span", "ui2-job-legend-item");
+      const icon = el("span", `ui2-mini-button ui2-job-action-icon ${className}`, glyph);
+      icon.title = label;
+      icon.setAttribute("aria-hidden", "true");
+      item.append(icon, document.createTextNode(` ${text}`));
+      items.appendChild(item);
+      if (index < 4) {
+        items.appendChild(document.createTextNode("; "));
+      }
+    });
+    legend.appendChild(items);
+    return legend;
   }
 
   function renderToolOutput(label, field) {

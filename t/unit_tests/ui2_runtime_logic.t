@@ -1030,15 +1030,28 @@ function legacyJob(id, moduleName, project, endSeconds, endText, duration, detai
 
 const now = 2000000;
 const rows = [
-  job("recent", "tools/data_interpolation", "hello", now - 3600, "", "0.7s"),
+  job("recent", "tools/data_interpolation", "hello", now - 1800, "", "0.7s"),
+  job("same-day", "tools/data_interpolation", "hello", now - 12 * 3600, "", "0.75s"),
   job("old", "tools/data_interpolation", "hello", now - 3 * 86400, "", "0.8s"),
   job("running", "tools/data_interpolation", "hello", 0, "", "active")
 ];
 
 assert.deepStrictEqual(
-  hooks.filterJobRows(rows, { running: false, completed: "1", project: "*all*", module: "*all*" }, now).map((row) => row.id),
+  hooks.filterJobRows(rows, { running: false, completed: "hour", project: "*all*", module: "*all*" }, now).map((row) => row.id),
   ["recent"],
-  "completed-days filter keeps only recent completed jobs"
+  "completed-hour filter keeps only jobs completed in the last hour"
+);
+
+assert.deepStrictEqual(
+  hooks.filterJobRows(rows, { running: false, completed: "1", project: "*all*", module: "*all*" }, now).map((row) => row.id),
+  ["recent", "same-day"],
+  "legacy completed-days filter keeps only recent completed jobs"
+);
+
+assert.deepStrictEqual(
+  hooks.filterJobRows(rows, { running: false, completed: "week", project: "*all*", module: "*all*" }, now).map((row) => row.id),
+  ["recent", "same-day", "old"],
+  "completed-week filter maps to the legacy seven-day window"
 );
 
 assert.deepStrictEqual(
@@ -1055,7 +1068,7 @@ assert.deepStrictEqual(
 
 assert.deepStrictEqual(
   hooks.filterJobRows(rows, { running: false, completed: "*all*", project: "hello", module: "tools/data_interpolation" }, now).map((row) => row.id),
-  ["recent", "old", "running"],
+  ["recent", "same-day", "old", "running"],
   "project and module filters match loaded row values"
 );
 

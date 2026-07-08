@@ -1352,6 +1352,33 @@ code {
   color: #f2d36b;
 }
 
+.ui2-job-actions-legend {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.25rem;
+}
+
+.ui2-job-legend-title {
+  color: var(--ui2-text);
+}
+
+.ui2-job-legend-list {
+  color: var(--ui2-muted);
+  line-height: 1.9;
+}
+
+.ui2-job-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-right: 0.25rem;
+  white-space: nowrap;
+}
+
+.ui2-job-actions-legend .ui2-mini-button {
+  cursor: default;
+}
+
 .ui2-job-row-running {
   background: rgba(255, 95, 109, 0.05);
 }
