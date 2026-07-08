@@ -50,6 +50,8 @@
     view: {},
     values: {},
     serverSelections: {},
+    lastServerFileDir: "",
+    lastServerFileSessionKey: "",
     jobSelections: {},
     submitResponse: null,
     activeJob: null,
@@ -311,8 +313,7 @@
         throw new Error(`session status returned ${response.status}`);
       }
       const payload = await response.json();
-      state.session.logon = stringValue(payload._logon);
-      state.session.project = stringValue(payload._project);
+      updateSessionIdentity(payload);
       state.session.groups = payload._groups || {};
       state.session.usergroups = Array.isArray(payload._usergroups) ? payload._usergroups : [];
       state.session.theme = stringValue(payload._theme);
@@ -380,6 +381,25 @@
       return;
     }
     openSplashDialog();
+  }
+
+  function updateSessionIdentity(payload) {
+    const previousKey = serverFileSessionKey();
+    state.session.logon = stringValue(payload?._logon);
+    state.session.project = stringValue(payload?._project);
+    const nextKey = serverFileSessionKey();
+    if (previousKey !== nextKey) {
+      clearRememberedServerFileDir();
+    }
+  }
+
+  function serverFileSessionKey() {
+    return `${state.session.logon || ""}:${state.session.project || ""}`;
+  }
+
+  function clearRememberedServerFileDir() {
+    state.lastServerFileDir = "";
+    state.lastServerFileSessionKey = serverFileSessionKey();
   }
 
   async function handleLogonAction() {
@@ -550,8 +570,7 @@
       if (!response.ok || payload.error) {
         throw new Error(payload.error || `Login returned HTTP ${response.status}`);
       }
-      state.session.logon = stringValue(payload._logon);
-      state.session.project = stringValue(payload._project);
+      updateSessionIdentity(payload);
       state.session.usergroups = Array.isArray(payload._usergroups) ? payload._usergroups : [];
       state.session.loaded = true;
       renderSessionState();
@@ -584,8 +603,7 @@
         credentials: "same-origin"
       });
       const payload = await response.json();
-      state.session.logon = stringValue(payload._logon);
-      state.session.project = stringValue(payload._project);
+      updateSessionIdentity(payload);
       state.session.loaded = true;
       state.session.restricted = [];
       renderMenu();
@@ -1900,6 +1918,14 @@
     header.append(title, close);
 
     const path = el("div", "ui2-server-path", "User files");
+    const nav = el("div", "ui2-file-actions");
+    const up = el("button", "ui2-button ui2-button-quiet", "Up");
+    up.type = "button";
+    const home = el("button", "ui2-button ui2-button-quiet", "Home");
+    home.type = "button";
+    const project = el("button", "ui2-button ui2-button-quiet", "Project");
+    project.type = "button";
+    nav.append(up, home, project);
     const list = el("div", "ui2-server-file-tree");
     list.setAttribute("role", "tree");
     const status = el("div", "ui2-submit-status", "Loading server files...");
@@ -1913,18 +1939,24 @@
     actions.append(choose, cancel);
 
     let selected = null;
+    let currentDir = "#";
     const load = async (dirId, loadOptions) => {
       if (loadOptions?.inline) {
         return fetchServerFileEntries(dirId);
       }
+      currentDir = normalizeServerFileDir(dirId);
       status.textContent = "Loading server files...";
       status.dataset.status = "";
       list.innerHTML = "";
       choose.disabled = true;
       selected = null;
       try {
-        const entries = await fetchServerFileEntries(dirId);
-        path.textContent = dirId && dirId !== "#" ? `User files / ${decodeServerFileId(dirId)}` : "User files";
+        const entries = await fetchServerFileEntries(currentDir);
+        rememberServerFileDir(currentDir);
+        path.textContent = serverFileDirLabel(currentDir);
+        up.disabled = currentDir === "#";
+        home.disabled = currentDir === "#";
+        project.disabled = !serverFileProjectDir() || currentDir === serverFileProjectDir();
         renderServerFileTree(entries, list, {
           mode: serverFileType(field),
           load,
@@ -1950,21 +1982,31 @@
       targetInput.value = decodeServerFileId(selected.id).replace(/^\.\//, "");
       targetInput.dispatchEvent(new Event("input", { bubbles: true }));
       setServerSelection(field, options?.repeatTableIndex, selected);
+      rememberServerFileDir(serverFileRememberDirForSelection(selected, serverFileType(field)));
       overlay.remove();
     });
 
-    panel.append(header, path, list, status, actions);
+    up.addEventListener("click", () => load(serverFileParentDir(currentDir)));
+    home.addEventListener("click", () => load("#"));
+    project.addEventListener("click", () => {
+      const projectDir = serverFileProjectDir();
+      if (projectDir) {
+        load(projectDir);
+      }
+    });
+
+    panel.append(header, path, nav, list, status, actions);
     overlay.appendChild(panel);
     document.body.appendChild(overlay);
-    load("#");
+    load(serverFileInitialDir());
   }
 
-  async function fetchServerFileEntries(dirId) {
+  async function fetchServerFileEntries(dirId, options = {}) {
     const url = new URL(legacyEndpoint("filesBase", "ajax/sys_config/sys_files.php"), window.location.href);
     url.searchParams.set("_window", window.name);
     url.searchParams.set("_spec", "fc_cache");
     url.searchParams.set("_spec_dir", dirId && dirId !== "#" ? dirId : "");
-    if (state.session.project && state.session.project !== "no_project_specified") {
+    if (options.projectScoped && state.session.project && state.session.project !== "no_project_specified") {
       url.searchParams.set("project", state.session.project);
     }
     const response = await fetch(url.toString(), {
@@ -1972,6 +2014,61 @@
     });
     const payload = await parseJsonResponse(response, "Server file browser");
     return Array.isArray(payload) ? payload : [];
+  }
+
+  function serverFileInitialDir() {
+    const sessionKey = serverFileSessionKey();
+    if (state.lastServerFileSessionKey === sessionKey && state.lastServerFileDir) {
+      return normalizeServerFileDir(state.lastServerFileDir);
+    }
+    return serverFileProjectDir() || "#";
+  }
+
+  function serverFileProjectDir() {
+    const project = stringValue(state.session.project).trim();
+    if (!project || project === "no_project_specified") {
+      return "";
+    }
+    return encodeServerFilePath(`./${project}`);
+  }
+
+  function rememberServerFileDir(dirId) {
+    state.lastServerFileDir = normalizeServerFileDir(dirId);
+    state.lastServerFileSessionKey = serverFileSessionKey();
+  }
+
+  function serverFileRememberDirForSelection(entry, mode) {
+    const dir = normalizeServerFileDir(entry?.id);
+    if (mode === "rpath") {
+      return dir;
+    }
+    return serverFileParentDir(dir);
+  }
+
+  function serverFileParentDir(dirId) {
+    const path = decodeServerFileId(normalizeServerFileDir(dirId)).replace(/\/+$/, "");
+    if (!path || path === "." || path === "./") {
+      return "#";
+    }
+    const clean = path.replace(/^\.\//, "");
+    const parts = clean.split("/").filter(Boolean);
+    if (parts.length <= 1) {
+      return "#";
+    }
+    return encodeServerFilePath(`./${parts.slice(0, -1).join("/")}`);
+  }
+
+  function serverFileDirLabel(dirId) {
+    const path = decodeServerFileId(normalizeServerFileDir(dirId)).replace(/^\.\//, "");
+    return path ? `User files / ${path}` : "User files";
+  }
+
+  function normalizeServerFileDir(dirId) {
+    return dirId && dirId !== "#" ? dirId : "#";
+  }
+
+  function encodeServerFilePath(path) {
+    return btoa(path);
   }
 
   function renderServerFileTree(entries, container, options) {
@@ -2844,7 +2941,7 @@
     if (!response.ok || payload.error) {
       throw new Error(payload.error || `Project selection returned HTTP ${response.status}`);
     }
-    state.session.project = selected;
+    updateSessionIdentity({ _logon: state.session.logon, _project: selected });
     renderSessionState();
     return payload;
   }
@@ -6065,6 +6162,11 @@
       fileDownloadLinks,
       moduleSubmitEndpointFor,
       buildSubmitFormData,
+      serverFileInitialDir,
+      serverFileProjectDir,
+      serverFileParentDir,
+      serverFileRememberDirForSelection,
+      serverFileDirLabel,
       serverSelectionDisplayPath,
       serverFileTreeSelectable,
       serverFileEntryIsFolder,

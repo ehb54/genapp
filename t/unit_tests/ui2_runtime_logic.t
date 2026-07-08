@@ -293,6 +293,21 @@ assert.strictEqual(hooks.serverFileTreeSelectable(folderEntry, "rpath"), true, "
 assert.strictEqual(hooks.serverFileTreeSelectable(fileEntry, "rpath"), false, "UI2 rpath chooser does not select file leaves");
 assert.strictEqual(hooks.fileEntryName(fileEntry), "input.pdb", "UI2 server file tree strips metadata from the visible file name");
 assert.strictEqual(hooks.fileEntryDetails(fileEntry), "1.2Mb | 2026 Jul 03 12:00:00 UTC", "UI2 server file tree preserves file metadata separately");
+hooks.state.session = { logon: "Joseph", project: "hello" };
+hooks.state.lastServerFileDir = "";
+hooks.state.lastServerFileSessionKey = "";
+assert.strictEqual(hooks.serverFileProjectDir(), btoa("./hello"), "UI2 server chooser can root at the current project without using project-scoped ajax");
+assert.strictEqual(hooks.serverFileInitialDir(), btoa("./hello"), "UI2 server chooser starts in the current project when no path is remembered");
+hooks.state.lastServerFileDir = btoa("./test3");
+hooks.state.lastServerFileSessionKey = "Joseph:hello";
+assert.strictEqual(hooks.serverFileInitialDir(), btoa("./test3"), "UI2 server chooser reopens the last folder in the same user/project session");
+hooks.state.lastServerFileSessionKey = "Joseph:other";
+assert.strictEqual(hooks.serverFileInitialDir(), btoa("./hello"), "UI2 server chooser ignores a remembered folder from another project session");
+assert.strictEqual(hooks.serverFileParentDir(btoa("./hello/subdir")), btoa("./hello"), "UI2 server chooser computes an up-folder target");
+assert.strictEqual(hooks.serverFileParentDir(btoa("./hello")), "#", "UI2 server chooser can move up from a project to the user root");
+assert.strictEqual(hooks.serverFileRememberDirForSelection(fileEntry, "lrfile"), btoa("./project"), "UI2 remembers the containing folder after selecting a server file");
+assert.strictEqual(hooks.serverFileRememberDirForSelection(folderEntry, "rpath"), btoa("./project"), "UI2 remembers the selected folder after selecting a server path");
+assert.strictEqual(hooks.serverFileDirLabel(btoa("./project/subdir")), "User files / project/subdir", "UI2 labels server chooser paths relative to the user file root");
 
 function conditionRow(id, type, value) {
   const row = createNode("div");
