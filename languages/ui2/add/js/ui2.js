@@ -359,12 +359,14 @@
     }
   }
 
+  function sessionProjectName() {
+    return stringValue(state.session.project).trim() || "no_project_specified";
+  }
+
   function renderSessionState(error) {
-    const project = state.session.project && state.session.project !== "no_project_specified"
-      ? state.session.project
-      : "";
+    const project = sessionProjectName();
     if (nodes.sessionStatus) {
-      nodes.sessionStatus.textContent = project ? `Project ${project}` : "Project";
+      nodes.sessionStatus.textContent = `Project ${project}`;
       nodes.sessionStatus.title = state.session.logon
         ? `Logged on as ${state.session.logon}`
         : (error ? `Session status unavailable: ${error.message}` : "Not logged on");
@@ -6322,6 +6324,8 @@
       applyRuntimePayload,
       applyInputPayload,
       applySavedJobInput,
+      renderSessionState,
+      sessionProjectName,
       state
     };
   }

@@ -307,11 +307,27 @@ const context = {
 };
 context.globalThis = context;
 
+const sessionStatus = createNode("span");
+sessionStatus.id = "ui2-session-status";
+document.body.appendChild(sessionStatus);
+
 vm.createContext(context);
 vm.runInContext(source, context, { filename: "ui2.js" });
 
 const hooks = context.window.GenAppUi2TestHooks;
 assert(hooks, "test hooks were exposed");
+
+hooks.state.session = { logon: "Joseph", project: "" };
+hooks.renderSessionState();
+assert.strictEqual(sessionStatus.textContent, "Project no_project_specified", "UI2 header uses the legacy default project for empty project state");
+hooks.state.session.project = "no_project_specified";
+hooks.renderSessionState();
+assert.strictEqual(sessionStatus.textContent, "Project no_project_specified", "UI2 header displays the legacy default project name");
+hooks.state.session.project = "hello";
+hooks.renderSessionState();
+assert.strictEqual(sessionStatus.textContent, "Project hello", "UI2 header displays selected project names");
+hooks.state.session.project = "  ";
+assert.strictEqual(hooks.sessionProjectName(), "no_project_specified", "UI2 treats blank project strings as the legacy default project");
 
 const folderEntry = { id: btoa("./project"), text: "project", children: true };
 const fileEntry = { id: btoa("./project/input.pdb"), text: "input.pdb | 1.2Mb | 2026 Jul 03 12:00:00 UTC" };
