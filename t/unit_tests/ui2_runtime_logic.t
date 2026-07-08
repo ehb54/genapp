@@ -92,7 +92,14 @@ function createNode(tag) {
     querySelectorAll(selector) {
       return querySelectorAllFrom(this, selector);
     },
-    closest() {
+    closest(selector) {
+      let current = this;
+      while (current) {
+        if (matchesSelector(current, selector)) {
+          return current;
+        }
+        current = current.parentNode || null;
+      }
       return null;
     },
     setAttribute(name, value) {
@@ -121,6 +128,21 @@ function createNode(tag) {
     },
     get lastElementChild() {
       return this.children.length ? this.children[this.children.length - 1] : null;
+    },
+    get parentElement() {
+      return this.parentNode || null;
+    },
+    get rows() {
+      return this.tagName === "TBODY" || this.tagName === "TABLE"
+        ? this.children.filter((child) => child.tagName === "TR")
+        : undefined;
+    },
+    deleteRow(index) {
+      const rows = this.rows || [];
+      const row = rows[index];
+      if (row) {
+        this.removeChild(row);
+      }
     }
   };
   return node;
@@ -133,6 +155,14 @@ function querySelectorFrom(root, selector) {
 function querySelectorAllFrom(root, selector) {
   const selectors = String(selector || "").split(",").map((item) => item.trim()).filter(Boolean);
   const results = [];
+  if (selectors.length === 1 && /\\s+/.test(selectors[0])) {
+    const parts = selectors[0].split(/\\s+/).filter(Boolean);
+    let scopes = [root];
+    parts.forEach((part) => {
+      scopes = scopes.flatMap((scope) => querySelectorAllFrom(scope, part));
+    });
+    return scopes;
+  }
   function walk(node) {
     (node.children || []).forEach((child) => {
       if (selectors.some((item) => matchesSelector(child, item))) {
@@ -459,6 +489,92 @@ assert.deepStrictEqual(
   ["move_type", "flexible_region"],
   "UI2 excludes layout labels from tableized repeat columns"
 );
+
+function ui2MultiColumnRepeatForm() {
+  const form = createNode("form");
+  form.id = "ui2-form";
+
+  const runRow = createNode("div");
+  runRow.className = "ui2-field";
+  runRow.dataset.fieldId = "run_name";
+  const runName = createNode("input");
+  runName.type = "text";
+  runName.dataset.fieldId = "run_name";
+  runName.value = "run_0";
+  runRow.appendChild(runName);
+  form.appendChild(runRow);
+
+  const controllerRow = createNode("div");
+  controllerRow.className = "ui2-field ui2-tableized-repeater";
+  controllerRow.dataset.fieldId = "number_contrast_points";
+  const controller = createNode("input");
+  controller.type = "number";
+  controller.dataset.fieldId = "number_contrast_points";
+  controller.value = "4";
+  controllerRow.appendChild(controller);
+  controllerRow._ui2RepeatTableController = {
+    id: "number_contrast_points",
+    type: "integer",
+    min: 1,
+    default: 4
+  };
+  controllerRow._ui2RepeatTableFields = [
+    { id: "d2o_fraction", type: "float", default: ["0.0", "0.2", "0.85", "1.0"] },
+    { id: "total_concentration", type: "float", default: ["7.7", "7.7", "7.7", "7.7"] },
+    { id: "total_concentration_error", type: "float", default: ["0.4", "0.4", "0.4", "0.4"] },
+    { id: "i_zero", type: "float", default: ["0.85", "0.534", "0.013", "0.095"] },
+    { id: "i_zero_error", type: "float", default: ["0.01", "0.044", "0.003", "0.002"] }
+  ];
+  const table = createNode("table");
+  table.className = "ui2-repeat-table";
+  const tbody = createNode("tbody");
+  table.appendChild(tbody);
+  controllerRow.appendChild(table);
+  form.appendChild(controllerRow);
+  document.body.appendChild(form);
+  return { form, runName, controller, controllerRow, tbody };
+}
+
+document.body.children = [];
+hooks.state.module = {
+  fields: [
+    { id: "run_name", type: "text", default: "run_0" },
+    { id: "number_contrast_points", type: "integer", default: 4, min: 1, repeater: "true", tableize: "true" },
+    { id: "d2o_fraction", type: "float", default: ["0.0", "0.2", "0.85", "1.0"], repeat: "number_contrast_points" },
+    { id: "total_concentration", type: "float", default: ["7.7", "7.7", "7.7", "7.7"], repeat: "number_contrast_points" },
+    { id: "total_concentration_error", type: "float", default: ["0.4", "0.4", "0.4", "0.4"], repeat: "number_contrast_points" },
+    { id: "i_zero", type: "float", default: ["0.85", "0.534", "0.013", "0.095"], repeat: "number_contrast_points" },
+    { id: "i_zero_error", type: "float", default: ["0.01", "0.044", "0.003", "0.002"], repeat: "number_contrast_points" }
+  ]
+};
+const multiRepeat = ui2MultiColumnRepeatForm();
+hooks.applyInputPayload({
+  run_name: "run_33",
+  number_contrast_points: "4",
+  d2o_fraction: ["0.0", "0.15", "0.85", "1.0"],
+  total_concentration: ["7.7", "7.7", "7.7", "7.7"],
+  total_concentration_error: ["0.4", "0.4", "0.4", "0.4"],
+  i_zero: ["0.85", "0.534", "0.013", "0.095"],
+  i_zero_error: ["0.01", "0.044", "0.003", "0.002"]
+});
+assert.strictEqual(multiRepeat.runName.value, "run_33", "UI2 reattach restores scalar values before repeated table replay");
+assert.strictEqual(multiRepeat.tbody.rows.length, 4, "UI2 reattach builds the repeated table row count from saved input");
+assert.strictEqual(
+  multiRepeat.tbody.rows[1].children[0].children[0].value,
+  "0.15",
+  "UI2 reattach preserves changed values in plain tableized repeaters"
+);
+multiRepeat.runName.value = "mutated";
+multiRepeat.controller.value = "4";
+multiRepeat.tbody.rows[1].children[0].children[0].value = "0.15";
+hooks.resetModuleForm(multiRepeat.form);
+assert.strictEqual(multiRepeat.runName.value, "run_0", "UI2 reset restores scalar module defaults");
+assert.strictEqual(
+  multiRepeat.tbody.rows[1].children[0].children[0].value,
+  "0.2",
+  "UI2 reset restores tableized repeater defaults instead of blanking saved values"
+);
+document.body.children = [];
 
 function ui2FormControl(form, fieldId, value, repeatIndex) {
   const control = createNode("input");

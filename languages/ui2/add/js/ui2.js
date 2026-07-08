@@ -925,9 +925,10 @@
       event.preventDefault();
       await submitModule(form);
     });
-    form.addEventListener("reset", () => {
+    form.addEventListener("reset", (event) => {
+      event.preventDefault();
       stopJobPolling();
-      window.setTimeout(syncValues, 0);
+      resetModuleForm(form);
     });
     form.addEventListener("input", syncValues);
     form.addEventListener("change", syncValues);
@@ -1653,6 +1654,7 @@
       });
       wireRepeatTableControl(select, field, rowIndex);
       select.value = arrayDefaultValue(field.default, rowIndex) || select.value;
+      select.defaultValue = select.value;
       setHoverHelp(select, field.help);
       return select;
     }
@@ -1662,6 +1664,7 @@
       const input = document.createElement("input");
       input.type = "checkbox";
       input.checked = checkboxDefault(field, rowIndex);
+      input.defaultChecked = input.checked;
       wireRepeatTableControl(input, field, rowIndex);
       wrap.appendChild(input);
       setHoverHelp(wrap, field.help);
@@ -1680,6 +1683,7 @@
     input.type = inputType(type);
     wireRepeatTableControl(input, field, rowIndex);
     input.value = arrayDefaultValue(field.default, rowIndex);
+    input.defaultValue = input.value;
     setHoverHelp(input, field.help);
     return input;
   }
@@ -1698,6 +1702,7 @@
       const textarea = el("textarea", "ui2-textarea");
       wireControl(textarea, field);
       textarea.value = field.default || "";
+      textarea.defaultValue = textarea.value;
       return textarea;
     }
     if (type === "checkbox") {
@@ -1705,6 +1710,7 @@
       const input = document.createElement("input");
       input.type = "checkbox";
       input.checked = String(field.checked || field.default || "").toLowerCase() === "true";
+      input.defaultChecked = input.checked;
       wireControl(input, field);
       label.append(input);
       return label;
@@ -1719,6 +1725,7 @@
       });
       wireControl(select, field);
       select.value = field.default || select.value;
+      select.defaultValue = select.value;
       return select;
     }
     if (type === "radio") {
@@ -1742,6 +1749,7 @@
         input.name = field.name || field.id;
         input.value = choice.value;
         input.checked = String(field.default || "") === choice.value || (!field.default && index === 0);
+        input.defaultChecked = input.checked;
         wireControl(input, field);
         item.append(input, document.createTextNode(choice.label));
         group.appendChild(item);
@@ -1785,6 +1793,7 @@
     }
     wireControl(input, field);
     input.value = field.default == null ? "" : field.default;
+    input.defaultValue = input.value;
     return input;
   }
 
@@ -1859,6 +1868,7 @@
       input.dataset.sync = field.sync;
     }
     input.value = arrayDefaultValue(field.default, options?.repeatTableIndex || 0);
+    input.defaultValue = input.value;
 
     const localPicker = document.createElement("input");
     localPicker.type = "file";
@@ -4093,6 +4103,18 @@
     }
   }
 
+  function resetModuleForm(form) {
+    if (!form) {
+      return;
+    }
+    state.serverSelections = {};
+    state.jobSelections = {};
+    applyInputPayload(defaultInputPayload(), { clearMissing: true });
+    clearRuntimeOutputs(form);
+    clearSubmitResponse();
+    setSubmitStatus(document.getElementById("ui2-submit-status"), "", "");
+  }
+
   async function submitModule(form) {
     syncValues();
     const endpoint = moduleSubmitEndpoint();
@@ -4540,13 +4562,16 @@
     return parseJsonResponse(response, "UI2 job input");
   }
 
-  function applyInputPayload(inputs) {
+  function applyInputPayload(inputs, options = {}) {
     if (!inputs || typeof inputs !== "object") {
       return;
     }
     restoreServerSelections(inputs);
     const entries = Object.entries(inputs).filter(([id]) => id && !id.startsWith("_"));
-    const dependencyIds = conditionalRepeatDependencyIds(document.getElementById("ui2-form"));
+    const dependencyIds = new Set([
+      ...conditionalRepeatDependencyIds(document.getElementById("ui2-form")),
+      ...repeaterControllerIds()
+    ]);
     const restored = new Set();
     entries.forEach(([id, value]) => {
       if (!dependencyIds.has(id)) {
@@ -4564,7 +4589,63 @@
       }
       setInputControlValue(id, value);
     });
+    if (options.clearMissing) {
+      clearMissingInputValues(new Set(entries.map(([id]) => id)));
+    }
     syncValues();
+  }
+
+  function defaultInputPayload() {
+    const payload = {};
+    (state.module?.fields || []).forEach((field) => {
+      if (!field?.id || field.role === "output" || isLayoutLabel(field)) {
+        return;
+      }
+      payload[field.id] = defaultValueForField(field);
+    });
+    return payload;
+  }
+
+  function defaultValueForField(field) {
+    const type = String(field.type || "text").toLowerCase();
+    if (type === "checkbox") {
+      return checkboxDefault(field, 0);
+    }
+    if (type === "radio") {
+      return field.default == null ? "" : field.default;
+    }
+    if (Array.isArray(field.default)) {
+      return JSON.parse(JSON.stringify(field.default));
+    }
+    return field.default == null ? "" : field.default;
+  }
+
+  function repeaterControllerIds() {
+    const ids = new Set();
+    (state.module?.fields || []).forEach((field) => {
+      if (field?.id && isRepeater(field)) {
+        ids.add(field.id);
+      }
+    });
+    return Array.from(ids);
+  }
+
+  function clearMissingInputValues(ids) {
+    const form = document.getElementById("ui2-form");
+    if (!form) {
+      return;
+    }
+    fieldControls(form).forEach((control) => {
+      const id = control.dataset.fieldId;
+      if (!id || ids.has(id) || control.dataset.outputFieldId) {
+        return;
+      }
+      if (control.type === "checkbox" || control.type === "radio") {
+        control.checked = false;
+      } else if (control.type !== "file") {
+        control.value = "";
+      }
+    });
   }
 
   function mergeSavedInputPayloads(primary, saved) {
@@ -4650,7 +4731,7 @@
     const controls = Array.from(document.querySelectorAll(`[data-field-id="${cssEscape(id)}"]`))
       .filter((control) => !control.dataset.outputFieldId && control.closest("#ui2-form"));
     controls.forEach((control, index) => {
-      const controlValue = Array.isArray(value) ? value[index] ?? value[0] ?? "" : value;
+      const controlValue = inputControlValue(value, control, index);
       if (control.type === "file") {
         return;
       }
@@ -4664,6 +4745,24 @@
       control.dispatchEvent(new Event("input", { bubbles: true }));
       control.dispatchEvent(new Event("change", { bubbles: true }));
     });
+  }
+
+  function inputControlValue(value, control, index) {
+    if (!Array.isArray(value)) {
+      return value;
+    }
+    if (control.dataset.matrixRow != null && control.dataset.matrixColumn != null) {
+      return matrixDefaultValue(
+        value,
+        Number(control.dataset.matrixRow || 0),
+        Number(control.dataset.matrixColumn || 0)
+      );
+    }
+    if (control.dataset.repeatTableIndex != null) {
+      const repeatIndex = Number(control.dataset.repeatTableIndex || 0);
+      return value[repeatIndex] ?? value[0] ?? "";
+    }
+    return value[index] ?? value[0] ?? "";
   }
 
   function nextPollDelay(lastDelay) {
@@ -5386,6 +5485,10 @@
     }
   }
 
+  function clearSubmitResponse() {
+    document.getElementById("ui2-submit-response")?.remove();
+  }
+
   function collectControlValues(scope, includeControl) {
     const values = {};
     fieldControls(scope).forEach((control) => {
@@ -5514,6 +5617,7 @@
         while (listBody.children.length > wanted) {
           listBody.removeChild(listBody.lastElementChild);
         }
+        applyRepeatTableValues(listBody, [listField], rawValues);
         return;
       }
       if (!tbody) {
@@ -5525,6 +5629,27 @@
       while (tbody.rows.length > wanted) {
         tbody.deleteRow(tbody.rows.length - 1);
       }
+      applyRepeatTableValues(tbody, fields, rawValues);
+    });
+  }
+
+  function applyRepeatTableValues(scope, fields, rawValues) {
+    repeatTableFields(fields || []).forEach((field) => {
+      const values = rawValues?.[field.id];
+      if (!Array.isArray(values)) {
+        return;
+      }
+      Array.from(scope.querySelectorAll(`[data-repeat-table-field="${cssEscape(field.id)}"]`)).forEach((control, index) => {
+        const value = inputControlValue(values, control, index);
+        if (control.type === "file") {
+          return;
+        }
+        if (control.type === "checkbox") {
+          control.checked = value === true || String(value).toLowerCase() === "true" || String(value) === "1";
+        } else {
+          control.value = value == null ? "" : String(value);
+        }
+      });
     });
   }
 
@@ -6192,6 +6317,8 @@
       repeatTableFields,
       repeatCount,
       updateRepeatTables,
+      defaultInputPayload,
+      resetModuleForm,
       applyRuntimePayload,
       applyInputPayload,
       applySavedJobInput,

@@ -182,13 +182,14 @@ like( $ui2_js, qr/applySavedJobInput\(pollUuid\)/, 'ui2 Job Manager explicitly r
 like( $ui2_js, qr/startJobPolling\(pollUuid, form, status, false, !restoredInput\)/, 'ui2 Job Manager polls the uuid from the legacy switch target after input restore' );
 like( $ui2_js, qr/ajax\/ui2_job_input\.php/, 'ui2 Job Manager has a target-local saved input fallback endpoint' );
 like( $ui2_js, qr/function moduleIdFromSwitchParts\(parts\)/, 'ui2 Job Manager parses legacy switch targets without assuming one shape' );
-like( $ui2_js, qr/function applyInputPayload\(inputs\)/, 'ui2 Job Manager can hydrate form inputs from reattached job payloads' );
+like( $ui2_js, qr/function applyInputPayload\(inputs, options = \{\}\)/, 'ui2 Job Manager can hydrate form inputs from reattached job payloads' );
 like( $ui2_js, qr/function repeatIsCondition\(expression\)/, 'ui2 runtime detects expression-style repeat visibility conditions' );
 like( $ui2_js, qr/function repeatConditionTokens\(expression\)/, 'ui2 runtime tokenizes expression-style repeat visibility conditions' );
 like( $ui2_js, qr/function repeatConditionValue\(expression, rawValues, activeRows, rowsByFieldId\)/, 'ui2 runtime evaluates expression-style repeat visibility conditions' );
 like( $ui2_js, qr/function repeatControllerId\(expression\).*?repeatIsCondition\(String\(expression\)\).*?return ""/s, 'ui2 repeater planning ignores expression repeat visibility gates' );
-like( $ui2_js, qr/function conditionalRepeatDependencyIds\(scope\).*?repeatIsCondition\(expression\).*?repeatConditionDeps\(expression\)/s, 'ui2 replay dependency ordering is limited to expression repeat gates' );
-like( $ui2_js, qr/function applyInputPayload\(inputs\).*?conditionalRepeatDependencyIds\(document\.getElementById\("ui2-form"\)\).*?syncValues\(\).*?entries\.forEach/s, 'ui2 reattached input replay restores repeat-condition dependencies before dependent values' );
+like( $ui2_js, qr/function conditionalRepeatDependencyIds\(scope\).*?repeatIsCondition\(expression\).*?repeatConditionDeps\(expression\)/s, 'ui2 replay dependency ordering includes expression repeat gates' );
+like( $ui2_js, qr/function repeaterControllerIds\(\).*?isRepeater\(field\).*?ids\.add\(field\.id\)/s, 'ui2 replay dependency ordering includes repeater controllers' );
+like( $ui2_js, qr/function applyInputPayload\(inputs, options = \{\}\).*?conditionalRepeatDependencyIds\(document\.getElementById\("ui2-form"\)\).*?repeaterControllerIds\(\).*?syncValues\(\).*?entries\.forEach/s, 'ui2 reattached input replay restores repeat dependencies before dependent values' );
 like( $ui2_js, qr/function renderFileManagerTool\(module, fields\)/, 'ui2 has a dedicated File Manager shell' );
 like( $ui2_js, qr/function downloadFileManagerSelection\(table, status, links, module\)/, 'ui2 File Manager submits selected files for download and renders returned links' );
 like( $ui2_js, qr/function renderUserConfigTool\(module, fields\)/, 'ui2 has a dedicated Settings shell' );
