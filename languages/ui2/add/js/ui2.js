@@ -2447,11 +2447,6 @@
     tableWrap.appendChild(table);
     body.appendChild(tableWrap);
 
-    const messages = fields.find((field) => field.id === "messages");
-    if (messages) {
-      body.appendChild(renderToolOutput("Messages", messages));
-    }
-
     section.appendChild(body);
     table._ui2UtilityModuleId = moduleId;
     refresh.addEventListener("click", () => loadJobManagerRows(table));

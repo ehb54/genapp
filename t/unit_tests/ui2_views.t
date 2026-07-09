@@ -174,6 +174,7 @@ like( $ui2_js, qr/formData\.set\(`_selaltval_\$\{selection\.id\}`/, 'ui2 server 
 like( $ui2_js, qr/\$\{selection\.id\}_altval\[\]/, 'ui2 server file selections include legacy encoded alt values' );
 like( $ui2_js, qr/event\.isTrusted/, 'ui2 server file replay does not clear restored selections with synthetic events' );
 like( $ui2_js, qr/function renderJobManagerTool\(fields, moduleId = "sys_job_manager"\)/, 'ui2 has a dedicated Job Manager shell' );
+unlike( $ui2_js, qr/function renderJobManagerTool\(fields, moduleId = "sys_job_manager"\).*?renderToolOutput\("Messages"/s, 'ui2 Job Manager does not render its unused messages textarea output' );
 like( $ui2_js, qr/function fallbackUtilityModule\(moduleId\)/, 'ui2 can synthesize topbar utility modules not emitted into modules/' );
 like( $ui2_js, qr/ajax\/sys_config\/sys_jobs2\.php/, 'ui2 Job Manager loads rows from the legacy details-capable jobs endpoint' );
 like( $ui2_js, qr/function applyJobManagerFilters\(table\)/, 'ui2 Job Manager applies local table filters' );
