@@ -5164,8 +5164,9 @@
         return stage.loadFile(normalizeNglLoadName(payload.loadname), payload.loadparams || {}).then((component) => {
           output._ui2NglComponent = component;
           output._ui2NglReps = {};
-          nglRepresentationSpecs(payload).forEach((spec) => {
-            output._ui2NglReps[spec.type] = component.addRepresentation(spec.type, spec.params || {});
+          const specs = nglRepresentationSpecs(payload);
+          specs.forEach((spec, index) => {
+            output._ui2NglReps[nglRepresentationKey(spec, index)] = component.addRepresentation(spec.type, spec.params || {});
           });
           if (component.autoView) {
             component.autoView();
@@ -5173,7 +5174,11 @@
           if (stage.handleResize) {
             stage.handleResize();
           }
-          renderNglButtons(buttons, component, output._ui2NglReps);
+          if (Array.isArray(payload.representations) && payload.representations.length) {
+            renderNglLayerButtons(buttons, component, output._ui2NglReps, specs);
+          } else {
+            renderNglButtons(buttons, component, output._ui2NglReps);
+          }
         });
       })
       .catch((error) => {
@@ -5219,6 +5224,7 @@
     const reps = Array.isArray(payload?.representations) ? payload.representations : [];
     const specs = reps
       .map((rep) => ({
+        name: rep?.name || rep?.label || rep?.type || rep?.representation || "",
         type: rep?.type || rep?.representation || "",
         params: rep?.params || rep?.representationParams || {}
       }))
@@ -5227,9 +5233,43 @@
       return specs;
     }
     return [{
+      name: payload?.representation || "cartoon",
       type: payload?.representation || "cartoon",
       params: payload?.representationParams || {}
     }];
+  }
+
+  function nglRepresentationKey(spec, index) {
+    const key = spec?.type || "representation";
+    if (spec?.params?.sele) {
+      return `${key}:${spec.params.sele}:${index}`;
+    }
+    return index ? `${key}:${index}` : key;
+  }
+
+  function toggleNglRepresentation(button, component, reps, key, spec) {
+    if (reps[key] && component.removeRepresentation) {
+      component.removeRepresentation(reps[key]);
+      delete reps[key];
+      button.setAttribute("aria-pressed", "false");
+      return;
+    }
+    reps[key] = component.addRepresentation(spec.type, spec.params || {});
+    button.setAttribute("aria-pressed", "true");
+  }
+
+  function renderNglLayerButtons(container, component, reps, specs) {
+    container.textContent = "";
+    specs.forEach((spec, index) => {
+      const key = nglRepresentationKey(spec, index);
+      const button = el("button", "ui2-button ui2-button-quiet ui2-ngl-button", spec.name || spec.type);
+      button.type = "button";
+      button.setAttribute("aria-pressed", reps[key] ? "true" : "false");
+      button.addEventListener("click", () => {
+        toggleNglRepresentation(button, component, reps, key, spec);
+      });
+      container.appendChild(button);
+    });
   }
 
   function renderNglButtons(container, component, reps) {
@@ -5239,14 +5279,7 @@
       button.type = "button";
       button.setAttribute("aria-pressed", reps[type] ? "true" : "false");
       button.addEventListener("click", () => {
-        if (reps[type] && component.removeRepresentation) {
-          component.removeRepresentation(reps[type]);
-          delete reps[type];
-          button.setAttribute("aria-pressed", "false");
-          return;
-        }
-        reps[type] = component.addRepresentation(type, {});
-        button.setAttribute("aria-pressed", "true");
+        toggleNglRepresentation(button, component, reps, type, { type, params: {} });
       });
       container.appendChild(button);
     });
@@ -6345,6 +6378,7 @@
       parseNglPayload,
       normalizeNglLoadName,
       nglRepresentationSpecs,
+      nglRepresentationKey,
       applyPlotlyTheme,
       plotlyThemeColors,
       repeatIsCondition,

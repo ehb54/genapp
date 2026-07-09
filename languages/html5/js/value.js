@@ -1364,6 +1364,7 @@ ga.ngl.representationSpecs = function( v ) {
             rep = v.representations[ i ] || {};
             if ( rep.type ) {
                 specs.push( {
+                    name   : rep.name || rep.label || rep.type,
                     type   : rep.type,
                     params : rep.params || {}
                 } );
@@ -1373,6 +1374,7 @@ ga.ngl.representationSpecs = function( v ) {
 
     if ( !specs.length ) {
         specs.push( {
+            name   : v.representation || "cartoon",
             type   : v.representation || "cartoon",
             params : v.representationParams || {}
         } );
@@ -1398,6 +1400,57 @@ ga.ngl.addRepresentation = function( savekey, component, spec, index ) {
     return key;
 }
 
+ga.ngl.toggleRepresentation = function( savekey, key, spec, button ) {
+    var sk = ga.ngl[ savekey ];
+    if ( !sk || !sk.component ) {
+        return false;
+    }
+    if ( sk.reps[ key ] ) {
+        if ( sk.component.removeRepresentation ) {
+            sk.component.removeRepresentation( sk.reps[ key ] );
+        }
+        delete sk.reps[ key ];
+        $( button ).attr( "aria-pressed", "false" );
+    } else {
+        sk.reps[ key ] = sk.component.addRepresentation( spec.type, spec.params || {} );
+        $( button ).attr( "aria-pressed", "true" );
+    }
+    return false;
+}
+
+ga.ngl.renderLayerButtons = function( savekey, tid, specs ) {
+    var buttons = $( tid + "_buttons" );
+    buttons.empty();
+    for ( var i = 0; i < specs.length; ++i ) {
+        ( function( spec, index ) {
+            var key = ga.ngl.representationKey( spec, index );
+            var button = $( "<button type=\"button\" aria-pressed=\"true\"></button>" );
+            button.text( spec.name || spec.type );
+            button.on( "click", function() {
+                return ga.ngl.toggleRepresentation( savekey, key, spec, this );
+            } );
+            buttons.append( button );
+        } )( specs[ i ], i );
+    }
+}
+
+ga.ngl.renderTypeButtons = function( savekey, tid ) {
+    var buttons = $( tid + "_buttons" );
+    buttons.empty();
+    for ( var i = 0; i < ga.ngl.types.length; ++i ) {
+        ( function( type ) {
+            var spec = { type : type, params : {} };
+            var button = $( "<button type=\"button\"></button>" );
+            button.text( type );
+            button.attr( "aria-pressed", ga.ngl[ savekey ].reps[ type ] ? "true" : "false" );
+            button.on( "click", function() {
+                return ga.ngl.toggleRepresentation( savekey, type, spec, this );
+            } );
+            buttons.append( button );
+        } )( ga.ngl.types[ i ] );
+    }
+}
+
 ga.value.nglshow = function( mod, id, v ) {
     __~debug:ngl{console.log( "ga.value.nglshow( " + mod + " , " + id  + " , " + JSON.stringify( v ) + " )" );}
     var tid = "#" + id;
@@ -1412,7 +1465,6 @@ ga.value.nglshow = function( mod, id, v ) {
         ga.ngl[ savekey ] = {};
         ga.ngl[ savekey ].stage = new NGL.Stage( id + "_plot" );
         ga.ngl[ savekey ].stage.loadFile( v.loadname, v.loadparams ).then( function (component) {
-            var key;
             ga.ngl[ savekey ].component = component;
             ga.ngl[ savekey ].reps = {};
             for ( var j = 0; j < specs.length; ++j ) {
@@ -1420,18 +1472,12 @@ ga.value.nglshow = function( mod, id, v ) {
             }
             // provide a "good" view of the structure
             component.autoView();
-            
-            var al = ga.ngl.types.length;
-            var htmladd = "";
-            var evaladd = "";
-            for ( var i = 0; i < al; ++i ) {
-                htmladd += '<button id="' + ga.ngl.types[ i ].replace( '+', '' ) + '">' + ga.ngl.types[ i ] + '</button>';
-                key = ga.ngl.types[ i ];
-                evaladd += '$("#' + key.replace( '+', '' ) + '").on("click", function() { var sk = ga.ngl["' + savekey + '"]; var comp = sk.component; var crep = sk.reps["' + key + '"]; if ( comp && crep ) { comp.removeRepresentation( crep ); delete sk.reps["' + key + '"]; } else { sk.reps["' + key + '"] = comp.addRepresentation("' + key + '", {});} return false; });';
+
+            if ( v.representations && Array.isArray( v.representations ) && v.representations.length ) {
+                ga.ngl.renderLayerButtons( savekey, tid, specs );
+            } else {
+                ga.ngl.renderTypeButtons( savekey, tid );
             }
-            $( tid + "_buttons" ).html( htmladd );
-            __~debug:ngl{console.log( evaladd );}
-            eval ( evaladd );
         });
         $( "#global_data" ).data( savekey , v ); 
     }

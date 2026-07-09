@@ -1582,6 +1582,12 @@ code {
   gap: 0.5rem;
 }
 
+.ui2-ngl-button[aria-pressed="true"] {
+  border-color: var(--ui2-accent);
+  color: var(--ui2-text);
+  background: rgba(97, 211, 198, 0.16);
+}
+
 .ui2-ngl-placeholder {
   color: var(--ui2-muted);
 }

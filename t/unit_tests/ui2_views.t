@@ -273,6 +273,7 @@ like( $ui2_css, qr/\.ui2-captcha-dialog/, 'ui2 stylesheet includes a dedicated c
 like( $ui2_css, qr/\.ui2-splash-footer/, 'ui2 stylesheet includes splash footer metadata styles' );
 like( $ui2_css, qr/\.ui2-output-plotly/, 'ui2 stylesheet includes a stable Plotly output surface' );
 like( $ui2_css, qr/\.ui2-output-ngl\s*\{[^}]*white-space:\s*normal/s, 'ui2 stylesheet gives NGL outputs a non-text viewer container' );
+like( $ui2_css, qr/\.ui2-ngl-button\[aria-pressed="true"\]/, 'ui2 stylesheet makes active NGL layer buttons visible' );
 like( $ui2_css, qr/\.ui2-dynamic-output\s*\{[^}]*display:\s*grid/s, 'ui2 stylesheet stacks dynamic output instances' );
 like( $ui2_css, qr/\.ui2-field\[hidden\],[\s\n]*\.ui2-dynamic-output-row\[hidden\]\s*\{[^}]*display:\s*none !important/s, 'ui2 stylesheet really hides inactive dynamic output rows' );
 like( $ui2_css, qr/\.ui2-output-rendered/, 'ui2 stylesheet distinguishes rendered runtime output from placeholders' );

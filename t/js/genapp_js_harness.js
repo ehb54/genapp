@@ -183,6 +183,7 @@ function createDomHarness() {
       },
       empty() {
         ele.html = "";
+        ele.children = [];
         return this;
       },
       is(query) {
@@ -218,6 +219,14 @@ function createDomHarness() {
       addClass() { return this; },
       removeClass() { return this; },
       append(value) {
+        const child = value && typeof value.get === "function" ? value.get(0) : value;
+        if (child && typeof child === "object" && child.id) {
+          child.parentId = ele.id;
+          if (!ele.children.includes(child.id)) {
+            ele.children.push(child.id);
+          }
+          return this;
+        }
         ele.html += value;
         parseMarkup(value, ele.id, false);
         return this;
@@ -374,6 +383,15 @@ function createDomHarness() {
   function $(selector) {
     if (selector === global.document || selector === global.window) {
       return emptyWrapper();
+    }
+    if (typeof selector === "string" && selector.trim().startsWith("<")) {
+      const id = `created_${Object.keys(elements).length + 1}`;
+      const tag = (selector.match(/^<\s*([A-Za-z0-9_:-]+)/) || [null, "div"])[1];
+      const ele = element(id);
+      ele.nodeName = tag.toUpperCase();
+      ele.attributes = parseAttributes(selector);
+      ele.type = ele.attributes.type || "";
+      return wrapperFor(id);
     }
     if (selector && typeof selector === "object" && selector.id) {
       return wrapperFor(selector.id);
@@ -904,14 +922,15 @@ function runNglRepresentationScenario(gaPath) {
     "ngl show should pass single representationParams to addRepresentation"
   );
   assert(ga.ngl["module_output:#structure_ngl:last_value"].reps.cartoon, "single ngl representation should keep the legacy representation key");
+  assert(h.elements.structure_ngl_buttons.children.length === ga.ngl.types.length, "single ngl representation should keep the generic representation buttons");
 
   calls.length = 0;
   ga.value.nglshow("module_output", "structure_ngl", {
     loadname: "run_0/monomer_monte_carlo/monomer_monte_carlo_colored_movie.pdb",
     loadparams: { ext: "pdb", asTrajectory: true },
     representations: [
-      { type: "cartoon", params: { sele: "all", color: "blue" } },
-      { type: "cartoon", params: { sele: "bfactor > 0.5", color: "red" } },
+      { name: "reference ribbon", type: "cartoon", params: { sele: "all", color: "blue" } },
+      { name: "reference alignment basis", type: "cartoon", params: { sele: "bfactor > 0.5", color: "red" } },
     ],
   });
 
@@ -922,6 +941,14 @@ function runNglRepresentationScenario(gaPath) {
   assert(calls.some((call) => call.method === "dispose"), "ngl show should dispose the previous stage before reloading");
   assert(ga.ngl["module_output:#structure_ngl:last_value"].reps["cartoon:all:0"], "ngl show should retain the first representation handle");
   assert(ga.ngl["module_output:#structure_ngl:last_value"].reps["cartoon:bfactor > 0.5:1"], "ngl show should retain the second representation handle");
+  const layerButtons = h.elements.structure_ngl_buttons.children.map((id) => h.elements[id]);
+  assert(layerButtons.length === 2, "layered ngl representations should replace generic buttons with named layer buttons");
+  assert(layerButtons[0].html === "reference ribbon", "first layered ngl button should use the representation name");
+  assert(layerButtons[1].html === "reference alignment basis", "second layered ngl button should use the representation name");
+  calls.length = 0;
+  h.context.$(`#${layerButtons[1].id}`).trigger("click");
+  assert(calls.some((call) => call.method === "removeRepresentation" && call.rep.type === "cartoon" && call.rep.params.color === "red"), "layered ngl button should remove only the selected representation");
+  assert(!ga.ngl["module_output:#structure_ngl:last_value"].reps["cartoon:bfactor > 0.5:1"], "layered ngl button should clear the selected representation handle");
 }
 
 function setupCalcDrivenIntegerpairReplay(h) {

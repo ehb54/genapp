@@ -761,13 +761,18 @@ assert.strictEqual(
 );
 assert.strictEqual(
   JSON.stringify(hooks.nglRepresentationSpecs(nglPayload)),
-  JSON.stringify([{ type: "cartoon", params: { color: "blue" } }]),
+  JSON.stringify([{ name: "cartoon", type: "cartoon", params: { color: "blue" } }]),
   "UI2 preserves legacy NGL representation specs"
 );
 assert.strictEqual(
   JSON.stringify(hooks.nglRepresentationSpecs({ loadname: "model.pdb" })),
-  JSON.stringify([{ type: "cartoon", params: {} }]),
+  JSON.stringify([{ name: "cartoon", type: "cartoon", params: {} }]),
   "UI2 defaults NGL payloads to the legacy cartoon representation"
+);
+assert.strictEqual(
+  hooks.nglRepresentationKey({ type: "cartoon", params: { sele: "bfactor > 0.5" } }, 1),
+  "cartoon:bfactor > 0.5:1",
+  "UI2 keeps selection-specific NGL representation handles distinct"
 );
 
 window.__styleVars = {
