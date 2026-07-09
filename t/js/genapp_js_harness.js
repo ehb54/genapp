@@ -70,6 +70,15 @@ function createDomHarness() {
     return found;
   }
 
+  function deleteDescendants(parentId) {
+    descendantsOf(parentId).forEach((child) => {
+      delete elements[child.id];
+    });
+    if (elements[parentId]) {
+      elements[parentId].children = [];
+    }
+  }
+
   function parseAttributes(markup) {
     const attrs = {};
     const body = String(markup).replace(/^<\s*[A-Za-z0-9_:-]+/, "").replace(/\/?>$/, "");
@@ -183,7 +192,7 @@ function createDomHarness() {
       },
       empty() {
         ele.html = "";
-        ele.children = [];
+        deleteDescendants(ele.id);
         return this;
       },
       is(query) {
@@ -385,11 +394,12 @@ function createDomHarness() {
       return emptyWrapper();
     }
     if (typeof selector === "string" && selector.trim().startsWith("<")) {
-      const id = `created_${Object.keys(elements).length + 1}`;
+      const attrs = parseAttributes(selector);
+      const id = attrs.id || `created_${Object.keys(elements).length + 1}`;
       const tag = (selector.match(/^<\s*([A-Za-z0-9_:-]+)/) || [null, "div"])[1];
       const ele = element(id);
       ele.nodeName = tag.toUpperCase();
-      ele.attributes = parseAttributes(selector);
+      ele.attributes = attrs;
       ele.type = ele.attributes.type || "";
       return wrapperFor(id);
     }
@@ -923,6 +933,21 @@ function runNglRepresentationScenario(gaPath) {
   );
   assert(ga.ngl["module_output:#structure_ngl:last_value"].reps.cartoon, "single ngl representation should keep the legacy representation key");
   assert(h.elements.structure_ngl_buttons.children.length === ga.ngl.types.length, "single ngl representation should keep the generic representation buttons");
+  assert(h.elements.cartoon, "single ngl representation should keep the legacy cartoon button id");
+
+  calls.length = 0;
+  ga.value.nglshow("module_output", "structure_ngl", {
+    loadname: "run_0/monomer_monte_carlo/monomer_monte_carlo_colored_movie.pdb",
+    representation: "cartoon",
+    representationParams: { sele: "protein", colorScheme: "bfactor" },
+  });
+  const selectedSaveKey = ga.ngl["module_output:#structure_ngl:last_value"];
+  assert(selectedSaveKey.reps.cartoon, "single selected ngl representation should still use the generic cartoon key");
+  assert(!selectedSaveKey.reps["cartoon:protein:0"], "single selected ngl representation should not use layered selection keys");
+  calls.length = 0;
+  h.context.$("#cartoon").trigger("click");
+  assert(calls.some((call) => call.method === "removeRepresentation" && call.rep.params.sele === "protein"), "legacy cartoon button should remove the initial selected representation");
+  assert(!selectedSaveKey.reps.cartoon, "legacy cartoon button should clear the generic representation handle");
 
   calls.length = 0;
   ga.value.nglshow("module_output", "structure_ngl", {

@@ -5165,8 +5165,9 @@
           output._ui2NglComponent = component;
           output._ui2NglReps = {};
           const specs = nglRepresentationSpecs(payload);
+          const layered = Array.isArray(payload.representations) && payload.representations.length;
           specs.forEach((spec, index) => {
-            output._ui2NglReps[nglRepresentationKey(spec, index)] = component.addRepresentation(spec.type, spec.params || {});
+            output._ui2NglReps[nglRepresentationStoreKey(spec, index, layered)] = component.addRepresentation(spec.type, spec.params || {});
           });
           if (component.autoView) {
             component.autoView();
@@ -5174,7 +5175,7 @@
           if (stage.handleResize) {
             stage.handleResize();
           }
-          if (Array.isArray(payload.representations) && payload.representations.length) {
+          if (layered) {
             renderNglLayerButtons(buttons, component, output._ui2NglReps, specs);
           } else {
             renderNglButtons(buttons, component, output._ui2NglReps);
@@ -5245,6 +5246,10 @@
       return `${key}:${spec.params.sele}:${index}`;
     }
     return index ? `${key}:${index}` : key;
+  }
+
+  function nglRepresentationStoreKey(spec, index, layered) {
+    return layered ? nglRepresentationKey(spec, index) : spec?.type || "representation";
   }
 
   function toggleNglRepresentation(button, component, reps, key, spec) {
@@ -6379,6 +6384,7 @@
       normalizeNglLoadName,
       nglRepresentationSpecs,
       nglRepresentationKey,
+      nglRepresentationStoreKey,
       applyPlotlyTheme,
       plotlyThemeColors,
       repeatIsCondition,

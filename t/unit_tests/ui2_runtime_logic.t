@@ -774,6 +774,16 @@ assert.strictEqual(
   "cartoon:bfactor > 0.5:1",
   "UI2 keeps selection-specific NGL representation handles distinct"
 );
+assert.strictEqual(
+  hooks.nglRepresentationStoreKey({ type: "cartoon", params: { sele: "protein" } }, 0, false),
+  "cartoon",
+  "UI2 keeps simple selected NGL payloads on generic button keys"
+);
+assert.strictEqual(
+  hooks.nglRepresentationStoreKey({ type: "cartoon", params: { sele: "protein" } }, 0, true),
+  "cartoon:protein:0",
+  "UI2 keeps layered selected NGL payloads on distinct layer keys"
+);
 
 window.__styleVars = {
   "--ui2-panel": "#1a201f",

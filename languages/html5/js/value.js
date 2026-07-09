@@ -1393,8 +1393,8 @@ ga.ngl.representationKey = function( spec, index ) {
     return index ? key + ":" + index : key;
 }
 
-ga.ngl.addRepresentation = function( savekey, component, spec, index ) {
-    var key = ga.ngl.representationKey( spec, index );
+ga.ngl.addRepresentation = function( savekey, component, spec, index, layered ) {
+    var key = layered ? ga.ngl.representationKey( spec, index ) : spec.type;
 
     ga.ngl[ savekey ].reps[ key ] = component.addRepresentation( spec.type, spec.params || {} );
     return key;
@@ -1440,7 +1440,7 @@ ga.ngl.renderTypeButtons = function( savekey, tid ) {
     for ( var i = 0; i < ga.ngl.types.length; ++i ) {
         ( function( type ) {
             var spec = { type : type, params : {} };
-            var button = $( "<button type=\"button\"></button>" );
+            var button = $( "<button id=\"" + type.replace( '+', '' ) + "\" type=\"button\"></button>" );
             button.text( type );
             button.attr( "aria-pressed", ga.ngl[ savekey ].reps[ type ] ? "true" : "false" );
             button.on( "click", function() {
@@ -1462,18 +1462,19 @@ ga.value.nglshow = function( mod, id, v ) {
             v.loadparams = {};
         }
         var specs = ga.ngl.representationSpecs( v );
+        var layered = v.representations && Array.isArray( v.representations ) && v.representations.length;
         ga.ngl[ savekey ] = {};
         ga.ngl[ savekey ].stage = new NGL.Stage( id + "_plot" );
         ga.ngl[ savekey ].stage.loadFile( v.loadname, v.loadparams ).then( function (component) {
             ga.ngl[ savekey ].component = component;
             ga.ngl[ savekey ].reps = {};
             for ( var j = 0; j < specs.length; ++j ) {
-                ga.ngl.addRepresentation( savekey, component, specs[ j ], j );
+                ga.ngl.addRepresentation( savekey, component, specs[ j ], j, layered );
             }
             // provide a "good" view of the structure
             component.autoView();
 
-            if ( v.representations && Array.isArray( v.representations ) && v.representations.length ) {
+            if ( layered ) {
                 ga.ngl.renderLayerButtons( savekey, tid, specs );
             } else {
                 ga.ngl.renderTypeButtons( savekey, tid );
