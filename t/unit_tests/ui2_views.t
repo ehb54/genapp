@@ -46,6 +46,7 @@ like( $index, qr/Choose a menu group from the options on the left/, 'ui2 index o
 like( $index, qr/module from the list that appears at the top of the page/, 'ui2 index describes the selected-menu module strip' );
 unlike( $index, qr/<p class="ui2-kicker">Ready<\/p>/, 'ui2 empty shell does not show a Ready kicker' );
 like( $index, qr/class="ui2-nav-icon-button" id="ui2-nav-toggle"/, 'ui2 menu toggle lives in the topbar instead of the collapsed sidebar column' );
+like( $index, qr/<a class="ui2-title-link" href="\?apprun=1" target="_blank" rel="noopener" title="Open another [^"]+ instance">[\s\S]*?<h1>[^<]+<\/h1>[\s\S]*?<\/a>/, 'ui2 title opens another application instance like legacy' );
 like( $index, qr/id="ui2-module-strip"/, 'ui2 index exposes a legacy-style selected menu module strip' );
 like( $index, qr/id="ui2-feedback"/, 'ui2 index exposes the legacy feedback utility entry point' );
 like( $index, qr/id="ui2-docs"/, 'ui2 index exposes the legacy docs entry point' );
@@ -277,6 +278,7 @@ like( $ui2_css, qr/\.ui2-field\[hidden\],[\s\n]*\.ui2-dynamic-output-row\[hidden
 like( $ui2_css, qr/\.ui2-output-rendered/, 'ui2 stylesheet distinguishes rendered runtime output from placeholders' );
 like( $ui2_css, qr/\.ui2-output-field/, 'ui2 stylesheet lets output rows use the full default width' );
 like( $ui2_css, qr/\.ui2-mini-button/, 'ui2 stylesheet includes compact system action buttons' );
+like( $ui2_css, qr/\.ui2-title-link/, 'ui2 stylesheet preserves clickable title styling' );
 like( $ui2_css, qr/\.ui2-job-actions-legend/, 'ui2 stylesheet includes Job Manager actions legend styling' );
 like( $ui2_css, qr/\.ui2-server-file-tree/, 'ui2 stylesheet includes a legacy-style server file tree' );
 like( $ui2_css, qr/\.ui2-server-tree-checkbox/, 'ui2 stylesheet includes selectable server tree checkbox affordances' );
