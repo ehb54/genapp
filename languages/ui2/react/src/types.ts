@@ -27,6 +27,7 @@ export type SubmitResult = {
 
 export type MmcBridge = {
   createField: (field: Ui2Field, role: "input" | "output") => HTMLElement
+  releaseField: (field: HTMLElement) => void
   createActionBar: () => HTMLElement
   syncValues: () => Record<string, unknown>
   reset: (form: HTMLFormElement) => void

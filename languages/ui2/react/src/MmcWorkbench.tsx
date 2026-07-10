@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ChevronDown, FlaskConical, Settings2 } from "lucide-react"
+import { ChevronDown, FlaskConical, Maximize2, Minimize2, Settings2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -58,7 +58,7 @@ const summaryFieldIds = [
   "advanced_input",
 ]
 
-function NativeHost({ create, className }: { create: () => HTMLElement; className?: string }) {
+function NativeHost({ create, release, className }: { create: () => HTMLElement; release?: (node: HTMLElement) => void; className?: string }) {
   const hostRef = React.useRef<HTMLDivElement>(null)
 
   React.useLayoutEffect(() => {
@@ -67,16 +67,23 @@ function NativeHost({ create, className }: { create: () => HTMLElement; classNam
     const node = create()
     host.replaceChildren(node)
     return () => {
+      release?.(node)
       if (node.parentNode === host) host.removeChild(node)
     }
-  }, [create])
+  }, [create, release])
 
   return <div className={className} ref={hostRef} />
 }
 
-function FieldHost({ field, bridge, role = "input" }: { field: Ui2Field; bridge: MmcBridge; role?: "input" | "output" }) {
-  const create = React.useCallback(() => bridge.createField(field, role), [bridge, field, role])
-  return <NativeHost create={create} className="ui2-mmc-native-field" />
+function FieldHost({ field, bridge, role = "input", fitPlot = false }: { field: Ui2Field; bridge: MmcBridge; role?: "input" | "output"; fitPlot?: boolean }) {
+  const create = React.useCallback(() => {
+    const node = bridge.createField(field, role)
+    if (fitPlot) {
+      node.querySelector<HTMLElement>('[data-output-type="plotly"]')?.setAttribute("data-plot-fit", "pane")
+    }
+    return node
+  }, [bridge, field, fitPlot, role])
+  return <NativeHost create={create} release={bridge.releaseField} className="ui2-mmc-native-field" />
 }
 
 function FieldGroup({ fields, bridge, role = "input" }: { fields: Ui2Field[]; bridge: MmcBridge; role?: "input" | "output" }) {
@@ -142,6 +149,8 @@ function SubmittedInputs({
 export function MmcWorkbench({ module, fields, bridge, submitted: initialSubmitted }: MmcMountProps) {
   const [advancedOpen, setAdvancedOpen] = React.useState(false)
   const [submitted, setSubmitted] = React.useState<{ values: Record<string, unknown>; uuid?: string } | null>(initialSubmitted || null)
+  const [activeResult, setActiveResult] = React.useState("plot")
+  const [plotExpanded, setPlotExpanded] = React.useState(false)
   const fieldsById = React.useMemo(() => new Map(fields.map((field) => [field.id, field])), [fields])
   const outputFields = fields.filter((field) => field.role === "output")
   const progressFields = outputFields.filter((field) => field.id === "progress_output" || field.id === "progress_html")
@@ -168,6 +177,23 @@ export function MmcWorkbench({ module, fields, bridge, submitted: initialSubmitt
     window.addEventListener("ui2:mmc-reattached", handleReattached)
     return () => window.removeEventListener("ui2:mmc-reattached", handleReattached)
   }, [bridge])
+
+  React.useEffect(() => {
+    if (!plotExpanded) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPlotExpanded(false)
+    }
+    document.body.classList.add("ui2-plot-expanded")
+    window.addEventListener("keydown", handleKeyDown)
+    return () => {
+      document.body.classList.remove("ui2-plot-expanded")
+      window.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [plotExpanded])
+
+  React.useLayoutEffect(() => {
+    window.requestAnimationFrame(() => bridge.resizeOutputs())
+  }, [bridge, plotExpanded])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -268,15 +294,38 @@ export function MmcWorkbench({ module, fields, bridge, submitted: initialSubmitt
             <CardContent><FieldGroup bridge={bridge} fields={progressFields} role="output" /></CardContent>
           </Card>
 
-          <Card className="ui2-mmc-result-card">
+          {plotExpanded && <div aria-hidden="true" className="ui2-mmc-result-backdrop" />}
+          <Card
+            aria-label={plotExpanded ? "Expanded Monomer Monte Carlo trajectory plot" : undefined}
+            aria-modal={plotExpanded ? true : undefined}
+            className={`ui2-mmc-result-card${plotExpanded ? " ui2-mmc-result-card-expanded" : ""}`}
+            role={plotExpanded ? "dialog" : undefined}
+          >
             <CardContent>
-              <Tabs defaultValue="plot" onValueChange={() => window.setTimeout(bridge.resizeOutputs, 0)}>
-                <TabsList aria-label="MMC results">
-                  <TabsTrigger value="plot">Trajectory plot</TabsTrigger>
-                  <TabsTrigger value="structure">Structure</TabsTrigger>
-                </TabsList>
+              <Tabs className="ui2-mmc-result-tabs" value={activeResult} onValueChange={(value) => {
+                setActiveResult(value)
+                if (value !== "plot") setPlotExpanded(false)
+                window.setTimeout(bridge.resizeOutputs, 0)
+              }}>
+                <div className="ui2-mmc-result-toolbar">
+                  <TabsList aria-label="MMC results">
+                    <TabsTrigger value="plot">Trajectory plot</TabsTrigger>
+                    <TabsTrigger value="structure">Structure</TabsTrigger>
+                  </TabsList>
+                  {activeResult === "plot" && (
+                    <Button
+                      aria-expanded={plotExpanded}
+                      onClick={() => setPlotExpanded((current) => !current)}
+                      type="button"
+                      variant="outline"
+                    >
+                      {plotExpanded ? <Minimize2 aria-hidden="true" size={16} /> : <Maximize2 aria-hidden="true" size={16} />}
+                      {plotExpanded ? "Close expanded plot" : "Expand plot"}
+                    </Button>
+                  )}
+                </div>
                 <TabsContent forceMount value="plot" className="data-[state=inactive]:hidden">
-                  {plotField && <FieldHost bridge={bridge} field={plotField} role="output" />}
+                  {plotField && <FieldHost bridge={bridge} field={plotField} fitPlot role="output" />}
                 </TabsContent>
                 <TabsContent forceMount value="structure" className="data-[state=inactive]:hidden">
                   {structureField && <FieldHost bridge={bridge} field={structureField} role="output" />}

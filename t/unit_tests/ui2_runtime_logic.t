@@ -791,6 +791,27 @@ window.__styleVars = {
   "--ui2-text": "#eef4f1",
   "--ui2-border": "#33403d"
 };
+const producerPlotLayout = {
+  width: 1200,
+  height: 760,
+  title: "Monomer Monte Carlo Progress",
+  font: { size: 14 }
+};
+const fittedPlotLayout = hooks.plotlyLayoutForOutput(
+  { dataset: { plotFit: "pane" } },
+  producerPlotLayout
+);
+assert.strictEqual(fittedPlotLayout.width, undefined, "MMC fit-to-pane removes producer Plotly width from the client copy");
+assert.strictEqual(fittedPlotLayout.height, undefined, "MMC fit-to-pane removes producer Plotly height from the client copy");
+assert.strictEqual(fittedPlotLayout.autosize, true, "MMC fit-to-pane keeps Plotly autosizing enabled");
+assert.strictEqual(producerPlotLayout.width, 1200, "MMC fit-to-pane does not mutate the producer Plotly width");
+assert.strictEqual(producerPlotLayout.height, 760, "MMC fit-to-pane does not mutate the producer Plotly height");
+const fixedPlotLayout = hooks.plotlyLayoutForOutput(
+  { dataset: {} },
+  producerPlotLayout
+);
+assert.strictEqual(fixedPlotLayout.width, 1200, "ordinary UI2 Plotly outputs preserve producer width");
+assert.strictEqual(fixedPlotLayout.height, 760, "ordinary UI2 Plotly outputs preserve producer height");
 const darkLayout = hooks.applyPlotlyTheme({
   legend: { bgcolor: "#ffffff", font: { color: "#ffffff" } },
   legend2: { bgcolor: "#ffffff", font: { color: "#ffffff" } },

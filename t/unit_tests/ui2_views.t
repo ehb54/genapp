@@ -65,6 +65,9 @@ like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declar
 like( $ui2_js, qr/state\.moduleId === "monomer_monte_carlo" && renderReactMmc\(module, fields\)/, 'ui2 delegates only Monomer Monte Carlo to the React workbench' );
 like( $ui2_js, qr/function renderReactMmc\(module, fields\).*?createField:.*?renderField\(field, role\).*?submit:.*?submitModule\(form\)/s, 'MMC React bridge reuses canonical UI2 fields and submission' );
 like( $ui2_js, qr/function resizeMmcOutputs\(\).*?Plotly\.Plots\.resize.*?_ui2NglStage.*?handleResize/s, 'MMC result tabs resize existing Plotly and NGL renderers' );
+like( $ui2_js, qr/function plotlyLayoutForOutput\(output, sourceLayout\).*?plotFit === "pane".*?delete layout\.width;.*?delete layout\.height;/s, 'MMC fitted Plotly layouts remove fixed producer dimensions' );
+like( $ui2_js, qr/function observeFitPlotlyOutput\(output\).*?new ResizeObserver.*?Plotly\.Plots\.resize/s, 'MMC fitted Plotly surfaces observe their actual container size' );
+like( $ui2_js, qr/function releaseReactMmcField\(fieldNode\).*?disconnectPlotlyOutputObserver.*?Plotly\.purge/s, 'MMC React unmount cleans up Plotly resize observation and graph state' );
 like( $ui2_js, qr/ui2:mmc-reattached.*?values: cloneUi2Value\(state\.values\)/s, 'MMC reattachment publishes the restored submitted-input snapshot' );
 
 my $ui2_react_js = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.js) ) );
@@ -72,7 +75,11 @@ my $ui2_react_css = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.css
 like( $ui2_react_js, qr/Submitted inputs/, 'React bundle contains the MMC submitted-input summary' );
 like( $ui2_react_js, qr/Trajectory plot/, 'React bundle contains the MMC Plotly result tab' );
 like( $ui2_react_js, qr/Structure/, 'React bundle contains the MMC NGL result tab' );
+like( $ui2_react_js, qr/Expand plot/, 'React bundle contains the same-instance MMC plot expansion control' );
+like( $ui2_react_js, qr/Close expanded plot/, 'React bundle contains an explicit expanded-plot close control' );
 like( $ui2_react_css, qr/\.ui2-mmc-grid/, 'React stylesheet contains the fixed MMC workbench grid' );
+like( $ui2_react_css, qr/\.ui2-mmc-result-card \.ui2-output-plotly\{[^}]*overflow:hidden/, 'MMC fitted Plotly output suppresses internal scrollbars' );
+like( $ui2_react_css, qr/\.ui2-mmc-result-card-expanded\{[^}]*position:fixed/, 'MMC expanded plot uses a viewport overlay' );
 like( $ui2_js, qr/function renderTabs\(inputCount, outputCount\)/, 'ui2 runtime keeps input/output jump tabs with counts' );
 like( $ui2_js, qr/tabButton\("Inputs", inputCount, true, "ui2-input-section"\)/, 'ui2 input jump tab keeps its field count for accessibility' );
 like( $ui2_js, qr/const button = el\("button", "ui2-tab", label\)/, 'ui2 jump tabs display labels without count text' );

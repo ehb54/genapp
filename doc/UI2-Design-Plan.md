@@ -521,3 +521,9 @@ Use this section to append concise dated decisions as they become real.
   existing UI2 fields, conditional logic, file controls, submission, polling,
   Plotly, NGL, and reattachment behavior. Other modules retain the existing UI2
   renderer during this migration step.
+- 2026-07-09: Chose fit-to-pane sizing for the MMC trajectory plot. The UI2
+  renderer removes producer-supplied Plotly width and height only for this
+  curated surface, observes its pane, and resizes the existing graph in place.
+  An Expand control promotes that same result card to a viewport overlay; it
+  does not create a second Plotly instance or introduce an internal scrolling
+  plot canvas. Close and Escape return the card to the workbench.

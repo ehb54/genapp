@@ -89,6 +89,20 @@
   height: 100%;
 }
 
+.ui2-mmc-result-tabs {
+  display: flex;
+  min-height: 0;
+  height: 100%;
+  flex-direction: column;
+}
+
+.ui2-mmc-result-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .ui2-mmc-field-group {
   display: flex;
   flex-direction: column;
@@ -187,6 +201,47 @@
   min-height: 28rem;
 }
 
+.ui2-mmc-result-card .ui2-output-plotly {
+  height: clamp(30rem, 58dvh, 44rem);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ui2-mmc-result-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2990;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.ui2-mmc-result-card-expanded {
+  position: fixed;
+  inset: 1rem;
+  z-index: 3000;
+  min-height: 0;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+}
+
+.ui2-mmc-result-card-expanded > div {
+  height: 100%;
+  padding: 1rem;
+}
+
+.ui2-mmc-result-card-expanded [role="tabpanel"] {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.ui2-mmc-result-card-expanded .ui2-output-plotly {
+  height: calc(100dvh - 8.5rem);
+  min-height: 0;
+}
+
+.ui2-plot-expanded .ui2-stage {
+  overflow: hidden;
+}
+
 .ui2-mmc-submitted {
   align-self: stretch;
 }
@@ -247,5 +302,24 @@
 
   .ui2-mmc-results-pane {
     grid-template-rows: auto minmax(28rem, auto);
+  }
+}
+
+@media (max-width: 640px) {
+  .ui2-mmc-result-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ui2-mmc-result-toolbar > button {
+    width: 100%;
+  }
+
+  .ui2-mmc-result-card-expanded {
+    inset: 0.35rem;
+  }
+
+  .ui2-mmc-result-card-expanded .ui2-output-plotly {
+    height: calc(100dvh - 11rem);
   }
 }

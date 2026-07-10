@@ -1048,6 +1048,7 @@
     }
     const bridge = {
       createField: (field, role) => renderField(field, role),
+      releaseField: releaseReactMmcField,
       createActionBar: () => renderActionBar(),
       syncValues: () => {
         syncValues();
@@ -1094,6 +1095,18 @@
     });
     document.querySelectorAll('[data-output-type="ngl"]').forEach((output) => {
       output._ui2NglStage?.handleResize?.();
+    });
+  }
+
+  function releaseReactMmcField(fieldNode) {
+    fieldNode?.querySelectorAll?.("[data-output-field-id]").forEach((output) => {
+      disconnectPlotlyOutputObserver(output);
+      if (output.dataset.outputType === "plotly" && window.Plotly?.purge) {
+        window.Plotly.purge(output);
+      }
+      if (output.dataset.outputType === "ngl") {
+        clearNglOutput(output);
+      }
     });
   }
 
@@ -5412,14 +5425,14 @@
     output.textContent = "";
     ensurePlotlyLoaded()
       .then(() => {
-        const layout = Object.assign(defaultPlotlyLayout(), figure.layout || {});
-        layout.font = Object.assign(defaultPlotlyLayout().font, figure.layout?.font || {});
+        const layout = plotlyLayoutForOutput(output, figure.layout);
         applyPlotlyTheme(layout);
         const config = Object.assign({ responsive: true }, figure.config || {});
         applyPlotlyModebarHooks(figure, config);
         return window.Plotly.newPlot(output, figure.data, layout, config);
       })
       .then(() => {
+        observeFitPlotlyOutput(output);
         if (window.Plotly?.Plots?.resize) {
           window.Plotly.Plots.resize(output);
         }
@@ -5428,6 +5441,49 @@
         output.classList.remove("ui2-output-plotly-ready");
         output.textContent = `Could not render Plotly output: ${error.message}`;
       });
+  }
+
+  function plotlyLayoutForOutput(output, sourceLayout) {
+    const layout = Object.assign(defaultPlotlyLayout(), sourceLayout || {});
+    layout.font = Object.assign(defaultPlotlyLayout().font, sourceLayout?.font || {});
+    if (output?.dataset?.plotFit === "pane") {
+      layout.autosize = true;
+      delete layout.width;
+      delete layout.height;
+    }
+    return layout;
+  }
+
+  function observeFitPlotlyOutput(output) {
+    disconnectPlotlyOutputObserver(output);
+    if (output?.dataset?.plotFit !== "pane" || typeof ResizeObserver !== "function") {
+      return;
+    }
+    let width = 0;
+    let height = 0;
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries?.[0]?.contentRect;
+      if (!rect || Math.abs(rect.width - width) < 1 && Math.abs(rect.height - height) < 1) {
+        return;
+      }
+      width = rect.width;
+      height = rect.height;
+      const schedule = window.requestAnimationFrame || ((callback) => window.setTimeout(callback, 0));
+      schedule(() => {
+        if (output.isConnected && window.Plotly?.Plots?.resize) {
+          window.Plotly.Plots.resize(output);
+        }
+      });
+    });
+    observer.observe(output);
+    output._ui2PlotlyResizeObserver = observer;
+  }
+
+  function disconnectPlotlyOutputObserver(output) {
+    output?._ui2PlotlyResizeObserver?.disconnect?.();
+    if (output) {
+      output._ui2PlotlyResizeObserver = null;
+    }
   }
 
   function applyPlotlyModebarHooks(figure, config) {
@@ -6498,6 +6554,7 @@
       nglRepresentationKey,
       nglRepresentationStoreKey,
       applyPlotlyTheme,
+      plotlyLayoutForOutput,
       plotlyThemeColors,
       repeatIsCondition,
       repeatConditionTokens,
