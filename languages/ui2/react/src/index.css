@@ -196,10 +196,25 @@
   padding-block: 0.85rem;
 }
 
+.ui2-mmc-run-cue-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .ui2-mmc-run-cue {
   color: var(--ui2-text);
   font-size: 0.9rem;
   font-weight: 650;
+}
+
+.ui2-mmc-run-cue-warning {
+  color: #ffd37a;
+}
+
+.ui2-mmc-run-cue-row > button {
+  flex: 0 0 auto;
 }
 
 .ui2-mmc-run-log {
@@ -280,6 +295,10 @@
   min-height: 0;
 }
 
+.ui2-mmc-workspace-card-expanded .ui2-mmc-result-toolbar {
+  padding-bottom: 0.5rem;
+}
+
 .ui2-plot-expanded .ui2-stage {
   overflow: hidden;
 }
@@ -349,6 +368,11 @@
 
 @media (max-width: 640px) {
   .ui2-mmc-result-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ui2-mmc-run-cue-row {
     align-items: stretch;
     flex-direction: column;
   }

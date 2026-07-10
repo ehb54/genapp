@@ -10794,30 +10794,78 @@ function Jr(e) {
 	return t && typeof t == "object" ? t : {};
 }
 function Yr(e) {
+	let t = e.channels.structure || {};
+	return Object.values(t).flatMap((e) => (Array.isArray(e?.items) ? e.items : []).filter((e) => !!e && typeof e == "object"));
+}
+function Xr(e) {
 	let t = Number(e);
 	return Number.isFinite(t) ? String(t) : null;
 }
-function Xr(e, t) {
+function Zr(e, t) {
 	return e.match(t)?.[1]?.trim() || null;
 }
-function Zr(e) {
-	let t = qr(e), n = Jr(e), r = Xr(t, /accepted\s+(\d+\s+out\s+of\s+\d+)\s*:/i) || (Yr(n.accepted) && Yr(n.attempted) ? `${Yr(n.accepted)} / ${Yr(n.attempted)}` : null), i = Xr(t, /Configurations and statistics saved in\s+(.+?)\s+directory/i), a = Yr(n.reloads), o = Yr(n.percent) || (Number(n.fraction) >= 0 ? String(Math.round(Number(n.fraction) * 1e3) / 10) : null), s = /DIHEDRAL IS DONE/i.test(t) || Number(n.fraction) >= 1, c = [s ? "Run completed" : "Running"];
-	if (r && c.push(`accepted ${r}`), !s && a && a !== "0" && c.push(`reloads ${a}`), !s && o && c.push(`${o}%`), s && i && c.push(`outputs saved in ${i}`), c.length > 1) return c.join(" · ");
-	let l = t ? t.split(/\r?\n/).filter((e) => e.trim()).length : 0;
-	return l ? `Run log available · ${l} lines` : "Run status will appear here.";
+function Qr(e) {
+	let t = qr(e), n = Jr(e), r = Yr(e), i = r[r.length - 1], a = Zr(t, /accepted\s+(\d+\s+out\s+of\s+\d+)\s*:/i) || (Xr(n.accepted) && Xr(n.attempted) ? `${Xr(n.accepted)} / ${Xr(n.attempted)}` : null), o = Zr(t, /Configurations and statistics saved in\s+(.+?)\s+directory/i), s = Xr(n.percent) || (Number(n.fraction) >= 0 ? String(Math.round(Number(n.fraction) * 1e3) / 10) : null), c = /DIHEDRAL IS DONE/i.test(t) || Number(n.fraction) >= 1, l = /(?:unhandled exception|traceback|error:|exception)/i.test(t), u = Object.keys(n).length > 0;
+	if (l && !c) return {
+		text: "Needs attention · driver reported an exception",
+		tone: "warning"
+	};
+	if (c) {
+		let e = ["Run completed"];
+		return a && e.push(`accepted ${a}`), o && e.push(`outputs saved in ${o}`), {
+			text: e.join(" · "),
+			tone: "normal"
+		};
+	}
+	if (!u && !t && !e.run) return {
+		text: "Starting job · waiting for first runtime message",
+		tone: "normal"
+	};
+	if (!u && !t) return {
+		text: "Starting job · runtime stream connecting",
+		tone: "normal"
+	};
+	if (r.length) {
+		let e = Xr(i?.milestonePercent), t = Xr(i?.trial), n = [`Running · structure frame ${r.length}/10 captured`];
+		return (s || e) && n.push(`plot updated at ${s || e}%`), t && n.push(`trial ${t}`), {
+			text: n.join(" · "),
+			tone: "normal"
+		};
+	}
+	if (u) return {
+		text: `Running · progress stream active${s ? ` · plot updated at ${s}%` : ""} · structure viewer pending`,
+		tone: "normal"
+	};
+	let d = t ? t.split(/\r?\n/).filter((e) => e.trim()).length : 0;
+	return d ? {
+		text: `Running · run log active · ${d} lines received`,
+		tone: "normal"
+	} : {
+		text: "Starting job · waiting for first runtime message",
+		tone: "normal"
+	};
 }
-function Qr({ snapshot: e }) {
+function $r({ snapshot: e, onViewLog: t }) {
+	let n = Qr(e);
 	return /* @__PURE__ */ (0, I.jsx)($t, {
 		className: "ui2-mmc-run-cue-card",
-		children: /* @__PURE__ */ (0, I.jsx)(rn, { children: /* @__PURE__ */ (0, I.jsx)("div", {
-			"aria-live": "polite",
-			className: "ui2-mmc-run-cue",
-			role: "status",
-			children: Zr(e)
+		children: /* @__PURE__ */ (0, I.jsx)(rn, { children: /* @__PURE__ */ (0, I.jsxs)("div", {
+			className: "ui2-mmc-run-cue-row",
+			children: [/* @__PURE__ */ (0, I.jsx)("div", {
+				"aria-live": "polite",
+				className: `ui2-mmc-run-cue ui2-mmc-run-cue-${n.tone}`,
+				role: "status",
+				children: n.text
+			}), /* @__PURE__ */ (0, I.jsx)(Qt, {
+				type: "button",
+				variant: "outline",
+				onClick: t,
+				children: "View run log"
+			})]
 		}) })
 	});
 }
-function $r({ values: e, fields: t, summaryFieldIds: n, uuid: r, onEdit: i, onHide: a }) {
+function ei({ values: e, fields: t, summaryFieldIds: n, uuid: r, onEdit: i, onHide: a }) {
 	let [o, s] = S.useState(!1), c = S.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), l = o ? Object.keys(e) : n.filter((t) => Object.prototype.hasOwnProperty.call(e, t));
 	return /* @__PURE__ */ (0, I.jsxs)($t, {
 		className: "ui2-mmc-submitted",
@@ -10851,11 +10899,11 @@ function $r({ values: e, fields: t, summaryFieldIds: n, uuid: r, onEdit: i, onHi
 		})] })]
 	});
 }
-function ei({ snapshot: e, title: t, description: n, defaultOpen: r = !1 }) {
-	let [i, a] = S.useState(r), o = qr(e), s = o ? o.split(/\r?\n/).length : 0;
+function ti({ snapshot: e, title: t, description: n, defaultOpen: r = !1, open: i, onOpenChange: a }) {
+	let [o, s] = S.useState(r), c = i ?? o, l = a ?? s, u = qr(e), d = u ? u.split(/\r?\n/).length : 0;
 	return /* @__PURE__ */ (0, I.jsx)(zn, {
-		open: i,
-		onOpenChange: a,
+		open: c,
+		onOpenChange: l,
 		children: /* @__PURE__ */ (0, I.jsxs)($t, {
 			className: "ui2-mmc-log-card",
 			children: [/* @__PURE__ */ (0, I.jsx)(Bn, {
@@ -10870,10 +10918,10 @@ function ei({ snapshot: e, title: t, description: n, defaultOpen: r = !1 }) {
 						}),
 						" ",
 						t,
-						s ? ` (${s} lines)` : ""
+						d ? ` (${d} lines)` : ""
 					] }), /* @__PURE__ */ (0, I.jsx)(T, {
 						"aria-hidden": "true",
-						className: i ? "rotate-180" : "",
+						className: c ? "rotate-180" : "",
 						size: 18
 					})]
 				})
@@ -10887,14 +10935,14 @@ function ei({ snapshot: e, title: t, description: n, defaultOpen: r = !1 }) {
 					"aria-live": "off",
 					className: "ui2-mmc-run-log",
 					role: "log",
-					children: o || "Runtime messages will appear here."
+					children: u || "Runtime messages will appear here."
 				})] })
 			})]
 		})
 	});
 }
-function ti({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
-	let [a, o] = S.useState(!1), [s, c] = S.useState(i || null), l = n.inputs?.sections || [], u = n.inputs?.advanced, d = u?.fields || [], f = n.inputs?.submittedSummary?.fields || [], p = n.results?.progress, m = n.results?.tabs || [], h = m.find((e) => e.primary)?.id || m[0]?.id || "", [g, _] = S.useState(h), [v, y] = S.useState(!1), [b, x] = S.useState(!1), [ee, C] = S.useState(!1), w = S.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), te = S.useSyncExternalStore(r.subscribeRuntime, r.runtimeSnapshot, r.runtimeSnapshot), ne = (p?.fields || []).map((e) => w.get(e)).filter(Boolean), se = m.find((e) => e.id === g), le = /* @__PURE__ */ new Set([...l.flatMap((e) => [...e.fields]), ...d]), E = t.filter((e) => e.role !== "output" && e.id && e.type !== "label" && !le.has(e.id));
+function ni({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
+	let [a, o] = S.useState(!1), [s, c] = S.useState(i || null), l = n.inputs?.sections || [], u = n.inputs?.advanced, d = u?.fields || [], f = n.inputs?.submittedSummary?.fields || [], p = n.results?.progress, m = n.results?.tabs || [], h = m.find((e) => e.primary)?.id || m[0]?.id || "", [g, _] = S.useState(h), [v, y] = S.useState(!1), [b, x] = S.useState(!1), [ee, C] = S.useState(!1), [w, te] = S.useState(!!n.results?.runtimeLog?.defaultOpen), ne = S.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), se = S.useSyncExternalStore(r.subscribeRuntime, r.runtimeSnapshot, r.runtimeSnapshot), le = (p?.fields || []).map((e) => ne.get(e)).filter(Boolean), E = m.find((e) => e.id === g), D = /* @__PURE__ */ new Set([...l.flatMap((e) => [...e.fields]), ...d]), ue = t.filter((e) => e.role !== "output" && e.id && e.type !== "label" && !D.has(e.id));
 	S.useEffect(() => {
 		m.some((e) => e.id === g) || _(h);
 	}, [
@@ -10923,7 +10971,7 @@ function ti({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 	}, [v]), S.useLayoutEffect(() => {
 		window.requestAnimationFrame(() => r.resizeOutputs());
 	}, [r, v]);
-	let D = async (e) => {
+	let de = async (e) => {
 		e.preventDefault(), x(!0);
 		try {
 			let t = await r.submit(e.currentTarget);
@@ -10934,16 +10982,16 @@ function ti({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 		} finally {
 			x(!1);
 		}
-	}, ue = (e) => {
+	}, fe = (e) => {
 		e.preventDefault(), r.reset(e.currentTarget), c(null), o(!1), C(!1);
-	}, de = String(te.lifecycle?.state || (b ? "submitting" : "editing")), fe = String(te.lifecycle?.error || te.lifecycle?.message || de), O = !!(s || te.run);
+	}, O = String(se.lifecycle?.state || (b ? "submitting" : "editing")), k = String(se.lifecycle?.error || se.lifecycle?.message || O), A = !!(s || se.run);
 	return /* @__PURE__ */ (0, I.jsxs)("form", {
 		className: "ui2-mmc-react",
 		id: "ui2-form",
 		onChange: () => r.syncValues(),
 		onInput: () => r.syncValues(),
-		onReset: ue,
-		onSubmit: D,
+		onReset: fe,
+		onSubmit: de,
 		children: [/* @__PURE__ */ (0, I.jsx)("header", {
 			className: "ui2-mmc-heading",
 			children: /* @__PURE__ */ (0, I.jsxs)("div", { children: [
@@ -10965,7 +11013,7 @@ function ti({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 			className: `ui2-mmc-grid${ee ? " ui2-mmc-grid-inputs-hidden" : ""}`,
 			children: [!ee && /* @__PURE__ */ (0, I.jsxs)("aside", {
 				className: "ui2-mmc-input-pane",
-				children: [s ? /* @__PURE__ */ (0, I.jsx)($r, {
+				children: [s ? /* @__PURE__ */ (0, I.jsx)(ei, {
 					fields: t,
 					summaryFieldIds: f,
 					onEdit: () => {
@@ -10978,7 +11026,7 @@ function ti({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 					className: "ui2-mmc-input-scroll",
 					children: [
 						l.map((e) => {
-							let t = e.fields.map((e) => w.get(e)).filter(Boolean);
+							let t = e.fields.map((e) => ne.get(e)).filter(Boolean);
 							return /* @__PURE__ */ (0, I.jsxs)($t, { children: [/* @__PURE__ */ (0, I.jsx)(en, { children: /* @__PURE__ */ (0, I.jsxs)("div", { children: [/* @__PURE__ */ (0, I.jsx)(tn, { children: e.title }), /* @__PURE__ */ (0, I.jsx)(nn, { children: e.description })] }) }), /* @__PURE__ */ (0, I.jsx)(rn, { children: /* @__PURE__ */ (0, I.jsx)(Wr, {
 								bridge: r,
 								fields: t
@@ -11013,13 +11061,13 @@ function ti({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 									children: u.description
 								}), /* @__PURE__ */ (0, I.jsx)(Wr, {
 									bridge: r,
-									fields: d.map((e) => w.get(e)).filter(Boolean)
+									fields: d.map((e) => ne.get(e)).filter(Boolean)
 								})] })
 							})] })
 						}),
-						E.length > 0 && /* @__PURE__ */ (0, I.jsxs)($t, { children: [/* @__PURE__ */ (0, I.jsx)(en, { children: /* @__PURE__ */ (0, I.jsx)(tn, { children: "Additional inputs" }) }), /* @__PURE__ */ (0, I.jsx)(rn, { children: /* @__PURE__ */ (0, I.jsx)(Wr, {
+						ue.length > 0 && /* @__PURE__ */ (0, I.jsxs)($t, { children: [/* @__PURE__ */ (0, I.jsx)(en, { children: /* @__PURE__ */ (0, I.jsx)(tn, { children: "Additional inputs" }) }), /* @__PURE__ */ (0, I.jsx)(rn, { children: /* @__PURE__ */ (0, I.jsx)(Wr, {
 							bridge: r,
-							fields: E
+							fields: ue
 						}) })] })
 					]
 				}), !s && /* @__PURE__ */ (0, I.jsxs)("div", {
@@ -11048,7 +11096,7 @@ function ti({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						className: "ui2-submit-status",
 						id: "ui2-submit-status",
 						role: "status",
-						children: de === "editing" ? "Not submitted" : fe
+						children: O === "editing" ? "Not submitted" : k
 					})]
 				})]
 			}), /* @__PURE__ */ (0, I.jsxs)("main", {
@@ -11067,15 +11115,20 @@ function ti({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						className: "ui2-mmc-progress-card",
 						children: [/* @__PURE__ */ (0, I.jsx)(en, { children: /* @__PURE__ */ (0, I.jsxs)("div", { children: [/* @__PURE__ */ (0, I.jsx)(tn, { children: p.title }), p.description && /* @__PURE__ */ (0, I.jsx)(nn, { children: p.description })] }) }), /* @__PURE__ */ (0, I.jsx)(rn, { children: /* @__PURE__ */ (0, I.jsx)(Wr, {
 							bridge: r,
-							fields: ne,
+							fields: le,
 							role: "output"
 						}) })]
 					}),
-					n.results?.runtimeLog && O && /* @__PURE__ */ (0, I.jsx)(Qr, { snapshot: te }),
-					n.results?.runtimeLog && /* @__PURE__ */ (0, I.jsx)(ei, {
+					n.results?.runtimeLog && A && /* @__PURE__ */ (0, I.jsx)($r, {
+						snapshot: se,
+						onViewLog: () => te(!0)
+					}),
+					n.results?.runtimeLog && /* @__PURE__ */ (0, I.jsx)(ti, {
 						defaultOpen: n.results.runtimeLog.defaultOpen,
 						description: n.results.runtimeLog.description,
-						snapshot: te,
+						open: w,
+						onOpenChange: te,
+						snapshot: se,
 						title: n.results.runtimeLog.title || "Run log"
 					}),
 					v && /* @__PURE__ */ (0, I.jsx)("div", {
@@ -11083,9 +11136,9 @@ function ti({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						className: "ui2-mmc-result-backdrop"
 					}),
 					m.length > 0 && /* @__PURE__ */ (0, I.jsx)($t, {
-						"aria-label": v ? `Expanded ${se?.label || "result"}` : void 0,
+						"aria-label": v ? `Expanded ${E?.label || "result"}` : void 0,
 						"aria-modal": v ? !0 : void 0,
-						className: `ui2-mmc-result-card${v ? " ui2-mmc-result-card-expanded" : ""}`,
+						className: `ui2-mmc-result-card ui2-mmc-workspace-card${v ? " ui2-mmc-result-card-expanded ui2-mmc-workspace-card-expanded" : ""}`,
 						role: v ? "dialog" : void 0,
 						children: /* @__PURE__ */ (0, I.jsx)(rn, { children: /* @__PURE__ */ (0, I.jsxs)(Rr, {
 							className: "ui2-mmc-result-tabs",
@@ -11101,7 +11154,7 @@ function ti({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 										value: e.id,
 										children: e.label
 									}, e.id))
-								}), se?.expandable && /* @__PURE__ */ (0, I.jsxs)(Qt, {
+								}), E?.expandable && /* @__PURE__ */ (0, I.jsxs)(Qt, {
 									"aria-expanded": v,
 									onClick: () => y((e) => !e),
 									type: "button",
@@ -11112,13 +11165,13 @@ function ti({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 									}) : /* @__PURE__ */ (0, I.jsx)(ie, {
 										"aria-hidden": "true",
 										size: 16
-									}), v ? "Close expanded result" : "Expand result"]
+									}), v ? "Restore split view" : "Expand workspace"]
 								})]
 							}), m.map((e) => /* @__PURE__ */ (0, I.jsx)(Vr, {
 								forceMount: !0,
 								value: e.id,
 								className: "data-[state=inactive]:hidden",
-								children: e.outputs.map((e) => w.get(e)).filter(Boolean).map((t) => /* @__PURE__ */ (0, I.jsx)(Ur, {
+								children: e.outputs.map((e) => ne.get(e)).filter(Boolean).map((t) => /* @__PURE__ */ (0, I.jsx)(Ur, {
 									bridge: r,
 									field: t,
 									fitPlot: e.fit === "pane" && t?.type === "plotly",
@@ -11134,16 +11187,16 @@ function ti({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 }
 //#endregion
 //#region src/main.tsx
-var ni = /* @__PURE__ */ new WeakMap();
+var ri = /* @__PURE__ */ new WeakMap();
 window.GenAppUi2Mmc = {
 	mount(e, t) {
 		window.GenAppUi2Mmc?.unmount(e);
 		let n = (0, le.createRoot)(e);
-		ni.set(e, n), n.render(/* @__PURE__ */ (0, I.jsx)(ti, { ...t }));
+		ri.set(e, n), n.render(/* @__PURE__ */ (0, I.jsx)(ni, { ...t }));
 	},
 	unmount(e) {
-		let t = ni.get(e);
-		t && (t.unmount(), ni.delete(e));
+		let t = ri.get(e);
+		t && (t.unmount(), ri.delete(e));
 	}
 }, window.dispatchEvent(new CustomEvent("ui2-react-ready"));
 //#endregion

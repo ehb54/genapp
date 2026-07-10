@@ -81,6 +81,14 @@ function runtimeProgressValue(snapshot: JobRuntimeSnapshot): Record<string, unkn
   return value && typeof value === "object" ? value as Record<string, unknown> : {}
 }
 
+function runtimeStructureFrames(snapshot: JobRuntimeSnapshot): Array<Record<string, unknown>> {
+  const structureTopics = snapshot.channels.structure || {}
+  return Object.values(structureTopics).flatMap((topic) => {
+    const items = Array.isArray(topic?.items) ? topic.items : []
+    return items.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+  })
+}
+
 function numberText(value: unknown): string | null {
   const numeric = Number(value)
   return Number.isFinite(numeric) ? String(numeric) : null
@@ -91,9 +99,11 @@ function firstLogMatch(text: string, pattern: RegExp): string | null {
   return match?.[1]?.trim() || null
 }
 
-function runCueText(snapshot: JobRuntimeSnapshot): string {
+function runCueMessage(snapshot: JobRuntimeSnapshot): { text: string; tone: "normal" | "warning" } {
   const log = runtimeLogText(snapshot)
   const progress = runtimeProgressValue(snapshot)
+  const frames = runtimeStructureFrames(snapshot)
+  const lastFrame = frames[frames.length - 1]
   const accepted = firstLogMatch(log, /accepted\s+(\d+\s+out\s+of\s+\d+)\s*:/i)
     || (
       numberText(progress.accepted) && numberText(progress.attempted)
@@ -101,27 +111,56 @@ function runCueText(snapshot: JobRuntimeSnapshot): string {
         : null
     )
   const outputDir = firstLogMatch(log, /Configurations and statistics saved in\s+(.+?)\s+directory/i)
-  const reloads = numberText(progress.reloads)
   const framePercent = numberText(progress.percent) || (
     Number(progress.fraction) >= 0 ? String(Math.round(Number(progress.fraction) * 1000) / 10) : null
   )
   const completed = /DIHEDRAL IS DONE/i.test(log) || Number(progress.fraction) >= 1
-  const parts = [completed ? "Run completed" : "Running"]
-  if (accepted) parts.push(`accepted ${accepted}`)
-  if (!completed && reloads && reloads !== "0") parts.push(`reloads ${reloads}`)
-  if (!completed && framePercent) parts.push(`${framePercent}%`)
-  if (completed && outputDir) parts.push(`outputs saved in ${outputDir}`)
-  if (parts.length > 1) return parts.join(" · ")
+  const hasException = /(?:unhandled exception|traceback|error:|exception)/i.test(log)
+  const hasProgress = Object.keys(progress).length > 0
+  if (hasException && !completed) {
+    return { text: "Needs attention · driver reported an exception", tone: "warning" }
+  }
+  if (completed) {
+    const parts = ["Run completed"]
+    if (accepted) parts.push(`accepted ${accepted}`)
+    if (outputDir) parts.push(`outputs saved in ${outputDir}`)
+    return { text: parts.join(" · "), tone: "normal" }
+  }
+  if (!hasProgress && !log && !snapshot.run) {
+    return { text: "Starting job · waiting for first runtime message", tone: "normal" }
+  }
+  if (!hasProgress && !log) {
+    return { text: "Starting job · runtime stream connecting", tone: "normal" }
+  }
+  if (frames.length) {
+    const milestone = numberText(lastFrame?.milestonePercent)
+    const trial = numberText(lastFrame?.trial)
+    const parts = [`Running · structure frame ${frames.length}/10 captured`]
+    if (framePercent || milestone) parts.push(`plot updated at ${framePercent || milestone}%`)
+    if (trial) parts.push(`trial ${trial}`)
+    return { text: parts.join(" · "), tone: "normal" }
+  }
+  if (hasProgress) {
+    const percent = framePercent ? ` · plot updated at ${framePercent}%` : ""
+    return { text: `Running · progress stream active${percent} · structure viewer pending`, tone: "normal" }
+  }
   const lineCount = log ? log.split(/\r?\n/).filter((line) => line.trim()).length : 0
-  return lineCount ? `Run log available · ${lineCount} lines` : "Run status will appear here."
+  if (lineCount) return { text: `Running · run log active · ${lineCount} lines received`, tone: "normal" }
+  return { text: "Starting job · waiting for first runtime message", tone: "normal" }
 }
 
-function RunCue({ snapshot }: { snapshot: JobRuntimeSnapshot }) {
+function RunCue({ snapshot, onViewLog }: { snapshot: JobRuntimeSnapshot; onViewLog: () => void }) {
+  const message = runCueMessage(snapshot)
   return (
     <Card className="ui2-mmc-run-cue-card">
       <CardContent>
-        <div aria-live="polite" className="ui2-mmc-run-cue" role="status">
-          {runCueText(snapshot)}
+        <div className="ui2-mmc-run-cue-row">
+          <div aria-live="polite" className={`ui2-mmc-run-cue ui2-mmc-run-cue-${message.tone}`} role="status">
+            {message.text}
+          </div>
+          <Button type="button" variant="outline" onClick={onViewLog}>
+            View run log
+          </Button>
         </div>
       </CardContent>
     </Card>
@@ -182,23 +221,29 @@ function RunLog({
   title,
   description,
   defaultOpen = false,
+  open,
+  onOpenChange,
 }: {
   snapshot: JobRuntimeSnapshot
   title: string
   description?: string
   defaultOpen?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }) {
-  const [open, setOpen] = React.useState(defaultOpen)
+  const [internalOpen, setInternalOpen] = React.useState(defaultOpen)
+  const isOpen = open ?? internalOpen
+  const setOpen = onOpenChange ?? setInternalOpen
   const text = runtimeLogText(snapshot)
   const lineCount = text ? text.split(/\r?\n/).length : 0
 
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
+    <Collapsible open={isOpen} onOpenChange={setOpen}>
       <Card className="ui2-mmc-log-card">
         <CollapsibleTrigger asChild>
           <button className="ui2-mmc-collapsible-trigger" type="button">
             <span><ScrollText aria-hidden="true" size={17} /> {title}{lineCount ? ` (${lineCount} lines)` : ""}</span>
-            <ChevronDown aria-hidden="true" className={open ? "rotate-180" : ""} size={18} />
+            <ChevronDown aria-hidden="true" className={isOpen ? "rotate-180" : ""} size={18} />
           </button>
         </CollapsibleTrigger>
         <CollapsibleContent forceMount className="data-[state=closed]:hidden">
@@ -228,6 +273,7 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
   const [plotExpanded, setPlotExpanded] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
   const [inputRailCollapsed, setInputRailCollapsed] = React.useState(false)
+  const [runLogOpen, setRunLogOpen] = React.useState(Boolean(view.results?.runtimeLog?.defaultOpen))
   const fieldsById = React.useMemo(() => new Map(fields.map((field) => [field.id, field])), [fields])
   const runtime = React.useSyncExternalStore(bridge.subscribeRuntime, bridge.runtimeSnapshot, bridge.runtimeSnapshot)
   const progressFields = (progressSection?.fields || []).map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]
@@ -409,12 +455,16 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
             </Card>
           )}
 
-          {view.results?.runtimeLog && hasRunContext && <RunCue snapshot={runtime} />}
+          {view.results?.runtimeLog && hasRunContext && (
+            <RunCue snapshot={runtime} onViewLog={() => setRunLogOpen(true)} />
+          )}
 
           {view.results?.runtimeLog && (
             <RunLog
               defaultOpen={view.results.runtimeLog.defaultOpen}
               description={view.results.runtimeLog.description}
+              open={runLogOpen}
+              onOpenChange={setRunLogOpen}
               snapshot={runtime}
               title={view.results.runtimeLog.title || "Run log"}
             />
@@ -425,7 +475,7 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
             <Card
               aria-label={plotExpanded ? `Expanded ${activeTab?.label || "result"}` : undefined}
               aria-modal={plotExpanded ? true : undefined}
-              className={`ui2-mmc-result-card${plotExpanded ? " ui2-mmc-result-card-expanded" : ""}`}
+              className={`ui2-mmc-result-card ui2-mmc-workspace-card${plotExpanded ? " ui2-mmc-result-card-expanded ui2-mmc-workspace-card-expanded" : ""}`}
               role={plotExpanded ? "dialog" : undefined}
             >
               <CardContent>
@@ -447,7 +497,7 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
                         variant="outline"
                       >
                         {plotExpanded ? <Minimize2 aria-hidden="true" size={16} /> : <Maximize2 aria-hidden="true" size={16} />}
-                        {plotExpanded ? "Close expanded result" : "Expand result"}
+                        {plotExpanded ? "Restore split view" : "Expand workspace"}
                       </Button>
                     )}
                   </div>
