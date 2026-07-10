@@ -41,6 +41,7 @@
   ];
   let plotlyLoadPromise = null;
   let nglLoadPromise = null;
+  let reactMmcRoot = null;
 
   const state = {
     moduleId: "",
@@ -54,6 +55,7 @@
     lastServerFileSessionKey: "",
     jobSelections: {},
     submitResponse: null,
+    mmcSubmitted: null,
     activeJob: null,
     freshLoginAfterLogoff: false,
     ws: {
@@ -102,6 +104,11 @@
 
   function init() {
     ensureWindowName();
+    window.addEventListener?.("ui2-react-ready", () => {
+      if (state.moduleId === "monomer_monte_carlo") {
+        renderModule();
+      }
+    });
     document.body.classList.toggle("ui2-dev-mode", devMode);
     setSidebarCollapsed(prefs.sidebarCollapsed === true);
     nodes.navToggle?.addEventListener("click", () => {
@@ -896,9 +903,14 @@
     const inputFields = fields.filter((field) => field.role !== "output");
     const outputFields = fields.filter((field) => field.role === "output");
 
+    unmountReactMmc();
     nodes.empty.hidden = true;
     nodes.root.hidden = false;
     nodes.root.innerHTML = "";
+
+    if (state.moduleId === "monomer_monte_carlo" && renderReactMmc(module, fields)) {
+      return;
+    }
 
     const container = el("div", "ui2-module");
     const systemTool = renderSystemTool(module, fields);
@@ -1006,18 +1018,83 @@
   function clearLoadedModule() {
     stopJobPolling();
     closeUtilityOverlay();
+    unmountReactMmc();
     state.moduleId = "";
     state.menuId = "";
     state.module = null;
     state.view = {};
     state.values = {};
     state.submitResponse = null;
+    state.mmcSubmitted = null;
     state.activeJob = null;
     nodes.root.hidden = true;
     nodes.root.innerHTML = "";
     nodes.empty.hidden = true;
     nodes.empty.innerHTML = "";
     syncDocsLink();
+  }
+
+  function renderReactMmc(module, fields) {
+    if (!window.GenAppUi2Mmc?.mount) {
+      return false;
+    }
+    const root = el("div", "ui2-mmc-react-root");
+    reactMmcRoot = root;
+    nodes.root.appendChild(root);
+    const stage = nodes.root.closest(".ui2-stage");
+    if (stage) {
+      stage.scrollTop = 0;
+      stage.scrollLeft = 0;
+    }
+    const bridge = {
+      createField: (field, role) => renderField(field, role),
+      createActionBar: () => renderActionBar(),
+      syncValues: () => {
+        syncValues();
+        return cloneUi2Value(state.values);
+      },
+      reset: (form) => resetModuleForm(form),
+      clearSubmitted: () => {
+        state.mmcSubmitted = null;
+      },
+      submit: (form) => submitModule(form),
+      resizeOutputs: resizeMmcOutputs
+    };
+    window.GenAppUi2Mmc.mount(root, {
+      module,
+      fields,
+      bridge,
+      submitted: cloneUi2Value(state.mmcSubmitted)
+    });
+    window.setTimeout(() => {
+      if (reactMmcRoot === root) {
+        syncValues();
+      }
+    }, 0);
+    return true;
+  }
+
+  function unmountReactMmc() {
+    if (!reactMmcRoot) {
+      return;
+    }
+    window.GenAppUi2Mmc?.unmount?.(reactMmcRoot);
+    reactMmcRoot = null;
+  }
+
+  function cloneUi2Value(value) {
+    return value == null ? value : JSON.parse(JSON.stringify(value));
+  }
+
+  function resizeMmcOutputs() {
+    document.querySelectorAll('[data-output-type="plotly"]').forEach((output) => {
+      if (window.Plotly?.Plots?.resize) {
+        window.Plotly.Plots.resize(output);
+      }
+    });
+    document.querySelectorAll('[data-output-type="ngl"]').forEach((output) => {
+      output._ui2NglStage?.handleResize?.();
+    });
   }
 
   function renderModuleStrip() {
@@ -3609,6 +3686,17 @@
       const status = document.getElementById("ui2-submit-status");
       const restoredInput = form ? await applySavedJobInput(pollUuid) : false;
       setSubmitStatus(status, `Attached (${jobId})`, "ok");
+      if (form && state.moduleId === "monomer_monte_carlo") {
+        state.mmcSubmitted = {
+          uuid: pollUuid,
+          values: cloneUi2Value(state.values)
+        };
+        dispatchUi2Event("ui2:mmc-reattached", {
+          moduleId: state.moduleId,
+          uuid: pollUuid,
+          values: cloneUi2Value(state.values)
+        });
+      }
       if (form) {
         startJobPolling(pollUuid, form, status, false, !restoredInput);
       }
@@ -4147,6 +4235,7 @@
     }
     state.serverSelections = {};
     state.jobSelections = {};
+    state.mmcSubmitted = null;
     applyInputPayload(defaultInputPayload(), { clearMissing: true });
     clearRuntimeOutputs(form);
     clearSubmitResponse();
@@ -4159,11 +4248,13 @@
     const status = document.getElementById("ui2-submit-status");
     if (!endpoint) {
       setSubmitStatus(status, "This module does not have a runtime endpoint yet.", "error");
-      return;
+      return { ok: false, error: "No runtime endpoint" };
     }
 
     const submitButton = form.querySelector('button[type="submit"]');
-    submitButton.disabled = true;
+    if (submitButton) {
+      submitButton.disabled = true;
+    }
     stopJobPolling();
     clearRuntimeOutputs(form);
     setSubmitStatus(status, `Submitting to ${endpoint}`, "pending");
@@ -4192,12 +4283,33 @@
       if (jobUuid && !isTerminalStatus(runtimeStatus(payload))) {
         startJobPolling(jobUuid, form, status);
       }
+      if (state.moduleId === "monomer_monte_carlo") {
+        state.mmcSubmitted = {
+          uuid: jobUuid,
+          values: cloneUi2Value(state.values)
+        };
+      }
+      return {
+        ok: true,
+        uuid: jobUuid,
+        values: cloneUi2Value(state.values)
+      };
     } catch (error) {
       setSubmitStatus(status, error.message, "error");
       renderSubmitResponse({ error: error.message });
+      return { ok: false, error: error.message };
     } finally {
-      submitButton.disabled = false;
+      if (submitButton) {
+        submitButton.disabled = false;
+      }
     }
+  }
+
+  function dispatchUi2Event(name, detail) {
+    if (typeof window.dispatchEvent !== "function" || typeof CustomEvent !== "function") {
+      return;
+    }
+    window.dispatchEvent(new CustomEvent(name, { detail }));
   }
 
   function moduleSubmitEndpoint() {

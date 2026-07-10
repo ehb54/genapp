@@ -1,5 +1,9 @@
 *~
 *.lock
+!languages/ui2/react/pnpm-lock.yaml
+*.tsbuildinfo
+.pnpm-store/
+node_modules/
 etc/apps.json
 etc/config.json
 etc/no_sudo
@@ -11,5 +15,3 @@ appconfig.json*
 mongo
 *rsa*
 jobrunner*
-
-

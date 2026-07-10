@@ -26,6 +26,8 @@ ok( -f File::Spec->catfile( $ui2, 'index.html' ), 'ui2 index was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(js app-map.js) ), 'ui2 app map was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(css ui2.css) ), 'ui2 stylesheet was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(js ui2.js) ), 'ui2 script was copied' );
+ok( -f File::Spec->catfile( $ui2, qw(react ui2-react.css) ), 'ui2 React stylesheet was copied' );
+ok( -f File::Spec->catfile( $ui2, qw(react ui2-react.js) ), 'ui2 React bundle was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(modules shared.json) ), 'ui2 shared module summary was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(modules plain.json) ), 'ui2 plain module summary was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(modules typed.json) ), 'ui2 typed module summary was generated without ui2 type templates' );
@@ -40,6 +42,8 @@ like( $index, qr/\.\.\/js\/autobahn\.min\.js/, 'ui2 index preloads the existing 
 like( $index, qr/\.\.\/js\/plotly-2\.35\.2\.min\.js/, 'ui2 index preloads the existing generated Plotly bundle' );
 like( $index, qr/js\/ui2\.js/, 'ui2 index loads the plain JavaScript playground' );
 like( $index, qr/css\/ui2\.css/, 'ui2 index loads the ui2 stylesheet' );
+like( $index, qr/react\/ui2-react\.css/, 'ui2 index loads the React workbench stylesheet' );
+like( $index, qr/<script type="module" src="react\/ui2-react\.js/, 'ui2 index loads the React workbench module' );
 like( $index, qr/id="ui2-session-status"/, 'ui2 index exposes a session/project status target' );
 like( $index, qr/data-app-id="ui2_views"/, 'ui2 index exposes the generated application id' );
 like( $index, qr/Choose a menu group from the options on the left/, 'ui2 index opens at a neutral menu-group-first shell' );
@@ -58,6 +62,17 @@ like( $app_map_js, qr/app\.help\.feedback = "Feedback help"/, 'ui2 app map recor
 
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
 like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declares a module submit endpoint helper' );
+like( $ui2_js, qr/state\.moduleId === "monomer_monte_carlo" && renderReactMmc\(module, fields\)/, 'ui2 delegates only Monomer Monte Carlo to the React workbench' );
+like( $ui2_js, qr/function renderReactMmc\(module, fields\).*?createField:.*?renderField\(field, role\).*?submit:.*?submitModule\(form\)/s, 'MMC React bridge reuses canonical UI2 fields and submission' );
+like( $ui2_js, qr/function resizeMmcOutputs\(\).*?Plotly\.Plots\.resize.*?_ui2NglStage.*?handleResize/s, 'MMC result tabs resize existing Plotly and NGL renderers' );
+like( $ui2_js, qr/ui2:mmc-reattached.*?values: cloneUi2Value\(state\.values\)/s, 'MMC reattachment publishes the restored submitted-input snapshot' );
+
+my $ui2_react_js = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.js) ) );
+my $ui2_react_css = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.css) ) );
+like( $ui2_react_js, qr/Submitted inputs/, 'React bundle contains the MMC submitted-input summary' );
+like( $ui2_react_js, qr/Trajectory plot/, 'React bundle contains the MMC Plotly result tab' );
+like( $ui2_react_js, qr/Structure/, 'React bundle contains the MMC NGL result tab' );
+like( $ui2_react_css, qr/\.ui2-mmc-grid/, 'React stylesheet contains the fixed MMC workbench grid' );
 like( $ui2_js, qr/function renderTabs\(inputCount, outputCount\)/, 'ui2 runtime keeps input/output jump tabs with counts' );
 like( $ui2_js, qr/tabButton\("Inputs", inputCount, true, "ui2-input-section"\)/, 'ui2 input jump tab keeps its field count for accessibility' );
 like( $ui2_js, qr/const button = el\("button", "ui2-tab", label\)/, 'ui2 jump tabs display labels without count text' );

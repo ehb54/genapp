@@ -1,0 +1,251 @@
+@import "tailwindcss";
+
+@source "./**/*.{ts,tsx}";
+
+.ui2-mmc-react {
+  --ui2-panel-strong: var(--ui2-panel-soft);
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  gap: 1rem;
+  color: var(--ui2-text);
+}
+
+.ui2-mmc-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ui2-mmc-heading h2 {
+  margin: 0.2rem 0 0;
+  font-size: clamp(1.45rem, 2vw, 2rem);
+  line-height: 1.2;
+}
+
+.ui2-mmc-heading p {
+  max-width: 68rem;
+  margin: 0.45rem 0 0;
+  color: var(--ui2-muted);
+}
+
+.ui2-mmc-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ui2-accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.ui2-mmc-grid {
+  display: grid;
+  min-height: 0;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(20rem, 0.8fr) minmax(24rem, 1.2fr);
+  gap: 1rem;
+}
+
+.ui2-mmc-input-pane,
+.ui2-mmc-results-pane {
+  min-width: 0;
+}
+
+.ui2-mmc-input-pane {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ui2-mmc-input-scroll {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  padding-bottom: 5rem;
+  padding-right: 0.25rem;
+}
+
+.ui2-mmc-results-pane {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: auto minmax(28rem, 1fr);
+  gap: 0.75rem;
+}
+
+.ui2-mmc-result-card,
+.ui2-mmc-result-card > div,
+.ui2-mmc-result-card [role="tabpanel"] {
+  min-height: 0;
+}
+
+.ui2-mmc-result-card > div {
+  height: 100%;
+}
+
+.ui2-mmc-field-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.ui2-mmc-native-field > .ui2-field {
+  grid-template-columns: minmax(9rem, 0.45fr) minmax(0, 1fr);
+  padding-inline: 0;
+}
+
+.ui2-mmc-native-field:first-child > .ui2-field {
+  padding-top: 0;
+}
+
+.ui2-mmc-native-field:last-child > .ui2-field {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.ui2-mmc-input-pane .ui2-file-control {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.ui2-mmc-input-pane .ui2-file-actions {
+  justify-content: flex-start;
+}
+
+.ui2-mmc-collapsible-trigger {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  border: 0;
+  background: transparent;
+  color: var(--ui2-text);
+  cursor: pointer;
+  padding: 1rem 1.25rem;
+  font-weight: 700;
+}
+
+.ui2-mmc-collapsible-trigger > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ui2-mmc-collapsible-trigger svg {
+  transition: transform 160ms ease;
+}
+
+.ui2-mmc-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  border: 1px solid var(--ui2-border);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--ui2-panel) 94%, transparent);
+  box-shadow: var(--ui2-shadow);
+  padding: 0.4rem;
+  backdrop-filter: blur(10px);
+}
+
+.ui2-mmc-actions .ui2-form-actions {
+  margin: 0;
+  border: 0;
+  padding: 0.2rem;
+}
+
+.ui2-mmc-actions-hidden {
+  display: none;
+}
+
+.ui2-mmc-progress-card .ui2-field {
+  grid-template-columns: minmax(8rem, 0.25fr) minmax(0, 1fr);
+  padding-inline: 0;
+}
+
+.ui2-mmc-progress-card .ui2-field:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.ui2-mmc-result-card .ui2-output-field {
+  display: block;
+  padding: 0;
+  border: 0;
+}
+
+.ui2-mmc-result-card .ui2-output-field > .ui2-field-label {
+  display: none;
+}
+
+.ui2-mmc-result-card .ui2-output,
+.ui2-mmc-result-card .ui2-ngl-plot {
+  width: 100% !important;
+  min-height: 28rem;
+}
+
+.ui2-mmc-submitted {
+  align-self: stretch;
+}
+
+.ui2-mmc-status-badge {
+  border: 1px solid var(--ui2-border);
+  border-radius: 999px;
+  background: var(--ui2-accent-soft);
+  color: var(--ui2-accent);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.ui2-mmc-summary-list {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.ui2-mmc-summary-list > div {
+  display: grid;
+  grid-template-columns: minmax(9rem, 0.65fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--ui2-border);
+  padding: 0.6rem 0;
+}
+
+.ui2-mmc-summary-list dt {
+  color: var(--ui2-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.ui2-mmc-summary-list dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.ui2-mmc-summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 1100px) {
+  .ui2-mmc-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ui2-mmc-input-scroll {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .ui2-mmc-results-pane {
+    grid-template-rows: auto minmax(28rem, auto);
+  }
+}

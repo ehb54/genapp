@@ -227,6 +227,8 @@ if [[ "$generate_mode" = "all" || "$generate_language" = "ui2" ]]; then
     test -f output/ui2/index.html
     test -f output/ui2/js/ui2.js
     test -f output/ui2/css/ui2.css
+    test -f output/ui2/react/ui2-react.js
+    test -f output/ui2/react/ui2-react.css
     if [[ -d output/html5 ]]; then
         ln -sfn ../ui2 output/html5/ui2
         test -f output/html5/ui2/index.html
