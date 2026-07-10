@@ -43,7 +43,7 @@ like( $index, qr/\.\.\/js\/plotly-2\.35\.2\.min\.js/, 'ui2 index preloads the ex
 like( $index, qr/js\/ui2\.js/, 'ui2 index loads the plain JavaScript playground' );
 like( $index, qr/css\/ui2\.css/, 'ui2 index loads the ui2 stylesheet' );
 like( $index, qr/react\/ui2-react\.css/, 'ui2 index loads the React workbench stylesheet' );
-like( $index, qr/<html lang="en" data-ui2-theme="system">/, 'ui2 index starts with the native system theme selected at the document root' );
+like( $index, qr/<html lang="en" data-ui2-theme="slate">/, 'ui2 index starts with Slate selected at the document root' );
 like( $index, qr/<script type="module" src="react\/ui2-react\.js/, 'ui2 index loads the React workbench module' );
 like( $index, qr/id="ui2-session-status"/, 'ui2 index exposes a session/project status target' );
 like( $index, qr/data-app-id="ui2_views"/, 'ui2 index exposes the generated application id' );
@@ -228,6 +228,7 @@ like( $ui2_js, qr/function legacyUtilityFieldName\(control\)/, 'ui2 Settings sub
 like( $ui2_js, qr/function userConfigFields\(fields\)/, 'ui2 Settings filters fields through legacy directive visibility' );
 like( $ui2_js, qr/LEGACY_USER_CONFIG_THEME_FIELD_IDS = new Set\(\["changetheme", "themetype", "themedark", "themelight", "theme"\]\)/, 'ui2 Settings recognizes the legacy theme control cluster' );
 like( $ui2_js, qr/function ui2UserConfigFields\(fields\).*?ui2ThemeConfigField\(\)/s, 'ui2 Settings replaces legacy theme controls with a native UI2 theme preference' );
+like( $ui2_js, qr/\["superhero", "Superhero"\][\s\S]+\["flatly", "Flatly"\]/, 'ui2 Settings exposes legacy-inspired theme candidates for review' );
 like( $ui2_js, qr/dataset\.ui2LocalPreference = "theme"/, 'ui2 Settings marks the native theme selector as a local preference' );
 like( $ui2_js, qr/control\.dataset\.ui2LocalPreference[\s\S]+return;/, 'ui2 Settings keeps native UI2 preferences out of legacy settings submits' );
 like( $ui2_js, qr/function renderGroupField\(field\)/, 'ui2 Settings renders legacy group fields as configured checkboxes' );
@@ -301,7 +302,10 @@ like( $ui2_js, qr/type === "integer"[\s\S]+input\.step = "1"/, 'ui2 integer inpu
 
 my $ui2_css = read_file( File::Spec->catfile( $ui2, qw(css ui2.css) ) );
 like( $ui2_css, qr/:root\[data-ui2-theme="system"\]/, 'ui2 stylesheet declares an explicit native system theme mode' );
+like( $ui2_css, qr/:root\[data-ui2-theme="slate"\]/, 'ui2 stylesheet declares the Slate legacy-continuity theme mode' );
 like( $ui2_css, qr/:root\[data-ui2-theme="dark"\]/, 'ui2 stylesheet declares an explicit native dark theme mode' );
+like( $ui2_css, qr/:root\[data-ui2-theme="cyborg"\]/, 'ui2 stylesheet declares legacy-inspired dark review palettes' );
+like( $ui2_css, qr/:root\[data-ui2-theme="flatly"\]/, 'ui2 stylesheet declares legacy-inspired light review palettes' );
 like( $ui2_css, qr/--ui2-on-accent:/, 'ui2 stylesheet exposes a semantic foreground token for accent buttons' );
 like( $ui2_css, qr/--ui2-focus-ring:/, 'ui2 stylesheet exposes a semantic focus-ring token' );
 like( $ui2_css, qr/\.ui2-dialog-overlay/, 'ui2 stylesheet includes login dialog shell styles' );

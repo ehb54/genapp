@@ -17,10 +17,37 @@
   const candidateModules = moduleCandidates();
   const params = new URLSearchParams(window.location.search);
   const prefs = loadPreferences();
-  const UI2_THEME_VALUES = new Set(["system", "light", "dark"]);
+  const UI2_DEFAULT_THEME = "slate";
+  const UI2_THEME_OPTIONS = [
+    ["system", "System"],
+    ["slate", "Slate"],
+    ["dark", "Dark"],
+    ["cyborg", "Cyborg"],
+    ["darkly", "Darkly"],
+    ["solar", "Solar"],
+    ["superhero", "Superhero"],
+    ["light", "Light"],
+    ["cerulean", "Cerulean"],
+    ["cosmo", "Cosmo"],
+    ["flatly", "Flatly"],
+    ["journal", "Journal"],
+    ["litera", "Litera"],
+    ["lumen", "Lumen"],
+    ["lux", "Lux"],
+    ["materia", "Materia"],
+    ["minty", "Minty"],
+    ["pulse", "Pulse"],
+    ["sandstone", "Sandstone"],
+    ["simplex", "Simplex"],
+    ["sketchy", "Sketchy"],
+    ["spacelab", "Spacelab"],
+    ["united", "United"],
+    ["yeti", "Yeti"]
+  ];
+  const UI2_THEME_VALUES = new Set(UI2_THEME_OPTIONS.map(([value]) => value));
   const LEGACY_USER_CONFIG_THEME_FIELD_IDS = new Set(["changetheme", "themetype", "themedark", "themelight", "theme"]);
   const requestedUi2Theme = params.get("ui2theme");
-  let activeUi2Theme = normalizeUi2Theme(requestedUi2Theme || prefs.ui2Theme || "system");
+  let activeUi2Theme = normalizeUi2Theme(requestedUi2Theme || prefs.ui2Theme || UI2_DEFAULT_THEME);
   const devMode = params.get("ui2dev") === "1" || prefs.devMode === true;
   const JOB_MANAGER_ENDPOINT = "ajax/sys_config/sys_jobs2.php";
   const FIELD_CONTROL_SELECTOR = "input[data-field-id], select[data-field-id], textarea[data-field-id]";
@@ -871,7 +898,7 @@
 
   function normalizeUi2Theme(value) {
     const theme = String(value || "").trim().toLowerCase();
-    return UI2_THEME_VALUES.has(theme) ? theme : "system";
+    return UI2_THEME_VALUES.has(theme) ? theme : UI2_DEFAULT_THEME;
   }
 
   function applyUi2Theme(value) {
@@ -2928,11 +2955,15 @@
       id: "ui2theme",
       label: "UI2 theme",
       type: "listbox",
-      values: "System~system~Light~light~Dark~dark",
+      values: ui2ThemeOptionValues(),
       default: currentUi2Theme(),
-      help: "Select the native UI2 color theme. System follows the browser or operating system setting.",
+      help: "Select a native UI2 color theme. System follows the browser or operating system setting.",
       ui2LocalPreference: true
     };
+  }
+
+  function ui2ThemeOptionValues() {
+    return UI2_THEME_OPTIONS.map(([value, label]) => `${label}~${value}`).join("~");
   }
 
   function normalizeUserConfigField(field) {
@@ -7114,6 +7145,7 @@
       setUi2ThemePreference,
       currentUi2Theme,
       ui2UserConfigFields,
+      ui2ThemeOptionValues,
       replaceSelectOptions,
       userConfigGroupVisible,
       parseNglPayload,

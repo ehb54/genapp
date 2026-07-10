@@ -11,7 +11,7 @@ threads.
 Related discussion:
 
 - issue 41: React/shadcn versus scientific layout responsibilities
-- issue 42: native UI2 System/Light/Dark theme selection in Settings
+- issue 42: native UI2 legacy-inspired theme selection in Settings
 - `doc/UI2-Job-Event-Protocol.md`
 - `doc/UI2-Renderer-ROA.md`
 - `doc/UI2-Runtime-Contract-ROA.md`
@@ -27,9 +27,9 @@ Current scope decision:
 - UI2 will evolve at its existing `/sassie3/ui2` location.
 - UI2 uses one fixed workbench layout during the current exploration phase.
 - User-selectable layouts are postponed.
-- UI2 exposes a small native theme preference in Settings: System, Light, and
-  Dark. This is implemented with UI2 semantic CSS variables, not Bootstrap or
-  Bootswatch.
+- UI2 exposes native theme preferences in Settings. The list includes System,
+  Slate, Light, Dark, and Bootswatch-inspired review candidates implemented
+  with UI2 semantic CSS variables, not Bootstrap or Bootswatch.
 - Monomer Monte Carlo is the first React/shadcn vertical slice because it runs
   quickly while exercising conditional inputs, progress, Plotly, and NGL.
 
@@ -88,12 +88,33 @@ behavior without changing scientific meaning or runtime contracts.
 
 ## Native Theme Foundation
 
-UI2 themes are intentionally narrow at this stage. The supported user-facing
-choices are:
+UI2 themes are intentionally token-based at this stage. The supported
+user-facing choices are:
 
 - System
-- Light
+- Slate
 - Dark
+- Cyborg
+- Darkly
+- Solar
+- Superhero
+- Light
+- Cerulean
+- Cosmo
+- Flatly
+- Journal
+- Litera
+- Lumen
+- Lux
+- Materia
+- Minty
+- Pulse
+- Sandstone
+- Simplex
+- Sketchy
+- Spacelab
+- United
+- Yeti
 
 The implementation uses semantic `--ui2-*` CSS variables applied from the
 document root through `data-ui2-theme`. The plain JavaScript UI2 shell and the
@@ -105,8 +126,9 @@ The UI2 Settings utility replaces the legacy Bootswatch-oriented controls
 `ui2theme` selector. That selector is a UI2-local preference and is not posted
 to the legacy `sys_user_config.php` endpoint.
 
-This foundation deliberately does not add Bootstrap, Bootswatch, custom named
-legacy themes, per-module theme overrides, or a polished theme-management UI.
+These palettes are Bootswatch-inspired review candidates. This foundation
+deliberately does not add Bootstrap, Bootswatch CSS, per-module theme
+overrides, or a polished theme-management UI.
 
 ## Goals
 
@@ -585,8 +607,9 @@ Use this section to append concise dated decisions as they become real.
   `sendall()`. A repeated 20-trial capability-on run delivered 59 ordered job
   events, including four full coordinate frames and both Plotly snapshot and
   append operations, while retaining legacy mirror messages and final outputs.
-- 2026-07-10: Began the native UI2 theme foundation. UI2 Settings replaces the
-  legacy Bootswatch theme controls with a local System/Light/Dark selector,
-  applies the selection through root `data-ui2-theme` and semantic `--ui2-*`
-  variables, and keeps the value out of legacy settings submits. Plain JS UI2
-  and the React MMC workbench consume the same tokens.
+- 2026-07-10: Expanded the native UI2 theme foundation for collaborator review.
+  UI2 Settings replaces the legacy Bootswatch theme controls with a local
+  selector containing Slate, System, Dark, Light, and Bootswatch-inspired named
+  palettes. The selection applies through root `data-ui2-theme` and semantic
+  `--ui2-*` variables, and the value stays out of legacy settings submits.
+  Plain JS UI2 and the React MMC workbench consume the same tokens.

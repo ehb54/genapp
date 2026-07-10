@@ -13,8 +13,8 @@ the established runtime while React owns workspace composition.
 
 Theme styling is owned by the UI2 shell. React components consume the shared
 semantic `--ui2-*` CSS variables and should not introduce Bootstrap,
-Bootswatch, or per-workbench theme overrides. The current native theme choices
-are System, Light, and Dark, selected at the document root.
+Bootswatch, or per-workbench theme overrides. Native themes are selected at the
+document root and include Slate plus Bootswatch-inspired review candidates.
 
 ## Build
 

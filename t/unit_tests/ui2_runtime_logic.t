@@ -327,16 +327,23 @@ assert(hooks, "test hooks were exposed");
 
 assert.strictEqual(hooks.normalizeUi2Theme("dark"), "dark", "UI2 accepts the native dark theme id");
 assert.strictEqual(hooks.normalizeUi2Theme("LIGHT"), "light", "UI2 normalizes native theme ids");
-assert.strictEqual(hooks.normalizeUi2Theme("slate"), "system", "UI2 rejects legacy Bootswatch theme ids");
-assert.strictEqual(hooks.currentUi2Theme(), "system", "UI2 starts in system theme mode by default");
-hooks.applyUi2Theme("dark");
-assert.strictEqual(document.documentElement.dataset.ui2Theme, "dark", "UI2 applies the native theme at the document root");
-hooks.setUi2ThemePreference("light", true);
-assert.strictEqual(hooks.currentUi2Theme(), "light", "UI2 stores the active native theme");
+assert.strictEqual(hooks.normalizeUi2Theme("slate"), "slate", "UI2 accepts the legacy-default Slate theme id");
+assert.strictEqual(hooks.normalizeUi2Theme("superhero"), "superhero", "UI2 accepts legacy-inspired theme ids");
+assert.strictEqual(hooks.normalizeUi2Theme("unknown"), "slate", "UI2 falls back to Slate for unknown theme ids");
+assert.strictEqual(hooks.currentUi2Theme(), "slate", "UI2 starts in Slate theme mode by default");
+hooks.applyUi2Theme("cyborg");
+assert.strictEqual(document.documentElement.dataset.ui2Theme, "cyborg", "UI2 applies named native themes at the document root");
+hooks.setUi2ThemePreference("flatly", true);
+assert.strictEqual(hooks.currentUi2Theme(), "flatly", "UI2 stores the active native theme");
 assert.strictEqual(
   JSON.parse(window.__localStorage["genapp-ui2-preferences"]).ui2Theme,
-  "light",
+  "flatly",
   "UI2 persists the native theme in UI2 preferences"
+);
+assert.strictEqual(
+  hooks.ui2ThemeOptionValues().includes("Superhero~superhero") && hooks.ui2ThemeOptionValues().includes("Flatly~flatly"),
+  true,
+  "UI2 Settings exposes legacy-inspired theme candidates"
 );
 const nativeThemeFields = hooks.ui2UserConfigFields([
   { id: "project", type: "listbox" },
