@@ -62,7 +62,7 @@ like( $app_map_js, qr/app\.help\.feedback = "Feedback help"/, 'ui2 app map recor
 
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
 like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declares a module submit endpoint helper' );
-like( $ui2_js, qr/state\.moduleId === "monomer_monte_carlo" && renderReactMmc\(module, fields\)/, 'ui2 delegates only Monomer Monte Carlo to the React workbench' );
+like( $ui2_js, qr/isReactWorkbenchView\(state\.view\) && renderReactMmc\(module, fields\)/, 'ui2 delegates modules to React only through explicit view metadata' );
 like( $ui2_js, qr/function renderReactMmc\(module, fields\).*?createField:.*?renderField\(field, role\).*?submit:.*?submitModule\(form\)/s, 'MMC React bridge reuses canonical UI2 fields and submission' );
 like( $ui2_js, qr/function resizeMmcOutputs\(\).*?Plotly\.Plots\.resize.*?_ui2NglStage.*?handleResize/s, 'MMC result tabs resize existing Plotly and NGL renderers' );
 like( $ui2_js, qr/function plotlyLayoutForOutput\(output, sourceLayout\).*?plotFit === "pane".*?delete layout\.width;.*?delete layout\.height;/s, 'MMC fitted Plotly layouts remove fixed producer dimensions' );
@@ -73,10 +73,10 @@ like( $ui2_js, qr/ui2:mmc-reattached.*?values: cloneUi2Value\(state\.values\)/s,
 my $ui2_react_js = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.js) ) );
 my $ui2_react_css = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.css) ) );
 like( $ui2_react_js, qr/Submitted inputs/, 'React bundle contains the MMC submitted-input summary' );
-like( $ui2_react_js, qr/Trajectory plot/, 'React bundle contains the MMC Plotly result tab' );
-like( $ui2_react_js, qr/Structure/, 'React bundle contains the MMC NGL result tab' );
-like( $ui2_react_js, qr/Expand plot/, 'React bundle contains the same-instance MMC plot expansion control' );
-like( $ui2_react_js, qr/Close expanded plot/, 'React bundle contains an explicit expanded-plot close control' );
+like( $ui2_react_js, qr/results\?\.runtimeLog/, 'React bundle places the runtime log from view metadata' );
+like( $ui2_react_js, qr/\.outputs\.map/, 'React bundle places declared module outputs from view tab metadata' );
+like( $ui2_react_js, qr/Expand result/, 'React bundle contains the view-driven result expansion control' );
+like( $ui2_react_js, qr/Close expanded result/, 'React bundle contains an explicit expanded-result close control' );
 like( $ui2_react_css, qr/\.ui2-mmc-grid/, 'React stylesheet contains the fixed MMC workbench grid' );
 like( $ui2_react_css, qr/\.ui2-mmc-result-card \.ui2-output-plotly\{[^}]*overflow:hidden/, 'MMC fitted Plotly output suppresses internal scrollbars' );
 like( $ui2_react_css, qr/\.ui2-mmc-result-card-expanded\{[^}]*position:fixed/, 'MMC expanded plot uses a viewport overlay' );
@@ -207,7 +207,7 @@ like( $ui2_js, qr/function toolFieldControl\(section, id, tagName\)/, 'ui2 Job M
 like( $ui2_js, qr/ajax\/sys_config\/sys_managejob\.php/, 'ui2 Job Manager uses the legacy manage-job endpoint for row actions' );
 like( $ui2_js, qr/function submitSystemModuleAction\(action, jobIds, moduleId = "sys_job_manager"\)/, 'ui2 Job Manager can submit legacy system-module actions' );
 like( $ui2_js, qr/applySavedJobInput\(pollUuid\)/, 'ui2 Job Manager explicitly restores saved inputs from the legacy switch target' );
-like( $ui2_js, qr/startJobPolling\(pollUuid, form, status, false, !restoredInput\)/, 'ui2 Job Manager polls the uuid from the legacy switch target after input restore' );
+like( $ui2_js, qr/startJobPolling\(\s*pollUuid, form, status, true, !restoredInput, false\)/s, 'ui2 Job Manager polls and replays the uuid from the legacy switch target after input restore' );
 like( $ui2_js, qr/ajax\/ui2_job_input\.php/, 'ui2 Job Manager has a target-local saved input fallback endpoint' );
 like( $ui2_js, qr/function moduleIdFromSwitchParts\(parts\)/, 'ui2 Job Manager parses legacy switch targets without assuming one shape' );
 like( $ui2_js, qr/function applyInputPayload\(inputs, options = \{\}\)/, 'ui2 Job Manager can hydrate form inputs from reattached job payloads' );
@@ -254,7 +254,8 @@ like( $ui2_js, qr/formData\.set\("_logon", state\.session\.logon/, 'ui2 submit u
 like( $ui2_js, qr/formData\.set\("_project", state\.session\.project/, 'ui2 submit uses the legacy session project' );
 like( $ui2_js, qr/if \(state\.module\?\.docrootexecutable\).*?formData\.set\("_docrootexecutable", state\.module\.docrootexecutable\)/s, 'ui2 runtime bridge sends legacy docroot executable metadata for system module submits' );
 like( $ui2_js, qr/const payload = await parseJsonResponse\(response, "Runtime"\);\s+state\.submitResponse = payload;\s+showLegacyMessagePayload\(payload\);/s, 'ui2 shows legacy submit messages before failed runtime responses become inline errors' );
-like( $ui2_js, qr/function startJobPolling\(uuid, form, statusNode, getLastMsg = true, getInput = false\)/, 'ui2 runtime bridge starts polling submitted jobs' );
+like( $ui2_js, qr/function startJobPolling\(\s*uuid, form, statusNode, getLastMsg = true, getInput = false,\s*subscribeFirst = true\)/s, 'ui2 runtime bridge starts polling submitted jobs' );
+like( $ui2_js, qr/startJobPolling\(\s*pollUuid, form, status, true, !restoredInput, false\)/s, 'ui2 reattachment hydrates the replay journal before subscribing to live events' );
 like( $ui2_js, qr/function pollJobResults\(uuid, form, statusNode, lastDelay, getLastMsg, getInput = false\)/, 'ui2 runtime bridge polls legacy job results' );
 like( $ui2_js, qr/ajax\/get_results\.php/, 'ui2 runtime bridge uses the legacy job results endpoint' );
 like( $ui2_js, qr/url\.searchParams\.set\("_getlastmsg", getLastMsg \? "1" : "0"\)/, 'ui2 runtime bridge requests legacy last-message updates with the PHP-native flag' );
@@ -268,6 +269,8 @@ like( $ui2_js, qr/function stripUi2RuntimeStatus\(text\)/, 'ui2 runtime bridge s
 like( $ui2_js, qr/function isRuntimeDividerText\(text\)/, 'ui2 runtime bridge preserves repeated textarea divider lines' );
 like( $ui2_js, qr/output\.dataset\.runtimeText = merged/, 'ui2 runtime bridge keeps runtime text across later output redraws' );
 like( $ui2_js, qr/function renderPlotlyOutput\(output, value\)/, 'ui2 runtime bridge has a dedicated Plotly output renderer' );
+like( $ui2_js, qr/Plotly\.react\(output, figure\.data, layout, config\)/, 'ui2 authoritative plot snapshots update the existing Plotly graph' );
+like( $ui2_js, qr/Plotly\.extendTraces\(output, \{ x, y \}, indices/, 'ui2 plot append events extend existing traces incrementally' );
 like( $ui2_js, qr/function applyPlotlyModebarHooks\(figure, config\)/, 'ui2 runtime bridge honors legacy Plotly Chart Editor config' );
 like( $ui2_js, qr/Edit in Chart Editor/, 'ui2 Plotly modebar exposes the Chart Editor action when configured' );
 like( $ui2_js, qr/function chartEditorLayout\(layout\)/, 'ui2 Plotly Chart Editor receives an editor-friendly layout copy' );
@@ -276,6 +279,9 @@ like( $ui2_js, qr/new URL\(legacyEndpoint\("", raw\), window\.location\.href\)/,
 like( $ui2_js, qr/function parsePlotlyFigure\(value\)/, 'ui2 runtime bridge parses Plotly JSON string payloads' );
 like( $ui2_js, qr/function defaultPlotlyLayout\(\)/, 'ui2 runtime bridge supplies default Plotly layout polish' );
 like( $ui2_js, qr/function nglRepresentationStoreKey\(spec, index, layered\).*?layered \? nglRepresentationKey\(spec, index\) : spec\?\.type/s, 'ui2 NGL keeps simple payloads on generic button keys while layering named representations' );
+like( $ui2_js, qr/function applyNglCoordinateFrame\(output, frame\).*?structure\.updatePosition\(frame\.coordinates\).*?updateRepresentations\(\{ position: true \}\)/s, 'ui2 NGL structure events update coordinates without recreating topology' );
+like( $ui2_js, qr/function scheduleNglCoordinateFrame\(output\).*?requestAnimationFrame.*?_ui2NglPendingFrame/s, 'ui2 NGL coalesces live coordinate frames to browser repaint cadence' );
+like( $ui2_js, qr/formData\.set\("_runtime_protocol", "1"\).*?"job-events".*?"plot-append".*?"structure-frames"/s, 'ui2 advertises the versioned streaming capabilities explicitly' );
 like( $ui2_js, qr/function applyPlotlyTheme\(layout\).*?plotlyLegendKeys\(layout\)\.forEach.*?contrastTextColor\(legendBackground\)/s, 'ui2 runtime bridge applies theme-aware Plotly legend contrast polish across multiple legend slots' );
 like( $ui2_js, qr/function applyPlotlyTheme\(layout\).*?layout\.annotations = layout\.annotations\.map.*?contrastTextColor\(annotation\.bgcolor\)/s, 'ui2 runtime bridge applies theme-aware Plotly contrast to annotation legends' );
 like( $ui2_js, qr/function plotlyThemeColors\(\).*?legendBackground: dark \? "rgba\(26, 32, 31, 0\.88\)" : "rgba\(255, 255, 255, 0\.88\)"/s, 'ui2 runtime bridge derives dark and light Plotly legend backgrounds' );

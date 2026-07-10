@@ -18,6 +18,75 @@ export type Ui2Module = {
   [key: string]: unknown
 }
 
+export type WorkbenchSection = {
+  id: string
+  title: string
+  description?: string
+  fields: string[]
+  collapsed?: boolean
+}
+
+export type WorkbenchResultTab = {
+  id: string
+  label: string
+  outputs: string[]
+  primary?: boolean
+  expandable?: boolean
+  fit?: "pane" | string
+}
+
+export type WorkbenchView = {
+  renderer?: string
+  layout?: string
+  heading?: {
+    kicker?: string
+    description?: string
+  }
+  inputs?: {
+    sections?: WorkbenchSection[]
+    advanced?: WorkbenchSection
+    submittedSummary?: {
+      fields?: string[]
+    }
+  }
+  actions?: {
+    placement?: string
+    submitLabel?: string
+    resetLabel?: string
+  }
+  results?: {
+    progress?: WorkbenchSection
+    tabs?: WorkbenchResultTab[]
+    runtimeLog?: {
+      title?: string
+      description?: string
+      collapsible?: boolean
+      defaultOpen?: boolean
+    }
+  }
+  [key: string]: unknown
+}
+
+export type JobEventTopic = {
+  items?: unknown[]
+  value?: unknown
+  complete?: boolean
+  operation?: string
+  lastSequence?: number
+  timestamp?: string
+  legacy?: boolean
+}
+
+export type JobRuntimeSnapshot = {
+  run: string
+  module: string
+  lastSequence: number
+  missingSequences: number[]
+  pendingSequences: number[]
+  lifecycle: Record<string, unknown> | null
+  channels: Record<string, Record<string, JobEventTopic>>
+}
+
 export type SubmitResult = {
   ok: boolean
   uuid?: string
@@ -28,17 +97,19 @@ export type SubmitResult = {
 export type MmcBridge = {
   createField: (field: Ui2Field, role: "input" | "output") => HTMLElement
   releaseField: (field: HTMLElement) => void
-  createActionBar: () => HTMLElement
   syncValues: () => Record<string, unknown>
   reset: (form: HTMLFormElement) => void
   clearSubmitted: () => void
   submit: (form: HTMLFormElement) => Promise<SubmitResult>
   resizeOutputs: () => void
+  runtimeSnapshot: () => JobRuntimeSnapshot
+  subscribeRuntime: (listener: (snapshot: JobRuntimeSnapshot) => void) => () => void
 }
 
 export type MmcMountProps = {
   module: Ui2Module
   fields: Ui2Field[]
+  view: WorkbenchView
   bridge: MmcBridge
   submitted?: {
     values: Record<string, unknown>

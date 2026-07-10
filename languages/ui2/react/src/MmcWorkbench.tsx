@@ -1,62 +1,11 @@
 import * as React from "react"
-import { ChevronDown, FlaskConical, Maximize2, Minimize2, Settings2 } from "lucide-react"
+import { ChevronDown, FlaskConical, Maximize2, Minimize2, RotateCcw, ScrollText, Settings2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import type { MmcBridge, MmcMountProps, Ui2Field } from "@/types"
-
-const inputSections = [
-  {
-    id: "run-files",
-    title: "Run and files",
-    description: "Name the run and select its coordinate files.",
-    fields: ["run_name", "pdbfile", "dcdfile"],
-  },
-  {
-    id: "sampling",
-    title: "Sampling",
-    description: "Set Monte Carlo attempts, temperature, and molecule type.",
-    fields: ["trials", "goback", "temp", "moltype_list_box"],
-  },
-  {
-    id: "flexible-regions",
-    title: "Flexible regions",
-    description: "Describe the residues and torsion ranges to sample.",
-    fields: ["numranges", "reslow", "dtheta", "residue_alignment"],
-  },
-  {
-    id: "overlap",
-    title: "Overlap",
-    description: "Choose the collision basis and its optional cutoff.",
-    fields: ["overlap_list_box", "basis", "cutoff"],
-  },
-] as const
-
-const advancedFieldIds = [
-  "advanced_input",
-  "lowrg",
-  "highrg",
-  "directedmc",
-  "zflag_check_box",
-  "zcutoff",
-  "cflag_check_box",
-  "confile",
-]
-
-const summaryFieldIds = [
-  "run_name",
-  "pdbfile",
-  "dcdfile",
-  "trials",
-  "temp",
-  "moltype_list_box",
-  "numranges",
-  "reslow",
-  "overlap_list_box",
-  "advanced_input",
-]
+import type { JobRuntimeSnapshot, MmcBridge, MmcMountProps, Ui2Field, WorkbenchResultTab } from "@/types"
 
 function NativeHost({ create, release, className }: { create: () => HTMLElement; release?: (node: HTMLElement) => void; className?: string }) {
   const hostRef = React.useRef<HTMLDivElement>(null)
@@ -94,22 +43,48 @@ function FieldGroup({ fields, bridge, role = "input" }: { fields: Ui2Field[]; br
   )
 }
 
-function displayValue(value: unknown): string {
+function fieldChoices(field?: Ui2Field): Array<{ label: string; value: string }> {
+  if (!field?.values) return []
+  const parts = String(field.values).split("~")
+  const choices: Array<{ label: string; value: string }> = []
+  for (let index = 0; index < parts.length; index += 2) {
+    choices.push({
+      label: parts[index] || parts[index + 1] || "",
+      value: parts[index + 1] || parts[index] || "",
+    })
+  }
+  return choices
+}
+
+function displayValue(value: unknown, field?: Ui2Field): string {
   if (value === true) return "On"
   if (value === false) return "Off"
-  if (Array.isArray(value)) return value.map(displayValue).join(", ")
+  if (Array.isArray(value)) return value.map((item) => displayValue(item, field)).join(", ")
   if (value == null || value === "") return "—"
+  const choice = fieldChoices(field).find((item) => item.value === String(value))
+  if (choice) return choice.label
   return String(value)
+}
+
+function runtimeLogText(snapshot: JobRuntimeSnapshot): string {
+  const topic = snapshot.channels.log?.run
+  const appended = (topic?.items || []).map((item) => {
+    if (item && typeof item === "object" && "text" in item) return String((item as { text?: unknown }).text || "")
+    return String(item || "")
+  }).join("")
+  return appended || String(topic?.value || "")
 }
 
 function SubmittedInputs({
   values,
   fields,
+  summaryFieldIds,
   uuid,
   onEdit,
 }: {
   values: Record<string, unknown>
   fields: Ui2Field[]
+  summaryFieldIds: string[]
   uuid?: string
   onEdit: () => void
 }) {
@@ -131,7 +106,7 @@ function SubmittedInputs({
           {ids.map((id) => (
             <div key={id}>
               <dt>{fieldMap.get(id)?.label || id}</dt>
-              <dd>{displayValue(values[id])}</dd>
+              <dd>{displayValue(values[id], fieldMap.get(id))}</dd>
             </div>
           ))}
         </dl>
@@ -146,23 +121,71 @@ function SubmittedInputs({
   )
 }
 
-export function MmcWorkbench({ module, fields, bridge, submitted: initialSubmitted }: MmcMountProps) {
+function RunLog({
+  snapshot,
+  title,
+  description,
+  defaultOpen = false,
+}: {
+  snapshot: JobRuntimeSnapshot
+  title: string
+  description?: string
+  defaultOpen?: boolean
+}) {
+  const [open, setOpen] = React.useState(defaultOpen)
+  const text = runtimeLogText(snapshot)
+  const lineCount = text ? text.split(/\r?\n/).length : 0
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <Card className="ui2-mmc-log-card">
+        <CollapsibleTrigger asChild>
+          <button className="ui2-mmc-collapsible-trigger" type="button">
+            <span><ScrollText aria-hidden="true" size={17} /> {title}{lineCount ? ` (${lineCount} lines)` : ""}</span>
+            <ChevronDown aria-hidden="true" className={open ? "rotate-180" : ""} size={18} />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent forceMount className="data-[state=closed]:hidden">
+          <CardContent>
+            {description && <p className="ui2-mmc-log-description">{description}</p>}
+            <pre aria-live="off" className="ui2-mmc-run-log" role="log">
+              {text || "Runtime messages will appear here."}
+            </pre>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
+  )
+}
+
+export function MmcWorkbench({ module, fields, view, bridge, submitted: initialSubmitted }: MmcMountProps) {
   const [advancedOpen, setAdvancedOpen] = React.useState(false)
   const [submitted, setSubmitted] = React.useState<{ values: Record<string, unknown>; uuid?: string } | null>(initialSubmitted || null)
-  const [activeResult, setActiveResult] = React.useState("plot")
+  const inputSections = view.inputs?.sections || []
+  const advancedSection = view.inputs?.advanced
+  const advancedFieldIds = advancedSection?.fields || []
+  const summaryFieldIds = view.inputs?.submittedSummary?.fields || []
+  const progressSection = view.results?.progress
+  const resultTabs = view.results?.tabs || []
+  const initialResult = resultTabs.find((tab) => tab.primary)?.id || resultTabs[0]?.id || ""
+  const [activeResult, setActiveResult] = React.useState(initialResult)
   const [plotExpanded, setPlotExpanded] = React.useState(false)
+  const [submitting, setSubmitting] = React.useState(false)
   const fieldsById = React.useMemo(() => new Map(fields.map((field) => [field.id, field])), [fields])
-  const outputFields = fields.filter((field) => field.role === "output")
-  const progressFields = outputFields.filter((field) => field.id === "progress_output" || field.id === "progress_html")
-  const plotField = fieldsById.get("plotout4_stream")
-  const structureField = fieldsById.get("structure_ngl")
+  const runtime = React.useSyncExternalStore(bridge.subscribeRuntime, bridge.runtimeSnapshot, bridge.runtimeSnapshot)
+  const progressFields = (progressSection?.fields || []).map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]
+  const activeTab = resultTabs.find((tab) => tab.id === activeResult)
   const assigned = new Set([
-    "module_header",
-    "advanced_input_header",
     ...inputSections.flatMap((section) => [...section.fields]),
     ...advancedFieldIds,
   ])
-  const extraInputs = fields.filter((field) => field.role !== "output" && field.id && !assigned.has(field.id))
+  const extraInputs = fields.filter((field) => field.role !== "output" && field.id && field.type !== "label" && !assigned.has(field.id))
+
+  React.useEffect(() => {
+    if (!resultTabs.some((tab) => tab.id === activeResult)) {
+      setActiveResult(initialResult)
+    }
+  }, [activeResult, initialResult, resultTabs])
 
   React.useLayoutEffect(() => {
     bridge.syncValues()
@@ -197,9 +220,14 @@ export function MmcWorkbench({ module, fields, bridge, submitted: initialSubmitt
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const result = await bridge.submit(event.currentTarget)
-    if (result.ok) {
-      setSubmitted({ values: result.values || bridge.syncValues(), uuid: result.uuid })
+    setSubmitting(true)
+    try {
+      const result = await bridge.submit(event.currentTarget)
+      if (result.ok) {
+        setSubmitted({ values: result.values || bridge.syncValues(), uuid: result.uuid })
+      }
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -210,7 +238,8 @@ export function MmcWorkbench({ module, fields, bridge, submitted: initialSubmitt
     setAdvancedOpen(false)
   }
 
-  const actionCreate = React.useCallback(() => bridge.createActionBar(), [bridge])
+  const lifecycleState = String(runtime.lifecycle?.state || (submitting ? "submitting" : "editing"))
+  const lifecycleMessage = String(runtime.lifecycle?.error || runtime.lifecycle?.message || lifecycleState)
 
   return (
     <form
@@ -223,16 +252,16 @@ export function MmcWorkbench({ module, fields, bridge, submitted: initialSubmitt
     >
       <header className="ui2-mmc-heading">
         <div>
-          <span className="ui2-mmc-kicker"><FlaskConical aria-hidden="true" size={16} /> React workbench</span>
+          <span className="ui2-mmc-kicker"><FlaskConical aria-hidden="true" size={16} /> {view.heading?.kicker || "Scientific workbench"}</span>
           <h2>{module.label || "Monomer Monte Carlo"}</h2>
-          <p>Configure sampling, follow progress, and inspect trajectory and structure results without leaving the workspace.</p>
+          {view.heading?.description && <p>{view.heading.description}</p>}
         </div>
       </header>
 
       <div className="ui2-mmc-grid">
         <aside className="ui2-mmc-input-pane">
           {submitted ? (
-            <SubmittedInputs fields={fields} onEdit={() => {
+            <SubmittedInputs fields={fields} summaryFieldIds={summaryFieldIds} onEdit={() => {
               bridge.clearSubmitted()
               setSubmitted(null)
             }} uuid={submitted.uuid} values={submitted.values} />
@@ -253,21 +282,24 @@ export function MmcWorkbench({ module, fields, bridge, submitted: initialSubmitt
                 )
               })}
 
-              <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-                <Card>
-                  <CollapsibleTrigger asChild>
-                    <button className="ui2-mmc-collapsible-trigger" type="button">
-                      <span><Settings2 aria-hidden="true" size={17} /> Advanced input</span>
-                      <ChevronDown aria-hidden="true" className={advancedOpen ? "rotate-180" : ""} size={18} />
-                    </button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent forceMount className="data-[state=closed]:hidden">
-                    <CardContent>
-                      <FieldGroup bridge={bridge} fields={advancedFieldIds.map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]} />
-                    </CardContent>
-                  </CollapsibleContent>
-                </Card>
-              </Collapsible>
+              {advancedSection && (
+                <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
+                  <Card>
+                    <CollapsibleTrigger asChild>
+                      <button className="ui2-mmc-collapsible-trigger" type="button">
+                        <span><Settings2 aria-hidden="true" size={17} /> {advancedSection.title}</span>
+                        <ChevronDown aria-hidden="true" className={advancedOpen ? "rotate-180" : ""} size={18} />
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent forceMount className="data-[state=closed]:hidden">
+                      <CardContent>
+                        {advancedSection.description && <p className="ui2-mmc-section-description">{advancedSection.description}</p>}
+                        <FieldGroup bridge={bridge} fields={advancedFieldIds.map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]} />
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Card>
+                </Collapsible>
+              )}
 
               {extraInputs.length > 0 && (
                 <Card>
@@ -278,61 +310,93 @@ export function MmcWorkbench({ module, fields, bridge, submitted: initialSubmitt
             </div>
           )}
 
-          <div className={submitted ? "ui2-mmc-actions-hidden" : "ui2-mmc-actions"}>
-            <NativeHost create={actionCreate} />
-          </div>
+          {!submitted && (
+            <div className="ui2-mmc-actions">
+              <div className="ui2-mmc-action-buttons">
+                <Button disabled={submitting} type="submit">
+                  {submitting ? "Submitting…" : view.actions?.submitLabel || "Run"}
+                </Button>
+                <Button disabled={submitting} type="reset" variant="outline">
+                  <RotateCcw aria-hidden="true" size={16} /> {view.actions?.resetLabel || "Reset inputs"}
+                </Button>
+              </div>
+              <div aria-live="polite" className="ui2-submit-status" id="ui2-submit-status" role="status">
+                {lifecycleState === "editing" ? "Not submitted" : lifecycleMessage}
+              </div>
+            </div>
+          )}
         </aside>
 
         <main className="ui2-mmc-results-pane">
-          <Card className="ui2-mmc-progress-card">
-            <CardHeader>
-              <div>
-                <CardTitle>Run progress</CardTitle>
-                <CardDescription>Status remains visible while results update.</CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent><FieldGroup bridge={bridge} fields={progressFields} role="output" /></CardContent>
-          </Card>
+          {progressSection && (
+            <Card className="ui2-mmc-progress-card">
+              <CardHeader>
+                <div>
+                  <CardTitle>{progressSection.title}</CardTitle>
+                  {progressSection.description && <CardDescription>{progressSection.description}</CardDescription>}
+                </div>
+              </CardHeader>
+              <CardContent><FieldGroup bridge={bridge} fields={progressFields} role="output" /></CardContent>
+            </Card>
+          )}
+
+          {view.results?.runtimeLog && (
+            <RunLog
+              defaultOpen={view.results.runtimeLog.defaultOpen}
+              description={view.results.runtimeLog.description}
+              snapshot={runtime}
+              title={view.results.runtimeLog.title || "Run log"}
+            />
+          )}
 
           {plotExpanded && <div aria-hidden="true" className="ui2-mmc-result-backdrop" />}
-          <Card
-            aria-label={plotExpanded ? "Expanded Monomer Monte Carlo trajectory plot" : undefined}
-            aria-modal={plotExpanded ? true : undefined}
-            className={`ui2-mmc-result-card${plotExpanded ? " ui2-mmc-result-card-expanded" : ""}`}
-            role={plotExpanded ? "dialog" : undefined}
-          >
-            <CardContent>
-              <Tabs className="ui2-mmc-result-tabs" value={activeResult} onValueChange={(value) => {
-                setActiveResult(value)
-                if (value !== "plot") setPlotExpanded(false)
-                window.setTimeout(bridge.resizeOutputs, 0)
-              }}>
-                <div className="ui2-mmc-result-toolbar">
-                  <TabsList aria-label="MMC results">
-                    <TabsTrigger value="plot">Trajectory plot</TabsTrigger>
-                    <TabsTrigger value="structure">Structure</TabsTrigger>
-                  </TabsList>
-                  {activeResult === "plot" && (
-                    <Button
-                      aria-expanded={plotExpanded}
-                      onClick={() => setPlotExpanded((current) => !current)}
-                      type="button"
-                      variant="outline"
-                    >
-                      {plotExpanded ? <Minimize2 aria-hidden="true" size={16} /> : <Maximize2 aria-hidden="true" size={16} />}
-                      {plotExpanded ? "Close expanded plot" : "Expand plot"}
-                    </Button>
-                  )}
-                </div>
-                <TabsContent forceMount value="plot" className="data-[state=inactive]:hidden">
-                  {plotField && <FieldHost bridge={bridge} field={plotField} fitPlot role="output" />}
-                </TabsContent>
-                <TabsContent forceMount value="structure" className="data-[state=inactive]:hidden">
-                  {structureField && <FieldHost bridge={bridge} field={structureField} role="output" />}
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+          {resultTabs.length > 0 && (
+            <Card
+              aria-label={plotExpanded ? `Expanded ${activeTab?.label || "result"}` : undefined}
+              aria-modal={plotExpanded ? true : undefined}
+              className={`ui2-mmc-result-card${plotExpanded ? " ui2-mmc-result-card-expanded" : ""}`}
+              role={plotExpanded ? "dialog" : undefined}
+            >
+              <CardContent>
+                <Tabs className="ui2-mmc-result-tabs" value={activeResult} onValueChange={(value) => {
+                  setActiveResult(value)
+                  const selected = resultTabs.find((tab) => tab.id === value)
+                  if (!selected?.expandable) setPlotExpanded(false)
+                  window.setTimeout(bridge.resizeOutputs, 0)
+                }}>
+                  <div className="ui2-mmc-result-toolbar">
+                    <TabsList aria-label={`${module.label || "Module"} results`}>
+                      {resultTabs.map((tab) => <TabsTrigger key={tab.id} value={tab.id}>{tab.label}</TabsTrigger>)}
+                    </TabsList>
+                    {activeTab?.expandable && (
+                      <Button
+                        aria-expanded={plotExpanded}
+                        onClick={() => setPlotExpanded((current) => !current)}
+                        type="button"
+                        variant="outline"
+                      >
+                        {plotExpanded ? <Minimize2 aria-hidden="true" size={16} /> : <Maximize2 aria-hidden="true" size={16} />}
+                        {plotExpanded ? "Close expanded result" : "Expand result"}
+                      </Button>
+                    )}
+                  </div>
+                  {resultTabs.map((tab: WorkbenchResultTab) => (
+                    <TabsContent forceMount key={tab.id} value={tab.id} className="data-[state=inactive]:hidden">
+                      {tab.outputs.map((id) => fieldsById.get(id)).filter(Boolean).map((field) => (
+                        <FieldHost
+                          bridge={bridge}
+                          field={field as Ui2Field}
+                          fitPlot={tab.fit === "pane" && field?.type === "plotly"}
+                          key={field?.id}
+                          role="output"
+                        />
+                      ))}
+                    </TabsContent>
+                  ))}
+                </Tabs>
+              </CardContent>
+            </Card>
+          )}
         </main>
       </div>
 

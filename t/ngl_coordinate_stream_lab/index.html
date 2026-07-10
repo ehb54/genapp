@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NGL coordinate stream benchmark</title>
+  <style>
+    html, body { margin: 0; min-height: 100%; background: #0d1513; color: #eaf2ef; font: 16px system-ui, sans-serif; }
+    main { display: grid; grid-template-columns: minmax(0, 1fr) 28rem; gap: 1rem; padding: 1rem; }
+    #viewport { height: 42rem; border: 1px solid #38504b; border-radius: .75rem; overflow: hidden; }
+    aside { padding: 1rem; border: 1px solid #38504b; border-radius: .75rem; background: #15201d; }
+    pre { white-space: pre-wrap; color: #8ddbd0; }
+  </style>
+</head>
+<body>
+  <main>
+    <div id="viewport"></div>
+    <aside>
+      <h1>Topology-once coordinate streaming</h1>
+      <p>One PDB topology is parsed, then 120 coordinate frames update the existing NGL component.</p>
+      <pre id="benchmark-result" data-status="running">Starting…</pre>
+    </aside>
+  </main>
+  <script src="../../languages/html5/add/js/ngl.js"></script>
+  <script src="stream-benchmark.js"></script>
+</body>
+</html>

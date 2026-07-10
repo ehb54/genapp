@@ -11,6 +11,7 @@ threads.
 Related discussion:
 
 - issue 41: React/shadcn versus scientific layout responsibilities
+- `doc/UI2-Job-Event-Protocol.md`
 - `doc/UI2-Renderer-ROA.md`
 - `doc/UI2-Runtime-Contract-ROA.md`
 - `doc/UI2-Legacy-Guardrails-ROA.md`
@@ -527,3 +528,36 @@ Use this section to append concise dated decisions as they become real.
   An Expand control promotes that same result card to a viewport overlay; it
   does not create a second Plotly instance or introduce an internal scrolling
   plot canvas. Close and Escape return the card to the workbench.
+- 2026-07-09: Established the driver-to-UI2 boundary for modern runtime
+  communication. SASSIE `pgui()` remains destination-blind; the application
+  driver translates queue records into versioned job events, with legacy html5
+  output isolated behind an adapter. UI2 React modules consume a run-scoped
+  event store and must not create or discover presentation DOM from runtime
+  payloads. The contract is documented in `doc/UI2-Job-Event-Protocol.md` and
+  is intended to support logs, progress, metrics, incremental plots, structure
+  frames, artifacts, and future MMC SAS, p(r), and energy streams.
+- 2026-07-09: Verified topology-once live structure rendering with the bundled
+  NGL 0.10.4. MMC can emit capability-gated coordinate frames through `pgui()`;
+  the driver publishes structure append events and UI2 updates one persistent
+  NGL component in place, coalescing stale preview frames. A 1,000-atom,
+  120-frame browser benchmark retained one component and averaged about
+  0.20 ms of coordinate-update work per frame on the development machine.
+- 2026-07-09: Added a bounded server-side event replay journal and ordered UI2
+  recovery. WebSocket delivery remains immediate, while polling/reattachment
+  can replay missed events; duplicate sequences are suppressed and later
+  events wait behind a detected gap.
+- 2026-07-09: Completed the local MMC vertical-slice implementation and
+  compatibility audit. The modern event path is enabled only when the client
+  advertises protocol version 1 capabilities; capability-free legacy html5
+  submissions retain their existing driver payloads and final textarea,
+  progress, Plotly, and NGL outputs. Driver, SASSIE, UI2, HTML5 assembly,
+  high-risk generation, TypeScript, browser benchmark, and the complete
+  667-test GenApp suite pass. The exact replay-cache implementation also
+  passes its semantic checks under Zazzie PHP 8.1. Live UI2 and legacy browser
+  verification remains a deployment step.
+- 2026-07-10: End-to-end testing with a real 6,730-atom MMC input exposed the
+  historical Python helper's partial-write `socket.send()` calls and UDP's
+  datagram-size ceiling. The shared Python 2/3 GenApp TCP helpers now use
+  `sendall()`. A repeated 20-trial capability-on run delivered 59 ordered job
+  events, including four full coordinate frames and both Plotly snapshot and
+  append operations, while retaining legacy mirror messages and final outputs.

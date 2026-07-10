@@ -1,6 +1,8 @@
 #!/usr/local/bin/php
 <?php
 
+require_once __DIR__ . "/job-event-cache.php";
+
 // todo: monitor connections and on close, remove any associated topic keys
 $GLOBALS[ "MAXTEXTAREANOTICE" ] = "The messages are truncated at the top due to large size\n";
 $GLOBALS[ "MAXTEXTAREALEN" ] = 512000;
@@ -10,6 +12,8 @@ if ( $GLOBALS[ "MAXTEXTAREALEN" ] > 10000000 ) {
 }
 $GLOBALS[ "MAXTEXTAREATRUNC" ] = -$GLOBALS[ "MAXTEXTAREALEN" ];
 $GLOBALS[ "MAXTEXTAREALEN" ] += strlen( $GLOBALS[ "MAXTEXTAREANOTICE" ] );
+$GLOBALS[ "MAXJOBEVENTS" ] = 256;
+$GLOBALS[ "MAXJOBEVENTBYTES" ] = 8388608;
 
 $json = json_decode( file_get_contents( "__appconfig__" ) );
 
@@ -269,6 +273,8 @@ __~debug:ws{        echo "postData[_uuid] = " . $postData[ '_uuid' ] . "\n";}
 __~debug:ws{        echo "onMsgPost broadcast()\n";}
 __~debug:ws{        echo "mongo save() $postmsg\n";}
 
+        $cachedPostData = array();
+        $cachePostData = $postData;
         if ( $doc =
              ga_db_output(
                  ga_db_findOne(
@@ -281,9 +287,12 @@ __~debug:ws{        echo "mongo save() $postmsg\n";}
             $textprepend = "";
             $textcurrent = isset( $postData[ '_textarea' ] ) ? $postData[ '_textarea' ] : "";
             if ( isset( $doc[ 'data' ] ) ) {
-                $docjson = json_decode( $doc[ 'data' ] );
-                if ( isset( $docjson->_textarea ) ) {
-                    $textprepend = $docjson->_textarea;
+                $cachedPostData = json_decode( $doc[ 'data' ], true );
+                if ( !is_array( $cachedPostData ) ) {
+                    $cachedPostData = array();
+                }
+                if ( isset( $cachedPostData[ '_textarea' ] ) ) {
+                    $textprepend = $cachedPostData[ '_textarea' ];
                 }
             }
             $texttot = $textprepend . $textcurrent;
@@ -292,12 +301,24 @@ __~debug:ws{        echo "mongo save() $postmsg\n";}
                 if ( $textlen > $GLOBALS[ "MAXTEXTAREALEN" ] ) {
                     $texttot = $GLOBALS[ "MAXTEXTAREANOTICE" ] . substr( $texttot, $GLOBALS[ "MAXTEXTAREATRUNC" ] );
                 }
-                $toPostData = $postData;
-                $toPostData[ '_textarea' ] = $texttot;
-                $postmsg = json_encode( $toPostData );
-__~debug:ws{   echo "mongo save() updated $postmsg\n";}
+                $cachePostData[ '_textarea' ] = $texttot;
             }
         }
+
+        $eventJournal = ga_job_event_journal(
+            $cachedPostData,
+            $postData,
+            $GLOBALS[ "MAXJOBEVENTS" ],
+            $GLOBALS[ "MAXJOBEVENTBYTES" ]
+        );
+        unset( $cachePostData[ '_job_event' ] );
+        if ( count( $eventJournal ) ) {
+            $cachePostData[ '_job_events' ] = $eventJournal;
+        } else {
+            unset( $cachePostData[ '_job_events' ] );
+        }
+        $postmsg = json_encode( $cachePostData );
+__~debug:ws{   echo "mongo save() updated $postmsg\n";}
 
         if ( !ga_db_status(
                   ga_db_update(

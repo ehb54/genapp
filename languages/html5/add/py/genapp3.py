@@ -76,7 +76,7 @@ class genapp(object):
         # send question
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((self.jsoninput['_tcphost'],int( self.jsoninput['_tcpport']) ))
-        s.send(msgj.encode('utf-8'))
+        s.sendall(msgj.encode('utf-8'))
 
         # receive answer
 
@@ -109,7 +109,7 @@ class genapp(object):
         # send question
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((self.jsoninput['_tcphost'],int( self.jsoninput['_tcpport']) ))
-        s.send(json.dumps(msg).encode('utf-8'))
+        s.sendall(json.dumps(msg).encode('utf-8'))
         s.close()
         time.sleep( self._TCP_SLEEP_MS / 1000 )
         return {'status':'ok'}
@@ -135,7 +135,7 @@ class genapp(object):
         # send question
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((self.jsoninput['_tcphost'],int( self.jsoninput['_tcpport']) ))
-        s.send(json.dumps(msg).encode('utf-8'))
+        s.sendall(json.dumps(msg).encode('utf-8'))
         s.close()
         time.sleep( self._TCP_SLEEP_MS / 1000 )
         return {'status':'ok'}

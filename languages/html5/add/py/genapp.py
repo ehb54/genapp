@@ -73,7 +73,7 @@ class genapp(object):
         # send question
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((self.jsoninput['_tcphost'],int( self.jsoninput['_tcpport']) ))
-        s.send(msgj)
+        s.sendall(msgj)
 
         # receive answer
 
@@ -104,7 +104,7 @@ class genapp(object):
         # send question
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((self.jsoninput['_tcphost'],int( self.jsoninput['_tcpport']) ))
-        s.send(json.dumps(msg).encode('utf-8'))
+        s.sendall(json.dumps(msg).encode('utf-8'))
         s.close()
         return {'status':'ok'}
 
@@ -129,7 +129,7 @@ class genapp(object):
         # send question
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((self.jsoninput['_tcphost'],int( self.jsoninput['_tcpport']) ))
-        s.send( json.dumps( msg ).encode('utf-8') )
+        s.sendall( json.dumps( msg ).encode('utf-8') )
         s.close()
         return {'status':'ok'}
 

@@ -34,7 +34,13 @@ if ( !-f $directives_source ) {
 }
 
 my $stage_root = tempdir( CLEANUP => 1 );
-my $app_dir    = File::Spec->catdir( $stage_root, 'sassie2' );
+my $directives_text = read_file($directives_source);
+$directives_text =~ s/^\s*#.*\n//mg;
+my $directives = decode_json($directives_text);
+my $application = $directives->{application};
+die "directives application must be a safe directory name\n"
+    if !defined($application) || $application !~ /\A[A-Za-z0-9._-]+\z/;
+my $app_dir    = File::Spec->catdir( $stage_root, $application );
 make_path($app_dir);
 
 copy( $directives_source, File::Spec->catfile( $app_dir, 'directives.json' ) )

@@ -240,6 +240,13 @@
                    }
                    ,{
                     "frequency"  : "once",
+                    "output"     : "util/job-event-cache.php",
+                    "inputs"     : [
+                                    { "util/job-event-cache.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
                     "output"     : "util/msg-wsserver.php",
                     "inputs"     : [ 
                                     { "util/msg-wsserver.php" : "once" }

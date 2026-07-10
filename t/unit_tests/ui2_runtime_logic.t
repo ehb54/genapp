@@ -812,6 +812,49 @@ const fixedPlotLayout = hooks.plotlyLayoutForOutput(
 );
 assert.strictEqual(fixedPlotLayout.width, 1200, "ordinary UI2 Plotly outputs preserve producer width");
 assert.strictEqual(fixedPlotLayout.height, 760, "ordinary UI2 Plotly outputs preserve producer height");
+assert.strictEqual(
+  hooks.normalizeJobEvent({ version: 2, run: "run-1", module: "mmc", sequence: 1, channel: "log", topic: "run" }),
+  null,
+  "job event normalizer rejects unknown protocol versions"
+);
+const eventStore = hooks.createJobEventStore();
+eventStore.reset("run-1", "monomer_monte_carlo");
+let eventNotifications = 0;
+const unsubscribeEvents = eventStore.subscribe(() => { eventNotifications += 1; });
+const logEvent = {
+  version: 1,
+  run: "run-1",
+  module: "monomer_monte_carlo",
+  sequence: 1,
+  timestamp: "2026-07-10T12:00:00Z",
+  channel: "log",
+  topic: "run",
+  operation: "append",
+  payload: { text: "first line\\n" }
+};
+assert.strictEqual(eventStore.apply(logEvent), true, "job event store accepts a valid event");
+assert.strictEqual(eventStore.apply(logEvent), false, "job event store suppresses duplicate sequence numbers");
+assert.strictEqual(eventStore.apply(Object.assign({}, logEvent, {
+  sequence: 3,
+  channel: "progress",
+  operation: "snapshot",
+  payload: { fraction: 0.3 }
+})), true, "job event store accepts a later topic snapshot");
+assert.strictEqual(JSON.stringify(eventStore.snapshot().missingSequences), "[2]", "job event store records a delivery gap");
+assert.strictEqual(eventStore.apply(Object.assign({}, logEvent, {
+  sequence: 2,
+  payload: { text: "second line\\n" }
+})), true, "job event store accepts a recovered missing event");
+assert.strictEqual(JSON.stringify(eventStore.snapshot().missingSequences), "[]", "job event store clears a recovered sequence gap");
+assert.strictEqual(
+  JSON.stringify(eventStore.snapshot().channels.log.run.items.map((item) => item.text)),
+  JSON.stringify(["first line\\n", "second line\\n"]),
+  "job event store keeps append payloads in sequence recovery order"
+);
+eventStore.appendLegacyLog("legacy line\\n", "run-1", "monomer_monte_carlo");
+assert.strictEqual(eventStore.snapshot().channels.log.run.value, "legacy line\\n", "legacy text adapter writes only to the run-log topic");
+unsubscribeEvents();
+assert(eventNotifications >= 4, "job event subscribers receive immutable state updates");
 const darkLayout = hooks.applyPlotlyTheme({
   legend: { bgcolor: "#ffffff", font: { color: "#ffffff" } },
   legend2: { bgcolor: "#ffffff", font: { color: "#ffffff" } },
@@ -1426,6 +1469,12 @@ const dcdFormData = hooks.buildSubmitFormData({
 assert.deepStrictEqual(dcdFormData.get("dcdfile"), ["run_0.dcd"], "submit keeps MMC dcdfile as the text output name");
 assert.strictEqual(dcdFormData.get("_selaltval_dcdfile"), undefined, "submit ignores stale server selections for non-file fields");
 assert.strictEqual(dcdFormData.get("dcdfile_altval[]"), undefined, "submit omits stale non-file alt values");
+assert.strictEqual(dcdFormData.get("_runtime_protocol"), "1", "UI2 submit advertises the versioned runtime protocol");
+assert.deepStrictEqual(
+  JSON.parse(dcdFormData.get("_runtime_capabilities")),
+  ["job-events", "plot-append", "structure-frames"],
+  "UI2 submit advertises event, incremental plot, and structure-frame capabilities"
+);
 
 const dynamicGroup = {
   dataset: {
@@ -1452,6 +1501,156 @@ const unsafeDynamicItems = hooks.dynamicOutputItems(dynamicGroup, [
   { id: "../bad id", value: "clean me" }
 ]);
 assert.strictEqual(unsafeDynamicItems[0].id, "badid", "dynamic output explicit ids are sanitized");
+
+const futureEventStore = hooks.createJobEventStore();
+futureEventStore.reset("event-run", "monomer_monte_carlo");
+assert.strictEqual(futureEventStore.apply({
+  version: 1,
+  run: "event-run",
+  module: "monomer_monte_carlo",
+  sequence: 1,
+  timestamp: "2026-07-09T12:00:00Z",
+  channel: "log",
+  topic: "run",
+  operation: "append",
+  payload: { text: "native log\\n" }
+}), true, "native runtime events enter the event store");
+assert.strictEqual(futureEventStore.apply({
+  version: 1,
+  run: "event-run",
+  module: "monomer_monte_carlo",
+  sequence: 1,
+  timestamp: "2026-07-09T12:00:00Z",
+  channel: "log",
+  topic: "run",
+  operation: "append",
+  payload: { text: "native log\\n" }
+}), false, "duplicate event sequences are rejected");
+assert.strictEqual(futureEventStore.apply({
+  version: 1,
+  run: "event-run",
+  module: "monomer_monte_carlo",
+  sequence: 3,
+  timestamp: "2026-07-09T12:00:01Z",
+  channel: "plot",
+  topic: "sas_stream",
+  operation: "append",
+  payload: { traces: [] }
+}), true, "independent future plot topics share the generic event store");
+assert.deepStrictEqual(
+  Array.from(futureEventStore.snapshot().missingSequences),
+  [2],
+  "event sequence gaps are retained for replay recovery"
+);
+
+const strictEventStore = hooks.createJobEventStore();
+strictEventStore.reset("new-run", "monomer_monte_carlo");
+strictEventStore.apply({
+  version: 1,
+  run: "new-run",
+  module: "monomer_monte_carlo",
+  sequence: 3,
+  channel: "plot",
+  topic: "plotout4_stream",
+  operation: "append",
+  payload: { traces: [] }
+});
+assert.strictEqual(strictEventStore.snapshot().lastSequence, 0, "a newly submitted run buffers events that arrive before sequence one");
+assert.deepStrictEqual(Array.from(strictEventStore.snapshot().pendingSequences), [3], "out-of-order new-run events remain pending");
+const recoveredEvents = strictEventStore.applyMany([{
+  version: 1,
+  run: "new-run",
+  module: "monomer_monte_carlo",
+  sequence: 1,
+  channel: "lifecycle",
+  topic: "run",
+  operation: "replace",
+  payload: { state: "running" }
+}, {
+  version: 1,
+  run: "new-run",
+  module: "monomer_monte_carlo",
+  sequence: 2,
+  channel: "plot",
+  topic: "plotout4_stream",
+  operation: "snapshot",
+  payload: { figure: { data: [] } }
+}]);
+assert.deepStrictEqual(Array.from(recoveredEvents.applied).map((event) => event.sequence), [1, 2, 3], "gap recovery releases buffered events in strict sequence order");
+
+const reattachedEventStore = hooks.createJobEventStore();
+reattachedEventStore.reset("", "monomer_monte_carlo");
+reattachedEventStore.apply({
+  version: 1,
+  run: "old-run",
+  module: "monomer_monte_carlo",
+  sequence: 100,
+  channel: "progress",
+  topic: "run",
+  operation: "snapshot",
+  payload: { fraction: 0.75 }
+});
+assert.strictEqual(reattachedEventStore.snapshot().lastSequence, 100, "reattachment can establish a baseline from a truncated bounded journal");
+
+hooks.state.view = { renderer: "react-workbench" };
+hooks.state.moduleId = "monomer_monte_carlo";
+hooks.state.jobEvents.reset("native-run", "monomer_monte_carlo");
+hooks.applyRuntimePayload({
+  _job_event: {
+    version: 1,
+    run: "native-run",
+    module: "monomer_monte_carlo",
+    sequence: 1,
+    timestamp: "2026-07-09T12:00:00Z",
+    channel: "log",
+    topic: "run",
+    operation: "append",
+    payload: { text: "one copy\\n" }
+  }
+});
+hooks.applyRuntimePayload({ _textarea: "one copy\\n" });
+const nativeLogTopic = hooks.state.jobEvents.snapshot().channels.log.run;
+assert.strictEqual(nativeLogTopic.items.length, 1, "React ignores mirrored legacy textarea text after native events arrive");
+assert.strictEqual(nativeLogTopic.value, null, "mirrored textarea text does not create a second legacy log value");
+
+const normalizedFrame = hooks.normalizeNglCoordinateFrame({
+  atomCount: 2,
+  frame: 7,
+  coordinates: [0, 1, 2, 3, 4, 5]
+});
+assert.strictEqual(Object.prototype.toString.call(normalizedFrame.coordinates), "[object Float32Array]", "structure frames normalize to compact Float32 coordinates");
+assert.strictEqual(normalizedFrame.atomCount, 2, "structure frames retain their topology atom count");
+assert.strictEqual(
+  hooks.normalizeNglCoordinateFrame({ atomCount: 2, coordinates: [0, 1, 2] }),
+  null,
+  "structure frames reject coordinate counts that do not match topology"
+);
+
+const nglCalls = [];
+const frameOutput = {
+  dataset: {},
+  _ui2NglComponent: {
+    structure: {
+      atomCount: 2,
+      updatePosition(coordinates) { nglCalls.push(["coordinates", Array.from(coordinates)]); }
+    },
+    updateRepresentations(changes) { nglCalls.push(["representations", changes]); }
+  }
+};
+assert.strictEqual(hooks.applyNglCoordinateFrame(frameOutput, normalizedFrame), true, "NGL accepts an in-place coordinate frame");
+assert.deepStrictEqual(nglCalls[0], ["coordinates", [0, 1, 2, 3, 4, 5]], "NGL updates the existing Structure coordinates");
+assert.strictEqual(JSON.stringify(nglCalls[1]), JSON.stringify(["representations", { position: true }]), "NGL updates representation positions without rebuilding topology");
+assert.strictEqual(frameOutput.dataset.nglFrame, "7", "NGL records the displayed frame without recentering");
+
+const scheduledFrames = [];
+window.requestAnimationFrame = (callback) => { scheduledFrames.push(callback); };
+nglCalls.length = 0;
+hooks.queueNglCoordinateFrame(frameOutput, { atomCount: 2, frame: 8, coordinates: [1, 1, 1, 2, 2, 2] });
+hooks.queueNglCoordinateFrame(frameOutput, { atomCount: 2, frame: 9, coordinates: [3, 3, 3, 4, 4, 4] });
+assert.strictEqual(scheduledFrames.length, 1, "rapid structure frames coalesce into one animation-frame render");
+scheduledFrames.shift()();
+assert.deepStrictEqual(nglCalls[0], ["coordinates", [3, 3, 3, 4, 4, 4]], "coalescing renders the newest available structure frame");
+assert.strictEqual(frameOutput.dataset.nglFrame, "9", "coalescing skips stale previews but retains the latest frame identity");
 JS
 close $fh;
 

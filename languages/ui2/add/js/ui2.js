@@ -57,6 +57,7 @@
     submitResponse: null,
     mmcSubmitted: null,
     activeJob: null,
+    jobEvents: createJobEventStore(),
     freshLoginAfterLogoff: false,
     ws: {
       conn: null,
@@ -105,7 +106,7 @@
   function init() {
     ensureWindowName();
     window.addEventListener?.("ui2-react-ready", () => {
-      if (state.moduleId === "monomer_monte_carlo") {
+      if (isReactWorkbenchView(state.view)) {
         renderModule();
       }
     });
@@ -752,6 +753,7 @@
       state.module = payload.module;
       state.view = payload.viewjson || {};
       state.values = {};
+      state.jobEvents.reset("", moduleId);
       renderModule();
       updateSelectedNavigation();
       syncDocsLink();
@@ -884,6 +886,7 @@
     state.module = null;
     state.view = {};
     state.values = {};
+    state.jobEvents.reset();
     nodes.root.hidden = true;
     nodes.root.innerHTML = "";
     nodes.empty.hidden = false;
@@ -908,7 +911,7 @@
     nodes.root.hidden = false;
     nodes.root.innerHTML = "";
 
-    if (state.moduleId === "monomer_monte_carlo" && renderReactMmc(module, fields)) {
+    if (isReactWorkbenchView(state.view) && renderReactMmc(module, fields)) {
       return;
     }
 
@@ -1027,6 +1030,7 @@
     state.submitResponse = null;
     state.mmcSubmitted = null;
     state.activeJob = null;
+    state.jobEvents.reset();
     nodes.root.hidden = true;
     nodes.root.innerHTML = "";
     nodes.empty.hidden = true;
@@ -1049,7 +1053,6 @@
     const bridge = {
       createField: (field, role) => renderField(field, role),
       releaseField: releaseReactMmcField,
-      createActionBar: () => renderActionBar(),
       syncValues: () => {
         syncValues();
         return cloneUi2Value(state.values);
@@ -1059,11 +1062,14 @@
         state.mmcSubmitted = null;
       },
       submit: (form) => submitModule(form),
-      resizeOutputs: resizeMmcOutputs
+      resizeOutputs: resizeMmcOutputs,
+      runtimeSnapshot: () => state.jobEvents.snapshot(),
+      subscribeRuntime: (listener) => state.jobEvents.subscribe(listener)
     };
     window.GenAppUi2Mmc.mount(root, {
       module,
       fields,
+      view: cloneUi2Value(state.view),
       bridge,
       submitted: cloneUi2Value(state.mmcSubmitted)
     });
@@ -1073,6 +1079,10 @@
       }
     }, 0);
     return true;
+  }
+
+  function isReactWorkbenchView(view) {
+    return String(view?.renderer || "").toLowerCase() === "react-workbench";
   }
 
   function unmountReactMmc() {
@@ -3711,7 +3721,8 @@
         });
       }
       if (form) {
-        startJobPolling(pollUuid, form, status, false, !restoredInput);
+        startJobPolling(
+          pollUuid, form, status, true, !restoredInput, false);
       }
     } catch (error) {
       setSystemMessage("messages", error.message, true);
@@ -4249,6 +4260,7 @@
     state.serverSelections = {};
     state.jobSelections = {};
     state.mmcSubmitted = null;
+    state.jobEvents.reset("", state.moduleId);
     applyInputPayload(defaultInputPayload(), { clearMissing: true });
     clearRuntimeOutputs(form);
     clearSubmitResponse();
@@ -4278,6 +4290,8 @@
         throw new Error("You must be logged on to submit");
       }
       const uuid = createUuid();
+      state.jobEvents.reset(uuid, state.moduleId);
+      state.jobEvents.setLifecycle({ state: "submitting" });
       const response = await fetch(endpoint, {
         method: "POST",
         body: buildSubmitFormData(form, uuid),
@@ -4290,6 +4304,7 @@
         throw new Error(payload.error || `Runtime returned HTTP ${response.status}`);
       }
       const jobUuid = payload._uuid || uuid;
+      state.jobEvents.setLifecycle({ state: "running", run: jobUuid });
       applyRuntimePayload(payload);
       setSubmitStatus(status, `Started${jobUuid ? ` (${jobUuid})` : ""}`, "ok");
       renderSubmitResponse(payload);
@@ -4308,6 +4323,7 @@
         values: cloneUi2Value(state.values)
       };
     } catch (error) {
+      state.jobEvents.setLifecycle({ state: "failed", error: error.message });
       setSubmitStatus(status, error.message, "error");
       renderSubmitResponse({ error: error.message });
       return { ok: false, error: error.message };
@@ -4376,6 +4392,12 @@
     formData.set("_window", window.name);
     formData.set("_project", state.session.project || "");
     formData.set("_logon", state.session.logon || "");
+    formData.set("_runtime_protocol", "1");
+    formData.set("_runtime_capabilities", JSON.stringify([
+      "job-events",
+      "plot-append",
+      "structure-frames"
+    ]));
     if (state.module?.docrootexecutable) {
       formData.set("_docrootexecutable", state.module.docrootexecutable);
     }
@@ -4596,7 +4618,9 @@
     });
   }
 
-  function startJobPolling(uuid, form, statusNode, getLastMsg = true, getInput = false) {
+  function startJobPolling(
+      uuid, form, statusNode, getLastMsg = true, getInput = false,
+      subscribeFirst = true) {
     stopJobPolling();
     state.activeJob = {
       uuid,
@@ -4604,9 +4628,12 @@
       statusNode,
       delay: 2000,
       getInput,
+      subscribeAfterFirstPoll: !subscribeFirst,
       timer: null
     };
-    subscribeRuntimeMessages(uuid);
+    if (subscribeFirst) {
+      subscribeRuntimeMessages(uuid);
+    }
     pollJobResults(uuid, form, statusNode, 0, getLastMsg, getInput);
   }
 
@@ -4646,6 +4673,10 @@
         }
       }
       applyRuntimePayload(payload);
+      if (state.activeJob?.uuid === uuid && state.activeJob.subscribeAfterFirstPoll) {
+        state.activeJob.subscribeAfterFirstPoll = false;
+        subscribeRuntimeMessages(uuid);
+      }
       renderSubmitResponse(payload);
 
       const status = runtimeStatus(payload);
@@ -4965,18 +4996,284 @@
     return ["failed", "error", "cancelled", "canceled"].includes(normalized) ? "error" : "ok";
   }
 
+  function createJobEventStore() {
+    const listeners = new Set();
+    let run = "";
+    let moduleId = "";
+    let lastSequence = 0;
+    let legacySequence = 0;
+    let lifecycle = null;
+    let channels = {};
+    let expectFirstSequence = false;
+    const seen = new Set();
+    const missing = new Set();
+    const pending = new Map();
+
+    function notify() {
+      const value = snapshot();
+      listeners.forEach((listener) => {
+        try {
+          listener(value);
+        } catch (error) {
+          window.setTimeout(() => { throw error; }, 0);
+        }
+      });
+    }
+
+    function reset(nextRun = "", nextModuleId = "") {
+      run = stringValue(nextRun);
+      moduleId = stringValue(nextModuleId);
+      lastSequence = 0;
+      legacySequence = 0;
+      lifecycle = null;
+      channels = {};
+      expectFirstSequence = Boolean(run);
+      seen.clear();
+      missing.clear();
+      pending.clear();
+      notify();
+    }
+
+    function commit(event, applied) {
+      const channel = channels[event.channel] || {};
+      const previous = channel[event.topic] || {
+        items: [],
+        value: null,
+        complete: false,
+        lastSequence: 0
+      };
+      const topic = Object.assign({}, previous, {
+        operation: event.operation,
+        lastSequence: event.sequence,
+        timestamp: event.timestamp
+      });
+      if (event.operation === "append") {
+        topic.items = [...(previous.items || []), cloneUi2Value(event.payload)];
+      } else if (event.operation === "clear") {
+        topic.items = [];
+        topic.value = null;
+        topic.complete = false;
+      } else {
+        topic.value = cloneUi2Value(event.payload);
+      }
+      if (event.operation === "complete") {
+        topic.complete = true;
+      }
+      channels = Object.assign({}, channels, {
+        [event.channel]: Object.assign({}, channel, { [event.topic]: topic })
+      });
+      if (event.channel === "lifecycle") {
+        lifecycle = cloneUi2Value(event.payload);
+      }
+      seen.add(event.sequence);
+      pending.delete(event.sequence);
+      missing.delete(event.sequence);
+      lastSequence = event.sequence;
+      expectFirstSequence = false;
+      applied.push(event);
+    }
+
+    function drainPending(applied) {
+      while (pending.has(lastSequence + 1)) {
+        commit(pending.get(lastSequence + 1), applied);
+      }
+    }
+
+    function applyMany(rawEvents) {
+      let accepted = false;
+      const applied = [];
+      (Array.isArray(rawEvents) ? rawEvents : [rawEvents])
+        .map(normalizeJobEvent)
+        .filter(Boolean)
+        .sort((left, right) => left.sequence - right.sequence)
+        .forEach((event) => {
+          if ((run && event.run !== run) || (moduleId && event.module !== moduleId) || seen.has(event.sequence)) {
+            return;
+          }
+          if (!run) {
+            run = event.run;
+          }
+          if (!moduleId) {
+            moduleId = event.module;
+          }
+
+          const expected = lastSequence + 1;
+          if (!lastSequence && !expectFirstSequence || event.sequence === expected) {
+            accepted = true;
+            commit(event, applied);
+            drainPending(applied);
+            return;
+          }
+          if (event.sequence > expected) {
+            accepted = true;
+            seen.add(event.sequence);
+            pending.set(event.sequence, event);
+            for (let sequence = expected; sequence < event.sequence; sequence += 1) {
+              if (!seen.has(sequence)) {
+                missing.add(sequence);
+              }
+            }
+          }
+        });
+      if (accepted) {
+        notify();
+      }
+      return { accepted, applied };
+    }
+
+    function apply(rawEvent) {
+      return applyMany([rawEvent]).accepted;
+    }
+
+    function appendLegacyLog(text, nextRun = "", nextModuleId = "") {
+      const value = stringValue(text);
+      if (!value) {
+        return false;
+      }
+      if (!run) {
+        run = stringValue(nextRun);
+        moduleId = stringValue(nextModuleId);
+      }
+      legacySequence += 1;
+      const channel = channels.log || {};
+      const previous = channel.run || { items: [], value: null, complete: false, lastSequence: 0 };
+      const priorText = stringValue(previous.value);
+      const topic = Object.assign({}, previous, {
+        operation: "append",
+        value: mergeRuntimeText(priorText, value),
+        legacy: true,
+        lastSequence: legacySequence
+      });
+      channels = Object.assign({}, channels, {
+        log: Object.assign({}, channel, { run: topic })
+      });
+      notify();
+      return true;
+    }
+
+    function setLifecycle(value) {
+      lifecycle = cloneUi2Value(value);
+      notify();
+    }
+
+    function snapshot() {
+      return {
+        run,
+        module: moduleId,
+        lastSequence,
+        missingSequences: Array.from(missing).sort((a, b) => a - b),
+        pendingSequences: Array.from(pending.keys()).sort((a, b) => a - b),
+        lifecycle: cloneUi2Value(lifecycle),
+        channels: cloneUi2Value(channels)
+      };
+    }
+
+    function subscribe(listener) {
+      if (typeof listener !== "function") {
+        return () => {};
+      }
+      listeners.add(listener);
+      listener(snapshot());
+      return () => listeners.delete(listener);
+    }
+
+    return { reset, apply, applyMany, appendLegacyLog, setLifecycle, snapshot, subscribe };
+  }
+
+  function normalizeJobEvent(rawEvent) {
+    if (!rawEvent || typeof rawEvent !== "object") {
+      return null;
+    }
+    const version = Number(rawEvent.version);
+    const sequence = Number(rawEvent.sequence);
+    const run = stringValue(rawEvent.run);
+    const moduleId = stringValue(rawEvent.module);
+    const channel = stringValue(rawEvent.channel).toLowerCase();
+    const topic = stringValue(rawEvent.topic || "run");
+    const operation = stringValue(rawEvent.operation || "replace").toLowerCase();
+    if (version !== 1 || !run || !moduleId || !Number.isInteger(sequence) || sequence < 1 || !channel || !topic) {
+      return null;
+    }
+    if (!["append", "replace", "snapshot", "complete", "clear"].includes(operation)) {
+      return null;
+    }
+    return {
+      version,
+      run,
+      module: moduleId,
+      sequence,
+      timestamp: stringValue(rawEvent.timestamp),
+      channel,
+      topic,
+      operation,
+      payload: cloneUi2Value(rawEvent.payload)
+    };
+  }
+
+  function applyJobEventPayload(payload) {
+    const events = [];
+    if (Array.isArray(payload?._job_events)) {
+      events.push(...payload._job_events);
+    }
+    if (payload?._job_event) {
+      events.push(payload._job_event);
+    }
+    state.jobEvents.applyMany(events).applied.forEach(applyJobEventToOutput);
+  }
+
+  function applyJobEventToOutput(event) {
+    if (!event || !["plot", "structure"].includes(event.channel)) {
+      return;
+    }
+    const output = document.querySelector(`[data-output-field-id="${cssEscape(event.topic)}"]`);
+    if (!output) {
+      return;
+    }
+    if (event.channel === "plot") {
+      if (event.operation === "append") {
+        appendPlotlyOutput(output, event.payload);
+      } else if (event.payload) {
+        renderPlotlyOutput(output, event.payload.figure || event.payload);
+      }
+      return;
+    }
+    if (event.channel === "structure" && event.payload) {
+      if (event.operation === "append") {
+        queueNglCoordinateFrame(output, event.payload);
+      } else {
+        renderNglOutput(output, event.payload.structure || event.payload);
+      }
+    }
+  }
+
   function applyRuntimePayload(payload) {
     if (!payload || typeof payload !== "object") {
       return;
     }
     showLegacyMessagePayload(payload);
+    applyJobEventPayload(payload);
     Object.entries(payload).forEach(([id, value]) => {
       if (id === "_progress") {
         updateProgressOutputs(value);
         return;
       }
       if (id === "_textarea" || id === "_airavata") {
+        if (isReactWorkbenchView(state.view)) {
+          // Capability-aware drivers continue emitting legacy messages so a
+          // legacy client can attach to the same job. Once native events have
+          // arrived, they are authoritative and the mirrored textarea stream
+          // must not be appended a second time in React.
+          if (state.jobEvents.snapshot().lastSequence > 0) {
+            return;
+          }
+          state.jobEvents.appendLegacyLog(value, state.activeJob?.uuid || "", state.moduleId);
+          return;
+        }
         appendRuntimeMessage(value);
+        return;
+      }
+      if (id === "_status") {
+        state.jobEvents.setLifecycle({ state: stringValue(value) });
         return;
       }
       if (id.startsWith("_")) {
@@ -5066,8 +5363,10 @@
   }
 
   function updateOutputField(id, value) {
-    const output = document.querySelector(`[data-output-field-id="${cssEscape(id)}"]`) ||
-      ensureRuntimeOutputField(id, displayLabel(id), runtimeOutputTypeForValue(value));
+    const declaredOutput = document.querySelector(`[data-output-field-id="${cssEscape(id)}"]`);
+    const output = declaredOutput || (isReactWorkbenchView(state.view)
+      ? null
+      : ensureRuntimeOutputField(id, displayLabel(id), runtimeOutputTypeForValue(value)));
     if (!output) {
       return;
     }
@@ -5245,6 +5544,8 @@
     output._ui2NglStage = null;
     output._ui2NglComponent = null;
     output._ui2NglReps = null;
+    output._ui2NglPendingFrame = null;
+    output._ui2NglFrameScheduled = false;
     const plot = output.querySelector(".ui2-ngl-plot");
     const buttons = output.querySelector(".ui2-ngl-buttons");
     const placeholder = output.querySelector(".ui2-ngl-placeholder");
@@ -5300,6 +5601,7 @@
           if (stage.handleResize) {
             stage.handleResize();
           }
+          scheduleNglCoordinateFrame(output);
           if (layered) {
             renderNglLayerButtons(buttons, component, output._ui2NglReps, specs);
           } else {
@@ -5314,6 +5616,78 @@
           message.textContent = `Could not render structure output: ${error.message}`;
         }
       });
+  }
+
+  function normalizeNglCoordinateFrame(payload) {
+    const raw = payload?.coordinates ?? payload?.positions;
+    if (!Array.isArray(raw) && !ArrayBuffer.isView(raw)) {
+      return null;
+    }
+    const coordinates = raw instanceof Float32Array ? raw : new Float32Array(raw);
+    if (!coordinates.length || coordinates.length % 3 !== 0 || coordinates.some((value) => !Number.isFinite(value))) {
+      return null;
+    }
+    const atomCount = Number(payload?.atomCount ?? coordinates.length / 3);
+    if (!Number.isInteger(atomCount) || atomCount < 1 || coordinates.length !== atomCount * 3) {
+      return null;
+    }
+    return {
+      coordinates,
+      atomCount,
+      frame: Number.isInteger(Number(payload?.frame)) ? Number(payload.frame) : null,
+      timestamp: stringValue(payload?.timestamp)
+    };
+  }
+
+  function queueNglCoordinateFrame(output, payload) {
+    const frame = normalizeNglCoordinateFrame(payload);
+    if (!output || !frame) {
+      return false;
+    }
+    output._ui2NglPendingFrame = frame;
+    scheduleNglCoordinateFrame(output);
+    return true;
+  }
+
+  function scheduleNglCoordinateFrame(output) {
+    if (!output?._ui2NglComponent || !output._ui2NglPendingFrame || output._ui2NglFrameScheduled) {
+      return;
+    }
+    output._ui2NglFrameScheduled = true;
+    const schedule = window.requestAnimationFrame || ((callback) => window.setTimeout(callback, 0));
+    schedule(() => {
+      output._ui2NglFrameScheduled = false;
+      const frame = output._ui2NglPendingFrame;
+      output._ui2NglPendingFrame = null;
+      applyNglCoordinateFrame(output, frame);
+      if (output._ui2NglPendingFrame) {
+        scheduleNglCoordinateFrame(output);
+      }
+    });
+  }
+
+  function applyNglCoordinateFrame(output, frame) {
+    const component = output?._ui2NglComponent;
+    const structure = component?.structure;
+    if (!component || !structure || typeof structure.updatePosition !== "function" || !frame) {
+      return false;
+    }
+    const structureAtomCount = Number(structure.atomCount ?? structure.atomStore?.count);
+    if (Number.isInteger(structureAtomCount) && structureAtomCount > 0 && structureAtomCount !== frame.atomCount) {
+      return false;
+    }
+    // This is the coordinate path used by bundled NGL 0.10.4 trajectories:
+    // update the existing Structure and its representation positions. Do not
+    // reload, recreate, or auto-center the component for each frame.
+    structure.updatePosition(frame.coordinates);
+    if (typeof component.updateRepresentations === "function") {
+      component.updateRepresentations({ position: true });
+    } else if (component.stage?.viewer?.requestRender) {
+      component.stage.viewer.requestRender();
+    }
+    output.dataset.nglFrame = frame.frame == null ? "" : String(frame.frame);
+    output._ui2NglLastFrame = frame;
+    return true;
   }
 
   function parseNglPayload(value) {
@@ -5422,14 +5796,22 @@
       return;
     }
     output.classList.add("ui2-output-rendered", "ui2-output-plotly-ready");
-    output.textContent = "";
+    const updateExisting = Boolean(output.data && window.Plotly?.react);
+    if (!updateExisting) {
+      output.textContent = "";
+    }
     ensurePlotlyLoaded()
       .then(() => {
         const layout = plotlyLayoutForOutput(output, figure.layout);
+        if (layout.uirevision == null) {
+          layout.uirevision = output.dataset.outputFieldId || "ui2-plot";
+        }
         applyPlotlyTheme(layout);
         const config = Object.assign({ responsive: true }, figure.config || {});
         applyPlotlyModebarHooks(figure, config);
-        return window.Plotly.newPlot(output, figure.data, layout, config);
+        return updateExisting
+          ? window.Plotly.react(output, figure.data, layout, config)
+          : window.Plotly.newPlot(output, figure.data, layout, config);
       })
       .then(() => {
         observeFitPlotlyOutput(output);
@@ -5440,6 +5822,44 @@
       .catch((error) => {
         output.classList.remove("ui2-output-plotly-ready");
         output.textContent = `Could not render Plotly output: ${error.message}`;
+      });
+  }
+
+  function appendPlotlyOutput(output, payload) {
+    const traces = Array.isArray(payload?.traces) ? payload.traces : [];
+    if (!traces.length) {
+      return;
+    }
+    ensurePlotlyLoaded()
+      .then(() => {
+        if (!output.data || typeof window.Plotly?.extendTraces !== "function") {
+          if (payload.figure) {
+            renderPlotlyOutput(output, payload.figure);
+          }
+          return;
+        }
+        const indices = [];
+        const x = [];
+        const y = [];
+        traces.forEach((trace) => {
+          const index = Number(trace?.index);
+          if (!Number.isInteger(index) || !Array.isArray(trace?.x) || !Array.isArray(trace?.y)) {
+            return;
+          }
+          indices.push(index);
+          x.push(trace.x);
+          y.push(trace.y);
+        });
+        if (!indices.length) {
+          return;
+        }
+        const maxPoints = Number(payload.maxPoints);
+        return Number.isInteger(maxPoints) && maxPoints > 0
+          ? window.Plotly.extendTraces(output, { x, y }, indices, maxPoints)
+          : window.Plotly.extendTraces(output, { x, y }, indices);
+      })
+      .catch((error) => {
+        output.textContent = `Could not append Plotly output: ${error.message}`;
       });
   }
 
@@ -6553,7 +6973,11 @@
       nglRepresentationSpecs,
       nglRepresentationKey,
       nglRepresentationStoreKey,
+      normalizeNglCoordinateFrame,
+      queueNglCoordinateFrame,
+      applyNglCoordinateFrame,
       applyPlotlyTheme,
+      appendPlotlyOutput,
       plotlyLayoutForOutput,
       plotlyThemeColors,
       repeatIsCondition,
@@ -6566,6 +6990,8 @@
       updateRepeatTables,
       defaultInputPayload,
       resetModuleForm,
+      createJobEventStore,
+      normalizeJobEvent,
       applyRuntimePayload,
       applyInputPayload,
       applySavedJobInput,

@@ -74,6 +74,8 @@ like(
 );
 
 my $module_php = read_file( File::Spec->catfile( $app_dir, qw(output html5 ajax demo echo.php) ) );
+my $job_event_cache = File::Spec->catfile( $app_dir, qw(output html5 util job-event-cache.php) );
+ok( -f $job_event_cache, 'bounded job-event replay helper was generated' );
 like( $module_php, qr/\$modjson = json_decode/,     'module php embeds module json decode' );
 like( $module_php, qr/\$_REQUEST\[ '_module' \]/,   'module php records module request metadata' );
 unlike( $module_php, qr/__modulejson__|__menu:modules:id__|__application__/, 'module php has key substitutions applied' );
