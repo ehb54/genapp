@@ -93,6 +93,7 @@
 
 .ui2-mmc-result-card {
   flex: 1 1 auto;
+  overflow-x: hidden;
 }
 
 .ui2-mmc-result-card,
@@ -259,8 +260,38 @@
 
 .ui2-mmc-result-card .ui2-output,
 .ui2-mmc-result-card .ui2-ngl-plot {
+  max-width: 100%;
   width: 100% !important;
   min-height: 28rem;
+}
+
+.ui2-mmc-result-card .ui2-output-ngl {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.ui2-mmc-result-card .ui2-ngl-plot {
+  box-sizing: border-box;
+}
+
+.ui2-mmc-result-card .ui2-ngl-plot canvas {
+  max-width: 100%;
+}
+
+.ui2-mmc-result-card .ui2-ngl-buttons {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.ui2-mmc-result-card .ui2-ngl-frame-controls {
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+.ui2-mmc-result-card .ui2-ngl-frame-select {
+  max-width: 100%;
+  min-width: 0;
 }
 
 .ui2-mmc-result-card .ui2-output-plotly {
