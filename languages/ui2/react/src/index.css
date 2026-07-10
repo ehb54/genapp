@@ -49,6 +49,10 @@
   gap: 1rem;
 }
 
+.ui2-mmc-grid-inputs-hidden {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .ui2-mmc-input-pane,
 .ui2-mmc-results-pane {
   min-width: 0;
@@ -77,6 +81,11 @@
   min-height: 0;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.ui2-mmc-show-inputs-row {
+  display: flex;
+  justify-content: flex-start;
 }
 
 .ui2-mmc-result-card {
@@ -181,6 +190,16 @@
   margin: 0 0 0.75rem;
   color: var(--ui2-muted);
   font-size: 0.875rem;
+}
+
+.ui2-mmc-run-cue-card > div {
+  padding-block: 0.85rem;
+}
+
+.ui2-mmc-run-cue {
+  color: var(--ui2-text);
+  font-size: 0.9rem;
+  font-weight: 650;
 }
 
 .ui2-mmc-run-log {

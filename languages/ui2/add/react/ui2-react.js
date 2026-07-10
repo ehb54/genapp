@@ -10789,8 +10789,36 @@ function qr(e) {
 	let t = e.channels.log?.run;
 	return (t?.items || []).map((e) => e && typeof e == "object" && "text" in e ? String(e.text || "") : String(e || "")).join("") || String(t?.value || "");
 }
-function Jr({ values: e, fields: t, summaryFieldIds: n, uuid: r, onEdit: i }) {
-	let [a, o] = S.useState(!1), s = S.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), c = a ? Object.keys(e) : n.filter((t) => Object.prototype.hasOwnProperty.call(e, t));
+function Jr(e) {
+	let t = e.channels.progress?.run?.value;
+	return t && typeof t == "object" ? t : {};
+}
+function Yr(e) {
+	let t = Number(e);
+	return Number.isFinite(t) ? String(t) : null;
+}
+function Xr(e, t) {
+	return e.match(t)?.[1]?.trim() || null;
+}
+function Zr(e) {
+	let t = qr(e), n = Jr(e), r = Xr(t, /accepted\s+(\d+\s+out\s+of\s+\d+)\s*:/i) || (Yr(n.accepted) && Yr(n.attempted) ? `${Yr(n.accepted)} / ${Yr(n.attempted)}` : null), i = Xr(t, /Configurations and statistics saved in\s+(.+?)\s+directory/i), a = Yr(n.reloads), o = Yr(n.percent) || (Number(n.fraction) >= 0 ? String(Math.round(Number(n.fraction) * 1e3) / 10) : null), s = /DIHEDRAL IS DONE/i.test(t) || Number(n.fraction) >= 1, c = [s ? "Run completed" : "Running"];
+	if (r && c.push(`accepted ${r}`), !s && a && a !== "0" && c.push(`reloads ${a}`), !s && o && c.push(`${o}%`), s && i && c.push(`outputs saved in ${i}`), c.length > 1) return c.join(" · ");
+	let l = t ? t.split(/\r?\n/).filter((e) => e.trim()).length : 0;
+	return l ? `Run log available · ${l} lines` : "Run status will appear here.";
+}
+function Qr({ snapshot: e }) {
+	return /* @__PURE__ */ (0, I.jsx)($t, {
+		className: "ui2-mmc-run-cue-card",
+		children: /* @__PURE__ */ (0, I.jsx)(rn, { children: /* @__PURE__ */ (0, I.jsx)("div", {
+			"aria-live": "polite",
+			className: "ui2-mmc-run-cue",
+			role: "status",
+			children: Zr(e)
+		}) })
+	});
+}
+function $r({ values: e, fields: t, summaryFieldIds: n, uuid: r, onEdit: i, onHide: a }) {
+	let [o, s] = S.useState(!1), c = S.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), l = o ? Object.keys(e) : n.filter((t) => Object.prototype.hasOwnProperty.call(e, t));
 	return /* @__PURE__ */ (0, I.jsxs)($t, {
 		className: "ui2-mmc-submitted",
 		children: [/* @__PURE__ */ (0, I.jsxs)(en, { children: [/* @__PURE__ */ (0, I.jsxs)("div", { children: [/* @__PURE__ */ (0, I.jsx)(tn, { children: "Submitted inputs" }), /* @__PURE__ */ (0, I.jsx)(nn, { children: r ? `Run ${r}` : "Values associated with this run" })] }), /* @__PURE__ */ (0, I.jsx)("span", {
@@ -10798,23 +10826,32 @@ function Jr({ values: e, fields: t, summaryFieldIds: n, uuid: r, onEdit: i }) {
 			children: "Submitted"
 		})] }), /* @__PURE__ */ (0, I.jsxs)(rn, { children: [/* @__PURE__ */ (0, I.jsx)("dl", {
 			className: "ui2-mmc-summary-list",
-			children: c.map((t) => /* @__PURE__ */ (0, I.jsxs)("div", { children: [/* @__PURE__ */ (0, I.jsx)("dt", { children: s.get(t)?.label || t }), /* @__PURE__ */ (0, I.jsx)("dd", { children: Kr(e[t], s.get(t)) })] }, t))
+			children: l.map((t) => /* @__PURE__ */ (0, I.jsxs)("div", { children: [/* @__PURE__ */ (0, I.jsx)("dt", { children: c.get(t)?.label || t }), /* @__PURE__ */ (0, I.jsx)("dd", { children: Kr(e[t], c.get(t)) })] }, t))
 		}), /* @__PURE__ */ (0, I.jsxs)("div", {
 			className: "ui2-mmc-summary-actions",
-			children: [/* @__PURE__ */ (0, I.jsx)(Qt, {
-				type: "button",
-				variant: "outline",
-				onClick: () => o((e) => !e),
-				children: a ? "Show key inputs" : "Show all inputs"
-			}), /* @__PURE__ */ (0, I.jsx)(Qt, {
-				type: "button",
-				onClick: i,
-				children: "Edit for new run"
-			})]
+			children: [
+				/* @__PURE__ */ (0, I.jsx)(Qt, {
+					type: "button",
+					variant: "outline",
+					onClick: () => s((e) => !e),
+					children: o ? "Show key inputs" : "Show all inputs"
+				}),
+				/* @__PURE__ */ (0, I.jsx)(Qt, {
+					type: "button",
+					variant: "outline",
+					onClick: a,
+					children: "Hide inputs"
+				}),
+				/* @__PURE__ */ (0, I.jsx)(Qt, {
+					type: "button",
+					onClick: i,
+					children: "Edit for new run"
+				})
+			]
 		})] })]
 	});
 }
-function Yr({ snapshot: e, title: t, description: n, defaultOpen: r = !1 }) {
+function ei({ snapshot: e, title: t, description: n, defaultOpen: r = !1 }) {
 	let [i, a] = S.useState(r), o = qr(e), s = o ? o.split(/\r?\n/).length : 0;
 	return /* @__PURE__ */ (0, I.jsx)(zn, {
 		open: i,
@@ -10856,8 +10893,8 @@ function Yr({ snapshot: e, title: t, description: n, defaultOpen: r = !1 }) {
 		})
 	});
 }
-function Xr({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
-	let [a, o] = S.useState(!1), [s, c] = S.useState(i || null), l = n.inputs?.sections || [], u = n.inputs?.advanced, d = u?.fields || [], f = n.inputs?.submittedSummary?.fields || [], p = n.results?.progress, m = n.results?.tabs || [], h = m.find((e) => e.primary)?.id || m[0]?.id || "", [g, _] = S.useState(h), [v, y] = S.useState(!1), [b, x] = S.useState(!1), ee = S.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), C = S.useSyncExternalStore(r.subscribeRuntime, r.runtimeSnapshot, r.runtimeSnapshot), w = (p?.fields || []).map((e) => ee.get(e)).filter(Boolean), te = m.find((e) => e.id === g), ne = /* @__PURE__ */ new Set([...l.flatMap((e) => [...e.fields]), ...d]), se = t.filter((e) => e.role !== "output" && e.id && e.type !== "label" && !ne.has(e.id));
+function ti({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
+	let [a, o] = S.useState(!1), [s, c] = S.useState(i || null), l = n.inputs?.sections || [], u = n.inputs?.advanced, d = u?.fields || [], f = n.inputs?.submittedSummary?.fields || [], p = n.results?.progress, m = n.results?.tabs || [], h = m.find((e) => e.primary)?.id || m[0]?.id || "", [g, _] = S.useState(h), [v, y] = S.useState(!1), [b, x] = S.useState(!1), [ee, C] = S.useState(!1), w = S.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), te = S.useSyncExternalStore(r.subscribeRuntime, r.runtimeSnapshot, r.runtimeSnapshot), ne = (p?.fields || []).map((e) => w.get(e)).filter(Boolean), se = m.find((e) => e.id === g), le = /* @__PURE__ */ new Set([...l.flatMap((e) => [...e.fields]), ...d]), E = t.filter((e) => e.role !== "output" && e.id && e.type !== "label" && !le.has(e.id));
 	S.useEffect(() => {
 		m.some((e) => e.id === g) || _(h);
 	}, [
@@ -10886,27 +10923,27 @@ function Xr({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 	}, [v]), S.useLayoutEffect(() => {
 		window.requestAnimationFrame(() => r.resizeOutputs());
 	}, [r, v]);
-	let le = async (e) => {
+	let D = async (e) => {
 		e.preventDefault(), x(!0);
 		try {
 			let t = await r.submit(e.currentTarget);
-			t.ok && c({
+			t.ok && (c({
 				values: t.values || r.syncValues(),
 				uuid: t.uuid
-			});
+			}), C(!1));
 		} finally {
 			x(!1);
 		}
-	}, E = (e) => {
-		e.preventDefault(), r.reset(e.currentTarget), c(null), o(!1);
-	}, D = String(C.lifecycle?.state || (b ? "submitting" : "editing")), ue = String(C.lifecycle?.error || C.lifecycle?.message || D);
+	}, ue = (e) => {
+		e.preventDefault(), r.reset(e.currentTarget), c(null), o(!1), C(!1);
+	}, de = String(te.lifecycle?.state || (b ? "submitting" : "editing")), fe = String(te.lifecycle?.error || te.lifecycle?.message || de), O = !!(s || te.run);
 	return /* @__PURE__ */ (0, I.jsxs)("form", {
 		className: "ui2-mmc-react",
 		id: "ui2-form",
 		onChange: () => r.syncValues(),
 		onInput: () => r.syncValues(),
-		onReset: E,
-		onSubmit: le,
+		onReset: ue,
+		onSubmit: D,
 		children: [/* @__PURE__ */ (0, I.jsx)("header", {
 			className: "ui2-mmc-heading",
 			children: /* @__PURE__ */ (0, I.jsxs)("div", { children: [
@@ -10925,22 +10962,23 @@ function Xr({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 				n.heading?.description && /* @__PURE__ */ (0, I.jsx)("p", { children: n.heading.description })
 			] })
 		}), /* @__PURE__ */ (0, I.jsxs)("div", {
-			className: "ui2-mmc-grid",
-			children: [/* @__PURE__ */ (0, I.jsxs)("aside", {
+			className: `ui2-mmc-grid${ee ? " ui2-mmc-grid-inputs-hidden" : ""}`,
+			children: [!ee && /* @__PURE__ */ (0, I.jsxs)("aside", {
 				className: "ui2-mmc-input-pane",
-				children: [s ? /* @__PURE__ */ (0, I.jsx)(Jr, {
+				children: [s ? /* @__PURE__ */ (0, I.jsx)($r, {
 					fields: t,
 					summaryFieldIds: f,
 					onEdit: () => {
-						r.clearSubmitted(), c(null);
+						r.clearSubmitted(), c(null), C(!1);
 					},
+					onHide: () => C(!0),
 					uuid: s.uuid,
 					values: s.values
 				}) : /* @__PURE__ */ (0, I.jsxs)("div", {
 					className: "ui2-mmc-input-scroll",
 					children: [
 						l.map((e) => {
-							let t = e.fields.map((e) => ee.get(e)).filter(Boolean);
+							let t = e.fields.map((e) => w.get(e)).filter(Boolean);
 							return /* @__PURE__ */ (0, I.jsxs)($t, { children: [/* @__PURE__ */ (0, I.jsx)(en, { children: /* @__PURE__ */ (0, I.jsxs)("div", { children: [/* @__PURE__ */ (0, I.jsx)(tn, { children: e.title }), /* @__PURE__ */ (0, I.jsx)(nn, { children: e.description })] }) }), /* @__PURE__ */ (0, I.jsx)(rn, { children: /* @__PURE__ */ (0, I.jsx)(Wr, {
 								bridge: r,
 								fields: t
@@ -10975,13 +11013,13 @@ function Xr({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 									children: u.description
 								}), /* @__PURE__ */ (0, I.jsx)(Wr, {
 									bridge: r,
-									fields: d.map((e) => ee.get(e)).filter(Boolean)
+									fields: d.map((e) => w.get(e)).filter(Boolean)
 								})] })
 							})] })
 						}),
-						se.length > 0 && /* @__PURE__ */ (0, I.jsxs)($t, { children: [/* @__PURE__ */ (0, I.jsx)(en, { children: /* @__PURE__ */ (0, I.jsx)(tn, { children: "Additional inputs" }) }), /* @__PURE__ */ (0, I.jsx)(rn, { children: /* @__PURE__ */ (0, I.jsx)(Wr, {
+						E.length > 0 && /* @__PURE__ */ (0, I.jsxs)($t, { children: [/* @__PURE__ */ (0, I.jsx)(en, { children: /* @__PURE__ */ (0, I.jsx)(tn, { children: "Additional inputs" }) }), /* @__PURE__ */ (0, I.jsx)(rn, { children: /* @__PURE__ */ (0, I.jsx)(Wr, {
 							bridge: r,
-							fields: se
+							fields: E
 						}) })] })
 					]
 				}), !s && /* @__PURE__ */ (0, I.jsxs)("div", {
@@ -11010,24 +11048,34 @@ function Xr({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						className: "ui2-submit-status",
 						id: "ui2-submit-status",
 						role: "status",
-						children: D === "editing" ? "Not submitted" : ue
+						children: de === "editing" ? "Not submitted" : fe
 					})]
 				})]
 			}), /* @__PURE__ */ (0, I.jsxs)("main", {
 				className: "ui2-mmc-results-pane",
 				children: [
+					s && ee && /* @__PURE__ */ (0, I.jsx)("div", {
+						className: "ui2-mmc-show-inputs-row",
+						children: /* @__PURE__ */ (0, I.jsx)(Qt, {
+							type: "button",
+							variant: "outline",
+							onClick: () => C(!1),
+							children: "Show submitted inputs"
+						})
+					}),
 					p && /* @__PURE__ */ (0, I.jsxs)($t, {
 						className: "ui2-mmc-progress-card",
 						children: [/* @__PURE__ */ (0, I.jsx)(en, { children: /* @__PURE__ */ (0, I.jsxs)("div", { children: [/* @__PURE__ */ (0, I.jsx)(tn, { children: p.title }), p.description && /* @__PURE__ */ (0, I.jsx)(nn, { children: p.description })] }) }), /* @__PURE__ */ (0, I.jsx)(rn, { children: /* @__PURE__ */ (0, I.jsx)(Wr, {
 							bridge: r,
-							fields: w,
+							fields: ne,
 							role: "output"
 						}) })]
 					}),
-					n.results?.runtimeLog && /* @__PURE__ */ (0, I.jsx)(Yr, {
+					n.results?.runtimeLog && O && /* @__PURE__ */ (0, I.jsx)(Qr, { snapshot: te }),
+					n.results?.runtimeLog && /* @__PURE__ */ (0, I.jsx)(ei, {
 						defaultOpen: n.results.runtimeLog.defaultOpen,
 						description: n.results.runtimeLog.description,
-						snapshot: C,
+						snapshot: te,
 						title: n.results.runtimeLog.title || "Run log"
 					}),
 					v && /* @__PURE__ */ (0, I.jsx)("div", {
@@ -11035,7 +11083,7 @@ function Xr({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						className: "ui2-mmc-result-backdrop"
 					}),
 					m.length > 0 && /* @__PURE__ */ (0, I.jsx)($t, {
-						"aria-label": v ? `Expanded ${te?.label || "result"}` : void 0,
+						"aria-label": v ? `Expanded ${se?.label || "result"}` : void 0,
 						"aria-modal": v ? !0 : void 0,
 						className: `ui2-mmc-result-card${v ? " ui2-mmc-result-card-expanded" : ""}`,
 						role: v ? "dialog" : void 0,
@@ -11053,7 +11101,7 @@ function Xr({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 										value: e.id,
 										children: e.label
 									}, e.id))
-								}), te?.expandable && /* @__PURE__ */ (0, I.jsxs)(Qt, {
+								}), se?.expandable && /* @__PURE__ */ (0, I.jsxs)(Qt, {
 									"aria-expanded": v,
 									onClick: () => y((e) => !e),
 									type: "button",
@@ -11070,7 +11118,7 @@ function Xr({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 								forceMount: !0,
 								value: e.id,
 								className: "data-[state=inactive]:hidden",
-								children: e.outputs.map((e) => ee.get(e)).filter(Boolean).map((t) => /* @__PURE__ */ (0, I.jsx)(Ur, {
+								children: e.outputs.map((e) => w.get(e)).filter(Boolean).map((t) => /* @__PURE__ */ (0, I.jsx)(Ur, {
 									bridge: r,
 									field: t,
 									fitPlot: e.fit === "pane" && t?.type === "plotly",
@@ -11086,16 +11134,16 @@ function Xr({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 }
 //#endregion
 //#region src/main.tsx
-var Zr = /* @__PURE__ */ new WeakMap();
+var ni = /* @__PURE__ */ new WeakMap();
 window.GenAppUi2Mmc = {
 	mount(e, t) {
 		window.GenAppUi2Mmc?.unmount(e);
 		let n = (0, le.createRoot)(e);
-		Zr.set(e, n), n.render(/* @__PURE__ */ (0, I.jsx)(Xr, { ...t }));
+		ni.set(e, n), n.render(/* @__PURE__ */ (0, I.jsx)(ti, { ...t }));
 	},
 	unmount(e) {
-		let t = Zr.get(e);
-		t && (t.unmount(), Zr.delete(e));
+		let t = ni.get(e);
+		t && (t.unmount(), ni.delete(e));
 	}
 }, window.dispatchEvent(new CustomEvent("ui2-react-ready"));
 //#endregion

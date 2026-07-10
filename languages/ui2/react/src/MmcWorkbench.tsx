@@ -75,18 +75,73 @@ function runtimeLogText(snapshot: JobRuntimeSnapshot): string {
   return appended || String(topic?.value || "")
 }
 
+function runtimeProgressValue(snapshot: JobRuntimeSnapshot): Record<string, unknown> {
+  const topic = snapshot.channels.progress?.run
+  const value = topic?.value
+  return value && typeof value === "object" ? value as Record<string, unknown> : {}
+}
+
+function numberText(value: unknown): string | null {
+  const numeric = Number(value)
+  return Number.isFinite(numeric) ? String(numeric) : null
+}
+
+function firstLogMatch(text: string, pattern: RegExp): string | null {
+  const match = text.match(pattern)
+  return match?.[1]?.trim() || null
+}
+
+function runCueText(snapshot: JobRuntimeSnapshot): string {
+  const log = runtimeLogText(snapshot)
+  const progress = runtimeProgressValue(snapshot)
+  const accepted = firstLogMatch(log, /accepted\s+(\d+\s+out\s+of\s+\d+)\s*:/i)
+    || (
+      numberText(progress.accepted) && numberText(progress.attempted)
+        ? `${numberText(progress.accepted)} / ${numberText(progress.attempted)}`
+        : null
+    )
+  const outputDir = firstLogMatch(log, /Configurations and statistics saved in\s+(.+?)\s+directory/i)
+  const reloads = numberText(progress.reloads)
+  const framePercent = numberText(progress.percent) || (
+    Number(progress.fraction) >= 0 ? String(Math.round(Number(progress.fraction) * 1000) / 10) : null
+  )
+  const completed = /DIHEDRAL IS DONE/i.test(log) || Number(progress.fraction) >= 1
+  const parts = [completed ? "Run completed" : "Running"]
+  if (accepted) parts.push(`accepted ${accepted}`)
+  if (!completed && reloads && reloads !== "0") parts.push(`reloads ${reloads}`)
+  if (!completed && framePercent) parts.push(`${framePercent}%`)
+  if (completed && outputDir) parts.push(`outputs saved in ${outputDir}`)
+  if (parts.length > 1) return parts.join(" · ")
+  const lineCount = log ? log.split(/\r?\n/).filter((line) => line.trim()).length : 0
+  return lineCount ? `Run log available · ${lineCount} lines` : "Run status will appear here."
+}
+
+function RunCue({ snapshot }: { snapshot: JobRuntimeSnapshot }) {
+  return (
+    <Card className="ui2-mmc-run-cue-card">
+      <CardContent>
+        <div aria-live="polite" className="ui2-mmc-run-cue" role="status">
+          {runCueText(snapshot)}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 function SubmittedInputs({
   values,
   fields,
   summaryFieldIds,
   uuid,
   onEdit,
+  onHide,
 }: {
   values: Record<string, unknown>
   fields: Ui2Field[]
   summaryFieldIds: string[]
   uuid?: string
   onEdit: () => void
+  onHide: () => void
 }) {
   const [showAll, setShowAll] = React.useState(false)
   const fieldMap = React.useMemo(() => new Map(fields.map((field) => [field.id, field])), [fields])
@@ -114,6 +169,7 @@ function SubmittedInputs({
           <Button type="button" variant="outline" onClick={() => setShowAll((current) => !current)}>
             {showAll ? "Show key inputs" : "Show all inputs"}
           </Button>
+          <Button type="button" variant="outline" onClick={onHide}>Hide inputs</Button>
           <Button type="button" onClick={onEdit}>Edit for new run</Button>
         </div>
       </CardContent>
@@ -171,6 +227,7 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
   const [activeResult, setActiveResult] = React.useState(initialResult)
   const [plotExpanded, setPlotExpanded] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
+  const [inputRailCollapsed, setInputRailCollapsed] = React.useState(false)
   const fieldsById = React.useMemo(() => new Map(fields.map((field) => [field.id, field])), [fields])
   const runtime = React.useSyncExternalStore(bridge.subscribeRuntime, bridge.runtimeSnapshot, bridge.runtimeSnapshot)
   const progressFields = (progressSection?.fields || []).map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]
@@ -225,6 +282,7 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
       const result = await bridge.submit(event.currentTarget)
       if (result.ok) {
         setSubmitted({ values: result.values || bridge.syncValues(), uuid: result.uuid })
+        setInputRailCollapsed(false)
       }
     } finally {
       setSubmitting(false)
@@ -236,10 +294,12 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
     bridge.reset(event.currentTarget)
     setSubmitted(null)
     setAdvancedOpen(false)
+    setInputRailCollapsed(false)
   }
 
   const lifecycleState = String(runtime.lifecycle?.state || (submitting ? "submitting" : "editing"))
   const lifecycleMessage = String(runtime.lifecycle?.error || runtime.lifecycle?.message || lifecycleState)
+  const hasRunContext = Boolean(submitted || runtime.run)
 
   return (
     <form
@@ -258,13 +318,14 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
         </div>
       </header>
 
-      <div className="ui2-mmc-grid">
-        <aside className="ui2-mmc-input-pane">
+      <div className={`ui2-mmc-grid${inputRailCollapsed ? " ui2-mmc-grid-inputs-hidden" : ""}`}>
+        {!inputRailCollapsed && <aside className="ui2-mmc-input-pane">
           {submitted ? (
             <SubmittedInputs fields={fields} summaryFieldIds={summaryFieldIds} onEdit={() => {
               bridge.clearSubmitted()
               setSubmitted(null)
-            }} uuid={submitted.uuid} values={submitted.values} />
+              setInputRailCollapsed(false)
+            }} onHide={() => setInputRailCollapsed(true)} uuid={submitted.uuid} values={submitted.values} />
           ) : (
             <div className="ui2-mmc-input-scroll">
               {inputSections.map((section) => {
@@ -325,9 +386,17 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
               </div>
             </div>
           )}
-        </aside>
+        </aside>}
 
         <main className="ui2-mmc-results-pane">
+          {submitted && inputRailCollapsed && (
+            <div className="ui2-mmc-show-inputs-row">
+              <Button type="button" variant="outline" onClick={() => setInputRailCollapsed(false)}>
+                Show submitted inputs
+              </Button>
+            </div>
+          )}
+
           {progressSection && (
             <Card className="ui2-mmc-progress-card">
               <CardHeader>
@@ -339,6 +408,8 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
               <CardContent><FieldGroup bridge={bridge} fields={progressFields} role="output" /></CardContent>
             </Card>
           )}
+
+          {view.results?.runtimeLog && hasRunContext && <RunCue snapshot={runtime} />}
 
           {view.results?.runtimeLog && (
             <RunLog
