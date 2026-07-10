@@ -52,6 +52,10 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+.ui2-mmc-react-workspace-expanded {
+  min-height: calc(100dvh - 8rem);
+}
+
 .ui2-mmc-input-pane,
 .ui2-mmc-results-pane {
   min-width: 0;
@@ -263,6 +267,19 @@
   height: clamp(30rem, 58dvh, 44rem);
   min-height: 0;
   overflow: hidden;
+}
+
+.ui2-mmc-react-workspace-expanded .ui2-mmc-result-card {
+  min-height: clamp(36rem, 70dvh, 64rem);
+}
+
+.ui2-mmc-react-workspace-expanded .ui2-mmc-result-card .ui2-output,
+.ui2-mmc-react-workspace-expanded .ui2-mmc-result-card .ui2-ngl-plot {
+  min-height: clamp(34rem, 66dvh, 58rem);
+}
+
+.ui2-mmc-react-workspace-expanded .ui2-mmc-result-card .ui2-output-plotly {
+  height: clamp(34rem, 66dvh, 58rem);
 }
 
 .ui2-mmc-submitted {

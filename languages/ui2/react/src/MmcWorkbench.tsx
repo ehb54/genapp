@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ChevronDown, FlaskConical, RotateCcw, ScrollText, Settings2 } from "lucide-react"
+import { ChevronDown, FlaskConical, Maximize2, Minimize2, RotateCcw, ScrollText, Settings2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -255,6 +255,7 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
   const [activeResult, setActiveResult] = React.useState(initialResult)
   const [submitting, setSubmitting] = React.useState(false)
   const [inputRailCollapsed, setInputRailCollapsed] = React.useState(false)
+  const [workspaceExpanded, setWorkspaceExpanded] = React.useState(false)
   const [runLogOpen, setRunLogOpen] = React.useState(Boolean(view.results?.runtimeLog?.defaultOpen))
   const fieldsById = React.useMemo(() => new Map(fields.map((field) => [field.id, field])), [fields])
   const runtime = React.useSyncExternalStore(bridge.subscribeRuntime, bridge.runtimeSnapshot, bridge.runtimeSnapshot)
@@ -294,7 +295,7 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
 
   React.useLayoutEffect(() => {
     scheduleOutputResize()
-  }, [activeResult, inputRailCollapsed, runtime.lastSequence, scheduleOutputResize])
+  }, [activeResult, inputRailCollapsed, runtime.lastSequence, scheduleOutputResize, workspaceExpanded])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -316,6 +317,14 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
     setSubmitted(null)
     setAdvancedOpen(false)
     setInputRailCollapsed(false)
+    setWorkspaceExpanded(false)
+  }
+
+  const toggleWorkspaceExpanded = () => {
+    setWorkspaceExpanded((current) => {
+      if (current) setInputRailCollapsed(false)
+      return !current
+    })
   }
 
   const lifecycleState = String(runtime.lifecycle?.state || (submitting ? "submitting" : "editing"))
@@ -325,7 +334,7 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
 
   return (
     <form
-      className="ui2-mmc-react"
+      className={`ui2-mmc-react${workspaceExpanded ? " ui2-mmc-react-workspace-expanded" : ""}`}
       id="ui2-form"
       onChange={() => bridge.syncValues()}
       onInput={() => bridge.syncValues()}
@@ -340,8 +349,8 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
         </div>
       </header>
 
-      <div className={`ui2-mmc-grid${inputRailCollapsed ? " ui2-mmc-grid-inputs-hidden" : ""}`}>
-        {!inputRailCollapsed && <aside className="ui2-mmc-input-pane">
+      <div className={`ui2-mmc-grid${inputRailCollapsed || workspaceExpanded ? " ui2-mmc-grid-inputs-hidden" : ""}`}>
+        {!inputRailCollapsed && !workspaceExpanded && <aside className="ui2-mmc-input-pane">
           {submitted ? (
             <SubmittedInputs fields={fields} summaryFieldIds={summaryFieldIds} onEdit={() => {
               bridge.clearSubmitted()
@@ -458,6 +467,15 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
                     <TabsList aria-label={`${module.label || "Module"} results`}>
                       {resultTabs.map((tab) => <TabsTrigger key={tab.id} value={tab.id}>{tab.label}</TabsTrigger>)}
                     </TabsList>
+                    <Button
+                      aria-pressed={workspaceExpanded}
+                      onClick={toggleWorkspaceExpanded}
+                      type="button"
+                      variant="outline"
+                    >
+                      {workspaceExpanded ? <Minimize2 aria-hidden="true" size={16} /> : <Maximize2 aria-hidden="true" size={16} />}
+                      {workspaceExpanded ? "Restore split view" : "Expand workspace"}
+                    </Button>
                   </div>
                   {resultTabs.map((tab: WorkbenchResultTab) => (
                     <TabsContent forceMount key={tab.id} value={tab.id} className="data-[state=inactive]:hidden">
