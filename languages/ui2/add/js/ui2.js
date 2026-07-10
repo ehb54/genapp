@@ -5730,10 +5730,11 @@
           specs.forEach((spec, index) => {
             output._ui2NglReps[nglRepresentationStoreKey(spec, index, layered)] = component.addRepresentation(spec.type, spec.params || {});
           });
+          resizeNglStage(stage);
           if (component.autoView) {
             component.autoView();
           }
-          resizeNglStage(stage);
+          requestNglRender(stage);
           scheduleNglCoordinateFrame(output);
           if (layered) {
             renderNglLayerButtons(buttons, component, output._ui2NglReps, specs);
