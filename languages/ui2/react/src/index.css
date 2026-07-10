@@ -372,7 +372,9 @@
 
 .ui2-mmc-workspace-panel-body {
   min-height: 0;
+  min-width: 0;
   flex: 1 1 auto;
+  width: 100%;
 }
 
 .ui2-mmc-workspace-panel-body,
@@ -384,8 +386,16 @@
   flex-direction: column;
 }
 
+.ui2-mmc-workspace-panel-body .ui2-mmc-native-field,
+.ui2-mmc-workspace-panel-body .ui2-output-field,
+.ui2-mmc-workspace-panel-body .ui2-output {
+  min-width: 0;
+  width: 100%;
+}
+
 .ui2-mmc-workspace-panel-body .ui2-output-plotly {
   display: block;
+  width: 100% !important;
 }
 
 .ui2-mmc-workspace-panel-body .ui2-output-field,
@@ -401,6 +411,11 @@
 .ui2-mmc-workspace-panel-body .ui2-ngl-plot {
   height: 100%;
   min-height: 28rem;
+}
+
+.ui2-mmc-workspace-panel-body .ui2-output-plotly .plot-container,
+.ui2-mmc-workspace-panel-body .ui2-output-plotly .svg-container {
+  width: 100% !important;
 }
 
 .ui2-mmc-workspace-panel-placeholder {
