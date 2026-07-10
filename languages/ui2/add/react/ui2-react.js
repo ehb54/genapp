@@ -11138,38 +11138,59 @@ function ei({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 								_(e), window.setTimeout(ue, 0);
 							},
 							value: g,
-							children: [/* @__PURE__ */ (0, L.jsxs)("div", {
-								className: "ui2-mmc-result-toolbar",
-								children: [/* @__PURE__ */ (0, L.jsx)(Rr, {
-									"aria-label": `${e.label || "Module"} results`,
-									children: m.map((e) => /* @__PURE__ */ (0, L.jsx)(zr, {
+							children: [
+								/* @__PURE__ */ (0, L.jsxs)("div", {
+									className: "ui2-mmc-result-toolbar",
+									children: [/* @__PURE__ */ (0, L.jsx)(Rr, {
+										"aria-label": `${e.label || "Module"} results`,
+										className: "ui2-mmc-result-tab-list",
+										children: m.map((e) => /* @__PURE__ */ (0, L.jsx)(zr, {
+											value: e.id,
+											children: e.label
+										}, e.id))
+									}), /* @__PURE__ */ (0, L.jsxs)(Zt, {
+										"aria-pressed": S,
+										onClick: A,
+										type: "button",
+										variant: "outline",
+										children: [S ? /* @__PURE__ */ (0, L.jsx)(ie, {
+											"aria-hidden": "true",
+											size: 16
+										}) : /* @__PURE__ */ (0, L.jsx)(re, {
+											"aria-hidden": "true",
+											size: 16
+										}), S ? "Restore split view" : "Expand workspace"]
+									})]
+								}),
+								m.map((e) => {
+									let t = e.outputs.map((e) => oe.get(e)).filter(Boolean), n = t.some((e) => e.type === "plotly") ? "plot" : t.some((e) => e.type === "ngl") ? "structure" : "other";
+									return /* @__PURE__ */ (0, L.jsxs)(Br, {
+										forceMount: !0,
 										value: e.id,
-										children: e.label
-									}, e.id))
-								}), /* @__PURE__ */ (0, L.jsxs)(Zt, {
-									"aria-pressed": S,
-									onClick: A,
-									type: "button",
-									variant: "outline",
-									children: [S ? /* @__PURE__ */ (0, L.jsx)(ie, {
-										"aria-hidden": "true",
-										size: 16
-									}) : /* @__PURE__ */ (0, L.jsx)(re, {
-										"aria-hidden": "true",
-										size: 16
-									}), S ? "Restore split view" : "Expand workspace"]
-								})]
-							}), m.map((e) => /* @__PURE__ */ (0, L.jsx)(Br, {
-								forceMount: !0,
-								value: e.id,
-								className: "data-[state=inactive]:hidden",
-								children: e.outputs.map((e) => oe.get(e)).filter(Boolean).map((t) => /* @__PURE__ */ (0, L.jsx)(Hr, {
-									bridge: r,
-									field: t,
-									fitPlot: e.fit === "pane" && t?.type === "plotly",
-									role: "output"
-								}, t?.id))
-							}, e.id))]
+										className: S ? `ui2-mmc-expanded-panel ui2-mmc-result-panel-${n}` : "data-[state=inactive]:hidden",
+										children: [S && /* @__PURE__ */ (0, L.jsx)("h3", {
+											className: "ui2-mmc-result-panel-title",
+											children: e.label
+										}), t.map((t) => /* @__PURE__ */ (0, L.jsx)(Hr, {
+											bridge: r,
+											field: t,
+											fitPlot: e.fit === "pane" && t.type === "plotly",
+											role: "output"
+										}, t.id))]
+									}, e.id);
+								}),
+								S && /* @__PURE__ */ (0, L.jsxs)("section", {
+									className: "ui2-mmc-expanded-panel ui2-mmc-result-panel-sas",
+									"aria-label": "SAS/profile output",
+									children: [/* @__PURE__ */ (0, L.jsx)("h3", {
+										className: "ui2-mmc-result-panel-title",
+										children: "SAS/profile"
+									}), /* @__PURE__ */ (0, L.jsx)("div", {
+										className: "ui2-mmc-sas-placeholder",
+										children: "Reserved for dynamic SAS/profile comparison output."
+									})]
+								})
+							]
 						}) })
 					})
 				]

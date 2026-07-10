@@ -120,6 +120,20 @@
   gap: 0.75rem;
 }
 
+.ui2-mmc-result-panel-title {
+  display: none;
+}
+
+.ui2-mmc-sas-placeholder {
+  display: grid;
+  min-height: 16rem;
+  place-items: center;
+  border: 1px dashed var(--ui2-border);
+  border-radius: 0.5rem;
+  color: var(--ui2-muted);
+  text-align: center;
+}
+
 .ui2-mmc-field-group {
   display: flex;
   flex-direction: column;
@@ -301,16 +315,70 @@
 }
 
 .ui2-mmc-react-workspace-expanded .ui2-mmc-result-card {
-  min-height: clamp(36rem, 70dvh, 64rem);
+  min-height: auto;
+}
+
+.ui2-mmc-react-workspace-expanded .ui2-mmc-result-tabs {
+  display: grid;
+  height: auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "toolbar toolbar"
+    "plot structure"
+    "sas sas";
+  gap: 0.75rem;
+}
+
+.ui2-mmc-react-workspace-expanded .ui2-mmc-result-toolbar {
+  grid-area: toolbar;
+}
+
+.ui2-mmc-react-workspace-expanded .ui2-mmc-result-tab-list {
+  display: none;
+}
+
+.ui2-mmc-react-workspace-expanded .ui2-mmc-expanded-panel {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  gap: 0.55rem;
+  border: 1px solid var(--ui2-border);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+}
+
+.ui2-mmc-react-workspace-expanded .ui2-mmc-result-panel-title {
+  display: block;
+  margin: 0;
+  color: var(--ui2-muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.ui2-mmc-react-workspace-expanded .ui2-mmc-result-panel-plot {
+  grid-area: plot;
+}
+
+.ui2-mmc-react-workspace-expanded .ui2-mmc-result-panel-structure {
+  grid-area: structure;
+}
+
+.ui2-mmc-react-workspace-expanded .ui2-mmc-result-panel-other {
+  grid-area: sas;
+}
+
+.ui2-mmc-react-workspace-expanded .ui2-mmc-result-panel-sas {
+  grid-area: sas;
 }
 
 .ui2-mmc-react-workspace-expanded .ui2-mmc-result-card .ui2-output,
 .ui2-mmc-react-workspace-expanded .ui2-mmc-result-card .ui2-ngl-plot {
-  min-height: clamp(34rem, 66dvh, 58rem);
+  min-height: clamp(26rem, 48dvh, 42rem);
 }
 
 .ui2-mmc-react-workspace-expanded .ui2-mmc-result-card .ui2-output-plotly {
-  height: clamp(34rem, 66dvh, 58rem);
+  height: clamp(26rem, 48dvh, 42rem);
 }
 
 .ui2-mmc-submitted {
@@ -364,6 +432,15 @@
 @media (max-width: 1100px) {
   .ui2-mmc-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ui2-mmc-react-workspace-expanded .ui2-mmc-result-tabs {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "toolbar"
+      "plot"
+      "structure"
+      "sas";
   }
 
   .ui2-mmc-input-scroll {

@@ -481,7 +481,7 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
                   value={activeResult}
                 >
                   <div className="ui2-mmc-result-toolbar">
-                    <TabsList aria-label={`${module.label || "Module"} results`}>
+                    <TabsList aria-label={`${module.label || "Module"} results`} className="ui2-mmc-result-tab-list">
                       {resultTabs.map((tab) => <TabsTrigger key={tab.id} value={tab.id}>{tab.label}</TabsTrigger>)}
                     </TabsList>
                     <Button
@@ -494,19 +494,44 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
                       {workspaceExpanded ? "Restore split view" : "Expand workspace"}
                     </Button>
                   </div>
-                  {resultTabs.map((tab: WorkbenchResultTab) => (
-                    <TabsContent forceMount key={tab.id} value={tab.id} className="data-[state=inactive]:hidden">
-                      {tab.outputs.map((id) => fieldsById.get(id)).filter(Boolean).map((field) => (
-                        <FieldHost
-                          bridge={bridge}
-                          field={field as Ui2Field}
-                          fitPlot={tab.fit === "pane" && field?.type === "plotly"}
-                          key={field?.id}
-                          role="output"
-                        />
-                      ))}
-                    </TabsContent>
-                  ))}
+                  {resultTabs.map((tab: WorkbenchResultTab) => {
+                    const tabFields = tab.outputs.map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]
+                    const panelKind = tabFields.some((field) => field.type === "plotly")
+                      ? "plot"
+                      : tabFields.some((field) => field.type === "ngl")
+                        ? "structure"
+                        : "other"
+                    return (
+                      <TabsContent
+                        forceMount
+                        key={tab.id}
+                        value={tab.id}
+                        className={workspaceExpanded
+                          ? `ui2-mmc-expanded-panel ui2-mmc-result-panel-${panelKind}`
+                          : "data-[state=inactive]:hidden"
+                        }
+                      >
+                        {workspaceExpanded && <h3 className="ui2-mmc-result-panel-title">{tab.label}</h3>}
+                        {tabFields.map((field) => (
+                          <FieldHost
+                            bridge={bridge}
+                            field={field}
+                            fitPlot={tab.fit === "pane" && field.type === "plotly"}
+                            key={field.id}
+                            role="output"
+                          />
+                        ))}
+                      </TabsContent>
+                    )
+                  })}
+                  {workspaceExpanded && (
+                    <section className="ui2-mmc-expanded-panel ui2-mmc-result-panel-sas" aria-label="SAS/profile output">
+                      <h3 className="ui2-mmc-result-panel-title">SAS/profile</h3>
+                      <div className="ui2-mmc-sas-placeholder">
+                        Reserved for dynamic SAS/profile comparison output.
+                      </div>
+                    </section>
+                  )}
                 </Tabs>
               </CardContent>
             </Card>
