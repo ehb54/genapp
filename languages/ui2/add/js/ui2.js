@@ -1160,9 +1160,7 @@
 
   function resizeMmcOutputs() {
     document.querySelectorAll('[data-output-type="plotly"]').forEach((output) => {
-      if (window.Plotly?.Plots?.resize) {
-        window.Plotly.Plots.resize(output);
-      }
+      resizePlotlyOutputWhenVisible(output);
     });
     document.querySelectorAll('[data-output-type="ngl"]').forEach((output) => {
       resizeNglStage(output._ui2NglStage);
@@ -5999,9 +5997,7 @@
       })
       .then(() => {
         observeFitPlotlyOutput(output);
-        if (window.Plotly?.Plots?.resize) {
-          window.Plotly.Plots.resize(output);
-        }
+        resizePlotlyOutputWhenVisible(output);
       })
       .catch((error) => {
         output.classList.remove("ui2-output-plotly-ready");
@@ -6042,6 +6038,9 @@
           ? window.Plotly.extendTraces(output, { x, y }, indices, maxPoints)
           : window.Plotly.extendTraces(output, { x, y }, indices);
       })
+      .then(() => {
+        resizePlotlyOutputWhenVisible(output);
+      })
       .catch((error) => {
         output.textContent = `Could not append Plotly output: ${error.message}`;
       });
@@ -6074,13 +6073,27 @@
       height = rect.height;
       const schedule = window.requestAnimationFrame || ((callback) => window.setTimeout(callback, 0));
       schedule(() => {
-        if (output.isConnected && window.Plotly?.Plots?.resize) {
-          window.Plotly.Plots.resize(output);
-        }
+        resizePlotlyOutputWhenVisible(output);
       });
     });
     observer.observe(output);
     output._ui2PlotlyResizeObserver = observer;
+  }
+
+  function resizePlotlyOutputWhenVisible(output, attempt = 0) {
+    if (!output?.isConnected || !window.Plotly?.Plots?.resize) {
+      return;
+    }
+    const rect = output.getBoundingClientRect?.();
+    if (rect && rect.width > 1 && rect.height > 1 && output.offsetParent !== null) {
+      window.Plotly.Plots.resize(output);
+      return;
+    }
+    if (attempt >= 12) {
+      return;
+    }
+    const delay = attempt < 4 ? 32 : 75;
+    window.setTimeout(() => resizePlotlyOutputWhenVisible(output, attempt + 1), delay);
   }
 
   function disconnectPlotlyOutputObserver(output) {
