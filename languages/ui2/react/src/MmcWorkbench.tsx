@@ -1,9 +1,10 @@
 import * as React from "react"
-import { ChevronDown, FlaskConical, Maximize2, Minimize2, RotateCcw, ScrollText, Settings2 } from "lucide-react"
+import { ChevronDown, FlaskConical, RotateCcw, ScrollText, Settings2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { JobRuntimeSnapshot, MmcBridge, MmcMountProps, Ui2Field, WorkbenchResultTab } from "@/types"
 
 function NativeHost({ create, release, className }: { create: () => HTMLElement; release?: (node: HTMLElement) => void; className?: string }) {
@@ -241,109 +242,6 @@ function RunLog({
   )
 }
 
-function ResultOutputs({
-  activeResult,
-  bridge,
-  fieldsById,
-  moduleLabel,
-  onActiveResultChange,
-  onFocusChange,
-  resultTabs,
-  workspaceMode,
-  focused,
-}: {
-  activeResult: string
-  bridge: MmcBridge
-  fieldsById: Map<string | undefined, Ui2Field>
-  moduleLabel: string
-  onActiveResultChange: (value: string) => void
-  onFocusChange: (focused: boolean) => void
-  resultTabs: WorkbenchResultTab[]
-  workspaceMode: boolean
-  focused: boolean
-}) {
-  const activeTab = resultTabs.find((tab) => tab.id === activeResult)
-  return (
-    <Card
-      aria-label={focused ? "Focused output workspace" : undefined}
-      aria-modal={focused ? true : undefined}
-      className={`ui2-mmc-result-card ui2-mmc-workspace-card${workspaceMode ? " ui2-mmc-workspace-card-panels" : ""}${focused ? " ui2-mmc-result-card-expanded ui2-mmc-workspace-card-expanded" : ""}`}
-      role={focused ? "dialog" : undefined}
-    >
-      <CardContent>
-        <div className={`ui2-mmc-result-shell${workspaceMode ? " ui2-mmc-result-shell-workspace" : " ui2-mmc-result-shell-tabs"}`}>
-          <div className="ui2-mmc-result-toolbar">
-            {workspaceMode ? (
-              <div>
-                <CardTitle>Output workspace</CardTitle>
-                <CardDescription>Trajectory, SAS/profile space, and structure outputs share the workspace.</CardDescription>
-              </div>
-            ) : (
-              <div className="ui2-mmc-result-tab-list" role="tablist" aria-label={`${moduleLabel || "Module"} results`}>
-                {resultTabs.map((tab) => (
-                  <button
-                    aria-selected={tab.id === activeResult}
-                    className={`ui2-mmc-result-tab${tab.id === activeResult ? " ui2-mmc-result-tab-active" : ""}`}
-                    key={tab.id}
-                    onClick={() => onActiveResultChange(tab.id)}
-                    role="tab"
-                    type="button"
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            )}
-            {(workspaceMode || activeTab?.expandable) && (
-              <Button
-                aria-expanded={focused}
-                onClick={() => onFocusChange(!focused)}
-                type="button"
-                variant="outline"
-              >
-                {focused ? <Minimize2 aria-hidden="true" size={16} /> : <Maximize2 aria-hidden="true" size={16} />}
-                {focused ? "Restore page view" : "Focus workspace"}
-              </Button>
-            )}
-          </div>
-          <div className="ui2-mmc-workspace-panels">
-            {resultTabs.map((tab: WorkbenchResultTab) => {
-              const visible = workspaceMode || tab.id === activeResult
-              return (
-                <section
-                  aria-hidden={!visible}
-                  className={`ui2-mmc-workspace-panel${visible ? "" : " ui2-mmc-workspace-panel-hidden"}`}
-                  key={tab.id}
-                  role={workspaceMode ? "region" : "tabpanel"}
-                >
-                  <h3>{tab.label}</h3>
-                  <div className="ui2-mmc-workspace-panel-body">
-                    {tab.outputs.map((id) => fieldsById.get(id)).filter(Boolean).map((field) => (
-                      <FieldHost
-                        bridge={bridge}
-                        field={field as Ui2Field}
-                        fitPlot={tab.fit === "pane" && field?.type === "plotly"}
-                        key={field?.id}
-                        role="output"
-                      />
-                    ))}
-                  </div>
-                </section>
-              )
-            })}
-            {workspaceMode && (
-              <section className="ui2-mmc-workspace-panel ui2-mmc-workspace-panel-placeholder">
-                <h3>SAS/profile</h3>
-                <div className="ui2-mmc-workspace-placeholder">Reserved for dynamic SAS/profile comparison output.</div>
-              </section>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
 export function MmcWorkbench({ module, fields, view, bridge, submitted: initialSubmitted }: MmcMountProps) {
   const [advancedOpen, setAdvancedOpen] = React.useState(false)
   const [submitted, setSubmitted] = React.useState<{ values: Record<string, unknown>; uuid?: string } | null>(initialSubmitted || null)
@@ -355,7 +253,6 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
   const resultTabs = view.results?.tabs || []
   const initialResult = resultTabs.find((tab) => tab.primary)?.id || resultTabs[0]?.id || ""
   const [activeResult, setActiveResult] = React.useState(initialResult)
-  const [plotExpanded, setPlotExpanded] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
   const [inputRailCollapsed, setInputRailCollapsed] = React.useState(false)
   const [runLogOpen, setRunLogOpen] = React.useState(Boolean(view.results?.runtimeLog?.defaultOpen))
@@ -388,19 +285,6 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
     return () => window.removeEventListener("ui2:mmc-reattached", handleReattached)
   }, [bridge])
 
-  React.useEffect(() => {
-    if (!plotExpanded) return
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setPlotExpanded(false)
-    }
-    document.body.classList.add("ui2-plot-expanded")
-    window.addEventListener("keydown", handleKeyDown)
-    return () => {
-      document.body.classList.remove("ui2-plot-expanded")
-      window.removeEventListener("keydown", handleKeyDown)
-    }
-  }, [plotExpanded])
-
   const scheduleOutputResize = React.useCallback(() => {
     window.requestAnimationFrame(() => bridge.resizeOutputs())
     window.setTimeout(bridge.resizeOutputs, 75)
@@ -410,7 +294,7 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
 
   React.useLayoutEffect(() => {
     scheduleOutputResize()
-  }, [activeResult, inputRailCollapsed, plotExpanded, runtime.lastSequence, scheduleOutputResize])
+  }, [activeResult, inputRailCollapsed, runtime.lastSequence, scheduleOutputResize])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -438,7 +322,6 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
   const lifecycleMessage = String(runtime.lifecycle?.error || runtime.lifecycle?.message || lifecycleState)
   const hasRunContext = Boolean(submitted || runtime.run)
   const runCue = hasRunContext ? runCueMessage(runtime) : undefined
-  const workspaceMode = inputRailCollapsed || plotExpanded
 
   return (
     <form
@@ -560,22 +443,38 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
             />
           )}
 
-          {plotExpanded && <div aria-hidden="true" className="ui2-mmc-result-backdrop" />}
           {resultTabs.length > 0 && (
-            <ResultOutputs
-              activeResult={activeResult}
-              bridge={bridge}
-              fieldsById={fieldsById}
-              focused={plotExpanded}
-              moduleLabel={module.label || "Module"}
-              onActiveResultChange={(value) => {
-                setActiveResult(value)
-                window.setTimeout(scheduleOutputResize, 0)
-              }}
-              onFocusChange={setPlotExpanded}
-              resultTabs={resultTabs}
-              workspaceMode={workspaceMode}
-            />
+            <Card className="ui2-mmc-result-card">
+              <CardContent>
+                <Tabs
+                  className="ui2-mmc-result-tabs"
+                  onValueChange={(value) => {
+                    setActiveResult(value)
+                    window.setTimeout(scheduleOutputResize, 0)
+                  }}
+                  value={activeResult}
+                >
+                  <div className="ui2-mmc-result-toolbar">
+                    <TabsList aria-label={`${module.label || "Module"} results`}>
+                      {resultTabs.map((tab) => <TabsTrigger key={tab.id} value={tab.id}>{tab.label}</TabsTrigger>)}
+                    </TabsList>
+                  </div>
+                  {resultTabs.map((tab: WorkbenchResultTab) => (
+                    <TabsContent forceMount key={tab.id} value={tab.id} className="data-[state=inactive]:hidden">
+                      {tab.outputs.map((id) => fieldsById.get(id)).filter(Boolean).map((field) => (
+                        <FieldHost
+                          bridge={bridge}
+                          field={field as Ui2Field}
+                          fitPlot={tab.fit === "pane" && field?.type === "plotly"}
+                          key={field?.id}
+                          role="output"
+                        />
+                      ))}
+                    </TabsContent>
+                  ))}
+                </Tabs>
+              </CardContent>
+            </Card>
           )}
         </main>
       </div>
