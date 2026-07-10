@@ -1504,6 +1504,11 @@ assert.strictEqual(unsafeDynamicItems[0].id, "badid", "dynamic output explicit i
 
 const futureEventStore = hooks.createJobEventStore();
 futureEventStore.reset("event-run", "monomer_monte_carlo");
+assert.strictEqual(
+  futureEventStore.snapshot(),
+  futureEventStore.snapshot(),
+  "job event snapshots keep stable identity between store updates"
+);
 assert.strictEqual(futureEventStore.apply({
   version: 1,
   run: "event-run",
@@ -1515,6 +1520,12 @@ assert.strictEqual(futureEventStore.apply({
   operation: "append",
   payload: { text: "native log\\n" }
 }), true, "native runtime events enter the event store");
+const stableSnapshotAfterEvent = futureEventStore.snapshot();
+assert.strictEqual(
+  futureEventStore.snapshot(),
+  stableSnapshotAfterEvent,
+  "job event snapshots remain stable after an applied event"
+);
 assert.strictEqual(futureEventStore.apply({
   version: 1,
   run: "event-run",

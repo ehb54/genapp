@@ -5005,11 +5005,17 @@
     let lifecycle = null;
     let channels = {};
     let expectFirstSequence = false;
+    let cachedSnapshot = null;
     const seen = new Set();
     const missing = new Set();
     const pending = new Map();
 
+    function invalidateSnapshot() {
+      cachedSnapshot = null;
+    }
+
     function notify() {
+      invalidateSnapshot();
       const value = snapshot();
       listeners.forEach((listener) => {
         try {
@@ -5157,7 +5163,10 @@
     }
 
     function snapshot() {
-      return {
+      if (cachedSnapshot) {
+        return cachedSnapshot;
+      }
+      cachedSnapshot = {
         run,
         module: moduleId,
         lastSequence,
@@ -5166,6 +5175,7 @@
         lifecycle: cloneUi2Value(lifecycle),
         channels: cloneUi2Value(channels)
       };
+      return cachedSnapshot;
     }
 
     function subscribe(listener) {
