@@ -5865,7 +5865,7 @@
     if (typeof component.updateRepresentations === "function") {
       component.updateRepresentations({ position: true });
     }
-    resizeNglStage(component.stage || output._ui2NglStage);
+    requestNglRender(component.stage || output._ui2NglStage);
     output.dataset.nglFrame = frame.frame == null ? "" : String(frame.frame);
     output.dataset.nglFrameIndex = frame.frameIndex == null ? "" : String(frame.frameIndex);
     output.dataset.nglMilestonePercent = frame.milestonePercent == null ? "" : String(frame.milestonePercent);
