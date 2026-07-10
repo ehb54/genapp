@@ -1,8 +1,9 @@
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --ui2-bg: #f7f8fa;
   --ui2-panel: #ffffff;
   --ui2-panel-soft: #f1f5f4;
+  --ui2-panel-strong: #e5ece9;
   --ui2-text: #17201d;
   --ui2-muted: #65716d;
   --ui2-border: #d8dfdc;
@@ -10,19 +11,32 @@
   --ui2-accent: #196b68;
   --ui2-accent-strong: #114d4b;
   --ui2-accent-soft: #dcefed;
+  --ui2-on-accent: #ffffff;
   --ui2-warn: #8a5a13;
+  --ui2-warn-soft: #fff4d6;
+  --ui2-warn-border: #e4c06f;
+  --ui2-success: #1f7a45;
+  --ui2-success-soft: #e0f4e8;
+  --ui2-success-border: #9ccfad;
   --ui2-danger: #a33434;
   --ui2-danger-soft: #fff7f7;
   --ui2-danger-border: #e0b1b1;
+  --ui2-focus-ring: #196b68;
   --ui2-shadow: 0 12px 32px rgba(23, 32, 29, 0.08);
+  --ui2-shadow-floating: 0 18px 48px rgba(23, 32, 29, 0.16);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+:root[data-ui2-theme="system"] {
+  color-scheme: light dark;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-ui2-theme="light"]) {
     --ui2-bg: #111615;
     --ui2-panel: #1a201f;
     --ui2-panel-soft: #232b29;
+    --ui2-panel-strong: #2b3633;
     --ui2-text: #eef4f1;
     --ui2-muted: #a2afab;
     --ui2-border: #33403d;
@@ -30,12 +44,52 @@
     --ui2-accent: #65bdb7;
     --ui2-accent-strong: #9adbd7;
     --ui2-accent-soft: #173b39;
+    --ui2-on-accent: #071311;
     --ui2-warn: #e4b563;
+    --ui2-warn-soft: #332817;
+    --ui2-warn-border: #725822;
+    --ui2-success: #74d69a;
+    --ui2-success-soft: #173523;
+    --ui2-success-border: #3b7250;
     --ui2-danger: #ff9b9b;
     --ui2-danger-soft: #351d1d;
     --ui2-danger-border: #6f3c3c;
+    --ui2-focus-ring: #65bdb7;
     --ui2-shadow: 0 12px 32px rgba(0, 0, 0, 0.36);
+    --ui2-shadow-floating: 0 18px 48px rgba(0, 0, 0, 0.52);
   }
+}
+
+:root[data-ui2-theme="dark"] {
+  color-scheme: dark;
+  --ui2-bg: #111615;
+  --ui2-panel: #1a201f;
+  --ui2-panel-soft: #232b29;
+  --ui2-panel-strong: #2b3633;
+  --ui2-text: #eef4f1;
+  --ui2-muted: #a2afab;
+  --ui2-border: #33403d;
+  --ui2-border-strong: #5b6a66;
+  --ui2-accent: #65bdb7;
+  --ui2-accent-strong: #9adbd7;
+  --ui2-accent-soft: #173b39;
+  --ui2-on-accent: #071311;
+  --ui2-warn: #e4b563;
+  --ui2-warn-soft: #332817;
+  --ui2-warn-border: #725822;
+  --ui2-success: #74d69a;
+  --ui2-success-soft: #173523;
+  --ui2-success-border: #3b7250;
+  --ui2-danger: #ff9b9b;
+  --ui2-danger-soft: #351d1d;
+  --ui2-danger-border: #6f3c3c;
+  --ui2-focus-ring: #65bdb7;
+  --ui2-shadow: 0 12px 32px rgba(0, 0, 0, 0.36);
+  --ui2-shadow-floating: 0 18px 48px rgba(0, 0, 0, 0.52);
+}
+
+:root[data-ui2-theme="light"] {
+  color-scheme: light;
 }
 
 * {
@@ -115,7 +169,7 @@ code {
 
 .ui2-title-link:focus-visible {
   border-radius: 5px;
-  outline: 2px solid var(--ui2-accent);
+  outline: 2px solid var(--ui2-focus-ring);
   outline-offset: 4px;
 }
 
@@ -291,7 +345,7 @@ code {
   border: 1px solid var(--ui2-accent-strong);
   border-radius: 6px;
   background: var(--ui2-accent);
-  color: #ffffff;
+  color: var(--ui2-on-accent);
   padding: 0.42rem 0.8rem;
   cursor: pointer;
 }
@@ -589,7 +643,7 @@ code {
 .ui2-input:focus,
 .ui2-select:focus,
 .ui2-textarea:focus {
-  outline: 2px solid var(--ui2-accent-soft);
+  outline: 2px solid var(--ui2-focus-ring);
   border-color: var(--ui2-accent);
 }
 

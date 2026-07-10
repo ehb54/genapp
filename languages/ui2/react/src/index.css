@@ -3,7 +3,6 @@
 @source "./**/*.{ts,tsx}";
 
 .ui2-mmc-react {
-  --ui2-panel-strong: var(--ui2-panel-soft);
   display: flex;
   min-height: 100%;
   flex-direction: column;
@@ -216,7 +215,7 @@
 }
 
 .ui2-mmc-log-cue-warning {
-  color: #ffd37a;
+  color: var(--ui2-warn);
 }
 
 .ui2-mmc-run-log {

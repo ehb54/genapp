@@ -11,6 +11,11 @@ GenApp field semantics, local/server file selection, repeat visibility,
 submission, polling, Plotly, NGL, and reattachment behavior authoritative in
 the established runtime while React owns workspace composition.
 
+Theme styling is owned by the UI2 shell. React components consume the shared
+semantic `--ui2-*` CSS variables and should not introduce Bootstrap,
+Bootswatch, or per-workbench theme overrides. The current native theme choices
+are System, Light, and Dark, selected at the document root.
+
 ## Build
 
 Node.js 20.19 or newer and pnpm are required for the frontend build:

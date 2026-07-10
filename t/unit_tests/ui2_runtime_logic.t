@@ -218,7 +218,7 @@ function matchesSelector(node, selector) {
 }
 
 const document = {
-  documentElement: { clientHeight: 800, clientWidth: 1200 },
+  documentElement: { clientHeight: 800, clientWidth: 1200, dataset: {} },
   body: createNode("body"),
   head: createNode("head"),
   scripts: [],
@@ -238,9 +238,17 @@ const window = {
   GenAppUi2App: { menus: [] },
   GenAppUi2ExposeTestHooks: true,
   __styleVars: {},
+  __localStorage: {},
   CSS: { escape(value) { return String(value); } },
   crypto: { randomUUID() { return "uuid-for-test"; } },
-  localStorage: { getItem() { return "{}"; }, setItem() {} },
+  localStorage: {
+    getItem(key) {
+      return window.__localStorage[key] || "{}";
+    },
+    setItem(key, value) {
+      window.__localStorage[key] = String(value);
+    }
+  },
   location: { href: "https://example.test/sassie3/ui2/", pathname: "/sassie3/ui2/", search: "" },
   name: "ui2-test",
   getComputedStyle() {
@@ -316,6 +324,39 @@ vm.runInContext(source, context, { filename: "ui2.js" });
 
 const hooks = context.window.GenAppUi2TestHooks;
 assert(hooks, "test hooks were exposed");
+
+assert.strictEqual(hooks.normalizeUi2Theme("dark"), "dark", "UI2 accepts the native dark theme id");
+assert.strictEqual(hooks.normalizeUi2Theme("LIGHT"), "light", "UI2 normalizes native theme ids");
+assert.strictEqual(hooks.normalizeUi2Theme("slate"), "system", "UI2 rejects legacy Bootswatch theme ids");
+assert.strictEqual(hooks.currentUi2Theme(), "system", "UI2 starts in system theme mode by default");
+hooks.applyUi2Theme("dark");
+assert.strictEqual(document.documentElement.dataset.ui2Theme, "dark", "UI2 applies the native theme at the document root");
+hooks.setUi2ThemePreference("light", true);
+assert.strictEqual(hooks.currentUi2Theme(), "light", "UI2 stores the active native theme");
+assert.strictEqual(
+  JSON.parse(window.__localStorage["genapp-ui2-preferences"]).ui2Theme,
+  "light",
+  "UI2 persists the native theme in UI2 preferences"
+);
+const nativeThemeFields = hooks.ui2UserConfigFields([
+  { id: "project", type: "listbox" },
+  { id: "changetheme", type: "checkbox" },
+  { id: "themetype", type: "listbox" },
+  { id: "themedark", type: "listbox" },
+  { id: "themelight", type: "listbox" },
+  { id: "theme", type: "listbox" },
+  { id: "help", type: "checkbox" }
+]);
+assert.strictEqual(
+  nativeThemeFields.map((field) => field.id).join(","),
+  "project,ui2theme,help",
+  "UI2 replaces the legacy theme cluster with one native Settings field"
+);
+assert.strictEqual(
+  nativeThemeFields.find((field) => field.id === "ui2theme").ui2LocalPreference,
+  true,
+  "UI2 marks the native theme Settings field as a local preference"
+);
 
 hooks.state.session = { logon: "Joseph", project: "" };
 hooks.renderSessionState();

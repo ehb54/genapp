@@ -9,7 +9,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-[var(--ui2-accent)] px-4 py-2 text-[#071311] hover:brightness-110",
+        default: "bg-[var(--ui2-accent)] px-4 py-2 text-[var(--ui2-on-accent)] hover:brightness-110",
         outline: "border border-[var(--ui2-border)] bg-transparent px-4 py-2 text-[var(--ui2-text)] hover:bg-[var(--ui2-panel-strong)]",
         ghost: "px-3 py-2 text-[var(--ui2-muted)] hover:bg-[var(--ui2-panel-strong)] hover:text-[var(--ui2-text)]",
       },

@@ -43,6 +43,7 @@ like( $index, qr/\.\.\/js\/plotly-2\.35\.2\.min\.js/, 'ui2 index preloads the ex
 like( $index, qr/js\/ui2\.js/, 'ui2 index loads the plain JavaScript playground' );
 like( $index, qr/css\/ui2\.css/, 'ui2 index loads the ui2 stylesheet' );
 like( $index, qr/react\/ui2-react\.css/, 'ui2 index loads the React workbench stylesheet' );
+like( $index, qr/<html lang="en" data-ui2-theme="system">/, 'ui2 index starts with the native system theme selected at the document root' );
 like( $index, qr/<script type="module" src="react\/ui2-react\.js/, 'ui2 index loads the React workbench module' );
 like( $index, qr/id="ui2-session-status"/, 'ui2 index exposes a session/project status target' );
 like( $index, qr/data-app-id="ui2_views"/, 'ui2 index exposes the generated application id' );
@@ -225,6 +226,10 @@ like( $ui2_js, qr/afterSuccess: \(\) => setSessionProjectFromSettings\(form\)/, 
 like( $ui2_js, qr/function renderRegisterTool\(module, fields\)/, 'ui2 has a dedicated Register shell' );
 like( $ui2_js, qr/function legacyUtilityFieldName\(control\)/, 'ui2 Settings submits legacy repeat-prefixed field names' );
 like( $ui2_js, qr/function userConfigFields\(fields\)/, 'ui2 Settings filters fields through legacy directive visibility' );
+like( $ui2_js, qr/LEGACY_USER_CONFIG_THEME_FIELD_IDS = new Set\(\["changetheme", "themetype", "themedark", "themelight", "theme"\]\)/, 'ui2 Settings recognizes the legacy theme control cluster' );
+like( $ui2_js, qr/function ui2UserConfigFields\(fields\).*?ui2ThemeConfigField\(\)/s, 'ui2 Settings replaces legacy theme controls with a native UI2 theme preference' );
+like( $ui2_js, qr/dataset\.ui2LocalPreference = "theme"/, 'ui2 Settings marks the native theme selector as a local preference' );
+like( $ui2_js, qr/control\.dataset\.ui2LocalPreference[\s\S]+return;/, 'ui2 Settings keeps native UI2 preferences out of legacy settings submits' );
 like( $ui2_js, qr/function renderGroupField\(field\)/, 'ui2 Settings renders legacy group fields as configured checkboxes' );
 like( $ui2_js, qr/control\.type === "checkbox" && !control\.checked[\s\S]+return;/, 'ui2 utility submit skips unchecked checkboxes like native legacy forms' );
 like( $ui2_js, qr/dataset\.pullKey = field\.pull/, 'ui2 Settings records legacy pull keys separately from field ids' );
@@ -295,6 +300,10 @@ like( $ui2_js, qr/type === "float"[\s\S]+input\.step = "any"/, 'ui2 float inputs
 like( $ui2_js, qr/type === "integer"[\s\S]+input\.step = "1"/, 'ui2 integer inputs keep whole-number stepping' );
 
 my $ui2_css = read_file( File::Spec->catfile( $ui2, qw(css ui2.css) ) );
+like( $ui2_css, qr/:root\[data-ui2-theme="system"\]/, 'ui2 stylesheet declares an explicit native system theme mode' );
+like( $ui2_css, qr/:root\[data-ui2-theme="dark"\]/, 'ui2 stylesheet declares an explicit native dark theme mode' );
+like( $ui2_css, qr/--ui2-on-accent:/, 'ui2 stylesheet exposes a semantic foreground token for accent buttons' );
+like( $ui2_css, qr/--ui2-focus-ring:/, 'ui2 stylesheet exposes a semantic focus-ring token' );
 like( $ui2_css, qr/\.ui2-dialog-overlay/, 'ui2 stylesheet includes login dialog shell styles' );
 like( $ui2_css, qr/\.ui2-legacy-message-dialog/, 'ui2 stylesheet includes legacy backend message dialog styles' );
 like( $ui2_css, qr/\.ui2-legacy-message-icon/, 'ui2 stylesheet includes legacy backend message icon styling' );

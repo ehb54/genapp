@@ -17,6 +17,10 @@
   const candidateModules = moduleCandidates();
   const params = new URLSearchParams(window.location.search);
   const prefs = loadPreferences();
+  const UI2_THEME_VALUES = new Set(["system", "light", "dark"]);
+  const LEGACY_USER_CONFIG_THEME_FIELD_IDS = new Set(["changetheme", "themetype", "themedark", "themelight", "theme"]);
+  const requestedUi2Theme = params.get("ui2theme");
+  let activeUi2Theme = normalizeUi2Theme(requestedUi2Theme || prefs.ui2Theme || "system");
   const devMode = params.get("ui2dev") === "1" || prefs.devMode === true;
   const JOB_MANAGER_ENDPOINT = "ajax/sys_config/sys_jobs2.php";
   const FIELD_CONTROL_SELECTOR = "input[data-field-id], select[data-field-id], textarea[data-field-id]";
@@ -102,6 +106,8 @@
     logoff: document.getElementById("ui2-logoff"),
     wsIndicator: document.querySelector(".ui2-ws-indicator")
   };
+
+  applyUi2Theme(activeUi2Theme);
 
   function init() {
     ensureWindowName();
@@ -861,6 +867,34 @@
     } catch (error) {
       // Local storage can be unavailable; preferences are convenience only.
     }
+  }
+
+  function normalizeUi2Theme(value) {
+    const theme = String(value || "").trim().toLowerCase();
+    return UI2_THEME_VALUES.has(theme) ? theme : "system";
+  }
+
+  function applyUi2Theme(value) {
+    activeUi2Theme = normalizeUi2Theme(value);
+    const root = document.documentElement;
+    if (root?.dataset) {
+      root.dataset.ui2Theme = activeUi2Theme;
+    } else if (root && typeof root.setAttribute === "function") {
+      root.setAttribute("data-ui2-theme", activeUi2Theme);
+    }
+    return activeUi2Theme;
+  }
+
+  function setUi2ThemePreference(value, persist) {
+    const theme = applyUi2Theme(value);
+    if (persist) {
+      savePreference("ui2Theme", theme);
+    }
+    return theme;
+  }
+
+  function currentUi2Theme() {
+    return activeUi2Theme;
   }
 
   function setSidebarCollapsed(collapsed, persist) {
@@ -1828,6 +1862,15 @@
       wireControl(select, field);
       select.value = field.default || select.value;
       select.defaultValue = select.value;
+      if (field.ui2LocalPreference === true && field.id === "ui2theme") {
+        select.dataset.ui2LocalPreference = "theme";
+        select.value = currentUi2Theme();
+        select.defaultValue = select.value;
+        select.addEventListener("change", () => {
+          select.value = setUi2ThemePreference(select.value, true);
+          select.defaultValue = select.value;
+        });
+      }
       return select;
     }
     if (type === "radio") {
@@ -2613,7 +2656,7 @@
     const section = el("section", "ui2-section ui2-system-tool ui2-user-config");
     const form = el("form", "ui2-utility-form");
     form.noValidate = true;
-    const inputFields = userConfigFields(fields.filter((field) => field.role !== "output"))
+    const inputFields = ui2UserConfigFields(userConfigFields(fields.filter((field) => field.role !== "output")))
       .map(normalizeUserConfigField);
     const outputFields = fields.filter((field) => field.role === "output");
     form.appendChild(renderUtilitySection("Settings", inputFields, "input"));
@@ -2855,6 +2898,41 @@
       const controller = repeatControllerId(field.repeat || "");
       return !controller || visibleIds.has(controller);
     });
+  }
+
+  function ui2UserConfigFields(fields) {
+    const nextFields = [];
+    let insertedTheme = false;
+    fields.forEach((field) => {
+      if (isLegacyUserConfigThemeField(field)) {
+        if (!insertedTheme) {
+          nextFields.push(ui2ThemeConfigField());
+          insertedTheme = true;
+        }
+        return;
+      }
+      nextFields.push(field);
+    });
+    if (!insertedTheme) {
+      nextFields.push(ui2ThemeConfigField());
+    }
+    return nextFields;
+  }
+
+  function isLegacyUserConfigThemeField(field) {
+    return LEGACY_USER_CONFIG_THEME_FIELD_IDS.has(String(field?.id || ""));
+  }
+
+  function ui2ThemeConfigField() {
+    return {
+      id: "ui2theme",
+      label: "UI2 theme",
+      type: "listbox",
+      values: "System~system~Light~light~Dark~dark",
+      default: currentUi2Theme(),
+      help: "Select the native UI2 color theme. System follows the browser or operating system setting.",
+      ui2LocalPreference: true
+    };
   }
 
   function normalizeUserConfigField(field) {
@@ -3109,6 +3187,9 @@
     const formData = new FormData();
     fieldControls(form).forEach((control) => {
       if (control.disabled || control.type === "radio" && !control.checked) {
+        return;
+      }
+      if (control.dataset.ui2LocalPreference) {
         return;
       }
       if (control.type === "checkbox" && !control.checked) {
@@ -7028,6 +7109,11 @@
       menuVisibleForSession,
       moduleIdFromSwitchParts,
       legacyUtilityFieldName,
+      normalizeUi2Theme,
+      applyUi2Theme,
+      setUi2ThemePreference,
+      currentUi2Theme,
+      ui2UserConfigFields,
       replaceSelectOptions,
       userConfigGroupVisible,
       parseNglPayload,
