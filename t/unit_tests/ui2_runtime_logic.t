@@ -1627,10 +1627,17 @@ assert.strictEqual(nativeLogTopic.value, null, "mirrored textarea text does not 
 const normalizedFrame = hooks.normalizeNglCoordinateFrame({
   atomCount: 2,
   frame: 7,
+  frameIndex: 3,
+  milestonePercent: 30,
+  milestoneTrial: 600,
+  trial: 612,
   coordinates: [0, 1, 2, 3, 4, 5]
 });
 assert.strictEqual(Object.prototype.toString.call(normalizedFrame.coordinates), "[object Float32Array]", "structure frames normalize to compact Float32 coordinates");
 assert.strictEqual(normalizedFrame.atomCount, 2, "structure frames retain their topology atom count");
+assert.strictEqual(normalizedFrame.frameIndex, 3, "structure frames retain their streamed milestone frame index");
+assert.strictEqual(normalizedFrame.milestonePercent, 30, "structure frames retain their milestone percent");
+assert.strictEqual(normalizedFrame.milestoneTrial, 600, "structure frames retain their milestone trial");
 assert.strictEqual(
   hooks.normalizeNglCoordinateFrame({ atomCount: 2, coordinates: [0, 1, 2] }),
   null,
@@ -1652,16 +1659,23 @@ assert.strictEqual(hooks.applyNglCoordinateFrame(frameOutput, normalizedFrame), 
 assert.deepStrictEqual(nglCalls[0], ["coordinates", [0, 1, 2, 3, 4, 5]], "NGL updates the existing Structure coordinates");
 assert.strictEqual(JSON.stringify(nglCalls[1]), JSON.stringify(["representations", { position: true }]), "NGL updates representation positions without rebuilding topology");
 assert.strictEqual(frameOutput.dataset.nglFrame, "7", "NGL records the displayed frame without recentering");
+assert.strictEqual(frameOutput.dataset.nglFrameIndex, "3", "NGL records the displayed streamed-frame index");
+assert.strictEqual(frameOutput.dataset.nglMilestonePercent, "30", "NGL records the displayed milestone percent");
 
 const scheduledFrames = [];
 window.requestAnimationFrame = (callback) => { scheduledFrames.push(callback); };
 nglCalls.length = 0;
 hooks.queueNglCoordinateFrame(frameOutput, { atomCount: 2, frame: 8, coordinates: [1, 1, 1, 2, 2, 2] });
 hooks.queueNglCoordinateFrame(frameOutput, { atomCount: 2, frame: 9, coordinates: [3, 3, 3, 4, 4, 4] });
+assert.strictEqual(frameOutput._ui2NglFrames.length, 2, "queued structure frames are retained for post-run NGL review");
 assert.strictEqual(scheduledFrames.length, 1, "rapid structure frames coalesce into one animation-frame render");
 scheduledFrames.shift()();
 assert.deepStrictEqual(nglCalls[0], ["coordinates", [3, 3, 3, 4, 4, 4]], "coalescing renders the newest available structure frame");
 assert.strictEqual(frameOutput.dataset.nglFrame, "9", "coalescing skips stale previews but retains the latest frame identity");
+for (let i = 0; i < 12; i += 1) {
+  hooks.queueNglCoordinateFrame(frameOutput, { atomCount: 2, frame: 20 + i, coordinates: [i, i, i, i + 1, i + 1, i + 1] });
+}
+assert.strictEqual(frameOutput._ui2NglFrames.length, 10, "UI2 bounds retained NGL milestone frames to ten");
 JS
 close $fh;
 

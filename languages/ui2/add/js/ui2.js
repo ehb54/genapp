@@ -5554,6 +5554,7 @@
     output._ui2NglStage = null;
     output._ui2NglComponent = null;
     output._ui2NglReps = null;
+    output._ui2NglFrames = null;
     output._ui2NglPendingFrame = null;
     output._ui2NglFrameScheduled = false;
     const plot = output.querySelector(".ui2-ngl-plot");
@@ -5645,6 +5646,10 @@
       coordinates,
       atomCount,
       frame: Number.isInteger(Number(payload?.frame)) ? Number(payload.frame) : null,
+      frameIndex: Number.isInteger(Number(payload?.frameIndex)) ? Number(payload.frameIndex) : null,
+      milestonePercent: Number.isFinite(Number(payload?.milestonePercent)) ? Number(payload.milestonePercent) : null,
+      milestoneTrial: Number.isInteger(Number(payload?.milestoneTrial)) ? Number(payload.milestoneTrial) : null,
+      trial: Number.isInteger(Number(payload?.trial)) ? Number(payload.trial) : null,
       timestamp: stringValue(payload?.timestamp)
     };
   }
@@ -5654,9 +5659,54 @@
     if (!output || !frame) {
       return false;
     }
+    output._ui2NglFrames = Array.isArray(output._ui2NglFrames) ? output._ui2NglFrames : [];
+    output._ui2NglFrames.push(frame);
+    if (output._ui2NglFrames.length > 10) {
+      output._ui2NglFrames.splice(0, output._ui2NglFrames.length - 10);
+    }
     output._ui2NglPendingFrame = frame;
+    renderNglFrameControls(output);
     scheduleNglCoordinateFrame(output);
     return true;
+  }
+
+  function nglFrameLabel(frame, index) {
+    const prefix = frame?.frameIndex ? `Frame ${frame.frameIndex}` : `Frame ${index + 1}`;
+    const percent = frame?.milestonePercent == null ? "" : ` / ${frame.milestonePercent}%`;
+    const trial = frame?.trial == null ? "" : ` / trial ${frame.trial}`;
+    return `${prefix}${percent}${trial}`;
+  }
+
+  function renderNglFrameControls(output) {
+    const buttons = output?.querySelector?.(".ui2-ngl-buttons");
+    if (!buttons) {
+      return;
+    }
+    buttons.querySelector(".ui2-ngl-frame-controls")?.remove();
+    const frames = Array.isArray(output._ui2NglFrames) ? output._ui2NglFrames : [];
+    if (!frames.length) {
+      return;
+    }
+    const controls = el("span", "ui2-ngl-frame-controls");
+    const label = el("span", "ui2-muted", frames.length === 1 ? nglFrameLabel(frames[0], 0) : "Streamed frames");
+    controls.appendChild(label);
+    if (frames.length > 1) {
+      const select = el("select", "ui2-input ui2-ngl-frame-select");
+      frames.forEach((frame, index) => {
+        const option = el("option", "", nglFrameLabel(frame, index));
+        option.value = String(index);
+        select.appendChild(option);
+      });
+      select.value = String(frames.length - 1);
+      select.addEventListener("change", () => {
+        const frame = frames[Number(select.value)];
+        if (frame) {
+          applyNglCoordinateFrame(output, frame);
+        }
+      });
+      controls.appendChild(select);
+    }
+    buttons.appendChild(controls);
   }
 
   function scheduleNglCoordinateFrame(output) {
@@ -5696,6 +5746,8 @@
       component.stage.viewer.requestRender();
     }
     output.dataset.nglFrame = frame.frame == null ? "" : String(frame.frame);
+    output.dataset.nglFrameIndex = frame.frameIndex == null ? "" : String(frame.frameIndex);
+    output.dataset.nglMilestonePercent = frame.milestonePercent == null ? "" : String(frame.milestonePercent);
     output._ui2NglLastFrame = frame;
     return true;
   }
