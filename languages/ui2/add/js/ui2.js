@@ -6086,7 +6086,7 @@
     }
     const rect = output.getBoundingClientRect?.();
     if (rect && rect.width > 1 && rect.height > 1 && output.offsetParent !== null) {
-      window.Plotly.Plots.resize(output);
+      resizePlotlyOutputToVisibleBox(output, rect);
       return;
     }
     if (attempt >= 12) {
@@ -6094,6 +6094,41 @@
     }
     const delay = attempt < 4 ? 32 : 75;
     window.setTimeout(() => resizePlotlyOutputWhenVisible(output, attempt + 1), delay);
+  }
+
+  function resizePlotlyOutputToVisibleBox(output, rect) {
+    const width = Math.max(1, Math.floor(rect?.width || output.clientWidth || 0));
+    const height = Math.max(1, Math.floor(rect?.height || output.clientHeight || 0));
+    debugPlotlyResize("resize", output, width, height);
+    const resize = () => window.Plotly?.Plots?.resize?.(output);
+    if (output?.dataset?.plotFit === "pane" && typeof window.Plotly?.relayout === "function") {
+      window.Plotly.relayout(output, { width, height })
+        .then(resize)
+        .catch(resize);
+      return;
+    }
+    resize();
+  }
+
+  function debugPlotlyResize(label, output, width, height) {
+    try {
+      if (window.localStorage?.getItem("ui2DebugPlotly") !== "1") {
+        return;
+      }
+      const svg = output?.querySelector?.(".svg-container")?.getBoundingClientRect?.();
+      const plot = output?.querySelector?.(".plot-container")?.getBoundingClientRect?.();
+      console.debug("[ui2 plotly]", label, {
+        field: output?.dataset?.outputFieldId || "",
+        width,
+        height,
+        output: output?.getBoundingClientRect?.(),
+        plot,
+        svg,
+        time: Math.round(performance.now())
+      });
+    } catch (_error) {
+      // Diagnostics must never affect runtime behavior.
+    }
   }
 
   function disconnectPlotlyOutputObserver(output) {
