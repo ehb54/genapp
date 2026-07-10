@@ -382,7 +382,7 @@
 }
 
 .ui2-mmc-submitted {
-  align-self: stretch;
+  align-self: start;
 }
 
 .ui2-mmc-status-badge {
