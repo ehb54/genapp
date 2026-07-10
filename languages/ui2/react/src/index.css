@@ -156,7 +156,7 @@
   font-weight: 700;
 }
 
-.ui2-mmc-collapsible-trigger > span {
+.ui2-mmc-collapsible-trigger > span:not(.ui2-mmc-log-trigger-text) {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -192,29 +192,31 @@
   font-size: 0.875rem;
 }
 
-.ui2-mmc-run-cue-card > div {
-  padding-block: 0.85rem;
-}
-
-.ui2-mmc-run-cue-row {
+.ui2-mmc-log-trigger-text {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  gap: 0.35rem;
+}
+
+.ui2-mmc-log-title {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.ui2-mmc-run-cue {
+  gap: 0.5rem;
   color: var(--ui2-text);
-  font-size: 0.9rem;
+}
+
+.ui2-mmc-log-cue {
+  color: var(--ui2-muted);
+  font-size: 0.88rem;
   font-weight: 650;
+  overflow-wrap: anywhere;
+  text-align: left;
 }
 
-.ui2-mmc-run-cue-warning {
+.ui2-mmc-log-cue-warning {
   color: #ffd37a;
-}
-
-.ui2-mmc-run-cue-row > button {
-  flex: 0 0 auto;
 }
 
 .ui2-mmc-run-log {
@@ -285,25 +287,39 @@
   padding: 1rem;
 }
 
-.ui2-mmc-expanded-workspace {
+.ui2-mmc-result-shell {
   display: flex;
   flex-direction: column;
   min-height: 0;
   height: 100%;
 }
 
-.ui2-mmc-result-card-expanded [role="tabpanel"] {
-  min-height: 0;
-  flex: 1 1 auto;
-}
-
-.ui2-mmc-result-card-expanded .ui2-output-plotly {
-  height: calc(100dvh - 8.5rem);
-  min-height: 0;
-}
-
 .ui2-mmc-workspace-card-expanded .ui2-mmc-result-toolbar {
   padding-bottom: 0.5rem;
+}
+
+.ui2-mmc-result-tab-list {
+  display: inline-flex;
+  gap: 0.25rem;
+  border: 1px solid var(--ui2-border);
+  border-radius: 0.5rem;
+  background: var(--ui2-panel-strong);
+  padding: 0.25rem;
+}
+
+.ui2-mmc-result-tab {
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--ui2-muted);
+  cursor: pointer;
+  padding: 0.55rem 0.85rem;
+  font-weight: 700;
+}
+
+.ui2-mmc-result-tab-active {
+  background: var(--ui2-accent-soft);
+  color: var(--ui2-accent);
 }
 
 .ui2-mmc-workspace-panels {
@@ -312,6 +328,10 @@
   gap: 0.75rem;
   min-height: 0;
   flex: 1 1 auto;
+}
+
+.ui2-mmc-result-shell-tabs .ui2-mmc-workspace-panels {
+  display: block;
 }
 
 .ui2-mmc-workspace-panel {
@@ -323,6 +343,18 @@
   border-radius: 0.75rem;
   background: color-mix(in srgb, var(--ui2-panel) 72%, var(--ui2-bg));
   padding: 0.75rem;
+}
+
+.ui2-mmc-result-shell-tabs .ui2-mmc-workspace-panel {
+  min-height: 28rem;
+}
+
+.ui2-mmc-result-shell-tabs .ui2-mmc-workspace-panel h3 {
+  display: none;
+}
+
+.ui2-mmc-workspace-panel-hidden {
+  display: none;
 }
 
 .ui2-mmc-workspace-panel h3 {
@@ -358,6 +390,26 @@
 .ui2-mmc-workspace-panel-body .ui2-output-plotly,
 .ui2-mmc-workspace-panel-body .ui2-ngl-plot {
   height: 100%;
+}
+
+.ui2-mmc-workspace-panel-placeholder {
+  border-style: dashed;
+}
+
+.ui2-mmc-workspace-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 18rem;
+  border: 1px dashed var(--ui2-border);
+  border-radius: 0.5rem;
+  color: var(--ui2-muted);
+  text-align: center;
+}
+
+.ui2-mmc-workspace-card-expanded .ui2-output-plotly,
+.ui2-mmc-workspace-card-expanded .ui2-ngl-plot {
+  min-height: 0;
 }
 
 .ui2-plot-expanded .ui2-stage {
@@ -433,11 +485,6 @@
     flex-direction: column;
   }
 
-  .ui2-mmc-run-cue-row {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
   .ui2-mmc-result-toolbar > button {
     width: 100%;
   }
@@ -446,7 +493,4 @@
     inset: 0.35rem;
   }
 
-  .ui2-mmc-result-card-expanded .ui2-output-plotly {
-    height: calc(100dvh - 11rem);
-  }
 }
