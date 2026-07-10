@@ -331,7 +331,9 @@
 }
 
 .ui2-mmc-result-shell-tabs .ui2-mmc-workspace-panels {
-  display: block;
+  display: grid;
+  grid-template-columns: 1fr;
+  position: relative;
 }
 
 .ui2-mmc-workspace-panel {
@@ -354,7 +356,11 @@
 }
 
 .ui2-mmc-workspace-panel-hidden {
-  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .ui2-mmc-workspace-panel h3 {
@@ -378,6 +384,10 @@
   flex-direction: column;
 }
 
+.ui2-mmc-workspace-panel-body .ui2-output-plotly {
+  display: block;
+}
+
 .ui2-mmc-workspace-panel-body .ui2-output-field,
 .ui2-mmc-workspace-panel-body .ui2-output,
 .ui2-mmc-workspace-panel-body .ui2-output-plotly,
@@ -390,6 +400,7 @@
 .ui2-mmc-workspace-panel-body .ui2-output-plotly,
 .ui2-mmc-workspace-panel-body .ui2-ngl-plot {
   height: 100%;
+  min-height: 28rem;
 }
 
 .ui2-mmc-workspace-panel-placeholder {

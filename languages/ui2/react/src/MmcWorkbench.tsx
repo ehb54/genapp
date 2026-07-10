@@ -401,9 +401,16 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
     }
   }, [plotExpanded])
 
-  React.useLayoutEffect(() => {
+  const scheduleOutputResize = React.useCallback(() => {
     window.requestAnimationFrame(() => bridge.resizeOutputs())
-  }, [activeResult, bridge, inputRailCollapsed, plotExpanded])
+    window.setTimeout(bridge.resizeOutputs, 75)
+    window.setTimeout(bridge.resizeOutputs, 250)
+    window.setTimeout(bridge.resizeOutputs, 600)
+  }, [bridge])
+
+  React.useLayoutEffect(() => {
+    scheduleOutputResize()
+  }, [activeResult, inputRailCollapsed, plotExpanded, runtime.lastSequence, scheduleOutputResize])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -563,7 +570,7 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
               moduleLabel={module.label || "Module"}
               onActiveResultChange={(value) => {
                 setActiveResult(value)
-                window.setTimeout(bridge.resizeOutputs, 0)
+                window.setTimeout(scheduleOutputResize, 0)
               }}
               onFocusChange={setPlotExpanded}
               resultTabs={resultTabs}

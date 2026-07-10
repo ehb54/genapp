@@ -10666,15 +10666,20 @@ function nr({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 		return document.body.classList.add("ui2-plot-expanded"), window.addEventListener("keydown", e), () => {
 			document.body.classList.remove("ui2-plot-expanded"), window.removeEventListener("keydown", e);
 		};
-	}, [v]), S.useLayoutEffect(() => {
-		window.requestAnimationFrame(() => r.resizeOutputs());
+	}, [v]);
+	let E = S.useCallback(() => {
+		window.requestAnimationFrame(() => r.resizeOutputs()), window.setTimeout(r.resizeOutputs, 75), window.setTimeout(r.resizeOutputs, 250), window.setTimeout(r.resizeOutputs, 600);
+	}, [r]);
+	S.useLayoutEffect(() => {
+		E();
 	}, [
 		g,
-		r,
 		ee,
-		v
+		v,
+		ie.lastSequence,
+		E
 	]);
-	let E = async (e) => {
+	let D = async (e) => {
 		e.preventDefault(), x(!0);
 		try {
 			let t = await r.submit(e.currentTarget);
@@ -10685,16 +10690,16 @@ function nr({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 		} finally {
 			x(!1);
 		}
-	}, D = (e) => {
+	}, ue = (e) => {
 		e.preventDefault(), r.reset(e.currentTarget), c(null), o(!1), C(!1);
-	}, ue = String(ie.lifecycle?.state || (b ? "submitting" : "editing")), de = String(ie.lifecycle?.error || ie.lifecycle?.message || ue), fe = s || ie.run ? Qn(ie) : void 0, O = ee || v;
+	}, de = String(ie.lifecycle?.state || (b ? "submitting" : "editing")), fe = String(ie.lifecycle?.error || ie.lifecycle?.message || de), O = s || ie.run ? Qn(ie) : void 0, k = ee || v;
 	return /* @__PURE__ */ (0, I.jsxs)("form", {
 		className: "ui2-mmc-react",
 		id: "ui2-form",
 		onChange: () => r.syncValues(),
 		onInput: () => r.syncValues(),
-		onReset: D,
-		onSubmit: E,
+		onReset: ue,
+		onSubmit: D,
 		children: [/* @__PURE__ */ (0, I.jsx)("header", {
 			className: "ui2-mmc-heading",
 			children: /* @__PURE__ */ (0, I.jsxs)("div", { children: [
@@ -10799,7 +10804,7 @@ function nr({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						className: "ui2-submit-status",
 						id: "ui2-submit-status",
 						role: "status",
-						children: ue === "editing" ? "Not submitted" : de
+						children: de === "editing" ? "Not submitted" : fe
 					})]
 				})]
 			}), /* @__PURE__ */ (0, I.jsxs)("main", {
@@ -10823,7 +10828,7 @@ function nr({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						}) })]
 					}),
 					n.results?.runtimeLog && /* @__PURE__ */ (0, I.jsx)(er, {
-						cue: fe,
+						cue: O,
 						defaultOpen: n.results.runtimeLog.defaultOpen,
 						description: n.results.runtimeLog.description,
 						open: w,
@@ -10842,11 +10847,11 @@ function nr({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						focused: v,
 						moduleLabel: e.label || "Module",
 						onActiveResultChange: (e) => {
-							_(e), window.setTimeout(r.resizeOutputs, 0);
+							_(e), window.setTimeout(E, 0);
 						},
 						onFocusChange: y,
 						resultTabs: m,
-						workspaceMode: O
+						workspaceMode: k
 					})
 				]
 			})]
