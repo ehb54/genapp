@@ -1165,8 +1165,20 @@
       }
     });
     document.querySelectorAll('[data-output-type="ngl"]').forEach((output) => {
-      output._ui2NglStage?.handleResize?.();
+      resizeNglStage(output._ui2NglStage);
     });
+  }
+
+  function resizeNglStage(stage) {
+    if (!stage) {
+      return;
+    }
+    stage.handleResize?.();
+    requestNglRender(stage);
+  }
+
+  function requestNglRender(stage) {
+    stage?.viewer?.requestRender?.();
   }
 
   function releaseReactMmcField(fieldNode) {
@@ -5721,9 +5733,7 @@
           if (component.autoView) {
             component.autoView();
           }
-          if (stage.handleResize) {
-            stage.handleResize();
-          }
+          resizeNglStage(stage);
           scheduleNglCoordinateFrame(output);
           if (layered) {
             renderNglLayerButtons(buttons, component, output._ui2NglReps, specs);
@@ -5854,9 +5864,8 @@
     structure.updatePosition(frame.coordinates);
     if (typeof component.updateRepresentations === "function") {
       component.updateRepresentations({ position: true });
-    } else if (component.stage?.viewer?.requestRender) {
-      component.stage.viewer.requestRender();
     }
+    resizeNglStage(component.stage || output._ui2NglStage);
     output.dataset.nglFrame = frame.frame == null ? "" : String(frame.frame);
     output.dataset.nglFrameIndex = frame.frameIndex == null ? "" : String(frame.frameIndex);
     output.dataset.nglMilestonePercent = frame.milestonePercent == null ? "" : String(frame.milestonePercent);

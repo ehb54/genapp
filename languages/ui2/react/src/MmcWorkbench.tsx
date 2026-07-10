@@ -257,6 +257,7 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
   const [inputRailCollapsed, setInputRailCollapsed] = React.useState(false)
   const [workspaceExpanded, setWorkspaceExpanded] = React.useState(false)
   const [runLogOpen, setRunLogOpen] = React.useState(Boolean(view.results?.runtimeLog?.defaultOpen))
+  const resultCardRef = React.useRef<HTMLElement>(null)
   const fieldsById = React.useMemo(() => new Map(fields.map((field) => [field.id, field])), [fields])
   const runtime = React.useSyncExternalStore(bridge.subscribeRuntime, bridge.runtimeSnapshot, bridge.runtimeSnapshot)
   const progressFields = (progressSection?.fields || []).map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]
@@ -296,6 +297,22 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
   React.useLayoutEffect(() => {
     scheduleOutputResize()
   }, [activeResult, inputRailCollapsed, runtime.lastSequence, scheduleOutputResize, workspaceExpanded])
+
+  React.useLayoutEffect(() => {
+    const target = resultCardRef.current
+    if (!target || typeof ResizeObserver !== "function") return
+    let width = 0
+    let height = 0
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries?.[0]?.contentRect
+      if (!rect || Math.abs(rect.width - width) < 1 && Math.abs(rect.height - height) < 1) return
+      width = rect.width
+      height = rect.height
+      scheduleOutputResize()
+    })
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [scheduleOutputResize])
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -453,7 +470,7 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
           )}
 
           {resultTabs.length > 0 && (
-            <Card className="ui2-mmc-result-card">
+            <Card className="ui2-mmc-result-card" ref={resultCardRef}>
               <CardContent>
                 <Tabs
                   className="ui2-mmc-result-tabs"
