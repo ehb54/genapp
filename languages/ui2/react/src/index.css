@@ -285,6 +285,13 @@
   padding: 1rem;
 }
 
+.ui2-mmc-expanded-workspace {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
 .ui2-mmc-result-card-expanded [role="tabpanel"] {
   min-height: 0;
   flex: 1 1 auto;
@@ -297,6 +304,60 @@
 
 .ui2-mmc-workspace-card-expanded .ui2-mmc-result-toolbar {
   padding-bottom: 0.5rem;
+}
+
+.ui2-mmc-workspace-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(32rem, 100%), 1fr));
+  gap: 0.75rem;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.ui2-mmc-workspace-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--ui2-border);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--ui2-panel) 72%, var(--ui2-bg));
+  padding: 0.75rem;
+}
+
+.ui2-mmc-workspace-panel h3 {
+  margin: 0 0 0.6rem;
+  color: var(--ui2-muted);
+  font-size: 0.85rem;
+  font-weight: 750;
+}
+
+.ui2-mmc-workspace-panel-body {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.ui2-mmc-workspace-panel-body,
+.ui2-mmc-workspace-panel-body .ui2-mmc-native-field,
+.ui2-mmc-workspace-panel-body .ui2-output-field,
+.ui2-mmc-workspace-panel-body .ui2-output,
+.ui2-mmc-workspace-panel-body .ui2-output-ngl {
+  display: flex;
+  flex-direction: column;
+}
+
+.ui2-mmc-workspace-panel-body .ui2-output-field,
+.ui2-mmc-workspace-panel-body .ui2-output,
+.ui2-mmc-workspace-panel-body .ui2-output-plotly,
+.ui2-mmc-workspace-panel-body .ui2-output-ngl,
+.ui2-mmc-workspace-panel-body .ui2-ngl-plot {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.ui2-mmc-workspace-panel-body .ui2-output-plotly,
+.ui2-mmc-workspace-panel-body .ui2-ngl-plot {
+  height: 100%;
 }
 
 .ui2-plot-expanded .ui2-stage {

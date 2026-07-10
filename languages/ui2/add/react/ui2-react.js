@@ -10805,40 +10805,40 @@ function Zr(e, t) {
 	return e.match(t)?.[1]?.trim() || null;
 }
 function Qr(e) {
-	let t = qr(e), n = Jr(e), r = Yr(e), i = r[r.length - 1], a = Zr(t, /accepted\s+(\d+\s+out\s+of\s+\d+)\s*:/i) || (Xr(n.accepted) && Xr(n.attempted) ? `${Xr(n.accepted)} / ${Xr(n.attempted)}` : null), o = Zr(t, /Configurations and statistics saved in\s+(.+?)\s+directory/i), s = Xr(n.percent) || (Number(n.fraction) >= 0 ? String(Math.round(Number(n.fraction) * 1e3) / 10) : null), c = /DIHEDRAL IS DONE/i.test(t) || Number(n.fraction) >= 1, l = /(?:unhandled exception|traceback|error:|exception)/i.test(t), u = Object.keys(n).length > 0;
-	if (l && !c) return {
+	let t = qr(e), n = Jr(e), r = Yr(e), i = r[r.length - 1], a = Zr(t, /accepted\s+(\d+\s+out\s+of\s+\d+)\s*:/i) || (Xr(n.accepted) && Xr(n.attempted) ? `${Xr(n.accepted)} / ${Xr(n.attempted)}` : null), o = Zr(t, /Configurations and statistics saved in\s+(.+?)\s+directory/i), s = /DIHEDRAL IS DONE/i.test(t) || Number(n.fraction) >= 1, c = /(?:unhandled exception|traceback|error:|exception)/i.test(t), l = Object.keys(n).length > 0;
+	if (c && !s) return {
 		text: "Needs attention · driver reported an exception",
 		tone: "warning"
 	};
-	if (c) {
+	if (s) {
 		let e = ["Run completed"];
 		return a && e.push(`accepted ${a}`), o && e.push(`outputs saved in ${o}`), {
 			text: e.join(" · "),
 			tone: "normal"
 		};
 	}
-	if (!u && !t && !e.run) return {
+	if (!l && !t && !e.run) return {
 		text: "Starting job · waiting for first runtime message",
 		tone: "normal"
 	};
-	if (!u && !t) return {
+	if (!l && !t) return {
 		text: "Starting job · runtime stream connecting",
 		tone: "normal"
 	};
 	if (r.length) {
-		let e = Xr(i?.milestonePercent), t = Xr(i?.trial), n = [`Running · structure frame ${r.length}/10 captured`];
-		return (s || e) && n.push(`plot updated at ${s || e}%`), t && n.push(`trial ${t}`), {
+		let e = Xr(i?.milestonePercent), t = Xr(i?.trial), n = [`Running · structure snapshots ${r.length}/10 available`];
+		return e && n.push(`latest snapshot ${e}%`), t && n.push(`trial ${t}`), {
 			text: n.join(" · "),
 			tone: "normal"
 		};
 	}
-	if (u) return {
-		text: `Running · progress stream active${s ? ` · plot updated at ${s}%` : ""} · structure viewer pending`,
+	if (l) return {
+		text: "Running · live progress active · waiting for first structure snapshot",
 		tone: "normal"
 	};
-	let d = t ? t.split(/\r?\n/).filter((e) => e.trim()).length : 0;
-	return d ? {
-		text: `Running · run log active · ${d} lines received`,
+	let u = t ? t.split(/\r?\n/).filter((e) => e.trim()).length : 0;
+	return u ? {
+		text: `Running · run log active · ${u} lines received`,
 		tone: "normal"
 	} : {
 		text: "Starting job · waiting for first runtime message",
@@ -11136,11 +11136,40 @@ function ni({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						className: "ui2-mmc-result-backdrop"
 					}),
 					m.length > 0 && /* @__PURE__ */ (0, I.jsx)($t, {
-						"aria-label": v ? `Expanded ${E?.label || "result"}` : void 0,
+						"aria-label": v ? "Expanded output workspace" : void 0,
 						"aria-modal": v ? !0 : void 0,
 						className: `ui2-mmc-result-card ui2-mmc-workspace-card${v ? " ui2-mmc-result-card-expanded ui2-mmc-workspace-card-expanded" : ""}`,
 						role: v ? "dialog" : void 0,
-						children: /* @__PURE__ */ (0, I.jsx)(rn, { children: /* @__PURE__ */ (0, I.jsxs)(Rr, {
+						children: /* @__PURE__ */ (0, I.jsx)(rn, { children: v ? /* @__PURE__ */ (0, I.jsxs)("div", {
+							className: "ui2-mmc-expanded-workspace",
+							children: [/* @__PURE__ */ (0, I.jsxs)("div", {
+								className: "ui2-mmc-result-toolbar",
+								children: [/* @__PURE__ */ (0, I.jsxs)("div", { children: [/* @__PURE__ */ (0, I.jsx)(tn, { children: "Output workspace" }), /* @__PURE__ */ (0, I.jsx)(nn, { children: "Trajectory and structure outputs are shown together in expanded view." })] }), /* @__PURE__ */ (0, I.jsxs)(Qt, {
+									"aria-expanded": "true",
+									onClick: () => y(!1),
+									type: "button",
+									variant: "outline",
+									children: [/* @__PURE__ */ (0, I.jsx)(ae, {
+										"aria-hidden": "true",
+										size: 16
+									}), "Restore split view"]
+								})]
+							}), /* @__PURE__ */ (0, I.jsx)("div", {
+								className: "ui2-mmc-workspace-panels",
+								children: m.map((e) => /* @__PURE__ */ (0, I.jsxs)("section", {
+									className: "ui2-mmc-workspace-panel",
+									children: [/* @__PURE__ */ (0, I.jsx)("h3", { children: e.label }), /* @__PURE__ */ (0, I.jsx)("div", {
+										className: "ui2-mmc-workspace-panel-body",
+										children: e.outputs.map((e) => ne.get(e)).filter(Boolean).map((t) => /* @__PURE__ */ (0, I.jsx)(Ur, {
+											bridge: r,
+											field: t,
+											fitPlot: e.fit === "pane" && t?.type === "plotly",
+											role: "output"
+										}, t?.id))
+									})]
+								}, e.id))
+							})]
+						}) : /* @__PURE__ */ (0, I.jsxs)(Rr, {
 							className: "ui2-mmc-result-tabs",
 							value: g,
 							onValueChange: (e) => {
@@ -11155,17 +11184,14 @@ function ni({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 										children: e.label
 									}, e.id))
 								}), E?.expandable && /* @__PURE__ */ (0, I.jsxs)(Qt, {
-									"aria-expanded": v,
-									onClick: () => y((e) => !e),
+									"aria-expanded": "false",
+									onClick: () => y(!0),
 									type: "button",
 									variant: "outline",
-									children: [v ? /* @__PURE__ */ (0, I.jsx)(ae, {
+									children: [/* @__PURE__ */ (0, I.jsx)(ie, {
 										"aria-hidden": "true",
 										size: 16
-									}) : /* @__PURE__ */ (0, I.jsx)(ie, {
-										"aria-hidden": "true",
-										size: 16
-									}), v ? "Restore split view" : "Expand workspace"]
+									}), "Expand workspace"]
 								})]
 							}), m.map((e) => /* @__PURE__ */ (0, I.jsx)(Vr, {
 								forceMount: !0,

@@ -111,9 +111,6 @@ function runCueMessage(snapshot: JobRuntimeSnapshot): { text: string; tone: "nor
         : null
     )
   const outputDir = firstLogMatch(log, /Configurations and statistics saved in\s+(.+?)\s+directory/i)
-  const framePercent = numberText(progress.percent) || (
-    Number(progress.fraction) >= 0 ? String(Math.round(Number(progress.fraction) * 1000) / 10) : null
-  )
   const completed = /DIHEDRAL IS DONE/i.test(log) || Number(progress.fraction) >= 1
   const hasException = /(?:unhandled exception|traceback|error:|exception)/i.test(log)
   const hasProgress = Object.keys(progress).length > 0
@@ -135,14 +132,13 @@ function runCueMessage(snapshot: JobRuntimeSnapshot): { text: string; tone: "nor
   if (frames.length) {
     const milestone = numberText(lastFrame?.milestonePercent)
     const trial = numberText(lastFrame?.trial)
-    const parts = [`Running · structure frame ${frames.length}/10 captured`]
-    if (framePercent || milestone) parts.push(`plot updated at ${framePercent || milestone}%`)
+    const parts = [`Running · structure snapshots ${frames.length}/10 available`]
+    if (milestone) parts.push(`latest snapshot ${milestone}%`)
     if (trial) parts.push(`trial ${trial}`)
     return { text: parts.join(" · "), tone: "normal" }
   }
   if (hasProgress) {
-    const percent = framePercent ? ` · plot updated at ${framePercent}%` : ""
-    return { text: `Running · progress stream active${percent} · structure viewer pending`, tone: "normal" }
+    return { text: "Running · live progress active · waiting for first structure snapshot", tone: "normal" }
   }
   const lineCount = log ? log.split(/\r?\n/).filter((line) => line.trim()).length : 0
   if (lineCount) return { text: `Running · run log active · ${lineCount} lines received`, tone: "normal" }
@@ -473,48 +469,86 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
           {plotExpanded && <div aria-hidden="true" className="ui2-mmc-result-backdrop" />}
           {resultTabs.length > 0 && (
             <Card
-              aria-label={plotExpanded ? `Expanded ${activeTab?.label || "result"}` : undefined}
+              aria-label={plotExpanded ? "Expanded output workspace" : undefined}
               aria-modal={plotExpanded ? true : undefined}
               className={`ui2-mmc-result-card ui2-mmc-workspace-card${plotExpanded ? " ui2-mmc-result-card-expanded ui2-mmc-workspace-card-expanded" : ""}`}
               role={plotExpanded ? "dialog" : undefined}
             >
               <CardContent>
-                <Tabs className="ui2-mmc-result-tabs" value={activeResult} onValueChange={(value) => {
-                  setActiveResult(value)
-                  const selected = resultTabs.find((tab) => tab.id === value)
-                  if (!selected?.expandable) setPlotExpanded(false)
-                  window.setTimeout(bridge.resizeOutputs, 0)
-                }}>
-                  <div className="ui2-mmc-result-toolbar">
-                    <TabsList aria-label={`${module.label || "Module"} results`}>
-                      {resultTabs.map((tab) => <TabsTrigger key={tab.id} value={tab.id}>{tab.label}</TabsTrigger>)}
-                    </TabsList>
-                    {activeTab?.expandable && (
+                {plotExpanded ? (
+                  <div className="ui2-mmc-expanded-workspace">
+                    <div className="ui2-mmc-result-toolbar">
+                      <div>
+                        <CardTitle>Output workspace</CardTitle>
+                        <CardDescription>Trajectory and structure outputs are shown together in expanded view.</CardDescription>
+                      </div>
                       <Button
-                        aria-expanded={plotExpanded}
-                        onClick={() => setPlotExpanded((current) => !current)}
+                        aria-expanded="true"
+                        onClick={() => setPlotExpanded(false)}
                         type="button"
                         variant="outline"
                       >
-                        {plotExpanded ? <Minimize2 aria-hidden="true" size={16} /> : <Maximize2 aria-hidden="true" size={16} />}
-                        {plotExpanded ? "Restore split view" : "Expand workspace"}
+                        <Minimize2 aria-hidden="true" size={16} />
+                        Restore split view
                       </Button>
-                    )}
-                  </div>
-                  {resultTabs.map((tab: WorkbenchResultTab) => (
-                    <TabsContent forceMount key={tab.id} value={tab.id} className="data-[state=inactive]:hidden">
-                      {tab.outputs.map((id) => fieldsById.get(id)).filter(Boolean).map((field) => (
-                        <FieldHost
-                          bridge={bridge}
-                          field={field as Ui2Field}
-                          fitPlot={tab.fit === "pane" && field?.type === "plotly"}
-                          key={field?.id}
-                          role="output"
-                        />
+                    </div>
+                    <div className="ui2-mmc-workspace-panels">
+                      {resultTabs.map((tab: WorkbenchResultTab) => (
+                        <section className="ui2-mmc-workspace-panel" key={tab.id}>
+                          <h3>{tab.label}</h3>
+                          <div className="ui2-mmc-workspace-panel-body">
+                            {tab.outputs.map((id) => fieldsById.get(id)).filter(Boolean).map((field) => (
+                              <FieldHost
+                                bridge={bridge}
+                                field={field as Ui2Field}
+                                fitPlot={tab.fit === "pane" && field?.type === "plotly"}
+                                key={field?.id}
+                                role="output"
+                              />
+                            ))}
+                          </div>
+                        </section>
                       ))}
-                    </TabsContent>
-                  ))}
-                </Tabs>
+                    </div>
+                  </div>
+                ) : (
+                  <Tabs className="ui2-mmc-result-tabs" value={activeResult} onValueChange={(value) => {
+                    setActiveResult(value)
+                    const selected = resultTabs.find((tab) => tab.id === value)
+                    if (!selected?.expandable) setPlotExpanded(false)
+                    window.setTimeout(bridge.resizeOutputs, 0)
+                  }}>
+                    <div className="ui2-mmc-result-toolbar">
+                      <TabsList aria-label={`${module.label || "Module"} results`}>
+                        {resultTabs.map((tab) => <TabsTrigger key={tab.id} value={tab.id}>{tab.label}</TabsTrigger>)}
+                      </TabsList>
+                      {activeTab?.expandable && (
+                        <Button
+                          aria-expanded="false"
+                          onClick={() => setPlotExpanded(true)}
+                          type="button"
+                          variant="outline"
+                        >
+                          <Maximize2 aria-hidden="true" size={16} />
+                          Expand workspace
+                        </Button>
+                      )}
+                    </div>
+                    {resultTabs.map((tab: WorkbenchResultTab) => (
+                      <TabsContent forceMount key={tab.id} value={tab.id} className="data-[state=inactive]:hidden">
+                        {tab.outputs.map((id) => fieldsById.get(id)).filter(Boolean).map((field) => (
+                          <FieldHost
+                            bridge={bridge}
+                            field={field as Ui2Field}
+                            fitPlot={tab.fit === "pane" && field?.type === "plotly"}
+                            key={field?.id}
+                            role="output"
+                          />
+                        ))}
+                      </TabsContent>
+                    ))}
+                  </Tabs>
+                )}
               </CardContent>
             </Card>
           )}
