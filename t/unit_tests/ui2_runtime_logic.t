@@ -903,6 +903,35 @@ eventStore.appendLegacyLog("legacy line\\n", "run-1", "monomer_monte_carlo");
 assert.strictEqual(eventStore.snapshot().channels.log.run.value, "legacy line\\n", "legacy text adapter writes only to the run-log topic");
 unsubscribeEvents();
 assert(eventNotifications >= 4, "job event subscribers receive immutable state updates");
+const transientEventStore = hooks.createJobEventStore();
+transientEventStore.reset("run-transient", "monomer_monte_carlo");
+const transientStructureEvent = {
+  version: 1,
+  run: "run-transient",
+  module: "monomer_monte_carlo",
+  sequence: 1,
+  timestamp: "2026-07-10T12:00:00Z",
+  channel: "structure",
+  topic: "structure_ngl",
+  operation: "append",
+  replay: false,
+  payload: { frame_index: 1, coordinates: [0, 1, 2] }
+};
+transientEventStore.apply(transientStructureEvent);
+transientEventStore.apply(Object.assign({}, transientStructureEvent, {
+  sequence: 2,
+  payload: { frame_index: 2, coordinates: [3, 4, 5] }
+}));
+assert.strictEqual(
+  transientEventStore.snapshot().channels.structure.structure_ngl.items.length,
+  1,
+  "live non-replayable structure events retain only the newest runtime-store payload"
+);
+assert.strictEqual(
+  transientEventStore.snapshot().channels.structure.structure_ngl.items[0].frame_index,
+  2,
+  "live non-replayable structure state advances to the newest frame"
+);
 const darkLayout = hooks.applyPlotlyTheme({
   legend: { bgcolor: "#ffffff", font: { color: "#ffffff" } },
   legend2: { bgcolor: "#ffffff", font: { color: "#ffffff" } },
@@ -1692,25 +1721,27 @@ assert.strictEqual(finalNativeLogTopic.items.length, 0, "React final textarea re
 assert.strictEqual(finalNativeLogTopic.value, completeTextareaLog, "React accepts complete final textarea report after native events arrive");
 assert.strictEqual(finalNativeLogTopic.complete, true, "React marks the final textarea report as a complete run log");
 
-const normalizedFrame = hooks.normalizeNglCoordinateFrame({
-  atomCount: 2,
+const normalized_frame = hooks.normalize_ngl_coordinate_frame({
+  atom_count: 2,
   frame: 7,
-  frameIndex: 3,
-  milestonePercent: 30,
-  milestoneTrial: 600,
+  accepted_structure: 7,
+  frame_index: 3,
+  milestone_percent: 30,
+  milestone_trial: 600,
   trial: 612,
-  coordinateDtype: "float32",
+  coordinate_dtype: "float32",
   coordinates: [0, 1, 2, 3, 4, 5]
 });
-assert.strictEqual(Object.prototype.toString.call(normalizedFrame.coordinates), "[object Float32Array]", "structure frames normalize to compact Float32 coordinates");
-assert.strictEqual(normalizedFrame.atomCount, 2, "structure frames retain their topology atom count");
-assert.strictEqual(normalizedFrame.frameIndex, 3, "structure frames retain their streamed milestone frame index");
-assert.strictEqual(normalizedFrame.milestonePercent, 30, "structure frames retain their milestone percent");
-assert.strictEqual(normalizedFrame.milestoneTrial, 600, "structure frames retain their milestone trial");
-assert.strictEqual(normalizedFrame.coordinateDtype, "float32", "structure frames retain their coordinate dtype marker");
-assert.strictEqual(normalizedFrame.byteLength, 24, "structure frame telemetry records retained byte size");
+assert.strictEqual(Object.prototype.toString.call(normalized_frame.coordinates), "[object Float32Array]", "structure frames normalize to compact Float32 coordinates");
+assert.strictEqual(normalized_frame.atom_count, 2, "structure frames retain their topology atom count");
+assert.strictEqual(normalized_frame.accepted_structure, 7, "structure frames retain their accepted structure index");
+assert.strictEqual(normalized_frame.frame_index, 3, "structure frames retain their streamed milestone frame index");
+assert.strictEqual(normalized_frame.milestone_percent, 30, "structure frames retain their milestone percent");
+assert.strictEqual(normalized_frame.milestone_trial, 600, "structure frames retain their milestone trial");
+assert.strictEqual(normalized_frame.coordinate_dtype, "float32", "structure frames retain their coordinate dtype marker");
+assert.strictEqual(normalized_frame.byte_length, 24, "structure frame telemetry records retained byte size");
 assert.strictEqual(
-  hooks.normalizeNglCoordinateFrame({ atomCount: 2, coordinates: [0, 1, 2] }),
+  hooks.normalize_ngl_coordinate_frame({ atom_count: 2, coordinates: [0, 1, 2] }),
   null,
   "structure frames reject coordinate counts that do not match topology"
 );
@@ -1726,38 +1757,74 @@ const frameOutput = {
     updateRepresentations(changes) { nglCalls.push(["representations", changes]); }
   }
 };
-assert.strictEqual(hooks.applyNglCoordinateFrame(frameOutput, normalizedFrame), true, "NGL accepts an in-place coordinate frame");
+assert.strictEqual(hooks.apply_ngl_coordinate_frame(frameOutput, normalized_frame), true, "NGL accepts an in-place coordinate frame");
 assert.deepStrictEqual(nglCalls[0], ["coordinates", [0, 1, 2, 3, 4, 5]], "NGL updates the existing Structure coordinates");
 assert.strictEqual(JSON.stringify(nglCalls[1]), JSON.stringify(["representations", { position: true }]), "NGL updates representation positions without rebuilding topology");
-assert.strictEqual(frameOutput.dataset.nglFrame, "7", "NGL records the displayed frame without recentering");
-assert.strictEqual(frameOutput.dataset.nglFrameIndex, "3", "NGL records the displayed streamed-frame index");
-assert.strictEqual(frameOutput.dataset.nglMilestonePercent, "30", "NGL records the displayed milestone percent");
-assert.strictEqual(frameOutput.dataset.nglFramesRendered, "1", "NGL telemetry records applied coordinate frames");
-assert.strictEqual(frameOutput.dataset.nglCoordinateDtype, "float32", "NGL telemetry records the active coordinate dtype");
+assert.strictEqual(frameOutput.dataset.ngl_frame, "7", "NGL records the displayed frame without recentering");
+assert.strictEqual(frameOutput.dataset.ngl_frame_index, "3", "NGL records the displayed streamed-frame index");
+assert.strictEqual(frameOutput.dataset.ngl_milestone_percent, "30", "NGL records the displayed milestone percent");
+assert.strictEqual(frameOutput.dataset.ngl_frames_rendered, "1", "NGL telemetry records applied coordinate frames");
+assert.strictEqual(frameOutput.dataset.ngl_coordinate_dtype, "float32", "NGL telemetry records the active coordinate dtype");
+
+const mismatch_output = {
+  dataset: {},
+  _ui2NglComponent: {
+    structure: {
+      atomCount: 3,
+      updatePosition() { throw new Error("mismatched coordinates must not render"); }
+    }
+  }
+};
+assert.strictEqual(
+  hooks.apply_ngl_coordinate_frame(mismatch_output, normalized_frame),
+  false,
+  "NGL rejects a frame whose atom count differs from the loaded topology"
+);
+assert.strictEqual(mismatch_output.dataset.ngl_frames_invalid, "1", "atom-count mismatch increments invalid-frame telemetry");
+assert.strictEqual(mismatch_output.dataset.ngl_last_dropped_reason, "atom_count_mismatch", "atom-count mismatch is explained without failing the job");
+
+const failed_render_output = {
+  dataset: {},
+  _ui2NglComponent: {
+    structure: {
+      atomCount: 2,
+      updatePosition() { throw new Error("viewer unavailable"); }
+    }
+  }
+};
+assert.strictEqual(
+  hooks.apply_ngl_coordinate_frame(failed_render_output, normalized_frame),
+  false,
+  "NGL rendering failure is contained as a preview failure"
+);
+assert.strictEqual(failed_render_output.dataset.ngl_frames_invalid, "1", "rendering failure increments invalid-frame telemetry");
+assert.strictEqual(failed_render_output.dataset.ngl_last_dropped_reason, "render_error", "rendering failure is explained without failing the job");
 
 const scheduledFrames = [];
 window.requestAnimationFrame = (callback) => { scheduledFrames.push(callback); };
 nglCalls.length = 0;
-hooks.queueNglCoordinateFrame(frameOutput, { atomCount: 2, frame: 8, coordinates: [1, 1, 1, 2, 2, 2] });
-hooks.queueNglCoordinateFrame(frameOutput, { atomCount: 2, frame: 9, coordinates: [3, 3, 3, 4, 4, 4] });
-assert.strictEqual(frameOutput._ui2NglFrames.length, 2, "queued structure frames are retained for post-run NGL review");
+hooks.queue_ngl_coordinate_frame(frameOutput, { atom_count: 2, frame: 8, coordinates: [1, 1, 1, 2, 2, 2] });
+hooks.queue_ngl_coordinate_frame(frameOutput, { atom_count: 2, frame: 9, coordinates: [3, 3, 3, 4, 4, 4] });
+assert.strictEqual(frameOutput._ui2_ngl_frames.length, 2, "queued structure frames are retained for post-run NGL review");
 assert.strictEqual(scheduledFrames.length, 1, "rapid structure frames coalesce into one animation-frame render");
 scheduledFrames.shift()();
 assert.deepStrictEqual(nglCalls[0], ["coordinates", [3, 3, 3, 4, 4, 4]], "coalescing renders the newest available structure frame");
-assert.strictEqual(frameOutput.dataset.nglFrame, "9", "coalescing skips stale previews but retains the latest frame identity");
-assert.strictEqual(frameOutput.dataset.nglFramesReceived, "2", "NGL telemetry records queued coordinate frames");
-assert.strictEqual(frameOutput.dataset.nglFramesRetained, "2", "NGL telemetry records retained coordinate frames");
-frameOutput._ui2NglFrameHistoryMaxBytes = 24 * 10;
+assert.strictEqual(frameOutput.dataset.ngl_frame, "9", "coalescing skips stale previews but retains the latest frame identity");
+assert.strictEqual(frameOutput.dataset.ngl_frames_received, "2", "NGL telemetry records queued coordinate frames");
+assert.strictEqual(frameOutput.dataset.ngl_frames_retained, "2", "NGL telemetry records retained coordinate frames");
+assert.strictEqual(frameOutput.dataset.ngl_frames_dropped, "1", "NGL telemetry records a coalesced stale render");
+assert.strictEqual(frameOutput.dataset.ngl_last_dropped_reason, "stale_frame", "NGL telemetry explains stale-frame coalescing");
+frameOutput._ui2_ngl_frame_history_max_bytes = 24 * 10;
 for (let i = 0; i < 12; i += 1) {
-  hooks.queueNglCoordinateFrame(frameOutput, { atomCount: 2, frame: 20 + i, coordinates: [i, i, i, i + 1, i + 1, i + 1] });
+  hooks.queue_ngl_coordinate_frame(frameOutput, { atom_count: 2, frame: 20 + i, coordinates: [i, i, i, i + 1, i + 1, i + 1] });
 }
-assert.strictEqual(frameOutput._ui2NglFrames.length, 10, "UI2 trims retained NGL frames when the memory budget is reached");
-assert.strictEqual(frameOutput.dataset.nglFramesDropped, "4", "NGL telemetry records memory-budget frame drops");
-assert.strictEqual(frameOutput.dataset.nglBytesRetained, String(24 * 10), "NGL telemetry records retained coordinate bytes");
-frameOutput._ui2NglFrameHistoryMaxBytes = 1;
-hooks.queueNglCoordinateFrame(frameOutput, { atomCount: 2, frame: 99, coordinates: [9, 9, 9, 10, 10, 10] });
-assert.strictEqual(frameOutput._ui2NglFrames.length, 1, "UI2 keeps only the latest NGL frame when the memory budget is tiny");
-assert.strictEqual(frameOutput._ui2NglFrames[0].frame, 99, "UI2 does not preserve the old ten-frame experiment under memory pressure");
+assert.strictEqual(frameOutput._ui2_ngl_frames.length, 10, "UI2 trims retained NGL frames when the memory budget is reached");
+assert.strictEqual(frameOutput.dataset.ngl_frames_dropped, "16", "NGL telemetry records stale-render and memory-budget frame drops");
+assert.strictEqual(frameOutput.dataset.ngl_bytes_retained, String(24 * 10), "NGL telemetry records retained coordinate bytes");
+frameOutput._ui2_ngl_frame_history_max_bytes = 1;
+hooks.queue_ngl_coordinate_frame(frameOutput, { atom_count: 2, frame: 99, coordinates: [9, 9, 9, 10, 10, 10] });
+assert.strictEqual(frameOutput._ui2_ngl_frames.length, 1, "UI2 keeps only the latest NGL frame when the memory budget is tiny");
+assert.strictEqual(frameOutput._ui2_ngl_frames[0].frame, 99, "UI2 does not preserve the old ten-frame experiment under memory pressure");
 JS
 close $fh;
 

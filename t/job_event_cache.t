@@ -70,6 +70,15 @@ $invalid = ga_job_event_journal(
     10,
     100000
 );
+$transient_event = event_value(5, "structure_preview");
+$transient_event["channel"] = "structure";
+$transient_event["replay"] = false;
+$with_transient_marker = ga_job_event_journal(
+    array("_job_events" => $merged),
+    array("_job_event" => $transient_event),
+    10,
+    100000
+);
 
 echo json_encode(array(
     "merged" => $merged,
@@ -77,6 +86,7 @@ echo json_encode(array(
     "bounded_bytes" => $bounded_bytes,
     "carried" => $carried,
     "invalid" => $invalid,
+    "with_transient_marker" => $with_transient_marker,
 ));
 PHP_BODY
 close $fh;
@@ -108,6 +118,24 @@ if ($data) {
     );
     is( scalar @{ $data->{carried} }, 4, 'non-event messages carry the existing replay journal forward' );
     is_deeply( $data->{invalid}, [], 'invalid event envelopes are not cached' );
+    is_deeply(
+        [ map { $_->{sequence} } @{ $data->{with_transient_marker} } ],
+        [ 1, 2, 3, 4, 5 ],
+        'non-replayable events retain a small sequence marker in the replay journal'
+    );
+    is(
+        $data->{with_transient_marker}[4]{channel},
+        'transient',
+        'the replay marker cannot be rendered as the original structure event'
+    );
+    ok(
+        $data->{with_transient_marker}[4]{payload}{omitted},
+        'the replay marker records that transient content was omitted'
+    );
+    ok(
+        !exists $data->{with_transient_marker}[4]{payload}{coordinates},
+        'the replay marker contains no coordinate payload'
+    );
 }
 
 done_testing();

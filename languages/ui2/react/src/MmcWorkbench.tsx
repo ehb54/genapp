@@ -130,9 +130,10 @@ function runCueMessage(snapshot: JobRuntimeSnapshot): { text: string; tone: "nor
     return { text: "Starting job · runtime stream connecting", tone: "normal" }
   }
   if (frames.length) {
-    const milestone = numberText(lastFrame?.milestonePercent)
+    const milestone = numberText(lastFrame?.milestone_percent ?? lastFrame?.milestonePercent)
     const trial = numberText(lastFrame?.trial)
-    const parts = [`Running · structure snapshots ${frames.length}/10 available`]
+    const frame_index = numberText(lastFrame?.frame_index ?? lastFrame?.frameIndex)
+    const parts = [`Running · structure snapshot ${frame_index || frames.length} available`]
     if (milestone) parts.push(`latest snapshot ${milestone}%`)
     if (trial) parts.push(`trial ${trial}`)
     return { text: parts.join(" · "), tone: "normal" }

@@ -25,6 +25,31 @@ function ga_job_event_key( $event ) {
         . intval( $event[ 'sequence' ] );
 }
 
+function ga_job_event_replayable( $event ) {
+    return !is_array( $event )
+        || !array_key_exists( 'replay', $event )
+        || $event[ 'replay' ] !== false;
+}
+
+function ga_job_event_replay_record( $event ) {
+    if ( ga_job_event_replayable( $event ) ) {
+        return $event;
+    }
+    return array(
+        'version' => intval( $event[ 'version' ] ),
+        'run' => strval( $event[ 'run' ] ),
+        'module' => strval( $event[ 'module' ] ),
+        'sequence' => intval( $event[ 'sequence' ] ),
+        'timestamp' => isset( $event[ 'timestamp' ] )
+            ? strval( $event[ 'timestamp' ] ) : '',
+        'channel' => 'transient',
+        'topic' => strval( $event[ 'channel' ] ) . ':'
+            . strval( $event[ 'topic' ] ),
+        'operation' => 'replace',
+        'payload' => array( 'omitted' => true ),
+    );
+}
+
 function ga_job_event_journal(
     $cached_data,
     $incoming_data,
@@ -52,7 +77,8 @@ function ga_job_event_journal(
     foreach ( $sources as $source ) {
         foreach ( $source as $event ) {
             if ( ga_job_event_valid( $event ) ) {
-                $events_by_key[ ga_job_event_key( $event ) ] = $event;
+                $events_by_key[ ga_job_event_key( $event ) ] =
+                    ga_job_event_replay_record( $event );
             }
         }
     }
