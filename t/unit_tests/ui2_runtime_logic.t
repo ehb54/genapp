@@ -1671,6 +1671,26 @@ hooks.applyRuntimePayload({ _textarea: "one copy\\n" });
 const nativeLogTopic = hooks.state.jobEvents.snapshot().channels.log.run;
 assert.strictEqual(nativeLogTopic.items.length, 1, "React ignores mirrored legacy textarea text after native events arrive");
 assert.strictEqual(nativeLogTopic.value, null, "mirrored textarea text does not create a second legacy log value");
+const completeTextareaLog = [
+  "============================================================",
+  "DATA FROM RUN: Fri Jul 10 22:12:16 2026",
+  "",
+  "Average accepted rg2 = 65.778345",
+  "",
+  "Configurations and statistics saved in ./run_0/monomer_monte_carlo/ directory",
+  "",
+  "accepted 269 out of 500 : 53.800000 percent",
+  "",
+  "============================================================",
+  "MONOMER MONTE CARLO IS DONE",
+  "============================================================",
+  ""
+].join("\\n");
+hooks.applyRuntimePayload({ _textarea: completeTextareaLog });
+const finalNativeLogTopic = hooks.state.jobEvents.snapshot().channels.log.run;
+assert.strictEqual(finalNativeLogTopic.items.length, 0, "React final textarea report replaces partial native log append items");
+assert.strictEqual(finalNativeLogTopic.value, completeTextareaLog, "React accepts complete final textarea report after native events arrive");
+assert.strictEqual(finalNativeLogTopic.complete, true, "React marks the final textarea report as a complete run log");
 
 const normalizedFrame = hooks.normalizeNglCoordinateFrame({
   atomCount: 2,

@@ -5266,10 +5266,13 @@
       const channel = channels.log || {};
       const previous = channel.run || { items: [], value: null, complete: false, lastSequence: 0 };
       const priorText = stringValue(previous.value);
+      const complete = isCompleteRuntimeText(value);
       const topic = Object.assign({}, previous, {
-        operation: "append",
+        operation: complete ? "complete" : "append",
+        items: complete ? [] : previous.items,
         value: mergeRuntimeText(priorText, value),
         legacy: true,
+        complete: previous.complete || complete,
         lastSequence: legacySequence
       });
       channels = Object.assign({}, channels, {
@@ -5394,11 +5397,14 @@
           // Capability-aware drivers continue emitting legacy messages so a
           // legacy client can attach to the same job. Once native events have
           // arrived, they are authoritative and the mirrored textarea stream
-          // must not be appended a second time in React.
-          if (state.jobEvents.snapshot().lastSequence > 0) {
+          // must not be appended a second time in React. The complete final
+          // textarea block is still accepted because it is the authoritative
+          // legacy run report and may be richer than the streamed native log.
+          const text = stringValue(value);
+          if (state.jobEvents.snapshot().lastSequence > 0 && !isCompleteRuntimeText(text)) {
             return;
           }
-          state.jobEvents.appendLegacyLog(value, state.activeJob?.uuid || "", state.moduleId);
+          state.jobEvents.appendLegacyLog(text, state.activeJob?.uuid || "", state.moduleId);
           return;
         }
         appendRuntimeMessage(value);
