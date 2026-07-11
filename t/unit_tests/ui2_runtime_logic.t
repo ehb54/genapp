@@ -1699,6 +1699,7 @@ const normalizedFrame = hooks.normalizeNglCoordinateFrame({
   milestonePercent: 30,
   milestoneTrial: 600,
   trial: 612,
+  coordinateDtype: "float32",
   coordinates: [0, 1, 2, 3, 4, 5]
 });
 assert.strictEqual(Object.prototype.toString.call(normalizedFrame.coordinates), "[object Float32Array]", "structure frames normalize to compact Float32 coordinates");
@@ -1706,6 +1707,8 @@ assert.strictEqual(normalizedFrame.atomCount, 2, "structure frames retain their 
 assert.strictEqual(normalizedFrame.frameIndex, 3, "structure frames retain their streamed milestone frame index");
 assert.strictEqual(normalizedFrame.milestonePercent, 30, "structure frames retain their milestone percent");
 assert.strictEqual(normalizedFrame.milestoneTrial, 600, "structure frames retain their milestone trial");
+assert.strictEqual(normalizedFrame.coordinateDtype, "float32", "structure frames retain their coordinate dtype marker");
+assert.strictEqual(normalizedFrame.byteLength, 24, "structure frame telemetry records retained byte size");
 assert.strictEqual(
   hooks.normalizeNglCoordinateFrame({ atomCount: 2, coordinates: [0, 1, 2] }),
   null,
@@ -1729,6 +1732,8 @@ assert.strictEqual(JSON.stringify(nglCalls[1]), JSON.stringify(["representations
 assert.strictEqual(frameOutput.dataset.nglFrame, "7", "NGL records the displayed frame without recentering");
 assert.strictEqual(frameOutput.dataset.nglFrameIndex, "3", "NGL records the displayed streamed-frame index");
 assert.strictEqual(frameOutput.dataset.nglMilestonePercent, "30", "NGL records the displayed milestone percent");
+assert.strictEqual(frameOutput.dataset.nglFramesRendered, "1", "NGL telemetry records applied coordinate frames");
+assert.strictEqual(frameOutput.dataset.nglCoordinateDtype, "float32", "NGL telemetry records the active coordinate dtype");
 
 const scheduledFrames = [];
 window.requestAnimationFrame = (callback) => { scheduledFrames.push(callback); };
@@ -1740,10 +1745,19 @@ assert.strictEqual(scheduledFrames.length, 1, "rapid structure frames coalesce i
 scheduledFrames.shift()();
 assert.deepStrictEqual(nglCalls[0], ["coordinates", [3, 3, 3, 4, 4, 4]], "coalescing renders the newest available structure frame");
 assert.strictEqual(frameOutput.dataset.nglFrame, "9", "coalescing skips stale previews but retains the latest frame identity");
+assert.strictEqual(frameOutput.dataset.nglFramesReceived, "2", "NGL telemetry records queued coordinate frames");
+assert.strictEqual(frameOutput.dataset.nglFramesRetained, "2", "NGL telemetry records retained coordinate frames");
+frameOutput._ui2NglFrameHistoryMaxBytes = 24 * 10;
 for (let i = 0; i < 12; i += 1) {
   hooks.queueNglCoordinateFrame(frameOutput, { atomCount: 2, frame: 20 + i, coordinates: [i, i, i, i + 1, i + 1, i + 1] });
 }
-assert.strictEqual(frameOutput._ui2NglFrames.length, 10, "UI2 bounds retained NGL milestone frames to ten");
+assert.strictEqual(frameOutput._ui2NglFrames.length, 10, "UI2 trims retained NGL frames when the memory budget is reached");
+assert.strictEqual(frameOutput.dataset.nglFramesDropped, "4", "NGL telemetry records memory-budget frame drops");
+assert.strictEqual(frameOutput.dataset.nglBytesRetained, String(24 * 10), "NGL telemetry records retained coordinate bytes");
+frameOutput._ui2NglFrameHistoryMaxBytes = 1;
+hooks.queueNglCoordinateFrame(frameOutput, { atomCount: 2, frame: 99, coordinates: [9, 9, 9, 10, 10, 10] });
+assert.strictEqual(frameOutput._ui2NglFrames.length, 1, "UI2 keeps only the latest NGL frame when the memory budget is tiny");
+assert.strictEqual(frameOutput._ui2NglFrames[0].frame, 99, "UI2 does not preserve the old ten-frame experiment under memory pressure");
 JS
 close $fh;
 

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GenApp NGL Viewer Lab</title>
+  <link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+  <header>
+    <div>
+      <h1>NGL Viewer Lab</h1>
+      <p>Load structures and Gaussian cube volumes locally. Nothing is uploaded.</p>
+    </div>
+    <div class="toolbar">
+      <label class="file-button">Open structure<input id="structure-file" type="file" accept=".pdb,.ent,.cif,.mmcif,.sdf,.mol2,.pqr,.gro"></label>
+      <label class="file-button">Open cube<input id="volume-file" type="file" accept=".cube,.cub"></label>
+      <button id="demo-structure" type="button">Demo molecule</button>
+      <button id="demo-volume" type="button">Demo cube</button>
+      <button id="center-view" type="button">Center view</button>
+      <button id="toggle-spin" type="button" aria-pressed="false">Spin</button>
+      <button id="clear-all" type="button">Clear all</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="viewer-panel">
+      <div id="viewport" aria-label="Molecular viewer"></div>
+      <div id="status" role="status">Open a structure or Gaussian cube file to begin.</div>
+      <div id="picked">Click an atom to inspect it.</div>
+    </section>
+
+    <aside>
+      <section class="card">
+        <div class="section-title">
+          <h2>Molecule layers</h2>
+          <button id="add-layer" type="button" disabled>Add layer</button>
+        </div>
+        <p class="hint">Selections use NGL syntax, for example <code>protein</code>, <code>:A</code>, <code>10-30</code>, <code>water</code>, or <code>ion</code>.</p>
+        <div id="molecule-layers" class="layer-list empty">Load a structure to add molecular layers.</div>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h2>Volume surfaces</h2>
+          <button id="add-surface" type="button" disabled>Add surface</button>
+        </div>
+        <p class="hint">Gaussian cube data can be shown as positive and negative isosurfaces.</p>
+        <div id="volume-layers" class="layer-list empty">Load a cube file to add isosurfaces.</div>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h2>Streaming benchmark</h2>
+          <button id="benchmark-run" type="button">Run</button>
+        </div>
+        <p class="hint">Fetches synthetic structures and coordinate frames from the serving host, then updates the active NGL structure in place.</p>
+        <div class="controls benchmark-controls">
+          <label>Atoms<input id="benchmark-atoms" type="number" min="100" max="250000" step="1000" value="6730"></label>
+          <label>Frames<input id="benchmark-frames" type="number" min="1" max="200" step="1" value="20"></label>
+          <label>Interval ms<input id="benchmark-interval" type="number" min="0" max="10000" step="100" value="1000"></label>
+          <label>Transport<select id="benchmark-transport">
+            <option value="json">JSON float array</option>
+            <option value="binary">float32 binary</option>
+          </select></label>
+          <label>Topology<select id="benchmark-topology">
+            <option value="synthetic">synthetic CA grid</option>
+            <option value="hiv1_gag">hiv1_gag_charmm27.pdb</option>
+            <option value="hiv1_gag_reduced">hiv1_gag CA/P reduced</option>
+          </select></label>
+          <label>Representation<select id="benchmark-representation">
+            <option value="point">point</option>
+            <option value="backbone">backbone</option>
+            <option value="cartoon">cartoon</option>
+            <option value="line">line</option>
+            <option value="ball+stick">ball + stick</option>
+          </select></label>
+          <label>Scale<select id="benchmark-scale">
+            <option value="all">all atoms</option>
+            <option value="reduced">reduced CA/P proxy</option>
+          </select></label>
+        </div>
+        <pre id="benchmark-results" class="benchmark-results">Benchmark not run yet.</pre>
+      </section>
+
+      <details class="card">
+        <summary>GenApp payload preview</summary>
+        <p class="hint">This is the structure-view portion of the current scene. Volume support will need an extension to the GenApp output contract.</p>
+        <textarea id="payload" readonly></textarea>
+        <button id="copy-payload" type="button">Copy JSON</button>
+      </details>
+    </aside>
+  </main>
+
+  <template id="molecule-layer-template">
+    <article class="layer molecule-layer">
+      <div class="layer-heading">
+        <input class="layer-name" aria-label="Layer name" value="selection">
+        <label class="visible"><input class="layer-visible" type="checkbox" checked> visible</label>
+        <button class="remove-layer" type="button" aria-label="Remove layer">Remove</button>
+      </div>
+      <div class="controls">
+        <label>Selection<input class="selection" value="all"></label>
+        <label>Representation<select class="representation">
+          <option value="cartoon">cartoon</option>
+          <option value="ball+stick">ball + stick</option>
+          <option value="licorice">licorice</option>
+          <option value="spacefill">spacefill</option>
+          <option value="surface">surface</option>
+          <option value="line">line</option>
+          <option value="backbone">backbone</option>
+          <option value="ribbon">ribbon</option>
+          <option value="point">point</option>
+          <option value="label">label</option>
+        </select></label>
+        <label>Color scheme<select class="color-scheme">
+          <option value="chainid">chain</option>
+          <option value="element">element</option>
+          <option value="resname">residue</option>
+          <option value="sstruc">secondary structure</option>
+          <option value="bfactor">B-factor</option>
+          <option value="uniform">single color</option>
+        </select></label>
+        <label>Color<input class="color" type="color" value="#4ca6ff"></label>
+        <label>Opacity<input class="opacity" type="range" min="0" max="1" step="0.05" value="1"><output>1.00</output></label>
+      </div>
+      <div class="layer-error" role="alert"></div>
+    </article>
+  </template>
+
+  <template id="volume-layer-template">
+    <article class="layer volume-layer">
+      <div class="layer-heading">
+        <input class="layer-name" aria-label="Surface name" value="isosurface">
+        <label class="visible"><input class="layer-visible" type="checkbox" checked> visible</label>
+        <button class="remove-layer" type="button" aria-label="Remove surface">Remove</button>
+      </div>
+      <div class="controls">
+        <label>Isovalue<input class="isolevel" type="number" step="0.005" value="0.015"></label>
+        <label>Color<input class="color" type="color" value="#2f7fff"></label>
+        <label>Opacity<input class="opacity" type="range" min="0" max="1" step="0.05" value="0.45"><output>0.45</output></label>
+        <label>Side<select class="side"><option value="double">double</option><option value="front">front</option><option value="back">back</option></select></label>
+      </div>
+      <div class="layer-error" role="alert"></div>
+    </article>
+  </template>
+
+  <script src="../../languages/html5/add/js/ngl.js"></script>
+  <script src="viewer.js"></script>
+</body>
+</html>

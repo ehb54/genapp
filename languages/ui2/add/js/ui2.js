@@ -70,6 +70,7 @@
     "trace",
     "tube"
   ];
+  const NGL_FRAME_HISTORY_DEFAULT_MAX_BYTES = 512 * 1024 * 1024;
   let plotlyLoadPromise = null;
   let nglLoadPromise = null;
   let reactMmcRoot = null;
@@ -5777,20 +5778,100 @@
       milestonePercent: Number.isFinite(Number(payload?.milestonePercent)) ? Number(payload.milestonePercent) : null,
       milestoneTrial: Number.isInteger(Number(payload?.milestoneTrial)) ? Number(payload.milestoneTrial) : null,
       trial: Number.isInteger(Number(payload?.trial)) ? Number(payload.trial) : null,
-      timestamp: stringValue(payload?.timestamp)
+      timestamp: stringValue(payload?.timestamp),
+      coordinateDtype: stringValue(payload?.coordinateDtype || payload?.coordinate_dtype || "float32") || "float32",
+      byteLength: coordinates.byteLength,
+      receivedAtMs: ui2NowMs()
     };
+  }
+
+  function ui2NowMs() {
+    return window.performance?.now ? window.performance.now() : Date.now();
+  }
+
+  function nglStreamTelemetry(output) {
+    if (!output) {
+      return null;
+    }
+    output._ui2NglTelemetry = output._ui2NglTelemetry || {
+      receivedFrames: 0,
+      retainedFrames: 0,
+      droppedFrames: 0,
+      invalidFrames: 0,
+      renderedFrames: 0,
+      bytesRetained: 0,
+      lastAtomCount: null,
+      lastCoordinateDtype: "",
+      lastFrameIndex: null,
+      lastTrial: null,
+      lastQueueAgeMs: null,
+      lastRenderMs: null,
+      lastDroppedReason: ""
+    };
+    return output._ui2NglTelemetry;
+  }
+
+  function syncNglStreamTelemetry(output) {
+    const telemetry = output?._ui2NglTelemetry;
+    if (!output || !telemetry) {
+      return;
+    }
+    output.dataset.nglFramesReceived = String(telemetry.receivedFrames);
+    output.dataset.nglFramesRetained = String(telemetry.retainedFrames);
+    output.dataset.nglFramesDropped = String(telemetry.droppedFrames);
+    output.dataset.nglFramesInvalid = String(telemetry.invalidFrames);
+    output.dataset.nglFramesRendered = String(telemetry.renderedFrames);
+    output.dataset.nglBytesRetained = String(telemetry.bytesRetained);
+    output.dataset.nglCoordinateDtype = telemetry.lastCoordinateDtype || "";
+  }
+
+  function pruneNglFrameHistory(output) {
+    const frames = Array.isArray(output?._ui2NglFrames) ? output._ui2NglFrames : [];
+    const telemetry = nglStreamTelemetry(output);
+    if (!telemetry) {
+      return;
+    }
+    const configuredMax = Number(output._ui2NglFrameHistoryMaxBytes);
+    const maxBytes = Number.isFinite(configuredMax) && configuredMax > 0
+      ? configuredMax
+      : NGL_FRAME_HISTORY_DEFAULT_MAX_BYTES;
+    let bytesRetained = frames.reduce((sum, frame) => sum + Number(frame.byteLength || 0), 0);
+    let dropped = 0;
+    while (bytesRetained > maxBytes && frames.length > 1) {
+      const removed = frames.shift();
+      bytesRetained -= Number(removed?.byteLength || 0);
+      dropped += 1;
+    }
+    telemetry.droppedFrames += dropped;
+    telemetry.retainedFrames = frames.length;
+    telemetry.bytesRetained = bytesRetained;
+    if (dropped > 0) {
+      telemetry.lastDroppedReason = "memory-budget";
+    }
+    syncNglStreamTelemetry(output);
   }
 
   function queueNglCoordinateFrame(output, payload) {
     const frame = normalizeNglCoordinateFrame(payload);
     if (!output || !frame) {
+      const telemetry = nglStreamTelemetry(output);
+      if (telemetry) {
+        telemetry.invalidFrames += 1;
+        syncNglStreamTelemetry(output);
+      }
       return false;
     }
+    const telemetry = nglStreamTelemetry(output);
     output._ui2NglFrames = Array.isArray(output._ui2NglFrames) ? output._ui2NglFrames : [];
     output._ui2NglFrames.push(frame);
-    if (output._ui2NglFrames.length > 10) {
-      output._ui2NglFrames.splice(0, output._ui2NglFrames.length - 10);
+    if (telemetry) {
+      telemetry.receivedFrames += 1;
+      telemetry.lastAtomCount = frame.atomCount;
+      telemetry.lastCoordinateDtype = frame.coordinateDtype;
+      telemetry.lastFrameIndex = frame.frameIndex;
+      telemetry.lastTrial = frame.trial;
     }
+    pruneNglFrameHistory(output);
     output._ui2NglPendingFrame = frame;
     renderNglFrameControls(output);
     scheduleNglCoordinateFrame(output);
@@ -5798,7 +5879,7 @@
   }
 
   function nglFrameLabel(frame, index) {
-    const prefix = frame?.frameIndex ? `Frame ${frame.frameIndex}` : `Frame ${index + 1}`;
+    const prefix = frame?.frameIndex != null ? `Frame ${frame.frameIndex}` : `Frame ${index + 1}`;
     const percent = frame?.milestonePercent == null ? "" : ` / ${frame.milestonePercent}%`;
     const trial = frame?.trial == null ? "" : ` / trial ${frame.trial}`;
     return `${prefix}${percent}${trial}`;
@@ -5863,6 +5944,7 @@
     if (Number.isInteger(structureAtomCount) && structureAtomCount > 0 && structureAtomCount !== frame.atomCount) {
       return false;
     }
+    const startedAtMs = ui2NowMs();
     // This is the coordinate path used by bundled NGL 0.10.4 trajectories:
     // update the existing Structure and its representation positions. Do not
     // reload, recreate, or auto-center the component for each frame.
@@ -5875,6 +5957,17 @@
     output.dataset.nglFrameIndex = frame.frameIndex == null ? "" : String(frame.frameIndex);
     output.dataset.nglMilestonePercent = frame.milestonePercent == null ? "" : String(frame.milestonePercent);
     output._ui2NglLastFrame = frame;
+    const telemetry = nglStreamTelemetry(output);
+    if (telemetry) {
+      telemetry.renderedFrames += 1;
+      telemetry.lastAtomCount = frame.atomCount;
+      telemetry.lastCoordinateDtype = frame.coordinateDtype;
+      telemetry.lastFrameIndex = frame.frameIndex;
+      telemetry.lastTrial = frame.trial;
+      telemetry.lastQueueAgeMs = Math.max(0, startedAtMs - Number(frame.receivedAtMs || startedAtMs));
+      telemetry.lastRenderMs = Math.max(0, ui2NowMs() - startedAtMs);
+      syncNglStreamTelemetry(output);
+    }
     return true;
   }
 
