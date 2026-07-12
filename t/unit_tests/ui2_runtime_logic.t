@@ -932,6 +932,86 @@ assert.strictEqual(
   2,
   "live non-replayable structure state advances to the newest frame"
 );
+
+window.Plotly = {
+  newPlot(output, data, layout, config) {
+    output.data = data;
+    output.layout = layout;
+    output.config = config;
+    return Promise.resolve(output);
+  },
+  react(output, data, layout, config) {
+    output.data = data;
+    output.layout = layout;
+    output.config = config;
+    return Promise.resolve(output);
+  },
+  Plots: { resize() {} }
+};
+const scatteringOutputSection = createNode("section");
+scatteringOutputSection.id = "ui2-output-section";
+const scatteringOutputBody = createNode("div");
+scatteringOutputBody.className = "ui2-section-body";
+scatteringOutputSection.appendChild(scatteringOutputBody);
+document.body.appendChild(scatteringOutputSection);
+hooks.state.jobEvents.reset("run-scattering", "monomer_monte_carlo");
+hooks.applyRuntimePayload({
+  _job_event: {
+    version: 1,
+    run: "run-scattering",
+    module: "monomer_monte_carlo",
+    sequence: 1,
+    timestamp: "2026-07-11T12:00:00Z",
+    channel: "plot",
+    topic: "scattering_preview",
+    operation: "append",
+    payload: {
+      q_grid_id: "interpolated:user-profile.dat",
+      interpolated_data: { label: "interpolated", q_values: [0, 0.1], iq: [10, 5] },
+      experimental_data: { label: "experiment", q_values: [0, 0.1], iq: [11, 4], sigma: [1, 1] },
+      profiles: [
+        { profile_id: "accepted-1", q_values: [0, 0.1], iq: [9, 4] },
+        { profile_id: "accepted-1", q_values: [0, 0.1], iq: [9, 4] },
+        { profile_id: "accepted-2", q_values: [0, 0.1], iq: [8, 3] }
+      ],
+      running_average_iq: { count: 2, values: [8.5, 3.5] }
+    }
+  }
+});
+const scatteringOutput = document.querySelector('[data-output-field-id="scattering_preview"]');
+assert(scatteringOutput, "UI2 creates a dynamic scattering-preview output for streaming plot events");
+assert.strictEqual(scatteringOutput.dataset.outputType, "plotly", "UI2 renders scattering preview as a Plotly output");
+assert.strictEqual(
+  scatteringOutput._ui2ScatteringPreview.profiles.length,
+  2,
+  "UI2 retains unique lightweight scattering profiles and suppresses replay duplicates"
+);
+assert.strictEqual(
+  scatteringOutput._ui2ScatteringPreview.qGridId,
+  "interpolated:user-profile.dat",
+  "UI2 records the authoritative q-grid identifier with the retained profile state"
+);
+assert.strictEqual(
+  scatteringOutput._ui2ScatteringPreview.experimentalData.label,
+  "experiment",
+  "UI2 keeps experimental reference data separate from calculated batch profiles"
+);
+const scatteringFigure = hooks.scatteringPreviewFigure(scatteringOutput._ui2ScatteringPreview);
+assert.strictEqual(
+  scatteringFigure.data.filter((trace) => trace.showlegend === false).length,
+  2,
+  "UI2 draws retained individual scattering profiles as unlabeled ensemble traces"
+);
+assert.strictEqual(
+  scatteringFigure.data[scatteringFigure.data.length - 1].name,
+  "running average (2 profiles)",
+  "UI2 labels the running average distinctly from the individual ensemble"
+);
+assert.strictEqual(
+  scatteringFigure.layout.annotations[0].text,
+  "q grid: interpolated:user-profile.dat",
+  "UI2 labels the q-grid source in the scattering preview figure"
+);
 const darkLayout = hooks.applyPlotlyTheme({
   legend: { bgcolor: "#ffffff", font: { color: "#ffffff" } },
   legend2: { bgcolor: "#ffffff", font: { color: "#ffffff" } },
@@ -1549,8 +1629,8 @@ assert.strictEqual(dcdFormData.get("dcdfile_altval[]"), undefined, "submit omits
 assert.strictEqual(dcdFormData.get("_runtime_protocol"), "1", "UI2 submit advertises the versioned runtime protocol");
 assert.deepStrictEqual(
   JSON.parse(dcdFormData.get("_runtime_capabilities")),
-  ["job-events", "plot-append", "structure-frames"],
-  "UI2 submit advertises event, incremental plot, and structure-frame capabilities"
+  ["job-events", "plot-append", "structure-frames", "scattering-preview"],
+  "UI2 submit advertises event, incremental plot, structure-frame, and scattering-preview capabilities"
 );
 
 const dynamicGroup = {

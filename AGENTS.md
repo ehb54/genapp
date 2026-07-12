@@ -1,5 +1,12 @@
 # Agent Guardrails
 
+## Communication
+
+When summarizing work or handing off state, use plain language first. Say what
+changed, what was verified, what remains uncertain, and the next concrete
+steps. Include an approximate count of remaining steps when the work spans more
+than one action, so the user can quickly judge scope and progress.
+
 ## Source Of Truth
 
 The GitHub wiki is the current source of truth for GenApp documentation. Prefer

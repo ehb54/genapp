@@ -4519,7 +4519,8 @@
     formData.set("_runtime_capabilities", JSON.stringify([
       "job-events",
       "plot-append",
-      "structure-frames"
+      "structure-frames",
+      "scattering-preview"
     ]));
     if (state.module?.docrootexecutable) {
       formData.set("_docrootexecutable", state.module.docrootexecutable);
@@ -5364,6 +5365,14 @@
     if (!event || !["plot", "structure"].includes(event.channel)) {
       return;
     }
+    if (event.channel === "plot" && event.topic === "scattering_preview") {
+      const output = document.querySelector(`[data-output-field-id="${cssEscape(event.topic)}"]`) ||
+        ensureRuntimeOutputField(event.topic, "Scattering preview", "plotly");
+      if (output && event.payload) {
+        renderScatteringPreviewOutput(output, event.payload);
+      }
+      return;
+    }
     const output = document.querySelector(`[data-output-field-id="${cssEscape(event.topic)}"]`);
     if (!output) {
       return;
@@ -5383,6 +5392,136 @@
         renderNglOutput(output, event.payload.structure || event.payload);
       }
     }
+  }
+
+  function renderScatteringPreviewOutput(output, payload) {
+    if (!output || !payload) {
+      return;
+    }
+    const stateValue = output._ui2ScatteringPreview || {
+      profiles: [],
+      profileIds: new Set(),
+      runningAverage: null,
+      interpolatedData: null,
+      experimentalData: null,
+      qGridId: "",
+      acceptedCount: 0,
+      timing: null
+    };
+    (Array.isArray(payload.profiles) ? payload.profiles : []).forEach((profile) => {
+      const id = String(profile?.profile_id || `${profile?.accepted_index || ""}:${profile?.trial || ""}:${stateValue.profiles.length}`);
+      if (stateValue.profileIds.has(id)) {
+        return;
+      }
+      stateValue.profileIds.add(id);
+      stateValue.profiles.push(profile);
+    });
+    if (payload.running_average_iq) {
+      stateValue.runningAverage = payload.running_average_iq;
+    }
+    if (payload.interpolated_data) {
+      stateValue.interpolatedData = payload.interpolated_data;
+    }
+    if (payload.experimental_data) {
+      stateValue.experimentalData = payload.experimental_data;
+    }
+    stateValue.qGridId = stringValue(payload.q_grid_id || stateValue.qGridId || "");
+    stateValue.acceptedCount = Number(payload.accepted_count || stateValue.acceptedCount || stateValue.profiles.length);
+    stateValue.timing = payload.timing || stateValue.timing;
+    output._ui2ScatteringPreview = stateValue;
+    renderPlotlyOutput(output, scatteringPreviewFigure(stateValue));
+  }
+
+  function scatteringPreviewFigure(stateValue) {
+    const traces = [];
+    const interpolatedTrace = scatteringReferenceTrace(
+      stateValue.interpolatedData,
+      "interpolated data",
+      "rgba(44, 160, 44, 0.90)");
+    if (interpolatedTrace) {
+      traces.push(interpolatedTrace);
+    }
+    const experimentalTrace = scatteringReferenceTrace(
+      stateValue.experimentalData,
+      "experimental data",
+      "rgba(31, 119, 180, 0.95)");
+    if (experimentalTrace) {
+      traces.push(experimentalTrace);
+    }
+    stateValue.profiles.forEach((profile) => {
+      if (!Array.isArray(profile?.q_values) || !Array.isArray(profile?.iq)) {
+        return;
+      }
+      traces.push({
+        x: profile.q_values,
+        y: profile.iq,
+        type: "scatter",
+        mode: "lines",
+        line: { color: "rgba(31, 119, 180, 0.20)", width: 1 },
+        hoverinfo: "skip",
+        showlegend: false,
+        name: "batch profile"
+      });
+    });
+    const average = stateValue.runningAverage;
+    const averageIq = Array.isArray(average?.iq) ? average.iq : average?.values;
+    const averageQ = Array.isArray(average?.q_values) ? average.q_values :
+      (stateValue.profiles.find((profile) => Array.isArray(profile?.q_values))?.q_values || []);
+    if (Array.isArray(averageQ) && Array.isArray(averageIq) && averageQ.length === averageIq.length) {
+      traces.push({
+        x: averageQ,
+        y: averageIq,
+        type: "scatter",
+        mode: "lines",
+        line: { color: "rgba(31, 119, 180, 0.95)", width: 3 },
+        name: `running average (${Number(average.count || 0)} profiles)`
+      });
+    }
+    return {
+      data: traces,
+      layout: {
+        title: "Streaming scattering preview",
+        xaxis: { title: "q (1/Å)" },
+        yaxis: { title: "I(q)", type: "log", autorange: true },
+        showlegend: true,
+        annotations: stateValue.qGridId ? [{
+          text: `q grid: ${stateValue.qGridId}`,
+          xref: "paper",
+          yref: "paper",
+          x: 1,
+          y: 1.08,
+          xanchor: "right",
+          yanchor: "bottom",
+          showarrow: false,
+          font: { size: 11 }
+        }] : []
+      },
+      config: { responsive: true }
+    };
+  }
+
+  function scatteringReferenceTrace(series, fallbackName, color) {
+    if (!Array.isArray(series?.q_values) || !Array.isArray(series?.iq)) {
+      return null;
+    }
+    const trace = {
+      x: series.q_values,
+      y: series.iq,
+      type: "scatter",
+      mode: Array.isArray(series.sigma) ? "markers" : "lines",
+      marker: { color, size: 6 },
+      line: { color, width: 2 },
+      name: stringValue(series.label || fallbackName)
+    };
+    if (Array.isArray(series.sigma) && series.sigma.length === series.q_values.length) {
+      trace.error_y = {
+        type: "data",
+        array: series.sigma,
+        visible: true,
+        thickness: 1
+      };
+    }
+    return trace;
   }
 
   function applyRuntimePayload(payload) {
@@ -7370,6 +7509,7 @@
       apply_ngl_coordinate_frame,
       applyPlotlyTheme,
       appendPlotlyOutput,
+      scatteringPreviewFigure,
       plotlyLayoutForOutput,
       plotlyThemeColors,
       repeatIsCondition,
