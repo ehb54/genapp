@@ -1848,6 +1848,7 @@ assert.strictEqual(frameOutput.dataset.ngl_frame_index, "3", "NGL records the di
 assert.strictEqual(frameOutput.dataset.ngl_milestone_percent, "30", "NGL records the displayed milestone percent");
 assert.strictEqual(frameOutput.dataset.ngl_frames_rendered, "1", "NGL telemetry records applied coordinate frames");
 assert.strictEqual(frameOutput.dataset.ngl_coordinate_dtype, "float32", "NGL telemetry records the active coordinate dtype");
+assert.strictEqual(hooks.ngl_active_frame_index(frameOutput, [normalized_frame]), 0, "NGL active-frame selection follows the last successfully rendered frame");
 
 const mismatch_output = {
   dataset: {},
@@ -1897,6 +1898,9 @@ assert.strictEqual(frameOutput.dataset.ngl_frames_received, "2", "NGL telemetry 
 assert.strictEqual(frameOutput.dataset.ngl_frames_retained, "2", "NGL telemetry records retained coordinate frames");
 assert.strictEqual(frameOutput.dataset.ngl_frames_dropped, "1", "NGL telemetry records a coalesced stale render");
 assert.strictEqual(frameOutput.dataset.ngl_last_dropped_reason, "stale_frame", "NGL telemetry explains stale-frame coalescing");
+const refreshStart = nglCalls.length;
+assert.strictEqual(hooks.refreshNglOutputFrame(frameOutput), true, "NGL refresh reapplies the active retained frame after tab or panel resize");
+assert.deepStrictEqual(nglCalls[refreshStart], ["coordinates", [3, 3, 3, 4, 4, 4]], "NGL resize refresh keeps the visible structure on the active streamed frame");
 frameOutput._ui2_ngl_frame_history_max_bytes = 24 * 10;
 for (let i = 0; i < 12; i += 1) {
   hooks.queue_ngl_coordinate_frame(frameOutput, { atom_count: 2, frame: 20 + i, coordinates: [i, i, i, i + 1, i + 1, i + 1] });

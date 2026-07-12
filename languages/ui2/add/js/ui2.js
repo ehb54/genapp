@@ -1165,6 +1165,7 @@
     });
     document.querySelectorAll('[data-output-type="ngl"]').forEach((output) => {
       resizeNglStage(output._ui2NglStage);
+      refreshNglOutputFrame(output);
     });
   }
 
@@ -6112,6 +6113,49 @@
     return `${prefix}${percent}${trial}`;
   }
 
+  function latest_ngl_retained_frame(output) {
+    const frames = Array.isArray(output?._ui2_ngl_frames) ? output._ui2_ngl_frames : [];
+    return frames.length ? frames[frames.length - 1] : null;
+  }
+
+  function ngl_active_frame_index(output, frames) {
+    const frame_list = Array.isArray(frames) ? frames : [];
+    const active_frame = output?._ui2_ngl_last_frame || output?._ui2_ngl_pending_frame || latest_ngl_retained_frame(output);
+    if (!active_frame || !frame_list.length) {
+      return -1;
+    }
+    return frame_list.indexOf(active_frame);
+  }
+
+  function refreshNglOutputFrame(output) {
+    const frame = output?._ui2_ngl_pending_frame || output?._ui2_ngl_last_frame || latest_ngl_retained_frame(output);
+    if (!output?._ui2NglComponent || !frame) {
+      return false;
+    }
+    return apply_ngl_coordinate_frame(output, frame);
+  }
+
+  function ngl_stream_telemetry_label(output) {
+    const telemetry = output?._ui2_ngl_telemetry;
+    if (!telemetry) {
+      return "";
+    }
+    const parts = [
+      `received ${telemetry.received_frames}`,
+      `rendered ${telemetry.rendered_frames}`
+    ];
+    if (telemetry.retained_frames) {
+      parts.push(`retained ${telemetry.retained_frames}`);
+    }
+    if (telemetry.invalid_frames) {
+      parts.push(`invalid ${telemetry.invalid_frames}`);
+    }
+    if (telemetry.last_dropped_reason) {
+      parts.push(`last ${telemetry.last_dropped_reason}`);
+    }
+    return parts.join(" · ");
+  }
+
   function render_ngl_frame_controls(output) {
     const buttons = output?.querySelector?.(".ui2-ngl-buttons");
     if (!buttons) {
@@ -6125,6 +6169,7 @@
     const controls = el("span", "ui2-ngl-frame-controls");
     const label = el("span", "ui2-muted", frames.length === 1 ? ngl_frame_label(frames[0], 0) : "Streamed frames");
     controls.appendChild(label);
+    const active_index = ngl_active_frame_index(output, frames);
     if (frames.length > 1) {
       const select = el("select", "ui2-input ui2-ngl-frame-select");
       frames.forEach((frame, index) => {
@@ -6132,7 +6177,7 @@
         option.value = String(index);
         select.appendChild(option);
       });
-      select.value = String(frames.length - 1);
+      select.value = String(active_index >= 0 ? active_index : frames.length - 1);
       select.addEventListener("change", () => {
         const frame = frames[Number(select.value)];
         if (frame) {
@@ -6140,6 +6185,10 @@
         }
       });
       controls.appendChild(select);
+    }
+    const telemetry_label = ngl_stream_telemetry_label(output);
+    if (telemetry_label) {
+      controls.appendChild(el("span", "ui2-muted ui2-ngl-frame-telemetry", telemetry_label));
     }
     buttons.appendChild(controls);
   }
@@ -6176,9 +6225,11 @@
         telemetry.last_dropped_reason = "atom_count_mismatch";
         sync_ngl_stream_telemetry(output);
       }
+      render_ngl_frame_controls(output);
       return false;
     }
     const started_at_ms = ui2_now_ms();
+    const is_same_active_frame = output._ui2_ngl_last_frame === frame;
     // This is the coordinate path used by bundled NGL 0.10.4 trajectories:
     // update the existing Structure and its representation positions. Do not
     // reload, recreate, or auto-center the component for each frame.
@@ -6195,6 +6246,7 @@
         telemetry.last_dropped_reason = "render_error";
         sync_ngl_stream_telemetry(output);
       }
+      render_ngl_frame_controls(output);
       return false;
     }
     set_ngl_output_value(output, "ngl_frame", frame.frame);
@@ -6202,7 +6254,9 @@
     set_ngl_output_value(output, "ngl_milestone_percent", frame.milestone_percent);
     output._ui2_ngl_last_frame = frame;
     if (telemetry) {
-      telemetry.rendered_frames += 1;
+      if (!is_same_active_frame) {
+        telemetry.rendered_frames += 1;
+      }
       telemetry.last_atom_count = frame.atom_count;
       telemetry.last_coordinate_dtype = frame.coordinate_dtype;
       telemetry.last_frame_index = frame.frame_index;
@@ -6212,6 +6266,7 @@
       telemetry.last_render_ms = Math.max(0, ui2_now_ms() - started_at_ms);
       sync_ngl_stream_telemetry(output);
     }
+    render_ngl_frame_controls(output);
     return true;
   }
 
@@ -7561,6 +7616,8 @@
       normalize_ngl_coordinate_frame,
       queue_ngl_coordinate_frame,
       apply_ngl_coordinate_frame,
+      refreshNglOutputFrame,
+      ngl_active_frame_index,
       applyPlotlyTheme,
       appendPlotlyOutput,
       plotlyLayoutForOutput,

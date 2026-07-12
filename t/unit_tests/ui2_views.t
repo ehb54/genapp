@@ -65,7 +65,7 @@ my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
 like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declares a module submit endpoint helper' );
 like( $ui2_js, qr/isReactWorkbenchView\(state\.view\) && renderReactMmc\(module, fields\)/, 'ui2 delegates modules to React only through explicit view metadata' );
 like( $ui2_js, qr/function renderReactMmc\(module, fields\).*?createField:.*?renderField\(field, role\).*?submit:.*?submitModule\(form\)/s, 'MMC React bridge reuses canonical UI2 fields and submission' );
-like( $ui2_js, qr/function resizeMmcOutputs\(\).*?resizePlotlyOutputWhenVisible\(output\).*?resizeNglStage\(output\._ui2NglStage\)/s, 'MMC result tabs resize existing Plotly and NGL renderers' );
+like( $ui2_js, qr/function resizeMmcOutputs\(\).*?resizePlotlyOutputWhenVisible\(output\).*?resizeNglStage\(output\._ui2NglStage\).*?refreshNglOutputFrame\(output\)/s, 'MMC result tabs resize existing Plotly and refresh active NGL frames' );
 like( $ui2_js, qr/function resizeNglStage\(stage\).*?stage\.handleResize\?\.\(\).*?requestNglRender\(stage\)/s, 'MMC result tabs resize NGL stages through the shared helper' );
 like( $ui2_js, qr/function plotlyLayoutForOutput\(output, sourceLayout\).*?plotFit === "pane".*?delete layout\.width;.*?delete layout\.height;/s, 'MMC fitted Plotly layouts remove fixed producer dimensions' );
 like( $ui2_js, qr/function observeFitPlotlyOutput\(output\).*?new ResizeObserver.*?resizePlotlyOutputWhenVisible\(output\)/s, 'MMC fitted Plotly surfaces observe their actual container size' );
