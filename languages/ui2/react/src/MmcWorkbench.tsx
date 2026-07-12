@@ -537,7 +537,9 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
                   </div>
                   {visibleResultTabs.map((tab: WorkbenchResultTab) => {
                     const tabFields = tab.outputs.map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]
-                    const panelKind = tabFields.some((field) => field.type === "plotly")
+                    const panelKind = tab.fit === "wide"
+                      ? "wide"
+                      : tabFields.some((field) => field.type === "plotly")
                       ? "plot"
                       : tabFields.some((field) => field.type === "ngl")
                         ? "structure"

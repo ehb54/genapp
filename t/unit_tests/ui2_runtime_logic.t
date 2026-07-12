@@ -1608,6 +1608,60 @@ const unsafeDynamicItems = hooks.dynamicOutputItems(dynamicGroup, [
 ]);
 assert.strictEqual(unsafeDynamicItems[0].id, "badid", "dynamic output explicit ids are sanitized");
 
+const dynamicPlotRow = createNode("div");
+dynamicPlotRow.className = "ui2-field ui2-output-field ui2-dynamic-output-row";
+dynamicPlotRow.hidden = true;
+const dynamicPlotGroup = createNode("div");
+dynamicPlotGroup.dataset.outputFieldId = "stream_dynamic_plot";
+dynamicPlotGroup.dataset.outputType = "plotly";
+dynamicPlotGroup.dataset.dynamicOutput = "true";
+dynamicPlotGroup.dataset.dynamicIdPrefix = "stream_plot";
+dynamicPlotGroup.dataset.dynamicMax = "1";
+dynamicPlotGroup.dataset.dynamicLabel = "Streaming plots";
+dynamicPlotRow.appendChild(dynamicPlotGroup);
+document.body.appendChild(dynamicPlotRow);
+window.Plotly = {
+  newPlot(output, data, layout, config) {
+    output.data = data;
+    output.layout = layout;
+    output.config = config;
+    return Promise.resolve(output);
+  },
+  react(output, data, layout, config) {
+    output.data = data;
+    output.layout = layout;
+    output.config = config;
+    return Promise.resolve(output);
+  },
+  Plots: { resize() {} }
+};
+hooks.state.jobEvents.reset("run-dynamic-plot", "monomer_monte_carlo");
+hooks.applyRuntimePayload({
+  _job_event: {
+    version: 1,
+    run: "run-dynamic-plot",
+    module: "monomer_monte_carlo",
+    sequence: 1,
+    timestamp: "2026-07-12T12:00:00Z",
+    channel: "plot",
+    topic: "stream_dynamic_plot",
+    operation: "snapshot",
+    payload: {
+      items: [{
+        id: "profile",
+        label: "Profile",
+        value: { data: [], layout: { title: "Profile" } }
+      }]
+    }
+  }
+});
+assert.strictEqual(dynamicPlotRow.hidden, false, "plot job events reveal dynamic plot output rows");
+assert.strictEqual(
+  dynamicPlotGroup.querySelectorAll(".ui2-dynamic-output-instance").length,
+  1,
+  "plot job events populate dynamic plot output groups instead of rendering on the group shell"
+);
+
 const futureEventStore = hooks.createJobEventStore();
 futureEventStore.reset("event-run", "monomer_monte_carlo");
 assert.strictEqual(

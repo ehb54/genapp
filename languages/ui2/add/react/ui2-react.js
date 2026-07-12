@@ -11189,7 +11189,7 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 									}), w ? "Restore split view" : "Expand workspace"]
 								})]
 							}), de.map((e) => {
-								let t = e.outputs.map((e) => E.get(e)).filter(Boolean), n = t.some((e) => e.type === "plotly") ? "plot" : t.some((e) => e.type === "ngl") ? "structure" : "other";
+								let t = e.outputs.map((e) => E.get(e)).filter(Boolean), n = e.fit === "wide" ? "wide" : t.some((e) => e.type === "plotly") ? "plot" : t.some((e) => e.type === "ngl") ? "structure" : "other";
 								return /* @__PURE__ */ (0, I.jsxs)(Vr, {
 									forceMount: !0,
 									value: e.id,

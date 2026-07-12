@@ -5554,6 +5554,10 @@
       return;
     }
     if (event.channel === "plot") {
+      if (output.dataset.dynamicOutput === "true") {
+        updateDynamicOutput(output, event.payload);
+        return;
+      }
       if (event.operation === "append") {
         appendPlotlyOutput(output, event.payload);
       } else if (event.payload) {
