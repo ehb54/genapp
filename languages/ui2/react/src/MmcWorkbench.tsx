@@ -66,6 +66,31 @@ function displayValue(value: unknown, field?: Ui2Field): string {
   return String(value)
 }
 
+function truthyRepeatValue(value: unknown): boolean {
+  if (Array.isArray(value)) return value.some((item) => truthyRepeatValue(item))
+  if (typeof value === "boolean") return value
+  const text = String(value ?? "").trim().toLowerCase()
+  return ["1", "true", "yes", "on", "checked"].includes(text)
+}
+
+function repeatAtomActive(atom: string, values: Record<string, unknown>): boolean {
+  const trimmed = atom.trim()
+  if (!trimmed) return true
+  if (trimmed.startsWith("!")) return !repeatAtomActive(trimmed.slice(1), values)
+  const [id, expected] = trimmed.split(":")
+  const value = values[id]
+  if (expected == null) return truthyRepeatValue(value)
+  return String(value ?? "") === expected
+}
+
+function repeatExpressionActive(expression: unknown, values: Record<string, unknown>): boolean {
+  const text = String(expression || "").trim()
+  if (!text) return true
+  return text
+    .split("||")
+    .some((orPart) => orPart.split("&&").every((andPart) => repeatAtomActive(andPart, values)))
+}
+
 function runtimeLogText(snapshot: JobRuntimeSnapshot): string {
   const topic = snapshot.channels.log?.run
   const appended = (topic?.items || []).map((item) => {
@@ -246,6 +271,7 @@ function RunLog({
 export function MmcWorkbench({ module, fields, view, bridge, submitted: initialSubmitted }: MmcMountProps) {
   const [advancedOpen, setAdvancedOpen] = React.useState(false)
   const [submitted, setSubmitted] = React.useState<{ values: Record<string, unknown>; uuid?: string } | null>(initialSubmitted || null)
+  const [liveValues, setLiveValues] = React.useState<Record<string, unknown>>(initialSubmitted?.values || {})
   const inputSections = view.inputs?.sections || []
   const advancedSection = view.inputs?.advanced
   const advancedFieldIds = advancedSection?.fields || []
@@ -261,6 +287,11 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
   const resultCardRef = React.useRef<HTMLElement>(null)
   const fieldsById = React.useMemo(() => new Map(fields.map((field) => [field.id, field])), [fields])
   const runtime = React.useSyncExternalStore(bridge.subscribeRuntime, bridge.runtimeSnapshot, bridge.runtimeSnapshot)
+  const resultTabValues = submitted?.values || liveValues
+  const visibleResultTabs = React.useMemo(
+    () => resultTabs.filter((tab) => repeatExpressionActive(tab.repeat, resultTabValues)),
+    [resultTabs, resultTabValues]
+  )
   const progressFields = (progressSection?.fields || []).map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]
   const assigned = new Set([
     ...inputSections.flatMap((section) => [...section.fields]),
@@ -269,20 +300,26 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
   const extraInputs = fields.filter((field) => field.role !== "output" && field.id && field.type !== "label" && !assigned.has(field.id))
 
   React.useEffect(() => {
-    if (!resultTabs.some((tab) => tab.id === activeResult)) {
-      setActiveResult(initialResult)
+    if (!visibleResultTabs.some((tab) => tab.id === activeResult)) {
+      setActiveResult(visibleResultTabs.find((tab) => tab.primary)?.id || visibleResultTabs[0]?.id || "")
     }
-  }, [activeResult, initialResult, resultTabs])
+  }, [activeResult, visibleResultTabs])
 
   React.useLayoutEffect(() => {
-    bridge.syncValues()
+    setLiveValues(bridge.syncValues())
+  }, [bridge])
+
+  const syncLiveValues = React.useCallback(() => {
+    setLiveValues(bridge.syncValues())
   }, [bridge])
 
   React.useEffect(() => {
     const handleReattached = (event: Event) => {
       const detail = (event as CustomEvent).detail || {}
       if (detail.moduleId !== "monomer_monte_carlo") return
-      setSubmitted({ values: detail.values || bridge.syncValues(), uuid: detail.uuid })
+      const values = detail.values || bridge.syncValues()
+      setLiveValues(values)
+      setSubmitted({ values, uuid: detail.uuid })
     }
     window.addEventListener("ui2:mmc-reattached", handleReattached)
     return () => window.removeEventListener("ui2:mmc-reattached", handleReattached)
@@ -321,7 +358,9 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
     try {
       const result = await bridge.submit(event.currentTarget)
       if (result.ok) {
-        setSubmitted({ values: result.values || bridge.syncValues(), uuid: result.uuid })
+        const values = result.values || bridge.syncValues()
+        setLiveValues(values)
+        setSubmitted({ values, uuid: result.uuid })
         setInputRailCollapsed(false)
       }
     } finally {
@@ -332,6 +371,7 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
   const handleReset = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     bridge.reset(event.currentTarget)
+    setLiveValues(bridge.syncValues())
     setSubmitted(null)
     setAdvancedOpen(false)
     setInputRailCollapsed(false)
@@ -354,8 +394,8 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
     <form
       className={`ui2-mmc-react${workspaceExpanded ? " ui2-mmc-react-workspace-expanded" : ""}`}
       id="ui2-form"
-      onChange={() => bridge.syncValues()}
-      onInput={() => bridge.syncValues()}
+      onChange={syncLiveValues}
+      onInput={syncLiveValues}
       onReset={handleReset}
       onSubmit={handleSubmit}
     >
@@ -470,7 +510,7 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
             />
           )}
 
-          {resultTabs.length > 0 && (
+          {visibleResultTabs.length > 0 && (
             <Card className="ui2-mmc-result-card" ref={resultCardRef}>
               <CardContent>
                 <Tabs
@@ -483,7 +523,7 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
                 >
                   <div className="ui2-mmc-result-toolbar">
                     <TabsList aria-label={`${module.label || "Module"} results`} className="ui2-mmc-result-tab-list">
-                      {resultTabs.map((tab) => <TabsTrigger key={tab.id} value={tab.id}>{tab.label}</TabsTrigger>)}
+                      {visibleResultTabs.map((tab) => <TabsTrigger key={tab.id} value={tab.id}>{tab.label}</TabsTrigger>)}
                     </TabsList>
                     <Button
                       aria-pressed={workspaceExpanded}
@@ -495,7 +535,7 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
                       {workspaceExpanded ? "Restore split view" : "Expand workspace"}
                     </Button>
                   </div>
-                  {resultTabs.map((tab: WorkbenchResultTab) => {
+                  {visibleResultTabs.map((tab: WorkbenchResultTab) => {
                     const tabFields = tab.outputs.map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]
                     const panelKind = tabFields.some((field) => field.type === "plotly")
                       ? "plot"
@@ -525,14 +565,6 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
                       </TabsContent>
                     )
                   })}
-                  {workspaceExpanded && (
-                    <section className="ui2-mmc-expanded-panel ui2-mmc-result-panel-sas" aria-label="SAS/profile output">
-                      <h3 className="ui2-mmc-result-panel-title">SAS/profile</h3>
-                      <div className="ui2-mmc-sas-placeholder">
-                        Reserved for dynamic SAS/profile comparison output.
-                      </div>
-                    </section>
-                  )}
                 </Tabs>
               </CardContent>
             </Card>

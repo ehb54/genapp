@@ -33,6 +33,7 @@ export type WorkbenchResultTab = {
   primary?: boolean
   expandable?: boolean
   fit?: "pane" | string
+  repeat?: string
 }
 
 export type WorkbenchView = {
