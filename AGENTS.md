@@ -6,6 +6,9 @@ When summarizing work or handing off state, use plain language first. Say what
 changed, what was verified, what remains uncertain, and the next concrete
 steps. Include an approximate count of remaining steps when the work spans more
 than one action, so the user can quickly judge scope and progress.
+For multi-step work, final responses must include a short next-steps note with
+an approximate remaining-step count, even when the immediate requested task is
+complete.
 
 ## Source Of Truth
 
@@ -106,6 +109,15 @@ The `genapp` and `genapp.pl` entry points require `GENAPP` to point at this
 repository and dispatch to `bin/genapp_run.pl`. `genapp_run.pl` validates the
 application directory, reads the language definitions, and assembles generated
 files from replacement templates.
+
+## Cross-Repository Work
+
+When a task touches files outside this repository, read and follow the
+applicable `AGENTS.md` in each repository or working tree before editing,
+testing, deploying, or drawing runtime conclusions about that code. The target
+repository's instructions control its interpreter, branch, deployment, testing,
+and ownership rules. Do not assume GenApp-local conventions apply to sibling
+repositories such as `genapp_zazzie` or `zazzie`.
 
 ## GitHub Workflow Preference
 
