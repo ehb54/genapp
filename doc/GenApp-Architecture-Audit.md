@@ -111,6 +111,43 @@ produce `{}`. Views are intended to organize presentation only; they should not
 redefine field types, repeat dependencies, executables, hook payloads, output
 ids, defaults, or backend request shape.
 
+## UI2 Runtime Boundary
+
+`confirmed` plus `inferred`
+
+`ui2` is the GenApp target language. `ui2-react` is a React/shadcn workbench
+inside that target, not a separate target language. The target definition lives
+in `languages/ui2.json`; the plain JavaScript runtime in
+`languages/ui2/add/js/ui2.js` owns module loading, field production, values,
+repeat visibility, submission, polling, output rendering, reattachment, and the
+bridge exposed to React.
+
+React source under `languages/ui2/react/` owns curated workspace composition and
+visual presentation. Its README states that React deliberately reuses the
+existing UI2 field and output DOM producers through a narrow bridge so GenApp
+field semantics, file selection, repeat behavior, submission, polling, Plotly,
+NGL, and reattachment remain authoritative in the established UI2 runtime.
+
+Action/precheck consequence: if a module-level action or pre-run check is added
+for UI2, implement the behavior in the UI2 core target/runtime first. Let React
+receive it through existing field production where possible. Add a bridge method
+only when a custom React view needs to invoke the same UI2-owned action without
+rendering the standard field producer. Do not create a standalone
+`ui2-react` target, move semantics into `views`, or make React own the backend
+request/response contract for this feature.
+
+The current precheck/action intent is additive and separate from hooks:
+
+- a user-visible button or control may run an optional or conditional precheck;
+- precheck may validate current values, run a configured executable, update
+  fields, return a message, or show a warning/dialog;
+- hooks remain automatic field-fill behavior and should not be overloaded for
+  this manual action path;
+- response contracts should be target-neutral enough for future PyQt, Swift, or
+  other target implementations;
+- files created by precheck execution should be treated as run data and moved
+  into the run-name module folder when a run is created.
+
 ## JSON Loading And Traversal
 
 `confirmed`

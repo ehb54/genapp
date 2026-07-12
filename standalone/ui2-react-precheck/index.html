@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en" data-ui2-theme="slate">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UI2 React Precheck Mock</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ui2-shell">
+    <header class="ui2-topbar">
+      <div class="ui2-titlebar">
+        <p class="ui2-kicker">Standalone UI2 React mock</p>
+        <h1>Precheck Action Test</h1>
+      </div>
+      <div class="ui2-session">Project mock_precheck</div>
+    </header>
+
+    <main class="ui2-mmc-react">
+      <section class="ui2-workbench-heading">
+        <div>
+          <span class="ui2-mmc-kicker">Manual pre-run action</span>
+          <h2>Contrast calculator setup</h2>
+          <p>Use this page to click through the action/precheck contract before wiring the feature into a real module.</p>
+        </div>
+        <span class="ui2-status-pill" id="precheck-state">Not checked</span>
+      </section>
+
+      <form id="mock-module-form" class="ui2-mmc-grid">
+        <aside class="ui2-input-pane" aria-label="Inputs">
+          <section class="ui2-card">
+            <header class="ui2-card-header">
+              <h3>Inputs</h3>
+              <p>Mock module fields sent to the precheck helper.</p>
+            </header>
+            <div class="ui2-card-body">
+              <label class="ui2-field">
+                <span>Run name</span>
+                <input id="run_name" name="run_name" value="run_0">
+              </label>
+              <label class="ui2-field">
+                <span>Input path</span>
+                <input id="input_file" name="input_file" value="results/users/curtis/example.dat">
+              </label>
+              <label class="ui2-field">
+                <span>q min</span>
+                <input id="q_min" name="q_min" type="number" step="any" value="0.005">
+              </label>
+              <label class="ui2-field">
+                <span>q max</span>
+                <input id="q_max" name="q_max" type="number" step="any" value="0.85">
+              </label>
+              <label class="ui2-field">
+                <span>D2O fraction</span>
+                <input id="d2o_fraction" name="d2o_fraction" type="number" step="any" value="0.95">
+              </label>
+              <label class="ui2-switch-row">
+                <input id="show_precheck" name="show_precheck" type="checkbox" checked>
+                <span>Show optional precheck action</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="ui2-card" id="precheck-panel">
+            <header class="ui2-card-header">
+              <h3>Action</h3>
+              <p>This button is manual and separate from normal submit.</p>
+            </header>
+            <div class="ui2-card-body">
+              <button class="ui2-button" id="precheck-button" type="button">Precheck</button>
+              <button class="ui2-button ui2-button-quiet" id="reset-button" type="reset">Reset inputs</button>
+              <div class="ui2-inline-status" id="precheck-status" role="status">No precheck has run.</div>
+            </div>
+          </section>
+        </aside>
+
+        <section class="ui2-results-pane" aria-label="Results">
+          <section class="ui2-card">
+            <header class="ui2-card-header">
+              <h3>Precheck response</h3>
+              <p>Same shape as the GenApp action response vocabulary.</p>
+            </header>
+            <div class="ui2-card-body">
+              <label class="ui2-field">
+                <span>Summary field</span>
+                <textarea id="precheck_summary" name="precheck_summary" readonly>Waiting for precheck.</textarea>
+              </label>
+              <pre class="ui2-response" id="response-json" aria-live="polite">{}</pre>
+            </div>
+          </section>
+
+          <section class="ui2-card">
+            <header class="ui2-card-header">
+              <h3>Run context</h3>
+              <p>The run button is only context here; it does not submit a job.</p>
+            </header>
+            <div class="ui2-card-body">
+              <button class="ui2-button ui2-button-primary" id="run-button" type="button" disabled>Run mock module</button>
+              <div class="ui2-inline-status">Precheck does not create a UUID, project lock, cache entry, or job log.</div>
+            </div>
+          </section>
+        </section>
+      </form>
+    </main>
+  </div>
+
+  <div class="ui2-dialog-overlay" id="message-dialog" role="dialog" aria-modal="true" aria-labelledby="message-title" hidden>
+    <section class="ui2-dialog">
+      <div class="ui2-dialog-icon" id="message-icon">!</div>
+      <div>
+        <h2 id="message-title">Message</h2>
+        <p id="message-text"></p>
+      </div>
+      <button class="ui2-dialog-close" id="message-close" type="button">Close</button>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

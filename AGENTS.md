@@ -79,6 +79,11 @@ columns, or generated runtime assets.
   expectations cannot drift unnoticed.
 - If a UI2 experiment needs shared GenApp core changes, add tests proving
   target filtering and legacy generation behavior remain intact.
+- For UI2 runtime features, keep behavior in the UI2 core target/runtime and
+  let React/shadcn consume it as presentation through the existing bridge unless
+  a reviewed architecture decision says otherwise. `ui2-react` is not a
+  separate target language. See `doc/GenApp-Architecture-Audit.md` for the
+  current action/precheck guidance.
 
 ## Repository Map
 

@@ -588,6 +588,13 @@ Use this section to append concise dated decisions as they become real.
   NGL component in place, coalescing stale preview frames. A 1,000-atom,
   120-frame browser benchmark retained one component and averaged about
   0.20 ms of coordinate-update work per frame on the development machine.
+- 2026-07-12: Reconfirmed the UI2/React boundary for action/precheck work.
+  `ui2` remains the target language and core runtime; React/shadcn are view
+  layers inside that target. Precheck/action behavior should be implemented in
+  UI2 core first, exposed through existing field production when possible, and
+  bridged only when a custom React view needs to invoke the same UI2-owned
+  behavior directly. Do not introduce a standalone `ui2-react` target for this
+  feature.
 - 2026-07-09: Added a bounded server-side event replay journal and ordered UI2
   recovery. WebSocket delivery remains immediate, while polling/reattachment
   can replay missed events; duplicate sequences are suppressed and later

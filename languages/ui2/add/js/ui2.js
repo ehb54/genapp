@@ -1939,6 +1939,9 @@
       });
       return group;
     }
+    if (type === "action") {
+      return renderActionControl(field);
+    }
     if (type === "button") {
       const button = el("button", "ui2-button ui2-button-quiet", field.buttontext || field.label || "Action");
       button.type = "button";
@@ -1991,6 +1994,19 @@
     const hidden = el("div", "ui2-job-reference-hidden");
     button.addEventListener("click", () => openJobReferenceDialog(field, wrap));
     wrap.append(button, summary, hidden);
+    return wrap;
+  }
+
+  function renderActionControl(field) {
+    const wrap = el("div", "ui2-action-control");
+    const button = el("button", "ui2-button ui2-button-quiet", field.buttontext || field.label || "Action");
+    button.type = "button";
+    button.id = fieldId(field);
+    button.dataset.actionId = field.id || "";
+    const status = el("div", "ui2-submit-status ui2-action-status", "");
+    status.id = `${fieldId(field)}-action-status`;
+    button.addEventListener("click", () => runModuleAction(field, button, status));
+    wrap.append(button, status);
     return wrap;
   }
 
@@ -4455,6 +4471,175 @@
         submitButton.disabled = false;
       }
     }
+  }
+
+  async function runModuleAction(field, button, statusNode) {
+    const form = document.getElementById("ui2-form");
+    const actionId = field?.id || "";
+    if (!form || !actionId) {
+      setSubmitStatus(statusNode, "Action is not available.", "error");
+      return { ok: false, error: "Action is not available" };
+    }
+
+    syncValues();
+    const endpoint = moduleActionEndpointFor(state.moduleId);
+    if (!endpoint) {
+      setSubmitStatus(statusNode, "This action does not have a runtime endpoint yet.", "error");
+      return { ok: false, error: "No action endpoint" };
+    }
+
+    if (button) {
+      button.disabled = true;
+    }
+    setSubmitStatus(statusNode, `Running ${field.buttontext || field.label || actionId}`, "pending");
+
+    try {
+      await refreshSessionState();
+      if (!state.session.logon) {
+        throw new Error("You must be logged on to run this action");
+      }
+      const response = await fetch(endpoint, {
+        method: "POST",
+        body: buildActionFormData(form, field),
+        credentials: "same-origin"
+      });
+      const payload = await parseJsonResponse(response, "Action");
+      if (!response.ok || payload.error || runtimeStatus(payload) === "failed" || runtimeStatus(payload) === "error") {
+        throw new Error(payload.error || `Action returned HTTP ${response.status}`);
+      }
+      applyActionPayload(payload);
+      const status = runtimeStatus(payload) || "complete";
+      setSubmitStatus(statusNode, statusLabel(status), statusKind(status));
+      return { ok: true, payload };
+    } catch (error) {
+      setSubmitStatus(statusNode, error.message, "error");
+      showLegacyMessagePayload({ error: error.message }, { force: true });
+      return { ok: false, error: error.message };
+    } finally {
+      if (button) {
+        button.disabled = false;
+      }
+    }
+  }
+
+  function moduleActionEndpointFor(moduleId) {
+    const id = sanitizeModuleId(moduleId || "");
+    if (!id) {
+      return "";
+    }
+    const base = params.get("actionBase") || legacyEndpoint("", "ajax/action");
+    return `${base.replace(/\/+$/, "")}/${encodeURIComponent(id)}.php`;
+  }
+
+  function buildActionFormData(form, field) {
+    const formData = new FormData();
+    const actionData = stringValue(field?.actiondata || "_allformdata");
+    const allData = !actionData || actionData === "_allformdata";
+    const requested = new Set(actionData.split(",").map((id) => id.trim()).filter(Boolean));
+
+    Object.entries(state.values || {}).forEach(([id, value]) => {
+      if (allData || requested.has(id)) {
+        appendFormValue(formData, id, value);
+      }
+    });
+    if (allData) {
+      appendSelectedFiles(formData, form);
+    }
+
+    formData.set("_action", field?.id || "");
+    formData.set("_window", window.name);
+    formData.set("_project", state.session.project || "no_project_specified");
+    formData.set("_logon", state.session.logon || "");
+    formData.set("_height", String(Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)));
+    formData.set("_width", String(Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)));
+    return formData;
+  }
+
+  function applyActionPayload(payload) {
+    if (!payload || typeof payload !== "object") {
+      return;
+    }
+    if (payload.fields && typeof payload.fields === "object") {
+      applyActionFields(payload.fields);
+    }
+    if (Array.isArray(payload.actions)) {
+      payload.actions.forEach(applyActionInstruction);
+    }
+    if (payload.summary) {
+      showLegacyMessagePayload({
+        _message: {
+          icon: actionMessageIcon(payload.status),
+          text: payload.summary
+        }
+      }, { force: true });
+    } else {
+      showLegacyMessagePayload(payload);
+    }
+  }
+
+  function applyActionInstruction(instruction) {
+    if (!instruction || typeof instruction !== "object") {
+      return;
+    }
+    const action = stringValue(instruction.action).toLowerCase();
+    if (action === "set_fields") {
+      applyActionFields(instruction.fields || {});
+      return;
+    }
+    if (action === "clear_fields") {
+      clearActionFields(instruction.fields || []);
+      return;
+    }
+    if (action === "message" || action === "dialog") {
+      showLegacyMessagePayload({
+        _message: {
+          icon: actionMessageIcon(instruction.level),
+          text: instruction.text || ""
+        }
+      }, { force: true });
+    }
+  }
+
+  function applyActionFields(fields) {
+    const inputs = {};
+    const outputs = {};
+    Object.entries(fields || {}).forEach(([id, value]) => {
+      const field = moduleFieldById(id);
+      if (field?.role === "output") {
+        outputs[id] = value;
+      } else {
+        inputs[id] = value;
+      }
+    });
+    if (Object.keys(inputs).length) {
+      applyInputPayload(inputs);
+    }
+    if (Object.keys(outputs).length) {
+      applyRuntimePayload(outputs);
+    }
+  }
+
+  function clearActionFields(ids) {
+    const inputs = {};
+    const outputs = {};
+    (Array.isArray(ids) ? ids : []).forEach((id) => {
+      const field = moduleFieldById(id);
+      if (field?.role === "output") {
+        outputs[id] = "";
+      } else if (field?.id) {
+        inputs[id] = "";
+      }
+    });
+    if (Object.keys(inputs).length) {
+      applyInputPayload(inputs);
+    }
+    if (Object.keys(outputs).length) {
+      applyRuntimePayload(outputs);
+    }
+  }
+
+  function actionMessageIcon(status) {
+    return /warn|fail|error/i.test(stringValue(status)) ? "warning.png" : "information.png";
   }
 
   function dispatchUi2Event(name, detail) {
@@ -7474,6 +7659,10 @@
       normalizeFileList,
       payloadFileList,
       fileDownloadLinks,
+      moduleActionEndpointFor,
+      buildActionFormData,
+      applyActionPayload,
+      applyActionFields,
       moduleSubmitEndpointFor,
       buildSubmitFormData,
       serverFileInitialDir,

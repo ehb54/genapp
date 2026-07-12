@@ -76,12 +76,19 @@
                                     { "sys/module_info.php"          : "once" }
                                    ]
                    }
-                   ,{
+                  ,{
                     "frequency"  : "menu:modules:id",
                     "output"     : "ajax/__menu:id__/__menu:modules:id__.php",
                     "prefix"     : "enable",
                     "inputs"     : [ 
                                     { "base.php" : "once" }
+                                   ]
+                   }
+                  ,{
+                    "frequency"  : "menu:modules:id",
+                    "output"     : "ajax/action/__menu:modules:id__.php",
+                    "inputs"     : [
+                                    { "action.php" : "once" }
                                    ]
                    }
 # special configuration modules from config.json
@@ -567,6 +574,7 @@
                                     ,{ "js/ws.js"               : "once" }
                                     ,{ "js/layout.js"           : "once" }
                                     ,{ "js/button.js"           : "once" }
+                                    ,{ "js/action.js"           : "once" }
                                     ,{ "js/util.js"             : "once" }
                                    ]
                    }

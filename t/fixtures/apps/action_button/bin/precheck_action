@@ -1,0 +1,29 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use JSON;
+
+my $raw = do { local $/; <STDIN> };
+my $request = eval { decode_json($raw) } || {};
+my $sample = exists $request->{sample} ? $request->{sample} : 'missing';
+
+print encode_json(
+    {
+        status  => $sample eq 'bad' ? 'warning' : 'pass',
+        summary => "Checked sample '$sample'",
+        actions => [
+            {
+                action => 'set_fields',
+                fields => {
+                    precheck_summary => "checked:$sample"
+                }
+            },
+            {
+                action => 'message',
+                level  => $sample eq 'bad' ? 'warning' : 'info',
+                text   => "Precheck finished"
+            }
+        ]
+    }
+);

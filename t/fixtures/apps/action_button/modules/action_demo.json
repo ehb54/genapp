@@ -1,0 +1,54 @@
+{
+    "moduleid"   : "action_demo",
+    "label"      : "Action Demo",
+    "executable" : "run_action_demo",
+    "resource"   : "local",
+    "fields"     : [
+        {
+            "role"    : "input",
+            "id"      : "sample",
+            "label"   : "Sample",
+            "type"    : "text",
+            "default" : "alpha"
+        },
+        {
+            "role"       : "input",
+            "id"         : "precheck",
+            "label"      : "Input check",
+            "type"       : "action",
+            "buttontext" : "Precheck",
+            "executable" : "precheck_action",
+            "actiondata" : "_allformdata",
+            "timeout"    : "10"
+        },
+        {
+            "role"     : "input",
+            "id"       : "show_conditional",
+            "label"    : "Show conditional precheck",
+            "type"     : "checkbox",
+            "repeater" : "true"
+        },
+        {
+            "role"     : "input",
+            "id"       : "conditional_precheck",
+            "label"    : "Conditional input check",
+            "type"     : "action",
+            "buttontext" : "Conditional precheck",
+            "executable" : "precheck_action",
+            "actiondata" : "sample",
+            "repeat"   : "show_conditional"
+        },
+        {
+            "role"  : "output",
+            "id"    : "precheck_summary",
+            "label" : "Precheck summary",
+            "type"  : "text"
+        },
+        {
+            "role"  : "output",
+            "id"    : "reply",
+            "label" : "Reply",
+            "type"  : "text"
+        }
+    ]
+}

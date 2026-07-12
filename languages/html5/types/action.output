@@ -1,0 +1,4 @@
+// -- action.output --
+// Action fields are explicit input controls only. Results should be returned
+// through response actions such as set_fields, message, or dialog.
+// -- end action.output --

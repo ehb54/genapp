@@ -1,0 +1,15 @@
+{
+    "header" : "Action Button Fixture",
+    "menu"   : [
+        {
+            "id"      : "demo",
+            "label"   : "Demo",
+            "modules" : [
+                {
+                    "id"    : "action_demo",
+                    "label" : "Action Demo"
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,6 @@
+{
+    "title"       : "Action Button Fixture",
+    "application" : "action_button",
+    "version"     : "0.01",
+    "languages"   : [ "html5", "ui2" ]
+}

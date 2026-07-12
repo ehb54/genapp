@@ -1484,6 +1484,34 @@ assert.strictEqual(
   "admin system module submits carry the legacy docroot executable to the generated wrapper"
 );
 
+assert.strictEqual(
+  hooks.moduleActionEndpointFor("action_demo"),
+  "/sassie3/ajax/action/action_demo.php",
+  "UI2 action endpoints resolve through the app-level legacy ajax action root"
+);
+hooks.state.values = { sample: "alpha", extra: "beta" };
+hooks.state.session = { logon: "Joseph", project: "precheck_project" };
+hooks.state.serverSelections = {};
+const allActionFormData = hooks.buildActionFormData({
+  querySelectorAll() {
+    return [];
+  }
+}, { id: "precheck", actiondata: "_allformdata" });
+assert.deepStrictEqual(allActionFormData.get("sample"), ["alpha"], "UI2 action all-form payload includes current field values");
+assert.deepStrictEqual(allActionFormData.get("extra"), ["beta"], "UI2 action all-form payload includes additional active values");
+assert.strictEqual(allActionFormData.get("_action"), "precheck", "UI2 action payload names the requested action");
+assert.strictEqual(allActionFormData.get("_logon"), "Joseph", "UI2 action payload carries the refreshed legacy logon");
+assert.strictEqual(allActionFormData.get("_project"), "precheck_project", "UI2 action payload carries the current project");
+assert.strictEqual(allActionFormData.get("_uuid"), undefined, "UI2 action payload stays outside the Job Manager uuid path");
+
+const selectedActionFormData = hooks.buildActionFormData({
+  querySelectorAll() {
+    return [];
+  }
+}, { id: "conditional_precheck", actiondata: "sample" });
+assert.deepStrictEqual(selectedActionFormData.get("sample"), ["alpha"], "UI2 action selected payload includes requested fields");
+assert.strictEqual(selectedActionFormData.get("extra"), undefined, "UI2 action selected payload excludes unrequested fields");
+
 const payloadFiles = hooks.payloadFileList({ outfile: "results/users/Joseph/min3.pdb" });
 assert.strictEqual(JSON.stringify(payloadFiles), JSON.stringify(["results/users/Joseph/min3.pdb"]), "single outfile payloads are accepted");
 
