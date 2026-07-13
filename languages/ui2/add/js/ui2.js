@@ -5943,6 +5943,10 @@
       renderTextOutput(output, value);
       return;
     }
+    if (densityPayload?.loadname && output._ui2NglComponent && Array.isArray(output._ui2_ngl_frames) && output._ui2_ngl_frames.length) {
+      renderNglDensityUpdate(output, densityPayload);
+      return;
+    }
     clearNglOutput(output);
     plot.hidden = false;
     buttons.hidden = false;
