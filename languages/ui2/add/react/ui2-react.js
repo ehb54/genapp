@@ -10747,7 +10747,7 @@ function Ur({ field: e, bridge: t, role: n = "input", fitPlot: r = !1 }) {
 	return /* @__PURE__ */ (0, I.jsx)(Hr, {
 		create: S.useCallback(() => {
 			let i = t.createField(e, n);
-			return r && i.querySelector("[data-output-type=\"plotly\"]")?.setAttribute("data-plot-fit", "pane"), i;
+			return r && (i.matches("[data-output-type=\"plotly\"]") ? i : i.querySelector("[data-output-type=\"plotly\"]"))?.setAttribute("data-plot-fit", "pane"), i;
 		}, [
 			t,
 			e,

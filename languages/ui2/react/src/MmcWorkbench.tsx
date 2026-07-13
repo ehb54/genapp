@@ -28,7 +28,10 @@ function FieldHost({ field, bridge, role = "input", fitPlot = false }: { field: 
   const create = React.useCallback(() => {
     const node = bridge.createField(field, role)
     if (fitPlot) {
-      node.querySelector<HTMLElement>('[data-output-type="plotly"]')?.setAttribute("data-plot-fit", "pane")
+      const plot = node.matches('[data-output-type="plotly"]')
+        ? node
+        : node.querySelector<HTMLElement>('[data-output-type="plotly"]')
+      plot?.setAttribute("data-plot-fit", "pane")
     }
     return node
   }, [bridge, field, fitPlot, role])

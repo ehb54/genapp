@@ -6151,7 +6151,10 @@
       parts.push(`invalid ${telemetry.invalid_frames}`);
     }
     if (telemetry.last_dropped_reason) {
-      parts.push(`last ${telemetry.last_dropped_reason}`);
+      const reason = telemetry.last_dropped_reason === "stale_frame"
+        ? "latest render superseded"
+        : `last ${telemetry.last_dropped_reason}`;
+      parts.push(reason);
     }
     return parts.join(" · ");
   }
@@ -6159,6 +6162,9 @@
   function render_ngl_frame_controls(output) {
     const buttons = output?.querySelector?.(".ui2-ngl-buttons");
     if (!buttons) {
+      return;
+    }
+    if (output._ui2_ngl_scrubbing) {
       return;
     }
     buttons.querySelector(".ui2-ngl-frame-controls")?.remove();
@@ -6178,6 +6184,19 @@
       scrubber.step = "1";
       scrubber.value = String(active_index >= 0 ? active_index : frames.length - 1);
       scrubber.setAttribute("aria-label", "Streamed structure frame");
+      scrubber.addEventListener("pointerdown", () => {
+        output._ui2_ngl_scrubbing = true;
+      });
+      const finishScrubbing = () => {
+        if (!output._ui2_ngl_scrubbing) {
+          return;
+        }
+        output._ui2_ngl_scrubbing = false;
+        render_ngl_frame_controls(output);
+      };
+      scrubber.addEventListener("pointerup", finishScrubbing);
+      scrubber.addEventListener("pointercancel", finishScrubbing);
+      scrubber.addEventListener("change", finishScrubbing);
       const selected_label = el(
         "span",
         "ui2-muted ui2-ngl-frame-selected-label",

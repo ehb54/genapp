@@ -82,10 +82,13 @@ like( $ui2_react_js, qr/Expand workspace/, 'React bundle contains the view-drive
 like( $ui2_react_js, qr/Restore split view/, 'React bundle contains an explicit expanded-workspace restore control' );
 like( $ui2_react_source, qr/\{extraInputs\.length > 0.*?Additional inputs.*?\}\s*\{advancedSection/s, 'MMC places additional inputs before advanced input' );
 like( $ui2_react_source, qr/tab\.fit === "pane" \|\| tab\.fit === "wide"/, 'MMC fits wide Plotly tabs to their allocated panel' );
+like( $ui2_react_source, qr/node\.matches\('\[data-output-type="plotly"\]'\).*?data-plot-fit/s, 'MMC applies fit-to-pane to a Plotly field root as well as a nested output' );
 like( $ui2_react_css, qr/\.ui2-mmc-grid/, 'React stylesheet contains the fixed MMC workbench grid' );
 like( $ui2_react_css, qr/\.ui2-mmc-result-card \.ui2-output-plotly\{[^}]*overflow:hidden/, 'MMC fitted Plotly output suppresses internal scrollbars' );
 like( $ui2_react_css, qr/\.ui2-mmc-react-workspace-expanded/, 'MMC expanded workspace styles are present' );
 like( $ui2_react_css, qr/\.ui2-mmc-result-card \.ui2-ngl-frame-scrubber/, 'React stylesheet owns the streamed-frame scrubber dimensions' );
+like( $ui2_js, qr/output\._ui2_ngl_scrubbing.*?pointerdown.*?pointerup/s, 'streamed-frame scrubber remains mounted while the user drags it' );
+like( $ui2_js, qr/latest render superseded/, 'stream telemetry describes an omitted intermediate render in plain language' );
 like( $ui2_js, qr/function renderTabs\(inputCount, outputCount\)/, 'ui2 runtime keeps input/output jump tabs with counts' );
 like( $ui2_js, qr/tabButton\("Inputs", inputCount, true, "ui2-input-section"\)/, 'ui2 input jump tab keeps its field count for accessibility' );
 like( $ui2_js, qr/const button = el\("button", "ui2-tab", label\)/, 'ui2 jump tabs display labels without count text' );
