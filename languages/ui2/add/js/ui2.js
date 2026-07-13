@@ -5785,10 +5785,10 @@
   function updateDynamicOutput(group, payload) {
     const parentRow = group.closest(".ui2-dynamic-output-row");
     const items = dynamicOutputItems(group, payload);
-    group.querySelectorAll(".ui2-dynamic-output-instance").forEach((node) => node.remove());
-    group.classList.remove("ui2-output-rendered");
-    group.textContent = "";
     if (!items.length) {
+      group.querySelectorAll(".ui2-dynamic-output-instance").forEach((node) => node.remove());
+      group.classList.remove("ui2-output-rendered");
+      group.textContent = "";
       if (parentRow) {
         parentRow.hidden = true;
       }
@@ -5802,19 +5802,44 @@
       parentRow.hidden = false;
     }
     group.classList.add("ui2-output-rendered");
+    const existing = new Map();
+    group.querySelectorAll(".ui2-dynamic-output-instance").forEach((instance) => {
+      const output = instance.querySelector("[data-output-field-id]");
+      const id = output?.dataset?.outputFieldId;
+      if (id) {
+        existing.set(id, { instance, output });
+      }
+    });
+    const active = new Set();
     items.forEach((item) => {
-      const instance = el("div", "ui2-dynamic-output-instance");
-      const label = el("h3", "ui2-dynamic-output-label", item.label);
-      const output = renderOutput({
-        id: item.id,
-        type: group.dataset.outputType || "html",
-        width: group.dataset.dynamicWidth || "",
-        height: group.dataset.dynamicHeight || ""
-      });
-      output.dataset.dynamicChild = "true";
-      instance.append(label, output);
-      group.appendChild(instance);
+      active.add(item.id);
+      let child = existing.get(item.id);
+      if (!child) {
+        const instance = el("div", "ui2-dynamic-output-instance");
+        const label = el("h3", "ui2-dynamic-output-label", item.label);
+        const output = renderOutput({
+          id: item.id,
+          type: group.dataset.outputType || "html",
+          width: group.dataset.dynamicWidth || "",
+          height: group.dataset.dynamicHeight || ""
+        });
+        output.dataset.dynamicChild = "true";
+        instance.append(label, output);
+        group.appendChild(instance);
+        child = { instance, output };
+      } else {
+        const label = child.instance.querySelector(".ui2-dynamic-output-label");
+        if (label) {
+          label.textContent = item.label;
+        }
+      }
+      const { output } = child;
       updateOutputElement(output, item.value);
+    });
+    existing.forEach((child, id) => {
+      if (!active.has(id)) {
+        child.instance.remove();
+      }
     });
   }
 

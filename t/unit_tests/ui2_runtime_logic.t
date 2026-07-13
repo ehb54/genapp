@@ -1671,6 +1671,31 @@ assert.strictEqual(
   1,
   "plot job events populate dynamic plot output groups instead of rendering on the group shell"
 );
+const retainedDynamicPlot = dynamicPlotGroup.querySelector('[data-output-field-id="profile"]');
+hooks.applyRuntimePayload({
+  _job_event: {
+    version: 1,
+    run: "run-dynamic-plot",
+    module: "monomer_monte_carlo",
+    sequence: 2,
+    timestamp: "2026-07-12T12:00:01Z",
+    channel: "plot",
+    topic: "stream_dynamic_plot",
+    operation: "snapshot",
+    payload: {
+      items: [{
+        id: "profile",
+        label: "Updated profile",
+        value: { data: [], layout: { title: "Updated profile" } }
+      }]
+    }
+  }
+});
+assert.strictEqual(
+  dynamicPlotGroup.querySelector('[data-output-field-id="profile"]'),
+  retainedDynamicPlot,
+  "successive dynamic Plotly snapshots retain the existing canvas instead of recreating it"
+);
 
 const futureEventStore = hooks.createJobEventStore();
 futureEventStore.reset("event-run", "monomer_monte_carlo");

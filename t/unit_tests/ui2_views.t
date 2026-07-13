@@ -141,7 +141,7 @@ like( $ui2_js, qr/function serverFileTreeSelectable\(entry, mode\)/, 'ui2 server
 like( $ui2_js, qr/function renderFileManagerNameCell\(row, entry, depth, isFolder\)/, 'ui2 File Manager shares legacy-style file and folder row labeling' );
 like( $ui2_js, qr/function isDynamicOutputField\(field\)/, 'ui2 runtime detects legacy dynamic output declarations' );
 like( $ui2_js, qr/role === "output" && isDynamicOutputField\(field\).*?row\.hidden = true/s, 'ui2 dynamic output rows are hidden until runtime data arrives' );
-like( $ui2_js, qr/function updateDynamicOutput\(group, payload\).*?updateOutputElement\(output, item\.value\)/s, 'ui2 dynamic output children reuse normal output rendering' );
+like( $ui2_js, qr/function updateDynamicOutput\(group, payload\).*?const existing = new Map\(\).*?updateOutputElement\(output, item\.value\).*?existing\.forEach/s, 'ui2 dynamic output children reuse and retain normal output rendering' );
 like( $ui2_js, qr/function clearRuntimeOutputs\(scope\).*?updateDynamicOutput\(output, \{ items: \[\] \}\).*?delete output\.dataset\.runtimeText/s, 'ui2 clears dynamic and textarea output state before a new submit' );
 like( $ui2_js, qr/function renderNglOutputShell\(field, type\).*?_plot.*?_buttons/s, 'ui2 NGL outputs render the legacy plot and buttons shell' );
 like( $ui2_js, qr/function renderNglOutput\(output, value\).*?new window\.NGL\.Stage\(plot\.id\).*?stage\.loadFile\(normalizeNglLoadName\(payload\.loadname\), payload\.loadparams/s, 'ui2 NGL outputs load rebased legacy NGL payloads into a stage' );
