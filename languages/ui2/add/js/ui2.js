@@ -89,6 +89,7 @@
     submitResponse: null,
     mmcSubmitted: null,
     mmcRunContextListeners: new Set(),
+    pendingSwitch: "",
     runtimeOutputs: {},
     activeJob: null,
     jobEvents: createJobEventStore(),
@@ -194,17 +195,24 @@
     loadStartupModule().catch((error) => showError(error.message));
   }
 
-  function loadStartupModule() {
+  async function loadStartupModule() {
     const switchValue = params.get("_switch");
     if (switchValue) {
-      return attachSwitchValue(switchValue);
+      await refreshSessionState();
+      if (!state.session.logon) {
+        state.pendingSwitch = switchValue;
+        openLoginDialog({ mandatory: true });
+        return;
+      }
+      await attachSwitchValue(switchValue);
+      return;
     }
     const requested = params.get("module");
     if (requested) {
-      return loadModule(requested);
+      await loadModule(requested);
+      return;
     }
     showStartupShell();
-    return Promise.resolve();
   }
 
   function ensureWindowName() {
@@ -605,6 +613,9 @@
     const endpoint = legacyEndpoint("loginBase", "ajax/sys_config/sys_login.php");
     const formData = new FormData(form);
     formData.set("_window", window.name);
+    if (state.pendingSwitch) {
+      formData.set("_switch", state.pendingSwitch);
+    }
     if (!formData.has("forgotpassword")) {
       formData.delete("forgotpassword");
     }
@@ -629,6 +640,12 @@
         document.getElementById("ui2-login-dialog").hidden = true;
         hideSplashDialog();
         await refreshSessionState();
+        const switchValue = stringValue(payload._switch || state.pendingSwitch);
+        if (switchValue) {
+          state.pendingSwitch = "";
+          await attachSwitchValue(switchValue);
+          return;
+        }
         if (state.freshLoginAfterLogoff) {
           state.freshLoginAfterLogoff = false;
           await loadStartupModule();
