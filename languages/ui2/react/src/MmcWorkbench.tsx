@@ -315,6 +315,14 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
     setLiveValues(bridge.syncValues())
   }, [bridge])
 
+  React.useLayoutEffect(() => {
+    // NativeHost mounts the existing UI2 field/output widgets in layout
+    // effects.  Notify core on the following frame, after those hosts exist,
+    // so reattachment can restore input and durable job state safely.
+    const frame = window.requestAnimationFrame(() => bridge.viewReady())
+    return () => window.cancelAnimationFrame(frame)
+  }, [bridge])
+
   const syncLiveValues = React.useCallback(() => {
     setLiveValues(bridge.syncValues())
   }, [bridge])

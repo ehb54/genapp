@@ -90,6 +90,8 @@
     mmcSubmitted: null,
     mmcRunContextListeners: new Set(),
     pendingSwitch: "",
+    viewReady: null,
+    viewReadyGeneration: 0,
     runtimeOutputs: {},
     activeJob: null,
     jobEvents: createJobEventStore(),
@@ -812,7 +814,9 @@
       state.values = {};
       setMmcSubmitted(null);
       state.jobEvents.reset("", moduleId);
+      beginViewReady();
       renderModule();
+      await waitForViewReady();
       updateSelectedNavigation();
       syncDocsLink();
     } catch (error) {
@@ -1010,6 +1014,7 @@
       container.appendChild(systemTool);
       nodes.root.appendChild(container);
       syncValues();
+      markViewReady();
       return;
     }
 
@@ -1041,6 +1046,49 @@
     container.appendChild(form);
     nodes.root.appendChild(container);
     syncValues();
+    markViewReady();
+  }
+
+  // Module definition and job state belong to UI2 core.  A renderer may mount
+  // asynchronously, so core must not begin reattachment until its field and
+  // output hosts exist.  Plain UI2 rendering resolves this synchronously;
+  // React views call the bridge once their layout effects have mounted hosts.
+  function beginViewReady() {
+    const generation = ++state.viewReadyGeneration;
+    let resolve;
+    const promise = new Promise((done) => { resolve = done; });
+    state.viewReady = { generation, promise, resolve, resolved: false };
+    return state.viewReady;
+  }
+
+  function markViewReady(generation = state.viewReadyGeneration) {
+    const ready = state.viewReady;
+    if (!ready || ready.generation !== generation || ready.resolved) {
+      return;
+    }
+    ready.resolved = true;
+    ready.resolve();
+  }
+
+  async function waitForViewReady() {
+    const ready = state.viewReady;
+    if (!ready || ready.resolved) {
+      return;
+    }
+    let timeout;
+    try {
+      await Promise.race([
+        ready.promise,
+        new Promise((_, reject) => {
+          timeout = window.setTimeout(
+            () => reject(new Error("Timed out waiting for the UI2 view to mount.")), 5000);
+        })
+      ]);
+    } finally {
+      if (timeout != null) {
+        window.clearTimeout(timeout);
+      }
+    }
   }
 
   function renderMenu() {
@@ -1152,6 +1200,7 @@
       },
       submit: (form) => submitModule(form),
       resizeOutputs: resizeMmcOutputs,
+      viewReady: () => markViewReady(),
       runtimeSnapshot: () => state.jobEvents.snapshot(),
       subscribeRuntime: (listener) => state.jobEvents.subscribe(listener),
       runContextSnapshot: () => state.mmcSubmitted,
@@ -3879,9 +3928,6 @@
 
   async function attachSwitchValue(switchValue, jobId = "") {
     const target = switchTargetFromValue(switchValue);
-    if (!target.moduleId) {
-      throw new Error(`Reattach target did not identify a UI2 module: ${switchValue}`);
-    }
     await refreshSessionState();
     closeUtilityOverlay();
     if (target.project) {
@@ -3890,27 +3936,33 @@
     await loadModule(target.moduleId);
     const form = document.getElementById("ui2-form");
     const status = document.getElementById("ui2-submit-status");
-    const restoredInput = form ? await applySavedJobInput(target.uuid) : null;
+    if (!form || !status) {
+      throw new Error(`UI2 view for ${target.moduleId} did not provide a reattach form.`);
+    }
     setSubmitStatus(status, `Attached (${jobId || target.uuid})`, "ok");
-    if (form && state.moduleId === "monomer_monte_carlo") {
-      notifyMmcReattached(target.uuid, restoredInput);
-    }
-    if (form) {
-      startJobPolling(
-        target.uuid, form, status, true, !restoredInput, false);
-    }
+    // Match legacy ga.switch.cb2: the first authoritative result request
+    // hydrates inputs and durable output/event state before live subscription.
+    startJobPolling(target.uuid, form, status, true, true, false);
   }
 
   function switchTargetFromValue(switchValue) {
-    const parts = stringValue(switchValue).split("/").filter(Boolean);
-    const modules = new Set(candidateModules.map((id) => sanitizeModuleId(id)).filter(Boolean));
-    const moduleId = parts.map((part) => sanitizeModuleId(part)).find((part) => modules.has(part))
-      || moduleIdFromSwitchParts(parts);
+    const parts = stringValue(switchValue).split("/");
+    const switchSegment = /^[A-Za-z0-9_.-]+$/;
+    if (parts.length !== 4 || parts.some((part) => !switchSegment.test(part))) {
+      throw new Error("Invalid legacy reattach target.");
+    }
+    const [menuId, moduleId, project, uuid] = parts;
+    const menu = Array.isArray(appMap.menus)
+      ? appMap.menus.find((entry) => entry.id === menuId)
+      : null;
+    if (!menu || !(menu.modules || []).some((entry) => entry.id === moduleId)) {
+      throw new Error(`Reattach target is not a generated UI2 module: ${switchValue}`);
+    }
     return {
       moduleId,
-      menuId: parts.length >= 4 ? parts[0] : "",
-      project: switchProjectFromParts(parts),
-      uuid: parts[parts.length - 1] || ""
+      menuId,
+      project,
+      uuid
     };
   }
 
@@ -7948,6 +8000,10 @@
       mergeSavedInputPayloads,
       menuVisibleForSession,
       moduleIdFromSwitchParts,
+      switchTargetFromValue,
+      beginViewReady,
+      markViewReady,
+      waitForViewReady,
       legacyUtilityFieldName,
       normalizeUi2Theme,
       applyUi2Theme,

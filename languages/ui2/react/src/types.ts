@@ -103,6 +103,7 @@ export type MmcBridge = {
   clearSubmitted: () => void
   submit: (form: HTMLFormElement) => Promise<SubmitResult>
   resizeOutputs: () => void
+  viewReady: () => void
   runtimeSnapshot: () => JobRuntimeSnapshot
   subscribeRuntime: (listener: (snapshot: JobRuntimeSnapshot) => void) => () => void
   runContextSnapshot: () => MmcRunContext

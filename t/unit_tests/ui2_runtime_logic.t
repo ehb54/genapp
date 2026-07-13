@@ -325,6 +325,30 @@ vm.runInContext(source, context, { filename: "ui2.js" });
 const hooks = context.window.GenAppUi2TestHooks;
 assert(hooks, "test hooks were exposed");
 
+window.GenAppUi2App.menus = [{
+  id: "simulate",
+  modules: [{ id: "monomer_monte_carlo" }]
+}];
+const parsedSwitch = hooks.switchTargetFromValue("simulate/monomer_monte_carlo/no_project_specified/uuid-123");
+assert.strictEqual(parsedSwitch.menuId, "simulate", "UI2 retains the legacy reattach menu id");
+assert.strictEqual(parsedSwitch.moduleId, "monomer_monte_carlo", "UI2 retains the legacy reattach module id");
+assert.strictEqual(parsedSwitch.project, "no_project_specified", "UI2 retains the legacy reattach project");
+assert.strictEqual(parsedSwitch.uuid, "uuid-123", "UI2 retains the legacy reattach uuid");
+assert.throws(
+  () => hooks.switchTargetFromValue("monomer_monte_carlo/no_project_specified/uuid-123"),
+  /Invalid legacy reattach target/,
+  "UI2 rejects noncanonical reattach target shapes instead of guessing the module"
+);
+assert.throws(
+  () => hooks.switchTargetFromValue("simulate/not_generated/no_project_specified/uuid-123"),
+  /not a generated UI2 module/,
+  "UI2 rejects a switch target outside the generated menu/module map"
+);
+const ready = hooks.beginViewReady();
+assert.strictEqual(ready.resolved, false, "UI2 core waits until an asynchronous renderer reports mounted hosts");
+hooks.markViewReady(ready.generation);
+assert.strictEqual(ready.resolved, true, "UI2 core releases reattach only after renderer readiness");
+
 assert.strictEqual(hooks.normalizeUi2Theme("dark"), "dark", "UI2 accepts the native dark theme id");
 assert.strictEqual(hooks.normalizeUi2Theme("LIGHT"), "light", "UI2 normalizes native theme ids");
 assert.strictEqual(hooks.normalizeUi2Theme("slate"), "slate", "UI2 accepts the legacy-default Slate theme id");
@@ -1053,7 +1077,8 @@ assert.strictEqual(
   "Job Manager uses the legacy details-capable job feed"
 );
 assert(
-  source.includes('closeUtilityOverlay();\\n      await loadModule(moduleId);'),
+  source.includes('closeUtilityOverlay();\\n    if (target.project) {') &&
+    source.includes('await loadModule(target.moduleId);'),
   "reattach closes the utility overlay before switching to the attached module"
 );
 assert(

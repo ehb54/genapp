@@ -71,7 +71,7 @@ like( $ui2_js, qr/function plotlyLayoutForOutput\(output, sourceLayout\).*?plotl
 like( $ui2_js, qr/function plotlyFitMode\(output\).*?closest\?\.\("\[data-plot-fit\]"\)/s, 'dynamic Plotly children inherit their MMC pane-fit setting' );
 like( $ui2_js, qr/function observeFitPlotlyOutput\(output\).*?fittedAncestor.*?observer\.observe\(target\)/s, 'MMC fitted Plotly surfaces observe their stable pane container' );
 like( $ui2_js, qr/function releaseReactMmcField\(fieldNode\).*?disconnectPlotlyOutputObserver.*?Plotly\.purge/s, 'MMC React unmount cleans up Plotly resize observation and graph state' );
-like( $ui2_js, qr/ui2:mmc-reattached.*?values: cloneUi2Value\(state\.values\)/s, 'MMC reattachment publishes the restored submitted-input snapshot' );
+like( $ui2_js, qr/function notifyMmcReattached\(uuid, savedValues = null\).*?setMmcSubmitted\(\{\s*uuid,\s*values/s, 'MMC reattachment publishes the restored submitted-input snapshot' );
 
 my $ui2_react_js = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.js) ) );
 my $ui2_react_css = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.css) ) );
@@ -181,7 +181,7 @@ like( $ui2_js, qr/renderSessionState\(\);\s+syncSplashForSession\(\);/s, 'ui2 ch
 like( $ui2_js, qr/function showStartupShell\(\)/, 'ui2 startup can show the application shell without loading a module' );
 like( $ui2_js, qr/Choose a menu group from the options on the left/, 'ui2 runtime reset uses the menu-group-first shell copy' );
 unlike( $ui2_js, qr/<p class="ui2-kicker">Ready<\/p>/, 'ui2 runtime reset does not restore the Ready kicker' );
-like( $ui2_js, qr/showStartupShell\(\);\s+return Promise\.resolve\(\);/s, 'ui2 startup does not auto-load the first generated module' );
+like( $ui2_js, qr/async function loadStartupModule\(\)[\s\S]*?showStartupShell\(\);/s, 'ui2 startup does not auto-load the first generated module' );
 unlike( $ui2_js, qr/function loadFirstAvailable\(\)/, 'ui2 no longer has a first-available-module startup path' );
 like( $ui2_js, qr/function collapseMenuGroups\(\)/, 'ui2 startup can leave all menu groups closed' );
 like( $ui2_js, qr/activeMenuId/, 'ui2 tracks the visible menu category separately from the loaded module' );
@@ -220,10 +220,10 @@ like( $ui2_js, qr/function renderJobSelectFilter\(id, label, options\)/, 'ui2 Jo
 like( $ui2_js, qr/function toolFieldControl\(section, id, tagName\)/, 'ui2 Job Manager reads actual filter controls instead of wrapper rows' );
 like( $ui2_js, qr/ajax\/sys_config\/sys_managejob\.php/, 'ui2 Job Manager uses the legacy manage-job endpoint for row actions' );
 like( $ui2_js, qr/function submitSystemModuleAction\(action, jobIds, moduleId = "sys_job_manager"\)/, 'ui2 Job Manager can submit legacy system-module actions' );
-like( $ui2_js, qr/applySavedJobInput\(pollUuid\)/, 'ui2 Job Manager explicitly restores saved inputs from the legacy switch target' );
-like( $ui2_js, qr/startJobPolling\(\s*pollUuid, form, status, true, !restoredInput, false\)/s, 'ui2 Job Manager polls and replays the uuid from the legacy switch target after input restore' );
+like( $ui2_js, qr/function beginViewReady\(\).*?function waitForViewReady\(\)/s, 'ui2 core owns a renderer-ready barrier before reattachment' );
+like( $ui2_js, qr/await loadModule\(target\.moduleId\);\s+const form = document\.getElementById\("ui2-form"\);.*?startJobPolling\(target\.uuid, form, status, true, true, false\)/s, 'ui2 reattachment waits for the mounted view then hydrates through the legacy results path' );
 like( $ui2_js, qr/ajax\/ui2_job_input\.php/, 'ui2 Job Manager has a target-local saved input fallback endpoint' );
-like( $ui2_js, qr/function moduleIdFromSwitchParts\(parts\)/, 'ui2 Job Manager parses legacy switch targets without assuming one shape' );
+like( $ui2_js, qr/function switchTargetFromValue\(switchValue\).*?parts\.length !== 4.*?entry\.id === menuId/s, 'ui2 Job Manager validates canonical legacy menu/module/project/uuid targets' );
 like( $ui2_js, qr/function applyInputPayload\(inputs, options = \{\}\)/, 'ui2 Job Manager can hydrate form inputs from reattached job payloads' );
 like( $ui2_js, qr/function repeatIsCondition\(expression\)/, 'ui2 runtime detects expression-style repeat visibility conditions' );
 like( $ui2_js, qr/function repeatConditionTokens\(expression\)/, 'ui2 runtime tokenizes expression-style repeat visibility conditions' );
@@ -274,7 +274,7 @@ like( $ui2_js, qr/formData\.set\("_project", state\.session\.project/, 'ui2 subm
 like( $ui2_js, qr/if \(state\.module\?\.docrootexecutable\).*?formData\.set\("_docrootexecutable", state\.module\.docrootexecutable\)/s, 'ui2 runtime bridge sends legacy docroot executable metadata for system module submits' );
 like( $ui2_js, qr/const payload = await parseJsonResponse\(response, "Runtime"\);\s+state\.submitResponse = payload;\s+showLegacyMessagePayload\(payload\);/s, 'ui2 shows legacy submit messages before failed runtime responses become inline errors' );
 like( $ui2_js, qr/function startJobPolling\(\s*uuid, form, statusNode, getLastMsg = true, getInput = false,\s*subscribeFirst = true\)/s, 'ui2 runtime bridge starts polling submitted jobs' );
-like( $ui2_js, qr/startJobPolling\(\s*pollUuid, form, status, true, !restoredInput, false\)/s, 'ui2 reattachment hydrates the replay journal before subscribing to live events' );
+like( $ui2_js, qr/startJobPolling\(target\.uuid, form, status, true, true, false\)/s, 'ui2 reattachment hydrates inputs and replay state before subscribing to live events' );
 like( $ui2_js, qr/function pollJobResults\(uuid, form, statusNode, lastDelay, getLastMsg, getInput = false\)/, 'ui2 runtime bridge polls legacy job results' );
 like( $ui2_js, qr/ajax\/get_results\.php/, 'ui2 runtime bridge uses the legacy job results endpoint' );
 like( $ui2_js, qr/url\.searchParams\.set\("_getlastmsg", getLastMsg \? "1" : "0"\)/, 'ui2 runtime bridge requests legacy last-message updates with the PHP-native flag' );

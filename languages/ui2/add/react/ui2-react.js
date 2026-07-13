@@ -10959,6 +10959,9 @@ function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 		le.some((e) => e.id === g) || _(le.find((e) => e.primary)?.id || le[0]?.id || "");
 	}, [g, le]), C.useLayoutEffect(() => {
 		c(r.syncValues());
+	}, [r]), C.useLayoutEffect(() => {
+		let e = window.requestAnimationFrame(() => r.viewReady());
+		return () => window.cancelAnimationFrame(e);
 	}, [r]);
 	let A = C.useCallback(() => {
 		c(r.syncValues());
