@@ -1266,7 +1266,10 @@
         window.Plotly.purge(output);
       }
       if (output.dataset.outputType === "ngl") {
-        clearNglOutput(output);
+        // A new job must not inherit a contour or opacity selected for the
+        // previous run's density range.  Live updates within a job retain
+        // these preferences; this is the explicit run boundary.
+        clearNglOutput(output, { resetDensityPreferences: true });
       }
     });
   }
@@ -6075,7 +6078,7 @@
     return output;
   }
 
-  function clearNglOutput(output) {
+  function clearNglOutput(output, options = {}) {
     if (output._ui2NglStage?.dispose) {
       output._ui2NglStage.dispose();
     }
@@ -6084,9 +6087,14 @@
     output._ui2NglDensityComponent = null;
     output._ui2NglDensitySurface = null;
     output._ui2NglReps = null;
+    output._ui2_ngl_density_payload = null;
     output._ui2_ngl_frames = null;
     output._ui2_ngl_pending_frame = null;
     output._ui2_ngl_frame_scheduled = false;
+    if (options.resetDensityPreferences) {
+      output._ui2_ngl_density_user_isovalue = null;
+      output._ui2_ngl_density_user_opacity = null;
+    }
     const plot = output.querySelector(".ui2-ngl-plot");
     const buttons = output.querySelector(".ui2-ngl-buttons");
     const placeholder = output.querySelector(".ui2-ngl-placeholder");
@@ -6120,8 +6128,15 @@
       renderTextOutput(output, value);
       return;
     }
-    if (densityPayload?.loadname && output._ui2NglComponent && Array.isArray(output._ui2_ngl_frames) && output._ui2_ngl_frames.length) {
-      renderNglDensityUpdate(output, densityPayload);
+    const preserveLiveFrames = payload?.preserve_live_frames === true
+      && output._ui2NglComponent
+      && Array.isArray(output._ui2_ngl_frames)
+      && output._ui2_ngl_frames.length;
+    if (preserveLiveFrames) {
+      if (densityPayload?.loadname) {
+        renderNglDensityUpdate(output, densityPayload);
+      }
+      render_ngl_frame_controls(output);
       return;
     }
     clearNglOutput(output);

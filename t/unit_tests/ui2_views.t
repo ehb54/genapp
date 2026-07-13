@@ -148,6 +148,8 @@ like( $ui2_js, qr/function isDynamicOutputField\(field\)/, 'ui2 runtime detects 
 like( $ui2_js, qr/role === "output" && isDynamicOutputField\(field\).*?row\.hidden = true/s, 'ui2 dynamic output rows are hidden until runtime data arrives' );
 like( $ui2_js, qr/function updateDynamicOutput\(group, payload\).*?const existing = new Map\(\).*?updateOutputElement\(output, item\.value\).*?existing\.forEach/s, 'ui2 dynamic output children reuse and retain normal output rendering' );
 like( $ui2_js, qr/function clearRuntimeOutputs\(scope\).*?updateDynamicOutput\(output, \{ items: \[\] \}\).*?delete output\.dataset\.runtimeText/s, 'ui2 clears dynamic and textarea output state before a new submit' );
+like( $ui2_js, qr/clearNglOutput\(output, \{ resetDensityPreferences: true \}\)/, 'a new submission clears density contour and opacity preferences from the prior run' );
+like( $ui2_js, qr/preserve_live_frames === true.*?render_ngl_frame_controls\(output\)/s, 'the final MMC structure snapshot can retain streamed-frame controls' );
 like( $ui2_js, qr/function renderNglOutputShell\(field, type\).*?_plot.*?_buttons/s, 'ui2 NGL outputs render the legacy plot and buttons shell' );
 like( $ui2_js, qr/function renderNglOutput\(output, value\).*?new window\.NGL\.Stage\(plot\.id\).*?stage\.loadFile\(normalizeNglLoadName\(payload\.loadname\), payload\.loadparams/s, 'ui2 NGL outputs load rebased legacy NGL payloads into a stage' );
 like( $ui2_js, qr/function normalizeNglLoadName\(loadname\).*?value\.startsWith\("results\/"\).*?`\.\.\/\$\{value\}`/s, 'ui2 NGL renderer rebases legacy result-relative paths from the ui2 directory' );
