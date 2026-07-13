@@ -5018,7 +5018,13 @@
   }
 
   async function applySavedJobInput(uuid) {
-    const payload = await fetchJobInputPayload(uuid);
+    let payload = null;
+    try {
+      payload = await fetchJobInputPayload(uuid);
+    } catch (error) {
+      console.warn("Unable to restore saved job input", error);
+      return false;
+    }
     if (!payload?._getinput) {
       return false;
     }
@@ -5062,6 +5068,9 @@
       cache: "no-cache",
       credentials: "same-origin"
     });
+    if (!response.ok) {
+      return {};
+    }
     return parseJsonResponse(response, "UI2 job input");
   }
 
@@ -5239,7 +5248,8 @@
         return;
       }
       if (control.type === "checkbox") {
-        control.checked = controlValue === true || String(controlValue).toLowerCase() === "true" || String(controlValue) === "1";
+        const normalized = String(controlValue).toLowerCase();
+        control.checked = controlValue === true || normalized === "true" || normalized === "1" || normalized === "on" || normalized === "yes";
       } else if (control.type === "radio") {
         control.checked = String(control.value) === String(controlValue);
       } else {
@@ -6031,13 +6041,24 @@
     const userValue = output?._ui2_ngl_density_user_isovalue;
     const fallback = Number(source.default_isovalue ?? source.isolevel ?? source.min_positive ?? 1.0);
     const isolevel = Number.isFinite(Number(userValue)) ? Number(userValue) : fallback;
+    const opacity = nglDensityOpacity(output, payload);
     return Object.assign({
       isolevelType: "value",
       isolevel: Number.isFinite(Number(isolevel)) ? Number(isolevel) : 1.0,
-      opacity: 0.45,
+      opacity,
       color: "yellow",
       opaqueBack: false
-    }, payload?.representationParams || {}, { isolevelType: "value", isolevel });
+    }, payload?.representationParams || {}, { isolevelType: "value", isolevel, opacity });
+  }
+
+  function nglDensityOpacity(output, payload) {
+    const userValue = output?._ui2_ngl_density_user_opacity;
+    const sourceValue = payload?.representationParams?.opacity ?? payload?.surface?.opacity ?? 0.45;
+    const opacity = Number(Number.isFinite(Number(userValue)) ? userValue : sourceValue);
+    if (!Number.isFinite(opacity)) {
+      return 0.45;
+    }
+    return Math.min(1.0, Math.max(0.05, opacity));
   }
 
   function nglDensityMinPositive(payload) {
@@ -6060,6 +6081,7 @@
     const minValue = nglDensityMinPositive(payload);
     const maxValue = nglDensityMaxValue(payload);
     const currentValue = Number((output._ui2_ngl_density_user_isovalue ?? payload?.surface?.isolevel ?? payload?.surface?.default_isovalue ?? minValue) || 1);
+    const currentOpacity = nglDensityOpacity(output, payload);
     const controls = el("span", "ui2-ngl-density-controls");
     const label = el("span", "ui2-muted", "Density contour");
     const slider = el("input", "ui2-ngl-density-slider");
@@ -6075,6 +6097,20 @@
     number.max = slider.max;
     number.step = slider.step;
     number.value = slider.value;
+    const opacityLabel = el("span", "ui2-muted", "Density opacity");
+    const opacitySlider = el("input", "ui2-ngl-density-opacity-slider");
+    opacitySlider.type = "range";
+    opacitySlider.min = "0.05";
+    opacitySlider.max = "1";
+    opacitySlider.step = "0.05";
+    opacitySlider.value = String(currentOpacity);
+    opacitySlider.setAttribute("aria-label", "Density opacity");
+    const opacityNumber = el("input", "ui2-ngl-density-input");
+    opacityNumber.type = "number";
+    opacityNumber.min = opacitySlider.min;
+    opacityNumber.max = opacitySlider.max;
+    opacityNumber.step = opacitySlider.step;
+    opacityNumber.value = opacitySlider.value;
     const reset = el("button", "ui2-button ui2-button-quiet ui2-ngl-button", "Reset density");
     reset.type = "button";
     const applyValue = (value, userSet = true) => {
@@ -6094,13 +6130,34 @@
       set_ngl_output_value(output, "ngl_density_isovalue", clamped);
       requestNglRender(output._ui2NglStage);
     };
+    const applyOpacity = (value, userSet = true) => {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) {
+        return;
+      }
+      const clamped = Math.min(1.0, Math.max(0.05, numeric));
+      if (userSet) {
+        output._ui2_ngl_density_user_opacity = clamped;
+      }
+      opacitySlider.value = String(clamped);
+      opacityNumber.value = String(clamped);
+      if (typeof surface.setParameters === "function") {
+        surface.setParameters({ opacity: clamped });
+      }
+      set_ngl_output_value(output, "ngl_density_opacity", clamped);
+      requestNglRender(output._ui2NglStage);
+    };
     slider.addEventListener("input", () => applyValue(slider.value));
     number.addEventListener("change", () => applyValue(number.value));
+    opacitySlider.addEventListener("input", () => applyOpacity(opacitySlider.value));
+    opacityNumber.addEventListener("change", () => applyOpacity(opacityNumber.value));
     reset.addEventListener("click", () => {
       output._ui2_ngl_density_user_isovalue = null;
+      output._ui2_ngl_density_user_opacity = null;
       applyValue(minValue || 1, false);
+      applyOpacity(0.45, false);
     });
-    controls.append(label, slider, number, reset);
+    controls.append(label, slider, number, opacityLabel, opacitySlider, opacityNumber, reset);
     buttons.appendChild(controls);
   }
 
