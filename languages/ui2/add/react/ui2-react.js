@@ -10975,27 +10975,30 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 		};
 		return window.addEventListener("ui2:mmc-reattached", e), () => window.removeEventListener("ui2:mmc-reattached", e);
 	}, [r]);
-	let pe = S.useCallback(() => {
-		window.requestAnimationFrame(() => r.resizeOutputs()), window.setTimeout(r.resizeOutputs, 75), window.setTimeout(r.resizeOutputs, 250), window.setTimeout(r.resizeOutputs, 600);
+	let pe = S.useRef(null), j = S.useCallback(() => {
+		pe.current === null && (pe.current = window.requestAnimationFrame(() => {
+			pe.current = null, r.resizeOutputs();
+		}));
 	}, [r]);
-	S.useLayoutEffect(() => {
-		pe();
+	S.useEffect(() => () => {
+		pe.current !== null && window.cancelAnimationFrame(pe.current);
+	}, []), S.useLayoutEffect(() => {
+		j();
 	}, [
 		v,
 		ee,
-		D.lastSequence,
-		pe,
+		j,
 		w
 	]), S.useLayoutEffect(() => {
 		let e = le.current;
 		if (!e || typeof ResizeObserver != "function") return;
 		let t = 0, n = 0, r = new ResizeObserver((e) => {
 			let r = e?.[0]?.contentRect;
-			!r || Math.abs(r.width - t) < 1 && Math.abs(r.height - n) < 1 || (t = r.width, n = r.height, pe());
+			!r || Math.abs(r.width - t) < 1 && Math.abs(r.height - n) < 1 || (t = r.width, n = r.height, j());
 		});
 		return r.observe(e), () => r.disconnect();
-	}, [pe]);
-	let j = async (e) => {
+	}, [j]);
+	let me = async (e) => {
 		e.preventDefault(), x(!0);
 		try {
 			let t = await r.submit(e.currentTarget);
@@ -11009,18 +11012,18 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 		} finally {
 			x(!1);
 		}
-	}, me = (e) => {
+	}, he = (e) => {
 		e.preventDefault(), r.reset(e.currentTarget), u(r.syncValues()), c(null), o(!1), C(!1), te(!1);
-	}, he = () => {
+	}, ge = () => {
 		te((e) => (e && C(!1), !e));
-	}, ge = String(D.lifecycle?.state || (b ? "submitting" : "editing")), _e = String(D.lifecycle?.error || D.lifecycle?.message || ge), ve = s || D.run ? ti(D) : void 0;
+	}, _e = String(D.lifecycle?.state || (b ? "submitting" : "editing")), ve = String(D.lifecycle?.error || D.lifecycle?.message || _e), ye = s || D.run ? ti(D) : void 0;
 	return /* @__PURE__ */ (0, I.jsxs)("form", {
 		className: `ui2-mmc-react${w ? " ui2-mmc-react-workspace-expanded" : ""}`,
 		id: "ui2-form",
 		onChange: A,
 		onInput: A,
-		onReset: me,
-		onSubmit: j,
+		onReset: he,
+		onSubmit: me,
 		children: [/* @__PURE__ */ (0, I.jsx)("header", {
 			className: "ui2-mmc-heading",
 			children: /* @__PURE__ */ (0, I.jsxs)("div", { children: [
@@ -11125,7 +11128,7 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						className: "ui2-submit-status",
 						id: "ui2-submit-status",
 						role: "status",
-						children: ge === "editing" ? "Not submitted" : _e
+						children: _e === "editing" ? "Not submitted" : ve
 					})]
 				})]
 			}), /* @__PURE__ */ (0, I.jsxs)("main", {
@@ -11149,7 +11152,7 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						}) })]
 					}),
 					n.results?.runtimeLog && /* @__PURE__ */ (0, I.jsx)(ri, {
-						cue: ve,
+						cue: ye,
 						defaultOpen: n.results.runtimeLog.defaultOpen,
 						description: n.results.runtimeLog.description,
 						open: ne,
@@ -11163,7 +11166,7 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						children: /* @__PURE__ */ (0, I.jsx)(rn, { children: /* @__PURE__ */ (0, I.jsxs)(Rr, {
 							className: "ui2-mmc-result-tabs",
 							onValueChange: (e) => {
-								y(e), window.setTimeout(pe, 0);
+								y(e), window.setTimeout(j, 0);
 							},
 							value: v,
 							children: [/* @__PURE__ */ (0, I.jsxs)("div", {
@@ -11177,7 +11180,7 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 									}, e.id))
 								}), /* @__PURE__ */ (0, I.jsxs)(Qt, {
 									"aria-pressed": w,
-									onClick: he,
+									onClick: ge,
 									type: "button",
 									variant: "outline",
 									children: [w ? /* @__PURE__ */ (0, I.jsx)(ae, {

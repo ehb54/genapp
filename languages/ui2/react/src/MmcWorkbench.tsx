@@ -331,16 +331,28 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
     return () => window.removeEventListener("ui2:mmc-reattached", handleReattached)
   }, [bridge])
 
+  const pendingOutputResizeRef = React.useRef<number | null>(null)
+
   const scheduleOutputResize = React.useCallback(() => {
-    window.requestAnimationFrame(() => bridge.resizeOutputs())
-    window.setTimeout(bridge.resizeOutputs, 75)
-    window.setTimeout(bridge.resizeOutputs, 250)
-    window.setTimeout(bridge.resizeOutputs, 600)
+    // Runtime events can arrive for every accepted structure.  Rendering a
+    // frame does not change the result pane geometry, so resize only once for
+    // an actual layout change and coalesce simultaneous observations.
+    if (pendingOutputResizeRef.current !== null) return
+    pendingOutputResizeRef.current = window.requestAnimationFrame(() => {
+      pendingOutputResizeRef.current = null
+      bridge.resizeOutputs()
+    })
   }, [bridge])
+
+  React.useEffect(() => () => {
+    if (pendingOutputResizeRef.current !== null) {
+      window.cancelAnimationFrame(pendingOutputResizeRef.current)
+    }
+  }, [])
 
   React.useLayoutEffect(() => {
     scheduleOutputResize()
-  }, [activeResult, inputRailCollapsed, runtime.lastSequence, scheduleOutputResize, workspaceExpanded])
+  }, [activeResult, inputRailCollapsed, scheduleOutputResize, workspaceExpanded])
 
   React.useLayoutEffect(() => {
     const target = resultCardRef.current

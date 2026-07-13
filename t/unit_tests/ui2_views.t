@@ -69,7 +69,7 @@ like( $ui2_js, qr/function resizeMmcOutputs\(\).*?resizePlotlyOutputWhenVisible\
 like( $ui2_js, qr/function resizeNglStage\(stage\).*?stage\.handleResize\?\.\(\).*?requestNglRender\(stage\)/s, 'MMC result tabs resize NGL stages through the shared helper' );
 like( $ui2_js, qr/function plotlyLayoutForOutput\(output, sourceLayout\).*?plotlyFitMode\(output\) === "pane".*?delete layout\.width;.*?delete layout\.height;/s, 'MMC fitted Plotly layouts remove fixed producer dimensions' );
 like( $ui2_js, qr/function plotlyFitMode\(output\).*?closest\?\.\("\[data-plot-fit\]"\)/s, 'dynamic Plotly children inherit their MMC pane-fit setting' );
-like( $ui2_js, qr/function observeFitPlotlyOutput\(output\).*?new ResizeObserver.*?resizePlotlyOutputWhenVisible\(output\)/s, 'MMC fitted Plotly surfaces observe their actual container size' );
+like( $ui2_js, qr/function observeFitPlotlyOutput\(output\).*?fittedAncestor.*?observer\.observe\(target\)/s, 'MMC fitted Plotly surfaces observe their stable pane container' );
 like( $ui2_js, qr/function releaseReactMmcField\(fieldNode\).*?disconnectPlotlyOutputObserver.*?Plotly\.purge/s, 'MMC React unmount cleans up Plotly resize observation and graph state' );
 like( $ui2_js, qr/ui2:mmc-reattached.*?values: cloneUi2Value\(state\.values\)/s, 'MMC reattachment publishes the restored submitted-input snapshot' );
 
@@ -84,6 +84,8 @@ like( $ui2_react_js, qr/Restore split view/, 'React bundle contains an explicit 
 like( $ui2_react_source, qr/\{extraInputs\.length > 0.*?Additional inputs.*?\}\s*\{advancedSection/s, 'MMC places additional inputs before advanced input' );
 like( $ui2_react_source, qr/tab\.fit === "pane" \|\| tab\.fit === "wide"/, 'MMC fits wide Plotly tabs to their allocated panel' );
 like( $ui2_react_source, qr/node\.setAttribute\("data-plot-fit", "pane"\).*?node\.matches\('\[data-output-type="plotly"\]'\).*?data-plot-fit/s, 'MMC applies fit-to-pane to the field root and a direct Plotly output' );
+unlike( $ui2_react_source, qr/\[activeResult, inputRailCollapsed, runtime\.lastSequence, scheduleOutputResize, workspaceExpanded\]/, 'MMC runtime events do not schedule global output resizes' );
+like( $ui2_react_source, qr/pendingOutputResizeRef.*?requestAnimationFrame.*?bridge\.resizeOutputs/s, 'MMC coalesces geometry-driven output resizes into one animation frame' );
 like( $ui2_react_css, qr/\.ui2-mmc-grid/, 'React stylesheet contains the fixed MMC workbench grid' );
 like( $ui2_react_css, qr/\.ui2-mmc-result-card \.ui2-output-plotly\{[^}]*overflow:hidden/, 'MMC fitted Plotly output suppresses internal scrollbars' );
 like( $ui2_react_css, qr/\.ui2-mmc-react-workspace-expanded/, 'MMC expanded workspace styles are present' );

@@ -6748,6 +6748,13 @@
     if (plotlyFitMode(output) !== "pane" || typeof ResizeObserver !== "function") {
       return;
     }
+    // Observe the allocated pane, not the Plotly element itself.  Plotly
+    // changes its own SVG dimensions while resizing; observing that element
+    // feeds its own relayout back into this observer and can widen the pane.
+    const fittedAncestor = output.closest?.("[data-plot-fit]");
+    const target = fittedAncestor && fittedAncestor !== output
+      ? fittedAncestor
+      : (output.parentElement || output);
     let width = 0;
     let height = 0;
     const observer = new ResizeObserver((entries) => {
@@ -6762,7 +6769,7 @@
         resizePlotlyOutputWhenVisible(output);
       });
     });
-    observer.observe(output);
+    observer.observe(target);
     output._ui2PlotlyResizeObserver = observer;
   }
 
@@ -6786,14 +6793,10 @@
     const width = Math.max(1, Math.floor(rect?.width || output.clientWidth || 0));
     const height = Math.max(1, Math.floor(rect?.height || output.clientHeight || 0));
     debugPlotlyResize("resize", output, width, height);
-    const resize = () => window.Plotly?.Plots?.resize?.(output);
-    if (plotlyFitMode(output) === "pane" && typeof window.Plotly?.relayout === "function") {
-      window.Plotly.relayout(output, { width, height })
-        .then(resize)
-        .catch(resize);
-      return;
-    }
-    resize();
+    // Pane-fitted figures are autosized.  Plotly's resize routine reads the
+    // CSS box; writing a fixed width/height back with relayout makes the plot
+    // participate in its own size calculation and can grow the pane.
+    window.Plotly?.Plots?.resize?.(output);
   }
 
   function debugPlotlyResize(label, output, width, height) {
