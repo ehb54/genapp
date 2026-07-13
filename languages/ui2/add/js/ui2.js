@@ -6178,13 +6178,11 @@
       scrubber.step = "1";
       scrubber.value = String(active_index >= 0 ? active_index : frames.length - 1);
       scrubber.setAttribute("aria-label", "Streamed structure frame");
-      scrubber.style.width = "min(28rem, 100%)";
       const selected_label = el(
         "span",
         "ui2-muted ui2-ngl-frame-selected-label",
         ngl_frame_label(frames[Number(scrubber.value)], Number(scrubber.value)),
       );
-      selected_label.style.marginLeft = "0.5rem";
       scrubber.addEventListener("input", () => {
         const index = Number(scrubber.value);
         const frame = frames[index];

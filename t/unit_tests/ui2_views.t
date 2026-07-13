@@ -74,14 +74,18 @@ like( $ui2_js, qr/ui2:mmc-reattached.*?values: cloneUi2Value\(state\.values\)/s,
 
 my $ui2_react_js = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.js) ) );
 my $ui2_react_css = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.css) ) );
+my $ui2_react_source = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 react src MmcWorkbench.tsx) ) );
 like( $ui2_react_js, qr/Submitted inputs/, 'React bundle contains the MMC submitted-input summary' );
 like( $ui2_react_js, qr/results\?\.runtimeLog/, 'React bundle places the runtime log from view metadata' );
 like( $ui2_react_js, qr/\.outputs\.map|outputs\.map|[A-Za-z]\.outputs\.map/, 'React bundle places declared module outputs from view tab metadata' );
 like( $ui2_react_js, qr/Expand workspace/, 'React bundle contains the view-driven workspace expansion control' );
 like( $ui2_react_js, qr/Restore split view/, 'React bundle contains an explicit expanded-workspace restore control' );
+like( $ui2_react_source, qr/\{extraInputs\.length > 0.*?Additional inputs.*?\}\s*\{advancedSection/s, 'MMC places additional inputs before advanced input' );
+like( $ui2_react_source, qr/tab\.fit === "pane" \|\| tab\.fit === "wide"/, 'MMC fits wide Plotly tabs to their allocated panel' );
 like( $ui2_react_css, qr/\.ui2-mmc-grid/, 'React stylesheet contains the fixed MMC workbench grid' );
 like( $ui2_react_css, qr/\.ui2-mmc-result-card \.ui2-output-plotly\{[^}]*overflow:hidden/, 'MMC fitted Plotly output suppresses internal scrollbars' );
 like( $ui2_react_css, qr/\.ui2-mmc-react-workspace-expanded/, 'MMC expanded workspace styles are present' );
+like( $ui2_react_css, qr/\.ui2-mmc-result-card \.ui2-ngl-frame-scrubber/, 'React stylesheet owns the streamed-frame scrubber dimensions' );
 like( $ui2_js, qr/function renderTabs\(inputCount, outputCount\)/, 'ui2 runtime keeps input/output jump tabs with counts' );
 like( $ui2_js, qr/tabButton\("Inputs", inputCount, true, "ui2-input-section"\)/, 'ui2 input jump tab keeps its field count for accessibility' );
 like( $ui2_js, qr/const button = el\("button", "ui2-tab", label\)/, 'ui2 jump tabs display labels without count text' );

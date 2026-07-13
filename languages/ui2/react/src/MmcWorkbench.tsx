@@ -432,6 +432,13 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
                 )
               })}
 
+              {extraInputs.length > 0 && (
+                <Card>
+                  <CardHeader><CardTitle>Additional inputs</CardTitle></CardHeader>
+                  <CardContent><FieldGroup bridge={bridge} fields={extraInputs} /></CardContent>
+                </Card>
+              )}
+
               {advancedSection && (
                 <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
                   <Card>
@@ -451,12 +458,6 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
                 </Collapsible>
               )}
 
-              {extraInputs.length > 0 && (
-                <Card>
-                  <CardHeader><CardTitle>Additional inputs</CardTitle></CardHeader>
-                  <CardContent><FieldGroup bridge={bridge} fields={extraInputs} /></CardContent>
-                </Card>
-              )}
             </div>
           )}
 
@@ -559,7 +560,7 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
                           <FieldHost
                             bridge={bridge}
                             field={field}
-                            fitPlot={tab.fit === "pane" && field.type === "plotly"}
+                            fitPlot={(tab.fit === "pane" || tab.fit === "wide") && field.type === "plotly"}
                             key={field.id}
                             role="output"
                           />

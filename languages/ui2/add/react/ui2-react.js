@@ -11061,6 +11061,10 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 								fields: t
 							}) })] }, e.id);
 						}),
+						k.length > 0 && /* @__PURE__ */ (0, I.jsxs)($t, { children: [/* @__PURE__ */ (0, I.jsx)(en, { children: /* @__PURE__ */ (0, I.jsx)(tn, { children: "Additional inputs" }) }), /* @__PURE__ */ (0, I.jsx)(rn, { children: /* @__PURE__ */ (0, I.jsx)(Wr, {
+							bridge: r,
+							fields: k
+						}) })] }),
 						f && /* @__PURE__ */ (0, I.jsx)(zn, {
 							open: a,
 							onOpenChange: o,
@@ -11093,11 +11097,7 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 									fields: p.map((e) => E.get(e)).filter(Boolean)
 								})] })
 							})] })
-						}),
-						k.length > 0 && /* @__PURE__ */ (0, I.jsxs)($t, { children: [/* @__PURE__ */ (0, I.jsx)(en, { children: /* @__PURE__ */ (0, I.jsx)(tn, { children: "Additional inputs" }) }), /* @__PURE__ */ (0, I.jsx)(rn, { children: /* @__PURE__ */ (0, I.jsx)(Wr, {
-							bridge: r,
-							fields: k
-						}) })] })
+						})
 					]
 				}), !s && /* @__PURE__ */ (0, I.jsxs)("div", {
 					className: "ui2-mmc-actions",
@@ -11200,7 +11200,7 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 									}), t.map((t) => /* @__PURE__ */ (0, I.jsx)(Ur, {
 										bridge: r,
 										field: t,
-										fitPlot: e.fit === "pane" && t.type === "plotly",
+										fitPlot: (e.fit === "pane" || e.fit === "wide") && t.type === "plotly",
 										role: "output"
 									}, t.id))]
 								}, e.id);

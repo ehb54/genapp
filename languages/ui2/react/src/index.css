@@ -303,9 +303,15 @@
   min-width: 0;
 }
 
-.ui2-mmc-result-card .ui2-ngl-frame-select {
+.ui2-mmc-result-card .ui2-ngl-frame-scrubber {
   max-width: 100%;
   min-width: 0;
+  width: min(28rem, 100%);
+}
+
+.ui2-mmc-result-card .ui2-ngl-frame-selected-label {
+  display: inline-block;
+  margin-left: 0.5rem;
 }
 
 .ui2-mmc-result-card .ui2-output-plotly {
