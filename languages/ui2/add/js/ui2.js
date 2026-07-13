@@ -88,6 +88,7 @@
     jobSelections: {},
     submitResponse: null,
     mmcSubmitted: null,
+    mmcRunContextListeners: new Set(),
     runtimeOutputs: {},
     activeJob: null,
     jobEvents: createJobEventStore(),
@@ -792,6 +793,7 @@
       state.module = payload.module;
       state.view = payload.viewjson || {};
       state.values = {};
+      setMmcSubmitted(null);
       state.jobEvents.reset("", moduleId);
       renderModule();
       updateSelectedNavigation();
@@ -953,6 +955,7 @@
     state.module = null;
     state.view = {};
     state.values = {};
+    setMmcSubmitted(null);
     state.runtimeOutputs = {};
     state.jobEvents.reset();
     nodes.root.hidden = true;
@@ -1096,7 +1099,7 @@
     state.view = {};
     state.values = {};
     state.submitResponse = null;
-    state.mmcSubmitted = null;
+    setMmcSubmitted(null);
     state.runtimeOutputs = {};
     state.activeJob = null;
     state.jobEvents.reset();
@@ -1128,12 +1131,14 @@
       },
       reset: (form) => resetModuleForm(form),
       clearSubmitted: () => {
-        state.mmcSubmitted = null;
+        setMmcSubmitted(null);
       },
       submit: (form) => submitModule(form),
       resizeOutputs: resizeMmcOutputs,
       runtimeSnapshot: () => state.jobEvents.snapshot(),
-      subscribeRuntime: (listener) => state.jobEvents.subscribe(listener)
+      subscribeRuntime: (listener) => state.jobEvents.subscribe(listener),
+      runContextSnapshot: () => state.mmcSubmitted,
+      subscribeRunContext: (listener) => subscribeMmcRunContext(listener)
     };
     window.GenAppUi2Mmc.mount(root, {
       module,
@@ -4417,7 +4422,7 @@
     }
     state.serverSelections = {};
     state.jobSelections = {};
-    state.mmcSubmitted = null;
+    setMmcSubmitted(null);
     state.jobEvents.reset("", state.moduleId);
     applyInputPayload(defaultInputPayload(), { clearMissing: true });
     clearRuntimeOutputs(form);
@@ -4470,10 +4475,10 @@
         startJobPolling(jobUuid, form, status);
       }
       if (state.moduleId === "monomer_monte_carlo") {
-        state.mmcSubmitted = {
+        setMmcSubmitted({
           uuid: jobUuid,
           values: cloneUi2Value(state.values)
-        };
+        });
       }
       return {
         ok: true,
@@ -5058,15 +5063,39 @@
     const values = savedValues && typeof savedValues === "object"
       ? cloneUi2Value(savedValues)
       : cloneUi2Value(state.values);
-    state.mmcSubmitted = {
+    setMmcSubmitted({
       uuid,
       values
-    };
+    });
     dispatchUi2Event("ui2:mmc-reattached", {
       moduleId: state.moduleId,
       uuid,
       values
     });
+  }
+
+  function setMmcSubmitted(context) {
+    state.mmcSubmitted = context ? cloneUi2Value(context) : null;
+    notifyMmcRunContext();
+  }
+
+  function notifyMmcRunContext() {
+    state.mmcRunContextListeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        window.setTimeout(() => { throw error; }, 0);
+      }
+    });
+  }
+
+  function subscribeMmcRunContext(listener) {
+    if (typeof listener !== "function") {
+      return () => {};
+    }
+    state.mmcRunContextListeners.add(listener);
+    listener();
+    return () => state.mmcRunContextListeners.delete(listener);
   }
 
   async function fetchJobInputPayload(uuid) {

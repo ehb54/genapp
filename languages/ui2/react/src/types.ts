@@ -105,17 +105,21 @@ export type MmcBridge = {
   resizeOutputs: () => void
   runtimeSnapshot: () => JobRuntimeSnapshot
   subscribeRuntime: (listener: (snapshot: JobRuntimeSnapshot) => void) => () => void
+  runContextSnapshot: () => MmcRunContext
+  subscribeRunContext: (listener: () => void) => () => void
 }
+
+export type MmcRunContext = {
+  values: Record<string, unknown>
+  uuid?: string
+} | null
 
 export type MmcMountProps = {
   module: Ui2Module
   fields: Ui2Field[]
   view: WorkbenchView
   bridge: MmcBridge
-  submitted?: {
-    values: Record<string, unknown>
-    uuid?: string
-  } | null
+  submitted?: MmcRunContext
 }
 
 declare global {

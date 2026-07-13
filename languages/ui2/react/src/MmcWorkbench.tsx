@@ -276,7 +276,6 @@ function RunLog({
 
 export function MmcWorkbench({ module, fields, view, bridge, submitted: initialSubmitted }: MmcMountProps) {
   const [advancedOpen, setAdvancedOpen] = React.useState(false)
-  const [submitted, setSubmitted] = React.useState<{ values: Record<string, unknown>; uuid?: string } | null>(initialSubmitted || null)
   const [liveValues, setLiveValues] = React.useState<Record<string, unknown>>(initialSubmitted?.values || {})
   const inputSections = view.inputs?.sections || []
   const advancedSection = view.inputs?.advanced
@@ -293,6 +292,7 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
   const resultCardRef = React.useRef<HTMLElement>(null)
   const fieldsById = React.useMemo(() => new Map(fields.map((field) => [field.id, field])), [fields])
   const runtime = React.useSyncExternalStore(bridge.subscribeRuntime, bridge.runtimeSnapshot, bridge.runtimeSnapshot)
+  const submitted = React.useSyncExternalStore(bridge.subscribeRunContext, bridge.runContextSnapshot, bridge.runContextSnapshot)
   const resultTabValues = submitted?.values || liveValues
   const visibleResultTabs = React.useMemo(
     () => resultTabs.filter((tab) => repeatExpressionActive(tab.repeat, resultTabValues)),
@@ -320,16 +320,8 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
   }, [bridge])
 
   React.useEffect(() => {
-    const handleReattached = (event: Event) => {
-      const detail = (event as CustomEvent).detail || {}
-      if (detail.moduleId !== "monomer_monte_carlo") return
-      const values = detail.values || bridge.syncValues()
-      setLiveValues(values)
-      setSubmitted({ values, uuid: detail.uuid })
-    }
-    window.addEventListener("ui2:mmc-reattached", handleReattached)
-    return () => window.removeEventListener("ui2:mmc-reattached", handleReattached)
-  }, [bridge])
+    if (submitted?.values) setLiveValues(submitted.values)
+  }, [submitted])
 
   const pendingOutputResizeRef = React.useRef<number | null>(null)
 
@@ -378,7 +370,6 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
       if (result.ok) {
         const values = result.values || bridge.syncValues()
         setLiveValues(values)
-        setSubmitted({ values, uuid: result.uuid })
         setInputRailCollapsed(false)
       }
     } finally {
@@ -390,7 +381,6 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
     event.preventDefault()
     bridge.reset(event.currentTarget)
     setLiveValues(bridge.syncValues())
-    setSubmitted(null)
     setAdvancedOpen(false)
     setInputRailCollapsed(false)
     setWorkspaceExpanded(false)
@@ -430,7 +420,6 @@ export function MmcWorkbench({ module, fields, view, bridge, submitted: initialS
           {submitted ? (
             <SubmittedInputs fields={fields} summaryFieldIds={summaryFieldIds} onEdit={() => {
               bridge.clearSubmitted()
-              setSubmitted(null)
               setInputRailCollapsed(false)
             }} onHide={() => setInputRailCollapsed(true)} uuid={submitted.uuid} values={submitted.values} />
           ) : (
