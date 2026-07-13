@@ -6171,20 +6171,30 @@
     controls.appendChild(label);
     const active_index = ngl_active_frame_index(output, frames);
     if (frames.length > 1) {
-      const select = el("select", "ui2-input ui2-ngl-frame-select");
-      frames.forEach((frame, index) => {
-        const option = el("option", "", ngl_frame_label(frame, index));
-        option.value = String(index);
-        select.appendChild(option);
-      });
-      select.value = String(active_index >= 0 ? active_index : frames.length - 1);
-      select.addEventListener("change", () => {
-        const frame = frames[Number(select.value)];
+      const scrubber = el("input", "ui2-ngl-frame-scrubber");
+      scrubber.type = "range";
+      scrubber.min = "0";
+      scrubber.max = String(frames.length - 1);
+      scrubber.step = "1";
+      scrubber.value = String(active_index >= 0 ? active_index : frames.length - 1);
+      scrubber.setAttribute("aria-label", "Streamed structure frame");
+      scrubber.style.width = "min(28rem, 100%)";
+      const selected_label = el(
+        "span",
+        "ui2-muted ui2-ngl-frame-selected-label",
+        ngl_frame_label(frames[Number(scrubber.value)], Number(scrubber.value)),
+      );
+      selected_label.style.marginLeft = "0.5rem";
+      scrubber.addEventListener("input", () => {
+        const index = Number(scrubber.value);
+        const frame = frames[index];
         if (frame) {
+          selected_label.textContent = ngl_frame_label(frame, index);
           apply_ngl_coordinate_frame(output, frame);
         }
       });
-      controls.appendChild(select);
+      controls.appendChild(scrubber);
+      controls.appendChild(selected_label);
     }
     const telemetry_label = ngl_stream_telemetry_label(output);
     if (telemetry_label) {
