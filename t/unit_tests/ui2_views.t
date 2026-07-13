@@ -88,7 +88,7 @@ like( $ui2_react_css, qr/\.ui2-mmc-result-card \.ui2-output-plotly\{[^}]*overflo
 like( $ui2_react_css, qr/\.ui2-mmc-react-workspace-expanded/, 'MMC expanded workspace styles are present' );
 like( $ui2_react_css, qr/\.ui2-mmc-result-card \.ui2-ngl-frame-scrubber/, 'React stylesheet owns the streamed-frame scrubber dimensions' );
 like( $ui2_js, qr/output\._ui2_ngl_scrubbing.*?pointerdown.*?pointerup/s, 'streamed-frame scrubber remains mounted while the user drags it' );
-like( $ui2_js, qr/latest render superseded/, 'stream telemetry describes an omitted intermediate render in plain language' );
+unlike( $ui2_js, qr/function ngl_stream_telemetry_label\(output\).*?last_dropped_reason.*?parts\.push/s, 'stream telemetry does not expose internal dropped-frame reasons to users' );
 like( $ui2_js, qr/function renderTabs\(inputCount, outputCount\)/, 'ui2 runtime keeps input/output jump tabs with counts' );
 like( $ui2_js, qr/tabButton\("Inputs", inputCount, true, "ui2-input-section"\)/, 'ui2 input jump tab keeps its field count for accessibility' );
 like( $ui2_js, qr/const button = el\("button", "ui2-tab", label\)/, 'ui2 jump tabs display labels without count text' );

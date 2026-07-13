@@ -6150,12 +6150,6 @@
     if (telemetry.invalid_frames) {
       parts.push(`invalid ${telemetry.invalid_frames}`);
     }
-    if (telemetry.last_dropped_reason) {
-      const reason = telemetry.last_dropped_reason === "stale_frame"
-        ? "latest render superseded"
-        : `last ${telemetry.last_dropped_reason}`;
-      parts.push(reason);
-    }
     return parts.join(" · ");
   }
 
