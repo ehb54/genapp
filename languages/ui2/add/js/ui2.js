@@ -190,10 +190,14 @@
       }
     });
 
-    loadStartupModule();
+    loadStartupModule().catch((error) => showError(error.message));
   }
 
   function loadStartupModule() {
+    const switchValue = params.get("_switch");
+    if (switchValue) {
+      return attachSwitchValue(switchValue);
+    }
     const requested = params.get("module");
     if (requested) {
       return loadModule(requested);
@@ -3839,32 +3843,48 @@
         throw new Error("Reattach returned no switch target.");
       }
       if (newWindow) {
-        const url = new URL("../index.html", window.location.href);
+        const url = new URL(window.location.pathname || "index.html", window.location.origin);
         url.searchParams.set("_reqlogin", "1");
         url.searchParams.set("_switch", switchValue);
         window.open(url.toString(), "_blank", "noopener");
         return;
       }
-      const parts = switchValue.split("/").filter(Boolean);
-      const moduleId = moduleIdFromSwitchParts(parts);
-      const pollUuid = parts[parts.length - 1] || jobId;
-      await refreshSessionState();
-      closeUtilityOverlay();
-      await loadModule(moduleId);
-      const form = document.getElementById("ui2-form");
-      const status = document.getElementById("ui2-submit-status");
-      const restoredInput = form ? await applySavedJobInput(pollUuid) : null;
-      setSubmitStatus(status, `Attached (${jobId})`, "ok");
-      if (form && state.moduleId === "monomer_monte_carlo") {
-        notifyMmcReattached(pollUuid, restoredInput);
-      }
-      if (form) {
-        startJobPolling(
-          pollUuid, form, status, true, !restoredInput, false);
-      }
+      await attachSwitchValue(switchValue, jobId);
     } catch (error) {
       setSystemMessage("messages", error.message, true);
     }
+  }
+
+  async function attachSwitchValue(switchValue, jobId = "") {
+    const target = switchTargetFromValue(switchValue);
+    if (!target.moduleId) {
+      throw new Error(`Reattach target did not identify a UI2 module: ${switchValue}`);
+    }
+    await refreshSessionState();
+    closeUtilityOverlay();
+    await loadModule(target.moduleId);
+    const form = document.getElementById("ui2-form");
+    const status = document.getElementById("ui2-submit-status");
+    const restoredInput = form ? await applySavedJobInput(target.uuid) : null;
+    setSubmitStatus(status, `Attached (${jobId || target.uuid})`, "ok");
+    if (form && state.moduleId === "monomer_monte_carlo") {
+      notifyMmcReattached(target.uuid, restoredInput);
+    }
+    if (form) {
+      startJobPolling(
+        target.uuid, form, status, true, !restoredInput, false);
+    }
+  }
+
+  function switchTargetFromValue(switchValue) {
+    const parts = stringValue(switchValue).split("/").filter(Boolean);
+    const modules = new Set(candidateModules.map((id) => sanitizeModuleId(id)).filter(Boolean));
+    const moduleId = parts.map((part) => sanitizeModuleId(part)).find((part) => modules.has(part))
+      || moduleIdFromSwitchParts(parts);
+    return {
+      moduleId,
+      uuid: parts[parts.length - 1] || ""
+    };
   }
 
   function moduleIdFromSwitchParts(parts) {
