@@ -88,6 +88,7 @@
     jobSelections: {},
     submitResponse: null,
     mmcSubmitted: null,
+    runtimeOutputs: {},
     activeJob: null,
     jobEvents: createJobEventStore(),
     freshLoginAfterLogoff: false,
@@ -948,6 +949,7 @@
     state.module = null;
     state.view = {};
     state.values = {};
+    state.runtimeOutputs = {};
     state.jobEvents.reset();
     nodes.root.hidden = true;
     nodes.root.innerHTML = "";
@@ -1091,6 +1093,7 @@
     state.values = {};
     state.submitResponse = null;
     state.mmcSubmitted = null;
+    state.runtimeOutputs = {};
     state.activeJob = null;
     state.jobEvents.reset();
     nodes.root.hidden = true;
@@ -1588,6 +1591,9 @@
     }
 
     row.append(label, stack);
+    if (role === "output") {
+      replayRuntimeOutput(field.id);
+    }
     return row;
   }
 
@@ -3850,7 +3856,7 @@
       const restoredInput = form ? await applySavedJobInput(pollUuid) : null;
       setSubmitStatus(status, `Attached (${jobId})`, "ok");
       if (form && state.moduleId === "monomer_monte_carlo") {
-        notifyMmcReattached(pollUuid);
+        notifyMmcReattached(pollUuid, restoredInput);
       }
       if (form) {
         startJobPolling(
@@ -4896,6 +4902,7 @@
   }
 
   function clearRuntimeOutputs(scope) {
+    state.runtimeOutputs = {};
     (scope || document).querySelectorAll("[data-output-field-id]").forEach((output) => {
       if (output.dataset.dynamicOutput === "true") {
         updateDynamicOutput(output, { items: [] });
@@ -4970,7 +4977,7 @@
       if (getInput && payload?._getinput) {
         applyInputPayload(payload._getinput);
         if (state.moduleId === "monomer_monte_carlo") {
-          notifyMmcReattached(uuid);
+          notifyMmcReattached(uuid, payload._getinput);
         }
         if (state.activeJob?.uuid === uuid) {
           state.activeJob.getInput = false;
@@ -5027,15 +5034,18 @@
     return payload._getinput;
   }
 
-  function notifyMmcReattached(uuid) {
+  function notifyMmcReattached(uuid, savedValues = null) {
+    const values = savedValues && typeof savedValues === "object"
+      ? cloneUi2Value(savedValues)
+      : cloneUi2Value(state.values);
     state.mmcSubmitted = {
       uuid,
-      values: cloneUi2Value(state.values)
+      values
     };
     dispatchUi2Event("ui2:mmc-reattached", {
       moduleId: state.moduleId,
       uuid,
-      values: cloneUi2Value(state.values)
+      values
     });
   }
 
@@ -5632,8 +5642,21 @@
       if (id.startsWith("_")) {
         return;
       }
+      state.runtimeOutputs[id] = cloneUi2Value(value);
       updateOutputField(id, value);
     });
+  }
+
+  function replayRuntimeOutput(id) {
+    if (!id || !Object.prototype.hasOwnProperty.call(state.runtimeOutputs, id)) {
+      return;
+    }
+    window.setTimeout(() => {
+      if (!Object.prototype.hasOwnProperty.call(state.runtimeOutputs, id)) {
+        return;
+      }
+      updateOutputField(id, state.runtimeOutputs[id]);
+    }, 0);
   }
 
   function updateProgressOutputs(value) {
