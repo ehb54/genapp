@@ -3847,18 +3847,10 @@
       await loadModule(moduleId);
       const form = document.getElementById("ui2-form");
       const status = document.getElementById("ui2-submit-status");
-      const restoredInput = form ? await applySavedJobInput(pollUuid) : false;
+      const restoredInput = form ? await applySavedJobInput(pollUuid) : null;
       setSubmitStatus(status, `Attached (${jobId})`, "ok");
       if (form && state.moduleId === "monomer_monte_carlo") {
-        state.mmcSubmitted = {
-          uuid: pollUuid,
-          values: cloneUi2Value(state.values)
-        };
-        dispatchUi2Event("ui2:mmc-reattached", {
-          moduleId: state.moduleId,
-          uuid: pollUuid,
-          values: cloneUi2Value(state.values)
-        });
+        notifyMmcReattached(pollUuid);
       }
       if (form) {
         startJobPolling(
@@ -4977,6 +4969,9 @@
       showLegacyMessagePayload(payload);
       if (getInput && payload?._getinput) {
         applyInputPayload(payload._getinput);
+        if (state.moduleId === "monomer_monte_carlo") {
+          notifyMmcReattached(uuid);
+        }
         if (state.activeJob?.uuid === uuid) {
           state.activeJob.getInput = false;
         }
@@ -5023,13 +5018,25 @@
       payload = await fetchJobInputPayload(uuid);
     } catch (error) {
       console.warn("Unable to restore saved job input", error);
-      return false;
+      return null;
     }
     if (!payload?._getinput) {
-      return false;
+      return null;
     }
     applyInputPayload(payload._getinput);
-    return true;
+    return payload._getinput;
+  }
+
+  function notifyMmcReattached(uuid) {
+    state.mmcSubmitted = {
+      uuid,
+      values: cloneUi2Value(state.values)
+    };
+    dispatchUi2Event("ui2:mmc-reattached", {
+      moduleId: state.moduleId,
+      uuid,
+      values: cloneUi2Value(state.values)
+    });
   }
 
   async function fetchJobInputPayload(uuid) {
