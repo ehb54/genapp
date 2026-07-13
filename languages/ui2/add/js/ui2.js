@@ -6108,9 +6108,8 @@
 
   function ngl_frame_label(frame, index) {
     const prefix = frame?.frame_index != null ? `Frame ${frame.frame_index}` : `Frame ${index + 1}`;
-    const percent = frame?.milestone_percent == null ? "" : ` / ${frame.milestone_percent}%`;
     const trial = frame?.trial == null ? "" : ` / trial ${frame.trial}`;
-    return `${prefix}${percent}${trial}`;
+    return `${prefix}${trial}`;
   }
 
   function latest_ngl_retained_frame(output) {
@@ -6140,17 +6139,14 @@
     if (!telemetry) {
       return "";
     }
-    const parts = [
-      `received ${telemetry.received_frames}`,
-      `rendered ${telemetry.rendered_frames}`
-    ];
-    if (telemetry.retained_frames) {
-      parts.push(`retained ${telemetry.retained_frames}`);
+    const latest = latest_ngl_retained_frame(output);
+    const accepted = Number(latest?.accepted_structure ?? telemetry.last_accepted_structure ?? 0);
+    const rendered = Math.max(0, Number(telemetry.rendered_frames || 0));
+    if (!Number.isFinite(accepted) || accepted <= 0) {
+      return "";
     }
-    if (telemetry.invalid_frames) {
-      parts.push(`invalid ${telemetry.invalid_frames}`);
-    }
-    return parts.join(" · ");
+    const percent = Math.max(0, Math.min(100, Math.round((rendered / accepted) * 100)));
+    return `Rendered ${percent}% of accepted structures`;
   }
 
   function render_ngl_frame_controls(output) {
@@ -6468,7 +6464,7 @@
   function plotlyLayoutForOutput(output, sourceLayout) {
     const layout = Object.assign(defaultPlotlyLayout(), sourceLayout || {});
     layout.font = Object.assign(defaultPlotlyLayout().font, sourceLayout?.font || {});
-    if (output?.dataset?.plotFit === "pane") {
+    if (plotlyFitMode(output) === "pane") {
       layout.autosize = true;
       delete layout.width;
       delete layout.height;
@@ -6476,9 +6472,19 @@
     return layout;
   }
 
+  function plotlyFitMode(output) {
+    if (!output) {
+      return "";
+    }
+    if (output.dataset?.plotFit) {
+      return output.dataset.plotFit;
+    }
+    return output.closest?.("[data-plot-fit]")?.dataset?.plotFit || "";
+  }
+
   function observeFitPlotlyOutput(output) {
     disconnectPlotlyOutputObserver(output);
-    if (output?.dataset?.plotFit !== "pane" || typeof ResizeObserver !== "function") {
+    if (plotlyFitMode(output) !== "pane" || typeof ResizeObserver !== "function") {
       return;
     }
     let width = 0;
@@ -6520,7 +6526,7 @@
     const height = Math.max(1, Math.floor(rect?.height || output.clientHeight || 0));
     debugPlotlyResize("resize", output, width, height);
     const resize = () => window.Plotly?.Plots?.resize?.(output);
-    if (output?.dataset?.plotFit === "pane" && typeof window.Plotly?.relayout === "function") {
+    if (plotlyFitMode(output) === "pane" && typeof window.Plotly?.relayout === "function") {
       window.Plotly.relayout(output, { width, height })
         .then(resize)
         .catch(resize);

@@ -299,7 +299,11 @@
 }
 
 .ui2-mmc-result-card .ui2-ngl-frame-controls {
+  align-items: center;
+  display: flex;
   flex: 1 1 18rem;
+  flex-wrap: wrap;
+  gap: 0.45rem;
   min-width: 0;
 }
 
@@ -311,7 +315,6 @@
 
 .ui2-mmc-result-card .ui2-ngl-frame-selected-label {
   display: inline-block;
-  margin-left: 0.5rem;
 }
 
 .ui2-mmc-result-card .ui2-output-plotly {

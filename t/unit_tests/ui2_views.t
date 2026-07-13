@@ -67,7 +67,8 @@ like( $ui2_js, qr/isReactWorkbenchView\(state\.view\) && renderReactMmc\(module,
 like( $ui2_js, qr/function renderReactMmc\(module, fields\).*?createField:.*?renderField\(field, role\).*?submit:.*?submitModule\(form\)/s, 'MMC React bridge reuses canonical UI2 fields and submission' );
 like( $ui2_js, qr/function resizeMmcOutputs\(\).*?resizePlotlyOutputWhenVisible\(output\).*?resizeNglStage\(output\._ui2NglStage\).*?refreshNglOutputFrame\(output\)/s, 'MMC result tabs resize existing Plotly and refresh active NGL frames' );
 like( $ui2_js, qr/function resizeNglStage\(stage\).*?stage\.handleResize\?\.\(\).*?requestNglRender\(stage\)/s, 'MMC result tabs resize NGL stages through the shared helper' );
-like( $ui2_js, qr/function plotlyLayoutForOutput\(output, sourceLayout\).*?plotFit === "pane".*?delete layout\.width;.*?delete layout\.height;/s, 'MMC fitted Plotly layouts remove fixed producer dimensions' );
+like( $ui2_js, qr/function plotlyLayoutForOutput\(output, sourceLayout\).*?plotlyFitMode\(output\) === "pane".*?delete layout\.width;.*?delete layout\.height;/s, 'MMC fitted Plotly layouts remove fixed producer dimensions' );
+like( $ui2_js, qr/function plotlyFitMode\(output\).*?closest\?\.\("\[data-plot-fit\]"\)/s, 'dynamic Plotly children inherit their MMC pane-fit setting' );
 like( $ui2_js, qr/function observeFitPlotlyOutput\(output\).*?new ResizeObserver.*?resizePlotlyOutputWhenVisible\(output\)/s, 'MMC fitted Plotly surfaces observe their actual container size' );
 like( $ui2_js, qr/function releaseReactMmcField\(fieldNode\).*?disconnectPlotlyOutputObserver.*?Plotly\.purge/s, 'MMC React unmount cleans up Plotly resize observation and graph state' );
 like( $ui2_js, qr/ui2:mmc-reattached.*?values: cloneUi2Value\(state\.values\)/s, 'MMC reattachment publishes the restored submitted-input snapshot' );
@@ -82,13 +83,15 @@ like( $ui2_react_js, qr/Expand workspace/, 'React bundle contains the view-drive
 like( $ui2_react_js, qr/Restore split view/, 'React bundle contains an explicit expanded-workspace restore control' );
 like( $ui2_react_source, qr/\{extraInputs\.length > 0.*?Additional inputs.*?\}\s*\{advancedSection/s, 'MMC places additional inputs before advanced input' );
 like( $ui2_react_source, qr/tab\.fit === "pane" \|\| tab\.fit === "wide"/, 'MMC fits wide Plotly tabs to their allocated panel' );
-like( $ui2_react_source, qr/node\.matches\('\[data-output-type="plotly"\]'\).*?data-plot-fit/s, 'MMC applies fit-to-pane to a Plotly field root as well as a nested output' );
+like( $ui2_react_source, qr/node\.setAttribute\("data-plot-fit", "pane"\).*?node\.matches\('\[data-output-type="plotly"\]'\).*?data-plot-fit/s, 'MMC applies fit-to-pane to the field root and a direct Plotly output' );
 like( $ui2_react_css, qr/\.ui2-mmc-grid/, 'React stylesheet contains the fixed MMC workbench grid' );
 like( $ui2_react_css, qr/\.ui2-mmc-result-card \.ui2-output-plotly\{[^}]*overflow:hidden/, 'MMC fitted Plotly output suppresses internal scrollbars' );
 like( $ui2_react_css, qr/\.ui2-mmc-react-workspace-expanded/, 'MMC expanded workspace styles are present' );
 like( $ui2_react_css, qr/\.ui2-mmc-result-card \.ui2-ngl-frame-scrubber/, 'React stylesheet owns the streamed-frame scrubber dimensions' );
 like( $ui2_js, qr/output\._ui2_ngl_scrubbing.*?pointerdown.*?pointerup/s, 'streamed-frame scrubber remains mounted while the user drags it' );
 unlike( $ui2_js, qr/function ngl_stream_telemetry_label\(output\).*?last_dropped_reason.*?parts\.push/s, 'stream telemetry does not expose internal dropped-frame reasons to users' );
+unlike( $ui2_js, qr/function ngl_frame_label\(frame, index\)\s*\{[^}]*milestone_percent/s, 'streamed-frame selection does not repeat trial progress percentage' );
+like( $ui2_js, qr/function ngl_stream_telemetry_label\(output\).*?Rendered \$\{percent\}% of accepted structures/s, 'stream telemetry reports rendering coverage of accepted structures' );
 like( $ui2_js, qr/function renderTabs\(inputCount, outputCount\)/, 'ui2 runtime keeps input/output jump tabs with counts' );
 like( $ui2_js, qr/tabButton\("Inputs", inputCount, true, "ui2-input-section"\)/, 'ui2 input jump tab keeps its field count for accessibility' );
 like( $ui2_js, qr/const button = el\("button", "ui2-tab", label\)/, 'ui2 jump tabs display labels without count text' );

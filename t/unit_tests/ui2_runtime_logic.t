@@ -854,6 +854,15 @@ assert.strictEqual(fittedPlotLayout.height, undefined, "MMC fit-to-pane removes 
 assert.strictEqual(fittedPlotLayout.autosize, true, "MMC fit-to-pane keeps Plotly autosizing enabled");
 assert.strictEqual(producerPlotLayout.width, 1200, "MMC fit-to-pane does not mutate the producer Plotly width");
 assert.strictEqual(producerPlotLayout.height, 760, "MMC fit-to-pane does not mutate the producer Plotly height");
+const inheritedFitHost = {
+  dataset: {},
+  closest(selector) {
+    return selector === "[data-plot-fit]" ? { dataset: { plotFit: "pane" } } : null;
+  }
+};
+const inheritedFittedPlotLayout = hooks.plotlyLayoutForOutput(inheritedFitHost, producerPlotLayout);
+assert.strictEqual(inheritedFittedPlotLayout.width, undefined, "dynamic MMC Plotly children inherit the pane-fit width rule");
+assert.strictEqual(inheritedFittedPlotLayout.height, undefined, "dynamic MMC Plotly children inherit the pane-fit height rule");
 const fixedPlotLayout = hooks.plotlyLayoutForOutput(
   { dataset: {} },
   producerPlotLayout
@@ -1612,6 +1621,7 @@ const dynamicPlotRow = createNode("div");
 dynamicPlotRow.className = "ui2-field ui2-output-field ui2-dynamic-output-row";
 dynamicPlotRow.hidden = true;
 const dynamicPlotGroup = createNode("div");
+dynamicPlotGroup.dataset.plotFit = "pane";
 dynamicPlotGroup.dataset.outputFieldId = "stream_dynamic_plot";
 dynamicPlotGroup.dataset.outputType = "plotly";
 dynamicPlotGroup.dataset.dynamicOutput = "true";

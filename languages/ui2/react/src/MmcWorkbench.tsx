@@ -28,6 +28,9 @@ function FieldHost({ field, bridge, role = "input", fitPlot = false }: { field: 
   const create = React.useCallback(() => {
     const node = bridge.createField(field, role)
     if (fitPlot) {
+      // Dynamic outputs create their Plotly child later.  Mark the native field
+      // root too, so those children inherit the allocated MMC pane size.
+      node.setAttribute("data-plot-fit", "pane")
       const plot = node.matches('[data-output-type="plotly"]')
         ? node
         : node.querySelector<HTMLElement>('[data-output-type="plotly"]')
