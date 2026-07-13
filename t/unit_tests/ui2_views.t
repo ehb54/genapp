@@ -142,6 +142,7 @@ like( $ui2_js, qr/formData\.append\(input\.name, input\.value\)/, 'ui2 submits s
 like( $ui2_js, qr/function renderServerFileTree\(entries, container, options\)/, 'ui2 server file chooser uses a tree renderer' );
 like( $ui2_js, qr/function renderServerFileTreeNode\(entry, options, depth\)/, 'ui2 server file chooser renders folder and file tree nodes' );
 like( $ui2_js, qr/function serverFileTreeSelectable\(entry, mode\)/, 'ui2 server file chooser centralizes rfile/lrfile/rpath selectability' );
+like( $ui2_js, qr/function renderFileControl\(field, options\).*?input\.readOnly = true;.*?input\.autocomplete = "off";/s, 'ui2 file selection display cannot accept stale browser-history values' );
 like( $ui2_js, qr/function renderFileManagerNameCell\(row, entry, depth, isFolder\)/, 'ui2 File Manager shares legacy-style file and folder row labeling' );
 like( $ui2_js, qr/function isDynamicOutputField\(field\)/, 'ui2 runtime detects legacy dynamic output declarations' );
 like( $ui2_js, qr/role === "output" && isDynamicOutputField\(field\).*?row\.hidden = true/s, 'ui2 dynamic output rows are hidden until runtime data arrives' );

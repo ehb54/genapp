@@ -2132,6 +2132,13 @@
     const input = el("input", compact ? "ui2-input ui2-repeat-table-input" : "ui2-input");
     input.type = "text";
     input.placeholder = type === "rpath" ? "Server path" : "No file selected";
+    // This is a display surface for the selection made through the local or
+    // server picker, not a path-entry field.  A typed or browser-history value
+    // cannot recreate either a File object or the encoded server selection
+    // needed by submit, so prevent it from becoming a misleading pseudo-value.
+    input.readOnly = true;
+    input.autocomplete = "off";
+    input.spellcheck = false;
     if (options?.idSuffix) {
       input.id = `${fieldId(field)}${options.idSuffix}`;
     } else {
@@ -7996,6 +8003,7 @@
       serverFileEntryIsFolder,
       fileEntryName,
       fileEntryDetails,
+      renderFileControl,
       dynamicOutputItems,
       mergeSavedInputPayloads,
       menuVisibleForSession,

@@ -427,6 +427,15 @@ assert.strictEqual(hooks.serverFileRememberDirForSelection(fileEntry, "lrfile"),
 assert.strictEqual(hooks.serverFileRememberDirForSelection(folderEntry, "rpath"), btoa("./project"), "UI2 remembers the selected folder after selecting a server path");
 assert.strictEqual(hooks.serverFileDirLabel(btoa("./project/subdir")), "User files / project/subdir", "UI2 labels server chooser paths relative to the user file root");
 
+["file", "lrfile", "rfile", "rpath"].forEach((type) => {
+  const control = hooks.renderFileControl({ id: `\${type}_input`, type });
+  const display = control.children[0];
+  assert.strictEqual(display.type, "text", `UI2 \${type} control keeps a readable selection display`);
+  assert.strictEqual(display.readOnly, true, `UI2 \${type} control does not accept an unrecoverable typed file value`);
+  assert.strictEqual(display.autocomplete, "off", `UI2 \${type} control suppresses browser history suggestions`);
+  assert.strictEqual(display.spellcheck, false, `UI2 \${type} control does not spellcheck file names or paths`);
+});
+
 function conditionRow(id, type, value) {
   const row = createNode("div");
   row.className = "ui2-field";
