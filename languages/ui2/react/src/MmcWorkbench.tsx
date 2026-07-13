@@ -194,7 +194,12 @@ function SubmittedInputs({
 }) {
   const [showAll, setShowAll] = React.useState(false)
   const fieldMap = React.useMemo(() => new Map(fields.map((field) => [field.id, field])), [fields])
-  const ids = showAll ? Object.keys(values) : summaryFieldIds.filter((id) => Object.prototype.hasOwnProperty.call(values, id))
+  const ids = showAll
+    ? fields
+      .filter((field) => field.id && field.role !== "output" && field.type !== "label"
+        && Object.prototype.hasOwnProperty.call(values, field.id))
+      .map((field) => field.id as string)
+    : summaryFieldIds.filter((id) => Object.prototype.hasOwnProperty.call(values, id))
 
   return (
     <Card className="ui2-mmc-submitted">

@@ -10869,7 +10869,7 @@ function ei(e) {
 	};
 }
 function ti({ values: e, fields: t, summaryFieldIds: n, uuid: r, onEdit: i, onHide: a }) {
-	let [o, s] = C.useState(!1), c = C.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), l = o ? Object.keys(e) : n.filter((t) => Object.prototype.hasOwnProperty.call(e, t));
+	let [o, s] = C.useState(!1), c = C.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), l = o ? t.filter((t) => t.id && t.role !== "output" && t.type !== "label" && Object.prototype.hasOwnProperty.call(e, t.id)).map((e) => e.id) : n.filter((t) => Object.prototype.hasOwnProperty.call(e, t));
 	return /* @__PURE__ */ (0, L.jsxs)(Qt, {
 		className: "ui2-mmc-submitted",
 		children: [/* @__PURE__ */ (0, L.jsxs)($t, { children: [/* @__PURE__ */ (0, L.jsxs)("div", { children: [/* @__PURE__ */ (0, L.jsx)(en, { children: "Submitted inputs" }), /* @__PURE__ */ (0, L.jsx)(tn, { children: r ? `Run ${r}` : "Values associated with this run" })] }), /* @__PURE__ */ (0, L.jsx)("span", {

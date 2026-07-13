@@ -77,6 +77,8 @@ my $ui2_react_js = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.js) 
 my $ui2_react_css = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.css) ) );
 my $ui2_react_source = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 react src MmcWorkbench.tsx) ) );
 like( $ui2_react_js, qr/Submitted inputs/, 'React bundle contains the MMC submitted-input summary' );
+like( $ui2_react_source, qr/fields\s*\.filter\(\(field\)\s*=>\s*field\.id\s*&&\s*field\.role\s*!==\s*"output"/, 'MMC all-input view filters reattached values to declared input fields' );
+unlike( $ui2_react_source, qr/showAll\s*\?\s*Object\.keys\(values\)/, 'MMC all-input view does not expose runtime or session payload keys' );
 like( $ui2_react_js, qr/results\?\.runtimeLog/, 'React bundle places the runtime log from view metadata' );
 like( $ui2_react_js, qr/\.outputs\.map|outputs\.map|[A-Za-z]\.outputs\.map/, 'React bundle places declared module outputs from view tab metadata' );
 like( $ui2_react_js, qr/Expand workspace/, 'React bundle contains the view-driven workspace expansion control' );
