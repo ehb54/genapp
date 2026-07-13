@@ -3867,6 +3867,9 @@
     }
     await refreshSessionState();
     closeUtilityOverlay();
+    if (target.project) {
+      await setLegacyProject(target.project);
+    }
     await loadModule(target.moduleId);
     const form = document.getElementById("ui2-form");
     const status = document.getElementById("ui2-submit-status");
@@ -3888,6 +3891,8 @@
       || moduleIdFromSwitchParts(parts);
     return {
       moduleId,
+      menuId: parts.length >= 4 ? parts[0] : "",
+      project: switchProjectFromParts(parts),
       uuid: parts[parts.length - 1] || ""
     };
   }
@@ -3897,6 +3902,13 @@
       return "";
     }
     return parts.length >= 4 ? parts[1] : parts[0];
+  }
+
+  function switchProjectFromParts(parts) {
+    if (!Array.isArray(parts) || parts.length < 2) {
+      return "";
+    }
+    return parts.length >= 4 ? parts[2] : parts[parts.length - 2];
   }
 
   async function manageJob(jobId, command, prompt) {
