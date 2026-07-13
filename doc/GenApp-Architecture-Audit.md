@@ -136,6 +136,16 @@ rendering the standard field producer. Do not create a standalone
 `ui2-react` target, move semantics into `views`, or make React own the backend
 request/response contract for this feature.
 
+Reattach consequence for future module work: treat live streaming and durable
+reattachment as separate responsibilities. Transient WebSocket updates may
+power in-run visuals, but UI2 core must still publish or preserve the durable
+final outputs that reattachment can replay later. For structure-style viewers,
+that means the original/reference structure and any final composite output must
+remain available even if live frames were already streamed. React views should
+rebuild their submitted-input summaries from declared module fields only and
+must not infer durable state from transport/session metadata or from transient
+live events.
+
 The current precheck/action intent is additive and separate from hooks:
 
 - a user-visible button or control may run an optional or conditional precheck;
