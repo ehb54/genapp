@@ -1896,12 +1896,34 @@ code {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  align-items: center;
 }
 
 .ui2-ngl-button[aria-pressed="true"] {
   border-color: var(--ui2-accent);
   color: var(--ui2-text);
   background: rgba(97, 211, 198, 0.16);
+}
+
+.ui2-ngl-density-controls {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.ui2-ngl-density-slider {
+  width: min(14rem, 100%);
+}
+
+.ui2-ngl-density-input {
+  width: 5.5rem;
+  min-height: 2rem;
+  border: 1px solid var(--ui2-border);
+  border-radius: 4px;
+  background: var(--ui2-panel);
+  color: var(--ui2-text);
+  padding: 0.25rem 0.4rem;
 }
 
 .ui2-ngl-placeholder {

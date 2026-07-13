@@ -5567,6 +5567,10 @@
       return;
     }
     if (event.channel === "structure" && event.payload) {
+      if (event.payload.preview_type === "density" || event.payload.type === "density") {
+        renderNglDensityUpdate(output, event.payload.density || event.payload);
+        return;
+      }
       if (event.operation === "append") {
         queue_ngl_coordinate_frame(output, event.payload);
       } else {
@@ -5875,6 +5879,8 @@
     }
     output._ui2NglStage = null;
     output._ui2NglComponent = null;
+    output._ui2NglDensityComponent = null;
+    output._ui2NglDensitySurface = null;
     output._ui2NglReps = null;
     output._ui2_ngl_frames = null;
     output._ui2_ngl_pending_frame = null;
@@ -5898,7 +5904,9 @@
 
   function renderNglOutput(output, value) {
     const payload = parseNglPayload(value);
-    if (!payload?.loadname) {
+    const structurePayload = payload?.structure || payload;
+    const densityPayload = payload?.density || null;
+    if (!structurePayload?.loadname) {
       renderTextOutput(output, value);
       return;
     }
@@ -5920,11 +5928,11 @@
       .then(() => {
         const stage = new window.NGL.Stage(plot.id);
         output._ui2NglStage = stage;
-        return stage.loadFile(normalizeNglLoadName(payload.loadname), payload.loadparams || {}).then((component) => {
+        return stage.loadFile(normalizeNglLoadName(structurePayload.loadname), structurePayload.loadparams || {}).then((component) => {
           output._ui2NglComponent = component;
           output._ui2NglReps = {};
-          const specs = nglRepresentationSpecs(payload);
-          const layered = Array.isArray(payload.representations) && payload.representations.length;
+          const specs = nglRepresentationSpecs(structurePayload);
+          const layered = Array.isArray(structurePayload.representations) && structurePayload.representations.length;
           specs.forEach((spec, index) => {
             output._ui2NglReps[nglRepresentationStoreKey(spec, index, layered)] = component.addRepresentation(spec.type, spec.params || {});
           });
@@ -5939,6 +5947,10 @@
           } else {
             renderNglButtons(buttons, component, output._ui2NglReps);
           }
+          if (densityPayload?.loadname) {
+            return loadNglDensitySurface(output, densityPayload);
+          }
+          return component;
         });
       })
       .catch((error) => {
@@ -5948,6 +5960,119 @@
           message.textContent = `Could not render structure output: ${error.message}`;
         }
       });
+  }
+
+  function renderNglDensityUpdate(output, payload) {
+    if (!output?._ui2NglStage || !payload?.loadname) {
+      return false;
+    }
+    ensureNglLoaded()
+      .then(() => loadNglDensitySurface(output, payload))
+      .catch(() => {});
+    return true;
+  }
+
+  function loadNglDensitySurface(output, payload) {
+    const stage = output?._ui2NglStage;
+    if (!stage || !payload?.loadname) {
+      return Promise.resolve(null);
+    }
+    const started_at_ms = ui2_now_ms();
+    const priorComponent = output._ui2NglDensityComponent;
+    return stage.loadFile(normalizeNglLoadName(payload.loadname), payload.loadparams || { ext: "cube" }).then((component) => {
+      const params = nglDensitySurfaceParams(output, payload);
+      const surface = component.addRepresentation("surface", params);
+      output._ui2NglDensityComponent = component;
+      output._ui2NglDensitySurface = surface;
+      output._ui2_ngl_density_payload = cloneUi2Value(payload);
+      set_ngl_output_value(output, "ngl_density_load_ms", Math.max(0, ui2_now_ms() - started_at_ms).toFixed(3));
+      set_ngl_output_value(output, "ngl_density_isovalue", params.isolevel);
+      set_ngl_output_value(output, "ngl_density_min_positive", nglDensityMinPositive(payload));
+      if (priorComponent && priorComponent !== component && stage.removeComponent) {
+        stage.removeComponent(priorComponent);
+      }
+      renderNglDensityControls(output, payload);
+      requestNglRender(stage);
+      return component;
+    });
+  }
+
+  function nglDensitySurfaceParams(output, payload) {
+    const source = payload?.surface || payload?.representationParams || {};
+    const userValue = output?._ui2_ngl_density_user_isovalue;
+    const fallback = Number(source.default_isovalue ?? source.isolevel ?? source.min_positive ?? 1.0);
+    const isolevel = Number.isFinite(Number(userValue)) ? Number(userValue) : fallback;
+    return Object.assign({
+      isolevelType: "value",
+      isolevel: Number.isFinite(Number(isolevel)) ? Number(isolevel) : 1.0,
+      opacity: 0.45,
+      color: "yellow",
+      opaqueBack: false
+    }, payload?.representationParams || {}, { isolevelType: "value", isolevel });
+  }
+
+  function nglDensityMinPositive(payload) {
+    const value = Number(payload?.surface?.min_positive ?? payload?.surface?.default_isovalue ?? payload?.representationParams?.isolevel);
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  }
+
+  function nglDensityMaxValue(payload) {
+    const value = Number(payload?.surface?.max_value ?? 100);
+    return Number.isFinite(value) && value > 0 ? value : 100;
+  }
+
+  function renderNglDensityControls(output, payload) {
+    const buttons = output?.querySelector?.(".ui2-ngl-buttons");
+    const surface = output?._ui2NglDensitySurface;
+    if (!buttons || !surface) {
+      return;
+    }
+    buttons.querySelector(".ui2-ngl-density-controls")?.remove();
+    const minValue = nglDensityMinPositive(payload);
+    const maxValue = nglDensityMaxValue(payload);
+    const currentValue = Number((output._ui2_ngl_density_user_isovalue ?? payload?.surface?.isolevel ?? payload?.surface?.default_isovalue ?? minValue) || 1);
+    const controls = el("span", "ui2-ngl-density-controls");
+    const label = el("span", "ui2-muted", "Density contour");
+    const slider = el("input", "ui2-ngl-density-slider");
+    slider.type = "range";
+    slider.min = String(minValue || 0);
+    slider.max = String(maxValue);
+    slider.step = "0.1";
+    slider.value = String(Math.min(maxValue, Math.max(minValue || 0, currentValue)));
+    slider.setAttribute("aria-label", "Density contour");
+    const number = el("input", "ui2-ngl-density-input");
+    number.type = "number";
+    number.min = slider.min;
+    number.max = slider.max;
+    number.step = slider.step;
+    number.value = slider.value;
+    const reset = el("button", "ui2-button ui2-button-quiet ui2-ngl-button", "Reset density");
+    reset.type = "button";
+    const applyValue = (value, userSet = true) => {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) {
+        return;
+      }
+      const clamped = Math.min(maxValue, Math.max(minValue || 0, numeric));
+      if (userSet) {
+        output._ui2_ngl_density_user_isovalue = clamped;
+      }
+      slider.value = String(clamped);
+      number.value = String(clamped);
+      if (typeof surface.setParameters === "function") {
+        surface.setParameters({ isolevel: clamped, isolevelType: "value" });
+      }
+      set_ngl_output_value(output, "ngl_density_isovalue", clamped);
+      requestNglRender(output._ui2NglStage);
+    };
+    slider.addEventListener("input", () => applyValue(slider.value));
+    number.addEventListener("change", () => applyValue(number.value));
+    reset.addEventListener("click", () => {
+      output._ui2_ngl_density_user_isovalue = null;
+      applyValue(minValue || 1, false);
+    });
+    controls.append(label, slider, number, reset);
+    buttons.appendChild(controls);
   }
 
   function normalize_ngl_coordinate_frame(payload) {
