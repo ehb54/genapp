@@ -6274,10 +6274,8 @@
     slider.value = String(Math.min(maxValue, Math.max(minValue || 0, currentValue)));
     slider.setAttribute("aria-label", "Density contour");
     const number = el("input", "ui2-ngl-density-input");
-    number.type = "number";
-    number.min = slider.min;
-    number.max = slider.max;
-    number.step = slider.step;
+    number.type = "text";
+    number.inputMode = "decimal";
     number.value = slider.value;
     const opacityLabel = el("span", "ui2-muted", "Density opacity");
     const opacitySlider = el("input", "ui2-ngl-density-opacity-slider");
@@ -6288,10 +6286,8 @@
     opacitySlider.value = String(currentOpacity);
     opacitySlider.setAttribute("aria-label", "Density opacity");
     const opacityNumber = el("input", "ui2-ngl-density-input");
-    opacityNumber.type = "number";
-    opacityNumber.min = opacitySlider.min;
-    opacityNumber.max = opacitySlider.max;
-    opacityNumber.step = opacitySlider.step;
+    opacityNumber.type = "text";
+    opacityNumber.inputMode = "decimal";
     opacityNumber.value = opacitySlider.value;
     const reset = el("button", "ui2-button ui2-button-quiet ui2-ngl-button", "Reset density");
     reset.type = "button";
@@ -6306,8 +6302,9 @@
       }
       slider.value = String(clamped);
       number.value = String(clamped);
-      if (typeof surface.setParameters === "function") {
-        surface.setParameters({ isolevel: clamped, isolevelType: "value" });
+      const activeSurface = output?._ui2NglDensitySurface;
+      if (typeof activeSurface?.setParameters === "function") {
+        activeSurface.setParameters({ isolevel: clamped, isolevelType: "value" });
       }
       set_ngl_output_value(output, "ngl_density_isovalue", clamped);
       requestNglRender(output._ui2NglStage);
@@ -6323,8 +6320,9 @@
       }
       opacitySlider.value = String(clamped);
       opacityNumber.value = String(clamped);
-      if (typeof surface.setParameters === "function") {
-        surface.setParameters({ opacity: clamped });
+      const activeSurface = output?._ui2NglDensitySurface;
+      if (typeof activeSurface?.setParameters === "function") {
+        activeSurface.setParameters({ opacity: clamped });
       }
       set_ngl_output_value(output, "ngl_density_opacity", clamped);
       requestNglRender(output._ui2NglStage);
