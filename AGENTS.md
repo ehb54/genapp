@@ -88,6 +88,11 @@ columns, or generated runtime assets.
   separate target language. See `doc/GenApp-Architecture-Audit.md` for the
   current action/precheck guidance.
 
+Zazzie3 has a non-admin SASSIE-web test user named `codex` for UI2 runtime
+timing and reattach checks. Do not store its password in this file or any
+tracked repository file; ask the user or use an approved secret channel when
+credentials are needed.
+
 ## Repository Map
 
 This repository is the GenApp generator/runtime source, not an application
