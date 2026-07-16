@@ -820,6 +820,51 @@ assert.strictEqual(
 );
 document.body.children = [];
 
+hooks.beginRuntimeOutputContext("pdb_scan");
+const pdbScanToken = hooks.runtimeOutputToken();
+hooks.applyRuntimePayload({ sasoutput2: "PDBScan completed output" }, pdbScanToken);
+assert.strictEqual(
+  hooks.state.runtimeOutputs.sasoutput2,
+  "PDBScan completed output",
+  "UI2 runtime output cache stores declared output values inside the active module context"
+);
+hooks.beginRuntimeOutputContext("pdb_rx");
+assert.strictEqual(
+  Object.prototype.hasOwnProperty.call(hooks.state.runtimeOutputs, "sasoutput2"),
+  false,
+  "UI2 module navigation clears cached outputs even when the next module reuses an output id"
+);
+hooks.applyRuntimePayload({ sasoutput2: "Late PDBScan output" }, pdbScanToken);
+assert.strictEqual(
+  Object.prototype.hasOwnProperty.call(hooks.state.runtimeOutputs, "sasoutput2"),
+  false,
+  "UI2 ignores stale runtime payloads from the previous module context"
+);
+const pdbRxToken = hooks.runtimeOutputToken();
+hooks.applyRuntimePayload({ sasoutput2: "PDBRx output" }, pdbRxToken);
+assert.strictEqual(
+  hooks.state.runtimeOutputs.sasoutput2,
+  "PDBRx output",
+  "UI2 accepts reused output ids when the payload belongs to the active module context"
+);
+hooks.beginJobOutputContext("monomer_monte_carlo", "mmc-run-1");
+const mmcRunOneToken = hooks.runtimeOutputToken();
+hooks.applyRuntimePayload({ progress_html: "MMC run one" }, mmcRunOneToken);
+hooks.beginJobOutputContext("monomer_monte_carlo", "mmc-run-2");
+hooks.applyRuntimePayload({ progress_html: "Late MMC run one" }, mmcRunOneToken);
+assert.strictEqual(
+  Object.prototype.hasOwnProperty.call(hooks.state.runtimeOutputs, "progress_html"),
+  false,
+  "UI2 ignores stale payloads from an earlier job in the same module"
+);
+hooks.applyRuntimePayload({ progress_html: "MMC run two" });
+assert.strictEqual(
+  hooks.state.runtimeOutputs.progress_html,
+  "MMC run two",
+  "UI2 accepts payloads from the current job context without changing declared output ids"
+);
+document.body.children = [];
+
 const nglPayload = hooks.parseNglPayload(JSON.stringify({
   loadname: "results/users/Joseph/no_project_specified/run_0/monomer_monte_carlo/movie.pdb",
   loadparams: { ext: "pdb" },

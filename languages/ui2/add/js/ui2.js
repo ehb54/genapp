@@ -93,6 +93,11 @@
     viewReady: null,
     viewReadyGeneration: 0,
     runtimeOutputs: {},
+    runtimeOutputContext: {
+      moduleId: "",
+      jobUuid: "",
+      generation: 0
+    },
     activeJob: null,
     jobEvents: createJobEventStore(),
     freshLoginAfterLogoff: false,
@@ -321,9 +326,13 @@
     if (!payload) {
       return;
     }
+    const contextToken = state.activeJob?.contextToken || runtimeOutputToken();
+    if (!runtimeOutputContextMatches(contextToken)) {
+      return;
+    }
     state.submitResponse = Object.assign({}, state.submitResponse || {}, payload);
     showLegacyMessagePayload(payload);
-    applyRuntimePayload(payload);
+    applyRuntimePayload(payload, contextToken);
     const status = runtimeStatus(payload);
     if (status && state.activeJob?.statusNode) {
       setSubmitStatus(state.activeJob.statusNode, statusLabel(status), statusKind(status));
@@ -796,6 +805,7 @@
       return;
     }
     stopJobPolling();
+    beginRuntimeOutputContext(moduleId);
 
     if (nodes.input) {
       nodes.input.value = moduleId;
@@ -977,7 +987,7 @@
     state.view = {};
     state.values = {};
     setMmcSubmitted(null);
-    state.runtimeOutputs = {};
+    beginRuntimeOutputContext("");
     state.jobEvents.reset();
     nodes.root.hidden = true;
     nodes.root.innerHTML = "";
@@ -1165,7 +1175,7 @@
     state.values = {};
     state.submitResponse = null;
     setMmcSubmitted(null);
-    state.runtimeOutputs = {};
+    beginRuntimeOutputContext("");
     state.activeJob = null;
     state.jobEvents.reset();
     nodes.root.hidden = true;
@@ -3949,6 +3959,7 @@
     if (!form || !status) {
       throw new Error(`UI2 view for ${target.moduleId} did not provide a reattach form.`);
     }
+    beginJobOutputContext(target.moduleId, target.uuid);
     setSubmitStatus(status, `Attached (${jobId || target.uuid})`, "ok");
     // Match legacy ga.switch.cb2: the first authoritative result request
     // hydrates inputs and durable output/event state before live subscription.
@@ -4516,6 +4527,7 @@
     setMmcSubmitted(null);
     state.jobEvents.reset("", state.moduleId);
     applyInputPayload(defaultInputPayload(), { clearMissing: true });
+    beginRuntimeOutputContext(state.moduleId);
     clearRuntimeOutputs(form);
     clearSubmitResponse();
     setSubmitStatus(document.getElementById("ui2-submit-status"), "", "");
@@ -4544,6 +4556,7 @@
         throw new Error("You must be logged on to submit");
       }
       const uuid = createUuid();
+      const contextToken = beginJobOutputContext(state.moduleId, uuid);
       state.jobEvents.reset(uuid, state.moduleId);
       state.jobEvents.setLifecycle({ state: "submitting" });
       const response = await fetch(endpoint, {
@@ -4552,14 +4565,21 @@
         credentials: "same-origin"
       });
       const payload = await parseJsonResponse(response, "Runtime");
+      if (!runtimeOutputContextMatches(contextToken)) {
+        return { ok: false, error: "Submission context changed before the response arrived." };
+      }
       state.submitResponse = payload;
       showLegacyMessagePayload(payload);
       if (!response.ok || payload.error || payload._status === "failed") {
         throw new Error(payload.error || `Runtime returned HTTP ${response.status}`);
       }
       const jobUuid = payload._uuid || uuid;
+      if (jobUuid !== uuid) {
+        contextToken.jobUuid = jobUuid;
+        state.runtimeOutputContext.jobUuid = jobUuid;
+      }
       state.jobEvents.setLifecycle({ state: "running", run: jobUuid });
-      applyRuntimePayload(payload);
+      applyRuntimePayload(payload, contextToken);
       setSubmitStatus(status, `Started${jobUuid ? ` (${jobUuid})` : ""}`, "ok");
       renderSubmitResponse(payload);
       if (jobUuid && !isTerminalStatus(runtimeStatus(payload))) {
@@ -5042,10 +5062,42 @@
     });
   }
 
+  function runtimeOutputToken() {
+    return {
+      moduleId: state.runtimeOutputContext.moduleId || "",
+      jobUuid: state.runtimeOutputContext.jobUuid || "",
+      generation: state.runtimeOutputContext.generation || 0
+    };
+  }
+
+  function runtimeOutputContextMatches(token) {
+    if (!token) {
+      return false;
+    }
+    return token.moduleId === (state.runtimeOutputContext.moduleId || "")
+      && token.jobUuid === (state.runtimeOutputContext.jobUuid || "")
+      && token.generation === (state.runtimeOutputContext.generation || 0);
+  }
+
+  function beginRuntimeOutputContext(moduleId, jobUuid = "") {
+    state.runtimeOutputContext = {
+      moduleId: sanitizeModuleId(moduleId || ""),
+      jobUuid: stringValue(jobUuid),
+      generation: (state.runtimeOutputContext.generation || 0) + 1
+    };
+    state.runtimeOutputs = {};
+    return runtimeOutputToken();
+  }
+
+  function beginJobOutputContext(moduleId, jobUuid) {
+    return beginRuntimeOutputContext(moduleId || state.moduleId, jobUuid || "");
+  }
+
   function startJobPolling(
       uuid, form, statusNode, getLastMsg = true, getInput = false,
       subscribeFirst = true) {
     stopJobPolling();
+    const contextToken = runtimeOutputToken();
     state.activeJob = {
       uuid,
       form,
@@ -5053,12 +5105,13 @@
       delay: 2000,
       getInput,
       subscribeAfterFirstPoll: !subscribeFirst,
+      contextToken,
       timer: null
     };
     if (subscribeFirst) {
       subscribeRuntimeMessages(uuid);
     }
-    pollJobResults(uuid, form, statusNode, 0, getLastMsg, getInput);
+    pollJobResults(uuid, form, statusNode, 0, getLastMsg, getInput, contextToken);
   }
 
   function stopJobPolling() {
@@ -5069,8 +5122,9 @@
     state.activeJob = null;
   }
 
-  async function pollJobResults(uuid, form, statusNode, lastDelay, getLastMsg, getInput = false) {
-    if (!uuid || state.activeJob?.uuid !== uuid || !form?.isConnected) {
+  async function pollJobResults(uuid, form, statusNode, lastDelay, getLastMsg, getInput = false, contextToken = null) {
+    const activeToken = contextToken || state.activeJob?.contextToken || null;
+    if (!uuid || state.activeJob?.uuid !== uuid || !form?.isConnected || !runtimeOutputContextMatches(activeToken)) {
       return;
     }
     const url = new URL(legacyEndpoint("resultsBase", "ajax/get_results.php"), window.location.href);
@@ -5088,6 +5142,9 @@
         credentials: "same-origin"
       });
       const payload = await parseJsonResponse(response, "Job results");
+      if (state.activeJob?.uuid !== uuid || !form?.isConnected || !runtimeOutputContextMatches(activeToken)) {
+        return;
+      }
       state.submitResponse = payload;
       showLegacyMessagePayload(payload);
       if (getInput && payload?._getinput) {
@@ -5099,7 +5156,7 @@
           state.activeJob.getInput = false;
         }
       }
-      applyRuntimePayload(payload);
+      applyRuntimePayload(payload, activeToken);
       if (state.activeJob?.uuid === uuid && state.activeJob.subscribeAfterFirstPoll) {
         state.activeJob.subscribeAfterFirstPoll = false;
         subscribeRuntimeMessages(uuid);
@@ -5119,7 +5176,7 @@
       if (state.activeJob?.uuid === uuid) {
         state.activeJob.delay = nextDelay;
         state.activeJob.timer = window.setTimeout(
-          () => pollJobResults(uuid, form, statusNode, nextDelay, true, false),
+          () => pollJobResults(uuid, form, statusNode, nextDelay, true, false, activeToken),
           nextDelay
         );
       }
@@ -5128,7 +5185,7 @@
       if (state.activeJob?.uuid === uuid) {
         const nextDelay = nextPollDelay(lastDelay);
         state.activeJob.timer = window.setTimeout(
-          () => pollJobResults(uuid, form, statusNode, nextDelay, true, false),
+          () => pollJobResults(uuid, form, statusNode, nextDelay, true, false, activeToken),
           nextDelay
         );
       }
@@ -5746,8 +5803,12 @@
     }
   }
 
-  function applyRuntimePayload(payload) {
+  function applyRuntimePayload(payload, contextToken = null) {
     if (!payload || typeof payload !== "object") {
+      return;
+    }
+    const activeToken = contextToken || runtimeOutputToken();
+    if (!runtimeOutputContextMatches(activeToken)) {
       return;
     }
     showLegacyMessagePayload(payload);
@@ -5782,17 +5843,22 @@
       if (id.startsWith("_")) {
         return;
       }
+      if (!runtimeOutputContextMatches(activeToken)) {
+        return;
+      }
       state.runtimeOutputs[id] = cloneUi2Value(value);
       updateOutputField(id, value);
     });
   }
 
   function replayRuntimeOutput(id) {
+    const contextToken = runtimeOutputToken();
     if (!id || !Object.prototype.hasOwnProperty.call(state.runtimeOutputs, id)) {
       return;
     }
     window.setTimeout(() => {
-      if (!Object.prototype.hasOwnProperty.call(state.runtimeOutputs, id)) {
+      if (!runtimeOutputContextMatches(contextToken)
+          || !Object.prototype.hasOwnProperty.call(state.runtimeOutputs, id)) {
         return;
       }
       updateOutputField(id, state.runtimeOutputs[id]);
@@ -8060,6 +8126,10 @@
       resetModuleForm,
       createJobEventStore,
       normalizeJobEvent,
+      beginRuntimeOutputContext,
+      beginJobOutputContext,
+      runtimeOutputToken,
+      runtimeOutputContextMatches,
       applyRuntimePayload,
       applyInputPayload,
       applySavedJobInput,
