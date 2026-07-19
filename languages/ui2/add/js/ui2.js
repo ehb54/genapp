@@ -46,6 +46,8 @@
   ];
   const UI2_THEME_VALUES = new Set(UI2_THEME_OPTIONS.map(([value]) => value));
   const LEGACY_USER_CONFIG_THEME_FIELD_IDS = new Set(["changetheme", "themetype", "themedark", "themelight", "theme"]);
+  const AI_HELPER_PREFERENCE_VALUES = new Set(["default", "on", "off"]);
+  const AI_HELPER_SENSITIVE_FIELD_RE = /(?:password|passwd|passphrase|secret|token|apikey|api_key|auth|credential)/i;
   const requestedUi2Theme = params.get("ui2theme");
   let activeUi2Theme = normalizeUi2Theme(requestedUi2Theme || prefs.ui2Theme || UI2_DEFAULT_THEME);
   const devMode = params.get("ui2dev") === "1" || prefs.devMode === true;
@@ -134,6 +136,7 @@
     files: document.getElementById("ui2-files"),
     settings: document.getElementById("ui2-settings"),
     feedback: document.getElementById("ui2-feedback"),
+    aiHelper: document.getElementById("ui2-ai-helper"),
     docsControl: document.getElementById("ui2-docs-control"),
     docs: document.getElementById("ui2-docs"),
     docsToggle: document.getElementById("ui2-docs-toggle"),
@@ -163,6 +166,7 @@
     nodes.files?.addEventListener("click", () => openUtilityModule("sys_file_manager"));
     nodes.settings?.addEventListener("click", () => openUtilityModule("sys_user_config"));
     nodes.feedback?.addEventListener("click", () => openUtilityModule("sys_feedback"));
+    nodes.aiHelper?.addEventListener("click", openAiHelperPanel);
     nodes.docsToggle?.addEventListener("click", toggleDocsMenu);
     nodes.docsMain?.addEventListener("click", closeDocsMenu);
     nodes.docsModule?.addEventListener("click", closeDocsMenu);
@@ -384,18 +388,22 @@
       state.session.groups = payload._groups || {};
       state.session.usergroups = Array.isArray(payload._usergroups) ? payload._usergroups : [];
       state.session.theme = stringValue(payload._theme);
+      state.session.aiHelper = normalizeAiHelperStatus(payload._aihelper);
       state.session.loaded = true;
       showLegacyMessagePayload(payload);
       await refreshRestrictedState();
       renderMenu();
       renderSessionState();
+      renderAiHelperAvailability();
       syncSplashForSession();
       return payload;
     } catch (error) {
       state.session.loaded = false;
       state.session.restricted = [];
+      state.session.aiHelper = normalizeAiHelperStatus(null);
       renderMenu();
       renderSessionState(error);
+      renderAiHelperAvailability();
       return {};
     }
   }
@@ -442,6 +450,36 @@
       nodes.logoff.textContent = state.session.logon ? `Logoff ${state.session.logon}` : "Login";
       nodes.logoff.dataset.mode = state.session.logon ? "logoff" : "login";
     }
+  }
+
+  function normalizeAiHelperStatus(value) {
+    const status = value && typeof value === "object" ? value : {};
+    const preference = normalizeAiHelperPreference(status.user_preference);
+    const available = status.available === true || String(status.available || "").toLowerCase() === "true" || String(status.available || "") === "1";
+    const configured = status.configured === true || String(status.configured || "").toLowerCase() === "true" || String(status.configured || "") === "1";
+    const enabledForUser = available && preference !== "off";
+    return {
+      available,
+      configured,
+      user_preference: preference,
+      enabled_for_user: enabledForUser
+    };
+  }
+
+  function normalizeAiHelperPreference(value) {
+    const normalized = stringValue(value).trim().toLowerCase();
+    return AI_HELPER_PREFERENCE_VALUES.has(normalized) ? normalized : "default";
+  }
+
+  function renderAiHelperAvailability() {
+    if (!nodes.aiHelper) {
+      return;
+    }
+    nodes.aiHelper.hidden = !aiHelperEnabledForUser();
+  }
+
+  function aiHelperEnabledForUser() {
+    return state.session.aiHelper?.enabled_for_user === true;
   }
 
   function syncSplashForSession() {
@@ -912,6 +950,161 @@
         onClose();
       }
     }
+  }
+
+  function openAiHelperPanel() {
+    const content = renderAiHelperPanel();
+    showUtilityOverlay("AI Helper", content, { dialogClass: "ui2-ai-helper-dialog" });
+  }
+
+  function renderAiHelperPanel() {
+    const section = el("section", "ui2-section ui2-system-tool ui2-ai-helper");
+    const body = el("div", "ui2-section-body ui2-tool-body");
+    const context = buildAiHelperContext("");
+
+    body.appendChild(renderAiHelperContextSummary(context));
+
+    if (!state.session.aiHelper?.configured) {
+      body.appendChild(el("p", "ui2-help ui2-ai-helper-unconfigured", "AI Helper is not configured for this deployment."));
+      section.appendChild(body);
+      return section;
+    }
+
+    const form = el("form", "ui2-ai-helper-form");
+    form.noValidate = true;
+    const questionRow = el("label", "ui2-ai-helper-question");
+    questionRow.appendChild(el("span", "ui2-field-label", "Question"));
+    const question = el("textarea", "ui2-textarea");
+    question.required = true;
+    question.rows = 4;
+    question.placeholder = "What should I do next?";
+    questionRow.appendChild(question);
+    const actions = el("div", "ui2-form-actions");
+    const submit = el("button", "ui2-button ui2-button-primary", "Ask AI Helper");
+    submit.type = "submit";
+    const status = el("div", "ui2-submit-status", "");
+    status.setAttribute("role", "status");
+    actions.append(submit, status);
+    const response = el("div", "ui2-ai-helper-response");
+    response.setAttribute("aria-live", "polite");
+    form.append(questionRow, actions, response);
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const userQuestion = question.value.trim();
+      if (!userQuestion) {
+        setSubmitStatus(status, "Enter a question.", "error");
+        question.focus();
+        return;
+      }
+      submit.disabled = true;
+      response.textContent = "";
+      setSubmitStatus(status, "Asking AI Helper", "pending");
+      try {
+        const payload = await submitAiHelperQuestion(userQuestion);
+        response.textContent = aiHelperResponseMessage(payload);
+        setSubmitStatus(status, "Response received", "ok");
+      } catch (error) {
+        setSubmitStatus(status, error.message, "error");
+      } finally {
+        submit.disabled = false;
+      }
+    });
+    body.appendChild(form);
+    section.appendChild(body);
+    window.setTimeout(() => question.focus(), 0);
+    return section;
+  }
+
+  function renderAiHelperContextSummary(context) {
+    const wrap = el("div", "ui2-ai-helper-context");
+    const list = el("dl", "ui2-ai-helper-context-list");
+    [
+      ["Application", context.application || ""],
+      ["Module", context.module || "No module loaded"],
+      ["Page", context.page || ""],
+      ["Run status", context.run_context?.status || "idle"]
+    ].forEach(([label, value]) => {
+      list.append(el("dt", null, label), el("dd", null, value || "-"));
+    });
+    wrap.appendChild(list);
+    const values = el("pre", "ui2-ai-helper-values");
+    values.textContent = JSON.stringify(context.form_values || {}, null, 2);
+    wrap.appendChild(values);
+    return wrap;
+  }
+
+  async function submitAiHelperQuestion(userQuestion) {
+    const response = await fetch("ajax/ui2_ai_helper.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(buildAiHelperContext(userQuestion)),
+      credentials: "same-origin"
+    });
+    const payload = await parseJsonResponse(response, "AI Helper");
+    if (!response.ok || payload.error) {
+      throw new Error(payload.error || `AI Helper returned HTTP ${response.status}`);
+    }
+    return payload;
+  }
+
+  function buildAiHelperContext(userQuestion) {
+    syncValues();
+    const runtime = state.jobEvents.snapshot();
+    return {
+      application: aiHelperApplicationId(),
+      module: state.moduleId || runtime.module || "",
+      page: state.moduleId || state.activeMenuId || "",
+      form_values: sanitizeAiHelperFormValues(state.values),
+      run_context: aiHelperRunContext(runtime),
+      user_question: stringValue(userQuestion)
+    };
+  }
+
+  function aiHelperApplicationId() {
+    return stringValue(appMap.directives?.application)
+      || stringValue(document.querySelector(".ui2-shell")?.dataset.appId)
+      || stringValue(document.querySelector(".ui2-topbar h1")?.textContent);
+  }
+
+  function sanitizeAiHelperFormValues(values) {
+    const sanitized = {};
+    Object.entries(values || {}).forEach(([key, value]) => {
+      if (!key || key.startsWith("_") || AI_HELPER_SENSITIVE_FIELD_RE.test(key)) {
+        return;
+      }
+      sanitized[key] = cloneUi2Value(value);
+    });
+    return sanitized;
+  }
+
+  function aiHelperRunContext(runtime) {
+    const lifecycle = runtime?.lifecycle || {};
+    const activeStatus = stringValue(state.activeJob?.status || lifecycle.state || lifecycle.status);
+    const lastLog = runtimeLastLogMessage(runtime);
+    return {
+      status: activeStatus || (state.activeJob?.uuid || runtime?.run ? "running" : "idle"),
+      last_status_message: stringValue(lifecycle.error || lifecycle.message || lastLog)
+    };
+  }
+
+  function runtimeLastLogMessage(runtime) {
+    const log = runtime?.channels?.log?.run;
+    const value = stringValue(log?.value).trim();
+    if (value) {
+      return value.split(/\r?\n/).filter(Boolean).slice(-1)[0] || "";
+    }
+    const items = Array.isArray(log?.items) ? log.items : [];
+    return stringValue(items[items.length - 1]).trim();
+  }
+
+  function aiHelperResponseMessage(payload) {
+    if (payload == null) {
+      return "";
+    }
+    if (typeof payload === "string") {
+      return payload;
+    }
+    return stringValue(payload.message || payload.response || payload.text || "");
   }
 
   function loadPreferences() {
@@ -3103,6 +3296,9 @@
   }
 
   function userConfigFieldVisible(field) {
+    if (field?.id === "aihelperpreference") {
+      return state.session.aiHelper?.available === true;
+    }
     return !field.hideifnot || directiveEnabled(field.hideifnot);
   }
 
@@ -3194,6 +3390,8 @@
         control.checked = value === true || String(value).toLowerCase() === "on" || String(value).toLowerCase() === "true";
       } else if (control.tagName === "SELECT" && Array.isArray(value)) {
         replaceSelectOptions(control, value);
+      } else if (control.tagName === "SELECT" && id === "aihelperpreference" && !value) {
+        control.value = "default";
       } else if (Array.isArray(value)) {
         control.value = value[Number(control.dataset.repeatTableIndex || 0)] ?? control.value;
       } else {
@@ -8098,6 +8296,11 @@
       currentUi2Theme,
       ui2UserConfigFields,
       ui2ThemeOptionValues,
+      normalizeAiHelperStatus,
+      aiHelperEnabledForUser,
+      buildAiHelperContext,
+      sanitizeAiHelperFormValues,
+      aiHelperRunContext,
       replaceSelectOptions,
       userConfigGroupVisible,
       parseNglPayload,

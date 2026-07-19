@@ -1101,6 +1101,36 @@ assert.strictEqual(
   true,
   "UI2 Settings still shows other user configurable groups"
 );
+hooks.state.session.aiHelper = hooks.normalizeAiHelperStatus({ available: false, configured: false, user_preference: "on" });
+assert.strictEqual(
+  hooks.aiHelperEnabledForUser(),
+  false,
+  "AI Helper cannot be enabled by user preference when deployment availability is off"
+);
+hooks.state.session.aiHelper = hooks.normalizeAiHelperStatus({ available: true, configured: true, user_preference: "default" });
+assert.strictEqual(
+  hooks.aiHelperEnabledForUser(),
+  true,
+  "AI Helper is visible when deployment allows it and the user follows the default"
+);
+hooks.state.session.aiHelper = hooks.normalizeAiHelperStatus({ available: true, configured: true, user_preference: "off" });
+assert.strictEqual(
+  hooks.aiHelperEnabledForUser(),
+  false,
+  "AI Helper is hidden when the user turns it off"
+);
+const aiHelperSanitizedValues = hooks.sanitizeAiHelperFormValues({
+  runname: "run_0",
+  pdbfile: "example.pdb",
+  password: "hidden",
+  api_token: "hidden",
+  _uuid: "hidden"
+});
+assert.strictEqual(aiHelperSanitizedValues.runname, "run_0", "AI Helper context keeps ordinary run fields");
+assert.strictEqual(aiHelperSanitizedValues.pdbfile, "example.pdb", "AI Helper context keeps ordinary file path fields");
+assert.strictEqual(Object.prototype.hasOwnProperty.call(aiHelperSanitizedValues, "password"), false, "AI Helper context excludes password fields");
+assert.strictEqual(Object.prototype.hasOwnProperty.call(aiHelperSanitizedValues, "api_token"), false, "AI Helper context excludes token fields");
+assert.strictEqual(Object.prototype.hasOwnProperty.call(aiHelperSanitizedValues, "_uuid"), false, "AI Helper context excludes private UI fields");
 hooks.state.session.restricted = [];
 
 assert(
@@ -1193,7 +1223,7 @@ assert(
   "ui2 reconciles splash visibility from session status"
 );
 assert(
-  source.includes('renderSessionState();\\n      syncSplashForSession();'),
+  source.includes('renderSessionState();\\n      renderAiHelperAvailability();\\n      syncSplashForSession();'),
   "session refresh opens the splash for logged-out users"
 );
 assert(

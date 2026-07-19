@@ -26,6 +26,7 @@ ok( -f File::Spec->catfile( $ui2, 'index.html' ), 'ui2 index was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(js app-map.js) ), 'ui2 app map was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(css ui2.css) ), 'ui2 stylesheet was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(js ui2.js) ), 'ui2 script was copied' );
+ok( -f File::Spec->catfile( $ui2, qw(ajax ui2_ai_helper.php) ), 'ui2 AI Helper bridge was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(react ui2-react.css) ), 'ui2 React stylesheet was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(react ui2-react.js) ), 'ui2 React bundle was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(modules shared.json) ), 'ui2 shared module summary was generated' );
@@ -54,6 +55,7 @@ like( $index, qr/class="ui2-nav-icon-button" id="ui2-nav-toggle"/, 'ui2 menu tog
 like( $index, qr/<a class="ui2-title-link" href="\?apprun=1" target="_blank" rel="noopener" title="Open another [^"]+ instance">[\s\S]*?<h1>[^<]+<\/h1>[\s\S]*?<\/a>/, 'ui2 title opens another application instance like legacy' );
 like( $index, qr/id="ui2-module-strip"/, 'ui2 index exposes a legacy-style selected menu module strip' );
 like( $index, qr/id="ui2-feedback"/, 'ui2 index exposes the legacy feedback utility entry point' );
+like( $index, qr/id="ui2-ai-helper"[^>]*hidden/, 'ui2 index exposes an AI Helper entry point hidden until appconfig allows it' );
 like( $index, qr/id="ui2-docs"/, 'ui2 index exposes the legacy docs entry point' );
 like( $index, qr/id="ui2-docs-menu"/, 'ui2 index exposes a docs menu for contextual module documentation' );
 like( $app_map_js, qr/generatedOn:\s*"Generated on /, 'ui2 app map carries the legacy generated-on splash metadata' );
@@ -115,6 +117,10 @@ like( $ui2_js, qr/function docsModuleUrl\(/, 'ui2 runtime builds legacy-style pe
 like( $ui2_js, qr/`\.\.\/\$\{base\}\/`/, 'ui2 runtime rebases relative docsbaseurl out of the ui2 directory' );
 like( $ui2_js, qr/`\$\{mainUrl\}\$\{menu\}\/\$\{id\}\/\$\{id\}\.html`/, 'ui2 runtime mirrors SASSIE menu-scoped module docs path convention' );
 like( $ui2_js, qr/nodes\.feedback\?\.addEventListener\("click", \(\) => openUtilityModule\("sys_feedback"\)\)/, 'ui2 feedback button opens the legacy feedback utility' );
+like( $ui2_js, qr/nodes\.aiHelper\?\.addEventListener\("click", openAiHelperPanel\)/, 'ui2 AI Helper button opens a read-only helper panel' );
+like( $ui2_js, qr/fetch\("ajax\/ui2_ai_helper\.php"[\s\S]+method: "POST"[\s\S]+JSON\.stringify\(buildAiHelperContext\(userQuestion\)\)/, 'ui2 AI Helper submits context JSON through the same-origin bridge' );
+like( $ui2_js, qr/AI_HELPER_SENSITIVE_FIELD_RE.*password.*token.*api_key/s, 'ui2 AI Helper context filters obvious sensitive field ids' );
+like( $ui2_js, qr/id === "aihelperpreference" && !value[\s\S]+control\.value = "default"/, 'ui2 Settings keeps missing AI Helper user preference on deployment default' );
 like( $ui2_js, qr/dialogClass: \(moduleId === "sys_feedback" \|\| moduleId === "sys_feedback2"\) \? "ui2-feedback-dialog"/, 'ui2 feedback opens in a modal-sized utility dialog' );
 like( $ui2_js, qr/function renderFeedbackTool\(module, fields\)/, 'ui2 runtime has a dedicated Feedback utility renderer' );
 like( $ui2_js, qr/await submitUtilityModule\(form, module, `ajax\/sys_config\/\$\{moduleId\}\.php`/, 'ui2 feedback submits through the generated legacy feedback endpoint' );
@@ -186,7 +192,7 @@ like( $ui2_js, qr/function splashFooterLines\(\)/, 'ui2 splash derives footer me
 like( $ui2_js, qr/appMap\.generatedOn/, 'ui2 splash footer includes generated-on metadata when present' );
 like( $ui2_js, qr/appMap\.genappRevision/, 'ui2 splash footer includes GenApp revision credit when present' );
 like( $ui2_js, qr/function syncSplashForSession\(\)/, 'ui2 syncs the splash dialog from legacy session state' );
-like( $ui2_js, qr/renderSessionState\(\);\s+syncSplashForSession\(\);/s, 'ui2 checks splash visibility after refreshing legacy session status' );
+like( $ui2_js, qr/renderSessionState\(\);\s+renderAiHelperAvailability\(\);\s+syncSplashForSession\(\);/s, 'ui2 checks helper and splash visibility after refreshing legacy session status' );
 like( $ui2_js, qr/function showStartupShell\(\)/, 'ui2 startup can show the application shell without loading a module' );
 like( $ui2_js, qr/Choose a menu group from the options on the left/, 'ui2 runtime reset uses the menu-group-first shell copy' );
 unlike( $ui2_js, qr/<p class="ui2-kicker">Ready<\/p>/, 'ui2 runtime reset does not restore the Ready kicker' );

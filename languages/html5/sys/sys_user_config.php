@@ -212,6 +212,33 @@ if ( $doc =
        $do_update = 1;
    }
 
+   if ( isset( $_REQUEST[ 'aihelperpreference' ] ) )
+   {
+       $aihelperpreference = $_REQUEST[ 'aihelperpreference' ];
+       if ( !in_array( $aihelperpreference, array( 'default', 'on', 'off' ), true ) )
+       {
+           $results[ 'error' ] .= "Invalid AI Helper visibility preference. ";
+       } else if ( $aihelperpreference == 'default' )
+       {
+           if ( isset( $doc[ 'aihelperpreference' ] ) )
+           {
+               $update[ '$unset' ][ 'aihelperpreference' ] = 1;
+               $results[ 'status' ] .= "AI Helper visibility now follows the deployment default. ";
+               $results[ 'aihelperpreference' ] = 'default';
+               $do_update = 1;
+           }
+       } else if ( !isset( $doc[ 'aihelperpreference' ] ) ||
+                   $doc[ 'aihelperpreference' ] != $aihelperpreference )
+       {
+           $update[ '$set' ][ 'aihelperpreference' ] = $aihelperpreference;
+           $results[ 'status' ] .= $aihelperpreference == 'off'
+               ? "AI Helper hidden for your account. "
+               : "AI Helper shown for your account. ";
+           $results[ 'aihelperpreference' ] = $aihelperpreference;
+           $do_update = 1;
+       }
+   }
+
    if ( isset( $_REQUEST[ 'changepassword' ] ) &&
         $_REQUEST[ 'changepassword' ] == "on" )
    {

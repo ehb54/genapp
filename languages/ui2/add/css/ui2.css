@@ -1112,6 +1112,52 @@ code {
   outline: none;
 }
 
+.ui2-ai-helper-context {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ui2-ai-helper-context-list {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+}
+
+.ui2-ai-helper-context-list dt {
+  color: var(--ui2-muted);
+  font-weight: 650;
+}
+
+.ui2-ai-helper-context-list dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ui2-ai-helper-values,
+.ui2-ai-helper-response {
+  max-height: 14rem;
+  overflow: auto;
+  border: 1px solid var(--ui2-border);
+  border-radius: 6px;
+  background: var(--ui2-panel-soft);
+  color: var(--ui2-text);
+  padding: 0.75rem;
+  white-space: pre-wrap;
+}
+
+.ui2-ai-helper-values {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.ui2-ai-helper-form,
+.ui2-ai-helper-question {
+  display: grid;
+  gap: 0.75rem;
+}
+
 .ui2-submit-response {
   margin-top: 1rem;
   white-space: pre-wrap;
@@ -1152,6 +1198,10 @@ code {
 
 .ui2-feedback-dialog {
   width: min(78rem, calc(100vw - 2rem));
+}
+
+.ui2-ai-helper-dialog {
+  width: min(52rem, calc(100vw - 2rem));
 }
 
 .ui2-utility-body {

@@ -195,6 +195,17 @@
                    }
                   ,{
                    "role"     : "input",
+                   "id"       : "aihelperpreference",
+                   "label"    : "AI Helper visibility",
+                   "type"     : "listbox",
+                   "values"   : "Use deployment default~default~Show AI Helper~on~Hide AI Helper~off",
+                   "default"  : "default",
+                   "pull"     : "aihelperpreference",
+                   "help"     : "Control whether the read-only AI Helper button is visible for your account when the deployment enables it.",
+                   "hideifnot" : "ui2aihelper"
+                   }
+                  ,{
+                   "role"     : "input",
                    "id"       : "groups",
                    "type"     : "group"
                   }

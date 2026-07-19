@@ -41,6 +41,8 @@ if ( !$appjson ) {
         ];
 }
 
+$results[ "_aihelper" ] = ga_ai_helper_status( $appjson, "" );
+
 if ( isset( $appjson->submitblock ) ) {
     __~debug:submitblock{error_log( "submitblock found\n", 3, "/tmp/mylog" );}
     if ( isset( $appjson->submitblock->{"all"} ) &&
@@ -129,7 +131,7 @@ if ( isset( $_SESSION[ $window ][ 'logon' ] ) ) {
                        'users',
                        '',
                        [ "name" => $_SESSION[ $window ][ 'logon' ] ], 
-                       [ "groups" => 1 ]
+                       [ "groups" => 1, "aihelperpreference" => 1 ]
                        )
                )
               ) {
@@ -137,6 +139,9 @@ if ( isset( $_SESSION[ $window ][ 'logon' ] ) ) {
                   $results[ "_usergroups" ] = $doc[ "groups" ];
               } else {
                   $results[ "_usergroups" ] = [];
+              }
+              if ( isset( $doc[ "aihelperpreference" ] ) ) {
+                  $results[ "_aihelper" ] = ga_ai_helper_status( $appjson, $doc[ "aihelperpreference" ] );
               }
           } else {
               $results[ "_usergroups" ] = [];
@@ -218,6 +223,37 @@ if ( __~xsedeproject{1}0 && isset( $appjson->resources ) ) {
                 $results[ '_resourcexsedeproject' ][] = $k;
         }
     }
+}
+
+function ga_ai_helper_truthy( $value ) {
+    if ( is_bool( $value ) ) {
+        return $value;
+    }
+    if ( is_numeric( $value ) ) {
+        return intval( $value ) != 0;
+    }
+    return preg_match( '/^(1|true|on|yes)$/i', strval( $value ) ) === 1;
+}
+
+function ga_ai_helper_status( $appjson, $preference ) {
+    $available = false;
+    $configured = false;
+    if ( $appjson && isset( $appjson->aihelper ) && is_object( $appjson->aihelper ) ) {
+        $available = isset( $appjson->aihelper->enabled ) && ga_ai_helper_truthy( $appjson->aihelper->enabled );
+        if ( $available ) {
+            $has_endpoint = isset( $appjson->aihelper->endpoint ) && strlen( trim( strval( $appjson->aihelper->endpoint ) ) ) > 0;
+            $has_stub = isset( $appjson->aihelper->development_stub ) && ga_ai_helper_truthy( $appjson->aihelper->development_stub );
+            $configured = $has_endpoint || $has_stub;
+        }
+    }
+    if ( !in_array( $preference, array( "default", "on", "off" ), true ) ) {
+        $preference = "default";
+    }
+    return array(
+        "available" => $available,
+        "configured" => $configured,
+        "user_preference" => $preference
+    );
 }
 
 echo (json_encode($results));
