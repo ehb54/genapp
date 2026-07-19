@@ -1229,7 +1229,7 @@
 
   function aiHelperUsageSummary(payload) {
     const usage = normalizeAiHelperUsage(payload);
-    if (!usage.has_usage && !usage.has_remaining) {
+    if (!usage.has_usage && !usage.has_remaining && !usage.has_cumulative) {
       return "Token usage: not reported by backend.";
     }
     const parts = [];
@@ -1242,6 +1242,9 @@
       parts.push(`${usage.remaining_tokens} remaining`);
     } else {
       parts.push("remaining unavailable");
+    }
+    if (usage.cumulative_tokens != null) {
+      parts.push(`${usage.cumulative_tokens} cumulative`);
     }
     return `Token usage: ${parts.join("; ")}.`;
   }
@@ -1261,13 +1264,18 @@
     const remainingTokens = aiHelperNumberOrNull(
       usage.remaining_tokens ?? usage.account_remaining_tokens ?? usage.accountRemainingTokens ?? payload?.account_remaining_tokens
     );
+    const cumulativeTokens = aiHelperNumberOrNull(
+      usage.cumulative_tokens ?? usage.account_cumulative_tokens ?? usage.accountCumulativeTokens ?? payload?.account_cumulative_tokens
+    );
     return {
       input_tokens: inputTokens,
       output_tokens: outputTokens,
       total_tokens: totalTokens,
       remaining_tokens: remainingTokens,
+      cumulative_tokens: cumulativeTokens,
       has_usage: inputTokens != null || outputTokens != null || totalTokens != null,
-      has_remaining: remainingTokens != null
+      has_remaining: remainingTokens != null,
+      has_cumulative: cumulativeTokens != null
     };
   }
 

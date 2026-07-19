@@ -1194,17 +1194,19 @@ assert(longOutput.text.length <= 403, "AI Helper output analysis keeps long summ
 const pathOutput = hooks.aiHelperSummarizeOutputValue({ result: "/private/project/run_0/deep/result.dat" }, { type: "json" });
 assert.strictEqual(pathOutput.text.includes("/private/project"), false, "AI Helper output analysis redacts private path prefixes in structured summaries");
 assert.strictEqual(pathOutput.text.includes("[path:result.dat]"), true, "AI Helper output analysis preserves useful path basenames");
-const normalizedUsage = hooks.normalizeAiHelperUsage({ usage: { input_tokens: "12", output_tokens: 8, account_remaining_tokens: 1000 } });
+const normalizedUsage = hooks.normalizeAiHelperUsage({ usage: { input_tokens: "12", output_tokens: 8, account_remaining_tokens: 1000, account_cumulative_tokens: 2500 } });
 assert.strictEqual(normalizedUsage.input_tokens, 12, "AI Helper normalizes input token counts");
 assert.strictEqual(normalizedUsage.output_tokens, 8, "AI Helper normalizes output token counts");
 assert.strictEqual(normalizedUsage.total_tokens, null, "AI Helper leaves missing total token counts null");
 assert.strictEqual(normalizedUsage.remaining_tokens, 1000, "AI Helper normalizes account remaining token counts when supplied");
+assert.strictEqual(normalizedUsage.cumulative_tokens, 2500, "AI Helper normalizes cumulative account token counts when supplied");
 assert.strictEqual(normalizedUsage.has_usage, true, "AI Helper recognizes returned token usage");
 assert.strictEqual(normalizedUsage.has_remaining, true, "AI Helper recognizes returned account remaining tokens");
+assert.strictEqual(normalizedUsage.has_cumulative, true, "AI Helper recognizes returned cumulative account token counts");
 assert.strictEqual(
-  hooks.aiHelperUsageSummary({ usageMetadata: { promptTokenCount: 5, candidatesTokenCount: 7, totalTokenCount: 12 } }),
-  "Token usage: 12 tokens used; remaining unavailable.",
-  "AI Helper displays provider token usage while avoiding guessed account remaining values"
+  hooks.aiHelperUsageSummary({ usage: { total_tokens: 12, account_cumulative_tokens: 2500 } }),
+  "Token usage: 12 tokens used; remaining unavailable; 2500 cumulative.",
+  "AI Helper displays provider token usage with cumulative account usage when available"
 );
 assert.strictEqual(
   hooks.aiHelperUsageSummary({ message: "ok" }),
