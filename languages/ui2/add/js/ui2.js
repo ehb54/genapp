@@ -995,10 +995,11 @@
     actions.append(submit, status);
     const response = el("div", "ui2-ai-helper-response");
     response.setAttribute("aria-live", "polite");
-    form.append(questionRow, actions, response);
+    form.appendChild(questionRow);
     if (devMode) {
       form.appendChild(renderAiHelperPayloadPreview(question));
     }
+    form.append(actions, response);
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const userQuestion = question.value.trim();
@@ -1038,6 +1039,7 @@
       list.append(el("dt", null, label), el("dd", null, value || "-"));
     });
     wrap.appendChild(list);
+    wrap.appendChild(el("span", "ui2-field-label", "Current form values"));
     const values = el("pre", "ui2-ai-helper-values");
     values.textContent = JSON.stringify(context.form_values || {}, null, 2);
     wrap.appendChild(values);

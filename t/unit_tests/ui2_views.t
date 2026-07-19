@@ -120,7 +120,8 @@ like( $ui2_js, qr/`\.\.\/\$\{base\}\/`/, 'ui2 runtime rebases relative docsbaseu
 like( $ui2_js, qr/`\$\{mainUrl\}\$\{menu\}\/\$\{id\}\/\$\{id\}\.html`/, 'ui2 runtime mirrors SASSIE menu-scoped module docs path convention' );
 like( $ui2_js, qr/nodes\.feedback\?\.addEventListener\("click", \(\) => openUtilityModule\("sys_feedback"\)\)/, 'ui2 feedback button opens the legacy feedback utility' );
 like( $ui2_js, qr/nodes\.aiHelper\?\.addEventListener\("click", openAiHelperPanel\)/, 'ui2 AI Helper button opens a read-only helper panel' );
-like( $ui2_js, qr/devMode[\s\S]+renderAiHelperPayloadPreview\(question\)/, 'ui2 AI Helper shows a request payload preview only in development mode' );
+like( $ui2_js, qr/Current form values/, 'ui2 AI Helper labels the summarized form-values block' );
+like( $ui2_js, qr/form\.appendChild\(questionRow\);[\s\S]+devMode[\s\S]+renderAiHelperPayloadPreview\(question\)[\s\S]+form\.append\(actions, response\)/, 'ui2 AI Helper shows the development request payload preview before the submit response area' );
 like( $ui2_js, qr/function renderAiHelperPayloadPreview\(question\)[\s\S]+JSON\.stringify\(buildAiHelperContext\(question\.value\), null, 2\)/, 'ui2 AI Helper development preview renders the exact request payload shape' );
 like( $ui2_js, qr/fetch\("ajax\/ui2_ai_helper\.php"[\s\S]+method: "POST"[\s\S]+JSON\.stringify\(requestPayload\)/, 'ui2 AI Helper submits a single prebuilt context JSON payload through the same-origin bridge' );
 like( $ui2_js, qr/AI_HELPER_SENSITIVE_FIELD_RE.*password.*token.*api_key/s, 'ui2 AI Helper context filters obvious sensitive field ids' );
