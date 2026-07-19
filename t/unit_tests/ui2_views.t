@@ -38,6 +38,7 @@ ok( -f File::Spec->catfile( $ui2, qw(modules sys_feedback.json) ), 'ui2 feedback
 
 my $index      = read_file( File::Spec->catfile( $ui2, 'index.html' ) );
 my $app_map_js = read_file( File::Spec->catfile( $ui2, qw(js app-map.js) ) );
+my $ai_helper_php = read_file( File::Spec->catfile( $ui2, qw(ajax ui2_ai_helper.php) ) );
 like( $index, qr/js\/app-map\.js/, 'ui2 index loads the generated app map' );
 like( $index, qr/\.\.\/js\/autobahn\.min\.js/, 'ui2 index preloads the existing legacy Autobahn websocket client' );
 like( $index, qr/\.\.\/js\/plotly-2\.35\.2\.min\.js/, 'ui2 index preloads the existing generated Plotly bundle' );
@@ -120,6 +121,7 @@ like( $ui2_js, qr/nodes\.feedback\?\.addEventListener\("click", \(\) => openUtil
 like( $ui2_js, qr/nodes\.aiHelper\?\.addEventListener\("click", openAiHelperPanel\)/, 'ui2 AI Helper button opens a read-only helper panel' );
 like( $ui2_js, qr/fetch\("ajax\/ui2_ai_helper\.php"[\s\S]+method: "POST"[\s\S]+JSON\.stringify\(buildAiHelperContext\(userQuestion\)\)/, 'ui2 AI Helper submits context JSON through the same-origin bridge' );
 like( $ui2_js, qr/AI_HELPER_SENSITIVE_FIELD_RE.*password.*token.*api_key/s, 'ui2 AI Helper context filters obvious sensitive field ids' );
+like( $ai_helper_php, qr/Received question: " \. \$question\s*\)\)\);/, 'ui2 AI Helper development stub does not append punctuation after the user question' );
 like( $ui2_js, qr/id === "aihelperpreference" && !value[\s\S]+control\.value = "default"/, 'ui2 Settings keeps missing AI Helper user preference on deployment default' );
 like( $ui2_js, qr/dialogClass: \(moduleId === "sys_feedback" \|\| moduleId === "sys_feedback2"\) \? "ui2-feedback-dialog"/, 'ui2 feedback opens in a modal-sized utility dialog' );
 like( $ui2_js, qr/function renderFeedbackTool\(module, fields\)/, 'ui2 runtime has a dedicated Feedback utility renderer' );

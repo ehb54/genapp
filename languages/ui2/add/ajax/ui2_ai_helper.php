@@ -26,7 +26,7 @@ if (isset($appconfig->aihelper->development_stub) && ui2_ai_helper_truthy($appco
     $module = isset($request['module']) && strlen(trim(strval($request['module']))) ? strval($request['module']) : "none";
     $question = isset($request['user_question']) ? strval($request['user_question']) : "";
     echo(json_encode(array(
-        "message" => "AI Helper connected. Received module: " . $module . ". Received question: " . $question . "."
+        "message" => "AI Helper connected. Received module: " . $module . ". Received question: " . $question
     )));
     exit();
 }
