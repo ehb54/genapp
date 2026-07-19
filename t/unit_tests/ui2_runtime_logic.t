@@ -1154,6 +1154,7 @@ assert.strictEqual(Object.prototype.hasOwnProperty.call(aiHelperSanitizedValues,
 assert.strictEqual(Object.prototype.hasOwnProperty.call(aiHelperSanitizedValues, "_uuid"), false, "AI Helper context excludes private UI fields");
 hooks.state.moduleId = "";
 hooks.state.activeMenuId = "";
+hooks.state.runtimeOutputs = {};
 hooks.state.jobEvents.reset("", "");
 const aiHelperNoModuleContext = hooks.buildAiHelperContext("Hello world");
 assert.strictEqual(aiHelperNoModuleContext.application, null, "AI Helper sends JSON null when application cannot be resolved");
@@ -1161,17 +1162,42 @@ assert.strictEqual(aiHelperNoModuleContext.module, null, "AI Helper sends JSON n
 assert.strictEqual(aiHelperNoModuleContext.page, null, "AI Helper sends JSON null when no page or menu context is active");
 assert.strictEqual(aiHelperNoModuleContext.run_context.status, "idle", "AI Helper reports idle run status without an active job");
 assert.strictEqual(aiHelperNoModuleContext.run_context.last_status_message, null, "AI Helper sends JSON null when no status message is available");
+assert.strictEqual(aiHelperNoModuleContext.output_analysis.available, false, "AI Helper reports no output analysis when no runtime outputs are available");
+assert.strictEqual(aiHelperNoModuleContext.output_analysis.output_count, 0, "AI Helper output analysis starts with zero output fields");
 hooks.state.moduleId = "pdbrx";
+hooks.state.module = {
+  fields: [
+    { id: "run_report", role: "output", label: "Run report", type: "html" },
+    { id: "download_files", role: "output", label: "Download files", type: "filelist" },
+    { id: "api_token_result", role: "output", label: "Hidden output", type: "textarea" }
+  ]
+};
 hooks.state.values = { runname: "", pdbfile: "example.pdb", api_token: "hidden" };
+hooks.state.runtimeOutputs = {
+  run_report: "<p>Finished PDBRx validation with 2 warnings.</p>",
+  download_files: ["/private/project/run_0/full/path/output.pdb"],
+  api_token_result: "hidden"
+};
 const aiHelperModuleContext = hooks.buildAiHelperContext("What next?");
 assert.strictEqual(aiHelperModuleContext.module, "pdbrx", "AI Helper sends the active module id when one is loaded");
 assert.strictEqual(aiHelperModuleContext.page, "pdbrx", "AI Helper uses the active module id as page context");
 assert.strictEqual(aiHelperModuleContext.form_values.runname, "", "AI Helper preserves intentional empty form field values");
 assert.strictEqual(aiHelperModuleContext.form_values.pdbfile, "example.pdb", "AI Helper carries ordinary module form values");
 assert.strictEqual(Object.prototype.hasOwnProperty.call(aiHelperModuleContext.form_values, "api_token"), false, "AI Helper filters sensitive values from the submitted payload");
+assert.strictEqual(aiHelperModuleContext.output_analysis.available, true, "AI Helper marks output analysis available when runtime outputs exist");
+assert.strictEqual(aiHelperModuleContext.output_analysis.output_count, 2, "AI Helper output analysis filters sensitive output ids");
+assert.strictEqual(aiHelperModuleContext.output_analysis.fields[0].summary, "Finished PDBRx validation with 2 warnings.", "AI Helper output analysis strips HTML from output summaries");
+assert.strictEqual(aiHelperModuleContext.output_analysis.fields[1].summary, "Files: output.pdb", "AI Helper output analysis keeps filenames without full private paths");
+const longOutput = hooks.aiHelperSummarizeOutputValue("x".repeat(450), { type: "textarea" });
+assert.strictEqual(longOutput.truncated, true, "AI Helper output analysis truncates long output text");
+assert(longOutput.text.length <= 403, "AI Helper output analysis keeps long summaries compact");
+const pathOutput = hooks.aiHelperSummarizeOutputValue({ result: "/private/project/run_0/deep/result.dat" }, { type: "json" });
+assert.strictEqual(pathOutput.text.includes("/private/project"), false, "AI Helper output analysis redacts private path prefixes in structured summaries");
+assert.strictEqual(pathOutput.text.includes("[path:result.dat]"), true, "AI Helper output analysis preserves useful path basenames");
 hooks.state.moduleId = "";
 hooks.state.activeMenuId = "";
 hooks.state.values = {};
+hooks.state.runtimeOutputs = {};
 hooks.state.session.restricted = [];
 
 assert(

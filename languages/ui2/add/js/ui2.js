@@ -49,6 +49,8 @@
   const AI_HELPER_PREFERENCE_VALUES = new Set(["default", "on", "off"]);
   const AI_HELPER_ENDPOINT_STATES = new Set(["unavailable", "unconfigured", "development_stub", "configured"]);
   const AI_HELPER_SENSITIVE_FIELD_RE = /(?:password|passwd|passphrase|secret|token|apikey|api_key|auth|credential)/i;
+  const AI_HELPER_OUTPUT_MAX_FIELDS = 6;
+  const AI_HELPER_OUTPUT_MAX_CHARS = 400;
   const requestedUi2Theme = params.get("ui2theme");
   let activeUi2Theme = normalizeUi2Theme(requestedUi2Theme || prefs.ui2Theme || UI2_DEFAULT_THEME);
   const devMode = params.get("ui2dev") === "1" || prefs.devMode === true;
@@ -1043,6 +1045,10 @@
     const values = el("pre", "ui2-ai-helper-values");
     values.textContent = JSON.stringify(context.form_values || {}, null, 2);
     wrap.appendChild(values);
+    wrap.appendChild(el("span", "ui2-field-label", "Output analysis"));
+    const outputs = el("pre", "ui2-ai-helper-values");
+    outputs.textContent = JSON.stringify(context.output_analysis || aiHelperOutputAnalysis(), null, 2);
+    wrap.appendChild(outputs);
     return wrap;
   }
 
@@ -1083,6 +1089,7 @@
       page: state.moduleId || state.activeMenuId || null,
       form_values: sanitizeAiHelperFormValues(state.values),
       run_context: aiHelperRunContext(runtime),
+      output_analysis: aiHelperOutputAnalysis(),
       user_question: stringValue(userQuestion)
     };
   }
@@ -1123,6 +1130,70 @@
     }
     const items = Array.isArray(log?.items) ? log.items : [];
     return stringValue(items[items.length - 1]).trim();
+  }
+
+  function aiHelperOutputAnalysis() {
+    const outputEntries = Object.entries(state.runtimeOutputs || {})
+      .filter(([id]) => id && !id.startsWith("_") && !AI_HELPER_SENSITIVE_FIELD_RE.test(id));
+    const fields = outputEntries.slice(0, AI_HELPER_OUTPUT_MAX_FIELDS)
+      .map(([id, value]) => aiHelperOutputSummary(id, value));
+    return {
+      available: outputEntries.length > 0,
+      output_count: outputEntries.length,
+      included_count: fields.length,
+      omitted_count: Math.max(0, outputEntries.length - fields.length),
+      fields
+    };
+  }
+
+  function aiHelperOutputSummary(id, value) {
+    const field = moduleFieldById(id) || {};
+    const summary = aiHelperSummarizeOutputValue(value, field);
+    return {
+      id,
+      label: stringValue(field.label || id) || null,
+      type: stringValue(field.type) || null,
+      summary: summary.text,
+      truncated: summary.truncated
+    };
+  }
+
+  function aiHelperSummarizeOutputValue(value, field = {}) {
+    let text = "";
+    const fieldType = stringValue(field.type);
+    if (Array.isArray(value) && /file/i.test(fieldType)) {
+      const files = normalizeFileList(value).map(aiHelperFileBasename).filter(Boolean);
+      text = files.length ? `Files: ${files.slice(0, 8).join(", ")}${files.length > 8 ? ", ..." : ""}` : "";
+    } else if (value && typeof value === "object") {
+      text = JSON.stringify(value);
+    } else {
+      text = stringValue(value);
+    }
+    if (/html/i.test(fieldType)) {
+      text = stripHtml(text);
+    }
+    text = aiHelperRedactPathsFromText(text);
+    text = text.replace(/\s+/g, " ").trim();
+    const truncated = text.length > AI_HELPER_OUTPUT_MAX_CHARS;
+    return {
+      text: truncated ? `${text.slice(0, AI_HELPER_OUTPUT_MAX_CHARS).trim()}...` : text,
+      truncated
+    };
+  }
+
+  function aiHelperFileBasename(value) {
+    return stringValue(value).split(/[\\/]/).filter(Boolean).pop() || "";
+  }
+
+  function aiHelperRedactPathsFromText(value) {
+    return stringValue(value).replace(/(^|[\s"'(:\[])(\/[^\s"',)\]}<>]+)+/g, (match, prefix) => {
+      const path = match.slice(prefix.length);
+      if (/^\/\//.test(path)) {
+        return match;
+      }
+      const basename = aiHelperFileBasename(path);
+      return `${prefix}${basename ? `[path:${basename}]` : "[path]"}`;
+    });
   }
 
   function aiHelperResponseMessage(payload) {
@@ -8330,6 +8401,8 @@
       buildAiHelperContext,
       sanitizeAiHelperFormValues,
       aiHelperRunContext,
+      aiHelperOutputAnalysis,
+      aiHelperSummarizeOutputValue,
       replaceSelectOptions,
       userConfigGroupVisible,
       parseNglPayload,
