@@ -1131,6 +1131,18 @@ assert.strictEqual(aiHelperSanitizedValues.pdbfile, "example.pdb", "AI Helper co
 assert.strictEqual(Object.prototype.hasOwnProperty.call(aiHelperSanitizedValues, "password"), false, "AI Helper context excludes password fields");
 assert.strictEqual(Object.prototype.hasOwnProperty.call(aiHelperSanitizedValues, "api_token"), false, "AI Helper context excludes token fields");
 assert.strictEqual(Object.prototype.hasOwnProperty.call(aiHelperSanitizedValues, "_uuid"), false, "AI Helper context excludes private UI fields");
+hooks.state.moduleId = "";
+hooks.state.activeMenuId = "";
+hooks.state.jobEvents.reset("", "");
+const aiHelperNoModuleContext = hooks.buildAiHelperContext("Hello world");
+assert.strictEqual(aiHelperNoModuleContext.module, null, "AI Helper sends JSON null when no module is loaded");
+assert.strictEqual(aiHelperNoModuleContext.page, null, "AI Helper sends JSON null when no page or menu context is active");
+hooks.state.moduleId = "pdbrx";
+const aiHelperModuleContext = hooks.buildAiHelperContext("What next?");
+assert.strictEqual(aiHelperModuleContext.module, "pdbrx", "AI Helper sends the active module id when one is loaded");
+assert.strictEqual(aiHelperModuleContext.page, "pdbrx", "AI Helper uses the active module id as page context");
+hooks.state.moduleId = "";
+hooks.state.activeMenuId = "";
 hooks.state.session.restricted = [];
 
 assert(

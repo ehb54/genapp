@@ -1050,10 +1050,11 @@
   function buildAiHelperContext(userQuestion) {
     syncValues();
     const runtime = state.jobEvents.snapshot();
+    const moduleId = state.moduleId || runtime.module || "";
     return {
       application: aiHelperApplicationId(),
-      module: state.moduleId || runtime.module || "",
-      page: state.moduleId || state.activeMenuId || "",
+      module: moduleId || null,
+      page: state.moduleId || state.activeMenuId || null,
       form_values: sanitizeAiHelperFormValues(state.values),
       run_context: aiHelperRunContext(runtime),
       user_question: stringValue(userQuestion)
