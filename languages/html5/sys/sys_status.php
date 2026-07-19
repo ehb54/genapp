@@ -238,12 +238,20 @@ function ga_ai_helper_truthy( $value ) {
 function ga_ai_helper_status( $appjson, $preference ) {
     $available = false;
     $configured = false;
+    $endpoint_state = "unavailable";
     if ( $appjson && isset( $appjson->aihelper ) && is_object( $appjson->aihelper ) ) {
         $available = isset( $appjson->aihelper->enabled ) && ga_ai_helper_truthy( $appjson->aihelper->enabled );
         if ( $available ) {
             $has_endpoint = isset( $appjson->aihelper->endpoint ) && strlen( trim( strval( $appjson->aihelper->endpoint ) ) ) > 0;
             $has_stub = isset( $appjson->aihelper->development_stub ) && ga_ai_helper_truthy( $appjson->aihelper->development_stub );
             $configured = $has_endpoint || $has_stub;
+            if ( $has_stub ) {
+                $endpoint_state = "development_stub";
+            } elseif ( $has_endpoint ) {
+                $endpoint_state = "configured";
+            } else {
+                $endpoint_state = "unconfigured";
+            }
         }
     }
     if ( !in_array( $preference, array( "default", "on", "off" ), true ) ) {
@@ -252,6 +260,7 @@ function ga_ai_helper_status( $appjson, $preference ) {
     return array(
         "available" => $available,
         "configured" => $configured,
+        "endpoint_state" => $endpoint_state,
         "user_preference" => $preference
     );
 }

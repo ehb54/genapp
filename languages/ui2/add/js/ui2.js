@@ -47,6 +47,7 @@
   const UI2_THEME_VALUES = new Set(UI2_THEME_OPTIONS.map(([value]) => value));
   const LEGACY_USER_CONFIG_THEME_FIELD_IDS = new Set(["changetheme", "themetype", "themedark", "themelight", "theme"]);
   const AI_HELPER_PREFERENCE_VALUES = new Set(["default", "on", "off"]);
+  const AI_HELPER_ENDPOINT_STATES = new Set(["unavailable", "unconfigured", "development_stub", "configured"]);
   const AI_HELPER_SENSITIVE_FIELD_RE = /(?:password|passwd|passphrase|secret|token|apikey|api_key|auth|credential)/i;
   const requestedUi2Theme = params.get("ui2theme");
   let activeUi2Theme = normalizeUi2Theme(requestedUi2Theme || prefs.ui2Theme || UI2_DEFAULT_THEME);
@@ -455,15 +456,22 @@
   function normalizeAiHelperStatus(value) {
     const status = value && typeof value === "object" ? value : {};
     const preference = normalizeAiHelperPreference(status.user_preference);
+    const endpointState = normalizeAiHelperEndpointState(status.endpoint_state);
     const available = status.available === true || String(status.available || "").toLowerCase() === "true" || String(status.available || "") === "1";
     const configured = status.configured === true || String(status.configured || "").toLowerCase() === "true" || String(status.configured || "") === "1";
     const enabledForUser = available && preference !== "off";
     return {
       available,
       configured,
+      endpoint_state: endpointState,
       user_preference: preference,
       enabled_for_user: enabledForUser
     };
+  }
+
+  function normalizeAiHelperEndpointState(value) {
+    const normalized = stringValue(value).trim().toLowerCase();
+    return AI_HELPER_ENDPOINT_STATES.has(normalized) ? normalized : "unavailable";
   }
 
   function normalizeAiHelperPreference(value) {
@@ -988,6 +996,9 @@
     const response = el("div", "ui2-ai-helper-response");
     response.setAttribute("aria-live", "polite");
     form.append(questionRow, actions, response);
+    if (devMode) {
+      form.appendChild(renderAiHelperPayloadPreview(question));
+    }
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const userQuestion = question.value.trim();
@@ -1000,7 +1011,7 @@
       response.textContent = "";
       setSubmitStatus(status, "Asking AI Helper", "pending");
       try {
-        const payload = await submitAiHelperQuestion(userQuestion);
+        const payload = await submitAiHelperQuestion(buildAiHelperContext(userQuestion));
         response.textContent = aiHelperResponseMessage(payload);
         setSubmitStatus(status, "Response received", "ok");
       } catch (error) {
@@ -1033,11 +1044,24 @@
     return wrap;
   }
 
-  async function submitAiHelperQuestion(userQuestion) {
+  function renderAiHelperPayloadPreview(question) {
+    const wrap = el("div", "ui2-ai-helper-payload-preview");
+    wrap.appendChild(el("span", "ui2-field-label", "AI Helper request payload"));
+    const preview = el("pre", "ui2-ai-helper-values");
+    wrap.appendChild(preview);
+    const update = () => {
+      preview.textContent = JSON.stringify(buildAiHelperContext(question.value), null, 2);
+    };
+    question.addEventListener("input", update);
+    update();
+    return wrap;
+  }
+
+  async function submitAiHelperQuestion(requestPayload) {
     const response = await fetch("ajax/ui2_ai_helper.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(buildAiHelperContext(userQuestion)),
+      body: JSON.stringify(requestPayload),
       credentials: "same-origin"
     });
     const payload = await parseJsonResponse(response, "AI Helper");
@@ -1052,7 +1076,7 @@
     const runtime = state.jobEvents.snapshot();
     const moduleId = state.moduleId || runtime.module || "";
     return {
-      application: aiHelperApplicationId(),
+      application: aiHelperApplicationId() || null,
       module: moduleId || null,
       page: state.moduleId || state.activeMenuId || null,
       form_values: sanitizeAiHelperFormValues(state.values),
@@ -1082,9 +1106,10 @@
     const lifecycle = runtime?.lifecycle || {};
     const activeStatus = stringValue(state.activeJob?.status || lifecycle.state || lifecycle.status);
     const lastLog = runtimeLastLogMessage(runtime);
+    const lastStatusMessage = stringValue(lifecycle.error || lifecycle.message || lastLog);
     return {
       status: activeStatus || (state.activeJob?.uuid || runtime?.run ? "running" : "idle"),
-      last_status_message: stringValue(lifecycle.error || lifecycle.message || lastLog)
+      last_status_message: lastStatusMessage || null
     };
   }
 
@@ -8298,6 +8323,7 @@
       ui2UserConfigFields,
       ui2ThemeOptionValues,
       normalizeAiHelperStatus,
+      normalizeAiHelperEndpointState,
       aiHelperEnabledForUser,
       buildAiHelperContext,
       sanitizeAiHelperFormValues,

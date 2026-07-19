@@ -1113,6 +1113,27 @@ assert.strictEqual(
   true,
   "AI Helper is visible when deployment allows it and the user follows the default"
 );
+assert.strictEqual(
+  hooks.state.session.aiHelper.endpoint_state,
+  "unavailable",
+  "AI Helper endpoint state defaults to unavailable when backend omits it"
+);
+hooks.state.session.aiHelper = hooks.normalizeAiHelperStatus({ available: true, configured: true, endpoint_state: "development_stub", user_preference: "default" });
+assert.strictEqual(
+  hooks.state.session.aiHelper.endpoint_state,
+  "development_stub",
+  "AI Helper preserves the development stub endpoint state"
+);
+assert.strictEqual(
+  hooks.normalizeAiHelperEndpointState("configured"),
+  "configured",
+  "AI Helper accepts the configured endpoint state"
+);
+assert.strictEqual(
+  hooks.normalizeAiHelperEndpointState("unexpected"),
+  "unavailable",
+  "AI Helper rejects unknown endpoint states"
+);
 hooks.state.session.aiHelper = hooks.normalizeAiHelperStatus({ available: true, configured: true, user_preference: "off" });
 assert.strictEqual(
   hooks.aiHelperEnabledForUser(),
@@ -1135,14 +1156,22 @@ hooks.state.moduleId = "";
 hooks.state.activeMenuId = "";
 hooks.state.jobEvents.reset("", "");
 const aiHelperNoModuleContext = hooks.buildAiHelperContext("Hello world");
+assert.strictEqual(aiHelperNoModuleContext.application, null, "AI Helper sends JSON null when application cannot be resolved");
 assert.strictEqual(aiHelperNoModuleContext.module, null, "AI Helper sends JSON null when no module is loaded");
 assert.strictEqual(aiHelperNoModuleContext.page, null, "AI Helper sends JSON null when no page or menu context is active");
+assert.strictEqual(aiHelperNoModuleContext.run_context.status, "idle", "AI Helper reports idle run status without an active job");
+assert.strictEqual(aiHelperNoModuleContext.run_context.last_status_message, null, "AI Helper sends JSON null when no status message is available");
 hooks.state.moduleId = "pdbrx";
+hooks.state.values = { runname: "", pdbfile: "example.pdb", api_token: "hidden" };
 const aiHelperModuleContext = hooks.buildAiHelperContext("What next?");
 assert.strictEqual(aiHelperModuleContext.module, "pdbrx", "AI Helper sends the active module id when one is loaded");
 assert.strictEqual(aiHelperModuleContext.page, "pdbrx", "AI Helper uses the active module id as page context");
+assert.strictEqual(aiHelperModuleContext.form_values.runname, "", "AI Helper preserves intentional empty form field values");
+assert.strictEqual(aiHelperModuleContext.form_values.pdbfile, "example.pdb", "AI Helper carries ordinary module form values");
+assert.strictEqual(Object.prototype.hasOwnProperty.call(aiHelperModuleContext.form_values, "api_token"), false, "AI Helper filters sensitive values from the submitted payload");
 hooks.state.moduleId = "";
 hooks.state.activeMenuId = "";
+hooks.state.values = {};
 hooks.state.session.restricted = [];
 
 assert(

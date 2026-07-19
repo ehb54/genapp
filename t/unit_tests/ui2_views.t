@@ -39,6 +39,7 @@ ok( -f File::Spec->catfile( $ui2, qw(modules sys_feedback.json) ), 'ui2 feedback
 my $index      = read_file( File::Spec->catfile( $ui2, 'index.html' ) );
 my $app_map_js = read_file( File::Spec->catfile( $ui2, qw(js app-map.js) ) );
 my $ai_helper_php = read_file( File::Spec->catfile( $ui2, qw(ajax ui2_ai_helper.php) ) );
+my $sys_status_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_status.php) ) );
 like( $index, qr/js\/app-map\.js/, 'ui2 index loads the generated app map' );
 like( $index, qr/\.\.\/js\/autobahn\.min\.js/, 'ui2 index preloads the existing legacy Autobahn websocket client' );
 like( $index, qr/\.\.\/js\/plotly-2\.35\.2\.min\.js/, 'ui2 index preloads the existing generated Plotly bundle' );
@@ -119,9 +120,15 @@ like( $ui2_js, qr/`\.\.\/\$\{base\}\/`/, 'ui2 runtime rebases relative docsbaseu
 like( $ui2_js, qr/`\$\{mainUrl\}\$\{menu\}\/\$\{id\}\/\$\{id\}\.html`/, 'ui2 runtime mirrors SASSIE menu-scoped module docs path convention' );
 like( $ui2_js, qr/nodes\.feedback\?\.addEventListener\("click", \(\) => openUtilityModule\("sys_feedback"\)\)/, 'ui2 feedback button opens the legacy feedback utility' );
 like( $ui2_js, qr/nodes\.aiHelper\?\.addEventListener\("click", openAiHelperPanel\)/, 'ui2 AI Helper button opens a read-only helper panel' );
-like( $ui2_js, qr/fetch\("ajax\/ui2_ai_helper\.php"[\s\S]+method: "POST"[\s\S]+JSON\.stringify\(buildAiHelperContext\(userQuestion\)\)/, 'ui2 AI Helper submits context JSON through the same-origin bridge' );
+like( $ui2_js, qr/devMode[\s\S]+renderAiHelperPayloadPreview\(question\)/, 'ui2 AI Helper shows a request payload preview only in development mode' );
+like( $ui2_js, qr/function renderAiHelperPayloadPreview\(question\)[\s\S]+JSON\.stringify\(buildAiHelperContext\(question\.value\), null, 2\)/, 'ui2 AI Helper development preview renders the exact request payload shape' );
+like( $ui2_js, qr/fetch\("ajax\/ui2_ai_helper\.php"[\s\S]+method: "POST"[\s\S]+JSON\.stringify\(requestPayload\)/, 'ui2 AI Helper submits a single prebuilt context JSON payload through the same-origin bridge' );
 like( $ui2_js, qr/AI_HELPER_SENSITIVE_FIELD_RE.*password.*token.*api_key/s, 'ui2 AI Helper context filters obvious sensitive field ids' );
 like( $ai_helper_php, qr/Received question: " \. \$question\s*\)\)\);/, 'ui2 AI Helper development stub does not append punctuation after the user question' );
+like( $sys_status_php, qr/"endpoint_state"\s*=>\s*\$endpoint_state/, 'html5 sys_status exposes AI Helper endpoint state without exposing the endpoint URL' );
+like( $sys_status_php, qr/\$endpoint_state\s*=\s*"development_stub"/, 'html5 sys_status maps development stub AI Helper endpoint state' );
+like( $sys_status_php, qr/\$endpoint_state\s*=\s*"configured"/, 'html5 sys_status maps configured AI Helper endpoint state' );
+like( $sys_status_php, qr/\$endpoint_state\s*=\s*"unconfigured"/, 'html5 sys_status maps unconfigured AI Helper endpoint state' );
 like( $ui2_js, qr/id === "aihelperpreference" && !value[\s\S]+control\.value = "default"/, 'ui2 Settings keeps missing AI Helper user preference on deployment default' );
 like( $ui2_js, qr/dialogClass: \(moduleId === "sys_feedback" \|\| moduleId === "sys_feedback2"\) \? "ui2-feedback-dialog"/, 'ui2 feedback opens in a modal-sized utility dialog' );
 like( $ui2_js, qr/function renderFeedbackTool\(module, fields\)/, 'ui2 runtime has a dedicated Feedback utility renderer' );
