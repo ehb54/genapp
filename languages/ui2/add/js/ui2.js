@@ -988,6 +988,16 @@
     question.required = true;
     question.rows = 4;
     question.placeholder = "What should I do next?";
+    question.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey && !event.isComposing) {
+        event.preventDefault();
+        if (typeof form.requestSubmit === "function") {
+          form.requestSubmit(submit);
+        } else {
+          submit.click();
+        }
+      }
+    });
     questionRow.appendChild(question);
     const actions = el("div", "ui2-form-actions");
     const submit = el("button", "ui2-button ui2-button-primary", "Ask AI Helper");
@@ -995,13 +1005,15 @@
     const status = el("div", "ui2-submit-status", "");
     status.setAttribute("role", "status");
     actions.append(submit, status);
+    const usage = el("div", "ui2-ai-helper-usage", "");
+    usage.setAttribute("aria-live", "polite");
     const response = el("div", "ui2-ai-helper-response");
     response.setAttribute("aria-live", "polite");
     form.appendChild(questionRow);
     if (devMode) {
       form.appendChild(renderAiHelperPayloadPreview(question));
     }
-    form.append(actions, response);
+    form.append(actions, usage, response);
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const userQuestion = question.value.trim();
@@ -1012,10 +1024,12 @@
       }
       submit.disabled = true;
       response.textContent = "";
+      usage.textContent = "";
       setSubmitStatus(status, "Asking AI Helper", "pending");
       try {
         const payload = await submitAiHelperQuestion(buildAiHelperContext(userQuestion));
         response.textContent = aiHelperResponseMessage(payload);
+        usage.textContent = aiHelperUsageSummary(payload);
         setSubmitStatus(status, "Response received", "ok");
       } catch (error) {
         setSubmitStatus(status, error.message, "error");
@@ -1041,15 +1055,22 @@
       list.append(el("dt", null, label), el("dd", null, value || "-"));
     });
     wrap.appendChild(list);
-    wrap.appendChild(el("span", "ui2-field-label", "Current form values"));
-    const values = el("pre", "ui2-ai-helper-values");
-    values.textContent = JSON.stringify(context.form_values || {}, null, 2);
-    wrap.appendChild(values);
+    wrap.appendChild(renderAiHelperJsonDetails("Current form values", context.form_values || {}, false));
     wrap.appendChild(el("span", "ui2-field-label", "Output analysis"));
     const outputs = el("pre", "ui2-ai-helper-values");
     outputs.textContent = JSON.stringify(context.output_analysis || aiHelperOutputAnalysis(), null, 2);
     wrap.appendChild(outputs);
     return wrap;
+  }
+
+  function renderAiHelperJsonDetails(label, value, open = false) {
+    const details = el("details", "ui2-ai-helper-details");
+    details.open = !!open;
+    details.appendChild(el("summary", "ui2-field-label", label));
+    const pre = el("pre", "ui2-ai-helper-values");
+    pre.textContent = JSON.stringify(value || {}, null, 2);
+    details.appendChild(pre);
+    return details;
   }
 
   function renderAiHelperPayloadPreview(question) {
@@ -1204,6 +1225,58 @@
       return payload;
     }
     return stringValue(payload.message || payload.response || payload.text || "");
+  }
+
+  function aiHelperUsageSummary(payload) {
+    const usage = normalizeAiHelperUsage(payload);
+    if (!usage.has_usage && !usage.has_remaining) {
+      return "Token usage: not reported by backend.";
+    }
+    const parts = [];
+    if (usage.total_tokens != null) {
+      parts.push(`${usage.total_tokens} tokens used`);
+    } else if (usage.input_tokens != null || usage.output_tokens != null) {
+      parts.push(`${usage.input_tokens ?? "?"} in / ${usage.output_tokens ?? "?"} out`);
+    }
+    if (usage.remaining_tokens != null) {
+      parts.push(`${usage.remaining_tokens} remaining`);
+    } else {
+      parts.push("remaining unavailable");
+    }
+    return `Token usage: ${parts.join("; ")}.`;
+  }
+
+  function normalizeAiHelperUsage(payload) {
+    const usage = payload?.usage && typeof payload.usage === "object" ? payload.usage : {};
+    const metadata = payload?.usageMetadata && typeof payload.usageMetadata === "object" ? payload.usageMetadata : {};
+    const inputTokens = aiHelperNumberOrNull(
+      usage.input_tokens ?? usage.prompt_tokens ?? usage.promptTokenCount ?? metadata.promptTokenCount
+    );
+    const outputTokens = aiHelperNumberOrNull(
+      usage.output_tokens ?? usage.completion_tokens ?? usage.candidatesTokenCount ?? metadata.candidatesTokenCount
+    );
+    const totalTokens = aiHelperNumberOrNull(
+      usage.total_tokens ?? usage.totalTokenCount ?? metadata.totalTokenCount
+    );
+    const remainingTokens = aiHelperNumberOrNull(
+      usage.remaining_tokens ?? usage.account_remaining_tokens ?? usage.accountRemainingTokens ?? payload?.account_remaining_tokens
+    );
+    return {
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+      total_tokens: totalTokens,
+      remaining_tokens: remainingTokens,
+      has_usage: inputTokens != null || outputTokens != null || totalTokens != null,
+      has_remaining: remainingTokens != null
+    };
+  }
+
+  function aiHelperNumberOrNull(value) {
+    if (value === "" || value == null) {
+      return null;
+    }
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
   }
 
   function loadPreferences() {
@@ -8403,6 +8476,8 @@
       aiHelperRunContext,
       aiHelperOutputAnalysis,
       aiHelperSummarizeOutputValue,
+      aiHelperUsageSummary,
+      normalizeAiHelperUsage,
       replaceSelectOptions,
       userConfigGroupVisible,
       parseNglPayload,

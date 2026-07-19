@@ -1135,6 +1135,10 @@ code {
   overflow-wrap: anywhere;
 }
 
+.ui2-ai-helper-details summary {
+  cursor: pointer;
+}
+
 .ui2-ai-helper-values,
 .ui2-ai-helper-response {
   max-height: 14rem;
@@ -1150,6 +1154,12 @@ code {
 .ui2-ai-helper-values {
   margin: 0;
   font-size: 0.85rem;
+}
+
+.ui2-ai-helper-usage {
+  color: var(--ui2-muted);
+  font-size: 0.85rem;
+  min-height: 1.2em;
 }
 
 .ui2-ai-helper-form,
