@@ -125,6 +125,10 @@ function ui2_ai_helper_post_json($endpoint, $json, $timeout) {
             return array("error" => "AI Helper endpoint request failed: " . $error);
         }
         if ($status < 200 || $status >= 300) {
+            $endpoint_error = ui2_ai_helper_error_from_body($body);
+            if (strlen($endpoint_error)) {
+                return array("error" => $endpoint_error);
+            }
             return array("error" => "AI Helper endpoint returned HTTP " . $status . ".");
         }
         return array("body" => substr($body, 0, 262144));
@@ -145,9 +149,25 @@ function ui2_ai_helper_post_json($endpoint, $json, $timeout) {
     }
     $status = ui2_ai_helper_stream_status(isset($http_response_header) ? $http_response_header : array());
     if ($status && ($status < 200 || $status >= 300)) {
+        $endpoint_error = ui2_ai_helper_error_from_body($body);
+        if (strlen($endpoint_error)) {
+            return array("error" => $endpoint_error);
+        }
         return array("error" => "AI Helper endpoint returned HTTP " . $status . ".");
     }
     return array("body" => substr($body, 0, 262144));
+}
+
+function ui2_ai_helper_error_from_body($body) {
+    $payload = json_decode(strval($body), true);
+    if (is_array($payload) && isset($payload['error']) && strlen(trim(strval($payload['error'])))) {
+        $error = trim(strval($payload['error']));
+        if (preg_match('/timed?\s*out|timeout/i', $error)) {
+            return "AI Helper took too long to respond. Please try again in a moment or ask a shorter question.";
+        }
+        return substr($error, 0, 500);
+    }
+    return "";
 }
 
 function ui2_ai_helper_stream_status($headers) {
