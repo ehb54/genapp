@@ -1265,6 +1265,10 @@
         flushParagraph();
         flushList();
         html.push(aiHelperMathPlaceholder(trimmed.slice(2, -2).trim(), true));
+      } else if (/^\\\[[\s\S]+\\\]$/.test(trimmed)) {
+        flushParagraph();
+        flushList();
+        html.push(aiHelperMathPlaceholder(trimmed.slice(2, -2).trim(), true));
       } else if (heading) {
         flushParagraph();
         flushList();
@@ -1289,12 +1293,24 @@
   }
 
   function aiHelperInlineMarkdown(value) {
-    return escapeHtml(String(value)).replace(/\$([^$\n]+)\$/g, (match, tex) => (
-      tex.trim() ? aiHelperMathPlaceholder(tex.trim(), false) : match
-    ))
+    const math = [];
+    const tokenized = String(value).replace(/\\\(([\s\S]*?)\\\)|\$([^$\n]+)\$/g, (match, parenTex, dollarTex) => {
+      const tex = stringValue(parenTex != null ? parenTex : dollarTex).trim();
+      if (!tex) {
+        return match;
+      }
+      const token = `@@AI_HELPER_MATH_${math.length}@@`;
+      math.push([token, aiHelperMathPlaceholder(tex, false)]);
+      return token;
+    });
+    let html = escapeHtml(tokenized)
       .replace(/`([^`]+)`/g, "<code>$1</code>")
       .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
       .replace(/\b_([^_]+)_\b/g, "<em>$1</em>");
+    math.forEach(([token, rendered]) => {
+      html = html.replace(new RegExp(token, "g"), rendered);
+    });
+    return html;
   }
 
   function aiHelperMathPlaceholder(tex, displayMode) {
