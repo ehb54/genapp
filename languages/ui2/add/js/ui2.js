@@ -51,6 +51,8 @@
   const AI_HELPER_SENSITIVE_FIELD_RE = /(?:password|passwd|passphrase|secret|token|apikey|api_key|auth|credential)/i;
   const AI_HELPER_OUTPUT_MAX_FIELDS = 6;
   const AI_HELPER_OUTPUT_MAX_CHARS = 400;
+  const AI_HELPER_KATEX_CSS_URL = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css";
+  const AI_HELPER_KATEX_SCRIPT_URL = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js";
   const requestedUi2Theme = params.get("ui2theme");
   let activeUi2Theme = normalizeUi2Theme(requestedUi2Theme || prefs.ui2Theme || UI2_DEFAULT_THEME);
   const devMode = params.get("ui2dev") === "1" || prefs.devMode === true;
@@ -78,6 +80,7 @@
   const NGL_FRAME_HISTORY_DEFAULT_MAX_BYTES = 64 * 1024 * 1024;
   let plotlyLoadPromise = null;
   let nglLoadPromise = null;
+  let katexLoadPromise = null;
   let reactMmcRoot = null;
 
   const state = {
@@ -1029,6 +1032,7 @@
       try {
         const payload = await submitAiHelperQuestion(buildAiHelperContext(userQuestion));
         response.innerHTML = aiHelperResponseHtml(aiHelperResponseMessage(payload));
+        aiHelperTypesetMath(response);
         usage.textContent = aiHelperUsageSummary(payload);
         setSubmitStatus(status, "Response received", "ok");
       } catch (error) {
@@ -1257,6 +1261,10 @@
       if (!trimmed) {
         flushParagraph();
         flushList();
+      } else if (/^\$\$[\s\S]+\$\$$/.test(trimmed)) {
+        flushParagraph();
+        flushList();
+        html.push(aiHelperMathPlaceholder(trimmed.slice(2, -2).trim(), true));
       } else if (heading) {
         flushParagraph();
         flushList();
@@ -1281,10 +1289,70 @@
   }
 
   function aiHelperInlineMarkdown(value) {
-    return escapeHtml(value)
+    return escapeHtml(String(value)).replace(/\$([^$\n]+)\$/g, (match, tex) => (
+      tex.trim() ? aiHelperMathPlaceholder(tex.trim(), false) : match
+    ))
       .replace(/`([^`]+)`/g, "<code>$1</code>")
       .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
       .replace(/\b_([^_]+)_\b/g, "<em>$1</em>");
+  }
+
+  function aiHelperMathPlaceholder(tex, displayMode) {
+    const marker = displayMode ? `$$${tex}$$` : `$${tex}$`;
+    const tag = displayMode ? "div" : "span";
+    return `<${tag} class="ui2-ai-helper-math" data-display="${displayMode ? "true" : "false"}" data-tex="${escapeHtml(tex)}">${escapeHtml(marker)}</${tag}>`;
+  }
+
+  function aiHelperTypesetMath(container) {
+    const nodes = Array.from(container.querySelectorAll(".ui2-ai-helper-math"));
+    if (!nodes.length) {
+      return;
+    }
+    ensureAiHelperKatexLoaded()
+      .then((katex) => {
+        nodes.forEach((node) => {
+          const tex = node.getAttribute("data-tex") || "";
+          const displayMode = node.getAttribute("data-display") === "true";
+          try {
+            katex.render(tex, node, { displayMode, throwOnError: false, strict: "ignore" });
+            node.classList.add("ui2-ai-helper-math-rendered");
+          } catch (error) {
+            node.classList.add("ui2-ai-helper-math-error");
+          }
+        });
+      })
+      .catch(() => {
+        nodes.forEach((node) => node.classList.add("ui2-ai-helper-math-unavailable"));
+      });
+  }
+
+  function ensureAiHelperKatexLoaded() {
+    if (window.katex?.render) {
+      ensureAiHelperKatexCss();
+      return Promise.resolve(window.katex);
+    }
+    if (katexLoadPromise) {
+      return katexLoadPromise;
+    }
+    ensureAiHelperKatexCss();
+    katexLoadPromise = loadScript(AI_HELPER_KATEX_SCRIPT_URL)
+      .then(() => {
+        if (!window.katex?.render) {
+          throw new Error("KaTeX did not initialize");
+        }
+        return window.katex;
+      });
+    return katexLoadPromise;
+  }
+
+  function ensureAiHelperKatexCss() {
+    if (document.querySelector(`link[href="${AI_HELPER_KATEX_CSS_URL}"]`)) {
+      return;
+    }
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = AI_HELPER_KATEX_CSS_URL;
+    document.head.appendChild(link);
   }
 
   function aiHelperUsageSummary(payload) {

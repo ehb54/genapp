@@ -128,7 +128,11 @@ like( $ui2_js, qr/aiHelperUsageSummary\(payload\)/, 'ui2 AI Helper displays back
 like( $ui2_js, qr/remaining unavailable/, 'ui2 AI Helper does not guess unavailable account token remaining values' );
 like( $ui2_js, qr/estimated_cost_usd[\s\S]+cumulative_cost_usd/, 'ui2 AI Helper displays backend cost estimates when returned' );
 like( $ui2_js, qr/response\.innerHTML = aiHelperResponseHtml\(aiHelperResponseMessage\(payload\)\)/, 'ui2 AI Helper renders returned Markdown as presentable response HTML' );
-like( $ui2_js, qr/function aiHelperResponseHtml\(message\)[\s\S]+function aiHelperInlineMarkdown\(value\)[\s\S]+escapeHtml\(value\)[\s\S]+<strong>\$1<\/strong>/, 'ui2 AI Helper escapes response text before applying small Markdown formatting' );
+like( $ui2_js, qr/function aiHelperResponseHtml\(message\)[\s\S]+function aiHelperInlineMarkdown\(value\)[\s\S]+escapeHtml\(String\(value\)\)[\s\S]+<strong>\$1<\/strong>/, 'ui2 AI Helper escapes response text before applying small Markdown formatting' );
+like( $ui2_js, qr/AI_HELPER_KATEX_SCRIPT_URL = "https:\/\/cdn\.jsdelivr\.net\/npm\/katex\@0\.16\.9\/dist\/katex\.min\.js"/, 'ui2 AI Helper uses a pinned KaTeX script for optional equation rendering' );
+like( $ui2_js, qr/response\.innerHTML = aiHelperResponseHtml[\s\S]+aiHelperTypesetMath\(response\)/, 'ui2 AI Helper typesets math only after a helper response is rendered' );
+like( $ui2_js, qr/function aiHelperMathPlaceholder\(tex, displayMode\)[\s\S]+data-tex="\$\{escapeHtml\(tex\)\}"/, 'ui2 AI Helper keeps equation text escaped in math placeholders' );
+like( $ui2_js, qr/function ensureAiHelperKatexLoaded\(\)[\s\S]+window\.katex\?\.render[\s\S]+loadScript\(AI_HELPER_KATEX_SCRIPT_URL\)/, 'ui2 AI Helper lazily loads KaTeX only when response math is present' );
 like( $ui2_js, qr/form\.appendChild\(questionRow\);[\s\S]+devMode[\s\S]+renderAiHelperPayloadPreview\(question\)[\s\S]+form\.append\(actions, usage, response\)/, 'ui2 AI Helper shows the development request payload preview before the submit response area' );
 like( $ui2_js, qr/function renderAiHelperPayloadPreview\(question\)[\s\S]+JSON\.stringify\(buildAiHelperContext\(question\.value\), null, 2\)/, 'ui2 AI Helper development preview renders the exact request payload shape' );
 like( $ui2_js, qr/fetch\("ajax\/ui2_ai_helper\.php"[\s\S]+method: "POST"[\s\S]+JSON\.stringify\(requestPayload\)/, 'ui2 AI Helper submits a single prebuilt context JSON payload through the same-origin bridge' );
@@ -360,6 +364,7 @@ like( $ui2_css, qr/\.ui2-legacy-message-icon/, 'ui2 stylesheet includes legacy b
 like( $ui2_css, qr/\.ui2-captcha-dialog/, 'ui2 stylesheet includes a dedicated captcha dialog shell' );
 like( $ui2_css, qr/\.ui2-splash-footer/, 'ui2 stylesheet includes splash footer metadata styles' );
 like( $ui2_css, qr/\.ui2-ai-helper-usage/, 'ui2 stylesheet includes compact AI Helper token usage styles' );
+like( $ui2_css, qr/\.ui2-ai-helper-math\[data-display="true"\]/, 'ui2 stylesheet includes AI Helper display-equation styling' );
 like( $ui2_css, qr/\.ui2-output-plotly/, 'ui2 stylesheet includes a stable Plotly output surface' );
 like( $ui2_css, qr/\.ui2-output-ngl\s*\{[^}]*white-space:\s*normal/s, 'ui2 stylesheet gives NGL outputs a non-text viewer container' );
 like( $ui2_css, qr/\.ui2-ngl-button\[aria-pressed="true"\]/, 'ui2 stylesheet makes active NGL layer buttons visible' );
