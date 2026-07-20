@@ -122,6 +122,9 @@ like( $ui2_js, qr/nodes\.feedback\?\.addEventListener\("click", \(\) => openUtil
 like( $ui2_js, qr/nodes\.aiHelper\?\.addEventListener\("click", openAiHelperPanel\)/, 'ui2 AI Helper button opens a read-only helper panel' );
 like( $ui2_js, qr/Form context/, 'ui2 AI Helper summarizes form context without raw form-value JSON in the normal panel' );
 like( $ui2_js, qr/Output context/, 'ui2 AI Helper summarizes output context without raw output-analysis JSON in the normal panel' );
+like( $ui2_js, qr/AI context/, 'ui2 AI Helper summarizes backend AI context metadata in the normal panel' );
+like( $ui2_js, qr/fetch\("ajax\/ui2_ai_helper\.php\?metadata=1"[\s\S]+method: "GET"/, 'ui2 AI Helper loads AI context metadata through the same-origin bridge' );
+like( $ui2_js, qr/function aiHelperContextRevisionSummary\(context\)/, 'ui2 AI Helper formats AI context revision metadata for users' );
 like( $ui2_js, qr/No output results available yet/, 'ui2 AI Helper uses plain language when no output context is available' );
 like( $ui2_js, qr/event\.key === "Enter"[\s\S]+!event\.shiftKey[\s\S]+form\.requestSubmit\(submit\)[\s\S]+submit\.click\(\)/, 'ui2 AI Helper textarea can submit with Enter without changing global form behavior' );
 like( $ui2_js, qr/aiHelperUsageSummary\(payload\)/, 'ui2 AI Helper displays backend token usage when returned' );
@@ -145,6 +148,8 @@ like( $ai_helper_php, qr/function ui2_ai_helper_timeout_seconds\(\$appconfig\)[\
 like( $ai_helper_php, qr/AI Helper took too long to respond \("\s*\. intval\(\$timeout\)\s*\.\s*" seconds\)/, 'ui2 AI Helper bridge returns a friendly timeout error' );
 like( $ai_helper_php, qr/AI Helper local service is not running\. Please try again in a moment\./, 'ui2 AI Helper bridge reports local service connection refusal without executing service commands' );
 unlike( $ai_helper_php, qr/\bexec\s*\(/, 'ui2 AI Helper bridge does not execute local service commands from a web request' );
+like( $ai_helper_php, qr/isset\(\$_GET\["metadata"\]\)[\s\S]+ui2_ai_helper_metadata\(\$appconfig, \$endpoint\)/, 'ui2 AI Helper bridge handles metadata GET requests before requiring JSON POST bodies' );
+like( $ai_helper_php, qr/function ui2_ai_helper_metadata_endpoint\(\$endpoint\)[\s\S]+return \$url \. "\/health";/, 'ui2 AI Helper bridge maps configured helper endpoint to backend health metadata without exposing the endpoint URL' );
 like( $sys_status_php, qr/"endpoint_state"\s*=>\s*\$endpoint_state/, 'html5 sys_status exposes AI Helper endpoint state without exposing the endpoint URL' );
 like( $sys_status_php, qr/\$endpoint_state\s*=\s*"development_stub"/, 'html5 sys_status maps development stub AI Helper endpoint state' );
 like( $sys_status_php, qr/\$endpoint_state\s*=\s*"configured"/, 'html5 sys_status maps configured AI Helper endpoint state' );

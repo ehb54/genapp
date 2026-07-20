@@ -36,15 +36,27 @@ assert module.provider_kind("https://openrouter.ai/api/v1/chat/completions") == 
 assert module.cost_rates() == (0.084, 0.168, "openrouter_list_price_2026-07-20")
 assert module.env_int("AI_HELPER_TIMEOUT_SECONDS", module.DEFAULT_PROVIDER_TIMEOUT_SECONDS, 5, 120) == 40
 
-request = module.provider_request_body("openrouter", {
-    "application": "sassie3",
-    "module": "pdbrx",
-    "user_question": "Hello"
-})
-assert request["model"] == "deepseek/deepseek-v4-flash"
-assert request["max_tokens"] == 800
-assert request["messages"][0]["role"] == "user"
-assert "GenApp context JSON" in request["messages"][0]["content"]
+with tempfile.TemporaryDirectory() as context_tmpdir:
+    context_path = Path(context_tmpdir) / "sassie_ai_helper_context.md"
+    context_path.write_text("SASSIE AI context includes golden vector guidance.", encoding="utf-8")
+    os.environ["AI_HELPER_CONTEXT_PATH"] = str(context_path)
+    module.AI_CONTEXT_CACHE.update({"path": None, "mtime": None, "text": "", "sha256": "", "words": 0})
+
+    request = module.provider_request_body("openrouter", {
+        "application": "sassie3",
+        "module": "pdbrx",
+        "user_question": "Hello"
+    })
+    assert request["model"] == "deepseek/deepseek-v4-flash"
+    assert request["max_tokens"] == 800
+    assert request["messages"][0]["role"] == "system"
+    assert "golden vector" in request["messages"][0]["content"]
+    assert request["messages"][1]["role"] == "user"
+    assert "Live GenApp context JSON" in request["messages"][1]["content"]
+    context_status = module.ai_context_metadata()
+    assert context_status["loaded"] is True
+    assert context_status["words"] == 7
+    assert len(context_status["revision"]) == 12
 
 os.environ["AI_HELPER_MAX_OUTPUT_TOKENS"] = "0"
 uncapped_request = module.provider_request_body("openrouter", {

@@ -11,6 +11,13 @@ if (!$appconfig || !isset($appconfig->aihelper) || !is_object($appconfig->aihelp
     exit();
 }
 
+$endpoint = isset($appconfig->aihelper->endpoint) ? trim(strval($appconfig->aihelper->endpoint)) : "";
+
+if (isset($_GET["metadata"])) {
+    echo(json_encode(ui2_ai_helper_metadata($appconfig, $endpoint)));
+    exit();
+}
+
 $raw = file_get_contents('php://input');
 $request = json_decode($raw, true);
 if (!is_array($request)) {
@@ -31,7 +38,6 @@ if (isset($appconfig->aihelper->development_stub) && ui2_ai_helper_truthy($appco
     exit();
 }
 
-$endpoint = isset($appconfig->aihelper->endpoint) ? trim(strval($appconfig->aihelper->endpoint)) : "";
 if (!strlen($endpoint)) {
     echo(json_encode(array("error" => "AI Helper is not configured for this deployment.")));
     exit();
@@ -99,6 +105,96 @@ function ui2_ai_helper_timeout_seconds($appconfig) {
 
 function ui2_ai_helper_timeout_error($timeout) {
     return "AI Helper took too long to respond (" . intval($timeout) . " seconds). Please try again in a moment or ask a shorter question.";
+}
+
+function ui2_ai_helper_metadata($appconfig, $endpoint) {
+    if (isset($appconfig->aihelper->development_stub) && ui2_ai_helper_truthy($appconfig->aihelper->development_stub)) {
+        return array(
+            "ok" => true,
+            "endpoint_state" => "development_stub",
+            "ai_context" => array("loaded" => false)
+        );
+    }
+    if (!strlen($endpoint)) {
+        return array("error" => "AI Helper is not configured for this deployment.");
+    }
+    $metadata_endpoint = ui2_ai_helper_metadata_endpoint($endpoint);
+    if (!strlen($metadata_endpoint)) {
+        return array("error" => "AI Helper endpoint must be an http or https URL.");
+    }
+    $response = ui2_ai_helper_get_json($metadata_endpoint, min(10, ui2_ai_helper_timeout_seconds($appconfig)));
+    if (isset($response["error"])) {
+        return $response;
+    }
+    $payload = json_decode($response["body"], true);
+    if (is_array($payload)) {
+        return $payload;
+    }
+    return array("error" => "AI Helper metadata response was not JSON.");
+}
+
+function ui2_ai_helper_metadata_endpoint($endpoint) {
+    $parts = parse_url($endpoint);
+    if (!$parts || !isset($parts["scheme"]) || !in_array(strtolower($parts["scheme"]), array("http", "https"), true) ||
+        !isset($parts["host"])) {
+        return "";
+    }
+    $url = strtolower($parts["scheme"]) . "://";
+    if (isset($parts["user"])) {
+        return "";
+    }
+    $host = strval($parts["host"]);
+    if (strpos($host, ":") !== false && substr($host, 0, 1) !== "[") {
+        $host = "[" . $host . "]";
+    }
+    $url .= $host;
+    if (isset($parts["port"])) {
+        $url .= ":" . intval($parts["port"]);
+    }
+    return $url . "/health";
+}
+
+function ui2_ai_helper_get_json($endpoint, $timeout) {
+    if (function_exists('curl_init')) {
+        $curl = curl_init($endpoint);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, min(5, max(1, intval($timeout))));
+        curl_setopt($curl, CURLOPT_TIMEOUT, intval($timeout));
+        curl_setopt($curl, CURLOPT_MAXREDIRS, 0);
+        $body = curl_exec($curl);
+        $error = curl_error($curl);
+        $status = intval(curl_getinfo($curl, CURLINFO_HTTP_CODE));
+        curl_close($curl);
+        if ($body === false) {
+            if (preg_match('/timed?\s*out|timeout/i', $error)) {
+                return array("error" => ui2_ai_helper_timeout_error($timeout));
+            }
+            if (ui2_ai_helper_connection_refused($error)) {
+                return array("error" => "AI Helper local service is not running. Please try again in a moment.");
+            }
+            return array("error" => "AI Helper metadata request failed: " . $error);
+        }
+        if ($status < 200 || $status >= 300) {
+            return array("error" => "AI Helper metadata returned HTTP " . $status . ".");
+        }
+        return array("body" => substr($body, 0, 262144));
+    }
+    $context = stream_context_create(array(
+        "http" => array(
+            "method" => "GET",
+            "timeout" => intval($timeout),
+            "ignore_errors" => true
+        )
+    ));
+    $body = file_get_contents($endpoint, false, $context);
+    if ($body === false) {
+        return array("error" => ui2_ai_helper_timeout_error($timeout));
+    }
+    $status = ui2_ai_helper_stream_status(isset($http_response_header) ? $http_response_header : array());
+    if ($status && ($status < 200 || $status >= 300)) {
+        return array("error" => "AI Helper metadata returned HTTP " . $status . ".");
+    }
+    return array("body" => substr($body, 0, 262144));
 }
 
 function ui2_ai_helper_post_json($endpoint, $json, $timeout) {

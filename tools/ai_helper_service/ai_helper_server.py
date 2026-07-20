@@ -5,6 +5,7 @@ import socket
 import sys
 import urllib.error
 import urllib.request
+import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -14,6 +15,14 @@ USAGE_PATH = SERVICE_DIR / "usage.json"
 MAX_BODY_BYTES = 262144
 DEFAULT_PROVIDER_TIMEOUT_SECONDS = 40
 DEFAULT_MAX_OUTPUT_TOKENS = 800
+DEFAULT_AI_CONTEXT_PATH = SERVICE_DIR.parents[1] / "output" / "html5" / "docs" / "ai_helper" / "sassie_ai_helper_context.md"
+AI_CONTEXT_CACHE = {
+    "path": None,
+    "mtime": None,
+    "text": "",
+    "sha256": "",
+    "words": 0,
+}
 
 
 def load_env(path):
@@ -82,19 +91,70 @@ def env_int(name, default, minimum=None, maximum=None):
     return value
 
 
-def ai_helper_prompt(payload):
+def ai_context_path():
+    configured = os.environ.get("AI_HELPER_CONTEXT_PATH", "").strip() or os.environ.get("AI_HELPER_CONTEXT_FILE", "").strip()
+    return Path(configured) if configured else DEFAULT_AI_CONTEXT_PATH
+
+
+def load_ai_context():
+    path = ai_context_path()
+    try:
+        stat = path.stat()
+    except OSError:
+        AI_CONTEXT_CACHE.update({
+            "path": str(path),
+            "mtime": None,
+            "text": "",
+            "sha256": "",
+            "words": 0,
+        })
+        return ""
+    mtime = stat.st_mtime
+    if AI_CONTEXT_CACHE.get("path") != str(path) or AI_CONTEXT_CACHE.get("mtime") != mtime:
+        text = path.read_text(encoding="utf-8", errors="replace")
+        AI_CONTEXT_CACHE.update({
+            "path": str(path),
+            "mtime": mtime,
+            "text": text,
+            "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+            "words": len(text.split()),
+        })
+    return AI_CONTEXT_CACHE["text"]
+
+
+def ai_context_metadata():
+    text = load_ai_context()
+    return {
+        "loaded": bool(text),
+        "revision": AI_CONTEXT_CACHE.get("sha256", "")[:12],
+        "sha256": AI_CONTEXT_CACHE.get("sha256", ""),
+        "chars": len(text),
+        "words": AI_CONTEXT_CACHE.get("words", 0),
+        "mtime": AI_CONTEXT_CACHE.get("mtime"),
+    }
+
+
+def live_ai_helper_prompt(payload):
     safe_payload = json.dumps(payload, indent=2, sort_keys=True)
     question = str(payload.get("user_question") or "")
-    return """You are a read-only AI Helper for the SASSIE/ZAZZIE GenApp UI.
-Use the provided page context to answer the user's question.
-Do not claim to run SASSIE jobs, do not modify form values, and do not ask for API keys.
-
-GenApp context JSON:
+    return """Live GenApp context JSON:
 %s
 
 User question:
 %s
 """ % (safe_payload, question)
+
+
+def ai_helper_prompt(payload):
+    context = load_ai_context()
+    live_prompt = live_ai_helper_prompt(payload)
+    if not context:
+        return """You are a read-only AI Helper for the SASSIE/ZAZZIE GenApp UI.
+Use the provided page context to answer the user's question.
+Do not claim to run SASSIE jobs, do not modify form values, and do not ask for API keys.
+
+%s""" % live_prompt
+    return "%s\n\n---\n\n%s" % (context.rstrip(), live_prompt)
 
 
 def provider_request_body(kind, payload):
@@ -115,14 +175,28 @@ def provider_request_body(kind, payload):
         return request
     if kind == "openrouter":
         model = os.environ.get("AI_HELPER_MODEL", "").strip() or "deepseek/deepseek-v4-flash"
-        request = {
-            "model": model,
-            "messages": [
+        context = load_ai_context()
+        if context:
+            messages = [
+                {
+                    "role": "system",
+                    "content": context
+                },
+                {
+                    "role": "user",
+                    "content": live_ai_helper_prompt(payload)
+                }
+            ]
+        else:
+            messages = [
                 {
                     "role": "user",
                     "content": ai_helper_prompt(payload)
                 }
             ]
+        request = {
+            "model": model,
+            "messages": messages
         }
         if max_output_tokens > 0:
             request["max_tokens"] = max_output_tokens
@@ -302,7 +376,8 @@ def call_provider(payload):
         question = payload.get("user_question") or ""
         return {
             "message": "AI Helper service connected. Received module: %s. Received question: %s" % (module, question),
-            "endpoint_state": "local_stub"
+            "endpoint_state": "local_stub",
+            "ai_context": ai_context_metadata()
         }
 
     kind = provider_kind(url)
@@ -323,7 +398,10 @@ def call_provider(payload):
             raise RuntimeError("provider request timed out after %s seconds" % timeout)
         raise RuntimeError("provider request failed: %s" % error)
 
-    return add_cumulative_usage(parse_provider_response(kind, response_body))
+    payload = add_cumulative_usage(parse_provider_response(kind, response_body))
+    if isinstance(payload, dict):
+        payload["ai_context"] = ai_context_metadata()
+    return payload
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -339,7 +417,8 @@ class Handler(BaseHTTPRequestHandler):
                 "ok": True,
                 "provider": provider_kind(url) if url else "local_stub",
                 "provider_url_configured": bool(url),
-                "api_key_configured": bool(api_key)
+                "api_key_configured": bool(api_key),
+                "ai_context": ai_context_metadata()
             })
             return
         json_response(self, 404, {"error": "not found"})

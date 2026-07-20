@@ -975,13 +975,15 @@
     const body = el("div", "ui2-section-body ui2-tool-body");
     const context = buildAiHelperContext("");
 
-    body.appendChild(renderAiHelperContextSummary(context));
+    const contextSummary = renderAiHelperContextSummary(context);
+    body.appendChild(contextSummary);
 
     if (!state.session.aiHelper?.configured) {
       body.appendChild(el("p", "ui2-help ui2-ai-helper-unconfigured", "AI Helper is not configured for this deployment."));
       section.appendChild(body);
       return section;
     }
+    loadAiHelperMetadata(contextSummary);
 
     const form = el("form", "ui2-ai-helper-form");
     form.noValidate = true;
@@ -1034,6 +1036,7 @@
         response.innerHTML = aiHelperResponseHtml(aiHelperResponseMessage(payload));
         aiHelperTypesetMath(response);
         usage.textContent = aiHelperUsageSummary(payload);
+        updateAiHelperMetadata(contextSummary, payload);
         setSubmitStatus(status, "Response received", "ok");
       } catch (error) {
         setSubmitStatus(status, error.message, "error");
@@ -1067,7 +1070,9 @@
       el("dt", null, "Form context"),
       el("dd", null, formFieldCount ? `${formFieldCount} fields included` : "No form fields available"),
       el("dt", null, "Output context"),
-      el("dd", null, outputLabel)
+      el("dd", null, outputLabel),
+      el("dt", null, "AI context"),
+      el("dd", "ui2-ai-helper-context-revision", "Checking context revision...")
     );
     wrap.appendChild(list);
     return wrap;
@@ -1098,6 +1103,66 @@
       throw new Error(payload.error || `AI Helper returned HTTP ${response.status}`);
     }
     return payload;
+  }
+
+  async function loadAiHelperMetadata(contextSummary) {
+    const target = contextSummary?.querySelector(".ui2-ai-helper-context-revision");
+    if (!target) {
+      return;
+    }
+    try {
+      const response = await fetch("ajax/ui2_ai_helper.php?metadata=1", {
+        method: "GET",
+        credentials: "same-origin"
+      });
+      const payload = await parseJsonResponse(response, "AI Helper metadata");
+      if (!response.ok || payload.error) {
+        throw new Error(payload.error || `AI Helper metadata returned HTTP ${response.status}`);
+      }
+      updateAiHelperMetadata(contextSummary, payload);
+    } catch (error) {
+      target.textContent = "Unavailable";
+      target.title = error.message;
+    }
+  }
+
+  function updateAiHelperMetadata(contextSummary, payload) {
+    const target = contextSummary?.querySelector(".ui2-ai-helper-context-revision");
+    if (!target) {
+      return;
+    }
+    const context = payload?.ai_context && typeof payload.ai_context === "object" ? payload.ai_context : payload;
+    target.textContent = aiHelperContextRevisionSummary(context);
+  }
+
+  function aiHelperContextRevisionSummary(context) {
+    if (!context || typeof context !== "object") {
+      return "Not reported by backend";
+    }
+    if (context.loaded === false) {
+      return "Not loaded";
+    }
+    const parts = [];
+    const revision = stringValue(context.revision);
+    if (revision) {
+      parts.push(`rev ${revision}`);
+    }
+    const words = aiHelperNumberOrNull(context.words);
+    if (words != null) {
+      parts.push(`${words.toLocaleString()} words`);
+    }
+    const chars = aiHelperNumberOrNull(context.chars);
+    if (chars != null) {
+      parts.push(aiHelperFormatBytes(chars));
+    }
+    const mtime = aiHelperNumberOrNull(context.mtime);
+    if (mtime != null) {
+      const date = new Date(mtime * 1000);
+      if (!Number.isNaN(date.getTime())) {
+        parts.push(`updated ${date.toLocaleString()}`);
+      }
+    }
+    return parts.length ? parts.join("; ") : "Loaded; revision unavailable";
   }
 
   function buildAiHelperContext(userQuestion) {
@@ -1462,6 +1527,20 @@
       return "<$0.000001";
     }
     return `$${numeric.toFixed(numeric < 0.01 ? 6 : 4)}`;
+  }
+
+  function aiHelperFormatBytes(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric) || numeric < 0) {
+      return "0 B";
+    }
+    if (numeric < 1024) {
+      return `${Math.round(numeric)} B`;
+    }
+    if (numeric < 1024 * 1024) {
+      return `${(numeric / 1024).toFixed(1)} KB`;
+    }
+    return `${(numeric / (1024 * 1024)).toFixed(2)} MB`;
   }
 
   function aiHelperNumberOrNull(value) {
