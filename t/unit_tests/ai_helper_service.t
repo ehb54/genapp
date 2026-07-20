@@ -28,8 +28,11 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 os.environ["AI_HELPER_MODEL"] = "deepseek/deepseek-v4-flash"
+os.environ.pop("AI_HELPER_MAX_OUTPUT_TOKENS", None)
+os.environ.pop("AI_HELPER_TIMEOUT_SECONDS", None)
 assert module.provider_kind("https://openrouter.ai/api/v1/chat/completions") == "openrouter"
 assert module.cost_rates() == (0.084, 0.168, "openrouter_list_price_2026-07-20")
+assert module.env_int("AI_HELPER_TIMEOUT_SECONDS", module.DEFAULT_PROVIDER_TIMEOUT_SECONDS, 5, 120) == 45
 
 request = module.provider_request_body("openrouter", {
     "application": "sassie3",
@@ -37,8 +40,17 @@ request = module.provider_request_body("openrouter", {
     "user_question": "Hello"
 })
 assert request["model"] == "deepseek/deepseek-v4-flash"
+assert request["max_tokens"] == 800
 assert request["messages"][0]["role"] == "user"
 assert "GenApp context JSON" in request["messages"][0]["content"]
+
+os.environ["AI_HELPER_MAX_OUTPUT_TOKENS"] = "0"
+uncapped_request = module.provider_request_body("openrouter", {
+    "application": "sassie3",
+    "module": "pdbrx",
+    "user_question": "Hello"
+})
+assert "max_tokens" not in uncapped_request
 
 response = json.dumps({
     "choices": [

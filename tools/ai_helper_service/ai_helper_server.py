@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import os
+import socket
 import sys
 import urllib.error
 import urllib.request
@@ -11,6 +12,8 @@ SERVICE_DIR = Path(__file__).resolve().parent
 ENV_PATH = SERVICE_DIR / ".env"
 USAGE_PATH = SERVICE_DIR / "usage.json"
 MAX_BODY_BYTES = 262144
+DEFAULT_PROVIDER_TIMEOUT_SECONDS = 45
+DEFAULT_MAX_OUTPUT_TOKENS = 800
 
 
 def load_env(path):
@@ -67,6 +70,18 @@ def provider_headers(api_key):
     return headers
 
 
+def env_int(name, default, minimum=None, maximum=None):
+    try:
+        value = int(str(os.environ.get(name, "")).strip() or default)
+    except Exception:
+        value = int(default)
+    if minimum is not None and value < minimum:
+        value = minimum
+    if maximum is not None and value > maximum:
+        value = maximum
+    return value
+
+
 def ai_helper_prompt(payload):
     safe_payload = json.dumps(payload, indent=2, sort_keys=True)
     question = str(payload.get("user_question") or "")
@@ -83,8 +98,9 @@ User question:
 
 
 def provider_request_body(kind, payload):
+    max_output_tokens = env_int("AI_HELPER_MAX_OUTPUT_TOKENS", DEFAULT_MAX_OUTPUT_TOKENS, 0, 4096)
     if kind == "gemini":
-        return {
+        request = {
             "contents": [
                 {
                     "role": "user",
@@ -94,9 +110,12 @@ def provider_request_body(kind, payload):
                 }
             ]
         }
+        if max_output_tokens > 0:
+            request["generationConfig"] = {"maxOutputTokens": max_output_tokens}
+        return request
     if kind == "openrouter":
         model = os.environ.get("AI_HELPER_MODEL", "").strip() or "deepseek/deepseek-v4-flash"
-        return {
+        request = {
             "model": model,
             "messages": [
                 {
@@ -105,6 +124,9 @@ def provider_request_body(kind, payload):
                 }
             ]
         }
+        if max_output_tokens > 0:
+            request["max_tokens"] = max_output_tokens
+        return request
     return payload
 
 
@@ -284,7 +306,7 @@ def call_provider(payload):
         }
 
     kind = provider_kind(url)
-    timeout = float(os.environ.get("AI_HELPER_TIMEOUT_SECONDS", "15") or "15")
+    timeout = env_int("AI_HELPER_TIMEOUT_SECONDS", DEFAULT_PROVIDER_TIMEOUT_SECONDS, 5, 120)
     request_payload = provider_request_body(kind, payload)
     data = json.dumps(request_payload).encode("utf-8")
     request = urllib.request.Request(url, data=data, headers=provider_headers(api_key), method="POST")
@@ -294,7 +316,11 @@ def call_provider(payload):
     except urllib.error.HTTPError as error:
         detail = error.read(4096).decode("utf-8", errors="replace")
         raise RuntimeError("provider returned HTTP %s: %s" % (error.code, detail[:500]))
+    except (TimeoutError, socket.timeout) as error:
+        raise RuntimeError("provider request timed out after %s seconds" % timeout)
     except Exception as error:
+        if "timed out" in str(error).lower():
+            raise RuntimeError("provider request timed out after %s seconds" % timeout)
         raise RuntimeError("provider request failed: %s" % error)
 
     return add_cumulative_usage(parse_provider_response(kind, response_body))
