@@ -303,6 +303,13 @@ def add_cumulative_usage(payload):
 
 
 def add_cost_estimate(usage):
+    provider_cost = usage.get("provider_cost_credits")
+    if isinstance(provider_cost, (int, float)) and provider_cost >= 0:
+        usage["estimated_cost_usd"] = round(float(provider_cost), 8)
+        usage["cost_basis"] = {
+            "source": "openrouter_usage_cost"
+        }
+        return
     input_tokens = usage.get("input_tokens") if isinstance(usage.get("input_tokens"), int) else 0
     output_tokens = usage.get("output_tokens") if isinstance(usage.get("output_tokens"), int) else 0
     input_rate, output_rate, source = cost_rates()

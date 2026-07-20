@@ -101,9 +101,10 @@ assert parsed["usage"]["provider_cost_credits"] == 0.0002
 with tempfile.TemporaryDirectory() as tmpdir:
     module.USAGE_PATH = Path(tmpdir) / "usage.json"
     tracked = module.add_cumulative_usage(parsed)
-    assert tracked["usage"]["estimated_cost_usd"] == 0.000168
+    assert tracked["usage"]["estimated_cost_usd"] == 0.0002
+    assert tracked["usage"]["cost_basis"]["source"] == "openrouter_usage_cost"
     assert tracked["usage"]["account_cumulative_tokens"] == 1500
-    assert tracked["usage"]["account_cumulative_cost_usd"] == 0.000168
+    assert tracked["usage"]["account_cumulative_cost_usd"] == 0.0002
 PY
 close $fh;
 
