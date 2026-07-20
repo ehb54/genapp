@@ -1255,20 +1255,17 @@
 
     lines.forEach((line) => {
       const trimmed = line.trim();
+      const displayMath = aiHelperDisplayMathLine(trimmed);
       const heading = /^(#{1,3})\s+(.+)$/.exec(trimmed);
       const ordered = /^\d+[.)]\s+(.+)$/.exec(trimmed);
       const unordered = /^[-*]\s+(.+)$/.exec(trimmed);
       if (!trimmed) {
         flushParagraph();
         flushList();
-      } else if (/^\$\$[\s\S]+\$\$$/.test(trimmed)) {
+      } else if (displayMath) {
         flushParagraph();
         flushList();
-        html.push(aiHelperMathPlaceholder(trimmed.slice(2, -2).trim(), true));
-      } else if (/^\\\[[\s\S]+\\\]$/.test(trimmed)) {
-        flushParagraph();
-        flushList();
-        html.push(aiHelperMathPlaceholder(trimmed.slice(2, -2).trim(), true));
+        html.push(aiHelperMathPlaceholder(displayMath, true));
       } else if (heading) {
         flushParagraph();
         flushList();
@@ -1292,17 +1289,27 @@
     return html.join("");
   }
 
+  function aiHelperDisplayMathLine(value) {
+    const trimmed = stringValue(value).trim();
+    let match = /^\$\$([\s\S]+)\$\$$/.exec(trimmed);
+    if (match && match[1].trim()) {
+      return match[1].trim();
+    }
+    match = /^\\{1,2}\[([\s\S]+)\\{1,2}\]$/.exec(trimmed);
+    return match && match[1].trim() ? match[1].trim() : "";
+  }
+
   function aiHelperInlineMarkdown(value) {
     const math = [];
-    const tokenized = String(value).replace(/\\\(([\s\S]*?)\\\)|\$([^$\n]+)\$/g, (match, parenTex, dollarTex) => {
-      const tex = stringValue(parenTex != null ? parenTex : dollarTex).trim();
-      if (!tex) {
-        return match;
-      }
-      const token = `@@AI_HELPER_MATH_${math.length}@@`;
-      math.push([token, aiHelperMathPlaceholder(tex, false)]);
-      return token;
-    });
+    const tokenized = String(value)
+      .replace(/\$\$([\s\S]*?)\$\$|\\{1,2}\[([\s\S]*?)\\{1,2}\]/g, (match, dollarDisplayTex, bracketDisplayTex) => {
+        const tex = stringValue(dollarDisplayTex != null ? dollarDisplayTex : bracketDisplayTex).trim();
+        return aiHelperMathToken(math, match, tex, true);
+      })
+      .replace(/\\{1,2}\(([\s\S]*?)\\{1,2}\)|\$([^$\n]+)\$/g, (match, parenTex, dollarTex) => {
+        const tex = stringValue(parenTex != null ? parenTex : dollarTex).trim();
+        return aiHelperMathToken(math, match, tex, false);
+      });
     let html = escapeHtml(tokenized)
       .replace(/`([^`]+)`/g, "<code>$1</code>")
       .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
@@ -1313,10 +1320,18 @@
     return html;
   }
 
+  function aiHelperMathToken(math, fallback, tex, displayMode) {
+    if (!tex) {
+      return fallback;
+    }
+    const token = `@@AI_HELPER_MATH_${math.length}@@`;
+    math.push([token, aiHelperMathPlaceholder(tex, displayMode)]);
+    return token;
+  }
+
   function aiHelperMathPlaceholder(tex, displayMode) {
     const marker = displayMode ? `$$${tex}$$` : `$${tex}$`;
-    const tag = displayMode ? "div" : "span";
-    return `<${tag} class="ui2-ai-helper-math" data-display="${displayMode ? "true" : "false"}" data-tex="${escapeHtml(tex)}">${escapeHtml(marker)}</${tag}>`;
+    return `<span class="ui2-ai-helper-math" data-display="${displayMode ? "true" : "false"}" data-tex="${escapeHtml(tex)}">${escapeHtml(marker)}</span>`;
   }
 
   function aiHelperTypesetMath(container) {
