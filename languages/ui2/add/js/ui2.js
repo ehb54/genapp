@@ -1054,23 +1054,19 @@
     ].forEach(([label, value]) => {
       list.append(el("dt", null, label), el("dd", null, value || "-"));
     });
+    const formFieldCount = Object.keys(context.form_values || {}).length;
+    const outputAnalysis = context.output_analysis || aiHelperOutputAnalysis();
+    const outputLabel = outputAnalysis.available
+      ? `${outputAnalysis.included_count || 0} output summaries available${outputAnalysis.omitted_count ? `; ${outputAnalysis.omitted_count} omitted` : ""}`
+      : "No output results available yet";
+    list.append(
+      el("dt", null, "Form context"),
+      el("dd", null, formFieldCount ? `${formFieldCount} fields included` : "No form fields available"),
+      el("dt", null, "Output context"),
+      el("dd", null, outputLabel)
+    );
     wrap.appendChild(list);
-    wrap.appendChild(renderAiHelperJsonDetails("Current form values", context.form_values || {}, false));
-    wrap.appendChild(el("span", "ui2-field-label", "Output analysis"));
-    const outputs = el("pre", "ui2-ai-helper-values");
-    outputs.textContent = JSON.stringify(context.output_analysis || aiHelperOutputAnalysis(), null, 2);
-    wrap.appendChild(outputs);
     return wrap;
-  }
-
-  function renderAiHelperJsonDetails(label, value, open = false) {
-    const details = el("details", "ui2-ai-helper-details");
-    details.open = !!open;
-    details.appendChild(el("summary", "ui2-field-label", label));
-    const pre = el("pre", "ui2-ai-helper-values");
-    pre.textContent = JSON.stringify(value || {}, null, 2);
-    details.appendChild(pre);
-    return details;
   }
 
   function renderAiHelperPayloadPreview(question) {

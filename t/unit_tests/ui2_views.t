@@ -120,9 +120,9 @@ like( $ui2_js, qr/`\.\.\/\$\{base\}\/`/, 'ui2 runtime rebases relative docsbaseu
 like( $ui2_js, qr/`\$\{mainUrl\}\$\{menu\}\/\$\{id\}\/\$\{id\}\.html`/, 'ui2 runtime mirrors SASSIE menu-scoped module docs path convention' );
 like( $ui2_js, qr/nodes\.feedback\?\.addEventListener\("click", \(\) => openUtilityModule\("sys_feedback"\)\)/, 'ui2 feedback button opens the legacy feedback utility' );
 like( $ui2_js, qr/nodes\.aiHelper\?\.addEventListener\("click", openAiHelperPanel\)/, 'ui2 AI Helper button opens a read-only helper panel' );
-like( $ui2_js, qr/Current form values/, 'ui2 AI Helper labels the summarized form-values block' );
-like( $ui2_js, qr/renderAiHelperJsonDetails\("Current form values", context\.form_values \|\| \{\}, false\)/, 'ui2 AI Helper collapses the current form-values block by default' );
-like( $ui2_js, qr/Output analysis/, 'ui2 AI Helper labels the summarized output-analysis block' );
+like( $ui2_js, qr/Form context/, 'ui2 AI Helper summarizes form context without raw form-value JSON in the normal panel' );
+like( $ui2_js, qr/Output context/, 'ui2 AI Helper summarizes output context without raw output-analysis JSON in the normal panel' );
+like( $ui2_js, qr/No output results available yet/, 'ui2 AI Helper uses plain language when no output context is available' );
 like( $ui2_js, qr/event\.key === "Enter"[\s\S]+!event\.shiftKey[\s\S]+form\.requestSubmit\(submit\)[\s\S]+submit\.click\(\)/, 'ui2 AI Helper textarea can submit with Enter without changing global form behavior' );
 like( $ui2_js, qr/aiHelperUsageSummary\(payload\)/, 'ui2 AI Helper displays backend token usage when returned' );
 like( $ui2_js, qr/remaining unavailable/, 'ui2 AI Helper does not guess unavailable account token remaining values' );
