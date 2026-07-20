@@ -1470,6 +1470,9 @@
     if (usage.cumulative_tokens != null) {
       parts.push(`${usage.cumulative_tokens} cumulative`);
     }
+    if (usage.cache_state) {
+      parts.push(`cache ${usage.cache_state}`);
+    }
     if (usage.cached_input_tokens != null) {
       parts.push(`${usage.cached_input_tokens} cached`);
     }
@@ -1516,6 +1519,7 @@
       remaining_tokens: remainingTokens,
       cumulative_tokens: cumulativeTokens,
       cached_input_tokens: cachedInputTokens,
+      cache_state: aiHelperCacheState(inputTokens, cachedInputTokens),
       estimated_cost_usd: estimatedCostUsd,
       cumulative_cost_usd: cumulativeCostUsd,
       has_usage: inputTokens != null || outputTokens != null || totalTokens != null,
@@ -1523,6 +1527,16 @@
       has_cumulative: cumulativeTokens != null,
       has_cost: estimatedCostUsd != null || cumulativeCostUsd != null
     };
+  }
+
+  function aiHelperCacheState(inputTokens, cachedInputTokens) {
+    if (cachedInputTokens != null && cachedInputTokens > 0) {
+      return "warm";
+    }
+    if (inputTokens != null && inputTokens >= 50000) {
+      return "cold";
+    }
+    return "";
   }
 
   function aiHelperFormatUsd(value) {

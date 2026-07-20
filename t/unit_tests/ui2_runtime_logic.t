@@ -1201,6 +1201,7 @@ assert.strictEqual(normalizedUsage.total_tokens, null, "AI Helper leaves missing
 assert.strictEqual(normalizedUsage.remaining_tokens, 1000, "AI Helper normalizes account remaining token counts when supplied");
 assert.strictEqual(normalizedUsage.cumulative_tokens, 2500, "AI Helper normalizes cumulative account token counts when supplied");
 assert.strictEqual(normalizedUsage.cached_input_tokens, 11, "AI Helper normalizes cached input token counts when supplied");
+assert.strictEqual(normalizedUsage.cache_state, "warm", "AI Helper labels cached provider responses as warm");
 assert.strictEqual(normalizedUsage.estimated_cost_usd, 0.00000235, "AI Helper normalizes per-request estimated costs when supplied");
 assert.strictEqual(normalizedUsage.cumulative_cost_usd, 0.0012, "AI Helper normalizes cumulative estimated costs when supplied");
 assert.strictEqual(normalizedUsage.has_usage, true, "AI Helper recognizes returned token usage");
@@ -1209,8 +1210,13 @@ assert.strictEqual(normalizedUsage.has_cumulative, true, "AI Helper recognizes r
 assert.strictEqual(normalizedUsage.has_cost, true, "AI Helper recognizes returned cost estimates");
 assert.strictEqual(
   hooks.aiHelperUsageSummary({ usage: { total_tokens: 12, cached_input_tokens: 11, account_cumulative_tokens: 2500, estimated_cost_usd: 0.00000235, account_cumulative_cost_usd: 0.0012 } }),
-  "Token usage: 12 tokens used; remaining unavailable; 2500 cumulative; 11 cached; \$0.000002 estimated; \$0.001200 cumulative cost.",
+  "Token usage: 12 tokens used; remaining unavailable; 2500 cumulative; cache warm; 11 cached; \$0.000002 estimated; \$0.001200 cumulative cost.",
   "AI Helper displays provider token usage with cumulative account usage and estimated costs when available"
+);
+assert.strictEqual(
+  hooks.aiHelperUsageSummary({ usage: { input_tokens: 256000, total_tokens: 256012, cached_input_tokens: 0 } }),
+  "Token usage: 256012 tokens used; remaining unavailable; cache cold; 0 cached.",
+  "AI Helper labels large uncached provider prompts as cold"
 );
 assert.strictEqual(
   hooks.aiHelperUsageSummary({ message: "ok" }),
