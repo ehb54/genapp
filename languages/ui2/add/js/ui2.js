@@ -1229,7 +1229,7 @@
 
   function aiHelperUsageSummary(payload) {
     const usage = normalizeAiHelperUsage(payload);
-    if (!usage.has_usage && !usage.has_remaining && !usage.has_cumulative) {
+    if (!usage.has_usage && !usage.has_remaining && !usage.has_cumulative && !usage.has_cost) {
       return "Token usage: not reported by backend.";
     }
     const parts = [];
@@ -1245,6 +1245,12 @@
     }
     if (usage.cumulative_tokens != null) {
       parts.push(`${usage.cumulative_tokens} cumulative`);
+    }
+    if (usage.estimated_cost_usd != null) {
+      parts.push(`${aiHelperFormatUsd(usage.estimated_cost_usd)} estimated`);
+    }
+    if (usage.cumulative_cost_usd != null) {
+      parts.push(`${aiHelperFormatUsd(usage.cumulative_cost_usd)} cumulative cost`);
     }
     return `Token usage: ${parts.join("; ")}.`;
   }
@@ -1267,16 +1273,36 @@
     const cumulativeTokens = aiHelperNumberOrNull(
       usage.cumulative_tokens ?? usage.account_cumulative_tokens ?? usage.accountCumulativeTokens ?? payload?.account_cumulative_tokens
     );
+    const estimatedCostUsd = aiHelperNumberOrNull(
+      usage.estimated_cost_usd ?? usage.estimatedCostUsd ?? payload?.estimated_cost_usd
+    );
+    const cumulativeCostUsd = aiHelperNumberOrNull(
+      usage.cumulative_cost_usd ?? usage.account_cumulative_cost_usd ?? usage.accountCumulativeCostUsd ?? payload?.account_cumulative_cost_usd
+    );
     return {
       input_tokens: inputTokens,
       output_tokens: outputTokens,
       total_tokens: totalTokens,
       remaining_tokens: remainingTokens,
       cumulative_tokens: cumulativeTokens,
+      estimated_cost_usd: estimatedCostUsd,
+      cumulative_cost_usd: cumulativeCostUsd,
       has_usage: inputTokens != null || outputTokens != null || totalTokens != null,
       has_remaining: remainingTokens != null,
-      has_cumulative: cumulativeTokens != null
+      has_cumulative: cumulativeTokens != null,
+      has_cost: estimatedCostUsd != null || cumulativeCostUsd != null
     };
+  }
+
+  function aiHelperFormatUsd(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+      return "$0.000000";
+    }
+    if (numeric > 0 && numeric < 0.000001) {
+      return "<$0.000001";
+    }
+    return `$${numeric.toFixed(numeric < 0.01 ? 6 : 4)}`;
   }
 
   function aiHelperNumberOrNull(value) {
