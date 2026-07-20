@@ -127,6 +127,8 @@ like( $ui2_js, qr/event\.key === "Enter"[\s\S]+!event\.shiftKey[\s\S]+form\.requ
 like( $ui2_js, qr/aiHelperUsageSummary\(payload\)/, 'ui2 AI Helper displays backend token usage when returned' );
 like( $ui2_js, qr/remaining unavailable/, 'ui2 AI Helper does not guess unavailable account token remaining values' );
 like( $ui2_js, qr/estimated_cost_usd[\s\S]+cumulative_cost_usd/, 'ui2 AI Helper displays backend cost estimates when returned' );
+like( $ui2_js, qr/response\.innerHTML = aiHelperResponseHtml\(aiHelperResponseMessage\(payload\)\)/, 'ui2 AI Helper renders returned Markdown as presentable response HTML' );
+like( $ui2_js, qr/function aiHelperResponseHtml\(message\)[\s\S]+function aiHelperInlineMarkdown\(value\)[\s\S]+escapeHtml\(value\)[\s\S]+<strong>\$1<\/strong>/, 'ui2 AI Helper escapes response text before applying small Markdown formatting' );
 like( $ui2_js, qr/form\.appendChild\(questionRow\);[\s\S]+devMode[\s\S]+renderAiHelperPayloadPreview\(question\)[\s\S]+form\.append\(actions, usage, response\)/, 'ui2 AI Helper shows the development request payload preview before the submit response area' );
 like( $ui2_js, qr/function renderAiHelperPayloadPreview\(question\)[\s\S]+JSON\.stringify\(buildAiHelperContext\(question\.value\), null, 2\)/, 'ui2 AI Helper development preview renders the exact request payload shape' );
 like( $ui2_js, qr/fetch\("ajax\/ui2_ai_helper\.php"[\s\S]+method: "POST"[\s\S]+JSON\.stringify\(requestPayload\)/, 'ui2 AI Helper submits a single prebuilt context JSON payload through the same-origin bridge' );

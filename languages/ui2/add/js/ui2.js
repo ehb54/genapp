@@ -1028,7 +1028,7 @@
       setSubmitStatus(status, "Asking AI Helper", "pending");
       try {
         const payload = await submitAiHelperQuestion(buildAiHelperContext(userQuestion));
-        response.textContent = aiHelperResponseMessage(payload);
+        response.innerHTML = aiHelperResponseHtml(aiHelperResponseMessage(payload));
         usage.textContent = aiHelperUsageSummary(payload);
         setSubmitStatus(status, "Response received", "ok");
       } catch (error) {
@@ -1221,6 +1221,70 @@
       return payload;
     }
     return stringValue(payload.message || payload.response || payload.text || "");
+  }
+
+  function aiHelperResponseHtml(message) {
+    const text = stringValue(message).trim();
+    if (!text) {
+      return "";
+    }
+    const lines = text.replace(/\r\n?/g, "\n").split("\n");
+    const html = [];
+    let paragraph = [];
+    let listType = "";
+    let listItems = [];
+
+    function flushParagraph() {
+      if (paragraph.length) {
+        html.push(`<p>${aiHelperInlineMarkdown(paragraph.join(" "))}</p>`);
+        paragraph = [];
+      }
+    }
+
+    function flushList() {
+      if (listType && listItems.length) {
+        html.push(`<${listType}>${listItems.map((item) => `<li>${aiHelperInlineMarkdown(item)}</li>`).join("")}</${listType}>`);
+      }
+      listType = "";
+      listItems = [];
+    }
+
+    lines.forEach((line) => {
+      const trimmed = line.trim();
+      const heading = /^(#{1,3})\s+(.+)$/.exec(trimmed);
+      const ordered = /^\d+[.)]\s+(.+)$/.exec(trimmed);
+      const unordered = /^[-*]\s+(.+)$/.exec(trimmed);
+      if (!trimmed) {
+        flushParagraph();
+        flushList();
+      } else if (heading) {
+        flushParagraph();
+        flushList();
+        const level = String(heading[1]).length + 2;
+        html.push(`<h${level}>${aiHelperInlineMarkdown(heading[2])}</h${level}>`);
+      } else if (ordered || unordered) {
+        flushParagraph();
+        const nextListType = ordered ? "ol" : "ul";
+        if (listType && listType !== nextListType) {
+          flushList();
+        }
+        listType = nextListType;
+        listItems.push((ordered || unordered)[1]);
+      } else {
+        flushList();
+        paragraph.push(trimmed);
+      }
+    });
+    flushParagraph();
+    flushList();
+    return html.join("");
+  }
+
+  function aiHelperInlineMarkdown(value) {
+    return escapeHtml(value)
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      .replace(/\b_([^_]+)_\b/g, "<em>$1</em>");
   }
 
   function aiHelperUsageSummary(payload) {

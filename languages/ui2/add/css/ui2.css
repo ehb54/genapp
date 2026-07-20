@@ -1148,12 +1148,40 @@ code {
   background: var(--ui2-panel-soft);
   color: var(--ui2-text);
   padding: 0.75rem;
-  white-space: pre-wrap;
 }
 
 .ui2-ai-helper-values {
   margin: 0;
   font-size: 0.85rem;
+  white-space: pre-wrap;
+}
+
+.ui2-ai-helper-response {
+  line-height: 1.45;
+  white-space: normal;
+}
+
+.ui2-ai-helper-response p,
+.ui2-ai-helper-response ol,
+.ui2-ai-helper-response ul {
+  margin: 0 0 0.75rem;
+}
+
+.ui2-ai-helper-response p:last-child,
+.ui2-ai-helper-response ol:last-child,
+.ui2-ai-helper-response ul:last-child {
+  margin-bottom: 0;
+}
+
+.ui2-ai-helper-response ol,
+.ui2-ai-helper-response ul {
+  padding-left: 1.4rem;
+}
+
+.ui2-ai-helper-response code {
+  background: color-mix(in srgb, var(--ui2-bg) 68%, transparent);
+  border-radius: 4px;
+  padding: 0.05rem 0.25rem;
 }
 
 .ui2-ai-helper-usage {
