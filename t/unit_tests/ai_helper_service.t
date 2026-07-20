@@ -34,7 +34,7 @@ os.environ.pop("AI_HELPER_MAX_OUTPUT_TOKENS", None)
 os.environ.pop("AI_HELPER_TIMEOUT_SECONDS", None)
 assert module.provider_kind("https://openrouter.ai/api/v1/chat/completions") == "openrouter"
 assert module.cost_rates() == (0.084, 0.168, "openrouter_list_price_2026-07-20")
-assert module.env_int("AI_HELPER_TIMEOUT_SECONDS", module.DEFAULT_PROVIDER_TIMEOUT_SECONDS, 5, 120) == 40
+assert module.env_int("AI_HELPER_TIMEOUT_SECONDS", module.DEFAULT_PROVIDER_TIMEOUT_SECONDS, 5, 120) == 120
 
 with tempfile.TemporaryDirectory() as context_tmpdir:
     context_path = Path(context_tmpdir) / "sassie_ai_helper_context.md"

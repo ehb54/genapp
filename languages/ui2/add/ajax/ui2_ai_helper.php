@@ -89,7 +89,7 @@ function ui2_ai_helper_truthy($value) {
 }
 
 function ui2_ai_helper_timeout_seconds($appconfig) {
-    $timeout = 45;
+    $timeout = 120;
     if ($appconfig && isset($appconfig->aihelper) && is_object($appconfig->aihelper) &&
         isset($appconfig->aihelper->timeout_seconds) && is_numeric($appconfig->aihelper->timeout_seconds)) {
         $timeout = intval($appconfig->aihelper->timeout_seconds);
@@ -97,8 +97,8 @@ function ui2_ai_helper_timeout_seconds($appconfig) {
     if ($timeout < 5) {
         return 5;
     }
-    if ($timeout > 120) {
-        return 120;
+    if ($timeout > 240) {
+        return 240;
     }
     return $timeout;
 }

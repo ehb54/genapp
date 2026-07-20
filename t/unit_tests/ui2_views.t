@@ -144,7 +144,7 @@ like( $ui2_js, qr/function renderAiHelperPayloadPreview\(question\)[\s\S]+JSON\.
 like( $ui2_js, qr/fetch\("ajax\/ui2_ai_helper\.php"[\s\S]+method: "POST"[\s\S]+JSON\.stringify\(requestPayload\)/, 'ui2 AI Helper submits a single prebuilt context JSON payload through the same-origin bridge' );
 like( $ui2_js, qr/AI_HELPER_SENSITIVE_FIELD_RE.*password.*token.*api_key/s, 'ui2 AI Helper context filters obvious sensitive field ids' );
 like( $ai_helper_php, qr/Received question: " \. \$question\s*\)\)\);/, 'ui2 AI Helper development stub does not append punctuation after the user question' );
-like( $ai_helper_php, qr/function ui2_ai_helper_timeout_seconds\(\$appconfig\)[\s\S]+\$timeout = 45[\s\S]+CURLOPT_TIMEOUT, intval\(\$timeout\)/, 'ui2 AI Helper bridge uses a configurable longer provider timeout' );
+like( $ai_helper_php, qr/function ui2_ai_helper_timeout_seconds\(\$appconfig\)[\s\S]+\$timeout = 120[\s\S]+if \(\$timeout > 240\)[\s\S]+CURLOPT_TIMEOUT, intval\(\$timeout\)/, 'ui2 AI Helper bridge uses a configurable full-context provider timeout' );
 like( $ai_helper_php, qr/AI Helper took too long to respond \("\s*\. intval\(\$timeout\)\s*\.\s*" seconds\)/, 'ui2 AI Helper bridge returns a friendly timeout error' );
 like( $ai_helper_php, qr/AI Helper local service is not running\. Please try again in a moment\./, 'ui2 AI Helper bridge reports local service connection refusal without executing service commands' );
 unlike( $ai_helper_php, qr/\bexec\s*\(/, 'ui2 AI Helper bridge does not execute local service commands from a web request' );
