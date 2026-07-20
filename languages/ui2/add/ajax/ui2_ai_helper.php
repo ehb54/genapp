@@ -106,21 +106,24 @@ function ui2_ai_helper_post_json($endpoint, $json, $timeout) {
         return array("error" => "AI Helper request is too large.");
     }
     if (function_exists('curl_init')) {
-        $curl = curl_init($endpoint);
-        curl_setopt($curl, CURLOPT_POST, true);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $json);
-        curl_setopt($curl, CURLOPT_HTTPHEADER, array("Content-Type: application/json"));
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, min(5, max(1, intval($timeout))));
-        curl_setopt($curl, CURLOPT_TIMEOUT, intval($timeout));
-        curl_setopt($curl, CURLOPT_MAXREDIRS, 0);
-        $body = curl_exec($curl);
-        $error = curl_error($curl);
-        $status = intval(curl_getinfo($curl, CURLINFO_HTTP_CODE));
-        curl_close($curl);
+        $result = ui2_ai_helper_curl_post($endpoint, $json, $timeout);
+        $body = $result["body"];
+        $error = $result["error"];
+        $status = $result["status"];
+        if ($body === false) {
+            if (ui2_ai_helper_connection_refused($error) && ui2_ai_helper_restart_local_service($endpoint)) {
+                $result = ui2_ai_helper_curl_post($endpoint, $json, $timeout);
+                $body = $result["body"];
+                $error = $result["error"];
+                $status = $result["status"];
+            }
+        }
         if ($body === false) {
             if (preg_match('/timed?\s*out|timeout/i', $error)) {
                 return array("error" => ui2_ai_helper_timeout_error($timeout));
+            }
+            if (ui2_ai_helper_connection_refused($error)) {
+                return array("error" => "AI Helper local service is not running. Please try again in a moment.");
             }
             return array("error" => "AI Helper endpoint request failed: " . $error);
         }
@@ -156,6 +159,46 @@ function ui2_ai_helper_post_json($endpoint, $json, $timeout) {
         return array("error" => "AI Helper endpoint returned HTTP " . $status . ".");
     }
     return array("body" => substr($body, 0, 262144));
+}
+
+function ui2_ai_helper_curl_post($endpoint, $json, $timeout) {
+    $curl = curl_init($endpoint);
+    curl_setopt($curl, CURLOPT_POST, true);
+    curl_setopt($curl, CURLOPT_POSTFIELDS, $json);
+    curl_setopt($curl, CURLOPT_HTTPHEADER, array("Content-Type: application/json"));
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, min(5, max(1, intval($timeout))));
+    curl_setopt($curl, CURLOPT_TIMEOUT, intval($timeout));
+    curl_setopt($curl, CURLOPT_MAXREDIRS, 0);
+    $body = curl_exec($curl);
+    $error = curl_error($curl);
+    $status = intval(curl_getinfo($curl, CURLINFO_HTTP_CODE));
+    curl_close($curl);
+    return array("body" => $body, "error" => $error, "status" => $status);
+}
+
+function ui2_ai_helper_connection_refused($error) {
+    return preg_match('/connection\s+refused|failed\s+to\s+connect/i', strval($error)) === 1;
+}
+
+function ui2_ai_helper_restart_local_service($endpoint) {
+    $parts = parse_url($endpoint);
+    if (!$parts || !isset($parts["host"])) {
+        return false;
+    }
+    $host = strtolower(trim(strval($parts["host"]), "[]"));
+    $port = isset($parts["port"]) ? intval($parts["port"]) : 80;
+    if (!in_array($host, array("127.0.0.1", "localhost", "::1"), true) || $port !== 8765) {
+        return false;
+    }
+    $service = "/etc/init.d/ai-helper-service";
+    if (!is_executable($service) || !function_exists("exec")) {
+        return false;
+    }
+    $output = array();
+    $status = 1;
+    exec($service . " check 2>&1", $output, $status);
+    return $status === 0;
 }
 
 function ui2_ai_helper_error_from_body($body) {

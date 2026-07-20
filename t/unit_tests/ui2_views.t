@@ -143,6 +143,13 @@ like( $ui2_js, qr/AI_HELPER_SENSITIVE_FIELD_RE.*password.*token.*api_key/s, 'ui2
 like( $ai_helper_php, qr/Received question: " \. \$question\s*\)\)\);/, 'ui2 AI Helper development stub does not append punctuation after the user question' );
 like( $ai_helper_php, qr/function ui2_ai_helper_timeout_seconds\(\$appconfig\)[\s\S]+\$timeout = 45[\s\S]+CURLOPT_TIMEOUT, intval\(\$timeout\)/, 'ui2 AI Helper bridge uses a configurable longer provider timeout' );
 like( $ai_helper_php, qr/AI Helper took too long to respond \("\s*\. intval\(\$timeout\)\s*\.\s*" seconds\)/, 'ui2 AI Helper bridge returns a friendly timeout error' );
+ok(
+    index( $ai_helper_php, 'function ui2_ai_helper_restart_local_service($endpoint)' ) >= 0 &&
+    index( $ai_helper_php, '/etc/init.d/ai-helper-service' ) >= 0 &&
+    index( $ai_helper_php, '$port !== 8765' ) >= 0 &&
+    index( $ai_helper_php, 'exec($service . " check 2>&1"' ) >= 0,
+    'ui2 AI Helper bridge can restart only the known local helper service after connection refusal'
+);
 like( $sys_status_php, qr/"endpoint_state"\s*=>\s*\$endpoint_state/, 'html5 sys_status exposes AI Helper endpoint state without exposing the endpoint URL' );
 like( $sys_status_php, qr/\$endpoint_state\s*=\s*"development_stub"/, 'html5 sys_status maps development stub AI Helper endpoint state' );
 like( $sys_status_php, qr/\$endpoint_state\s*=\s*"configured"/, 'html5 sys_status maps configured AI Helper endpoint state' );
