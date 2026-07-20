@@ -7,10 +7,12 @@ use FindBin;
 use Test::More;
 
 use lib File::Spec->catdir( $FindBin::Bin, '..', 'lib' );
-use GenAppTest qw(repo_root);
+use GenAppTest qw(read_file repo_root);
 
-my $repo_root = repo_root( File::Spec->catdir( $FindBin::Bin, '..' ) );
-my $service = File::Spec->catfile( $repo_root, qw(tools ai_helper_service ai_helper_server.py) );
+my $repo_root   = repo_root( File::Spec->catdir( $FindBin::Bin, '..' ) );
+my $service_dir = File::Spec->catdir( $repo_root, qw(tools ai_helper_service) );
+my $service     = File::Spec->catfile( $service_dir, 'ai_helper_server.py' );
+
 ok( -f $service, 'tracked AI Helper service script exists' );
 
 my ( $fh, $script ) = tempfile( 'ai-helper-service-XXXX', SUFFIX => '.py', TMPDIR => 1, UNLINK => 1 );
@@ -79,5 +81,43 @@ close $fh;
 
 my $status = system( 'python3', $script );
 is( $status, 0, 'tracked AI Helper service handles OpenRouter usage and cost estimates' );
+
+my $server      = read_file( File::Spec->catfile( $service_dir, 'ai_helper_server.py' ) );
+my $run_forever = read_file( File::Spec->catfile( $service_dir, 'run_forever.sh' ) );
+my $start       = read_file( File::Spec->catfile( $service_dir, 'start.sh' ) );
+my $stop        = read_file( File::Spec->catfile( $service_dir, 'stop.sh' ) );
+my $restart     = read_file( File::Spec->catfile( $service_dir, 'restart_if_needed.sh' ) );
+my $init        = read_file( File::Spec->catfile( $service_dir, 'ai-helper-service.init' ) );
+my $install     = read_file( File::Spec->catfile( $service_dir, 'install_service.sh' ) );
+my $deploy      = read_file( File::Spec->catfile( $repo_root, qw(tools zazzie3_update_genapp_core.sh) ) );
+
+like( $server, qr/ThreadingHTTPServer\(\(host, port\), Handler\)/, 'AI Helper backend serves through the threaded local HTTP server' );
+like( $server, qr/AI_HELPER_BIND_HOST", "127\.0\.0\.1"/, 'AI Helper backend defaults to loopback binding' );
+
+like( $run_forever, qr/AI Helper supervisor started/, 'AI Helper supervisor announces startup' );
+like( $run_forever, qr/python3 "\$SERVICE_DIR\/ai_helper_server\.py" &/, 'AI Helper supervisor starts the Python backend as a child process' );
+like( $run_forever, qr/AI Helper backend exited with status \$status; restarting after/, 'AI Helper supervisor restarts the backend after exit' );
+like( $run_forever, qr/trap shutdown TERM INT/, 'AI Helper supervisor handles termination cleanly' );
+
+like( $start, qr/run_forever\.sh/, 'AI Helper start script launches the supervisor rather than a one-shot backend' );
+like( $start, qr/ai_helper_supervisor\.pid/, 'AI Helper start script records a supervisor pid' );
+like( $start, qr/AI Helper service did not become healthy/, 'AI Helper start script fails if health does not come up' );
+
+like( $stop, qr/ai_helper_supervisor\.pid/, 'AI Helper stop script stops the supervisor' );
+like( $stop, qr/pkill -f "\$SERVICE_DIR\/ai_helper_server\.py"/, 'AI Helper stop script cleans up backend children as a fallback' );
+like( $restart, qr/AI Helper service unhealthy; restarting/, 'AI Helper health-check script restarts when unhealthy' );
+
+like( $init, qr/Provides:\s+ai-helper-service/, 'AI Helper init script declares the service name' );
+like( $init, qr/\/etc\/default\/ai-helper-service/, 'AI Helper init script reads deployment defaults' );
+like( $init, qr/start\|stop\|restart\|status\|check/, 'AI Helper init script exposes lifecycle commands' );
+
+like( $install, qr/cp "\$SERVICE_DIR\/ai-helper-service\.init" \/etc\/init\.d\/ai-helper-service/, 'AI Helper installer installs the init.d wrapper' );
+like( $install, qr/\/etc\/default\/ai-helper-service/, 'AI Helper installer writes non-secret service defaults' );
+unlike( $install, qr/AI_HELPER_API_KEY/, 'AI Helper installer does not write API keys' );
+
+like( $deploy, qr/AI Helper service deployment/, 'ZAZZIE deploy helper has an AI Helper service deployment step' );
+like( $deploy, qr/! -name "\.env"/, 'ZAZZIE deploy helper preserves deployment-local AI Helper env file' );
+like( $deploy, qr/install_service\.sh" --service-dir "\$service_dir"/, 'ZAZZIE deploy helper installs the AI Helper service from tracked files' );
+like( $deploy, qr/\/etc\/init\.d\/ai-helper-service status/, 'ZAZZIE deploy helper verifies AI Helper service health' );
 
 done_testing();

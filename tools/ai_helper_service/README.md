@@ -1,9 +1,9 @@
 # GenApp AI Helper service
 
-This is the small provider-neutral development service used by the UI2 AI
-Helper bridge. It accepts GenApp context at `/ai-helper`, calls the configured
-provider, and returns a JSON response with `message`, token usage, and optional
-estimated cost data.
+This is the small provider-neutral service used by the UI2 AI Helper bridge. It
+accepts GenApp context at `/ai-helper`, calls the configured provider, and
+returns a JSON response with `message`, token usage, and optional estimated cost
+data.
 
 Keep API keys in the deployment-local `.env` file only. Do not commit keys.
 
@@ -40,3 +40,36 @@ AI_HELPER_OUTPUT_USD_PER_1M=0.168
 The cumulative token and cost counters are local observed totals for this helper
 service, stored in `usage.json`; they are not authoritative provider account
 balances.
+
+## Service management
+
+The service is intended to run as a deployment-local backend on loopback
+(`127.0.0.1:8765` by default). The frontend never receives the provider URL or
+API key.
+
+Production-style container deployment uses:
+
+- `run_forever.sh` — a tiny supervisor loop that restarts the Python backend if
+  it exits.
+- `start.sh` / `stop.sh` — start and stop the supervisor, with health checks.
+- `restart_if_needed.sh` — a safe health check/restart command.
+- `ai-helper-service.init` — an init.d wrapper exposing
+  `start|stop|restart|status|check`.
+- `install_service.sh` — installs `/etc/init.d/ai-helper-service` and
+  `/etc/default/ai-helper-service`.
+
+For ZAZZIE3, `tools/zazzie3_update_genapp_core.sh --generate-all` copies these
+tracked files into `/opt/genapp/sassie3/.local/ai_helper_service`, preserves the
+deployment-local `.env`, installs the init.d service, starts it, and verifies
+health.
+
+Manual commands inside the container:
+
+```bash
+cd /opt/genapp/sassie3/.local/ai_helper_service
+./install_service.sh --service-dir /opt/genapp/sassie3/.local/ai_helper_service
+/etc/init.d/ai-helper-service status
+```
+
+If the backend process exits, the supervisor restarts it. If the supervisor is
+not running, `/etc/init.d/ai-helper-service check` starts it again.

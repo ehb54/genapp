@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+### BEGIN INIT INFO
+# Provides:          ai-helper-service
+# Required-Start:    $network $local_fs
+# Required-Stop:     $network $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: GenApp AI Helper local backend service
+# Description:       Starts and monitors the local GenApp AI Helper backend bridge.
+### END INIT INFO
+
+set -euo pipefail
+
+defaults=/etc/default/ai-helper-service
+if [ -r "$defaults" ]; then
+  # shellcheck disable=SC1090
+  . "$defaults"
+fi
+
+SERVICE_DIR="${AI_HELPER_SERVICE_DIR:-/opt/genapp/sassie3/.local/ai_helper_service}"
+port="${AI_HELPER_PORT:-8765}"
+health_url="${AI_HELPER_HEALTH_URL:-http://127.0.0.1:${port}/health}"
+
+healthy() {
+  curl -fsS --max-time 3 "$health_url" >/dev/null
+}
+
+case "${1:-status}" in
+  start)
+    cd "$SERVICE_DIR"
+    ./start.sh
+    ;;
+  stop)
+    cd "$SERVICE_DIR"
+    ./stop.sh
+    ;;
+  restart)
+    cd "$SERVICE_DIR"
+    ./stop.sh || true
+    ./start.sh
+    ;;
+  status)
+    if [ -f "$SERVICE_DIR/ai_helper_supervisor.pid" ] &&
+       kill -0 "$(cat "$SERVICE_DIR/ai_helper_supervisor.pid")" 2>/dev/null &&
+       healthy; then
+      echo "AI Helper service is healthy"
+      exit 0
+    fi
+    echo "AI Helper service is not healthy"
+    exit 1
+    ;;
+  check)
+    cd "$SERVICE_DIR"
+    ./restart_if_needed.sh
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|restart|status|check}"
+    exit 2
+    ;;
+esac

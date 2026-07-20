@@ -249,6 +249,28 @@ if [[ -n "$ui2_index_before" ]]; then
     fi
 fi
 
+if [[ -d "$core_dir/tools/ai_helper_service" ]]; then
+    stamp "AI Helper service deployment"
+    service_source="$core_dir/tools/ai_helper_service"
+    service_dir="$gz_dir/.local/ai_helper_service"
+    mkdir -p "$service_dir"
+    find "$service_source" -maxdepth 1 -type f \
+        ! -name ".env" \
+        ! -name "usage.json" \
+        ! -name "ai_helper.log" \
+        ! -name "ai_helper.pid" \
+        ! -name "ai_helper_supervisor.pid" \
+        -exec cp {} "$service_dir"/ \;
+    chmod +x "$service_dir/ai_helper_server.py" \
+        "$service_dir/run_forever.sh" \
+        "$service_dir/start.sh" \
+        "$service_dir/stop.sh" \
+        "$service_dir/restart_if_needed.sh" \
+        "$service_dir/install_service.sh"
+    "$service_dir/install_service.sh" --service-dir "$service_dir"
+    /etc/init.d/ai-helper-service status
+fi
+
 stamp "Post-generate core cleanup"
 cd "$core_dir"
 core_dirty="$(git status --porcelain)"
