@@ -48,6 +48,7 @@ with tempfile.TemporaryDirectory() as context_tmpdir:
         "user_question": "Hello"
     })
     assert request["model"] == "deepseek/deepseek-v4-flash"
+    assert request["session_id"].startswith("sassie-ai-helper-sassie3-context-")
     assert request["max_tokens"] == 800
     assert request["messages"][0]["role"] == "system"
     assert "golden vector" in request["messages"][0]["content"]
@@ -57,6 +58,9 @@ with tempfile.TemporaryDirectory() as context_tmpdir:
     assert context_status["loaded"] is True
     assert context_status["words"] == 7
     assert len(context_status["revision"]) == 12
+    assert request["session_id"].endswith(context_status["revision"])
+    headers = module.provider_headers("redacted-key", "openrouter", request["session_id"])
+    assert headers["X-Session-Id"] == request["session_id"]
 
 os.environ["AI_HELPER_MAX_OUTPUT_TOKENS"] = "0"
 uncapped_request = module.provider_request_body("openrouter", {
@@ -73,7 +77,15 @@ response = json.dumps({
     "usage": {
         "prompt_tokens": 1000,
         "completion_tokens": 500,
-        "total_tokens": 1500
+        "total_tokens": 1500,
+        "prompt_tokens_details": {
+            "cached_tokens": 900,
+            "cache_write_tokens": 100
+        },
+        "completion_tokens_details": {
+            "reasoning_tokens": 25
+        },
+        "cost": 0.0002
     }
 })
 parsed = module.parse_provider_response("openrouter", response)
@@ -81,6 +93,10 @@ assert parsed["message"] == "Hello from OpenRouter"
 assert parsed["usage"]["input_tokens"] == 1000
 assert parsed["usage"]["output_tokens"] == 500
 assert parsed["usage"]["total_tokens"] == 1500
+assert parsed["usage"]["cached_input_tokens"] == 900
+assert parsed["usage"]["cache_write_tokens"] == 100
+assert parsed["usage"]["reasoning_tokens"] == 25
+assert parsed["usage"]["provider_cost_credits"] == 0.0002
 
 with tempfile.TemporaryDirectory() as tmpdir:
     module.USAGE_PATH = Path(tmpdir) / "usage.json"

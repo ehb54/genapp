@@ -65,7 +65,7 @@ def provider_kind(url):
     return "generic"
 
 
-def provider_headers(api_key):
+def provider_headers(api_key, kind=None, session_id=None):
     headers = {"Content-Type": "application/json"}
     header_name = os.environ.get("AI_HELPER_AUTH_HEADER", "Authorization").strip() or "Authorization"
     scheme = os.environ.get("AI_HELPER_AUTH_SCHEME", "Bearer").strip()
@@ -76,6 +76,8 @@ def provider_headers(api_key):
         headers["HTTP-Referer"] = referer
     if title:
         headers["X-Title"] = title
+    if kind == "openrouter" and session_id:
+        headers["X-Session-Id"] = session_id
     return headers
 
 
@@ -132,6 +134,36 @@ def ai_context_metadata():
         "words": AI_CONTEXT_CACHE.get("words", 0),
         "mtime": AI_CONTEXT_CACHE.get("mtime"),
     }
+
+
+def safe_session_part(value):
+    text = str(value or "").strip().lower()
+    safe = []
+    for char in text:
+        if char.isalnum() or char in ("-", "_", "."):
+            safe.append(char)
+        elif char.isspace() or char in ("/", ":"):
+            safe.append("-")
+    return "".join(safe).strip("-")[:80]
+
+
+def openrouter_session_id(payload):
+    configured = (
+        os.environ.get("AI_HELPER_OPENROUTER_SESSION_ID", "").strip()
+        or os.environ.get("AI_HELPER_SESSION_ID", "").strip()
+    )
+    if configured:
+        return safe_session_part(configured)[:256]
+
+    metadata = ai_context_metadata()
+    revision = safe_session_part(metadata.get("revision")) or "no-context"
+    application = safe_session_part(payload.get("application")) if isinstance(payload, dict) else ""
+    prefix = "sassie-ai-helper"
+    parts = [prefix]
+    if application:
+        parts.append(application)
+    parts.extend(["context", revision])
+    return "-".join(parts)[:256]
 
 
 def live_ai_helper_prompt(payload):
@@ -196,6 +228,7 @@ def provider_request_body(kind, payload):
             ]
         request = {
             "model": model,
+            "session_id": openrouter_session_id(payload),
             "messages": messages
         }
         if max_output_tokens > 0:
@@ -360,12 +393,22 @@ def openrouter_usage(metadata):
     prompt_tokens = metadata.get("prompt_tokens")
     completion_tokens = metadata.get("completion_tokens")
     total_tokens = metadata.get("total_tokens")
+    prompt_details = metadata.get("prompt_tokens_details") or {}
+    completion_details = metadata.get("completion_tokens_details") or {}
     if isinstance(prompt_tokens, int):
         usage["input_tokens"] = prompt_tokens
     if isinstance(completion_tokens, int):
         usage["output_tokens"] = completion_tokens
     if isinstance(total_tokens, int):
         usage["total_tokens"] = total_tokens
+    if isinstance(prompt_details.get("cached_tokens"), int):
+        usage["cached_input_tokens"] = prompt_details["cached_tokens"]
+    if isinstance(prompt_details.get("cache_write_tokens"), int):
+        usage["cache_write_tokens"] = prompt_details["cache_write_tokens"]
+    if isinstance(completion_details.get("reasoning_tokens"), int):
+        usage["reasoning_tokens"] = completion_details["reasoning_tokens"]
+    if isinstance(metadata.get("cost"), (int, float)):
+        usage["provider_cost_credits"] = float(metadata["cost"])
     return usage
 
 
@@ -384,7 +427,8 @@ def call_provider(payload):
     timeout = env_int("AI_HELPER_TIMEOUT_SECONDS", DEFAULT_PROVIDER_TIMEOUT_SECONDS, 5, 120)
     request_payload = provider_request_body(kind, payload)
     data = json.dumps(request_payload).encode("utf-8")
-    request = urllib.request.Request(url, data=data, headers=provider_headers(api_key), method="POST")
+    session_id = request_payload.get("session_id") if kind == "openrouter" and isinstance(request_payload, dict) else None
+    request = urllib.request.Request(url, data=data, headers=provider_headers(api_key, kind, session_id), method="POST")
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             response_body = response.read(MAX_BODY_BYTES).decode("utf-8", errors="replace")

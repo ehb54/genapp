@@ -1470,6 +1470,9 @@
     if (usage.cumulative_tokens != null) {
       parts.push(`${usage.cumulative_tokens} cumulative`);
     }
+    if (usage.cached_input_tokens != null) {
+      parts.push(`${usage.cached_input_tokens} cached`);
+    }
     if (usage.estimated_cost_usd != null) {
       parts.push(`${aiHelperFormatUsd(usage.estimated_cost_usd)} estimated`);
     }
@@ -1503,12 +1506,16 @@
     const cumulativeCostUsd = aiHelperNumberOrNull(
       usage.cumulative_cost_usd ?? usage.account_cumulative_cost_usd ?? usage.accountCumulativeCostUsd ?? payload?.account_cumulative_cost_usd
     );
+    const cachedInputTokens = aiHelperNumberOrNull(
+      usage.cached_input_tokens ?? usage.cached_tokens ?? usage.cachedTokens ?? usage.prompt_tokens_details?.cached_tokens
+    );
     return {
       input_tokens: inputTokens,
       output_tokens: outputTokens,
       total_tokens: totalTokens,
       remaining_tokens: remainingTokens,
       cumulative_tokens: cumulativeTokens,
+      cached_input_tokens: cachedInputTokens,
       estimated_cost_usd: estimatedCostUsd,
       cumulative_cost_usd: cumulativeCostUsd,
       has_usage: inputTokens != null || outputTokens != null || totalTokens != null,
