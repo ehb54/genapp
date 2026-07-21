@@ -38,8 +38,9 @@ assert module.env_int("AI_HELPER_TIMEOUT_SECONDS", module.DEFAULT_PROVIDER_TIMEO
 
 with tempfile.TemporaryDirectory() as context_tmpdir:
     context_path = Path(context_tmpdir) / "sassie_ai_helper_context.md"
-    context_path.write_text("SASSIE AI context includes golden vector guidance.", encoding="utf-8")
+    context_path.write_text(("Intro context unrelated to the target question. " * 80) + "\\n\\nSASSIE AI context includes golden vector guidance for SasCalc orientational averaging.\\n\\n" + ("Trailing context also mentions output files. " * 80), encoding="utf-8")
     os.environ["AI_HELPER_CONTEXT_PATH"] = str(context_path)
+    os.environ["AI_HELPER_COMPACT_CONTEXT_CHARS"] = "120"
     module.AI_CONTEXT_CACHE.update({"path": None, "mtime": None, "text": "", "sha256": "", "words": 0})
 
     request = module.provider_request_body("openrouter", {
@@ -58,11 +59,21 @@ with tempfile.TemporaryDirectory() as context_tmpdir:
     assert "Live GenApp context JSON" in request["messages"][1]["content"]
     context_status = module.ai_context_metadata()
     assert context_status["loaded"] is True
-    assert context_status["words"] == 7
+    assert context_status["words"] > 10
     assert len(context_status["revision"]) == 12
     assert request["session_id"].endswith(context_status["revision"])
     headers = module.provider_headers("redacted-key", "openrouter", request["session_id"])
     assert headers["X-Session-Id"] == request["session_id"]
+    compact_request = module.provider_request_body("openrouter", {
+        "application": "sassie3",
+        "module": None,
+        "page": "calculate",
+        "user_question": "what is a golden vector"
+    }, compact_context=True)
+    assert compact_request["session_id"].endswith("-compact")
+    assert "Compact relevant SASSIE AI context excerpt" in compact_request["messages"][0]["content"]
+    assert "golden vector guidance" in compact_request["messages"][0]["content"]
+    assert len(compact_request["messages"][0]["content"]) < len(request["messages"][0]["content"])
 
 os.environ["AI_HELPER_MAX_OUTPUT_TOKENS"] = "0"
 uncapped_request = module.provider_request_body("openrouter", {
@@ -124,6 +135,8 @@ my $deploy      = read_file( File::Spec->catfile( $repo_root, qw(tools zazzie3_u
 
 like( $server, qr/ThreadingHTTPServer\(\(host, port\), Handler\)/, 'AI Helper backend serves through the threaded local HTTP server' );
 like( $server, qr/AI_HELPER_BIND_HOST", "127\.0\.0\.1"/, 'AI Helper backend defaults to loopback binding' );
+like( $server, qr/AI_HELPER_FULL_CONTEXT_TIMEOUT_SECONDS/, 'AI Helper can fall back from slow full-context provider calls before the bridge timeout' );
+like( $server, qr/compact_context=True/, 'AI Helper retries slow OpenRouter full-context requests with compact context' );
 
 like( $run_forever, qr/AI Helper supervisor started/, 'AI Helper supervisor announces startup' );
 like( $run_forever, qr/python3 "\$SERVICE_DIR\/ai_helper_server\.py" &/, 'AI Helper supervisor starts the Python backend as a child process' );

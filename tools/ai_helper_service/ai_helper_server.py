@@ -15,6 +15,7 @@ USAGE_PATH = SERVICE_DIR / "usage.json"
 MAX_BODY_BYTES = 262144
 DEFAULT_PROVIDER_TIMEOUT_SECONDS = 120
 DEFAULT_MAX_OUTPUT_TOKENS = 800
+DEFAULT_COMPACT_CONTEXT_CHARS = 60000
 DEFAULT_AI_CONTEXT_PATH = SERVICE_DIR.parents[1] / "output" / "html5" / "docs" / "ai_helper" / "sassie_ai_helper_context.md"
 AI_CONTEXT_CACHE = {
     "path": None,
@@ -93,6 +94,13 @@ def env_int(name, default, minimum=None, maximum=None):
     return value
 
 
+def env_bool(name, default=False):
+    raw = os.environ.get(name, "").strip().lower()
+    if not raw:
+        return bool(default)
+    return raw in ("1", "true", "yes", "on")
+
+
 def ai_context_path():
     configured = os.environ.get("AI_HELPER_CONTEXT_PATH", "").strip() or os.environ.get("AI_HELPER_CONTEXT_FILE", "").strip()
     return Path(configured) if configured else DEFAULT_AI_CONTEXT_PATH
@@ -147,13 +155,14 @@ def safe_session_part(value):
     return "".join(safe).strip("-")[:80]
 
 
-def openrouter_session_id(payload):
+def openrouter_session_id(payload, compact_context=False):
     configured = (
         os.environ.get("AI_HELPER_OPENROUTER_SESSION_ID", "").strip()
         or os.environ.get("AI_HELPER_SESSION_ID", "").strip()
     )
     if configured:
-        return safe_session_part(configured)[:256]
+        base = safe_session_part(configured)[:220]
+        return f"{base}-compact" if compact_context else base
 
     metadata = ai_context_metadata()
     revision = safe_session_part(metadata.get("revision")) or "no-context"
@@ -163,6 +172,8 @@ def openrouter_session_id(payload):
     if application:
         parts.append(application)
     parts.extend(["context", revision])
+    if compact_context:
+        parts.append("compact")
     return "-".join(parts)[:256]
 
 
@@ -195,7 +206,66 @@ Do not claim to run SASSIE jobs, do not modify form values, and do not ask for A
     return "%s\n\n---\n\n%s" % (context.rstrip(), live_prompt)
 
 
-def provider_request_body(kind, payload):
+def compact_ai_context(payload):
+    context = load_ai_context()
+    if not context:
+        return ""
+    max_chars = env_int("AI_HELPER_COMPACT_CONTEXT_CHARS", DEFAULT_COMPACT_CONTEXT_CHARS, 4000, 200000)
+    terms = ai_context_search_terms(payload)
+    paragraphs = [paragraph.strip() for paragraph in context.split("\n\n") if paragraph.strip()]
+    scored = []
+    for index, paragraph in enumerate(paragraphs):
+        lower = paragraph.lower()
+        score = sum(lower.count(term) for term in terms)
+        if score > 0:
+            scored.append((score, index, paragraph))
+    if not scored:
+        return context[:max_chars].rstrip()
+    selected = []
+    selected_indexes = set()
+    for score, index, paragraph in sorted(scored, key=lambda item: (-item[0], item[1])):
+        for nearby in (index - 1, index, index + 1):
+            if nearby < 0 or nearby >= len(paragraphs) or nearby in selected_indexes:
+                continue
+            selected_indexes.add(nearby)
+            selected.append((nearby, paragraphs[nearby]))
+        if sum(len(text) + 2 for _, text in selected) >= max_chars:
+            break
+    body = []
+    for _, paragraph in sorted(selected, key=lambda item: item[0]):
+        if sum(len(text) + 2 for text in body) + len(paragraph) + 2 > max_chars:
+            break
+        body.append(paragraph)
+    return "\n\n".join(body).rstrip()
+
+
+def ai_context_search_terms(payload):
+    raw = []
+    if isinstance(payload, dict):
+        raw.extend([
+            payload.get("module"),
+            payload.get("page"),
+            payload.get("application"),
+            payload.get("user_question"),
+        ])
+    text = " ".join(str(part or "") for part in raw).lower()
+    cleaned = []
+    for char in text:
+        cleaned.append(char if char.isalnum() or char == "_" else " ")
+    stop = {
+        "what", "which", "when", "where", "why", "how", "does", "do", "the", "and",
+        "for", "with", "from", "this", "that", "are", "you", "can", "calculate",
+    }
+    terms = []
+    for token in "".join(cleaned).split():
+        if len(token) < 3 or token in stop:
+            continue
+        if token not in terms:
+            terms.append(token)
+    return terms[:20] or ["sassie"]
+
+
+def provider_request_body(kind, payload, compact_context=False):
     max_output_tokens = env_int("AI_HELPER_MAX_OUTPUT_TOKENS", DEFAULT_MAX_OUTPUT_TOKENS, 0, 4096)
     if kind == "gemini":
         request = {
@@ -213,12 +283,13 @@ def provider_request_body(kind, payload):
         return request
     if kind == "openrouter":
         model = os.environ.get("AI_HELPER_MODEL", "").strip() or "deepseek/deepseek-v4-flash"
-        context = load_ai_context()
+        context = compact_ai_context(payload) if compact_context else load_ai_context()
         if context:
+            context_prefix = "Compact relevant SASSIE AI context excerpt:\n\n" if compact_context else ""
             messages = [
                 {
                     "role": "system",
-                    "content": context
+                    "content": context_prefix + context
                 },
                 {
                     "role": "user",
@@ -234,7 +305,7 @@ def provider_request_body(kind, payload):
             ]
         request = {
             "model": model,
-            "session_id": openrouter_session_id(payload),
+            "session_id": openrouter_session_id(payload, compact_context),
             "messages": messages
         }
         if max_output_tokens > 0:
@@ -425,6 +496,29 @@ def openrouter_usage(metadata):
     return usage
 
 
+def provider_timeout_message(timeout):
+    return "provider request timed out after %s seconds" % timeout
+
+
+def request_provider_once(kind, url, api_key, payload, timeout, compact_context=False):
+    request_payload = provider_request_body(kind, payload, compact_context)
+    data = json.dumps(request_payload).encode("utf-8")
+    session_id = request_payload.get("session_id") if kind == "openrouter" and isinstance(request_payload, dict) else None
+    request = urllib.request.Request(url, data=data, headers=provider_headers(api_key, kind, session_id), method="POST")
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return response.read(MAX_BODY_BYTES).decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as error:
+        detail = error.read(4096).decode("utf-8", errors="replace")
+        raise RuntimeError("provider returned HTTP %s: %s" % (error.code, detail[:500]))
+    except (TimeoutError, socket.timeout):
+        raise TimeoutError(provider_timeout_message(timeout))
+    except Exception as error:
+        if "timed out" in str(error).lower():
+            raise TimeoutError(provider_timeout_message(timeout))
+        raise RuntimeError("provider request failed: %s" % error)
+
+
 def call_provider(payload):
     url, api_key = configured_provider()
     if not url or not api_key:
@@ -438,26 +532,27 @@ def call_provider(payload):
 
     kind = provider_kind(url)
     timeout = env_int("AI_HELPER_TIMEOUT_SECONDS", DEFAULT_PROVIDER_TIMEOUT_SECONDS, 5, 120)
-    request_payload = provider_request_body(kind, payload)
-    data = json.dumps(request_payload).encode("utf-8")
-    session_id = request_payload.get("session_id") if kind == "openrouter" and isinstance(request_payload, dict) else None
-    request = urllib.request.Request(url, data=data, headers=provider_headers(api_key, kind, session_id), method="POST")
+    full_context_timeout = timeout
+    retry_timeout = timeout
+    if kind == "openrouter" and env_bool("AI_HELPER_COMPACT_RETRY", True) and load_ai_context():
+        full_context_timeout = env_int("AI_HELPER_FULL_CONTEXT_TIMEOUT_SECONDS", min(timeout, 45), 5, timeout)
+        retry_timeout = max(5, timeout - full_context_timeout - 2)
+    used_compact_retry = False
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            response_body = response.read(MAX_BODY_BYTES).decode("utf-8", errors="replace")
-    except urllib.error.HTTPError as error:
-        detail = error.read(4096).decode("utf-8", errors="replace")
-        raise RuntimeError("provider returned HTTP %s: %s" % (error.code, detail[:500]))
-    except (TimeoutError, socket.timeout) as error:
-        raise RuntimeError("provider request timed out after %s seconds" % timeout)
-    except Exception as error:
-        if "timed out" in str(error).lower():
-            raise RuntimeError("provider request timed out after %s seconds" % timeout)
-        raise RuntimeError("provider request failed: %s" % error)
+        response_body = request_provider_once(kind, url, api_key, payload, full_context_timeout)
+    except TimeoutError as error:
+        if kind == "openrouter" and env_bool("AI_HELPER_COMPACT_RETRY", True) and load_ai_context():
+            used_compact_retry = True
+            response_body = request_provider_once(kind, url, api_key, payload, retry_timeout, compact_context=True)
+        else:
+            raise RuntimeError(str(error))
 
     payload = add_cumulative_usage(parse_provider_response(kind, response_body))
     if isinstance(payload, dict):
-        payload["ai_context"] = ai_context_metadata()
+        context_metadata = ai_context_metadata()
+        if used_compact_retry:
+            context_metadata["delivery"] = "compact_retry"
+        payload["ai_context"] = context_metadata
     return payload
 
 
