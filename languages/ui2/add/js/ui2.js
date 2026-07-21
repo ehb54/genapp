@@ -2788,6 +2788,10 @@
   }
 
   function renderHookButtonControl(field) {
+    const fileMode = hookFileMode(field);
+    if (fileMode) {
+      return renderHookFileButtonControl(field, fileMode);
+    }
     const wrap = el("div", "ui2-action-control ui2-hook-button-control");
     const button = el("button", "ui2-button ui2-button-quiet", field.buttontext || field.label || "Action");
     button.type = "button";
@@ -2797,6 +2801,68 @@
     status.id = `${fieldId(field)}-hook-status`;
     button.addEventListener("click", () => runHookButton(field, button, status));
     wrap.append(button, status);
+    return wrap;
+  }
+
+  function renderHookFileButtonControl(field, fileMode) {
+    const wrap = el("div", "ui2-file-control ui2-hook-button-control");
+    const display = el("input", "ui2-input");
+    display.type = "text";
+    display.id = `${fieldId(field)}-hook-file`;
+    display.placeholder = "No file selected";
+    display.readOnly = true;
+    display.autocomplete = "off";
+    display.spellcheck = false;
+
+    const localPicker = document.createElement("input");
+    localPicker.type = "file";
+    localPicker.className = "ui2-native-file";
+    localPicker.tabIndex = -1;
+
+    const status = el("div", "ui2-submit-status ui2-action-status", "");
+    status.id = `${fieldId(field)}-hook-status`;
+    const actions = el("div", "ui2-file-actions");
+    const supportsLocal = fileMode === "lfile" || fileMode === "lrfile";
+    const supportsServer = fileMode === "rfile" || fileMode === "lrfile";
+
+    if (supportsLocal) {
+      const local = el("button", "ui2-button ui2-button-quiet", "Browse local files");
+      local.type = "button";
+      local.addEventListener("click", () => localPicker.click());
+      actions.appendChild(local);
+    }
+    if (supportsServer) {
+      const server = el("button", "ui2-button ui2-button-quiet", "Browse server");
+      server.type = "button";
+      server.addEventListener("click", () => {
+        openServerFileDialog(Object.assign({}, field, { type: "rfile" }), display, {
+          onSelect: (entry) => {
+            display.value = decodeServerFileId(entry.id).replace(/^\.\//, "");
+            display.dispatchEvent(new Event("input", { bubbles: true }));
+            runHookButton(field, null, status, { source: "server", encodedPath: entry.id });
+          }
+        });
+      });
+      actions.appendChild(server);
+    }
+
+    localPicker.addEventListener("change", () => {
+      const file = localPicker.files && localPicker.files[0];
+      if (!file) {
+        setSubmitStatus(status, "No file selected.", "error");
+        return;
+      }
+      display.value = file.name || "Selected local file";
+      display.dispatchEvent(new Event("input", { bubbles: true }));
+      readHookLocalFile(file)
+        .then((text) => runHookButton(field, null, status, { source: "local", data: text }))
+        .catch((error) => {
+          setSubmitStatus(status, error.message, "error");
+          showLegacyMessagePayload({ error: error.message }, { force: true });
+        });
+    });
+
+    wrap.append(display, localPicker, actions, status);
     return wrap;
   }
 
@@ -5371,7 +5437,8 @@
     syncValues();
     const fileMode = hookFileMode(field);
     if (fileMode && !filePayload) {
-      return openHookFileDialog(field, button, statusNode, fileMode);
+      setSubmitStatus(statusNode, "Choose a file for this hook first.", "error");
+      return { ok: false, error: "Choose a file for this hook first" };
     }
 
     if (button) {
@@ -5410,85 +5477,6 @@
   function hookFileMode(field) {
     const mode = String(field?.file || "").toLowerCase();
     return mode && mode !== "__fields:file__" ? mode : "";
-  }
-
-  function openHookFileDialog(field, button, statusNode, fileMode) {
-    if (fileMode === "lfile") {
-      return chooseHookLocalFile(field, button, statusNode);
-    }
-    if (fileMode === "lrfile") {
-      return openHookLocalOrServerFileDialog(field, button, statusNode);
-    }
-    setSubmitStatus(statusNode, `Hook file mode ${fileMode} is not supported in UI2.`, "error");
-    return { ok: false, error: `Unsupported hook file mode ${fileMode}` };
-  }
-
-  function chooseHookLocalFile(field, button, statusNode) {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.className = "ui2-native-file";
-    input.tabIndex = -1;
-    input.addEventListener("change", () => {
-      const file = input.files && input.files[0];
-      if (!file) {
-        setSubmitStatus(statusNode, "No file selected.", "error");
-        return;
-      }
-      readHookLocalFile(file)
-        .then((text) => runHookButton(field, button, statusNode, { source: "local", data: text }))
-        .catch((error) => {
-          setSubmitStatus(statusNode, error.message, "error");
-          showLegacyMessagePayload({ error: error.message }, { force: true });
-        })
-        .finally(() => input.remove());
-    });
-    document.body.appendChild(input);
-    input.click();
-    return { ok: true, pending: true };
-  }
-
-  function openHookLocalOrServerFileDialog(field, button, statusNode) {
-    const overlay = el("div", "ui2-dialog-overlay");
-    overlay.setAttribute("role", "dialog");
-    overlay.setAttribute("aria-modal", "true");
-    overlay.setAttribute("aria-labelledby", "ui2-hook-file-title");
-
-    const panel = el("section", "ui2-dialog ui2-file-dialog");
-    const header = el("div", "ui2-dialog-header");
-    const title = el("h2", null, "Select a file");
-    title.id = "ui2-hook-file-title";
-    const close = el("button", "ui2-dialog-close", "Close");
-    close.type = "button";
-    close.addEventListener("click", () => overlay.remove());
-    header.append(title, close);
-
-    const message = el("p", "ui2-muted", "Choose a local file or a server file to load defaults for this module.");
-    const display = el("input", "ui2-input");
-    display.type = "text";
-    display.readOnly = true;
-    display.placeholder = "No file selected";
-    const actions = el("div", "ui2-file-actions");
-    const local = el("button", "ui2-button ui2-button-quiet", "Browse local files");
-    local.type = "button";
-    const server = el("button", "ui2-button ui2-button-quiet", "Browse server");
-    server.type = "button";
-    actions.append(local, server);
-
-    local.addEventListener("click", () => {
-      overlay.remove();
-      chooseHookLocalFile(field, button, statusNode);
-    });
-    server.addEventListener("click", () => {
-      overlay.remove();
-      openServerFileDialog(Object.assign({}, field, { type: "rfile" }), display, {
-        onSelect: (entry) => runHookButton(field, button, statusNode, { source: "server", encodedPath: entry.id })
-      });
-    });
-
-    panel.append(header, message, display, actions);
-    overlay.appendChild(panel);
-    document.body.appendChild(overlay);
-    return { ok: true, pending: true };
   }
 
   function readHookLocalFile(file) {
@@ -9028,6 +9016,7 @@
       fileEntryName,
       fileEntryDetails,
       renderFileControl,
+      renderHookButtonControl,
       dynamicOutputItems,
       mergeSavedInputPayloads,
       menuVisibleForSession,

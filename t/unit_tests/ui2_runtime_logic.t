@@ -1952,6 +1952,30 @@ assert.deepStrictEqual(hookFormData.get("component_count"), ["3"], "UI2 hook all
 assert.strictEqual(hookFormData.get("_file_enc_to_load"), serverRepeatOne, "UI2 hook server-file payload uses the legacy encoded-file key");
 assert.strictEqual(hookFormData.get("_project"), "hook_project", "UI2 hook payload carries the current project");
 
+const inlineHookFileControl = hooks.renderHookButtonControl({
+  id: "load_defaults",
+  label: "read data from contrast calculator output file",
+  type: "button",
+  hook: "hook_multicomponent_analysis.py",
+  hookdata: "_allformdata",
+  file: "lrfile"
+});
+assert.strictEqual(
+  inlineHookFileControl.querySelectorAll(".ui2-native-file").length,
+  1,
+  "UI2 hook file buttons render an inline local-file picker instead of a hook chooser popup"
+);
+assert.strictEqual(
+  inlineHookFileControl.querySelectorAll("button").map((button) => button.textContent).join("|"),
+  "Browse local files|Browse server",
+  "UI2 hook lrfile buttons expose normal inline local/server choices"
+);
+assert.strictEqual(
+  inlineHookFileControl.querySelector(".ui2-dialog-overlay"),
+  null,
+  "UI2 hook file buttons do not render a modal input chooser"
+);
+
 const dynamicGroup = {
   dataset: {
     outputFieldId: "dynamic_plots",
