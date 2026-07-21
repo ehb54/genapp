@@ -1796,6 +1796,162 @@ assert.deepStrictEqual(
   "UI2 submit advertises event, incremental plot, and structure-frame capabilities"
 );
 
+hooks.state.values = {
+  data_file_name: "stale-visible-value",
+  sas_paths: "stale-server-path"
+};
+hooks.state.session = { logon: "Joseph", project: "repeat_project" };
+hooks.state.module = {
+  fields: [
+    { id: "data_file_name", type: "lrfile" },
+    { id: "sas_paths", type: "rpath" }
+  ]
+};
+const serverRepeatOne = btoa("./server_one.dat");
+const serverRepeatTwo = btoa("./server_two.dat");
+const serverRepeatThree = btoa("./server_three.dat");
+hooks.state.serverSelections = {
+  "data_file_name:0": {
+    id: "data_file_name",
+    type: "lrfile",
+    repeatIndex: 0,
+    encodedPath: serverRepeatOne,
+    path: "server_one.dat"
+  },
+  "data_file_name:1": {
+    id: "data_file_name",
+    type: "lrfile",
+    repeatIndex: 1,
+    encodedPath: serverRepeatTwo,
+    path: "server_two.dat"
+  },
+  "data_file_name:2": {
+    id: "data_file_name",
+    type: "lrfile",
+    repeatIndex: 2,
+    encodedPath: serverRepeatThree,
+    path: "server_three.dat"
+  },
+  "sas_paths:0": {
+    id: "sas_paths",
+    type: "rpath",
+    repeatIndex: 0,
+    encodedPath: btoa("./sas/run_a"),
+    path: "sas/run_a"
+  },
+  "sas_paths:1": {
+    id: "sas_paths",
+    type: "rpath",
+    repeatIndex: 1,
+    encodedPath: btoa("./sas/run_b"),
+    path: "sas/run_b"
+  }
+};
+const repeatedFileFormData = hooks.buildSubmitFormData({
+  querySelectorAll(selector) {
+    if (selector !== ".ui2-native-file[data-field-id]") {
+      return [];
+    }
+    return [
+      {
+        dataset: { fieldId: "data_file_name", repeatTableIndex: "1" },
+        files: ["local_two.dat"]
+      }
+    ];
+  }
+}, "repeat-file-test-uuid");
+assert.deepStrictEqual(
+  repeatedFileFormData.get("data_file_name_altval[]"),
+  [serverRepeatOne, serverRepeatThree],
+  "UI2 repeated submit preserves server-file rows not replaced by a local row"
+);
+assert.deepStrictEqual(
+  repeatedFileFormData.get("data_file_name[]"),
+  ["local_two.dat"],
+  "UI2 repeated submit preserves the local-file row"
+);
+assert.strictEqual(
+  repeatedFileFormData.get("data_file_name"),
+  undefined,
+  "UI2 repeated submit clears stale scalar file values before appending row values"
+);
+assert.deepStrictEqual(
+  repeatedFileFormData.get("sas_paths[]"),
+  [btoa("./sas/run_a"), btoa("./sas/run_b")],
+  "UI2 repeated submit preserves repeated server rpath values"
+);
+assert.deepStrictEqual(
+  repeatedFileFormData.get("_decodepath_sas_paths"),
+  ["", ""],
+  "UI2 repeated rpath submit keeps the decode marker for each selected row"
+);
+assert.strictEqual(
+  hooks.state.serverSelections["data_file_name:1"],
+  undefined,
+  "UI2 local repeated file rows clear only the matching server selection row"
+);
+
+const repeatedReplayControls = [0, 1].map((repeatIndex) => ({
+  type: "text",
+  value: "",
+  dataset: { fieldId: "data_file_name", repeatTableIndex: String(repeatIndex) },
+  closest(selector) {
+    return selector === "#ui2-form" ? {} : null;
+  },
+  dispatchEvent(event) {
+    this.lastEvent = event.type;
+  }
+}));
+document.querySelectorAll = (selector) => (
+  selector === "[data-field-id=\\"data_file_name\\"]" ? repeatedReplayControls : []
+);
+hooks.state.serverSelections = {};
+hooks.applyInputPayload({
+  _selaltval_data_file_name: "data_file_name_altval",
+  data_file_name_altval: [[serverRepeatOne], [serverRepeatTwo]],
+  _html_data_file_name_altval: ["<i>Server</i>: server_one.dat", "<i>Server</i>: server_two.dat"]
+});
+assert.strictEqual(repeatedReplayControls[0].value, "server_one.dat", "UI2 reattach restores the first repeated server-file label");
+assert.strictEqual(repeatedReplayControls[1].value, "server_two.dat", "UI2 reattach restores the second repeated server-file label");
+assert.strictEqual(
+  hooks.state.serverSelections["data_file_name:0"].encodedPath,
+  serverRepeatOne,
+  "UI2 reattach restores the first repeated server-file payload"
+);
+assert.strictEqual(
+  hooks.state.serverSelections["data_file_name:1"].encodedPath,
+  serverRepeatTwo,
+  "UI2 reattach restores the second repeated server-file payload"
+);
+
+hooks.state.values = { component_count: 3, note: "hook note" };
+hooks.state.session = { logon: "Joseph", project: "hook_project" };
+hooks.state.serverSelections = {};
+hooks.state.module = {
+  fields: [
+    { id: "component_count", type: "integer" },
+    { id: "data_file_name", type: "lrfile" }
+  ]
+};
+const hookFormData = hooks.buildHookFormData({
+  querySelectorAll() {
+    return [];
+  }
+}, {
+  id: "load_defaults",
+  type: "button",
+  hook: "hook_multicomponent_analysis.py",
+  hookdata: "_allformdata",
+  file: "lrfile"
+}, {
+  source: "server",
+  encodedPath: serverRepeatOne
+});
+assert.strictEqual(hookFormData.get("hook"), "hook_multicomponent_analysis.py", "UI2 hook payload carries the configured hook script");
+assert.deepStrictEqual(hookFormData.get("component_count"), ["3"], "UI2 hook all-form payload includes current values");
+assert.strictEqual(hookFormData.get("_file_enc_to_load"), serverRepeatOne, "UI2 hook server-file payload uses the legacy encoded-file key");
+assert.strictEqual(hookFormData.get("_project"), "hook_project", "UI2 hook payload carries the current project");
+
 const dynamicGroup = {
   dataset: {
     outputFieldId: "dynamic_plots",

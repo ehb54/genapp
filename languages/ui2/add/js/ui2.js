@@ -2717,6 +2717,9 @@
       return renderActionControl(field);
     }
     if (type === "button") {
+      if (field.hook) {
+        return renderHookButtonControl(field);
+      }
       const button = el("button", "ui2-button ui2-button-quiet", field.buttontext || field.label || "Action");
       button.type = "button";
       button.id = fieldId(field);
@@ -2780,6 +2783,19 @@
     const status = el("div", "ui2-submit-status ui2-action-status", "");
     status.id = `${fieldId(field)}-action-status`;
     button.addEventListener("click", () => runModuleAction(field, button, status));
+    wrap.append(button, status);
+    return wrap;
+  }
+
+  function renderHookButtonControl(field) {
+    const wrap = el("div", "ui2-action-control ui2-hook-button-control");
+    const button = el("button", "ui2-button ui2-button-quiet", field.buttontext || field.label || "Action");
+    button.type = "button";
+    button.id = fieldId(field);
+    button.dataset.hookId = field.id || "";
+    const status = el("div", "ui2-submit-status ui2-action-status", "");
+    status.id = `${fieldId(field)}-hook-status`;
+    button.addEventListener("click", () => runHookButton(field, button, status));
     wrap.append(button, status);
     return wrap;
   }
@@ -2968,10 +2984,14 @@
       if (!selected) {
         return;
       }
-      setServerSelection(field, options?.repeatTableIndex, selected);
-      targetInput.value = decodeServerFileId(selected.id).replace(/^\.\//, "");
-      targetInput.dispatchEvent(new Event("input", { bubbles: true }));
-      setServerSelection(field, options?.repeatTableIndex, selected);
+      if (typeof options?.onSelect === "function") {
+        options.onSelect(selected, targetInput);
+      } else {
+        setServerSelection(field, options?.repeatTableIndex, selected);
+        targetInput.value = decodeServerFileId(selected.id).replace(/^\.\//, "");
+        targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+        setServerSelection(field, options?.repeatTableIndex, selected);
+      }
       rememberServerFileDir(serverFileRememberDirForSelection(selected, serverFileType(field)));
       overlay.remove();
     });
@@ -5341,6 +5361,145 @@
     }
   }
 
+  async function runHookButton(field, button, statusNode, filePayload) {
+    const form = document.getElementById("ui2-form");
+    if (!form || !field?.hook) {
+      setSubmitStatus(statusNode, "Hook is not available.", "error");
+      return { ok: false, error: "Hook is not available" };
+    }
+
+    syncValues();
+    const fileMode = hookFileMode(field);
+    if (fileMode && !filePayload) {
+      return openHookFileDialog(field, button, statusNode, fileMode);
+    }
+
+    if (button) {
+      button.disabled = true;
+    }
+    setSubmitStatus(statusNode, `Running ${field.buttontext || field.label || field.id || "hook"}`, "pending");
+
+    try {
+      await refreshSessionState();
+      if (!state.session.logon) {
+        throw new Error("You must be logged on to run this hook");
+      }
+      const response = await fetch(legacyEndpoint("", "ajax/sys/get_defaults.php"), {
+        method: "POST",
+        body: buildHookFormData(form, field, filePayload),
+        credentials: "same-origin"
+      });
+      const payload = await parseJsonResponse(response, "Hook");
+      if (!response.ok || payload.error) {
+        throw new Error(payload.error || `Hook returned HTTP ${response.status}`);
+      }
+      applyInputPayload(payload);
+      setSubmitStatus(statusNode, "Defaults updated", "complete");
+      return { ok: true, payload };
+    } catch (error) {
+      setSubmitStatus(statusNode, error.message, "error");
+      showLegacyMessagePayload({ error: error.message }, { force: true });
+      return { ok: false, error: error.message };
+    } finally {
+      if (button) {
+        button.disabled = false;
+      }
+    }
+  }
+
+  function hookFileMode(field) {
+    const mode = String(field?.file || "").toLowerCase();
+    return mode && mode !== "__fields:file__" ? mode : "";
+  }
+
+  function openHookFileDialog(field, button, statusNode, fileMode) {
+    if (fileMode === "lfile") {
+      return chooseHookLocalFile(field, button, statusNode);
+    }
+    if (fileMode === "lrfile") {
+      return openHookLocalOrServerFileDialog(field, button, statusNode);
+    }
+    setSubmitStatus(statusNode, `Hook file mode ${fileMode} is not supported in UI2.`, "error");
+    return { ok: false, error: `Unsupported hook file mode ${fileMode}` };
+  }
+
+  function chooseHookLocalFile(field, button, statusNode) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.className = "ui2-native-file";
+    input.tabIndex = -1;
+    input.addEventListener("change", () => {
+      const file = input.files && input.files[0];
+      if (!file) {
+        setSubmitStatus(statusNode, "No file selected.", "error");
+        return;
+      }
+      readHookLocalFile(file)
+        .then((text) => runHookButton(field, button, statusNode, { source: "local", data: text }))
+        .catch((error) => {
+          setSubmitStatus(statusNode, error.message, "error");
+          showLegacyMessagePayload({ error: error.message }, { force: true });
+        })
+        .finally(() => input.remove());
+    });
+    document.body.appendChild(input);
+    input.click();
+    return { ok: true, pending: true };
+  }
+
+  function openHookLocalOrServerFileDialog(field, button, statusNode) {
+    const overlay = el("div", "ui2-dialog-overlay");
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.setAttribute("aria-labelledby", "ui2-hook-file-title");
+
+    const panel = el("section", "ui2-dialog ui2-file-dialog");
+    const header = el("div", "ui2-dialog-header");
+    const title = el("h2", null, "Select a file");
+    title.id = "ui2-hook-file-title";
+    const close = el("button", "ui2-dialog-close", "Close");
+    close.type = "button";
+    close.addEventListener("click", () => overlay.remove());
+    header.append(title, close);
+
+    const message = el("p", "ui2-muted", "Choose a local file or a server file to load defaults for this module.");
+    const display = el("input", "ui2-input");
+    display.type = "text";
+    display.readOnly = true;
+    display.placeholder = "No file selected";
+    const actions = el("div", "ui2-file-actions");
+    const local = el("button", "ui2-button ui2-button-quiet", "Browse local files");
+    local.type = "button";
+    const server = el("button", "ui2-button ui2-button-quiet", "Browse server");
+    server.type = "button";
+    actions.append(local, server);
+
+    local.addEventListener("click", () => {
+      overlay.remove();
+      chooseHookLocalFile(field, button, statusNode);
+    });
+    server.addEventListener("click", () => {
+      overlay.remove();
+      openServerFileDialog(Object.assign({}, field, { type: "rfile" }), display, {
+        onSelect: (entry) => runHookButton(field, button, statusNode, { source: "server", encodedPath: entry.id })
+      });
+    });
+
+    panel.append(header, message, display, actions);
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+    return { ok: true, pending: true };
+  }
+
+  function readHookLocalFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => resolve(event.target?.result || "");
+      reader.onerror = () => reject(new Error("Unable to read selected file"));
+      reader.readAsText(file);
+    });
+  }
+
   function moduleActionEndpointFor(moduleId) {
     const id = sanitizeModuleId(moduleId || "");
     if (!id) {
@@ -5366,6 +5525,36 @@
     }
 
     formData.set("_action", field?.id || "");
+    formData.set("_window", window.name);
+    formData.set("_project", state.session.project || "no_project_specified");
+    formData.set("_logon", state.session.logon || "");
+    formData.set("_height", String(Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)));
+    formData.set("_width", String(Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)));
+    return formData;
+  }
+
+  function buildHookFormData(form, field, filePayload) {
+    const formData = new FormData();
+    const hookData = stringValue(field?.hookdata || "");
+    const allData = hookData === "_allformdata";
+    const requested = new Set(hookData.split(",").map((id) => id.trim()).filter(Boolean));
+
+    Object.entries(state.values || {}).forEach(([id, value]) => {
+      if (allData || requested.has(id)) {
+        appendFormValue(formData, id, value);
+      }
+    });
+    if (allData) {
+      appendSelectedFiles(formData, form);
+    }
+
+    if (filePayload?.source === "local") {
+      formData.set("_filedata", filePayload.data || "");
+    } else if (filePayload?.source === "server") {
+      formData.set("_file_enc_to_load", filePayload.encodedPath || "");
+    }
+
+    formData.set("hook", field?.hook || "");
     formData.set("_window", window.name);
     formData.set("_project", state.session.project || "no_project_specified");
     formData.set("_logon", state.session.logon || "");
@@ -5537,24 +5726,68 @@
     if (!form) {
       return;
     }
-    Object.values(state.serverSelections || {}).forEach((selection) => appendServerSelection(formData, selection));
+    const groups = new Map();
     form.querySelectorAll(".ui2-native-file[data-field-id]").forEach((picker) => {
       const id = picker.dataset.fieldId;
       if (!id || !picker.files || !picker.files.length) {
         return;
       }
-      removeServerSelection(id, picker.dataset.repeatTableIndex);
-      formData.delete(`${id}_altval[]`);
-      formData.delete(`_selaltval_${id}`);
-      formData.delete(`${id}[]`);
-      formData.delete(`_decodepath_${id}`);
-      if (picker.dataset.repeatTableIndex != null) {
-        Array.from(picker.files).forEach((file) => formData.append(`${id}[]`, file));
+      const repeatIndex = repeatIndexValue(picker.dataset.repeatTableIndex);
+      removeServerSelection(id, repeatIndex);
+      const group = fileSelectionGroup(groups, id);
+      group.local.push({
+        id,
+        repeatIndex,
+        files: Array.from(picker.files)
+      });
+    });
+    Object.values(state.serverSelections || {}).forEach((selection) => {
+      const field = moduleFieldById(selection?.id);
+      if (!selection?.id || !selection.encodedPath || !fieldIsFileLike(field)) {
         return;
       }
-      formData.delete(id);
-      Array.from(picker.files).forEach((file) => formData.append(id, file));
+      fileSelectionGroup(groups, selection.id).server.push(selection);
     });
+    groups.forEach((group, id) => {
+      clearFormDataFileField(formData, id);
+      group.server
+        .sort(compareFileSelectionRows)
+        .forEach((selection) => appendServerSelection(formData, selection));
+      group.local
+        .sort(compareFileSelectionRows)
+        .forEach((selection) => appendLocalFileSelection(formData, selection));
+    });
+  }
+
+  function fileSelectionGroup(groups, id) {
+    if (!groups.has(id)) {
+      groups.set(id, { local: [], server: [] });
+    }
+    return groups.get(id);
+  }
+
+  function repeatIndexValue(value) {
+    return value == null || value === "" ? null : Number(value);
+  }
+
+  function compareFileSelectionRows(left, right) {
+    const leftIndex = left?.repeatIndex == null ? -1 : Number(left.repeatIndex);
+    const rightIndex = right?.repeatIndex == null ? -1 : Number(right.repeatIndex);
+    return leftIndex - rightIndex;
+  }
+
+  function clearFormDataFileField(formData, id) {
+    formData.delete(id);
+    formData.delete(`${id}[]`);
+    formData.delete(`${id}_altval[]`);
+    formData.delete(`_selaltval_${id}`);
+    formData.delete(`_decodepath_${id}`);
+    formData.delete(`_html_${id}_altval`);
+  }
+
+  function appendLocalFileSelection(formData, selection) {
+    const key = selection.repeatIndex == null ? selection.id : `${selection.id}[]`;
+    selection.files.forEach((file) => formData.append(key, file));
   }
 
   function appendServerSelection(formData, selection) {
@@ -5562,11 +5795,6 @@
     if (!selection?.id || !selection.encodedPath || !fieldIsFileLike(field)) {
       return;
     }
-    formData.delete(selection.id);
-    formData.delete(`${selection.id}[]`);
-    formData.delete(`${selection.id}_altval[]`);
-    formData.delete(`_selaltval_${selection.id}`);
-    formData.delete(`_decodepath_${selection.id}`);
     if (selection.type === "rpath") {
       formData.append(`${selection.id}[]`, selection.encodedPath);
       formData.append(`_decodepath_${selection.id}`, "");
@@ -6083,12 +6311,15 @@
         return;
       }
       const altId = stringValue(firstValue(altField)) || `${id}_altval`;
-      const encodedPath = stringValue(firstValue(inputs[altId] ?? inputs[`${id}_altval`]));
-      if (!encodedPath) {
+      const encodedPaths = valueList(inputs[altId] ?? inputs[`${id}_altval`]).map(stringValue).filter(Boolean);
+      if (!encodedPaths.length) {
         return;
       }
-      const displayHtml = stringValue(inputs[`_html_${altId}`] ?? inputs[`_html_${id}_altval`]);
-      restoreServerSelection(id, encodedPath, displayHtml);
+      const displayValues = valueList(inputs[`_html_${altId}`] ?? inputs[`_html_${id}_altval`]);
+      encodedPaths.forEach((encodedPath, index) => {
+        const repeatIndex = encodedPaths.length > 1 ? index : null;
+        restoreServerSelection(id, encodedPath, stringValue(displayValues[index] ?? displayValues[0]), repeatIndex);
+      });
       restored.add(id);
     });
 
@@ -6101,26 +6332,34 @@
       if (restored.has(id)) {
         return;
       }
-      const encodedPath = stringValue(firstValue(value));
-      if (!encodedPath || !fieldIsFileLike(moduleFieldById(id))) {
+      const encodedPaths = valueList(value).map(stringValue).filter(Boolean);
+      if (!encodedPaths.length || !fieldIsFileLike(moduleFieldById(id))) {
         return;
       }
-      restoreServerSelection(id, encodedPath, stringValue(inputs[`_html_${key}`]));
+      const displayValues = valueList(inputs[`_html_${key}`]);
+      encodedPaths.forEach((encodedPath, index) => {
+        const repeatIndex = encodedPaths.length > 1 ? index : null;
+        restoreServerSelection(id, encodedPath, stringValue(displayValues[index] ?? displayValues[0]), repeatIndex);
+      });
     });
   }
 
-  function restoreServerSelection(id, encodedPath, displayHtml) {
+  function restoreServerSelection(id, encodedPath, displayHtml, repeatIndex) {
     const field = moduleFieldById(id);
     if (!fieldIsFileLike(field)) {
       return;
     }
     const path = serverSelectionDisplayPath(encodedPath, displayHtml);
-    setServerSelection(field, null, { id: encodedPath });
-    const keyName = serverSelectionKey(field, null);
+    setServerSelection(field, repeatIndex, { id: encodedPath });
+    const keyName = serverSelectionKey(field, repeatIndex);
     if (state.serverSelections[keyName]) {
       state.serverSelections[keyName].path = path;
     }
-    setInputControlValue(id, path);
+    if (repeatIndex == null) {
+      setInputControlValue(id, path);
+    } else {
+      setInputControlValueAtRepeatIndex(id, repeatIndex, path);
+    }
   }
 
   function moduleFieldById(id) {
@@ -6130,6 +6369,13 @@
 
   function firstValue(value) {
     return Array.isArray(value) ? value[0] : value;
+  }
+
+  function valueList(value) {
+    if (!Array.isArray(value)) {
+      return value == null ? [] : [value];
+    }
+    return value.map((item) => Array.isArray(item) ? firstValue(item) : item);
   }
 
   function serverSelectionDisplayPath(encodedPath, displayHtml) {
@@ -6156,6 +6402,20 @@
       control.dispatchEvent(new Event("input", { bubbles: true }));
       control.dispatchEvent(new Event("change", { bubbles: true }));
     });
+  }
+
+  function setInputControlValueAtRepeatIndex(id, repeatIndex, value) {
+    const controls = Array.from(document.querySelectorAll(`[data-field-id="${cssEscape(id)}"]`))
+      .filter((control) => !control.dataset.outputFieldId && control.closest("#ui2-form"));
+    controls
+      .filter((control) => String(control.dataset.repeatTableIndex ?? "") === String(repeatIndex))
+      .forEach((control) => {
+        if (control.type !== "file") {
+          control.value = value == null ? "" : String(value);
+          control.dispatchEvent(new Event("input", { bubbles: true }));
+          control.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      });
   }
 
   function inputControlValue(value, control, index) {
@@ -8752,6 +9012,7 @@
       fileDownloadLinks,
       moduleActionEndpointFor,
       buildActionFormData,
+      buildHookFormData,
       applyActionPayload,
       applyActionFields,
       moduleSubmitEndpointFor,
