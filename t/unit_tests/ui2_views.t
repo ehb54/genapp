@@ -127,6 +127,7 @@ like( $ui2_js, qr/fetch\("ajax\/ui2_ai_helper\.php\?metadata=1"[\s\S]+method: "G
 like( $ui2_js, qr/function aiHelperContextRevisionSummary\(context\)/, 'ui2 AI Helper formats AI context revision metadata for users' );
 like( $ui2_js, qr/No output results available yet/, 'ui2 AI Helper uses plain language when no output context is available' );
 like( $ui2_js, qr/event\.key === "Enter"[\s\S]+!event\.shiftKey[\s\S]+form\.requestSubmit\(submit\)[\s\S]+submit\.click\(\)/, 'ui2 AI Helper textarea can submit with Enter without changing global form behavior' );
+like( $ui2_js, qr/function startAiHelperWaitStatus\(status\)[\s\S]+Still waiting on the AI provider[\s\S]+Large-context answers can take up to about 2 minutes/, 'ui2 AI Helper shows elapsed progress for slow provider responses' );
 like( $ui2_js, qr/aiHelperUsageSummary\(payload\)/, 'ui2 AI Helper displays backend token usage when returned' );
 like( $ui2_js, qr/remaining unavailable/, 'ui2 AI Helper does not guess unavailable account token remaining values' );
 like( $ui2_js, qr/estimated_cost_usd[\s\S]+cumulative_cost_usd/, 'ui2 AI Helper displays backend cost estimates when returned' );

@@ -1031,6 +1031,7 @@
       response.textContent = "";
       usage.textContent = "";
       setSubmitStatus(status, "Asking AI Helper", "pending");
+      const waitStatus = startAiHelperWaitStatus(status);
       try {
         const payload = await submitAiHelperQuestion(buildAiHelperContext(userQuestion));
         response.innerHTML = aiHelperResponseHtml(aiHelperResponseMessage(payload));
@@ -1041,6 +1042,7 @@
       } catch (error) {
         setSubmitStatus(status, error.message, "error");
       } finally {
+        waitStatus.stop();
         submit.disabled = false;
       }
     });
@@ -1048,6 +1050,25 @@
     section.appendChild(body);
     window.setTimeout(() => question.focus(), 0);
     return section;
+  }
+
+  function startAiHelperWaitStatus(status) {
+    const started = Date.now();
+    const interval = window.setInterval(() => {
+      const elapsed = Math.max(1, Math.round((Date.now() - started) / 1000));
+      if (elapsed < 10) {
+        return;
+      }
+      const detail = elapsed >= 45
+        ? "Still waiting on the AI provider. Large-context answers can take up to about 2 minutes."
+        : "Still waiting on the AI provider.";
+      setSubmitStatus(status, `${detail} ${elapsed}s elapsed.`, "pending");
+    }, 1000);
+    return {
+      stop() {
+        window.clearInterval(interval);
+      }
+    };
   }
 
   function renderAiHelperContextSummary(context) {
