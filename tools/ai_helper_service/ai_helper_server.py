@@ -169,7 +169,13 @@ def openrouter_session_id(payload):
 def live_ai_helper_prompt(payload):
     safe_payload = json.dumps(payload, indent=2, sort_keys=True)
     question = str(payload.get("user_question") or "")
-    return """Live GenApp context JSON:
+    return """Answer style:
+- Be concise by default: aim for 2-5 short paragraphs or a few bullets.
+- Avoid long tables unless the user explicitly asks for a table.
+- If the question is broad, answer the likely intent first, then offer to go deeper.
+- Do not claim to run SASSIE jobs, do not modify form values, and do not ask for API keys.
+
+Live GenApp context JSON:
 %s
 
 User question:

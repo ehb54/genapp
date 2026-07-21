@@ -53,6 +53,8 @@ with tempfile.TemporaryDirectory() as context_tmpdir:
     assert request["messages"][0]["role"] == "system"
     assert "golden vector" in request["messages"][0]["content"]
     assert request["messages"][1]["role"] == "user"
+    assert "Be concise by default" in request["messages"][1]["content"]
+    assert "Avoid long tables" in request["messages"][1]["content"]
     assert "Live GenApp context JSON" in request["messages"][1]["content"]
     context_status = module.ai_context_metadata()
     assert context_status["loaded"] is True
