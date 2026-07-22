@@ -5837,7 +5837,14 @@
 
   function appendFormValue(formData, id, value) {
     if (Array.isArray(value)) {
-      value.forEach((item) => appendFormValue(formData, `${id}[]`, item));
+      const hasNestedValues = value.some((item) => Array.isArray(item));
+      value.forEach((item, index) => {
+        if (hasNestedValues) {
+          appendFormValue(formData, `${id}[${index}]`, item);
+          return;
+        }
+        formData.append(`${id}[]`, item == null ? "" : item);
+      });
       return;
     }
     formData.append(id, value == null ? "" : value);

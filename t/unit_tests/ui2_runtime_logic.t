@@ -1797,6 +1797,42 @@ assert.deepStrictEqual(
 );
 
 hooks.state.values = {
+  fraction_d2o: ["0.0", "0.2", "0.85", "1.0"],
+  delta_rho: [
+    ["2.551", "5.104"],
+    ["1.383", "3.928"],
+    ["-2.415", "0.109"],
+    ["-3.292", "-0.773"]
+  ]
+};
+hooks.state.serverSelections = {};
+const matrixFormData = hooks.buildSubmitFormData({
+  querySelectorAll() {
+    return [];
+  }
+}, "matrix-test-uuid");
+assert.deepStrictEqual(
+  matrixFormData.get("fraction_d2o[]"),
+  ["0.0", "0.2", "0.85", "1.0"],
+  "UI2 retains the established flat repeated-value form"
+);
+assert.deepStrictEqual(
+  matrixFormData.get("delta_rho[0][]"),
+  ["2.551", "5.104"],
+  "UI2 retains the first submitted matrix row"
+);
+assert.deepStrictEqual(
+  matrixFormData.get("delta_rho[3][]"),
+  ["-3.292", "-0.773"],
+  "UI2 retains every submitted matrix row and column"
+);
+assert.strictEqual(
+  matrixFormData.get("delta_rho[][]"),
+  undefined,
+  "UI2 does not flatten a matrix into one-cell rows"
+);
+
+hooks.state.values = {
   data_file_name: "stale-visible-value",
   sas_paths: "stale-server-path"
 };
