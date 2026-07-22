@@ -98,6 +98,7 @@
     submittedRunContext: null,
     workbenchRunContextListeners: new Set(),
     runtimeOutputListeners: new Set(),
+    runtimeOutputAvailability: {},
     pendingSwitch: "",
     viewReady: null,
     viewReadyGeneration: 0,
@@ -1893,7 +1894,7 @@
       viewReady: () => markViewReady(),
       runtimeSnapshot: () => state.jobEvents.snapshot(),
       subscribeRuntime: (listener) => state.jobEvents.subscribe(listener),
-      outputSnapshot: () => state.runtimeOutputs,
+      outputSnapshot: () => state.runtimeOutputAvailability,
       subscribeOutputs: (listener) => subscribeRuntimeOutputs(listener),
       runContextSnapshot: () => state.submittedRunContext,
       subscribeRunContext: (listener) => subscribeWorkbenchRunContext(listener)
@@ -5942,7 +5943,7 @@
 
   function clearRuntimeOutputs(scope) {
     state.runtimeOutputs = {};
-    notifyRuntimeOutputs();
+    clearRuntimeOutputAvailability();
     (scope || document).querySelectorAll("[data-output-field-id]").forEach((output) => {
       if (output.dataset.dynamicOutput === "true") {
         updateDynamicOutput(output, { items: [] });
@@ -5990,7 +5991,7 @@
       generation: (state.runtimeOutputContext.generation || 0) + 1
     };
     state.runtimeOutputs = {};
-    notifyRuntimeOutputs();
+    clearRuntimeOutputAvailability();
     return runtimeOutputToken();
   }
 
@@ -6159,6 +6160,22 @@
         window.setTimeout(() => { throw error; }, 0);
       }
     });
+  }
+
+  function clearRuntimeOutputAvailability() {
+    state.runtimeOutputAvailability = {};
+    notifyRuntimeOutputs();
+  }
+
+  function markRuntimeOutputAvailable(id) {
+    if (!id || state.runtimeOutputAvailability[id]) {
+      return;
+    }
+    state.runtimeOutputAvailability = {
+      ...state.runtimeOutputAvailability,
+      [id]: true
+    };
+    notifyRuntimeOutputs();
   }
 
   function subscribeRuntimeOutputs(listener) {
@@ -6758,6 +6775,7 @@
     if (!event || !["plot", "structure"].includes(event.channel)) {
       return;
     }
+    markRuntimeOutputAvailable(event.topic);
     const output = document.querySelector(`[data-output-field-id="${cssEscape(event.topic)}"]`);
     if (!output) {
       return;
@@ -6830,15 +6848,10 @@
       if (!runtimeOutputContextMatches(activeToken)) {
         return;
       }
-      // Publish a new snapshot object so React's external-store contract can
-      // detect availability changes without polling or copying every render.
-      state.runtimeOutputs = {
-        ...state.runtimeOutputs,
-        [id]: cloneUi2Value(value)
-      };
+      state.runtimeOutputs[id] = cloneUi2Value(value);
+      markRuntimeOutputAvailable(id);
       updateOutputField(id, value);
     });
-    notifyRuntimeOutputs();
   }
 
   function replayRuntimeOutput(id) {

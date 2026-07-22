@@ -76,8 +76,9 @@ like( $ui2_js, qr/function plotlyFitMode\(output\).*?closest\?\.\("\[data-plot-f
 like( $ui2_js, qr/function observeFitPlotlyOutput\(output\).*?fittedAncestor.*?observer\.observe\(target\)/s, 'workbench fitted Plotly surfaces observe their stable pane container' );
 like( $ui2_js, qr/function releaseReactWorkbenchField\(fieldNode\).*?disconnectPlotlyOutputObserver.*?Plotly\.purge/s, 'workbench unmount cleans up Plotly resize observation and graph state' );
 like( $ui2_js, qr/function notifyWorkbenchReattached\(uuid, savedValues = null\).*?setSubmittedRunContext\(\{\s*uuid,\s*values/s, 'workbench reattachment publishes the restored submitted-input snapshot' );
-like( $ui2_js, qr/outputSnapshot: \(\) => state\.runtimeOutputs.*?subscribeOutputs: \(listener\) => subscribeRuntimeOutputs\(listener\)/s, 'workbench bridge exposes runtime output availability without module-specific state' );
-like( $ui2_js, qr/state\.runtimeOutputs = \{\s*\.\.\.state\.runtimeOutputs,\s*\[id\]: cloneUi2Value\(value\)/s, 'runtime output availability publishes immutable snapshots for React subscribers' );
+like( $ui2_js, qr/outputSnapshot: \(\) => state\.runtimeOutputAvailability.*?subscribeOutputs: \(listener\) => subscribeRuntimeOutputs\(listener\)/s, 'workbench bridge exposes runtime output availability without module-specific state' );
+like( $ui2_js, qr/function markRuntimeOutputAvailable\(id\).*?state\.runtimeOutputAvailability\[id\].*?\[id\]: true/s, 'runtime output availability publishes a new snapshot only for a newly available output' );
+unlike( $ui2_js, qr/function applyRuntimePayload\(payload, contextToken = null\).*?state\.runtimeOutputs = \{\s*\.\.\.state\.runtimeOutputs/s, 'repeated runtime payload values do not recreate the React workbench snapshot' );
 like( $ui2_js, qr/function replayJobEventsForOutput\(id\).*?\["plot", "structure"\].*?applyJobEventToOutput/s, 'late-mounted available result groups replay retained Plotly and structure events' );
 
 my $ui2_react_js = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.js) ) );
