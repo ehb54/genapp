@@ -2,7 +2,7 @@
 
 @source "./**/*.{ts,tsx}";
 
-.ui2-mmc-react {
+.ui2-workbench-react {
   display: flex;
   min-height: 100%;
   flex-direction: column;
@@ -10,26 +10,26 @@
   color: var(--ui2-text);
 }
 
-.ui2-mmc-heading {
+.ui2-workbench-heading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
 }
 
-.ui2-mmc-heading h2 {
+.ui2-workbench-heading h2 {
   margin: 0.2rem 0 0;
   font-size: clamp(1.45rem, 2vw, 2rem);
   line-height: 1.2;
 }
 
-.ui2-mmc-heading p {
+.ui2-workbench-heading p {
   max-width: 68rem;
   margin: 0.45rem 0 0;
   color: var(--ui2-muted);
 }
 
-.ui2-mmc-kicker {
+.ui2-workbench-kicker {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -40,7 +40,7 @@
   text-transform: uppercase;
 }
 
-.ui2-mmc-grid {
+.ui2-workbench-grid {
   display: grid;
   min-height: 0;
   flex: 1 1 auto;
@@ -48,27 +48,27 @@
   gap: 1rem;
 }
 
-.ui2-mmc-grid-inputs-hidden {
+.ui2-workbench-grid-inputs-hidden {
   grid-template-columns: minmax(0, 1fr);
 }
 
-.ui2-mmc-react-workspace-expanded {
+.ui2-workbench-react-workspace-expanded {
   min-height: calc(100dvh - 8rem);
 }
 
-.ui2-mmc-input-pane,
-.ui2-mmc-results-pane {
+.ui2-workbench-input-pane,
+.ui2-workbench-results-pane {
   min-width: 0;
 }
 
-.ui2-mmc-input-pane {
+.ui2-workbench-input-pane {
   display: grid;
   min-height: 0;
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 0.75rem;
 }
 
-.ui2-mmc-input-scroll {
+.ui2-workbench-input-scroll {
   display: flex;
   min-height: 0;
   flex: 1 1 auto;
@@ -79,52 +79,56 @@
   padding-right: 0.25rem;
 }
 
-.ui2-mmc-results-pane {
+.ui2-workbench-results-pane {
   display: flex;
   min-height: 0;
   flex-direction: column;
   gap: 0.75rem;
 }
 
-.ui2-mmc-show-inputs-row {
+.ui2-workbench-show-inputs-row {
   display: flex;
   justify-content: flex-start;
 }
 
-.ui2-mmc-result-card {
+.ui2-workbench-result-card {
   flex: 1 1 auto;
   overflow-x: hidden;
 }
 
-.ui2-mmc-result-card,
-.ui2-mmc-result-card > div,
-.ui2-mmc-result-card [role="tabpanel"] {
+.ui2-workbench-result-card,
+.ui2-workbench-result-card > div,
+.ui2-workbench-result-card [role="tabpanel"] {
   min-height: 0;
 }
 
-.ui2-mmc-result-card > div {
+.ui2-workbench-result-card > div {
   height: 100%;
 }
 
-.ui2-mmc-result-tabs {
+.ui2-workbench-result-tabs {
   display: flex;
   min-height: 0;
   height: 100%;
   flex-direction: column;
 }
 
-.ui2-mmc-result-toolbar {
+.ui2-workbench-input-subsection {
+  margin-top: 0.75rem;
+}
+
+.ui2-workbench-result-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
 }
 
-.ui2-mmc-result-panel-title {
+.ui2-workbench-result-panel-title {
   display: none;
 }
 
-.ui2-mmc-sas-placeholder {
+.ui2-workbench-sas-placeholder {
   display: grid;
   min-height: 16rem;
   place-items: center;
@@ -134,34 +138,34 @@
   text-align: center;
 }
 
-.ui2-mmc-field-group {
+.ui2-workbench-field-group {
   display: flex;
   flex-direction: column;
 }
 
-.ui2-mmc-native-field > .ui2-field {
+.ui2-workbench-native-field > .ui2-field {
   grid-template-columns: minmax(9rem, 0.45fr) minmax(0, 1fr);
   padding-inline: 0;
 }
 
-.ui2-mmc-native-field:first-child > .ui2-field {
+.ui2-workbench-native-field:first-child > .ui2-field {
   padding-top: 0;
 }
 
-.ui2-mmc-native-field:last-child > .ui2-field {
+.ui2-workbench-native-field:last-child > .ui2-field {
   border-bottom: 0;
   padding-bottom: 0;
 }
 
-.ui2-mmc-input-pane .ui2-file-control {
+.ui2-workbench-input-pane .ui2-file-control {
   grid-template-columns: minmax(0, 1fr);
 }
 
-.ui2-mmc-input-pane .ui2-file-actions {
+.ui2-workbench-input-pane .ui2-file-actions {
   justify-content: flex-start;
 }
 
-.ui2-mmc-collapsible-trigger {
+.ui2-workbench-collapsible-trigger {
   display: flex;
   width: 100%;
   align-items: center;
@@ -174,17 +178,17 @@
   font-weight: 700;
 }
 
-.ui2-mmc-collapsible-trigger > span:not(.ui2-mmc-log-trigger-text) {
+.ui2-workbench-collapsible-trigger > span:not(.ui2-workbench-log-trigger-text) {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
 }
 
-.ui2-mmc-collapsible-trigger svg {
+.ui2-workbench-collapsible-trigger svg {
   transition: transform 160ms ease;
 }
 
-.ui2-mmc-actions {
+.ui2-workbench-actions {
   border: 1px solid var(--ui2-border);
   border-radius: 0.75rem;
   background: var(--ui2-panel);
@@ -192,25 +196,25 @@
   padding: 0.75rem;
 }
 
-.ui2-mmc-action-buttons {
+.ui2-workbench-action-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
 }
 
-.ui2-mmc-actions .ui2-submit-status {
+.ui2-workbench-actions .ui2-submit-status {
   margin-top: 0.55rem;
   min-height: 1.25rem;
 }
 
-.ui2-mmc-section-description,
-.ui2-mmc-log-description {
+.ui2-workbench-section-description,
+.ui2-workbench-log-description {
   margin: 0 0 0.75rem;
   color: var(--ui2-muted);
   font-size: 0.875rem;
 }
 
-.ui2-mmc-log-trigger-text {
+.ui2-workbench-log-trigger-text {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -218,14 +222,14 @@
   gap: 0.35rem;
 }
 
-.ui2-mmc-log-title {
+.ui2-workbench-log-title {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   color: var(--ui2-text);
 }
 
-.ui2-mmc-log-cue {
+.ui2-workbench-log-cue {
   color: var(--ui2-muted);
   font-size: 0.88rem;
   font-weight: 650;
@@ -233,11 +237,11 @@
   text-align: left;
 }
 
-.ui2-mmc-log-cue-warning {
+.ui2-workbench-log-cue-warning {
   color: var(--ui2-warn);
 }
 
-.ui2-mmc-run-log {
+.ui2-workbench-run-log {
   max-height: 18rem;
   margin: 0;
   overflow: auto;
@@ -252,53 +256,53 @@
   white-space: pre-wrap;
 }
 
-.ui2-mmc-progress-card .ui2-field {
+.ui2-workbench-progress-card .ui2-field {
   grid-template-columns: minmax(8rem, 0.25fr) minmax(0, 1fr);
   padding-inline: 0;
 }
 
-.ui2-mmc-progress-card .ui2-field:last-child {
+.ui2-workbench-progress-card .ui2-field:last-child {
   border-bottom: 0;
   padding-bottom: 0;
 }
 
-.ui2-mmc-result-card .ui2-output-field {
+.ui2-workbench-result-card .ui2-output-field {
   display: block;
   padding: 0;
   border: 0;
 }
 
-.ui2-mmc-result-card .ui2-output-field > .ui2-field-label {
+.ui2-workbench-result-card .ui2-output-field > .ui2-field-label {
   display: none;
 }
 
-.ui2-mmc-result-card .ui2-output,
-.ui2-mmc-result-card .ui2-ngl-plot {
+.ui2-workbench-result-card .ui2-output,
+.ui2-workbench-result-card .ui2-ngl-plot {
   max-width: 100%;
   width: 100% !important;
   min-height: 28rem;
 }
 
-.ui2-mmc-result-card .ui2-output-ngl {
+.ui2-workbench-result-card .ui2-output-ngl {
   max-width: 100%;
   overflow-x: hidden;
 }
 
-.ui2-mmc-result-card .ui2-ngl-plot {
+.ui2-workbench-result-card .ui2-ngl-plot {
   box-sizing: border-box;
 }
 
-.ui2-mmc-result-card .ui2-ngl-plot canvas {
+.ui2-workbench-result-card .ui2-ngl-plot canvas {
   max-width: 100%;
 }
 
-.ui2-mmc-result-card .ui2-ngl-buttons {
+.ui2-workbench-result-card .ui2-ngl-buttons {
   max-width: 100%;
   min-width: 0;
   overflow-x: hidden;
 }
 
-.ui2-mmc-result-card .ui2-ngl-frame-controls {
+.ui2-workbench-result-card .ui2-ngl-frame-controls {
   align-items: center;
   display: flex;
   flex: 1 1 18rem;
@@ -307,46 +311,42 @@
   min-width: 0;
 }
 
-.ui2-mmc-result-card .ui2-ngl-frame-scrubber {
+.ui2-workbench-result-card .ui2-ngl-frame-scrubber {
   max-width: 100%;
   min-width: 0;
   width: min(28rem, 100%);
 }
 
-.ui2-mmc-result-card .ui2-ngl-frame-selected-label {
+.ui2-workbench-result-card .ui2-ngl-frame-selected-label {
   display: inline-block;
 }
 
-.ui2-mmc-result-card .ui2-output-plotly {
+.ui2-workbench-result-card .ui2-output-plotly {
   height: clamp(30rem, 58dvh, 44rem);
   min-height: 0;
   overflow: hidden;
 }
 
-.ui2-mmc-react-workspace-expanded .ui2-mmc-result-card {
+.ui2-workbench-react-workspace-expanded .ui2-workbench-result-card {
   min-height: auto;
 }
 
-.ui2-mmc-react-workspace-expanded .ui2-mmc-result-tabs {
+.ui2-workbench-react-workspace-expanded .ui2-workbench-result-tabs {
   display: grid;
   height: auto;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-areas:
-    "toolbar toolbar"
-    "plot structure"
-    "sas sas";
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 30rem), 1fr));
   gap: 0.75rem;
 }
 
-.ui2-mmc-react-workspace-expanded .ui2-mmc-result-toolbar {
-  grid-area: toolbar;
+.ui2-workbench-react-workspace-expanded .ui2-workbench-result-toolbar {
+  grid-column: 1 / -1;
 }
 
-.ui2-mmc-react-workspace-expanded .ui2-mmc-result-tab-list {
+.ui2-workbench-react-workspace-expanded .ui2-workbench-result-tab-list {
   display: none;
 }
 
-.ui2-mmc-react-workspace-expanded .ui2-mmc-expanded-panel {
+.ui2-workbench-react-workspace-expanded .ui2-workbench-expanded-panel {
   display: flex;
   min-width: 0;
   min-height: 0;
@@ -357,7 +357,7 @@
   padding: 0.75rem;
 }
 
-.ui2-mmc-react-workspace-expanded .ui2-mmc-result-panel-title {
+.ui2-workbench-react-workspace-expanded .ui2-workbench-result-panel-title {
   display: block;
   margin: 0;
   color: var(--ui2-muted);
@@ -365,36 +365,32 @@
   font-weight: 800;
 }
 
-.ui2-mmc-react-workspace-expanded .ui2-mmc-result-panel-plot {
-  grid-area: plot;
+.ui2-workbench-react-workspace-expanded .ui2-workbench-result-panel-plot {
+  min-width: 30rem;
 }
 
-.ui2-mmc-react-workspace-expanded .ui2-mmc-result-panel-structure {
-  grid-area: structure;
+.ui2-workbench-react-workspace-expanded .ui2-workbench-result-panel-structure {
+  min-width: 30rem;
 }
 
-.ui2-mmc-react-workspace-expanded .ui2-mmc-result-panel-other {
-  grid-area: sas;
+.ui2-workbench-react-workspace-expanded .ui2-workbench-result-panel-wide {
+  grid-column: 1 / -1;
 }
 
-.ui2-mmc-react-workspace-expanded .ui2-mmc-result-panel-wide {
-  grid-area: sas;
-}
-
-.ui2-mmc-react-workspace-expanded .ui2-mmc-result-card .ui2-output,
-.ui2-mmc-react-workspace-expanded .ui2-mmc-result-card .ui2-ngl-plot {
+.ui2-workbench-react-workspace-expanded .ui2-workbench-result-card .ui2-output,
+.ui2-workbench-react-workspace-expanded .ui2-workbench-result-card .ui2-ngl-plot {
   min-height: clamp(26rem, 48dvh, 42rem);
 }
 
-.ui2-mmc-react-workspace-expanded .ui2-mmc-result-card .ui2-output-plotly {
+.ui2-workbench-react-workspace-expanded .ui2-workbench-result-card .ui2-output-plotly {
   height: clamp(26rem, 48dvh, 42rem);
 }
 
-.ui2-mmc-submitted {
+.ui2-workbench-submitted {
   align-self: start;
 }
 
-.ui2-mmc-status-badge {
+.ui2-workbench-status-badge {
   border: 1px solid var(--ui2-border);
   border-radius: 999px;
   background: var(--ui2-accent-soft);
@@ -405,13 +401,13 @@
   text-transform: uppercase;
 }
 
-.ui2-mmc-summary-list {
+.ui2-workbench-summary-list {
   display: grid;
   gap: 0;
   margin: 0;
 }
 
-.ui2-mmc-summary-list > div {
+.ui2-workbench-summary-list > div {
   display: grid;
   grid-template-columns: minmax(9rem, 0.65fr) minmax(0, 1fr);
   gap: 0.75rem;
@@ -419,19 +415,19 @@
   padding: 0.6rem 0;
 }
 
-.ui2-mmc-summary-list dt {
+.ui2-workbench-summary-list dt {
   color: var(--ui2-muted);
   font-size: 0.82rem;
   font-weight: 700;
 }
 
-.ui2-mmc-summary-list dd {
+.ui2-workbench-summary-list dd {
   min-width: 0;
   margin: 0;
   overflow-wrap: anywhere;
 }
 
-.ui2-mmc-summary-actions {
+.ui2-workbench-summary-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
@@ -439,36 +435,32 @@
 }
 
 @media (max-width: 1100px) {
-  .ui2-mmc-grid {
+  .ui2-workbench-grid {
     grid-template-columns: 1fr;
   }
 
-  .ui2-mmc-react-workspace-expanded .ui2-mmc-result-tabs {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "toolbar"
-      "plot"
-      "structure"
-      "sas";
+  .ui2-workbench-react-workspace-expanded .ui2-workbench-result-panel-plot,
+  .ui2-workbench-react-workspace-expanded .ui2-workbench-result-panel-structure {
+    min-width: 0;
   }
 
-  .ui2-mmc-input-scroll {
+  .ui2-workbench-input-scroll {
     max-height: none;
     overflow: visible;
   }
 
-  .ui2-mmc-results-pane {
+  .ui2-workbench-results-pane {
     grid-template-rows: auto minmax(28rem, auto);
   }
 }
 
 @media (max-width: 640px) {
-  .ui2-mmc-result-toolbar {
+  .ui2-workbench-result-toolbar {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .ui2-mmc-result-toolbar > button {
+  .ui2-workbench-result-toolbar > button {
     width: 100%;
   }
 

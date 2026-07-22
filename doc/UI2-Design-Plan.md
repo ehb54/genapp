@@ -86,6 +86,40 @@ The missing design layer is a presentation-only `views` model that can describe
 input grouping, output grouping, prominence, placement, and default workspace
 behavior without changing scientific meaning or runtime contracts.
 
+## Scientific Workbench Contract
+
+The first MMC workbench has now become the shared React workbench foundation.
+It is deliberately a presentation layer over the existing UI2 runtime rather
+than a second application runtime.
+
+- UI2 still owns generated field DOM, conditional/repeated controls, file
+  hooks, submission, polling, job reattach, and the Plotly/NGL adapters.
+- A React-owned module opts in with `renderer: "react-workbench"` in its view.
+  The core bridge is module-neutral: it records the submitted input snapshot
+  and exposes runtime output availability for every opted-in module.
+- `results.groups` is the new output-neutral view spelling.  Each group names
+  declared output ids and may be `visibility: "declared"` (the default) or
+  `visibility: "available"`.  The older `results.tabs` spelling remains
+  accepted so the MMC view does not need a compatibility rewrite.
+- An opted-in view may set `includeUnassignedOutputs: true`.  This is an
+  explicit safety net: currently available declared outputs that were not
+  placed in a curated group appear in an **Additional results** group.  It is
+  off by default so a curated view is never rearranged unexpectedly.
+- Input sections may contain nested child sections and view-level repeat
+  expressions.  Module JSON remains the source of truth for fields and
+  scientific meaning; views only arrange those fields.
+- Split view uses result tabs for compactness.  Expanded view shows all
+  visible result groups together in an open-ended responsive grid; it makes no
+  assumption that a module has exactly a plot, a structure, and a SAS panel.
+- An unknown but valid output remains the responsibility of the native UI2
+  renderer unless a view explicitly opts into the unassigned-output fallback.
+  This prevents a React view from silently discarding future output types.
+
+The next module rollout should add small, declarative views one module at a
+time.  Each rollout must verify normal submission, live updates if present,
+final outputs, reattach, and the ordinary UI2 fallback before treating the
+layout as established.
+
 ## Native Theme Foundation
 
 UI2 themes are intentionally token-based at this stage. The supported
