@@ -108,8 +108,9 @@ export type SubmitResult = {
 }
 
 export type ScientificWorkbenchBridge = {
-  createField: (field: Ui2Field, role: "input" | "output") => HTMLElement
+  createFieldGroup: (fields: Ui2Field[], role: "input" | "output") => HTMLElement
   releaseField: (field: HTMLElement) => void
+  fieldGroupMounted: () => void
   syncValues: () => Record<string, unknown>
   reset: (form: HTMLFormElement) => void
   clearSubmitted: () => void

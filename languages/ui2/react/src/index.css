@@ -143,16 +143,16 @@
   flex-direction: column;
 }
 
-.ui2-workbench-native-field > .ui2-field {
+.ui2-workbench-native-field-group > .ui2-field {
   grid-template-columns: minmax(9rem, 0.45fr) minmax(0, 1fr);
   padding-inline: 0;
 }
 
-.ui2-workbench-native-field:first-child > .ui2-field {
+.ui2-workbench-native-field-group > .ui2-field:first-child {
   padding-top: 0;
 }
 
-.ui2-workbench-native-field:last-child > .ui2-field {
+.ui2-workbench-native-field-group > .ui2-field:last-child {
   border-bottom: 0;
   padding-bottom: 0;
 }

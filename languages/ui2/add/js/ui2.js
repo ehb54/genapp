@@ -82,6 +82,7 @@
   let nglLoadPromise = null;
   let katexLoadPromise = null;
   let reactWorkbenchRoot = null;
+  let reactWorkbenchSyncFrame = null;
 
   const state = {
     moduleId: "",
@@ -1879,8 +1880,9 @@
       stage.scrollLeft = 0;
     }
     const bridge = {
-      createField: (field, role) => renderField(field, role),
+      createFieldGroup: (groupFields, role) => renderReactWorkbenchFieldGroup(groupFields, role),
       releaseField: releaseReactWorkbenchField,
+      fieldGroupMounted: () => scheduleReactWorkbenchSync(),
       syncValues: () => {
         syncValues();
         return cloneUi2Value(state.values);
@@ -1906,12 +1908,35 @@
       bridge,
       submitted: cloneUi2Value(state.submittedRunContext)
     });
-    window.setTimeout(() => {
-      if (reactWorkbenchRoot === root) {
+    scheduleReactWorkbenchSync();
+    return true;
+  }
+
+  // A React workbench may mount an input section only after another native
+  // control changes.  Run the normal UI2 dependency/table synchronization
+  // once the complete native group is in the DOM, rather than asking React to
+  // reproduce repeat, hook, matrix, and conditional-field behavior.
+  function scheduleReactWorkbenchSync() {
+    if (reactWorkbenchSyncFrame != null) {
+      return;
+    }
+    reactWorkbenchSyncFrame = window.requestAnimationFrame(() => {
+      reactWorkbenchSyncFrame = null;
+      if (reactWorkbenchRoot) {
         syncValues();
       }
-    }, 0);
-    return true;
+    });
+  }
+
+  function renderReactWorkbenchFieldGroup(groupFields, role) {
+    const group = el("div", "ui2-workbench-native-field-group");
+    const renderPlan = planFields(Array.isArray(groupFields) ? groupFields : []);
+    renderPlan.forEach((item) => {
+      group.appendChild(item.kind === "table"
+        ? renderTableizedRepeater(item, role)
+        : renderField(item.field, role));
+    });
+    return group;
   }
 
   function isReactWorkbenchView(view) {
@@ -1919,6 +1944,10 @@
   }
 
   function unmountReactWorkbench() {
+    if (reactWorkbenchSyncFrame != null) {
+      window.cancelAnimationFrame(reactWorkbenchSyncFrame);
+      reactWorkbenchSyncFrame = null;
+    }
     if (!reactWorkbenchRoot) {
       return;
     }

@@ -10729,46 +10729,44 @@ function Br({ className: e, ...t }) {
 }
 //#endregion
 //#region src/ScientificWorkbench.tsx
-function Vr({ create: e, release: t, className: n }) {
-	let r = C.useRef(null);
+function Vr({ create: e, release: t, mounted: n, className: r }) {
+	let i = C.useRef(null);
 	return C.useLayoutEffect(() => {
-		let n = r.current;
-		if (!n) return;
-		let i = e();
-		return n.replaceChildren(i), () => {
-			t?.(i), i.parentNode === n && n.removeChild(i);
+		let r = i.current;
+		if (!r) return;
+		let a = e();
+		return r.replaceChildren(a), n?.(), () => {
+			t?.(a), a.parentNode === r && r.removeChild(a);
 		};
-	}, [e, t]), /* @__PURE__ */ (0, L.jsx)("div", {
-		className: n,
-		ref: r
+	}, [
+		e,
+		t,
+		n
+	]), /* @__PURE__ */ (0, L.jsx)("div", {
+		className: r,
+		ref: i
 	});
 }
-function Hr({ field: e, bridge: t, role: n = "input", fitPlot: r = !1 }) {
+function Hr({ fields: e, bridge: t, role: n = "input", fitPlot: r = !1 }) {
+	let i = e.map((e) => e.id || "").join("\0"), a = C.useMemo(() => e, [i]), o = C.useCallback(() => {
+		let e = t.createFieldGroup(a, n);
+		return r && (e.setAttribute("data-plot-fit", "pane"), (e.matches("[data-output-type=\"plotly\"]") ? e : e.querySelector("[data-output-type=\"plotly\"]"))?.setAttribute("data-plot-fit", "pane")), e;
+	}, [
+		t,
+		a,
+		r,
+		n
+	]), s = C.useCallback(() => {
+		n === "input" && t.fieldGroupMounted();
+	}, [t, n]);
 	return /* @__PURE__ */ (0, L.jsx)(Vr, {
-		create: C.useCallback(() => {
-			let i = t.createField(e, n);
-			return r && (i.setAttribute("data-plot-fit", "pane"), (i.matches("[data-output-type=\"plotly\"]") ? i : i.querySelector("[data-output-type=\"plotly\"]"))?.setAttribute("data-plot-fit", "pane")), i;
-		}, [
-			t,
-			e,
-			r,
-			n
-		]),
+		create: o,
 		release: t.releaseField,
-		className: "ui2-workbench-native-field"
+		mounted: s,
+		className: "ui2-workbench-field-group"
 	});
 }
-function Ur({ fields: e, bridge: t, role: n = "input" }) {
-	return /* @__PURE__ */ (0, L.jsx)("div", {
-		className: "ui2-workbench-field-group",
-		children: e.map((e) => /* @__PURE__ */ (0, L.jsx)(Hr, {
-			bridge: t,
-			field: e,
-			role: n
-		}, e.id))
-	});
-}
-function Wr(e) {
+function Ur(e) {
 	if (!e?.values) return [];
 	let t = String(e.values).split("~"), n = [];
 	for (let e = 0; e < t.length; e += 2) n.push({
@@ -10777,16 +10775,16 @@ function Wr(e) {
 	});
 	return n;
 }
-function Gr(e, t) {
+function Wr(e, t) {
 	if (e === !0) return "On";
 	if (e === !1) return "Off";
-	if (Array.isArray(e)) return e.map((e) => Gr(e, t)).join(", ");
+	if (Array.isArray(e)) return e.map((e) => Wr(e, t)).join(", ");
 	if (e == null || e === "") return "—";
-	let n = Wr(t).find((t) => t.value === String(e));
+	let n = Ur(t).find((t) => t.value === String(e));
 	return n ? n.label : String(e);
 }
-function Kr(e) {
-	if (Array.isArray(e)) return e.some((e) => Kr(e));
+function Gr(e) {
+	if (Array.isArray(e)) return e.some((e) => Gr(e));
 	if (typeof e == "boolean") return e;
 	let t = String(e ?? "").trim().toLowerCase();
 	return [
@@ -10797,34 +10795,34 @@ function Kr(e) {
 		"checked"
 	].includes(t);
 }
-function qr(e, t) {
+function Kr(e, t) {
 	let n = e.trim();
 	if (!n) return !0;
-	if (n.startsWith("!")) return !qr(n.slice(1), t);
+	if (n.startsWith("!")) return !Kr(n.slice(1), t);
 	let [r, i] = n.split(":"), a = t[r];
-	return i == null ? Kr(a) : String(a ?? "") === i;
+	return i == null ? Gr(a) : String(a ?? "") === i;
 }
-function Jr(e, t) {
+function qr(e, t) {
 	let n = String(e || "").trim();
-	return !n || n.split("||").some((e) => e.split("&&").every((e) => qr(e, t)));
+	return !n || n.split("||").some((e) => e.split("&&").every((e) => Kr(e, t)));
 }
-function Yr(e) {
+function Jr(e) {
 	let t = e.channels.log?.run;
 	return (t?.items || []).map((e) => e && typeof e == "object" && "text" in e ? String(e.text || "") : String(e || "")).join("") || String(t?.value || "");
 }
-function Xr(e) {
+function Yr(e) {
 	let t = e.channels.progress?.run?.value;
 	return t && typeof t == "object" ? t : {};
 }
-function Zr(e) {
+function Xr(e) {
 	let t = Number(e);
 	return Number.isFinite(t) ? String(t) : null;
 }
-function Qr(e, t) {
+function Zr(e, t) {
 	return e.match(t)?.[1]?.trim() || null;
 }
-function $r(e) {
-	let t = Yr(e), n = Xr(e), r = Qr(t, /accepted\s+(\d+\s+out\s+of\s+\d+)\s*:/i) || (Zr(n.accepted) && Zr(n.attempted) ? `${Zr(n.accepted)} / ${Zr(n.attempted)}` : null), i = Qr(t, /Configurations and statistics saved in\s+(.+?)\s+directory/i), a = Number(n.fraction) >= 1 || /(?:is done|completed successfully|run complete)/i.test(t), o = /(?:unhandled exception|traceback|error:|exception)/i.test(t), s = Object.keys(n).length > 0;
+function Qr(e) {
+	let t = Jr(e), n = Yr(e), r = Zr(t, /accepted\s+(\d+\s+out\s+of\s+\d+)\s*:/i) || (Xr(n.accepted) && Xr(n.attempted) ? `${Xr(n.accepted)} / ${Xr(n.attempted)}` : null), i = Zr(t, /Configurations and statistics saved in\s+(.+?)\s+directory/i), a = Number(n.fraction) >= 1 || /(?:is done|completed successfully|run complete)/i.test(t), o = /(?:unhandled exception|traceback|error:|exception)/i.test(t), s = Object.keys(n).length > 0;
 	if (o && !a) return {
 		text: "Needs attention · driver reported an exception",
 		tone: "warning"
@@ -10857,10 +10855,10 @@ function $r(e) {
 		tone: "normal"
 	};
 }
-function ei(e) {
-	return [...e.fields || [], ...(e.children || []).flatMap((e) => ei(e))];
+function $r(e) {
+	return [...e.fields || [], ...(e.children || []).flatMap((e) => $r(e))];
 }
-function ti(e) {
+function ei(e) {
 	if (e == null || e === "") return !1;
 	if (Array.isArray(e)) return e.length > 0;
 	if (typeof e == "object" && "items" in e) {
@@ -10869,7 +10867,7 @@ function ti(e) {
 	}
 	return !0;
 }
-function ni({ values: e, fields: t, summaryFieldIds: n, uuid: r, onEdit: i, onHide: a }) {
+function ti({ values: e, fields: t, summaryFieldIds: n, uuid: r, onEdit: i, onHide: a }) {
 	let [o, s] = C.useState(!1), c = C.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), l = o ? t.filter((t) => t.id && t.role !== "output" && t.type !== "label" && Object.prototype.hasOwnProperty.call(e, t.id)).map((e) => e.id) : n.filter((t) => Object.prototype.hasOwnProperty.call(e, t));
 	return /* @__PURE__ */ (0, L.jsxs)(Qt, {
 		className: "ui2-workbench-submitted",
@@ -10878,7 +10876,7 @@ function ni({ values: e, fields: t, summaryFieldIds: n, uuid: r, onEdit: i, onHi
 			children: "Submitted"
 		})] }), /* @__PURE__ */ (0, L.jsxs)(nn, { children: [/* @__PURE__ */ (0, L.jsx)("dl", {
 			className: "ui2-workbench-summary-list",
-			children: l.map((t) => /* @__PURE__ */ (0, L.jsxs)("div", { children: [/* @__PURE__ */ (0, L.jsx)("dt", { children: c.get(t)?.label || t }), /* @__PURE__ */ (0, L.jsx)("dd", { children: Gr(e[t], c.get(t)) })] }, t))
+			children: l.map((t) => /* @__PURE__ */ (0, L.jsxs)("div", { children: [/* @__PURE__ */ (0, L.jsx)("dt", { children: c.get(t)?.label || t }), /* @__PURE__ */ (0, L.jsx)("dd", { children: Wr(e[t], c.get(t)) })] }, t))
 		}), /* @__PURE__ */ (0, L.jsxs)("div", {
 			className: "ui2-workbench-summary-actions",
 			children: [
@@ -10903,8 +10901,8 @@ function ni({ values: e, fields: t, summaryFieldIds: n, uuid: r, onEdit: i, onHi
 		})] })]
 	});
 }
-function ri({ snapshot: e, title: t, description: n, defaultOpen: r = !1, open: i, onOpenChange: a, cue: o }) {
-	let [s, c] = C.useState(r), l = i ?? s, u = a ?? c, d = Yr(e), f = d ? d.split(/\r?\n/).length : 0;
+function ni({ snapshot: e, title: t, description: n, defaultOpen: r = !1, open: i, onOpenChange: a, cue: o }) {
+	let [s, c] = C.useState(r), l = i ?? s, u = a ?? c, d = Jr(e), f = d ? d.split(/\r?\n/).length : 0;
 	return /* @__PURE__ */ (0, L.jsx)(Rn, {
 		open: l,
 		onOpenChange: u,
@@ -10954,12 +10952,12 @@ function ri({ snapshot: e, title: t, description: n, defaultOpen: r = !1, open: 
 		})
 	});
 }
-function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
-	let [a, o] = C.useState(!1), [s, c] = C.useState(i?.values || {}), l = n.inputs?.sections || [], u = n.inputs?.advanced, d = u?.fields || [], f = n.inputs?.submittedSummary?.fields || [], p = n.results?.progress, m = n.results?.groups || n.results?.tabs || [], h = m.find((e) => e.primary)?.id || m[0]?.id || "", [g, _] = C.useState(h), [v, y] = C.useState(!1), [b, x] = C.useState(!1), [S, w] = C.useState(!1), [T, ee] = C.useState(!!n.results?.runtimeLog?.defaultOpen), te = C.useRef(null), oe = C.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), ce = C.useSyncExternalStore(r.subscribeRuntime, r.runtimeSnapshot, r.runtimeSnapshot), D = C.useSyncExternalStore(r.subscribeOutputs, r.outputSnapshot, r.outputSnapshot), O = C.useSyncExternalStore(r.subscribeRunContext, r.runContextSnapshot, r.runContextSnapshot), le = O?.values || s, ue = C.useMemo(() => m.filter((e) => Jr(e.repeat, le) ? e.visibility !== "available" || e.outputs.some((e) => ti(D[e])) : !1), [
+function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
+	let [a, o] = C.useState(!1), [s, c] = C.useState(i?.values || {}), l = n.inputs?.sections || [], u = n.inputs?.advanced, d = u?.fields || [], f = n.inputs?.submittedSummary?.fields || [], p = n.results?.progress, m = n.results?.groups || n.results?.tabs || [], h = m.find((e) => e.primary)?.id || m[0]?.id || "", [g, _] = C.useState(h), [v, y] = C.useState(!1), [b, x] = C.useState(!1), [S, w] = C.useState(!1), [T, ee] = C.useState(!!n.results?.runtimeLog?.defaultOpen), te = C.useRef(null), oe = C.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), ce = C.useSyncExternalStore(r.subscribeRuntime, r.runtimeSnapshot, r.runtimeSnapshot), D = C.useSyncExternalStore(r.subscribeOutputs, r.outputSnapshot, r.outputSnapshot), O = C.useSyncExternalStore(r.subscribeRunContext, r.runContextSnapshot, r.runContextSnapshot), le = O?.values || s, ue = C.useMemo(() => m.filter((e) => qr(e.repeat, le) ? e.visibility !== "available" || e.outputs.some((e) => ei(D[e])) : !1), [
 		m,
 		le,
 		D
-	]), de = (p?.fields || []).map((e) => oe.get(e)).filter(Boolean), k = /* @__PURE__ */ new Set([...l.flatMap((e) => ei(e)), ...d]), A = t.filter((e) => e.role !== "output" && e.id && e.type !== "label" && !k.has(e.id)), j = /* @__PURE__ */ new Set([...p?.fields || [], ...m.flatMap((e) => e.outputs)]), fe = n.results?.includeUnassignedOutputs ? t.filter((e) => e.role === "output" && e.id && !j.has(e.id) && ti(D[e.id])) : [], M = fe.length > 0 ? [...ue, {
+	]), de = (p?.fields || []).map((e) => oe.get(e)).filter(Boolean), k = /* @__PURE__ */ new Set([...l.flatMap((e) => $r(e)), ...d]), A = t.filter((e) => e.role !== "output" && e.id && e.type !== "label" && !k.has(e.id)), j = /* @__PURE__ */ new Set([...p?.fields || [], ...m.flatMap((e) => e.outputs)]), fe = n.results?.includeUnassignedOutputs ? t.filter((e) => e.role === "output" && e.id && !j.has(e.id) && ei(D[e.id])) : [], M = fe.length > 0 ? [...ue, {
 		id: "additional-results",
 		label: "Additional results",
 		outputs: fe.map((e) => e.id),
@@ -11017,12 +11015,12 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 		e.preventDefault(), r.reset(e.currentTarget), c(r.syncValues()), o(!1), x(!1), w(!1);
 	}, ve = () => {
 		w((e) => (e && x(!1), !e));
-	}, ye = String(ce.lifecycle?.state || (v ? "submitting" : "editing")), be = String(ce.lifecycle?.error || ce.lifecycle?.message || ye), xe = O || ce.run ? $r(ce) : void 0, Se = (e, t = 0) => {
-		if (!Jr(e.repeat, s)) return null;
+	}, ye = String(ce.lifecycle?.state || (v ? "submitting" : "editing")), be = String(ce.lifecycle?.error || ce.lifecycle?.message || ye), xe = O || ce.run ? Qr(ce) : void 0, Se = (e, t = 0) => {
+		if (!qr(e.repeat, s)) return null;
 		let n = (e.fields || []).map((e) => oe.get(e)).filter(Boolean);
 		return /* @__PURE__ */ (0, L.jsxs)(Qt, {
 			className: t > 0 ? "ui2-workbench-input-subsection" : void 0,
-			children: [/* @__PURE__ */ (0, L.jsx)($t, { children: /* @__PURE__ */ (0, L.jsxs)("div", { children: [/* @__PURE__ */ (0, L.jsx)(en, { children: e.title }), e.description && /* @__PURE__ */ (0, L.jsx)(tn, { children: e.description })] }) }), /* @__PURE__ */ (0, L.jsxs)(nn, { children: [n.length > 0 && /* @__PURE__ */ (0, L.jsx)(Ur, {
+			children: [/* @__PURE__ */ (0, L.jsx)($t, { children: /* @__PURE__ */ (0, L.jsxs)("div", { children: [/* @__PURE__ */ (0, L.jsx)(en, { children: e.title }), e.description && /* @__PURE__ */ (0, L.jsx)(tn, { children: e.description })] }) }), /* @__PURE__ */ (0, L.jsxs)(nn, { children: [n.length > 0 && /* @__PURE__ */ (0, L.jsx)(Hr, {
 				bridge: r,
 				fields: n
 			}), (e.children || []).map((e) => Se(e, t + 1))] })]
@@ -11056,7 +11054,7 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 			className: `ui2-workbench-grid${b || S ? " ui2-workbench-grid-inputs-hidden" : ""}`,
 			children: [!b && !S && /* @__PURE__ */ (0, L.jsxs)("aside", {
 				className: "ui2-workbench-input-pane",
-				children: [O ? /* @__PURE__ */ (0, L.jsx)(ni, {
+				children: [O ? /* @__PURE__ */ (0, L.jsx)(ti, {
 					fields: t,
 					summaryFieldIds: f,
 					onEdit: () => {
@@ -11069,7 +11067,7 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 					className: "ui2-workbench-input-scroll",
 					children: [
 						l.map((e) => Se(e)),
-						A.length > 0 && /* @__PURE__ */ (0, L.jsxs)(Qt, { children: [/* @__PURE__ */ (0, L.jsx)($t, { children: /* @__PURE__ */ (0, L.jsx)(en, { children: "Additional inputs" }) }), /* @__PURE__ */ (0, L.jsx)(nn, { children: /* @__PURE__ */ (0, L.jsx)(Ur, {
+						A.length > 0 && /* @__PURE__ */ (0, L.jsxs)(Qt, { children: [/* @__PURE__ */ (0, L.jsx)($t, { children: /* @__PURE__ */ (0, L.jsx)(en, { children: "Additional inputs" }) }), /* @__PURE__ */ (0, L.jsx)(nn, { children: /* @__PURE__ */ (0, L.jsx)(Hr, {
 							bridge: r,
 							fields: A
 						}) })] }),
@@ -11100,7 +11098,7 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 								children: /* @__PURE__ */ (0, L.jsxs)(nn, { children: [u.description && /* @__PURE__ */ (0, L.jsx)("p", {
 									className: "ui2-workbench-section-description",
 									children: u.description
-								}), /* @__PURE__ */ (0, L.jsx)(Ur, {
+								}), /* @__PURE__ */ (0, L.jsx)(Hr, {
 									bridge: r,
 									fields: d.map((e) => oe.get(e)).filter(Boolean)
 								})] })
@@ -11150,13 +11148,13 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 					}),
 					p && /* @__PURE__ */ (0, L.jsxs)(Qt, {
 						className: "ui2-workbench-progress-card",
-						children: [/* @__PURE__ */ (0, L.jsx)($t, { children: /* @__PURE__ */ (0, L.jsxs)("div", { children: [/* @__PURE__ */ (0, L.jsx)(en, { children: p.title }), p.description && /* @__PURE__ */ (0, L.jsx)(tn, { children: p.description })] }) }), /* @__PURE__ */ (0, L.jsx)(nn, { children: /* @__PURE__ */ (0, L.jsx)(Ur, {
+						children: [/* @__PURE__ */ (0, L.jsx)($t, { children: /* @__PURE__ */ (0, L.jsxs)("div", { children: [/* @__PURE__ */ (0, L.jsx)(en, { children: p.title }), p.description && /* @__PURE__ */ (0, L.jsx)(tn, { children: p.description })] }) }), /* @__PURE__ */ (0, L.jsx)(nn, { children: /* @__PURE__ */ (0, L.jsx)(Hr, {
 							bridge: r,
 							fields: de,
 							role: "output"
 						}) })]
 					}),
-					n.results?.runtimeLog && /* @__PURE__ */ (0, L.jsx)(ri, {
+					n.results?.runtimeLog && /* @__PURE__ */ (0, L.jsx)(ni, {
 						cue: xe,
 						defaultOpen: n.results.runtimeLog.defaultOpen,
 						description: n.results.runtimeLog.description,
@@ -11205,12 +11203,12 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 									children: [S && /* @__PURE__ */ (0, L.jsx)("h3", {
 										className: "ui2-workbench-result-panel-title",
 										children: e.label
-									}), t.map((t) => /* @__PURE__ */ (0, L.jsx)(Hr, {
+									}), /* @__PURE__ */ (0, L.jsx)(Hr, {
 										bridge: r,
-										field: t,
-										fitPlot: (e.fit === "pane" || e.fit === "wide") && t.type === "plotly",
+										fields: t,
+										fitPlot: (e.fit === "pane" || e.fit === "wide") && t.some((e) => e.type === "plotly"),
 										role: "output"
-									}, t.id))]
+									})]
 								}, e.id);
 							})]
 						}) })
@@ -11222,16 +11220,16 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 }
 //#endregion
 //#region src/main.tsx
-var ai = /* @__PURE__ */ new WeakMap();
+var ii = /* @__PURE__ */ new WeakMap();
 window.GenAppUi2Workbench = {
 	mount(e, t) {
 		window.GenAppUi2Workbench?.unmount(e);
 		let n = (0, ce.createRoot)(e);
-		ai.set(e, n), n.render(/* @__PURE__ */ (0, L.jsx)(ii, { ...t }));
+		ii.set(e, n), n.render(/* @__PURE__ */ (0, L.jsx)(ri, { ...t }));
 	},
 	unmount(e) {
-		let t = ai.get(e);
-		t && (t.unmount(), ai.delete(e));
+		let t = ii.get(e);
+		t && (t.unmount(), ii.delete(e));
 	}
 }, window.dispatchEvent(new CustomEvent("ui2-react-ready"));
 //#endregion

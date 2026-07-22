@@ -7,7 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { JobRuntimeSnapshot, ScientificWorkbenchBridge, ScientificWorkbenchMountProps, Ui2Field, WorkbenchResultGroup, WorkbenchSection } from "@/types"
 
-function NativeHost({ create, release, className }: { create: () => HTMLElement; release?: (node: HTMLElement) => void; className?: string }) {
+function NativeHost({ create, release, mounted, className }: { create: () => HTMLElement; release?: (node: HTMLElement) => void; mounted?: () => void; className?: string }) {
   const hostRef = React.useRef<HTMLDivElement>(null)
 
   React.useLayoutEffect(() => {
@@ -15,18 +15,23 @@ function NativeHost({ create, release, className }: { create: () => HTMLElement;
     if (!host) return
     const node = create()
     host.replaceChildren(node)
+    mounted?.()
     return () => {
       release?.(node)
       if (node.parentNode === host) host.removeChild(node)
     }
-  }, [create, release])
+  }, [create, release, mounted])
 
   return <div className={className} ref={hostRef} />
 }
 
-function FieldHost({ field, bridge, role = "input", fitPlot = false }: { field: Ui2Field; bridge: ScientificWorkbenchBridge; role?: "input" | "output"; fitPlot?: boolean }) {
+function FieldGroup({ fields, bridge, role = "input", fitPlot = false }: { fields: Ui2Field[]; bridge: ScientificWorkbenchBridge; role?: "input" | "output"; fitPlot?: boolean }) {
+  // View JSON is decoded into new arrays on every parent render.  Keep the
+  // native group mounted while its declared field membership is unchanged.
+  const fieldIds = fields.map((field) => field.id || "").join("\u0000")
+  const plannedFields = React.useMemo(() => fields, [fieldIds])
   const create = React.useCallback(() => {
-    const node = bridge.createField(field, role)
+    const node = bridge.createFieldGroup(plannedFields, role)
     if (fitPlot) {
       // Dynamic outputs create their Plotly child later.  Mark the native field
       // root too, so those children inherit the allocated MMC pane size.
@@ -37,15 +42,12 @@ function FieldHost({ field, bridge, role = "input", fitPlot = false }: { field: 
       plot?.setAttribute("data-plot-fit", "pane")
     }
     return node
-  }, [bridge, field, fitPlot, role])
-  return <NativeHost create={create} release={bridge.releaseField} className="ui2-workbench-native-field" />
-}
-
-function FieldGroup({ fields, bridge, role = "input" }: { fields: Ui2Field[]; bridge: ScientificWorkbenchBridge; role?: "input" | "output" }) {
+  }, [bridge, plannedFields, fitPlot, role])
+  const mounted = React.useCallback(() => {
+    if (role === "input") bridge.fieldGroupMounted()
+  }, [bridge, role])
   return (
-    <div className="ui2-workbench-field-group">
-      {fields.map((field) => <FieldHost bridge={bridge} field={field} key={field.id} role={role} />)}
-    </div>
+    <NativeHost create={create} release={bridge.releaseField} mounted={mounted} className="ui2-workbench-field-group" />
   )
 }
 
@@ -601,15 +603,12 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
                         }
                       >
                         {workspaceExpanded && <h3 className="ui2-workbench-result-panel-title">{group.label}</h3>}
-                        {groupFields.map((field) => (
-                          <FieldHost
-                            bridge={bridge}
-                            field={field}
-                            fitPlot={(group.fit === "pane" || group.fit === "wide") && field.type === "plotly"}
-                            key={field.id}
-                            role="output"
-                          />
-                        ))}
+                        <FieldGroup
+                          bridge={bridge}
+                          fields={groupFields}
+                          fitPlot={(group.fit === "pane" || group.fit === "wide") && groupFields.some((field) => field.type === "plotly")}
+                          role="output"
+                        />
                       </TabsContent>
                     )
                   })}

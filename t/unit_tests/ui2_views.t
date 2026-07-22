@@ -68,7 +68,9 @@ like( $app_map_js, qr/app\.help\.feedback = "Feedback help"/, 'ui2 app map recor
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
 like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declares a module submit endpoint helper' );
 like( $ui2_js, qr/isReactWorkbenchView\(state\.view\) && renderReactWorkbench\(module, fields\)/, 'ui2 delegates modules to React only through explicit view metadata' );
-like( $ui2_js, qr/function renderReactWorkbench\(module, fields\).*?createField:.*?renderField\(field, role\).*?submit:.*?submitModule\(form\)/s, 'scientific workbench bridge reuses canonical UI2 fields and submission' );
+like( $ui2_js, qr/function renderReactWorkbench\(module, fields\).*?createFieldGroup:.*?renderReactWorkbenchFieldGroup\(groupFields, role\).*?fieldGroupMounted:.*?scheduleReactWorkbenchSync\(\).*?submit:.*?submitModule\(form\)/s, 'scientific workbench bridge mounts native field groups and reuses canonical UI2 submission' );
+like( $ui2_js, qr/function renderReactWorkbenchFieldGroup\(groupFields, role\).*?planFields\(Array\.isArray\(groupFields\) \? groupFields : \[\]\).*?renderTableizedRepeater\(item, role\).*?renderField\(item\.field, role\)/s, 'React workbench field groups retain native repeater, matrix, and ordinary-field rendering' );
+like( $ui2_js, qr/function scheduleReactWorkbenchSync\(\).*?requestAnimationFrame.*?syncValues\(\)/s, 'React-mounted input groups receive one native dependency synchronization after mounting' );
 like( $ui2_js, qr/function resizeWorkbenchOutputs\(\).*?resizePlotlyOutputWhenVisible\(output\).*?resizeNglStage\(output\._ui2NglStage\).*?refreshNglOutputFrame\(output\)/s, 'workbench result groups resize existing Plotly and refresh active NGL frames' );
 like( $ui2_js, qr/function resizeNglStage\(stage\).*?stage\.handleResize\?\.\(\).*?requestNglRender\(stage\)/s, 'workbench result groups resize NGL stages through the shared helper' );
 like( $ui2_js, qr/function plotlyLayoutForOutput\(output, sourceLayout\).*?plotlyFitMode\(output\) === "pane".*?delete layout\.width;.*?delete layout\.height;/s, 'workbench fitted Plotly layouts remove fixed producer dimensions' );
@@ -98,6 +100,7 @@ like( $ui2_react_source, qr/group\.visibility !== "available".*?outputHasContent
 unlike( $ui2_react_source, qr/outputHasRuntimeEvent\(id, runtime\)/, 'live job-event snapshots do not control result-pane membership' );
 like( $ui2_react_source, qr/includeUnassignedOutputs.*?Additional results/s, 'opt-in unassigned output fallback keeps future valid results visible' );
 like( $ui2_react_source, qr/node\.setAttribute\("data-plot-fit", "pane"\).*?node\.matches\('\[data-output-type="plotly"\]'\).*?data-plot-fit/s, 'workbench applies fit-to-pane to the field root and a direct Plotly output' );
+like( $ui2_react_source, qr/function FieldGroup\(.*?fieldIds.*?plannedFields.*?bridge\.createFieldGroup\(plannedFields, role\).*?bridge\.fieldGroupMounted/s, 'workbench mounts whole native field groups without recreating unchanged declared fields' );
 unlike( $ui2_react_source, qr/\[activeResult, inputRailCollapsed, runtime\.lastSequence, scheduleOutputResize, workspaceExpanded\]/, 'runtime events do not schedule global output resizes' );
 like( $ui2_react_source, qr/pendingOutputResizeRef.*?requestAnimationFrame.*?bridge\.resizeOutputs/s, 'workbench coalesces geometry-driven output resizes into one animation frame' );
 like( $ui2_react_css, qr/\.ui2-workbench-grid/, 'React stylesheet contains the scientific workbench grid' );
@@ -205,7 +208,12 @@ like( $ui2_js, qr/const activeSurface = output\?\._ui2NglDensitySurface;\s+if \(
 like( $ui2_js, qr/const activeSurface = output\?\._ui2NglDensitySurface;\s+if \(typeof activeSurface\?\.setParameters === "function"\) \{\s+activeSurface\.setParameters\(\{ opacity: clamped \}\);/s, 'density opacity updates the current NGL surface rather than a captured stale surface' );
 like( $ui2_js, qr/preserve_live_frames === true.*?render_ngl_frame_controls\(output\)/s, 'the final MMC structure snapshot can retain streamed-frame controls' );
 like( $ui2_js, qr/function renderNglOutputShell\(field, type\).*?_plot.*?_buttons/s, 'ui2 NGL outputs render the legacy plot and buttons shell' );
-like( $ui2_js, qr/function renderNglOutput\(output, value\).*?new window\.NGL\.Stage\(plot\.id\).*?stage\.loadFile\(normalizeNglLoadName\(payload\.loadname\), payload\.loadparams/s, 'ui2 NGL outputs load rebased legacy NGL payloads into a stage' );
+like( $ui2_js, qr/function renderNglOutput\(output, value\).*?new window\.NGL\.Stage\(plot\.id, nglViewerStageParams\(output\)\).*?stage\.loadFile\(normalizeNglLoadName\(structurePayload\.loadname\), structurePayload\.loadparams/s, 'ui2 NGL outputs load rebased legacy NGL payloads into a configured stage' );
+like( $ui2_js, qr/function nglViewerConfig\(output\).*?capabilities: Object\.assign.*?display: Object\.assign/s, 'ui2 merges module and runtime NGL viewer configuration' );
+like( $ui2_js, qr/function renderNglSceneControls\(output, component\).*?Perspective.*?Orthographic.*?Background.*?Molecular axes/s, 'ui2 NGL viewer exposes camera, background, and axes controls' );
+like( $ui2_js, qr/function renderNglLayerEditor\(output, component, specs\).*?Add layer.*?rebuildNglRepresentations/s, 'ui2 NGL viewer exposes editable representation layers' );
+like( $ui2_js, qr/function nglDensitySurfaceSpecs\(payload\).*?payload\?\.surfaces.*?function renderNglDensitySurfaceList/s, 'ui2 NGL viewer supports multiple editable volume surfaces' );
+like( $ui2_js, qr/function startNglFramePlayback\(output\).*?window\.setTimeout/s, 'ui2 NGL viewer can play retained streamed frames' );
 like( $ui2_js, qr/function normalizeNglLoadName\(loadname\).*?value\.startsWith\("results\/"\).*?`\.\.\/\$\{value\}`/s, 'ui2 NGL renderer rebases legacy result-relative paths from the ui2 directory' );
 like( $ui2_js, qr/function ensureNglLoaded\(\).*?loadScript\("\.\.\/js\/ngl\.js"\)/s, 'ui2 NGL renderer reuses the generated legacy NGL bundle' );
 like( $ui2_js, qr/const NGL_REPRESENTATION_TYPES = \[[\s\S]*"backbone"[\s\S]*"ball\+stick"[\s\S]*"cartoon"[\s\S]*"tube"[\s\S]*\]/, 'ui2 NGL renderer uses the legacy representation button list' );
