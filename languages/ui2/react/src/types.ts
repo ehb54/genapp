@@ -22,14 +22,11 @@ export type WorkbenchSection = {
   id: string
   title: string
   description?: string
-  fields?: string[]
+  fields: string[]
   collapsed?: boolean
-  repeat?: string
-  children?: WorkbenchSection[]
-  layout?: "form" | "table" | "wide" | string
 }
 
-export type WorkbenchResultGroup = {
+export type WorkbenchResultTab = {
   id: string
   label: string
   outputs: string[]
@@ -37,13 +34,7 @@ export type WorkbenchResultGroup = {
   expandable?: boolean
   fit?: "pane" | string
   repeat?: string
-  layout?: "auto" | "tabs" | "grid" | "comparison" | "gallery" | string
-  visibility?: "declared" | "available"
 }
-
-// `tabs` was the first MMC view spelling.  Keep it as a view-compatible
-// alias while new module views use the output-neutral `groups` name.
-export type WorkbenchResultTab = WorkbenchResultGroup
 
 export type WorkbenchView = {
   renderer?: string
@@ -55,7 +46,6 @@ export type WorkbenchView = {
   inputs?: {
     sections?: WorkbenchSection[]
     advanced?: WorkbenchSection
-    layout?: "standard" | "wide" | string
     submittedSummary?: {
       fields?: string[]
     }
@@ -67,9 +57,7 @@ export type WorkbenchView = {
   }
   results?: {
     progress?: WorkbenchSection
-    groups?: WorkbenchResultGroup[]
     tabs?: WorkbenchResultTab[]
-    includeUnassignedOutputs?: boolean
     runtimeLog?: {
       title?: string
       description?: string
@@ -107,7 +95,7 @@ export type SubmitResult = {
   error?: string
 }
 
-export type ScientificWorkbenchBridge = {
+export type MmcBridge = {
   createField: (field: Ui2Field, role: "input" | "output") => HTMLElement
   releaseField: (field: HTMLElement) => void
   syncValues: () => Record<string, unknown>
@@ -118,29 +106,27 @@ export type ScientificWorkbenchBridge = {
   viewReady: () => void
   runtimeSnapshot: () => JobRuntimeSnapshot
   subscribeRuntime: (listener: (snapshot: JobRuntimeSnapshot) => void) => () => void
-  outputSnapshot: () => Record<string, unknown>
-  subscribeOutputs: (listener: () => void) => () => void
-  runContextSnapshot: () => SubmittedRunContext
+  runContextSnapshot: () => MmcRunContext
   subscribeRunContext: (listener: () => void) => () => void
 }
 
-export type SubmittedRunContext = {
+export type MmcRunContext = {
   values: Record<string, unknown>
   uuid?: string
 } | null
 
-export type ScientificWorkbenchMountProps = {
+export type MmcMountProps = {
   module: Ui2Module
   fields: Ui2Field[]
   view: WorkbenchView
-  bridge: ScientificWorkbenchBridge
-  submitted?: SubmittedRunContext
+  bridge: MmcBridge
+  submitted?: MmcRunContext
 }
 
 declare global {
   interface Window {
-    GenAppUi2Workbench?: {
-      mount: (root: HTMLElement, props: ScientificWorkbenchMountProps) => void
+    GenAppUi2Mmc?: {
+      mount: (root: HTMLElement, props: MmcMountProps) => void
       unmount: (root: HTMLElement) => void
     }
   }

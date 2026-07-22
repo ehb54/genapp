@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import type { JobRuntimeSnapshot, ScientificWorkbenchBridge, ScientificWorkbenchMountProps, Ui2Field, WorkbenchResultGroup, WorkbenchSection } from "@/types"
+import type { JobRuntimeSnapshot, MmcBridge, MmcMountProps, Ui2Field, WorkbenchResultTab } from "@/types"
 
 function NativeHost({ create, release, className }: { create: () => HTMLElement; release?: (node: HTMLElement) => void; className?: string }) {
   const hostRef = React.useRef<HTMLDivElement>(null)
@@ -24,7 +24,7 @@ function NativeHost({ create, release, className }: { create: () => HTMLElement;
   return <div className={className} ref={hostRef} />
 }
 
-function FieldHost({ field, bridge, role = "input", fitPlot = false }: { field: Ui2Field; bridge: ScientificWorkbenchBridge; role?: "input" | "output"; fitPlot?: boolean }) {
+function FieldHost({ field, bridge, role = "input", fitPlot = false }: { field: Ui2Field; bridge: MmcBridge; role?: "input" | "output"; fitPlot?: boolean }) {
   const create = React.useCallback(() => {
     const node = bridge.createField(field, role)
     if (fitPlot) {
@@ -38,12 +38,12 @@ function FieldHost({ field, bridge, role = "input", fitPlot = false }: { field: 
     }
     return node
   }, [bridge, field, fitPlot, role])
-  return <NativeHost create={create} release={bridge.releaseField} className="ui2-workbench-native-field" />
+  return <NativeHost create={create} release={bridge.releaseField} className="ui2-mmc-native-field" />
 }
 
-function FieldGroup({ fields, bridge, role = "input" }: { fields: Ui2Field[]; bridge: ScientificWorkbenchBridge; role?: "input" | "output" }) {
+function FieldGroup({ fields, bridge, role = "input" }: { fields: Ui2Field[]; bridge: MmcBridge; role?: "input" | "output" }) {
   return (
-    <div className="ui2-workbench-field-group">
+    <div className="ui2-mmc-field-group">
       {fields.map((field) => <FieldHost bridge={bridge} field={field} key={field.id} role={role} />)}
     </div>
   )
@@ -112,6 +112,14 @@ function runtimeProgressValue(snapshot: JobRuntimeSnapshot): Record<string, unkn
   return value && typeof value === "object" ? value as Record<string, unknown> : {}
 }
 
+function runtimeStructureFrames(snapshot: JobRuntimeSnapshot): Array<Record<string, unknown>> {
+  const structureTopics = snapshot.channels.structure || {}
+  return Object.values(structureTopics).flatMap((topic) => {
+    const items = Array.isArray(topic?.items) ? topic.items : []
+    return items.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+  })
+}
+
 function numberText(value: unknown): string | null {
   const numeric = Number(value)
   return Number.isFinite(numeric) ? String(numeric) : null
@@ -125,6 +133,8 @@ function firstLogMatch(text: string, pattern: RegExp): string | null {
 function runCueMessage(snapshot: JobRuntimeSnapshot): { text: string; tone: "normal" | "warning" } {
   const log = runtimeLogText(snapshot)
   const progress = runtimeProgressValue(snapshot)
+  const frames = runtimeStructureFrames(snapshot)
+  const lastFrame = frames[frames.length - 1]
   const accepted = firstLogMatch(log, /accepted\s+(\d+\s+out\s+of\s+\d+)\s*:/i)
     || (
       numberText(progress.accepted) && numberText(progress.attempted)
@@ -132,7 +142,7 @@ function runCueMessage(snapshot: JobRuntimeSnapshot): { text: string; tone: "nor
         : null
     )
   const outputDir = firstLogMatch(log, /Configurations and statistics saved in\s+(.+?)\s+directory/i)
-  const completed = Number(progress.fraction) >= 1 || /(?:is done|completed successfully|run complete)/i.test(log)
+  const completed = /DIHEDRAL IS DONE/i.test(log) || Number(progress.fraction) >= 1
   const hasException = /(?:unhandled exception|traceback|error:|exception)/i.test(log)
   const hasProgress = Object.keys(progress).length > 0
   if (hasException && !completed) {
@@ -150,29 +160,21 @@ function runCueMessage(snapshot: JobRuntimeSnapshot): { text: string; tone: "nor
   if (!hasProgress && !log) {
     return { text: "Starting job · runtime stream connecting", tone: "normal" }
   }
+  if (frames.length) {
+    const milestone = numberText(lastFrame?.milestone_percent ?? lastFrame?.milestonePercent)
+    const trial = numberText(lastFrame?.trial)
+    const frame_index = numberText(lastFrame?.frame_index ?? lastFrame?.frameIndex)
+    const parts = [`Running · structure snapshot ${frame_index || frames.length} available`]
+    if (milestone) parts.push(`latest snapshot ${milestone}%`)
+    if (trial) parts.push(`trial ${trial}`)
+    return { text: parts.join(" · "), tone: "normal" }
+  }
   if (hasProgress) {
-    return { text: "Running · live progress active", tone: "normal" }
+    return { text: "Running · live progress active · waiting for first structure snapshot", tone: "normal" }
   }
   const lineCount = log ? log.split(/\r?\n/).filter((line) => line.trim()).length : 0
   if (lineCount) return { text: `Running · run log active · ${lineCount} lines received`, tone: "normal" }
   return { text: "Starting job · waiting for first runtime message", tone: "normal" }
-}
-
-function sectionFieldIds(section: WorkbenchSection): string[] {
-  return [
-    ...(section.fields || []),
-    ...((section.children || []).flatMap((child) => sectionFieldIds(child))),
-  ]
-}
-
-function outputHasContent(value: unknown): boolean {
-  if (value == null || value === "") return false
-  if (Array.isArray(value)) return value.length > 0
-  if (typeof value === "object" && "items" in (value as Record<string, unknown>)) {
-    const items = (value as { items?: unknown }).items
-    return !Array.isArray(items) || items.length > 0
-  }
-  return true
 }
 
 function SubmittedInputs({
@@ -200,16 +202,16 @@ function SubmittedInputs({
     : summaryFieldIds.filter((id) => Object.prototype.hasOwnProperty.call(values, id))
 
   return (
-    <Card className="ui2-workbench-submitted">
+    <Card className="ui2-mmc-submitted">
       <CardHeader>
         <div>
           <CardTitle>Submitted inputs</CardTitle>
           <CardDescription>{uuid ? `Run ${uuid}` : "Values associated with this run"}</CardDescription>
         </div>
-        <span className="ui2-workbench-status-badge">Submitted</span>
+        <span className="ui2-mmc-status-badge">Submitted</span>
       </CardHeader>
       <CardContent>
-        <dl className="ui2-workbench-summary-list">
+        <dl className="ui2-mmc-summary-list">
           {ids.map((id) => (
             <div key={id}>
               <dt>{fieldMap.get(id)?.label || id}</dt>
@@ -217,7 +219,7 @@ function SubmittedInputs({
             </div>
           ))}
         </dl>
-        <div className="ui2-workbench-summary-actions">
+        <div className="ui2-mmc-summary-actions">
           <Button type="button" variant="outline" onClick={() => setShowAll((current) => !current)}>
             {showAll ? "Show key inputs" : "Show all inputs"}
           </Button>
@@ -254,20 +256,20 @@ function RunLog({
 
   return (
     <Collapsible open={isOpen} onOpenChange={setOpen}>
-      <Card className="ui2-workbench-log-card">
+      <Card className="ui2-mmc-log-card">
         <CollapsibleTrigger asChild>
-          <button className="ui2-workbench-collapsible-trigger" type="button">
-            <span className="ui2-workbench-log-trigger-text">
-              <span className="ui2-workbench-log-title"><ScrollText aria-hidden="true" size={17} /> {title}{lineCount ? ` (${lineCount} lines)` : ""}</span>
-              {cue && <span className={`ui2-workbench-log-cue ui2-workbench-log-cue-${cue.tone}`}>{cue.text}</span>}
+          <button className="ui2-mmc-collapsible-trigger" type="button">
+            <span className="ui2-mmc-log-trigger-text">
+              <span className="ui2-mmc-log-title"><ScrollText aria-hidden="true" size={17} /> {title}{lineCount ? ` (${lineCount} lines)` : ""}</span>
+              {cue && <span className={`ui2-mmc-log-cue ui2-mmc-log-cue-${cue.tone}`}>{cue.text}</span>}
             </span>
             <ChevronDown aria-hidden="true" className={isOpen ? "rotate-180" : ""} size={18} />
           </button>
         </CollapsibleTrigger>
         <CollapsibleContent forceMount className="data-[state=closed]:hidden">
           <CardContent>
-            {description && <p className="ui2-workbench-log-description">{description}</p>}
-            <pre aria-live="off" className="ui2-workbench-run-log" role="log">
+            {description && <p className="ui2-mmc-log-description">{description}</p>}
+            <pre aria-live="off" className="ui2-mmc-run-log" role="log">
               {text || "Runtime messages will appear here."}
             </pre>
           </CardContent>
@@ -277,7 +279,7 @@ function RunLog({
   )
 }
 
-export function ScientificWorkbench({ module, fields, view, bridge, submitted: initialSubmitted }: ScientificWorkbenchMountProps) {
+export function MmcWorkbench({ module, fields, view, bridge, submitted: initialSubmitted }: MmcMountProps) {
   const [advancedOpen, setAdvancedOpen] = React.useState(false)
   const [liveValues, setLiveValues] = React.useState<Record<string, unknown>>(initialSubmitted?.values || {})
   const inputSections = view.inputs?.sections || []
@@ -285,9 +287,8 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
   const advancedFieldIds = advancedSection?.fields || []
   const summaryFieldIds = view.inputs?.submittedSummary?.fields || []
   const progressSection = view.results?.progress
-  // Existing MMC views use `tabs`; new views use generic result groups.
-  const resultGroups = view.results?.groups || view.results?.tabs || []
-  const initialResult = resultGroups.find((group) => group.primary)?.id || resultGroups[0]?.id || ""
+  const resultTabs = view.results?.tabs || []
+  const initialResult = resultTabs.find((tab) => tab.primary)?.id || resultTabs[0]?.id || ""
   const [activeResult, setActiveResult] = React.useState(initialResult)
   const [submitting, setSubmitting] = React.useState(false)
   const [inputRailCollapsed, setInputRailCollapsed] = React.useState(false)
@@ -296,45 +297,24 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
   const resultCardRef = React.useRef<HTMLElement>(null)
   const fieldsById = React.useMemo(() => new Map(fields.map((field) => [field.id, field])), [fields])
   const runtime = React.useSyncExternalStore(bridge.subscribeRuntime, bridge.runtimeSnapshot, bridge.runtimeSnapshot)
-  const runtimeOutputs = React.useSyncExternalStore(bridge.subscribeOutputs, bridge.outputSnapshot, bridge.outputSnapshot)
   const submitted = React.useSyncExternalStore(bridge.subscribeRunContext, bridge.runContextSnapshot, bridge.runContextSnapshot)
-  const resultGroupValues = submitted?.values || liveValues
-  const visibleResultGroups = React.useMemo(
-    () => resultGroups.filter((group) => {
-      if (!repeatExpressionActive(group.repeat, resultGroupValues)) return false
-      if (group.visibility !== "available") return true
-      // Result-pane membership is structural state.  It must not depend on the
-      // high-rate job-event snapshot used by the log and live native widgets;
-      // doing so makes React reconcile the imperative Plotly/NGL host tree for
-      // every streamed event.  Core publishes this small, per-output
-      // availability snapshot only when an output first becomes available.
-      return group.outputs.some((id) => outputHasContent(runtimeOutputs[id]))
-    }),
-    [resultGroups, resultGroupValues, runtimeOutputs]
+  const resultTabValues = submitted?.values || liveValues
+  const visibleResultTabs = React.useMemo(
+    () => resultTabs.filter((tab) => repeatExpressionActive(tab.repeat, resultTabValues)),
+    [resultTabs, resultTabValues]
   )
   const progressFields = (progressSection?.fields || []).map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]
   const assigned = new Set([
-    ...inputSections.flatMap((section) => sectionFieldIds(section)),
+    ...inputSections.flatMap((section) => [...section.fields]),
     ...advancedFieldIds,
   ])
   const extraInputs = fields.filter((field) => field.role !== "output" && field.id && field.type !== "label" && !assigned.has(field.id))
-  const assignedOutputs = new Set([
-    ...(progressSection?.fields || []),
-    ...resultGroups.flatMap((group) => group.outputs),
-  ])
-  const unassignedOutputs = view.results?.includeUnassignedOutputs
-    ? fields.filter((field) => field.role === "output" && field.id && !assignedOutputs.has(field.id)
-      && outputHasContent(runtimeOutputs[field.id]))
-    : []
-  const visibleOutputGroups = unassignedOutputs.length > 0
-    ? [...visibleResultGroups, { id: "additional-results", label: "Additional results", outputs: unassignedOutputs.map((field) => field.id as string), visibility: "available" as const }]
-    : visibleResultGroups
 
   React.useEffect(() => {
-    if (!visibleOutputGroups.some((group) => group.id === activeResult)) {
-      setActiveResult(visibleOutputGroups.find((group) => group.primary)?.id || visibleOutputGroups[0]?.id || "")
+    if (!visibleResultTabs.some((tab) => tab.id === activeResult)) {
+      setActiveResult(visibleResultTabs.find((tab) => tab.primary)?.id || visibleResultTabs[0]?.id || "")
     }
-  }, [activeResult, visibleOutputGroups])
+  }, [activeResult, visibleResultTabs])
 
   React.useLayoutEffect(() => {
     setLiveValues(bridge.syncValues())
@@ -430,52 +410,47 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
   const lifecycleMessage = String(runtime.lifecycle?.error || runtime.lifecycle?.message || lifecycleState)
   const hasRunContext = Boolean(submitted || runtime.run)
   const runCue = hasRunContext ? runCueMessage(runtime) : undefined
-  const renderInputSection = (section: WorkbenchSection, depth = 0): React.ReactNode => {
-    if (!repeatExpressionActive(section.repeat, liveValues)) return null
-    const sectionFields = (section.fields || []).map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]
-    return (
-      <Card className={depth > 0 ? "ui2-workbench-input-subsection" : undefined} key={section.id}>
-        <CardHeader>
-          <div>
-            <CardTitle>{section.title}</CardTitle>
-            {section.description && <CardDescription>{section.description}</CardDescription>}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {sectionFields.length > 0 && <FieldGroup bridge={bridge} fields={sectionFields} />}
-          {(section.children || []).map((child) => renderInputSection(child, depth + 1))}
-        </CardContent>
-      </Card>
-    )
-  }
 
   return (
     <form
-      className={`ui2-workbench-react${workspaceExpanded ? " ui2-workbench-react-workspace-expanded" : ""}`}
+      className={`ui2-mmc-react${workspaceExpanded ? " ui2-mmc-react-workspace-expanded" : ""}`}
       id="ui2-form"
       onChange={syncLiveValues}
       onInput={syncLiveValues}
       onReset={handleReset}
       onSubmit={handleSubmit}
     >
-      <header className="ui2-workbench-heading">
+      <header className="ui2-mmc-heading">
         <div>
-          <span className="ui2-workbench-kicker"><FlaskConical aria-hidden="true" size={16} /> {view.heading?.kicker || "Scientific workbench"}</span>
+          <span className="ui2-mmc-kicker"><FlaskConical aria-hidden="true" size={16} /> {view.heading?.kicker || "Scientific workbench"}</span>
           <h2>{module.label || "Monomer Monte Carlo"}</h2>
           {view.heading?.description && <p>{view.heading.description}</p>}
         </div>
       </header>
 
-      <div className={`ui2-workbench-grid${inputRailCollapsed || workspaceExpanded ? " ui2-workbench-grid-inputs-hidden" : ""}`}>
-        {!inputRailCollapsed && !workspaceExpanded && <aside className="ui2-workbench-input-pane">
+      <div className={`ui2-mmc-grid${inputRailCollapsed || workspaceExpanded ? " ui2-mmc-grid-inputs-hidden" : ""}`}>
+        {!inputRailCollapsed && !workspaceExpanded && <aside className="ui2-mmc-input-pane">
           {submitted ? (
             <SubmittedInputs fields={fields} summaryFieldIds={summaryFieldIds} onEdit={() => {
               bridge.clearSubmitted()
               setInputRailCollapsed(false)
             }} onHide={() => setInputRailCollapsed(true)} uuid={submitted.uuid} values={submitted.values} />
           ) : (
-            <div className="ui2-workbench-input-scroll">
-              {inputSections.map((section) => renderInputSection(section))}
+            <div className="ui2-mmc-input-scroll">
+              {inputSections.map((section) => {
+                const sectionFields = section.fields.map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]
+                return (
+                  <Card key={section.id}>
+                    <CardHeader>
+                      <div>
+                        <CardTitle>{section.title}</CardTitle>
+                        <CardDescription>{section.description}</CardDescription>
+                      </div>
+                    </CardHeader>
+                    <CardContent><FieldGroup bridge={bridge} fields={sectionFields} /></CardContent>
+                  </Card>
+                )
+              })}
 
               {extraInputs.length > 0 && (
                 <Card>
@@ -488,14 +463,14 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
                 <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
                   <Card>
                     <CollapsibleTrigger asChild>
-                      <button className="ui2-workbench-collapsible-trigger" type="button">
+                      <button className="ui2-mmc-collapsible-trigger" type="button">
                         <span><Settings2 aria-hidden="true" size={17} /> {advancedSection.title}</span>
                         <ChevronDown aria-hidden="true" className={advancedOpen ? "rotate-180" : ""} size={18} />
                       </button>
                     </CollapsibleTrigger>
                     <CollapsibleContent forceMount className="data-[state=closed]:hidden">
                       <CardContent>
-                        {advancedSection.description && <p className="ui2-workbench-section-description">{advancedSection.description}</p>}
+                        {advancedSection.description && <p className="ui2-mmc-section-description">{advancedSection.description}</p>}
                         <FieldGroup bridge={bridge} fields={advancedFieldIds.map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]} />
                       </CardContent>
                     </CollapsibleContent>
@@ -507,8 +482,8 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
           )}
 
           {!submitted && (
-            <div className="ui2-workbench-actions">
-              <div className="ui2-workbench-action-buttons">
+            <div className="ui2-mmc-actions">
+              <div className="ui2-mmc-action-buttons">
                 <Button disabled={submitting} type="submit">
                   {submitting ? "Submitting…" : view.actions?.submitLabel || "Run"}
                 </Button>
@@ -523,9 +498,9 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
           )}
         </aside>}
 
-        <main className="ui2-workbench-results-pane">
+        <main className="ui2-mmc-results-pane">
           {submitted && inputRailCollapsed && (
-            <div className="ui2-workbench-show-inputs-row">
+            <div className="ui2-mmc-show-inputs-row">
               <Button type="button" variant="outline" onClick={() => setInputRailCollapsed(false)}>
                 Show submitted inputs
               </Button>
@@ -533,7 +508,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
           )}
 
           {progressSection && (
-            <Card className="ui2-workbench-progress-card">
+            <Card className="ui2-mmc-progress-card">
               <CardHeader>
                 <div>
                   <CardTitle>{progressSection.title}</CardTitle>
@@ -556,20 +531,20 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
             />
           )}
 
-          {visibleOutputGroups.length > 0 && (
-            <Card className="ui2-workbench-result-card" ref={resultCardRef}>
+          {visibleResultTabs.length > 0 && (
+            <Card className="ui2-mmc-result-card" ref={resultCardRef}>
               <CardContent>
                 <Tabs
-                  className="ui2-workbench-result-tabs"
+                  className="ui2-mmc-result-tabs"
                   onValueChange={(value) => {
                     setActiveResult(value)
                     window.setTimeout(scheduleOutputResize, 0)
                   }}
                   value={activeResult}
                 >
-                  <div className="ui2-workbench-result-toolbar">
-                    <TabsList aria-label={`${module.label || "Module"} results`} className="ui2-workbench-result-tab-list">
-                      {visibleOutputGroups.map((group) => <TabsTrigger key={group.id} value={group.id}>{group.label}</TabsTrigger>)}
+                  <div className="ui2-mmc-result-toolbar">
+                    <TabsList aria-label={`${module.label || "Module"} results`} className="ui2-mmc-result-tab-list">
+                      {visibleResultTabs.map((tab) => <TabsTrigger key={tab.id} value={tab.id}>{tab.label}</TabsTrigger>)}
                     </TabsList>
                     <Button
                       aria-pressed={workspaceExpanded}
@@ -581,31 +556,31 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
                       {workspaceExpanded ? "Restore split view" : "Expand workspace"}
                     </Button>
                   </div>
-                  {visibleOutputGroups.map((group: WorkbenchResultGroup) => {
-                    const groupFields = group.outputs.map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]
-                    const panelKind = group.fit === "wide" || group.layout === "gallery"
+                  {visibleResultTabs.map((tab: WorkbenchResultTab) => {
+                    const tabFields = tab.outputs.map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]
+                    const panelKind = tab.fit === "wide"
                       ? "wide"
-                      : groupFields.some((field) => field.type === "plotly")
+                      : tabFields.some((field) => field.type === "plotly")
                       ? "plot"
-                      : groupFields.some((field) => field.type === "ngl" || field.type === "atomicstructure")
+                      : tabFields.some((field) => field.type === "ngl")
                         ? "structure"
                         : "other"
                     return (
                       <TabsContent
                         forceMount
-                        key={group.id}
-                        value={group.id}
+                        key={tab.id}
+                        value={tab.id}
                         className={workspaceExpanded
-                          ? `ui2-workbench-expanded-panel ui2-workbench-result-panel-${panelKind}`
+                          ? `ui2-mmc-expanded-panel ui2-mmc-result-panel-${panelKind}`
                           : "data-[state=inactive]:hidden"
                         }
                       >
-                        {workspaceExpanded && <h3 className="ui2-workbench-result-panel-title">{group.label}</h3>}
-                        {groupFields.map((field) => (
+                        {workspaceExpanded && <h3 className="ui2-mmc-result-panel-title">{tab.label}</h3>}
+                        {tabFields.map((field) => (
                           <FieldHost
                             bridge={bridge}
                             field={field}
-                            fitPlot={(group.fit === "pane" || group.fit === "wide") && field.type === "plotly"}
+                            fitPlot={(tab.fit === "pane" || tab.fit === "wide") && field.type === "plotly"}
                             key={field.id}
                             role="output"
                           />

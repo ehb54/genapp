@@ -1,17 +1,17 @@
 import { createRoot, type Root } from "react-dom/client"
 
-import { ScientificWorkbench } from "@/ScientificWorkbench"
-import type { ScientificWorkbenchMountProps } from "@/types"
+import { MmcWorkbench } from "@/MmcWorkbench"
+import type { MmcMountProps } from "@/types"
 import "@/index.css"
 
 const roots = new WeakMap<HTMLElement, Root>()
 
-window.GenAppUi2Workbench = {
-  mount(root, props: ScientificWorkbenchMountProps) {
-    window.GenAppUi2Workbench?.unmount(root)
+window.GenAppUi2Mmc = {
+  mount(root, props: MmcMountProps) {
+    window.GenAppUi2Mmc?.unmount(root)
     const reactRoot = createRoot(root)
     roots.set(root, reactRoot)
-    reactRoot.render(<ScientificWorkbench {...props} />)
+    reactRoot.render(<MmcWorkbench {...props} />)
   },
   unmount(root) {
     const reactRoot = roots.get(root)

@@ -81,7 +81,7 @@
   let plotlyLoadPromise = null;
   let nglLoadPromise = null;
   let katexLoadPromise = null;
-  let reactWorkbenchRoot = null;
+  let reactMmcRoot = null;
 
   const state = {
     moduleId: "",
@@ -95,10 +95,8 @@
     lastServerFileSessionKey: "",
     jobSelections: {},
     submitResponse: null,
-    submittedRunContext: null,
-    workbenchRunContextListeners: new Set(),
-    runtimeOutputListeners: new Set(),
-    runtimeOutputAvailability: {},
+    mmcSubmitted: null,
+    mmcRunContextListeners: new Set(),
     pendingSwitch: "",
     viewReady: null,
     viewReadyGeneration: 0,
@@ -875,7 +873,7 @@
       state.module = payload.module;
       state.view = payload.viewjson || {};
       state.values = {};
-      setSubmittedRunContext(null);
+      setMmcSubmitted(null);
       state.jobEvents.reset("", moduleId);
       beginViewReady();
       renderModule();
@@ -1667,7 +1665,7 @@
     state.module = null;
     state.view = {};
     state.values = {};
-    setSubmittedRunContext(null);
+    setMmcSubmitted(null);
     beginRuntimeOutputContext("");
     state.jobEvents.reset();
     nodes.root.hidden = true;
@@ -1689,12 +1687,12 @@
     const inputFields = fields.filter((field) => field.role !== "output");
     const outputFields = fields.filter((field) => field.role === "output");
 
-    unmountReactWorkbench();
+    unmountReactMmc();
     nodes.empty.hidden = true;
     nodes.root.hidden = false;
     nodes.root.innerHTML = "";
 
-    if (isReactWorkbenchView(state.view) && renderReactWorkbench(module, fields)) {
+    if (isReactWorkbenchView(state.view) && renderReactMmc(module, fields)) {
       return;
     }
 
@@ -1848,14 +1846,14 @@
   function clearLoadedModule() {
     stopJobPolling();
     closeUtilityOverlay();
-    unmountReactWorkbench();
+    unmountReactMmc();
     state.moduleId = "";
     state.menuId = "";
     state.module = null;
     state.view = {};
     state.values = {};
     state.submitResponse = null;
-    setSubmittedRunContext(null);
+    setMmcSubmitted(null);
     beginRuntimeOutputContext("");
     state.activeJob = null;
     state.jobEvents.reset();
@@ -1866,12 +1864,12 @@
     syncDocsLink();
   }
 
-  function renderReactWorkbench(module, fields) {
-    if (!window.GenAppUi2Workbench?.mount) {
+  function renderReactMmc(module, fields) {
+    if (!window.GenAppUi2Mmc?.mount) {
       return false;
     }
-    const root = el("div", "ui2-workbench-react-root");
-    reactWorkbenchRoot = root;
+    const root = el("div", "ui2-mmc-react-root");
+    reactMmcRoot = root;
     nodes.root.appendChild(root);
     const stage = nodes.root.closest(".ui2-stage");
     if (stage) {
@@ -1880,34 +1878,32 @@
     }
     const bridge = {
       createField: (field, role) => renderField(field, role),
-      releaseField: releaseReactWorkbenchField,
+      releaseField: releaseReactMmcField,
       syncValues: () => {
         syncValues();
         return cloneUi2Value(state.values);
       },
       reset: (form) => resetModuleForm(form),
       clearSubmitted: () => {
-        setSubmittedRunContext(null);
+        setMmcSubmitted(null);
       },
       submit: (form) => submitModule(form),
-      resizeOutputs: resizeWorkbenchOutputs,
+      resizeOutputs: resizeMmcOutputs,
       viewReady: () => markViewReady(),
       runtimeSnapshot: () => state.jobEvents.snapshot(),
       subscribeRuntime: (listener) => state.jobEvents.subscribe(listener),
-      outputSnapshot: () => state.runtimeOutputAvailability,
-      subscribeOutputs: (listener) => subscribeRuntimeOutputs(listener),
-      runContextSnapshot: () => state.submittedRunContext,
-      subscribeRunContext: (listener) => subscribeWorkbenchRunContext(listener)
+      runContextSnapshot: () => state.mmcSubmitted,
+      subscribeRunContext: (listener) => subscribeMmcRunContext(listener)
     };
-    window.GenAppUi2Workbench.mount(root, {
+    window.GenAppUi2Mmc.mount(root, {
       module,
       fields,
       view: cloneUi2Value(state.view),
       bridge,
-      submitted: cloneUi2Value(state.submittedRunContext)
+      submitted: cloneUi2Value(state.mmcSubmitted)
     });
     window.setTimeout(() => {
-      if (reactWorkbenchRoot === root) {
+      if (reactMmcRoot === root) {
         syncValues();
       }
     }, 0);
@@ -1918,19 +1914,19 @@
     return String(view?.renderer || "").toLowerCase() === "react-workbench";
   }
 
-  function unmountReactWorkbench() {
-    if (!reactWorkbenchRoot) {
+  function unmountReactMmc() {
+    if (!reactMmcRoot) {
       return;
     }
-    window.GenAppUi2Workbench?.unmount?.(reactWorkbenchRoot);
-    reactWorkbenchRoot = null;
+    window.GenAppUi2Mmc?.unmount?.(reactMmcRoot);
+    reactMmcRoot = null;
   }
 
   function cloneUi2Value(value) {
     return value == null ? value : JSON.parse(JSON.stringify(value));
   }
 
-  function resizeWorkbenchOutputs() {
+  function resizeMmcOutputs() {
     document.querySelectorAll('[data-output-type="plotly"]').forEach((output) => {
       resizePlotlyOutputWhenVisible(output);
     });
@@ -1952,7 +1948,7 @@
     stage?.viewer?.requestRender?.();
   }
 
-  function releaseReactWorkbenchField(fieldNode) {
+  function releaseReactMmcField(fieldNode) {
     fieldNode?.querySelectorAll?.("[data-output-field-id]").forEach((output) => {
       disconnectPlotlyOutputObserver(output);
       if (output.dataset.outputType === "plotly" && window.Plotly?.purge) {
@@ -5298,7 +5294,7 @@
     }
     state.serverSelections = {};
     state.jobSelections = {};
-    setSubmittedRunContext(null);
+    setMmcSubmitted(null);
     state.jobEvents.reset("", state.moduleId);
     applyInputPayload(defaultInputPayload(), { clearMissing: true });
     beginRuntimeOutputContext(state.moduleId);
@@ -5359,8 +5355,8 @@
       if (jobUuid && !isTerminalStatus(runtimeStatus(payload))) {
         startJobPolling(jobUuid, form, status);
       }
-      if (isReactWorkbenchView(state.view)) {
-        setSubmittedRunContext({
+      if (state.moduleId === "monomer_monte_carlo") {
+        setMmcSubmitted({
           uuid: jobUuid,
           values: cloneUi2Value(state.values)
         });
@@ -5943,7 +5939,6 @@
 
   function clearRuntimeOutputs(scope) {
     state.runtimeOutputs = {};
-    clearRuntimeOutputAvailability();
     (scope || document).querySelectorAll("[data-output-field-id]").forEach((output) => {
       if (output.dataset.dynamicOutput === "true") {
         updateDynamicOutput(output, { items: [] });
@@ -5991,7 +5986,6 @@
       generation: (state.runtimeOutputContext.generation || 0) + 1
     };
     state.runtimeOutputs = {};
-    clearRuntimeOutputAvailability();
     return runtimeOutputToken();
   }
 
@@ -6055,8 +6049,8 @@
       showLegacyMessagePayload(payload);
       if (getInput && payload?._getinput) {
         applyInputPayload(payload._getinput);
-        if (isReactWorkbenchView(state.view)) {
-          notifyWorkbenchReattached(uuid, payload._getinput);
+        if (state.moduleId === "monomer_monte_carlo") {
+          notifyMmcReattached(uuid, payload._getinput);
         }
         if (state.activeJob?.uuid === uuid) {
           state.activeJob.getInput = false;
@@ -6113,28 +6107,28 @@
     return payload._getinput;
   }
 
-  function notifyWorkbenchReattached(uuid, savedValues = null) {
+  function notifyMmcReattached(uuid, savedValues = null) {
     const values = savedValues && typeof savedValues === "object"
       ? cloneUi2Value(savedValues)
       : cloneUi2Value(state.values);
-    setSubmittedRunContext({
+    setMmcSubmitted({
       uuid,
       values
     });
-    dispatchUi2Event("ui2:workbench-reattached", {
+    dispatchUi2Event("ui2:mmc-reattached", {
       moduleId: state.moduleId,
       uuid,
       values
     });
   }
 
-  function setSubmittedRunContext(context) {
-    state.submittedRunContext = context ? cloneUi2Value(context) : null;
-    notifyWorkbenchRunContext();
+  function setMmcSubmitted(context) {
+    state.mmcSubmitted = context ? cloneUi2Value(context) : null;
+    notifyMmcRunContext();
   }
 
-  function notifyWorkbenchRunContext() {
-    state.workbenchRunContextListeners.forEach((listener) => {
+  function notifyMmcRunContext() {
+    state.mmcRunContextListeners.forEach((listener) => {
       try {
         listener();
       } catch (error) {
@@ -6143,47 +6137,13 @@
     });
   }
 
-  function subscribeWorkbenchRunContext(listener) {
+  function subscribeMmcRunContext(listener) {
     if (typeof listener !== "function") {
       return () => {};
     }
-    state.workbenchRunContextListeners.add(listener);
+    state.mmcRunContextListeners.add(listener);
     listener();
-    return () => state.workbenchRunContextListeners.delete(listener);
-  }
-
-  function notifyRuntimeOutputs() {
-    state.runtimeOutputListeners.forEach((listener) => {
-      try {
-        listener();
-      } catch (error) {
-        window.setTimeout(() => { throw error; }, 0);
-      }
-    });
-  }
-
-  function clearRuntimeOutputAvailability() {
-    state.runtimeOutputAvailability = {};
-    notifyRuntimeOutputs();
-  }
-
-  function markRuntimeOutputAvailable(id) {
-    if (!id || state.runtimeOutputAvailability[id]) {
-      return;
-    }
-    state.runtimeOutputAvailability = {
-      ...state.runtimeOutputAvailability,
-      [id]: true
-    };
-    notifyRuntimeOutputs();
-  }
-
-  function subscribeRuntimeOutputs(listener) {
-    if (typeof listener !== "function") {
-      return () => {};
-    }
-    state.runtimeOutputListeners.add(listener);
-    return () => state.runtimeOutputListeners.delete(listener);
+    return () => state.mmcRunContextListeners.delete(listener);
   }
 
   async function fetchJobInputPayload(uuid) {
@@ -6746,7 +6706,6 @@
     if (!event || !["plot", "structure"].includes(event.channel)) {
       return;
     }
-    markRuntimeOutputAvailable(event.topic);
     const output = document.querySelector(`[data-output-field-id="${cssEscape(event.topic)}"]`);
     if (!output) {
       return;
@@ -6820,23 +6779,21 @@
         return;
       }
       state.runtimeOutputs[id] = cloneUi2Value(value);
-      markRuntimeOutputAvailable(id);
       updateOutputField(id, value);
     });
   }
 
   function replayRuntimeOutput(id) {
     const contextToken = runtimeOutputToken();
-    if (!id) {
+    if (!id || !Object.prototype.hasOwnProperty.call(state.runtimeOutputs, id)) {
       return;
     }
     window.setTimeout(() => {
-      if (!runtimeOutputContextMatches(contextToken)) {
+      if (!runtimeOutputContextMatches(contextToken)
+          || !Object.prototype.hasOwnProperty.call(state.runtimeOutputs, id)) {
         return;
       }
-      if (Object.prototype.hasOwnProperty.call(state.runtimeOutputs, id)) {
-        updateOutputField(id, state.runtimeOutputs[id]);
-      }
+      updateOutputField(id, state.runtimeOutputs[id]);
     }, 0);
   }
 
