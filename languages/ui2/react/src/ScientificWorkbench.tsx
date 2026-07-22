@@ -175,13 +175,6 @@ function outputHasContent(value: unknown): boolean {
   return true
 }
 
-function outputHasRuntimeEvent(id: string, snapshot: JobRuntimeSnapshot): boolean {
-  return ["plot", "structure"].some((channel) => {
-    const topic = snapshot.channels[channel]?.[id]
-    return Boolean(topic && (topic.value != null || (topic.items || []).length > 0))
-  })
-}
-
 function SubmittedInputs({
   values,
   fields,
@@ -310,9 +303,14 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
     () => resultGroups.filter((group) => {
       if (!repeatExpressionActive(group.repeat, resultGroupValues)) return false
       if (group.visibility !== "available") return true
-      return group.outputs.some((id) => outputHasContent(runtimeOutputs[id]) || outputHasRuntimeEvent(id, runtime))
+      // Result-pane membership is structural state.  It must not depend on the
+      // high-rate job-event snapshot used by the log and live native widgets;
+      // doing so makes React reconcile the imperative Plotly/NGL host tree for
+      // every streamed event.  Core publishes this small, per-output
+      // availability snapshot only when an output first becomes available.
+      return group.outputs.some((id) => outputHasContent(runtimeOutputs[id]))
     }),
-    [resultGroups, resultGroupValues, runtime, runtimeOutputs]
+    [resultGroups, resultGroupValues, runtimeOutputs]
   )
   const progressFields = (progressSection?.fields || []).map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]
   const assigned = new Set([

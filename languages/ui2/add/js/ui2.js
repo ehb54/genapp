@@ -6742,35 +6742,6 @@
     state.jobEvents.applyMany(events).applied.forEach(applyJobEventToOutput);
   }
 
-  function replayJobEventsForOutput(id) {
-    if (!id) {
-      return;
-    }
-    const channels = state.jobEvents.snapshot().channels || {};
-    ["plot", "structure"].forEach((channel) => {
-      const topic = channels[channel]?.[id];
-      if (!topic) {
-        return;
-      }
-      if (topic.value != null) {
-        applyJobEventToOutput({
-          channel,
-          topic: id,
-          operation: "replace",
-          payload: topic.value
-        });
-      }
-      (topic.items || []).forEach((payload) => {
-        applyJobEventToOutput({
-          channel,
-          topic: id,
-          operation: "append",
-          payload
-        });
-      });
-    });
-  }
-
   function applyJobEventToOutput(event) {
     if (!event || !["plot", "structure"].includes(event.channel)) {
       return;
@@ -6866,7 +6837,6 @@
       if (Object.prototype.hasOwnProperty.call(state.runtimeOutputs, id)) {
         updateOutputField(id, state.runtimeOutputs[id]);
       }
-      replayJobEventsForOutput(id);
     }, 0);
   }
 

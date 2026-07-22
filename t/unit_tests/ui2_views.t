@@ -79,7 +79,7 @@ like( $ui2_js, qr/function notifyWorkbenchReattached\(uuid, savedValues = null\)
 like( $ui2_js, qr/outputSnapshot: \(\) => state\.runtimeOutputAvailability.*?subscribeOutputs: \(listener\) => subscribeRuntimeOutputs\(listener\)/s, 'workbench bridge exposes runtime output availability without module-specific state' );
 like( $ui2_js, qr/function markRuntimeOutputAvailable\(id\).*?state\.runtimeOutputAvailability\[id\].*?\[id\]: true/s, 'runtime output availability publishes a new snapshot only for a newly available output' );
 unlike( $ui2_js, qr/function applyRuntimePayload\(payload, contextToken = null\).*?state\.runtimeOutputs = \{\s*\.\.\.state\.runtimeOutputs/s, 'repeated runtime payload values do not recreate the React workbench snapshot' );
-like( $ui2_js, qr/function replayJobEventsForOutput\(id\).*?\["plot", "structure"\].*?applyJobEventToOutput/s, 'late-mounted available result groups replay retained Plotly and structure events' );
+unlike( $ui2_js, qr/function replayJobEventsForOutput\(/, 'output mounting does not replay retained imperative Plotly or structure events' );
 
 my $ui2_react_js = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.js) ) );
 my $ui2_react_css = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.css) ) );
@@ -94,8 +94,8 @@ like( $ui2_react_js, qr/Restore split view/, 'React bundle contains an explicit 
 like( $ui2_react_source, qr/\{extraInputs\.length > 0.*?Additional inputs.*?\}\s*\{advancedSection/s, 'workbench places additional inputs before advanced input' );
 like( $ui2_react_source, qr/group\.fit === "pane" \|\| group\.fit === "wide"/, 'workbench fits wide Plotly groups to their allocated panel' );
 like( $ui2_react_source, qr/view\.results\?\.groups \|\| view\.results\?\.tabs/, 'workbench keeps existing tab views compatible while accepting result groups' );
-like( $ui2_react_source, qr/group\.visibility !== "available".*?outputHasContent\(runtimeOutputs\[id\]\)/s, 'available result groups appear only when runtime output data exists' );
-like( $ui2_react_source, qr/outputHasRuntimeEvent\(id, runtime\)/, 'available result groups also recognize retained live event data' );
+like( $ui2_react_source, qr/group\.visibility !== "available".*?outputHasContent\(runtimeOutputs\[id\]\)/s, 'available result groups appear only when core publishes output availability' );
+unlike( $ui2_react_source, qr/outputHasRuntimeEvent\(id, runtime\)/, 'live job-event snapshots do not control result-pane membership' );
 like( $ui2_react_source, qr/includeUnassignedOutputs.*?Additional results/s, 'opt-in unassigned output fallback keeps future valid results visible' );
 like( $ui2_react_source, qr/node\.setAttribute\("data-plot-fit", "pane"\).*?node\.matches\('\[data-output-type="plotly"\]'\).*?data-plot-fit/s, 'workbench applies fit-to-pane to the field root and a direct Plotly output' );
 unlike( $ui2_react_source, qr/\[activeResult, inputRailCollapsed, runtime\.lastSequence, scheduleOutputResize, workspaceExpanded\]/, 'runtime events do not schedule global output resizes' );

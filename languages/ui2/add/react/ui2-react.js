@@ -10869,13 +10869,7 @@ function ti(e) {
 	}
 	return !0;
 }
-function ni(e, t) {
-	return ["plot", "structure"].some((n) => {
-		let r = t.channels[n]?.[e];
-		return !!(r && (r.value != null || (r.items || []).length > 0));
-	});
-}
-function ri({ values: e, fields: t, summaryFieldIds: n, uuid: r, onEdit: i, onHide: a }) {
+function ni({ values: e, fields: t, summaryFieldIds: n, uuid: r, onEdit: i, onHide: a }) {
 	let [o, s] = C.useState(!1), c = C.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), l = o ? t.filter((t) => t.id && t.role !== "output" && t.type !== "label" && Object.prototype.hasOwnProperty.call(e, t.id)).map((e) => e.id) : n.filter((t) => Object.prototype.hasOwnProperty.call(e, t));
 	return /* @__PURE__ */ (0, L.jsxs)(Qt, {
 		className: "ui2-workbench-submitted",
@@ -10909,7 +10903,7 @@ function ri({ values: e, fields: t, summaryFieldIds: n, uuid: r, onEdit: i, onHi
 		})] })]
 	});
 }
-function ii({ snapshot: e, title: t, description: n, defaultOpen: r = !1, open: i, onOpenChange: a, cue: o }) {
+function ri({ snapshot: e, title: t, description: n, defaultOpen: r = !1, open: i, onOpenChange: a, cue: o }) {
 	let [s, c] = C.useState(r), l = i ?? s, u = a ?? c, d = Yr(e), f = d ? d.split(/\r?\n/).length : 0;
 	return /* @__PURE__ */ (0, L.jsx)(Rn, {
 		open: l,
@@ -10960,11 +10954,10 @@ function ii({ snapshot: e, title: t, description: n, defaultOpen: r = !1, open: 
 		})
 	});
 }
-function ai({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
-	let [a, o] = C.useState(!1), [s, c] = C.useState(i?.values || {}), l = n.inputs?.sections || [], u = n.inputs?.advanced, d = u?.fields || [], f = n.inputs?.submittedSummary?.fields || [], p = n.results?.progress, m = n.results?.groups || n.results?.tabs || [], h = m.find((e) => e.primary)?.id || m[0]?.id || "", [g, _] = C.useState(h), [v, y] = C.useState(!1), [b, x] = C.useState(!1), [S, w] = C.useState(!1), [T, ee] = C.useState(!!n.results?.runtimeLog?.defaultOpen), te = C.useRef(null), oe = C.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), ce = C.useSyncExternalStore(r.subscribeRuntime, r.runtimeSnapshot, r.runtimeSnapshot), D = C.useSyncExternalStore(r.subscribeOutputs, r.outputSnapshot, r.outputSnapshot), O = C.useSyncExternalStore(r.subscribeRunContext, r.runContextSnapshot, r.runContextSnapshot), le = O?.values || s, ue = C.useMemo(() => m.filter((e) => Jr(e.repeat, le) ? e.visibility !== "available" || e.outputs.some((e) => ti(D[e]) || ni(e, ce)) : !1), [
+function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
+	let [a, o] = C.useState(!1), [s, c] = C.useState(i?.values || {}), l = n.inputs?.sections || [], u = n.inputs?.advanced, d = u?.fields || [], f = n.inputs?.submittedSummary?.fields || [], p = n.results?.progress, m = n.results?.groups || n.results?.tabs || [], h = m.find((e) => e.primary)?.id || m[0]?.id || "", [g, _] = C.useState(h), [v, y] = C.useState(!1), [b, x] = C.useState(!1), [S, w] = C.useState(!1), [T, ee] = C.useState(!!n.results?.runtimeLog?.defaultOpen), te = C.useRef(null), oe = C.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), ce = C.useSyncExternalStore(r.subscribeRuntime, r.runtimeSnapshot, r.runtimeSnapshot), D = C.useSyncExternalStore(r.subscribeOutputs, r.outputSnapshot, r.outputSnapshot), O = C.useSyncExternalStore(r.subscribeRunContext, r.runContextSnapshot, r.runContextSnapshot), le = O?.values || s, ue = C.useMemo(() => m.filter((e) => Jr(e.repeat, le) ? e.visibility !== "available" || e.outputs.some((e) => ti(D[e])) : !1), [
 		m,
 		le,
-		ce,
 		D
 	]), de = (p?.fields || []).map((e) => oe.get(e)).filter(Boolean), k = /* @__PURE__ */ new Set([...l.flatMap((e) => ei(e)), ...d]), A = t.filter((e) => e.role !== "output" && e.id && e.type !== "label" && !k.has(e.id)), j = /* @__PURE__ */ new Set([...p?.fields || [], ...m.flatMap((e) => e.outputs)]), fe = n.results?.includeUnassignedOutputs ? t.filter((e) => e.role === "output" && e.id && !j.has(e.id) && ti(D[e.id])) : [], M = fe.length > 0 ? [...ue, {
 		id: "additional-results",
@@ -11063,7 +11056,7 @@ function ai({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 			className: `ui2-workbench-grid${b || S ? " ui2-workbench-grid-inputs-hidden" : ""}`,
 			children: [!b && !S && /* @__PURE__ */ (0, L.jsxs)("aside", {
 				className: "ui2-workbench-input-pane",
-				children: [O ? /* @__PURE__ */ (0, L.jsx)(ri, {
+				children: [O ? /* @__PURE__ */ (0, L.jsx)(ni, {
 					fields: t,
 					summaryFieldIds: f,
 					onEdit: () => {
@@ -11163,7 +11156,7 @@ function ai({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 							role: "output"
 						}) })]
 					}),
-					n.results?.runtimeLog && /* @__PURE__ */ (0, L.jsx)(ii, {
+					n.results?.runtimeLog && /* @__PURE__ */ (0, L.jsx)(ri, {
 						cue: xe,
 						defaultOpen: n.results.runtimeLog.defaultOpen,
 						description: n.results.runtimeLog.description,
@@ -11229,16 +11222,16 @@ function ai({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 }
 //#endregion
 //#region src/main.tsx
-var oi = /* @__PURE__ */ new WeakMap();
+var ai = /* @__PURE__ */ new WeakMap();
 window.GenAppUi2Workbench = {
 	mount(e, t) {
 		window.GenAppUi2Workbench?.unmount(e);
 		let n = (0, ce.createRoot)(e);
-		oi.set(e, n), n.render(/* @__PURE__ */ (0, L.jsx)(ai, { ...t }));
+		ai.set(e, n), n.render(/* @__PURE__ */ (0, L.jsx)(ii, { ...t }));
 	},
 	unmount(e) {
-		let t = oi.get(e);
-		t && (t.unmount(), oi.delete(e));
+		let t = ai.get(e);
+		t && (t.unmount(), ai.delete(e));
 	}
 }, window.dispatchEvent(new CustomEvent("ui2-react-ready"));
 //#endregion
