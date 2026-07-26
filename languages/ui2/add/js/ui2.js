@@ -1773,7 +1773,7 @@
         ready.promise,
         new Promise((_, reject) => {
           timeout = window.setTimeout(
-            () => reject(new Error("Timed out waiting for the UI2 view to mount.")), 5000);
+            () => reject(new Error("Timed out waiting for the UI2 view to mount.")), 30000);
         })
       ]);
     } finally {
