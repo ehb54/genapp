@@ -1479,11 +1479,20 @@ sub check_files {
             }
                 
             
-            # check types for valid registry
+            # check field types for valid registry.  Do not recursively collect
+            # every key named "type"; module fields can now carry nested
+            # presentation metadata such as Plotly trace specs where
+            # "type" values like "scatter", "data", and "log" are not GenApp
+            # field types.
             {
-                my $x = hash_simple( $json, 'type' );
-                print "types:\n\t" . ( join "\n\t", keys %$x ) . "\n" if keys %$x && $debug;
-                foreach my $k ( keys %$x )
+                my %field_types;
+                foreach my $field ( @{ $$json{ 'fields' } || [] } )
+                {
+                    my $field_type = $$field{ 'type' } || '';
+                    $field_types{ $field_type }++ if $field_type;
+                }
+                print "types:\n\t" . ( join "\n\t", keys %field_types ) . "\n" if keys %field_types && $debug;
+                foreach my $k ( keys %field_types )
                 {
                     $types{ $k }++;
                 }
