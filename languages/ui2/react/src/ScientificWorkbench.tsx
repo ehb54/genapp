@@ -359,21 +359,32 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
   }, [submitted])
 
   const pendingOutputResizeRef = React.useRef<number | null>(null)
+  const pendingOutputResizeTimerRef = React.useRef<number | null>(null)
 
-  const scheduleOutputResize = React.useCallback(() => {
-    // Runtime events can arrive for every accepted structure.  Rendering a
-    // frame does not change the result pane geometry, so resize only once for
-    // an actual layout change and coalesce simultaneous observations.
+  const scheduleOutputResize = React.useCallback((remainingPulses = 2) => {
+    // Plotly and NGL both read their host box at resize time.  Tabs,
+    // expanded-workspace switches, reattach restoration, and browser layout
+    // can settle over more than one frame, so send a short pulse train rather
+    // than one early resize that may catch a hidden or intermediate pane.
     if (pendingOutputResizeRef.current !== null) return
     pendingOutputResizeRef.current = window.requestAnimationFrame(() => {
       pendingOutputResizeRef.current = null
       bridge.resizeOutputs()
+      if (remainingPulses > 0) {
+        pendingOutputResizeTimerRef.current = window.setTimeout(() => {
+          pendingOutputResizeTimerRef.current = null
+          scheduleOutputResize(remainingPulses - 1)
+        }, remainingPulses === 2 ? 80 : 180)
+      }
     })
   }, [bridge])
 
   React.useEffect(() => () => {
     if (pendingOutputResizeRef.current !== null) {
       window.cancelAnimationFrame(pendingOutputResizeRef.current)
+    }
+    if (pendingOutputResizeTimerRef.current !== null) {
+      window.clearTimeout(pendingOutputResizeTimerRef.current)
     }
   }, [])
 

@@ -365,12 +365,9 @@
   font-weight: 800;
 }
 
-.ui2-workbench-react-workspace-expanded .ui2-workbench-result-panel-plot {
-  min-width: 30rem;
-}
-
+.ui2-workbench-react-workspace-expanded .ui2-workbench-result-panel-plot,
 .ui2-workbench-react-workspace-expanded .ui2-workbench-result-panel-structure {
-  min-width: 30rem;
+  min-width: 0;
 }
 
 .ui2-workbench-react-workspace-expanded .ui2-workbench-result-panel-wide {

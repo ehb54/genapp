@@ -1792,8 +1792,8 @@ assert.strictEqual(dcdFormData.get("dcdfile_altval[]"), undefined, "submit omits
 assert.strictEqual(dcdFormData.get("_runtime_protocol"), "1", "UI2 submit advertises the versioned runtime protocol");
 assert.deepStrictEqual(
   JSON.parse(dcdFormData.get("_runtime_capabilities")),
-  ["job-events", "plot-append", "structure-frames"],
-  "UI2 submit advertises event, incremental plot, and structure-frame capabilities"
+  ["job-events", "dataset-events", "plot-append", "structure-frames"],
+  "UI2 submit advertises event, dataset, incremental plot, and structure-frame capabilities"
 );
 
 hooks.state.values = {
@@ -1830,6 +1830,87 @@ assert.strictEqual(
   matrixFormData.get("delta_rho[][]"),
   undefined,
   "UI2 does not flatten a matrix into one-cell rows"
+);
+
+document.body.children = [];
+document.getElementById = function(id) {
+  return querySelectorFrom(this.body, `#\${id}`) || querySelectorFrom(this.head, `#\${id}`);
+};
+const matrixSubmitForm = createNode("form");
+matrixSubmitForm.id = "ui2-form";
+document.body.appendChild(matrixSubmitForm);
+ui2FormControl(matrixSubmitForm, "number_of_contrast_points_stuhrmann", "4");
+ui2FormControl(matrixSubmitForm, "number_of_components_stuhrmann", "2");
+const matrixSubmit = ui2IntegerpairMatrixRow();
+matrixSubmit.matrixRow._ui2RepeatTableController = {
+  id: "mpair_stuhrmann",
+  type: "integerpair",
+  calc: "number_of_contrast_points_stuhrmann,number_of_components_stuhrmann",
+  headers: {}
+};
+matrixSubmit.matrixRow._ui2RepeatTableFields = [{
+  id: "delta_rho_sturhmann",
+  type: "text",
+  default: [
+    ["2.551", "5.104"],
+    ["1.383", "3.928"],
+    ["-2.415", "0.109"],
+    ["-3.292", "-0.773"]
+  ]
+}];
+matrixSubmit.matrixWrap = matrixSubmit.matrixRow.querySelector(".ui2-matrix-wrap");
+matrixSubmit.matrixWrap._ui2RepeatMatrixField = matrixSubmit.matrixRow._ui2RepeatTableFields[0];
+matrixSubmit.matrixWrap._ui2RepeatMatrixController = matrixSubmit.matrixRow._ui2RepeatTableController;
+matrixSubmitForm.appendChild(matrixSubmit.matrixRow);
+hooks.updateRepeatTables(
+  matrixSubmitForm,
+  {
+    number_of_contrast_points_stuhrmann: "4",
+    number_of_components_stuhrmann: "2"
+  },
+  new Map([[matrixSubmit.matrixRow, true]])
+);
+assert.strictEqual(
+  matrixSubmitForm.querySelectorAll('input[data-field-id="delta_rho_sturhmann"]').length,
+  8,
+  "UI2 renders all MCA Stuhrmann matrix controls before collecting submit values"
+);
+assert.strictEqual(
+  JSON.stringify(hooks.collectControlValues(matrixSubmitForm, () => true).delta_rho_sturhmann),
+  JSON.stringify([
+    ["2.551", "5.104"],
+    ["1.383", "3.928"],
+    ["-2.415", "0.109"],
+    ["-3.292", "-0.773"]
+  ]),
+  "UI2 collects MCA Stuhrmann matrix controls as a nested matrix before repeat refresh"
+);
+hooks.syncValues();
+assert.strictEqual(
+  JSON.stringify(hooks.state.values.delta_rho_sturhmann),
+  JSON.stringify([
+    ["2.551", "5.104"],
+    ["1.383", "3.928"],
+    ["-2.415", "0.109"],
+    ["-3.292", "-0.773"]
+  ]),
+  "UI2 syncValues preserves the nested MCA Stuhrmann matrix before submit"
+);
+const matrixControlFormData = hooks.buildSubmitFormData(matrixSubmitForm, "matrix-control-test-uuid");
+assert.deepStrictEqual(
+  matrixControlFormData.get("delta_rho_sturhmann[0][]"),
+  ["2.551", "5.104"],
+  "UI2 submits the first MCA Stuhrmann matrix row as one indexed row"
+);
+assert.deepStrictEqual(
+  matrixControlFormData.get("delta_rho_sturhmann[3][]"),
+  ["-3.292", "-0.773"],
+  "UI2 submits the last MCA Stuhrmann matrix row as one indexed row"
+);
+assert.strictEqual(
+  matrixControlFormData.get("delta_rho_sturhmann[][]"),
+  undefined,
+  "UI2 MCA control collection never degrades a matrix into one-cell rows"
 );
 
 hooks.state.values = {
@@ -2117,6 +2198,132 @@ assert.strictEqual(
   retainedDynamicPlot,
   "successive dynamic Plotly snapshots retain the existing canvas instead of recreating it"
 );
+
+const datasetPlotOutput = createNode("div");
+datasetPlotOutput.dataset.outputFieldId = "plotout4_stream";
+datasetPlotOutput.dataset.outputType = "plotly";
+datasetPlotOutput._ui2_plot_spec = {
+  traces: [
+    {
+      dataset_id: "all_rg",
+      x: "trial",
+      y: "rg",
+      type: "scatter",
+      mode: "markers",
+      name: "all structures"
+    },
+    {
+      dataset_id: "accepted_rg",
+      x: "trial",
+      y: "rg",
+      type: "scatter",
+      mode: "lines+markers",
+      name: "accepted structures"
+    }
+  ],
+  layout: { title: "Monomer Monte Carlo Progress" },
+  config: { responsive: true }
+};
+hooks.apply_plot_dataset_event(datasetPlotOutput, {
+  operation: "append",
+  payload: {
+    datasets: [{
+      dataset_id: "all_rg",
+      max_points: 2,
+      rows: [
+        { trial: 1, rg: 20.1 },
+        { trial: 2, rg: 20.4 },
+        { trial: 3, rg: 20.2 }
+      ]
+    }, {
+      dataset_id: "accepted_rg",
+      rows: [
+        { trial: 2, rg: 20.4 }
+      ]
+    }]
+  }
+});
+const datasetFigure = hooks.plotly_figure_from_plot_state(datasetPlotOutput);
+assert.strictEqual(JSON.stringify(datasetFigure.data[0].x), JSON.stringify([2, 3]), "UI2 plot_state applies max_points to named dataset rows");
+assert.strictEqual(JSON.stringify(datasetFigure.data[0].y), JSON.stringify([20.4, 20.2]), "UI2 plot_state maps y values from a semantic field name");
+assert.strictEqual(JSON.stringify(datasetFigure.data[1].x), JSON.stringify([2]), "UI2 plot_state renders a second trace from its dataset_id");
+assert.strictEqual(datasetFigure.layout.height, undefined, "UI2 plot_state does not require hand-carved plot height");
+
+const scatteringPreviewRow = createNode("div");
+scatteringPreviewRow.className = "ui2-field ui2-output-field ui2-dynamic-output-row";
+scatteringPreviewRow.hidden = true;
+const scatteringPreviewGroup = createNode("div");
+scatteringPreviewGroup.dataset.outputFieldId = "scattering_preview";
+scatteringPreviewGroup.dataset.outputType = "plotly";
+scatteringPreviewGroup.dataset.dynamicOutput = "true";
+scatteringPreviewGroup.dataset.dynamicIdPrefix = "mmc_sas_profile";
+scatteringPreviewGroup.dataset.dynamicMax = "1";
+scatteringPreviewGroup.dataset.dynamicLabel = "SAS and P(r) Profiles";
+scatteringPreviewGroup._ui2_plot_spec = {
+  traces: [{
+    dataset_id: "average_iq",
+    x: "q",
+    y: "iq",
+    type: "scatter",
+    mode: "lines",
+    name: "average"
+  }],
+  layout: { title: "SAS and P(r) Profiles preview" }
+};
+scatteringPreviewRow.appendChild(scatteringPreviewGroup);
+document.body.appendChild(scatteringPreviewRow);
+hooks.apply_dynamic_plot_dataset_event(scatteringPreviewGroup, {
+  operation: "snapshot",
+  payload: {
+    item_id: "sas_profile_preview",
+    item_label: "SAS and P(r) Profiles preview",
+    datasets: [{
+      dataset_id: "average_iq",
+      rows: [
+        { q: 0.01, iq: 1.0 },
+        { q: 0.02, iq: 0.82 }
+      ]
+    }]
+  }
+});
+const scatteringPreviewChild = scatteringPreviewGroup.querySelector('[data-output-field-id="sas_profile_preview"]');
+assert.strictEqual(scatteringPreviewRow.hidden, false, "dataset events reveal dynamic scattering preview rows");
+assert.ok(scatteringPreviewChild, "dataset events create a stable dynamic scattering preview child");
+const scatteringPreviewFigure = hooks.plotly_figure_from_plot_state(scatteringPreviewChild);
+assert.strictEqual(JSON.stringify(scatteringPreviewFigure.data[0].x), JSON.stringify([0.01, 0.02]), "dynamic dataset events populate child plot x values");
+assert.strictEqual(scatteringPreviewFigure.layout.height, undefined, "dynamic dataset plot_spec keeps sizing in UI2");
+
+const reattachScatteringRow = createNode("div");
+reattachScatteringRow.className = "ui2-field ui2-output-field ui2-dynamic-output-row";
+reattachScatteringRow.hidden = true;
+const reattachScatteringGroup = createNode("div");
+reattachScatteringGroup.dataset.outputFieldId = "scattering_preview";
+reattachScatteringGroup.dataset.outputType = "plotly";
+reattachScatteringGroup.dataset.dynamicOutput = "true";
+reattachScatteringGroup.dataset.dynamicIdPrefix = "mmc_sas_profile";
+reattachScatteringGroup.dataset.dynamicMax = "1";
+reattachScatteringGroup.dataset.dynamicLabel = "SAS and P(r) Profiles";
+reattachScatteringGroup._ui2_plot_spec = scatteringPreviewGroup._ui2_plot_spec;
+reattachScatteringRow.appendChild(reattachScatteringGroup);
+document.body.appendChild(reattachScatteringRow);
+hooks.updateDynamicOutput(reattachScatteringGroup, {
+  items: [{
+    id: "sas_profile_preview",
+    label: "SAS and P(r) Profiles preview",
+    value: {
+      datasets: [{
+        dataset_id: "average_iq",
+        rows: [
+          { q: 0.03, iq: 0.7 },
+          { q: 0.04, iq: 0.5 }
+        ]
+      }]
+    }
+  }]
+});
+const reattachScatteringChild = reattachScatteringGroup.querySelector('[data-output-field-id="sas_profile_preview"]');
+const reattachScatteringFigure = hooks.plotly_figure_from_plot_state(reattachScatteringChild);
+assert.strictEqual(JSON.stringify(reattachScatteringFigure.data[0].x), JSON.stringify([0.03, 0.04]), "reattach dynamic output payloads populate dataset-backed scattering plots");
 
 const futureEventStore = hooks.createJobEventStore();
 futureEventStore.reset("event-run", "monomer_monte_carlo");

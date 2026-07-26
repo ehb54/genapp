@@ -3363,6 +3363,7 @@
     const output = el("div", outputClassForType(type), outputPlaceholderForType(type));
     output.dataset.outputFieldId = field.id || "";
     output.dataset.outputType = type;
+    attach_plot_spec(output, field);
     return output;
   }
 
@@ -3376,6 +3377,14 @@
     output.dataset.dynamicLabel = field.label || field.id || "Dynamic output";
     output.dataset.dynamicWidth = field.width || "";
     output.dataset.dynamicHeight = field.height || "";
+    attach_plot_spec(output, field);
+    return output;
+  }
+
+  function attach_plot_spec(output, field) {
+    if (output && field?.plot_spec != null) {
+      output._ui2_plot_spec = cloneUi2Value(field.plot_spec);
+    }
     return output;
   }
 
@@ -5732,6 +5741,7 @@
     formData.set("_runtime_protocol", "1");
     formData.set("_runtime_capabilities", JSON.stringify([
       "job-events",
+      "dataset-events",
       "plot-append",
       "structure-frames"
     ]));
@@ -5986,6 +5996,7 @@
         return;
       }
       delete output.dataset.runtimeText;
+      output._ui2_plot_state = null;
       output.classList.remove("ui2-output-rendered", "ui2-output-plotly-ready");
       output.dataset.status = "";
       if (window.Plotly?.purge && output.dataset.outputType === "plotly") {
@@ -6779,12 +6790,20 @@
   }
 
   function applyJobEventToOutput(event) {
-    if (!event || !["plot", "structure"].includes(event.channel)) {
+    if (!event || !["dataset", "plot", "structure"].includes(event.channel)) {
       return;
     }
     markRuntimeOutputAvailable(event.topic);
     const output = document.querySelector(`[data-output-field-id="${cssEscape(event.topic)}"]`);
     if (!output) {
+      return;
+    }
+    if (event.channel === "dataset") {
+      if (output.dataset.dynamicOutput === "true") {
+        apply_dynamic_plot_dataset_event(output, event);
+        return;
+      }
+      apply_plot_dataset_event(output, event);
       return;
     }
     if (event.channel === "plot") {
@@ -7025,6 +7044,13 @@
       return;
     }
     if (type === "plotly") {
+      if (is_plot_dataset_payload(value)) {
+        apply_plot_dataset_event(output, {
+          operation: "snapshot",
+          payload: value
+        });
+        return;
+      }
       renderPlotlyOutput(output, value);
       return;
     }
@@ -7078,7 +7104,8 @@
           id: item.id,
           type: group.dataset.outputType || "html",
           width: group.dataset.dynamicWidth || "",
-          height: group.dataset.dynamicHeight || ""
+          height: group.dataset.dynamicHeight || "",
+          plot_spec: item.plot_spec || group._ui2_plot_spec || null
         });
         output.dataset.dynamicChild = "true";
         instance.append(label, output);
@@ -7111,9 +7138,15 @@
       return {
         id: safeDynamicId(item.id) || generatedId,
         label: item.label || `${label} ${index + 1}`,
-        value: item.value ?? item.data ?? ""
+        value: item.value ?? item.data ?? "",
+        plot_spec: item.plot_spec || null
       };
     });
+  }
+
+  function dynamic_output_item_id(group, payload) {
+    const prefix = safeDynamicId(group?.dataset?.dynamicIdPrefix || group?.dataset?.outputFieldId || "dynamic_output");
+    return safeDynamicId(payload?.item_id || payload?.itemId || payload?.id) || `${prefix}_1`;
   }
 
   function safeDynamicId(value) {
@@ -7135,6 +7168,9 @@
     const output = el("div", outputClassForType(type));
     output.dataset.outputFieldId = field.id || "";
     output.dataset.outputType = type;
+    // `viewer` is presentation-only field metadata.  A driver may refine it
+    // per job with a top-level `viewer` object in the NGL payload.
+    output._ui2NglViewerConfig = cloneUi2Value(field.viewer || {});
 
     const plot = el("div", "ui2-ngl-plot");
     plot.id = `${field.id || "ngl_output"}_plot`;
@@ -7156,6 +7192,7 @@
   }
 
   function clearNglOutput(output, options = {}) {
+    stopNglFramePlayback(output);
     if (output._ui2NglStage?.dispose) {
       output._ui2NglStage.dispose();
     }
@@ -7163,7 +7200,11 @@
     output._ui2NglComponent = null;
     output._ui2NglDensityComponent = null;
     output._ui2NglDensitySurface = null;
+    output._ui2NglDensitySurfaces = null;
+    output._ui2NglDensitySpecs = null;
     output._ui2NglReps = null;
+    output._ui2NglSpecs = null;
+    output._ui2NglAxesRep = null;
     output._ui2_ngl_density_payload = null;
     output._ui2_ngl_frames = null;
     output._ui2_ngl_pending_frame = null;
@@ -7193,6 +7234,7 @@
     const payload = parseNglPayload(value);
     const structurePayload = payload?.structure || payload;
     const densityPayload = payload?.density || null;
+    output._ui2NglViewerRuntimeConfig = cloneUi2Value(payload?.viewer || {});
     if (!structurePayload?.loadname) {
       renderTextOutput(output, value);
       return;
@@ -7224,12 +7266,14 @@
     }
     ensureNglLoaded()
       .then(() => {
-        const stage = new window.NGL.Stage(plot.id);
+        const stage = new window.NGL.Stage(plot.id, nglViewerStageParams(output));
         output._ui2NglStage = stage;
         return stage.loadFile(normalizeNglLoadName(structurePayload.loadname), structurePayload.loadparams || {}).then((component) => {
           output._ui2NglComponent = component;
           output._ui2NglReps = {};
           const specs = nglRepresentationSpecs(structurePayload);
+          specs.forEach((spec) => { spec.visible = spec.visible !== false; });
+          output._ui2NglSpecs = specs;
           const layered = Array.isArray(structurePayload.representations) && structurePayload.representations.length;
           specs.forEach((spec, index) => {
             output._ui2NglReps[nglRepresentationStoreKey(spec, index, layered)] = component.addRepresentation(spec.type, spec.params || {});
@@ -7240,11 +7284,7 @@
           }
           requestNglRender(stage);
           schedule_ngl_coordinate_frame(output);
-          if (layered) {
-            renderNglLayerButtons(buttons, component, output._ui2NglReps, specs);
-          } else {
-            renderNglButtons(buttons, component, output._ui2NglReps);
-          }
+          renderNglViewerControls(output, component, specs, layered);
           if (densityPayload?.loadname) {
             return loadNglDensitySurface(output, densityPayload);
           }
@@ -7270,6 +7310,221 @@
     return true;
   }
 
+  function nglViewerConfig(output) {
+    const base = output?._ui2NglViewerConfig || {};
+    const runtime = output?._ui2NglViewerRuntimeConfig || {};
+    return Object.assign({}, base, runtime, {
+      capabilities: Object.assign({}, base.capabilities || {}, runtime.capabilities || {}),
+      display: Object.assign({}, base.display || {}, runtime.display || {})
+    });
+  }
+
+  function nglViewerStageParams(output) {
+    const display = nglViewerConfig(output).display || {};
+    const params = {};
+    if (display.background) params.backgroundColor = display.background;
+    if (display.camera === "orthographic" || display.camera === "perspective") {
+      params.cameraType = display.camera;
+    }
+    if (display.mouse_preset) params.mousePreset = display.mouse_preset;
+    return params;
+  }
+
+  function renderNglViewerControls(output, component, specs, layered) {
+    const buttons = output?.querySelector?.(".ui2-ngl-buttons");
+    if (!buttons || !component) return;
+    buttons.textContent = "";
+    if (layered) {
+      renderNglLayerButtons(buttons, component, output._ui2NglReps, specs);
+    } else {
+      renderNglButtons(buttons, component, output._ui2NglReps);
+    }
+    renderNglSceneControls(output, component);
+    if (nglViewerConfig(output).capabilities?.layer_editor !== false) {
+      renderNglLayerEditor(output, component, specs);
+    }
+  }
+
+  function renderNglSceneControls(output, component) {
+    const buttons = output?.querySelector?.(".ui2-ngl-buttons");
+    const stage = output?._ui2NglStage;
+    if (!buttons || !stage || !component) return;
+    buttons.querySelector(".ui2-ngl-scene-controls")?.remove();
+    const config = nglViewerConfig(output);
+    const display = config.display || {};
+    const controls = el("details", "ui2-ngl-scene-controls");
+    controls.open = false;
+    controls.appendChild(el("summary", null, "Viewer settings"));
+    const grid = el("div", "ui2-ngl-control-grid");
+    const visible = document.createElement("input");
+    visible.type = "checkbox";
+    visible.checked = component.visible !== false;
+    visible.setAttribute("aria-label", "Show molecule");
+    visible.addEventListener("change", () => {
+      if (typeof component.setVisibility === "function") component.setVisibility(visible.checked);
+      requestNglRender(stage);
+    });
+    grid.appendChild(nglViewerControl("Molecule", visible));
+
+    const camera = document.createElement("select");
+    [["perspective", "Perspective"], ["orthographic", "Orthographic"]].forEach(([value, label]) => {
+      camera.appendChild(new Option(label, value));
+    });
+    camera.value = display.camera === "orthographic" ? "orthographic" : "perspective";
+    camera.addEventListener("change", () => {
+      stage.setParameters?.({ cameraType: camera.value });
+      requestNglRender(stage);
+    });
+    grid.appendChild(nglViewerControl("Camera", camera));
+
+    const background = document.createElement("input");
+    background.type = "color";
+    background.value = normalizeNglColor(display.background || "#050909");
+    background.setAttribute("aria-label", "Background color");
+    background.addEventListener("input", () => {
+      stage.setParameters?.({ backgroundColor: background.value });
+      requestNglRender(stage);
+    });
+    grid.appendChild(nglViewerControl("Background", background));
+
+    const mouse = document.createElement("select");
+    [["default", "Rotate / pan / zoom"], ["pymol", "PyMOL controls"], ["coot", "Coot controls"], ["astexviewer", "Astex controls"]].forEach(([value, label]) => {
+      mouse.appendChild(new Option(label, value));
+    });
+    mouse.value = display.mouse_preset || "default";
+    mouse.addEventListener("change", () => {
+      try {
+        stage.mouseControls?.preset?.(mouse.value);
+        stage.setParameters?.({ mousePreset: mouse.value });
+      } catch (_error) {
+        mouse.value = "default";
+      }
+    });
+    grid.appendChild(nglViewerControl("Mouse", mouse));
+
+    const axes = document.createElement("input");
+    axes.type = "checkbox";
+    axes.checked = display.axes === true;
+    axes.setAttribute("aria-label", "Show molecular axes");
+    const setAxesVisible = () => {
+      if (output._ui2NglAxesRep) {
+        component.removeRepresentation?.(output._ui2NglAxesRep);
+        output._ui2NglAxesRep = null;
+      }
+      if (axes.checked) {
+        try {
+          output._ui2NglAxesRep = component.addRepresentation("axes", { color: "white" });
+        } catch (_error) {
+          axes.checked = false;
+        }
+      }
+      requestNglRender(stage);
+    };
+    axes.addEventListener("change", setAxesVisible);
+    grid.appendChild(nglViewerControl("Molecular axes", axes));
+
+    const reset = el("button", "ui2-button ui2-button-quiet", "Reset view");
+    reset.type = "button";
+    reset.addEventListener("click", () => component.autoView?.(250));
+    grid.appendChild(reset);
+    const spin = el("button", "ui2-button ui2-button-quiet", "Spin");
+    spin.type = "button";
+    spin.setAttribute("aria-pressed", "false");
+    spin.addEventListener("click", () => {
+      const enabled = spin.getAttribute("aria-pressed") !== "true";
+      spin.setAttribute("aria-pressed", String(enabled));
+      stage.setSpin?.(enabled);
+    });
+    grid.appendChild(spin);
+    const fullscreen = el("button", "ui2-button ui2-button-quiet", "Fullscreen");
+    fullscreen.type = "button";
+    fullscreen.addEventListener("click", () => stage.toggleFullscreen?.());
+    grid.appendChild(fullscreen);
+    controls.appendChild(grid);
+    buttons.appendChild(controls);
+    if (axes.checked) setAxesVisible();
+  }
+
+  function nglViewerControl(label, control) {
+    const wrapper = el("label", "ui2-ngl-control");
+    wrapper.append(document.createTextNode(label), control);
+    return wrapper;
+  }
+
+  function normalizeNglColor(value) {
+    return /^#[0-9a-f]{6}$/i.test(String(value || "")) ? value : "#050909";
+  }
+
+  function renderNglLayerEditor(output, component, specs) {
+    const buttons = output?.querySelector?.(".ui2-ngl-buttons");
+    if (!buttons || !component) return;
+    buttons.querySelector(".ui2-ngl-layer-editor")?.remove();
+    const editor = el("details", "ui2-ngl-layer-editor");
+    editor.appendChild(el("summary", null, "Display layers"));
+    const list = el("div", "ui2-ngl-layer-list");
+    specs.forEach((spec, index) => {
+      const row = el("div", "ui2-ngl-layer-row");
+      const name = document.createElement("input");
+      name.type = "text";
+      name.value = spec.name || `Layer ${index + 1}`;
+      name.setAttribute("aria-label", `Layer ${index + 1} name`);
+      name.addEventListener("change", () => { spec.name = name.value || spec.type; });
+      const selection = document.createElement("input");
+      selection.type = "text";
+      selection.value = spec.params?.sele || "all";
+      selection.setAttribute("aria-label", `Layer ${index + 1} selection`);
+      selection.addEventListener("change", () => {
+        spec.params = Object.assign({}, spec.params || {}, { sele: selection.value || "all" });
+        rebuildNglRepresentations(output, component, specs);
+      });
+      const representation = document.createElement("select");
+      NGL_REPRESENTATION_TYPES.forEach((type) => representation.appendChild(new Option(type, type)));
+      representation.value = spec.type;
+      representation.setAttribute("aria-label", `Layer ${index + 1} representation`);
+      representation.addEventListener("change", () => {
+        spec.type = representation.value;
+        rebuildNglRepresentations(output, component, specs);
+      });
+      const visible = document.createElement("input");
+      visible.type = "checkbox";
+      visible.checked = spec.visible !== false;
+      visible.setAttribute("aria-label", `Show layer ${index + 1}`);
+      visible.addEventListener("change", () => {
+        spec.visible = visible.checked;
+        rebuildNglRepresentations(output, component, specs);
+      });
+      const remove = el("button", "ui2-button ui2-button-quiet", "Remove");
+      remove.type = "button";
+      remove.addEventListener("click", () => {
+        specs.splice(index, 1);
+        rebuildNglRepresentations(output, component, specs);
+      });
+      row.append(visible, name, selection, representation, remove);
+      list.appendChild(row);
+    });
+    const add = el("button", "ui2-button ui2-button-quiet", "Add layer");
+    add.type = "button";
+    add.addEventListener("click", () => {
+      specs.push({ name: "selection", type: "ball+stick", params: { sele: "all", colorScheme: "element" } });
+      rebuildNglRepresentations(output, component, specs);
+    });
+    editor.append(list, add);
+    buttons.appendChild(editor);
+  }
+
+  function rebuildNglRepresentations(output, component, specs) {
+    Object.values(output._ui2NglReps || {}).forEach((rep) => component.removeRepresentation?.(rep));
+    output._ui2NglReps = {};
+    specs.forEach((spec, index) => {
+      if (spec.visible !== false) {
+        output._ui2NglReps[nglRepresentationKey(spec, index)] = component.addRepresentation(spec.type, spec.params || {});
+      }
+    });
+    output._ui2NglSpecs = specs;
+    renderNglViewerControls(output, component, specs, true);
+    requestNglRender(output._ui2NglStage);
+  }
+
   function loadNglDensitySurface(output, payload) {
     const stage = output?._ui2NglStage;
     if (!stage || !payload?.loadname) {
@@ -7278,40 +7533,74 @@
     const started_at_ms = ui2_now_ms();
     const priorComponent = output._ui2NglDensityComponent;
     return stage.loadFile(normalizeNglLoadName(payload.loadname), payload.loadparams || { ext: "cube" }).then((component) => {
-      const params = nglDensitySurfaceParams(output, payload);
-      const surface = component.addRepresentation("surface", params);
+      const specs = nglDensitySurfaceSpecs(payload);
+      const surfaces = specs.map((spec, index) => {
+        const surfacePayload = Object.assign({}, payload, {
+          surface: spec,
+          _ui2_primary_density_surface: index === 0,
+          representationParams: Object.assign({}, payload.representationParams || {}, spec.params || {})
+        });
+        const surface = component.addRepresentation("surface", nglDensitySurfaceParams(output, surfacePayload));
+        if (spec.visible === false) {
+          surface.setVisibility?.(false);
+        }
+        return surface;
+      });
+      const surface = surfaces[0];
       output._ui2NglDensityComponent = component;
       output._ui2NglDensitySurface = surface;
+      output._ui2NglDensitySurfaces = surfaces;
+      output._ui2NglDensitySpecs = specs;
       output._ui2_ngl_density_payload = cloneUi2Value(payload);
       set_ngl_output_value(output, "ngl_density_load_ms", Math.max(0, ui2_now_ms() - started_at_ms).toFixed(3));
-      set_ngl_output_value(output, "ngl_density_isovalue", params.isolevel);
+      set_ngl_output_value(output, "ngl_density_isovalue", nglDensitySurfaceParams(output, Object.assign({}, payload, {
+        surface: specs[0] || {}
+      })).isolevel);
       set_ngl_output_value(output, "ngl_density_min_positive", nglDensityMinPositive(payload));
       if (priorComponent && priorComponent !== component && stage.removeComponent) {
         stage.removeComponent(priorComponent);
       }
       renderNglDensityControls(output, payload);
+      renderNglDensitySurfaceList(output);
       requestNglRender(stage);
       return component;
     });
   }
 
+  function nglDensitySurfaceSpecs(payload) {
+    const surfaces = Array.isArray(payload?.surfaces) ? payload.surfaces : [];
+    if (surfaces.length) {
+      return surfaces.map((surface, index) => Object.assign({
+        name: index ? `Surface ${index + 1}` : "Density contour",
+        visible: true
+      }, surface || {}));
+    }
+    return [Object.assign({ name: "Density contour", visible: true }, payload?.surface || {})];
+  }
+
   function nglDensitySurfaceParams(output, payload) {
     const source = payload?.surface || payload?.representationParams || {};
-    const userValue = output?._ui2_ngl_density_user_isovalue;
+    const userValue = payload?._ui2_primary_density_surface === false ? null : output?._ui2_ngl_density_user_isovalue;
     const fallback = Number(source.default_isovalue ?? source.isolevel ?? source.min_positive ?? 1.0);
     const isolevel = Number.isFinite(Number(userValue)) ? Number(userValue) : fallback;
     const opacity = nglDensityOpacity(output, payload);
+    const params = Object.assign({}, payload?.representationParams || {}, source || {});
+    delete params.name;
+    delete params.visible;
+    delete params.min_positive;
+    delete params.default_isovalue;
+    delete params.max_value;
     return Object.assign({
       isolevelType: "value",
       isolevel: Number.isFinite(Number(isolevel)) ? Number(isolevel) : 1.0,
       opacity,
       color: "yellow",
       opaqueBack: false
-    }, payload?.representationParams || {}, { isolevelType: "value", isolevel, opacity });
+    }, params, { isolevelType: "value", isolevel, opacity });
   }
 
   function nglDensityOpacity(output, payload) {
-    const userValue = output?._ui2_ngl_density_user_opacity;
+    const userValue = payload?._ui2_primary_density_surface === false ? null : output?._ui2_ngl_density_user_opacity;
     const sourceValue = payload?.representationParams?.opacity ?? payload?.surface?.opacity ?? 0.45;
     const opacity = Number(Number.isFinite(Number(userValue)) ? userValue : sourceValue);
     if (!Number.isFinite(opacity)) {
@@ -7416,6 +7705,70 @@
     });
     controls.append(label, slider, number, opacityLabel, opacitySlider, opacityNumber, reset);
     buttons.appendChild(controls);
+  }
+
+  function renderNglDensitySurfaceList(output) {
+    const buttons = output?.querySelector?.(".ui2-ngl-buttons");
+    const specs = Array.isArray(output?._ui2NglDensitySpecs) ? output._ui2NglDensitySpecs : [];
+    const surfaces = Array.isArray(output?._ui2NglDensitySurfaces) ? output._ui2NglDensitySurfaces : [];
+    if (!buttons || !specs.length || !surfaces.length) return;
+    buttons.querySelector(".ui2-ngl-density-surface-list")?.remove();
+    const editor = el("details", "ui2-ngl-density-surface-list");
+    editor.appendChild(el("summary", null, specs.length > 1 ? "Volume surfaces" : "Volume surface"));
+    const list = el("div", "ui2-ngl-layer-list");
+    specs.forEach((spec, index) => {
+      const surface = surfaces[index];
+      if (!surface) return;
+      const row = el("div", "ui2-ngl-layer-row");
+      const visible = document.createElement("input");
+      visible.type = "checkbox";
+      visible.checked = spec.visible !== false;
+      visible.setAttribute("aria-label", `Show ${spec.name || `surface ${index + 1}`}`);
+      visible.addEventListener("change", () => {
+        spec.visible = visible.checked;
+        surface.setVisibility?.(visible.checked);
+        requestNglRender(output._ui2NglStage);
+      });
+      const label = el("span", "ui2-muted", spec.name || `Surface ${index + 1}`);
+      const isolevel = document.createElement("input");
+      isolevel.type = "number";
+      isolevel.step = "any";
+      isolevel.value = String(spec.isolevel ?? spec.default_isovalue ?? 1);
+      isolevel.setAttribute("aria-label", `${spec.name || `Surface ${index + 1}`} isovalue`);
+      isolevel.addEventListener("change", () => {
+        const value = Number(isolevel.value);
+        if (!Number.isFinite(value)) return;
+        spec.isolevel = value;
+        surface.setParameters?.({ isolevel: value, isolevelType: "value" });
+        requestNglRender(output._ui2NglStage);
+      });
+      const color = document.createElement("input");
+      color.type = "color";
+      color.value = normalizeNglColor(spec.color || spec.params?.color || (index ? "#ff3c52" : "#ffd400"));
+      color.setAttribute("aria-label", `${spec.name || `Surface ${index + 1}`} color`);
+      color.addEventListener("input", () => {
+        spec.color = color.value;
+        surface.setParameters?.({ color: color.value });
+        requestNglRender(output._ui2NglStage);
+      });
+      const opacity = document.createElement("input");
+      opacity.type = "range";
+      opacity.min = "0.05";
+      opacity.max = "1";
+      opacity.step = "0.05";
+      opacity.value = String(spec.opacity ?? spec.params?.opacity ?? 0.45);
+      opacity.setAttribute("aria-label", `${spec.name || `Surface ${index + 1}`} opacity`);
+      opacity.addEventListener("input", () => {
+        const value = Number(opacity.value);
+        spec.opacity = value;
+        surface.setParameters?.({ opacity: value });
+        requestNglRender(output._ui2NglStage);
+      });
+      row.append(visible, label, isolevel, color, opacity);
+      list.appendChild(row);
+    });
+    editor.appendChild(list);
+    buttons.appendChild(editor);
   }
 
   function normalize_ngl_coordinate_frame(payload) {
@@ -7670,12 +8023,94 @@
       });
       controls.appendChild(scrubber);
       controls.appendChild(selected_label);
+
+      const previous = el("button", "ui2-button ui2-button-quiet ui2-ngl-button", "Previous");
+      previous.type = "button";
+      previous.addEventListener("click", () => setNglActiveFrame(output, Math.max(0, ngl_active_frame_index(output, frames) - 1)));
+      const next = el("button", "ui2-button ui2-button-quiet ui2-ngl-button", "Next");
+      next.type = "button";
+      next.addEventListener("click", () => setNglActiveFrame(output, Math.min(frames.length - 1, Math.max(0, ngl_active_frame_index(output, frames)) + 1)));
+      const play = el("button", "ui2-button ui2-button-quiet ui2-ngl-button", output._ui2_ngl_playback?.timer ? "Pause" : "Play");
+      play.type = "button";
+      play.setAttribute("aria-pressed", output._ui2_ngl_playback?.timer ? "true" : "false");
+      play.addEventListener("click", () => {
+        if (output._ui2_ngl_playback?.timer) {
+          stopNglFramePlayback(output);
+        } else {
+          startNglFramePlayback(output);
+        }
+        render_ngl_frame_controls(output);
+      });
+      const mode = document.createElement("select");
+      [["loop", "Loop"], ["once", "Once"], ["bounce", "Bounce"]].forEach(([value, label]) => mode.appendChild(new Option(label, value)));
+      mode.value = output._ui2_ngl_playback?.mode || "loop";
+      mode.setAttribute("aria-label", "Trajectory playback mode");
+      mode.addEventListener("change", () => {
+        output._ui2_ngl_playback = Object.assign({}, output._ui2_ngl_playback || {}, { mode: mode.value });
+      });
+      const speed = document.createElement("input");
+      speed.type = "number";
+      speed.min = "20";
+      speed.step = "10";
+      speed.value = String(output._ui2_ngl_playback?.interval || 100);
+      speed.setAttribute("aria-label", "Trajectory frame interval milliseconds");
+      speed.addEventListener("change", () => {
+        const interval = Math.max(20, Number(speed.value) || 100);
+        output._ui2_ngl_playback = Object.assign({}, output._ui2_ngl_playback || {}, { interval });
+      });
+      controls.append(previous, next, play, mode, speed);
     }
     const telemetry_label = ngl_stream_telemetry_label(output);
     if (telemetry_label) {
       controls.appendChild(el("span", "ui2-muted ui2-ngl-frame-telemetry", telemetry_label));
     }
     buttons.appendChild(controls);
+  }
+
+  function setNglActiveFrame(output, index) {
+    const frames = Array.isArray(output?._ui2_ngl_frames) ? output._ui2_ngl_frames : [];
+    const frame = frames[index];
+    if (!frame) return false;
+    output._ui2_ngl_pending_frame = null;
+    const applied = apply_ngl_coordinate_frame(output, frame);
+    render_ngl_frame_controls(output);
+    return applied;
+  }
+
+  function stopNglFramePlayback(output) {
+    const timer = output?._ui2_ngl_playback?.timer;
+    if (timer) window.clearTimeout(timer);
+    if (output?._ui2_ngl_playback) output._ui2_ngl_playback.timer = null;
+  }
+
+  function startNglFramePlayback(output) {
+    const state = output._ui2_ngl_playback = Object.assign({ mode: "loop", interval: 100, direction: 1, timer: null }, output?._ui2_ngl_playback || {});
+    const advance = () => {
+      const frames = Array.isArray(output?._ui2_ngl_frames) ? output._ui2_ngl_frames : [];
+      if (frames.length < 2) {
+        stopNglFramePlayback(output);
+        render_ngl_frame_controls(output);
+        return;
+      }
+      let index = ngl_active_frame_index(output, frames);
+      index = index < 0 ? frames.length - 1 : index + state.direction;
+      if (index >= frames.length || index < 0) {
+        if (state.mode === "once") {
+          stopNglFramePlayback(output);
+          render_ngl_frame_controls(output);
+          return;
+        }
+        if (state.mode === "bounce") {
+          state.direction *= -1;
+          index = Math.max(0, Math.min(frames.length - 1, index + 2 * state.direction));
+        } else {
+          index = index < 0 ? frames.length - 1 : 0;
+        }
+      }
+      setNglActiveFrame(output, index);
+      state.timer = window.setTimeout(advance, Math.max(20, Number(state.interval) || 100));
+    };
+    state.timer = window.setTimeout(advance, Math.max(20, Number(state.interval) || 100));
   }
 
   function schedule_ngl_coordinate_frame(output) {
@@ -7927,6 +8362,142 @@
       .catch((error) => {
         output.textContent = `Could not append Plotly output: ${error.message}`;
       });
+  }
+
+  function apply_dynamic_plot_dataset_event(group, event) {
+    if (!group || group.dataset.outputType !== "plotly") {
+      return;
+    }
+    const payload = event.payload || {};
+    const item_id = dynamic_output_item_id(group, payload);
+    updateDynamicOutput(group, {
+      items: [{
+        id: item_id,
+        label: payload.item_label || payload.itemLabel || group.dataset.dynamicLabel || item_id,
+        value: { data: [] },
+        plot_spec: payload.plot_spec || group._ui2_plot_spec || null
+      }]
+    });
+    const output = group.querySelector(`[data-output-field-id="${cssEscape(item_id)}"]`);
+    if (!output) {
+      return;
+    }
+    apply_plot_dataset_event(output, event);
+  }
+
+  function apply_plot_dataset_event(output, event) {
+    if (!output || output.dataset.outputType !== "plotly") {
+      return;
+    }
+    const payload = event.payload || {};
+    if (payload.plot_spec) {
+      output._ui2_plot_spec = cloneUi2Value(payload.plot_spec);
+    }
+    if (event.operation === "clear") {
+      output._ui2_plot_state = { datasets: {} };
+      render_plot_state(output);
+      return;
+    }
+    const state_value = output._ui2_plot_state || { datasets: {} };
+    const next_state = {
+      datasets: Object.assign({}, state_value.datasets || {})
+    };
+    normalize_plot_dataset_payload(payload).forEach((dataset) => {
+      const dataset_id = dataset.dataset_id;
+      if (!dataset_id) {
+        return;
+      }
+      const previous = next_state.datasets[dataset_id] || { rows: [] };
+      const rows = dataset.rows || [];
+      const max_points = Number(dataset.max_points ?? payload.max_points);
+      let next_rows = event.operation === "append"
+        ? (previous.rows || []).concat(rows)
+        : rows.slice();
+      if (Number.isInteger(max_points) && max_points > 0 && next_rows.length > max_points) {
+        next_rows = next_rows.slice(next_rows.length - max_points);
+      }
+      next_state.datasets[dataset_id] = Object.assign({}, previous, {
+        rows: next_rows,
+        complete: event.operation === "complete" || dataset.complete === true,
+        metadata: cloneUi2Value(dataset.metadata || previous.metadata || {})
+      });
+    });
+    output._ui2_plot_state = next_state;
+    render_plot_state(output);
+  }
+
+  function is_plot_dataset_payload(value) {
+    return Boolean(value && typeof value === "object" && (
+      Array.isArray(value.datasets) || value.dataset_id
+    ));
+  }
+
+  function normalize_plot_dataset_payload(payload) {
+    if (!payload || typeof payload !== "object") {
+      return [];
+    }
+    const datasets = Array.isArray(payload.datasets)
+      ? payload.datasets
+      : (payload.dataset_id ? [payload] : []);
+    return datasets.map((dataset) => {
+      const dataset_id = stringValue(dataset.dataset_id || dataset.id);
+      const rows = Array.isArray(dataset.rows)
+        ? dataset.rows
+        : (dataset.row && typeof dataset.row === "object" ? [dataset.row] : []);
+      return {
+        dataset_id,
+        rows: rows.map(normalize_plot_dataset_row).filter(Boolean),
+        max_points: dataset.max_points,
+        complete: dataset.complete === true,
+        metadata: dataset.metadata || {}
+      };
+    }).filter((dataset) => dataset.dataset_id);
+  }
+
+  function normalize_plot_dataset_row(row) {
+    if (!row || typeof row !== "object" || Array.isArray(row)) {
+      return null;
+    }
+    return cloneUi2Value(row);
+  }
+
+  function render_plot_state(output) {
+    const figure = plotly_figure_from_plot_state(output);
+    if (!figure) {
+      return;
+    }
+    renderPlotlyOutput(output, figure);
+  }
+
+  function plotly_figure_from_plot_state(output) {
+    const spec = output?._ui2_plot_spec || {};
+    const state_value = output?._ui2_plot_state || { datasets: {} };
+    const trace_specs = Array.isArray(spec.traces) ? spec.traces : [];
+    if (!trace_specs.length) {
+      return null;
+    }
+    const traces = trace_specs.map((trace_spec) => {
+      const dataset = state_value.datasets?.[trace_spec.dataset_id] || { rows: [] };
+      const rows = Array.isArray(dataset.rows) ? dataset.rows : [];
+      const trace = cloneUi2Value(trace_spec);
+      const x_field = trace.x || "x";
+      const y_field = trace.y || "y";
+      trace.x = rows.map((row) => row?.[x_field]);
+      trace.y = rows.map((row) => row?.[y_field]);
+      if (trace.error_y?.array_field) {
+        trace.error_y = Object.assign({}, trace.error_y, {
+          array: rows.map((row) => row?.[trace.error_y.array_field])
+        });
+        delete trace.error_y.array_field;
+      }
+      delete trace.dataset_id;
+      return trace;
+    });
+    return {
+      data: traces,
+      layout: cloneUi2Value(spec.layout || {}),
+      config: cloneUi2Value(spec.config || {})
+    };
   }
 
   function plotlyLayoutForOutput(output, sourceLayout) {
@@ -9097,6 +9668,7 @@
       renderFileControl,
       renderHookButtonControl,
       dynamicOutputItems,
+      updateDynamicOutput,
       mergeSavedInputPayloads,
       menuVisibleForSession,
       moduleIdFromSwitchParts,
@@ -9135,6 +9707,9 @@
       ngl_active_frame_index,
       applyPlotlyTheme,
       appendPlotlyOutput,
+      apply_dynamic_plot_dataset_event,
+      apply_plot_dataset_event,
+      plotly_figure_from_plot_state,
       plotlyLayoutForOutput,
       plotlyThemeColors,
       repeatIsCondition,
@@ -9144,6 +9719,8 @@
       repeatControllerId,
       repeatTableFields,
       repeatCount,
+      collectControlValues,
+      syncValues,
       updateRepeatTables,
       defaultInputPayload,
       resetModuleForm,

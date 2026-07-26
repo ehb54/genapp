@@ -10977,30 +10977,32 @@ function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 	C.useEffect(() => {
 		O?.values && c(O.values);
 	}, [O]);
-	let me = C.useRef(null), he = C.useCallback(() => {
+	let me = C.useRef(null), he = C.useRef(null), ge = C.useCallback((e = 2) => {
 		me.current === null && (me.current = window.requestAnimationFrame(() => {
-			me.current = null, r.resizeOutputs();
+			me.current = null, r.resizeOutputs(), e > 0 && (he.current = window.setTimeout(() => {
+				he.current = null, ge(e - 1);
+			}, e === 2 ? 80 : 180));
 		}));
 	}, [r]);
 	C.useEffect(() => () => {
-		me.current !== null && window.cancelAnimationFrame(me.current);
+		me.current !== null && window.cancelAnimationFrame(me.current), he.current !== null && window.clearTimeout(he.current);
 	}, []), C.useLayoutEffect(() => {
-		he();
+		ge();
 	}, [
 		g,
 		b,
-		he,
+		ge,
 		S
 	]), C.useLayoutEffect(() => {
 		let e = te.current;
 		if (!e || typeof ResizeObserver != "function") return;
 		let t = 0, n = 0, r = new ResizeObserver((e) => {
 			let r = e?.[0]?.contentRect;
-			!r || Math.abs(r.width - t) < 1 && Math.abs(r.height - n) < 1 || (t = r.width, n = r.height, he());
+			!r || Math.abs(r.width - t) < 1 && Math.abs(r.height - n) < 1 || (t = r.width, n = r.height, ge());
 		});
 		return r.observe(e), () => r.disconnect();
-	}, [he]);
-	let ge = async (e) => {
+	}, [ge]);
+	let _e = async (e) => {
 		e.preventDefault(), y(!0);
 		try {
 			let t = await r.submit(e.currentTarget);
@@ -11011,11 +11013,11 @@ function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 		} finally {
 			y(!1);
 		}
-	}, _e = (e) => {
+	}, ve = (e) => {
 		e.preventDefault(), r.reset(e.currentTarget), c(r.syncValues()), o(!1), x(!1), w(!1);
-	}, ve = () => {
+	}, ye = () => {
 		w((e) => (e && x(!1), !e));
-	}, ye = String(ce.lifecycle?.state || (v ? "submitting" : "editing")), be = String(ce.lifecycle?.error || ce.lifecycle?.message || ye), xe = O || ce.run ? Qr(ce) : void 0, Se = (e, t = 0) => {
+	}, be = String(ce.lifecycle?.state || (v ? "submitting" : "editing")), xe = String(ce.lifecycle?.error || ce.lifecycle?.message || be), Se = O || ce.run ? Qr(ce) : void 0, Ce = (e, t = 0) => {
 		if (!qr(e.repeat, s)) return null;
 		let n = (e.fields || []).map((e) => oe.get(e)).filter(Boolean);
 		return /* @__PURE__ */ (0, L.jsxs)(Qt, {
@@ -11023,7 +11025,7 @@ function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 			children: [/* @__PURE__ */ (0, L.jsx)($t, { children: /* @__PURE__ */ (0, L.jsxs)("div", { children: [/* @__PURE__ */ (0, L.jsx)(en, { children: e.title }), e.description && /* @__PURE__ */ (0, L.jsx)(tn, { children: e.description })] }) }), /* @__PURE__ */ (0, L.jsxs)(nn, { children: [n.length > 0 && /* @__PURE__ */ (0, L.jsx)(Hr, {
 				bridge: r,
 				fields: n
-			}), (e.children || []).map((e) => Se(e, t + 1))] })]
+			}), (e.children || []).map((e) => Ce(e, t + 1))] })]
 		}, e.id);
 	};
 	return /* @__PURE__ */ (0, L.jsxs)("form", {
@@ -11031,8 +11033,8 @@ function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 		id: "ui2-form",
 		onChange: pe,
 		onInput: pe,
-		onReset: _e,
-		onSubmit: ge,
+		onReset: ve,
+		onSubmit: _e,
 		children: [/* @__PURE__ */ (0, L.jsx)("header", {
 			className: "ui2-workbench-heading",
 			children: /* @__PURE__ */ (0, L.jsxs)("div", { children: [
@@ -11066,7 +11068,7 @@ function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 				}) : /* @__PURE__ */ (0, L.jsxs)("div", {
 					className: "ui2-workbench-input-scroll",
 					children: [
-						l.map((e) => Se(e)),
+						l.map((e) => Ce(e)),
 						A.length > 0 && /* @__PURE__ */ (0, L.jsxs)(Qt, { children: [/* @__PURE__ */ (0, L.jsx)($t, { children: /* @__PURE__ */ (0, L.jsx)(en, { children: "Additional inputs" }) }), /* @__PURE__ */ (0, L.jsx)(nn, { children: /* @__PURE__ */ (0, L.jsx)(Hr, {
 							bridge: r,
 							fields: A
@@ -11131,7 +11133,7 @@ function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						className: "ui2-submit-status",
 						id: "ui2-submit-status",
 						role: "status",
-						children: ye === "editing" ? "Not submitted" : be
+						children: be === "editing" ? "Not submitted" : xe
 					})]
 				})]
 			}), /* @__PURE__ */ (0, L.jsxs)("main", {
@@ -11155,7 +11157,7 @@ function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						}) })]
 					}),
 					n.results?.runtimeLog && /* @__PURE__ */ (0, L.jsx)(ni, {
-						cue: xe,
+						cue: Se,
 						defaultOpen: n.results.runtimeLog.defaultOpen,
 						description: n.results.runtimeLog.description,
 						open: T,
@@ -11169,7 +11171,7 @@ function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						children: /* @__PURE__ */ (0, L.jsx)(nn, { children: /* @__PURE__ */ (0, L.jsxs)(Lr, {
 							className: "ui2-workbench-result-tabs",
 							onValueChange: (e) => {
-								_(e), window.setTimeout(he, 0);
+								_(e), window.setTimeout(ge, 0);
 							},
 							value: g,
 							children: [/* @__PURE__ */ (0, L.jsxs)("div", {
@@ -11183,7 +11185,7 @@ function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 									}, e.id))
 								}), /* @__PURE__ */ (0, L.jsxs)(Zt, {
 									"aria-pressed": S,
-									onClick: ve,
+									onClick: ye,
 									type: "button",
 									variant: "outline",
 									children: [S ? /* @__PURE__ */ (0, L.jsx)(ie, {
