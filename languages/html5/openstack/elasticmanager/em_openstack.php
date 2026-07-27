@@ -323,6 +323,18 @@ class em_openstack {
             $cmd = "openstack server list -c ID -c Name -c Status -c Networks";
             $regexp = "/\| $project-run-$this->idprefix-$this->id-$this->flavor-/";
             $results_all = $this->run_cmd( $cmd, false, true );
+
+            ## a failed list means "we do not know what is out there", not "there
+            ## is nothing out there". believing it drops every tracked instance,
+            ## in use included, and the next loop launches replacements for all
+            ## of them. a DNS outage did exactly that on 2025-08-04.
+
+            if ( $this->run_cmd_last_error_code ) {
+                $this->echo_warn( "reload_state() could not list servers for project $project, leaving state untouched"
+                                  ,implode( " ", $results_all ) );
+                return false;
+            }
+
             $results = preg_grep( $regexp, $results_all );
             $this->debug_echo( "cmd : $cmd\n" . implode( "\n", $results ) );
 
@@ -402,8 +414,8 @@ class em_openstack {
         if ( $this->debug ) {
             debug_json( "reload state em_state - after save", $this->em_state->state );
         }
-            
-        # $this->error_exit( "em_openstack:reload_state() - not yet implemented" );
+
+        return true;
     }
 
 
@@ -1206,8 +1218,16 @@ class em_openstack {
 
     ## os interaction
 
-    ## echo_warn() - print warning, perhaps to stderr later
-    function echo_warn( $msg ) {
+    ## echo_warn() - print warning, perhaps to stderr later.
+    ## $detail was already being passed at one call site but the signature only
+    ## took $msg, so PHP dropped it: 423 boot failures on 2025-08-04 were logged
+    ## with no trace of the cause. the log is one line per entry and em_log.php
+    ## parses it that way, so detail is flattened rather than wrapped.
+
+    function echo_warn( $msg, $detail = "" ) {
+        if ( strlen( $detail ) ) {
+            $msg .= " [" . preg_replace( '/\s*\R\s*/', " | ", trim( $detail ) ) . "]";
+        }
         $this->log( "WARNING: $msg" );
         echo "WARNING: $msg\n";
     }
