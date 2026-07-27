@@ -38,12 +38,14 @@ replace by rename so a concurrent em_client.php can never read a partial file
     --force             : allow an em_config.json identity change, see below
     --rollback          : restore the most recent backup set
     --backups           : list backup sets
+    --restart           : stop and restart the daemon, then confirm it came back.
+                          may be given on its own or after --install
 
-    One of --diff, --install, --rollback or --backups must be given. With no
-    action this prints help and does nothing.
+    One of --diff, --install, --rollback, --backups or --restart must be given.
+    With no action this prints help and does nothing.
 
-    Restart impact is reported per file. Nothing here restarts the daemon; when
-    a restart is needed the command is printed.
+    Restart impact is reported per file. A restart only happens if you ask for
+    one with --restart; otherwise the commands are printed for you to run.
 
     An em_config.json change to project, id or a flavor name is refused without
     --force. reload_state() finds instances by a name built from those three, so
@@ -140,26 +142,171 @@ function git_mode( $ref, $path ) {
     return ( count( $out ) && substr( $out[ 0 ], 0, 6 ) == "100755" ) ? 0755 : 0644;
 }
 
-## service_pid() - the daemon holds its lock as a symlink to /proc/<pid>
+## em_cfg() - em_config.json, or null
+
+function em_cfg() {
+    return file_exists( "em_config.json" ) ? json_decode( file_get_contents( "em_config.json" ) ) : null;
+}
+
+## logfile() - absolute path to the manager log
+
+function logfile() {
+    global $emdir;
+
+    $cfg = em_cfg();
+
+    if ( !isset( $cfg->logfile ) ) {
+        return "";
+    }
+
+    return substr( $cfg->logfile, 0, 1 ) == "/" ? $cfg->logfile : "$emdir/$cfg->logfile";
+}
+
+## startup_count() - STARTUP lines in the log, how we prove a restart took
+
+function startup_count() {
+    $f = logfile();
+
+    if ( !strlen( $f ) || !file_exists( $f ) ) {
+        return -1;
+    }
+
+    return count( preg_grep( '/ - STARTUP/', file( $f ) ) );
+}
+
+## service_pid() - the daemon holds its lock as a symlink to /proc/<pid>.
+## em_service.php takes lockdir from appconfig first and only falls back to
+## em_config, so check both, and fall back to the process list because the lock
+## can be stale or absent: SIGTERM does not run the shutdown handler that
+## removes it.
 
 function service_pid() {
-    if ( !file_exists( "em_config.json" ) ) {
-        return false;
+
+    ## php caches stat results, and this gets called in a poll loop
+
+    clearstatcache();
+
+    $cfg  = em_cfg();
+    $dirs = [];
+
+    if ( isset( $cfg->files->appconfig ) && file_exists( $cfg->files->appconfig ) ) {
+        $app = json_decode( file_get_contents( $cfg->files->appconfig ) );
+        if ( isset( $app->lockdir ) ) {
+            $dirs[] = $app->lockdir;
+        }
     }
 
-    $cfg = json_decode( file_get_contents( "em_config.json" ) );
-
-    if ( !isset( $cfg->files->lockdir ) ) {
-        return false;
+    if ( isset( $cfg->files->lockdir ) ) {
+        $dirs[] = $cfg->files->lockdir;
     }
 
-    $lock = $cfg->files->lockdir . "/em-service.lock";
+    foreach ( $dirs as $d ) {
+        $lock = "$d/em-service.lock";
 
-    if ( !is_link( $lock ) || ( $link = readlink( $lock ) ) === false ) {
-        return false;
+        if ( is_link( $lock )
+             && ( $link = readlink( $lock ) ) !== false
+             && preg_match( '#/proc/(\d+)#', $link, $m )
+             && is_dir( "/proc/" . $m[ 1 ] ) ) {
+            return $m[ 1 ];
+        }
     }
 
-    return preg_match( '#/proc/(\d+)#', $link, $m ) ? $m[ 1 ] : false;
+    ## pgrep -f matches any process whose command line merely contains the
+    ## pattern, including the shell exec() spawned to run pgrep itself. check
+    ## argv directly instead: argv[0] must be php and argv[1] em_service.php
+
+    foreach ( run( "pgrep -f 'php em_service.php'" ) as $p ) {
+        $p = trim( $p );
+
+        if ( !preg_match( '/^\d+$/', $p ) ) {
+            continue;
+        }
+
+        if ( ( $raw = @file_get_contents( "/proc/$p/cmdline" ) ) === false ) {
+            continue;
+        }
+
+        $argv = array_values( array_filter( explode( "\0", $raw ), 'strlen' ) );
+
+        if ( count( $argv ) >= 2
+             && preg_match( '#(^|/)php[0-9.]*$#', $argv[ 0 ] )
+             && preg_match( '#(^|/)em_service\.php$#', $argv[ 1 ] ) ) {
+            return $p;
+        }
+    }
+
+    return false;
+}
+
+## daemon_restart() - stop, start, and prove it came back
+
+function daemon_restart() {
+    global $emdir;
+
+    echo "pool: " . pool_summary() . "\n\n";
+
+    $pid = service_pid();
+
+    if ( $pid === false ) {
+        echo "no running daemon found, starting one\n";
+    } else {
+        echo "stopping daemon pid $pid\n";
+
+        run( "kill " . escapeshellarg( $pid ) );
+
+        $gone = false;
+
+        for ( $i = 0; $i < 20; ++$i ) {
+            clearstatcache();
+
+            if ( !is_dir( "/proc/$pid" ) ) {
+                $gone = true;
+                break;
+            }
+
+            sleep( 1 );
+        }
+
+        if ( !$gone ) {
+            fail( "daemon pid $pid did not stop within 20s, not starting a second one" );
+        }
+
+        echo "  stopped\n";
+    }
+
+    $before = startup_count();
+
+    if ( !file_exists( "$emdir/em_start.sh" ) ) {
+        fail( "em_start.sh not found in $emdir" );
+    }
+
+    echo "starting\n";
+
+    run( "cd " . escapeshellarg( $emdir ) . " && ./em_start.sh > /dev/null 2>&1" );
+
+    ## a running process is not proof it initialised, a new STARTUP line is
+
+    $newpid = false;
+
+    for ( $i = 0; $i < 20; ++$i ) {
+        sleep( 1 );
+        clearstatcache();
+        $newpid = service_pid();
+
+        if ( $newpid !== false && ( $before < 0 || startup_count() > $before ) ) {
+            echo "  running as pid $newpid, STARTUP logged\n\n";
+            return true;
+        }
+    }
+
+    if ( $newpid === false ) {
+        fail( "daemon did not come back, check service.log and nohup.out in $emdir" );
+    }
+
+    echo "  WARNING: pid $newpid is running but no new STARTUP appeared in the log,\n"
+        . "  check service.log and nohup.out in $emdir\n\n";
+
+    return false;
 }
 
 ## pool_summary() - what the pool is doing right now, for restart timing
@@ -265,6 +412,7 @@ $only    = [];
 $action  = "";
 $fetch   = false;
 $force   = false;
+$restart = false;
 
 while( count( $u_argv ) && substr( $u_argv[ 0 ], 0, 1 ) == "-" ) {
     switch( $arg = $u_argv[ 0 ] ) {
@@ -298,6 +446,11 @@ while( count( $u_argv ) && substr( $u_argv[ 0 ], 0, 1 ) == "-" ) {
             $force = true;
             break;
         }
+        case "--restart" : {
+            array_shift( $u_argv );
+            $restart = true;
+            break;
+        }
         case "--diff" :
         case "--install" :
         case "--rollback" :
@@ -318,6 +471,10 @@ if ( count( $u_argv ) ) {
     fail( "unexpected argument '$u_argv[0]'\n$notes" );
 }
 
+if ( !strlen( $action ) && $restart ) {
+    $action = "restart";
+}
+
 ## no action without being asked for one, not even a read only one
 
 if ( !strlen( $action ) ) {
@@ -326,6 +483,12 @@ if ( !strlen( $action ) ) {
 }
 
 $backuproot = ( getenv( "HOME" ) ? getenv( "HOME" ) : $emdir ) . "/.em_install_backups";
+
+## ---------------- restart on its own ----------------
+
+if ( $action == "restart" ) {
+    exit( daemon_restart() ? 0 : 1 );
+}
 
 ## ---------------- backups ----------------
 
@@ -648,14 +811,7 @@ if ( count( $needs_restart ) ) {
         . "working while the daemon is down, only rebalancing pauses. Prefer a moment\n"
         . "with nothing mid operation. To restart:\n\n";
 
-    if ( ( $pid = service_pid() ) !== false ) {
-        echo "  kill $pid\n";
-    } else {
-        echo "  ## daemon pid not readable from the lock file, find it by hand\n";
-        echo "  pkill -f 'php em_service.php'\n";
-    }
-
-    echo "  cd $emdir && ./em_start.sh\n\n";
+    echo "  php $self --restart\n\n";
 } else if ( $has_shared ) {
     echo "The daemon stays correct without a restart, but it keeps its loaded copy,\n"
         . "so it is STILL RUNNING THE OLD CODE. Anything in this change that affects\n"
@@ -664,15 +820,14 @@ if ( count( $needs_restart ) ) {
         . "(acquire, release, status, probe) are already live.\n\n";
 
     echo "pool: " . pool_summary() . "\n\nTo restart if this change needs it:\n\n";
-
-    if ( ( $pid = service_pid() ) !== false ) {
-        echo "  kill $pid\n";
-    } else {
-        echo "  ## daemon pid not readable from the lock file, find it by hand\n";
-        echo "  pkill -f 'php em_service.php'\n";
-    }
-
-    echo "  cd $emdir && ./em_start.sh\n\n";
+    echo "  php $self --restart\n\n";
 } else {
     echo "No restart needed.\n\n";
+}
+
+## ---------------- restart, when chained after --install ----------------
+
+if ( $restart ) {
+    echo str_repeat( "-", 72 ) . "\n\n";
+    exit( daemon_restart() ? 0 : 1 );
 }
