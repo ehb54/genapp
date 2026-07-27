@@ -19,6 +19,10 @@
       <button id="demo-volume" type="button">Demo cube</button>
       <button id="center-view" type="button">Center view</button>
       <button id="toggle-spin" type="button" aria-pressed="false">Spin</button>
+      <label class="select-control">Camera<select id="camera-mode"><option value="perspective">Perspective</option><option value="orthographic">Orthographic</option></select></label>
+      <label class="select-control">Background<input id="background-color" type="color" value="#050909"></label>
+      <label class="select-control">Mouse<select id="mouse-preset"><option value="default">Rotate / pan / zoom</option><option value="pymol">PyMOL</option><option value="coot">Coot</option></select></label>
+      <label class="select-control"><input id="show-axes" type="checkbox"> Molecular axes</label>
       <button id="clear-all" type="button">Clear all</button>
     </div>
   </header>
@@ -31,6 +35,21 @@
     </section>
 
     <aside>
+      <section class="card">
+        <div class="section-title">
+          <h2>Retained trajectory</h2>
+          <span id="trajectory-status" class="hint">No frames retained.</span>
+        </div>
+        <p class="hint">The benchmark keeps the most recent 40 coordinate frames so they can be reviewed after streaming completes.</p>
+        <div class="trajectory-controls">
+          <button id="trajectory-previous" type="button" disabled>Previous</button>
+          <button id="trajectory-play" type="button" disabled aria-pressed="false">Play</button>
+          <button id="trajectory-next" type="button" disabled>Next</button>
+          <label>Frame<input id="trajectory-frame" type="range" min="1" max="1" value="1" disabled></label>
+          <label>Speed ms<input id="trajectory-speed" type="number" min="20" max="10000" step="20" value="250"></label>
+        </div>
+      </section>
+
       <section class="card">
         <div class="section-title">
           <h2>Molecule layers</h2>
@@ -145,7 +164,24 @@
     </article>
   </template>
 
-  <script src="../../languages/html5/add/js/ngl.js"></script>
-  <script src="viewer.js"></script>
+  <script>
+    (function () {
+      const ngl = document.createElement("script");
+      const loadViewer = function () {
+        const viewer = document.createElement("script");
+        viewer.src = "viewer.js";
+        document.body.appendChild(viewer);
+      };
+      // Generated UI2 pages expose NGL at ../../js/ngl.js.  The repository
+      // lab server exposes the source bundle at the fallback path.
+      ngl.src = "../../js/ngl.js";
+      ngl.onload = loadViewer;
+      ngl.onerror = function () {
+        ngl.onerror = null;
+        ngl.src = "../../languages/html5/add/js/ngl.js";
+      };
+      document.head.appendChild(ngl);
+    }());
+  </script>
 </body>
 </html>

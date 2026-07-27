@@ -2,12 +2,15 @@
   "use strict";
 
   const stage = new NGL.Stage("viewport", { backgroundColor: "#050909" });
+  const streamingAvailable = new URLSearchParams(window.location.search).get("streaming") !== "off";
   const state = {
     structure: null,
     structureName: "",
     volume: null,
+    axes: null,
     moleculeLayers: [],
-    volumeLayers: []
+    volumeLayers: [],
+    trajectory: { frames: [], cursor: 0, timer: null }
   };
 
   const elements = {
@@ -28,8 +31,62 @@
     benchmarkTopology: document.getElementById("benchmark-topology"),
     benchmarkRepresentation: document.getElementById("benchmark-representation"),
     benchmarkScale: document.getElementById("benchmark-scale"),
-    benchmarkResults: document.getElementById("benchmark-results")
+    benchmarkResults: document.getElementById("benchmark-results"),
+    cameraMode: document.getElementById("camera-mode"),
+    backgroundColor: document.getElementById("background-color"),
+    mousePreset: document.getElementById("mouse-preset"),
+    showAxes: document.getElementById("show-axes"),
+    trajectoryStatus: document.getElementById("trajectory-status"),
+    trajectoryPrevious: document.getElementById("trajectory-previous"),
+    trajectoryPlay: document.getElementById("trajectory-play"),
+    trajectoryNext: document.getElementById("trajectory-next"),
+    trajectoryFrame: document.getElementById("trajectory-frame"),
+    trajectorySpeed: document.getElementById("trajectory-speed")
   };
+
+  function stopTrajectory() {
+    if (state.trajectory.timer) window.clearTimeout(state.trajectory.timer);
+    state.trajectory.timer = null;
+    elements.trajectoryPlay.textContent = "Play";
+    elements.trajectoryPlay.setAttribute("aria-pressed", "false");
+  }
+
+  function updateTrajectoryControls() {
+    const count = state.trajectory.frames.length;
+    const enabled = count > 1 && Boolean(state.structure);
+    [elements.trajectoryPrevious, elements.trajectoryPlay, elements.trajectoryNext, elements.trajectoryFrame].forEach((control) => { control.disabled = !enabled; });
+    elements.trajectoryFrame.max = String(Math.max(1, count));
+    elements.trajectoryFrame.value = String(Math.min(count || 1, state.trajectory.cursor + 1));
+    elements.trajectoryStatus.textContent = count ? `${count} retained frame${count === 1 ? "" : "s"}; frame ${state.trajectory.cursor + 1}.` : "No frames retained.";
+  }
+
+  function showTrajectoryFrame(index) {
+    const frames = state.trajectory.frames;
+    if (!state.structure || !frames.length) return;
+    state.trajectory.cursor = Math.max(0, Math.min(frames.length - 1, index));
+    applyCoordinateFrame(state.structure, frames[state.trajectory.cursor]);
+    updateTrajectoryControls();
+  }
+
+  function playTrajectory() {
+    stopTrajectory();
+    if (state.trajectory.frames.length < 2 || !state.structure) return;
+    elements.trajectoryPlay.textContent = "Pause";
+    elements.trajectoryPlay.setAttribute("aria-pressed", "true");
+    const tick = () => {
+      if (!state.trajectory.timer) return;
+      showTrajectoryFrame((state.trajectory.cursor + 1) % state.trajectory.frames.length);
+      state.trajectory.timer = window.setTimeout(tick, Math.max(20, Number(elements.trajectorySpeed.value) || 250));
+    };
+    state.trajectory.timer = window.setTimeout(tick, Math.max(20, Number(elements.trajectorySpeed.value) || 250));
+  }
+
+  function clearTrajectory() {
+    stopTrajectory();
+    state.trajectory.frames = [];
+    state.trajectory.cursor = 0;
+    updateTrajectoryControls();
+  }
 
   function setStatus(message, isError) {
     elements.status.textContent = message;
@@ -172,6 +229,8 @@
     const name = displayName || source.name;
     setStatus(`Loading structure ${name}…`);
     if (state.structure) stage.removeComponent(state.structure);
+    state.axes = null;
+    clearTrajectory();
     state.moleculeLayers = [];
     elements.moleculeLayers.textContent = "";
     elements.moleculeLayers.classList.add("empty");
@@ -179,6 +238,9 @@
       state.structure = await stage.loadFile(source, { ext: extension(name) });
       state.structureName = name;
       elements.addLayer.disabled = false;
+      if (elements.showAxes.checked) {
+        try { state.axes = state.structure.addRepresentation("axes", { color: "white" }); } catch (_error) { elements.showAxes.checked = false; }
+      }
       addMoleculeLayer({ name: "molecule", selection: "all", representation: "ball+stick", colorScheme: "element" });
       state.structure.autoView();
       setStatus(`Loaded structure ${name}.`);
@@ -287,6 +349,10 @@
   }
 
   async function runBenchmark() {
+    if (!streamingAvailable) {
+      setBenchmarkResults("Streaming is disabled for this static preview. Use the local lab server or a live GenApp job to exercise coordinate streaming.");
+      return;
+    }
     const requestedAtoms = Math.max(1, Number(elements.benchmarkAtoms.value) || 6730);
     const topology = elements.benchmarkTopology.value;
     const scale = elements.benchmarkScale.value;
@@ -345,6 +411,9 @@
         parseTimes.push(framePayload.parseMs);
         totalBytes += framePayload.bytes;
         renderTimes.push(applyCoordinateFrame(state.structure, framePayload.coordinates));
+        state.trajectory.frames.push(framePayload.coordinates.slice());
+        if (state.trajectory.frames.length > 40) state.trajectory.frames.shift();
+        state.trajectory.cursor = state.trajectory.frames.length - 1;
         const elapsed = (nowMs() - started) / 1000;
         const mb = totalBytes / (1024 * 1024);
         setBenchmarkResults([
@@ -358,6 +427,7 @@
         ]);
         if (frame < frames && interval > 0) await sleep(interval);
       }
+      updateTrajectoryControls();
       const totalSeconds = (nowMs() - started) / 1000;
       const mb = totalBytes / (1024 * 1024);
       setBenchmarkResults([
@@ -412,12 +482,30 @@
     this.setAttribute("aria-pressed", String(enabled));
     stage.setSpin(enabled);
   });
+  elements.cameraMode.addEventListener("change", () => stage.setParameters({ cameraType: elements.cameraMode.value }));
+  elements.backgroundColor.addEventListener("input", () => stage.setParameters({ backgroundColor: elements.backgroundColor.value }));
+  elements.mousePreset.addEventListener("change", () => {
+    try { stage.mouseControls.preset(elements.mousePreset.value); } catch (_error) { elements.mousePreset.value = "default"; }
+  });
+  elements.showAxes.addEventListener("change", () => {
+    if (state.axes && state.structure) state.structure.removeRepresentation(state.axes);
+    state.axes = null;
+    if (elements.showAxes.checked && state.structure) {
+      try { state.axes = state.structure.addRepresentation("axes", { color: "white" }); } catch (_error) { elements.showAxes.checked = false; }
+    }
+  });
+  elements.trajectoryPrevious.addEventListener("click", () => showTrajectoryFrame(state.trajectory.cursor - 1));
+  elements.trajectoryNext.addEventListener("click", () => showTrajectoryFrame(state.trajectory.cursor + 1));
+  elements.trajectoryFrame.addEventListener("input", () => showTrajectoryFrame(Number(elements.trajectoryFrame.value) - 1));
+  elements.trajectoryPlay.addEventListener("click", () => state.trajectory.timer ? stopTrajectory() : playTrajectory());
   document.getElementById("clear-all").addEventListener("click", function () {
     stage.removeAllComponents();
     state.structure = null;
     state.volume = null;
+    state.axes = null;
     state.moleculeLayers = [];
     state.volumeLayers = [];
+    clearTrajectory();
     elements.addLayer.disabled = true;
     elements.addSurface.disabled = true;
     elements.moleculeLayers.textContent = "";
@@ -442,5 +530,9 @@
   });
   window.addEventListener("resize", () => stage.handleResize());
   elements.payload.value = "";
+  if (!streamingAvailable) {
+    elements.benchmarkRun.disabled = true;
+    setBenchmarkResults("Streaming is disabled for this static preview. Use the local lab server or a live GenApp job to exercise coordinate streaming.");
+  }
   setStatus(`Ready. GenApp bundled NGL ${NGL.Version}.`);
 }());

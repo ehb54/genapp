@@ -34,6 +34,9 @@ h2 { font-size: 1rem; }
 header p, .hint { color: #aebcb9; font-size: 0.82rem; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .file-button input { display: none; }
+.select-control { display: flex; align-items: center; gap: 0.35rem; color: #cbd8d5; font-size: 0.78rem; }
+.select-control select, .select-control input { max-width: 9rem; }
+.select-control input[type="color"] { width: 2.2rem; height: 2rem; padding: 1px; }
 
 main {
   display: grid;
@@ -104,6 +107,10 @@ code { color: #95e0ce; }
 summary { cursor: pointer; font-weight: 650; }
 textarea { width: 100%; height: 190px; resize: vertical; font-family: ui-monospace, monospace; font-size: 0.75rem; }
 .benchmark-controls { margin-top: 0.55rem; }
+.trajectory-controls { display: grid; grid-template-columns: repeat(3, auto) minmax(110px, 1fr) minmax(95px, 0.55fr); gap: 0.5rem; align-items: end; }
+.trajectory-controls label { display: grid; gap: 0.25rem; color: #aebcb9; font-size: 0.76rem; }
+.trajectory-controls input { min-width: 0; border: 1px solid #455b56; border-radius: 4px; background: #0a1110; color: #edf4f2; padding: 0.38rem; }
+.trajectory-controls input[type="range"] { padding: 0; }
 .benchmark-results {
   overflow: auto;
   min-height: 9rem;
@@ -123,4 +130,5 @@ textarea { width: 100%; height: 190px; resize: vertical; font-family: ui-monospa
   main { grid-template-columns: 1fr; }
   .viewer-panel { min-height: 55vh; }
   aside { max-height: none; border-left: 0; border-top: 1px solid #33423f; }
+  .trajectory-controls { grid-template-columns: 1fr 1fr; }
 }
