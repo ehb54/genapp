@@ -41,6 +41,9 @@ class em_openstack {
     private $global_putenv_done = false;
 
     private $run_cmd_last_error_code;
+
+    ## why the last probe_instance() failed, so --probe can say more than "?"
+    public $probe_error = "";
     
     function __construct( $debug = false, $configfile = "em_config.json" ) {
         $this->debug       = $debug;
@@ -453,7 +456,17 @@ class em_openstack {
 
         $remote = 'echo L $(cut -d" " -f3 /proc/loadavg); if docker ps >/dev/null 2>&1; then echo W $(docker ps | grep -ci waxsis); else echo W ?; fi';
 
-        $cmd = sprintf( "timeout %d ssh -i %s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=%d %s %s 2>/dev/null"
+        ## UserKnownHostsFile=/dev/null is not optional here. shelve and unshelve
+        ## recycle addresses, so the same ip legitimately belongs to a different
+        ## instance with a different host key over time; persisting keys would
+        ## eventually fail every probe against a recycled address.
+        ##
+        ## LogLevel=ERROR suppresses the "Permanently added ... to the list of
+        ## known hosts" line at the source. It used to be swallowed by sending
+        ## all of stderr to /dev/null, which threw away the real errors too, so
+        ## an unreachable instance reported "?" with no reason attached.
+
+        $cmd = sprintf( "timeout %d ssh -i %s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR -o BatchMode=yes -o ConnectTimeout=%d %s %s 2>&1"
                         ,$probe_timeout
                         ,escapeshellarg( $p->sshidentity )
                         ,$probe_connect_timeout
@@ -467,18 +480,29 @@ class em_openstack {
         ## outcome here, not something to log as a command failure
 
         $out = [];
-        exec( $cmd, $out );
+        exec( $cmd, $out, $code );
+
+        $noise = [];
 
         foreach ( $out as $line ) {
             if ( preg_match( '/^L\s+(\S+)/', $line, $m ) ) {
                 $load = $m[ 1 ];
-            }
-            if ( preg_match( '/^W\s+(\S+)/', $line, $m ) ) {
+            } else if ( preg_match( '/^W\s+(\S+)/', $line, $m ) ) {
                 $waxsis = $m[ 1 ] == "?" ? "?" : ( intval( $m[ 1 ] ) > 0 ? "yes" : "no" );
+            } else if ( strlen( trim( $line ) ) ) {
+                $noise[] = trim( $line );
             }
         }
 
-        return $load != "?";
+        if ( $load == "?" ) {
+            $this->probe_error = count( $noise )
+                               ? implode( " | ", $noise )
+                               : ( $code == 124 ? "timed out after {$probe_timeout}s" : "no answer, ssh exit $code" );
+            return false;
+        }
+
+        $this->probe_error = "";
+        return true;
     }
 
     function status( $update = false, $probe = false ) {
@@ -597,12 +621,18 @@ class em_openstack {
         ## probing is one ssh per instance, so only on request and only where
         ## there is a running OS to answer
 
+        $probe_errors = [];
+
         if ( $probe ) {
             foreach ( $instances as $k => $v ) {
                 if ( $v->status != "ACTIVE" ) {
                     continue;
                 }
-                $this->probe_instance( $v->ip, $load, $waxsis );
+
+                if ( !$this->probe_instance( $v->ip, $load, $waxsis ) && strlen( $this->probe_error ) ) {
+                    $probe_errors[] = sprintf( "  slot %-4s %-15s %s", $k, $v->ip, $this->probe_error );
+                }
+
                 $v->load   = $load;
                 $v->waxsis = $waxsis;
             }
@@ -620,6 +650,10 @@ class em_openstack {
             $instance_table .= $probe
                              ? sprintf( $fmt, $k, $v->ip, $v->status, $v->use, $v->load, $v->waxsis, $v->held, $v->tag )
                              : sprintf( $fmt, $k, $v->ip, $v->status, $v->use, $v->held, $v->tag );
+        }
+
+        if ( count( $probe_errors ) ) {
+            $instance_table .= "\nprobe failures:\n" . implode( "\n", $probe_errors ) . "\n";
         }
 
         if ( $update ) {
