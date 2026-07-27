@@ -369,11 +369,27 @@ if ( $fetch ) {
     }
 }
 
-git( "rev-parse --verify " . escapeshellarg( "$ref^{commit}" ), $code );
+## accept a bare branch name for a remote branch, the way git checkout does.
+## git rev-parse does not do that on its own, so try origin/<ref> too
 
-if ( $code ) {
-    fail( "ref '$ref' not found, try --fetch" );
+$resolved = "";
+
+foreach ( [ $ref, "origin/$ref" ] as $try ) {
+    git( "rev-parse --verify " . escapeshellarg( "$try^{commit}" ), $code );
+
+    if ( !$code ) {
+        $resolved = $try;
+        break;
+    }
 }
+
+if ( !strlen( $resolved ) ) {
+    fail( $fetch
+          ? "ref '$ref' not found after fetching, tried '$ref' and 'origin/$ref'"
+          : "ref '$ref' not found as '$ref' or 'origin/$ref', try --fetch" );
+}
+
+$ref = $resolved;
 
 ## capture the prefix while git is still running from $emdir, then move it to
 ## the repo root for everything after
