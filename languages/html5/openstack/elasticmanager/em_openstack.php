@@ -1265,7 +1265,7 @@ class em_openstack {
         $this->log( "STARTUP : elastic manager server id $this->id flavor $this->flavor" );
 
         if ( !$this->mail_transport_ok( $why ) ) {
-            $this->echo_warn( "mail transport looks down, $why. notifications will not be delivered until it is started" );
+            $this->echo_warn( "configured smtp server unreachable, $why. notifications will be lost until it is reachable" );
         }
 
         ## read current server state & config & determine what's needed
@@ -1378,26 +1378,30 @@ class em_openstack {
         }
     }
 
-    ## mail_transport_ok() - can a notification actually leave the box?
+    ## mail_transport_ok() - only meaningful when we open the connection ourselves.
     ##
-    ## postfix in this container does not restart on its own after a docker
-    ## start, which is what happens after a jetstream maintenance reboot. an
-    ## alert raised in that window would be silently undeliverable, so say so
-    ## at startup where it will be seen.
+    ## with mail:smtp set, phpmailer connects to that server at send time and a
+    ## failure loses the message. without it we hand off to the local sendmail,
+    ## which accepts into postfix's maildrop whether or not postfix is running
+    ## and delivers once it starts, so a stopped postfix delays notifications
+    ## rather than losing them. there is nothing to check in that case, and
+    ## postfix's health is not this program's business.
 
     function mail_transport_ok( &$why ) {
-        $why  = "";
-        $host = "127.0.0.1";
-        $port = 25;
+        $why = "";
 
-        if ( isset( $this->em_config->files->appconfig ) && file_exists( $this->em_config->files->appconfig ) ) {
-            $app = json_decode( file_get_contents( $this->em_config->files->appconfig ) );
-
-            if ( isset( $app->mail->smtp->host ) ) {
-                $host = $app->mail->smtp->host;
-                $port = isset( $app->mail->smtp->port ) && $app->mail->smtp->port ? $app->mail->smtp->port : 25;
-            }
+        if ( !isset( $this->em_config->files->appconfig ) || !file_exists( $this->em_config->files->appconfig ) ) {
+            return true;
         }
+
+        $app = json_decode( file_get_contents( $this->em_config->files->appconfig ) );
+
+        if ( !isset( $app->mail->smtp->host ) ) {
+            return true;
+        }
+
+        $host = $app->mail->smtp->host;
+        $port = isset( $app->mail->smtp->port ) && $app->mail->smtp->port ? $app->mail->smtp->port : 25;
 
         ob_start();
         $fp = @fsockopen( $host, $port, $errno, $errstr, 5 );
