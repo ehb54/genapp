@@ -39,7 +39,8 @@ replace by rename so a concurrent em_client.php can never read a partial file
     --rollback          : restore the most recent backup set
     --backups           : list backup sets
 
-    With no action given, --diff is assumed.
+    One of --diff, --install, --rollback or --backups must be given. With no
+    action this prints help and does nothing.
 
     Restart impact is reported per file. Nothing here restarts the daemon; when
     a restart is needed the command is printed.
@@ -311,8 +312,11 @@ if ( count( $u_argv ) ) {
     fail( "unexpected argument '$u_argv[0]'\n$notes" );
 }
 
+## no action without being asked for one, not even a read only one
+
 if ( !strlen( $action ) ) {
-    $action = "diff";
+    echo $notes;
+    exit;
 }
 
 $backuproot = ( getenv( "HOME" ) ? getenv( "HOME" ) : $emdir ) . "/.em_install_backups";
