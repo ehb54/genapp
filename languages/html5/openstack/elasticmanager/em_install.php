@@ -72,7 +72,12 @@ $em_scope = [
     ,"em_test.php"      => "standalone"
     ,"em_test_mail.php" => "standalone"
     ,"em_install.php"   => "standalone"
+    ,"em_log.php"       => "standalone"
     ];
+
+## anything the ref carries that is not classified above
+
+define( "EM_UNCLASSIFIED", "unclassified" );
 
 $em_scope_notes = [
     "client"      => "hot, applies to the next em_client.php run"
@@ -80,6 +85,7 @@ $em_scope_notes = [
     ,"daemon"     => "no effect until the daemon is restarted"
     ,"config"     => "no effect until the daemon is restarted, config is read once at startup"
     ,"standalone" => "no effect on the running system"
+    ,"unclassified" => "not classified in em_install.php, assume it may need a daemon restart"
     ];
 
 function fail( $msg ) {
@@ -407,15 +413,34 @@ if ( count( $toplevel ) && is_dir( $toplevel[ 0 ] ) ) {
     $gitdir = $toplevel[ 0 ];
 }
 
+## enumerate from the ref rather than from $em_scope. $em_scope classifies
+## restart impact, it is not the file list: driving the loop from it meant a
+## newly added file nobody had listed there was silently never installed.
+
+$reffiles = [];
+
+foreach ( git( "ls-tree " . escapeshellarg( rtrim( $ref, "/" ) . ":" . rtrim( $prefix, "/" ) ), $code ) as $l ) {
+
+    ## regular blobs only, the tree also carries the vendor symlink
+
+    if ( preg_match( '/^(100644|100755) blob \S+\t(.+)$/', $l, $m ) ) {
+        $reffiles[] = $m[ 2 ];
+    }
+}
+
+if ( $code || !count( $reffiles ) ) {
+    fail( "could not list the elastic manager directory in $ref" );
+}
+
 foreach ( $only as $f ) {
-    if ( !isset( $em_scope[ $f ] ) ) {
-        fail( "'$f' is not an elastic manager file" );
+    if ( !in_array( $f, $reffiles ) ) {
+        fail( "'$f' is not in $ref, known files: " . implode( " ", $reffiles ) );
     }
 }
 
 $changed = [];
 
-foreach ( array_keys( $em_scope ) as $f ) {
+foreach ( $reffiles as $f ) {
     if ( count( $only ) && !in_array( $f, $only ) ) {
         continue;
     }
@@ -441,7 +466,7 @@ echo "pending changes:\n\n";
 $scopes_seen = [];
 
 foreach ( $changed as $f ) {
-    $scope = $em_scope[ $f ];
+    $scope = isset( $em_scope[ $f ] ) ? $em_scope[ $f ] : EM_UNCLASSIFIED;
     $scopes_seen[ $scope ] = true;
     echo sprintf( "  %-18s %-11s %s\n", $f, "[$scope]", $em_scope_notes[ $scope ] );
 }
@@ -603,7 +628,7 @@ echo "  ok\n\n";
 
 ## ---------------- what is left to do ----------------
 
-$needs_restart = array_intersect( [ "daemon", "config" ], array_keys( $scopes_seen ) );
+$needs_restart = array_intersect( [ "daemon", "config", EM_UNCLASSIFIED ], array_keys( $scopes_seen ) );
 $has_shared    = isset( $scopes_seen[ "shared" ] );
 
 echo "installed " . count( $installed ) . " file" . ( count( $installed ) == 1 ? "" : "s" ) . " from $ref\n";
@@ -613,7 +638,7 @@ echo "rollback : php $self --rollback\n\n";
 if ( count( $needs_restart ) ) {
     echo "A DAEMON RESTART IS REQUIRED for these changes to take effect:\n";
     foreach ( $changed as $f ) {
-        if ( in_array( $em_scope[ $f ], [ "daemon", "config" ] ) ) {
+        if ( in_array( isset( $em_scope[ $f ] ) ? $em_scope[ $f ] : EM_UNCLASSIFIED, [ "daemon", "config", EM_UNCLASSIFIED ] ) ) {
             echo "  $f\n";
         }
     }
@@ -632,8 +657,22 @@ if ( count( $needs_restart ) ) {
 
     echo "  cd $emdir && ./em_start.sh\n\n";
 } else if ( $has_shared ) {
-    echo "No restart needed for the running daemon to stay correct. It keeps its\n"
-        . "loaded copy and will pick these up whenever it is next restarted.\n\n";
+    echo "The daemon stays correct without a restart, but it keeps its loaded copy,\n"
+        . "so it is STILL RUNNING THE OLD CODE. Anything in this change that affects\n"
+        . "daemon behaviour (reload_state, shelve, unshelve, launch_one, the service\n"
+        . "loop) does not take effect until you restart it. Client side changes\n"
+        . "(acquire, release, status, probe) are already live.\n\n";
+
+    echo "pool: " . pool_summary() . "\n\nTo restart if this change needs it:\n\n";
+
+    if ( ( $pid = service_pid() ) !== false ) {
+        echo "  kill $pid\n";
+    } else {
+        echo "  ## daemon pid not readable from the lock file, find it by hand\n";
+        echo "  pkill -f 'php em_service.php'\n";
+    }
+
+    echo "  cd $emdir && ./em_start.sh\n\n";
 } else {
     echo "No restart needed.\n\n";
 }
