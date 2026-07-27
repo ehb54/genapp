@@ -1,0 +1,20 @@
+## Runtime state and transient files. These are produced by a running manager
+## and are per deployment, never part of the repo.
+##
+## em_state.json in particular is the live pool bookkeeping. If it were ever
+## committed, both "git checkout -- ." and em_install.php would overwrite a
+## running pool's state with a stale snapshot. em_install.php refuses to
+## install anything matching these names as a second line of defence.
+
+em_state.json
+*.log
+nohup.out
+
+## em_install.php staging and rollback artefacts, normally removed on the way
+## through but left behind if it is interrupted
+
+*.new.*
+*.rollback.*
+
+## appconfig.json and secrets.json are already covered by the repo root
+## .gitignore
