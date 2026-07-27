@@ -75,6 +75,7 @@ $em_scope = [
     ,"em_test_mail.php" => "standalone"
     ,"em_install.php"   => "standalone"
     ,"em_log.php"       => "standalone"
+    ,".gitignore"       => "standalone"
     ];
 
 ## anything the ref carries that is not classified above
@@ -140,6 +141,30 @@ function validate( $path, $name ) {
 function git_mode( $ref, $path ) {
     $out = git( "ls-tree " . escapeshellarg( $ref ) . " -- " . escapeshellarg( $path ) );
     return ( count( $out ) && substr( $out[ 0 ], 0, 6 ) == "100755" ) ? 0755 : 0644;
+}
+
+## runtime_files() - names that belong to a running manager, never installed.
+## taken from em_config.json where it names them, so a renamed state file or
+## logfile is still protected, plus what em_start.sh produces.
+
+function runtime_files() {
+    $cfg   = em_cfg();
+    $names = [ "service.log", "nohup.out" ];
+
+    $from_cfg = [
+        isset( $cfg->logfile )          ? $cfg->logfile          : ""
+        ,isset( $cfg->files->state )    ? $cfg->files->state     : ""
+        ,isset( $cfg->files->appconfig )? $cfg->files->appconfig : ""
+        ,isset( $cfg->files->secrets )  ? $cfg->files->secrets   : ""
+        ];
+
+    foreach ( $from_cfg as $n ) {
+        if ( strlen( $n ) ) {
+            $names[] = basename( $n );
+        }
+    }
+
+    return array_values( array_unique( $names ) );
 }
 
 ## em_cfg() - em_config.json, or null
@@ -595,7 +620,27 @@ if ( $code || !count( $reffiles ) ) {
     fail( "could not list the elastic manager directory in $ref" );
 }
 
+## a runtime file committed by mistake must never be installed over the live
+## one. say so rather than skipping quietly, it means the repo needs fixing
+
+$protected = runtime_files();
+$blocked   = array_values( array_intersect( $reffiles, $protected ) );
+
+if ( count( $blocked ) ) {
+    echo "WARNING: $ref contains runtime files, refusing to install them:\n";
+    foreach ( $blocked as $b ) {
+        echo "  $b\n";
+    }
+    echo "  these belong to the running manager. add them to .gitignore and\n"
+        . "  git rm --cached them in the repo.\n\n";
+
+    $reffiles = array_values( array_diff( $reffiles, $protected ) );
+}
+
 foreach ( $only as $f ) {
+    if ( in_array( $f, $protected ) ) {
+        fail( "'$f' is a runtime file of the running manager, refusing to install it" );
+    }
     if ( !in_array( $f, $reffiles ) ) {
         fail( "'$f' is not in $ref, known files: " . implode( " ", $reffiles ) );
     }
