@@ -24,6 +24,12 @@ airavata job status messages
     --acquire flavor tag       : get an instance and tag it supplementary info
     --release id               : release an instance
     --status                   : print status
+    --probe                    : print status, and ask each active instance what
+                                 it is doing. one ssh per instance, so slower.
+                                 load15 is the 15 minute load average: waxsis runs
+                                 one container per frame, so a low instantaneous
+                                 reading is normal between frames but a sustained
+                                 low load15 on a held slot is not
 
 __EOD;
 
@@ -69,6 +75,11 @@ while( count( $u_argv ) && substr( $u_argv[ 0 ], 0, 1 ) == "-" ) {
             $status = true;
             break;
         }
+        case "--probe": {
+            array_shift( $u_argv );
+            $probe = true;
+            break;
+        }
       default:
         error_exit( "\nUnknown option '$u_argv[0]'\n\n$notes" );
     }
@@ -85,8 +96,8 @@ if ( isset( $acquire ) && isset( $release ) ) {
     error_exit( "--acquire & --release are mutually exclusive" );
 }
 
-if ( isset( $status ) ) {
-    echo $em_openstack->status();
+if ( isset( $status ) || isset( $probe ) ) {
+    echo $em_openstack->status( false, isset( $probe ) );
 }
 
 if ( isset( $acquire ) ) {
