@@ -36,7 +36,7 @@ echo "test message to $argv[1] using $smtp\n";
 
 $host = gethostname();
 
-if ( mymail( $argv[ 1 ], "[$host][elasticmanager][$emconfig->id][test message][$smtp]", "This is a $emconfig->id test message from host named $host send by $argv[0] using $smtp" ) )
+if ( mymail_digest( $argv[ 1 ], "[$host][elasticmanager][$emconfig->id][test message][$smtp]", "This is a $emconfig->id test message from host named $host send by $argv[0] using $smtp" ) )
 {
     echo "error found in sending\n";
 } else {

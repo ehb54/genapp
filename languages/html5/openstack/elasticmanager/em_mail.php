@@ -130,6 +130,110 @@ function mymail( $to, $subject, $body )
     return PEAR::isError( $mail );
 }
 
+function mymail_digest( $to, $subject, $body, $digest_timeout_minutes = 10 ) {
+    global $emconfig;
+    global $digest_state;
+    if ( !isset( $digest_state ) ) {
+        $digest_state = [];
+    }
+
+    $now = time();
+    $digest_timeout = $digest_timeout_minutes * 60;
+
+    ## Initialize or get digest state for this recipient
+    if ( !isset( $digest_state[$to] ) ) {
+        $digest_state[$to] = [
+            'last_sent' => 0,
+            'messages'  => []
+            ];
+    }
+
+    ## Queue the message
+    $digest_state[$to]['messages'][] = [
+        'timestamp' => $now,
+        'subject'   => $subject,
+        'body'      => $body
+        ];
+
+    ## Check if timeout has expired
+    if ( $now - $digest_state[$to]['last_sent'] < $digest_timeout ) {
+        return false; ## Digest not sent yet
+    }
+
+    ## Compose the digest message
+    $digest_body = "This is a digest of recent messages:\n\n";
+    foreach ( $digest_state[$to]['messages'] as $msg ) {
+        $digest_body .= "------------------------------\n";
+        $digest_body .= "Time: " . date('Y-m-d H:i:s', $msg['timestamp']) . "\n";
+        $digest_body .= "Subject: " . $msg['subject'] . "\n\n";
+        $digest_body .= $msg['body'] . "\n\n";
+    }
+
+    ## Load config and prepare headers
+    $json = json_decode( file_get_contents( APPCONFIG ) );
+    $headers = array (
+        'From'    => $emconfig->id . '@' . $json->mail->from,
+        'To'      => $to,
+        'Subject' => "[Digest] " . $subject
+        );
+
+    ## Send via SMTP or PHP mail
+    if ( isset( $json->mail->smtp ) ) {
+        $result = !phpmailer_mail( $to, "[Digest] " . $subject, $digest_body );
+    } else {
+        $phpmail = Mail::factory('mail');
+        $mail    = $phpmail->send( $to, $headers, $digest_body );
+        $result  = PEAR::isError( $mail );
+    }
+
+    ## If sent successfully, reset state
+    if ( !$result ) {
+        $digest_state[$to]['last_sent'] = $now;
+        $digest_state[$to]['messages']  = [];
+    }
+
+    return $result; ## false if success, true if error (to match original style)
+}
+
+function flush_all_digests() {
+    global $digest_state;
+    global $emconfig;
+    if (!isset($digest_state)) {
+        return;
+    }
+
+    $json = json_decode( file_get_contents( APPCONFIG ) );
+
+    foreach ( $digest_state as $to => $data ) {
+        if ( empty($data['messages']) ) continue;
+
+        $digest_body = "This is a digest of recent messages:\n\n";
+        foreach ( $data['messages'] as $msg ) {
+            $digest_body .= "------------------------------\n";
+            $digest_body .= "Time: " . date('Y-m-d H:i:s', $msg['timestamp']) . "\n";
+            $digest_body .= "Subject: " . $msg['subject'] . "\n\n";
+            $digest_body .= $msg['body'] . "\n\n";
+        }
+
+        $headers = array (
+            'From'    => $emconfig->id . '@' . $json->mail->from,
+            'To'      => $to,
+            'Subject' => "[Digest] Final Digest on Shutdown"
+            );
+
+        if ( isset( $json->mail->smtp ) ) {
+            phpmailer_mail( $to, "[Digest] Final Digest on Shutdown", $digest_body );
+        } else {
+            $phpmail = Mail::factory('mail');
+            $phpmail->send( $to, $headers, $digest_body );
+        }
+
+        // Clear messages after sending
+            $digest_state[$to]['messages'] = [];
+    }
+}
+
+
 function error_mail( $body ) {
     return admin_mail( "[elasticmanager][$emconfig->id][internal error message]", $body );
 }

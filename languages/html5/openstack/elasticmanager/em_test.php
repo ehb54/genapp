@@ -26,7 +26,7 @@ for ( $i = 1; $i <= $reps; ++$i  ) {
     $run_for = rand( 60, 600 );
     $sleep_for = rand( 60, 600 );
 
-    $cmd = "php em_client.php --acquire m3.tiny $tag";
+    $cmd = "php em_client.php --acquire m3.2xl $tag";
 
     echo "$cmd\n";
     $res = explode( " ", trim( run_cmd( $cmd ) ) );

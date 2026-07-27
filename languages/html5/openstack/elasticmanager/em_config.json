@@ -2,7 +2,7 @@
     "project"  : "TG-MCB170057"
     ,"id"      : "saxsafold"
     ,"logfile" : "em_saxsafold.log"
-    ,"notify"  : "emre@flash.net"
+    ,"notify"  : "emre.brookes@umt.edu"
     ,"files" : {
         "appconfig"      : "appconfig.json"
         ,"secrets"       : "secrets.json"
@@ -15,9 +15,9 @@
         ,"acquire_wait" : 15
     }
     ,"flavors" : {
-        "m3.tiny" : {
-            "idle" : 2
-            ,"maximum" : 6
+        "m3.2xl" : {
+            "idle" : 1
+            ,"maximum" : 10
         }
     }
 }
