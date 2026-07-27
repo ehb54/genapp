@@ -240,6 +240,28 @@ function startup_count() {
     return count( preg_grep( '/ - STARTUP/', file( $f ) ) );
 }
 
+## pid_alive() - is this pid a live process?
+##
+## /proc/<pid> existing is not enough. a dead process keeps its /proc entry
+## until it is reaped, and pid 1 in this container is "sleep infinity", which
+## never reaps anything, so an orphaned daemon becomes a zombie that lingers
+## forever. checking only for the directory made --restart report "did not stop
+## within 20s" for a daemon it had already killed, and refuse to start a
+## replacement, leaving the pool with no manager at all. zombies have an empty
+## cmdline, which is how they are told apart.
+
+function pid_alive( $pid ) {
+    clearstatcache();
+
+    if ( !is_dir( "/proc/$pid" ) ) {
+        return false;
+    }
+
+    $cl = @file_get_contents( "/proc/$pid/cmdline" );
+
+    return $cl !== false && strlen( str_replace( "\0", "", $cl ) ) > 0;
+}
+
 ## service_pid() - the daemon holds its lock as a symlink to /proc/<pid>.
 ## em_service.php takes lockdir from appconfig first and only falls back to
 ## em_config, so check both, and fall back to the process list because the lock
@@ -272,7 +294,7 @@ function service_pid() {
         if ( is_link( $lock )
              && ( $link = readlink( $lock ) ) !== false
              && preg_match( '#/proc/(\d+)#', $link, $m )
-             && is_dir( "/proc/" . $m[ 1 ] ) ) {
+             && pid_alive( $m[ 1 ] ) ) {
             return $m[ 1 ];
         }
     }
@@ -323,9 +345,7 @@ function daemon_restart() {
         $gone = false;
 
         for ( $i = 0; $i < 20; ++$i ) {
-            clearstatcache();
-
-            if ( !is_dir( "/proc/$pid" ) ) {
+            if ( !pid_alive( $pid ) ) {
                 $gone = true;
                 break;
             }
