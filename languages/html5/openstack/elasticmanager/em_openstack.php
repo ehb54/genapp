@@ -1264,6 +1264,10 @@ class em_openstack {
         $this->debug_echo( "em_openstack: server_start()" );
         $this->log( "STARTUP : elastic manager server id $this->id flavor $this->flavor" );
 
+        if ( !$this->mail_transport_ok( $why ) ) {
+            $this->echo_warn( "mail transport looks down, $why. notifications will not be delivered until it is started" );
+        }
+
         ## read current server state & config & determine what's needed
         $this->read_config();
         
@@ -1374,6 +1378,40 @@ class em_openstack {
         }
     }
 
+    ## mail_transport_ok() - can a notification actually leave the box?
+    ##
+    ## postfix in this container does not restart on its own after a docker
+    ## start, which is what happens after a jetstream maintenance reboot. an
+    ## alert raised in that window would be silently undeliverable, so say so
+    ## at startup where it will be seen.
+
+    function mail_transport_ok( &$why ) {
+        $why  = "";
+        $host = "127.0.0.1";
+        $port = 25;
+
+        if ( isset( $this->em_config->files->appconfig ) && file_exists( $this->em_config->files->appconfig ) ) {
+            $app = json_decode( file_get_contents( $this->em_config->files->appconfig ) );
+
+            if ( isset( $app->mail->smtp->host ) ) {
+                $host = $app->mail->smtp->host;
+                $port = isset( $app->mail->smtp->port ) && $app->mail->smtp->port ? $app->mail->smtp->port : 25;
+            }
+        }
+
+        ob_start();
+        $fp = @fsockopen( $host, $port, $errno, $errstr, 5 );
+        ob_end_clean();
+
+        if ( $fp ) {
+            fclose( $fp );
+            return true;
+        }
+
+        $why = "cannot connect to $host:$port ($errstr)";
+        return false;
+    }
+
     ## --- logfile functions ----
     function timestamp() {
         $date = new DateTimeImmutable();
@@ -1399,7 +1437,16 @@ class em_openstack {
                 $tag .= "shutdown";
             }
             $host = gethostname();
-            mymail( $this->notify, "[$host][$this->id] $tag", $msg );
+
+            ## mymail() returns true on failure. write the failure straight to
+            ## the file rather than calling log(), which would try to mail
+            ## about the mail failing
+
+            if ( mymail( $this->notify, "[$host][$this->id] $tag", $msg ) ) {
+                file_put_contents( $this->logfile
+                                   ,$this->timestamp() . " - NOTIFY FAILED : could not mail $this->notify, the message above was not delivered\n"
+                                   ,LOCK_EX | FILE_APPEND );
+            }
         }
     }
 
