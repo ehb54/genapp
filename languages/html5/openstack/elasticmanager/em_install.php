@@ -143,6 +143,24 @@ function git_mode( $ref, $path ) {
     return ( count( $out ) && substr( $out[ 0 ], 0, 6 ) == "100755" ) ? 0755 : 0644;
 }
 
+## scope_of() - restart impact for a file, classified or not.
+## an unlisted file is only treated as possibly needing a restart when the
+## daemon could actually load it: it requires php and reads json config, so a
+## .gitignore, a README or a shell script cannot change how it runs and saying
+## otherwise just trains the operator to ignore the warning.
+
+function scope_of( $f ) {
+    global $em_scope;
+
+    if ( isset( $em_scope[ $f ] ) ) {
+        return $em_scope[ $f ];
+    }
+
+    return in_array( pathinfo( $f, PATHINFO_EXTENSION ), [ "php", "json" ] )
+         ? EM_UNCLASSIFIED
+         : "standalone";
+}
+
 ## runtime_files() - names that belong to a running manager, never installed.
 ## taken from em_config.json where it names them, so a renamed state file or
 ## logfile is still protected, plus what em_start.sh produces.
@@ -674,7 +692,7 @@ echo "pending changes:\n\n";
 $scopes_seen = [];
 
 foreach ( $changed as $f ) {
-    $scope = isset( $em_scope[ $f ] ) ? $em_scope[ $f ] : EM_UNCLASSIFIED;
+    $scope = scope_of( $f );
     $scopes_seen[ $scope ] = true;
     echo sprintf( "  %-18s %-11s %s\n", $f, "[$scope]", $em_scope_notes[ $scope ] );
 }
@@ -846,7 +864,7 @@ echo "rollback : php $self --rollback\n\n";
 if ( count( $needs_restart ) ) {
     echo "A DAEMON RESTART IS REQUIRED for these changes to take effect:\n";
     foreach ( $changed as $f ) {
-        if ( in_array( isset( $em_scope[ $f ] ) ? $em_scope[ $f ] : EM_UNCLASSIFIED, [ "daemon", "config", EM_UNCLASSIFIED ] ) ) {
+        if ( in_array( scope_of( $f ), [ "daemon", "config", EM_UNCLASSIFIED ] ) ) {
             echo "  $f\n";
         }
     }
