@@ -44,6 +44,11 @@ class em_openstack {
 
     ## why the last probe_instance() failed, so --probe can say more than "?"
     public $probe_error = "";
+
+    ## consecutive low cpu readings per slot, and whether this episode has
+    ## already been warned about. process local on purpose, see probe_check()
+    private $probe_low     = [];
+    private $probe_alerted = [];
     
     function __construct( $debug = false, $configfile = "em_config.json" ) {
         $this->debug       = $debug;
@@ -441,7 +446,8 @@ class em_openstack {
     ## idle gap actually look like over time.
 
     function probe_sample() {
-        if ( !isset( $this->em_config->probe->history ) ) {
+        if ( !isset( $this->em_config->probe->history )
+             && !isset( $this->em_config->probe->min_pct ) ) {
             return false;
         }
 
@@ -458,14 +464,17 @@ class em_openstack {
                 continue;
             }
 
-            $ok = $this->probe_instance( $v->network, $load, $waxsis, $cores );
+            $ok  = $this->probe_instance( $v->network, $load, $waxsis, $cores );
+            $pct = $this->load_pct( $load, $cores );
+
+            $this->probe_check( $k, $v, $pct );
 
             $lines[] = sprintf( "%s slot=%s cores=%s load15=%s pct=%s waxsis=%s use=%s ip=%s tag=%s%s"
                                 ,$this->timestamp()
                                 ,$k
                                 ,$cores
                                 ,$load
-                                ,$this->load_pct( $load, $cores )
+                                ,$pct
                                 ,$waxsis
                                 ,( isset( $v->use_status ) && $v->use_status == "in use" ) ? "inuse" : "idle"
                                 ,$v->network
@@ -474,13 +483,74 @@ class em_openstack {
                 );
         }
 
-        if ( count( $lines ) ) {
+        if ( count( $lines ) && isset( $this->em_config->probe->history ) ) {
             file_put_contents( $this->em_config->probe->history, implode( "\n", $lines ) . "\n", LOCK_EX | FILE_APPEND );
         }
 
         $this->debug_echo( "probe_sample: recorded " . count( $lines ) . " samples" );
 
         return true;
+    }
+
+    ## probe_check() - warn once when a held slot stays under probe:min_pct for
+    ## probe:consecutive readings in a row.
+    ##
+    ## only held slots: an idle instance is legitimately near nothing, and the
+    ## floor is not zero anyway, a kworker stuck in D state since boot puts it
+    ## around 2% of a 64 core box.
+    ##
+    ## consecutive readings matter because load15 is a 15 minute average that
+    ## decays: a working job that pauses between waxsis frames slides down for
+    ## a while before recovering, and a single low reading proves nothing. an
+    ## unreadable probe is not counted either way, it is a different failure and
+    ## is already recorded with its reason in the history.
+    ##
+    ## the counters live in this process, so a daemon restart just delays an
+    ## alert rather than losing correctness.
+
+    function probe_check( $slot, $v, $pct ) {
+        if ( !isset( $this->em_config->probe->min_pct ) ) {
+            return;
+        }
+
+        if ( !isset( $v->use_status ) || $v->use_status != "in use" || !is_numeric( $pct ) ) {
+            return;
+        }
+
+        $min  = $this->em_config->probe->min_pct;
+        $need = isset( $this->em_config->probe->consecutive ) ? $this->em_config->probe->consecutive : 3;
+
+        if ( $pct >= $min ) {
+            if ( !empty( $this->probe_alerted[ $slot ] ) ) {
+                $this->log( sprintf( "probe: slot %s back above %d%% cpu (%d%%)", $slot, $min, $pct ) );
+            }
+
+            $this->probe_low[ $slot ]     = 0;
+            $this->probe_alerted[ $slot ] = false;
+            return;
+        }
+
+        $this->probe_low[ $slot ] = ( isset( $this->probe_low[ $slot ] ) ? $this->probe_low[ $slot ] : 0 ) + 1;
+
+        $this->debug_echo( sprintf( "probe_check: slot %s at %d%%, %d of %d low readings", $slot, $pct, $this->probe_low[ $slot ], $need ) );
+
+        if ( $this->probe_low[ $slot ] < $need || !empty( $this->probe_alerted[ $slot ] ) ) {
+            return;
+        }
+
+        ## one alert per episode, not one every interval until it recovers
+
+        $this->probe_alerted[ $slot ] = true;
+
+        $this->echo_warn( sprintf( "slot %s looks idle: %d%% cpu, under %d%% for %d consecutive probes %ds apart. held %s by %s, ip %s"
+                                   ,$slot
+                                   ,$pct
+                                   ,$min
+                                   ,$this->probe_low[ $slot ]
+                                   ,isset( $this->em_config->probe->interval ) ? $this->em_config->probe->interval : 0
+                                   ,$this->held_for( isset( $v->acquired_at ) ? $v->acquired_at : 0 )
+                                   ,empty( $v->use_id ) ? "unknown" : $v->use_id
+                                   ,isset( $v->network ) ? $v->network : "?" ) );
     }
 
     ## held_for() - how long a slot has been held, from acquired_at
