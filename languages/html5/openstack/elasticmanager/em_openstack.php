@@ -435,6 +435,7 @@ class em_openstack {
         $unknown    = [];
         $all        = [];
         $missing    = [];
+        $instances  = [];
 
         for ( $i = 0; $i < $maximum; ++$i ) {
             if ( !isset( $this->em_state->state->$i ) ) {
@@ -444,6 +445,14 @@ class em_openstack {
 
         foreach ( (array) $this->em_state->state as $k => $v ) {
             $all[] = $k;
+
+            $instances[ $k ] = (object)[
+                "ip"      => isset( $v->network )    ? $v->network    : "?"
+                ,"status" => isset( $v->status )     ? $v->status     : "?"
+                ,"use"    => isset( $v->use_status ) ? $v->use_status : "?"
+                ,"tag"    => empty( $v->use_id )     ? ""             : $v->use_id
+                ];
+
             switch( $v->status ) {
                 case "ACTIVE" : {
                     $active[] = $k;
@@ -504,6 +513,23 @@ class em_openstack {
         }
 
         $this->em_state->release_lock();
+
+        ## per instance detail, sorted by slot number
+
+        ksort( $instances, SORT_NUMERIC );
+
+        $instance_table = sprintf( "%-4s %-15s %-17s %-6s %s\n", "slot", "ip", "status", "use", "tag" );
+
+        foreach ( $instances as $k => $v ) {
+            $instance_table .=
+                sprintf( "%-4s %-15s %-17s %-6s %s\n"
+                         ,$k
+                         ,$v->ip
+                         ,$v->status
+                         ,$v->use
+                         ,$v->tag
+                );
+        }
 
         if ( $update ) {
             $do_reload_state = false;
@@ -580,6 +606,8 @@ class em_openstack {
             . "unknown %d [%s]\n"
             . "missing %d [%s]\n"
             . "\n"
+            . "%s"
+            . "\n"
             . "needed idle $needed_idle\n"
             . "maximum     $maximum\n"
             . "instances to start $instances_to_start\n"
@@ -593,6 +621,7 @@ class em_openstack {
             ,count( $build ), implode( ",", $build )
             ,count( $unknown ), implode( ",", $unknown )
             ,count( $missing ), implode( ",", $missing )
+            ,$instance_table
 
             );
     }
