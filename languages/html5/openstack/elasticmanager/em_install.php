@@ -143,6 +143,46 @@ function git_mode( $ref, $path ) {
     return ( count( $out ) && substr( $out[ 0 ], 0, 6 ) == "100755" ) ? 0755 : 0644;
 }
 
+## ref_blob() / work_blob() - object ids for the two sides of a comparison.
+##
+## these exist because "git diff <ref> -- <path>" consults the index, so a file
+## that is not tracked in this clone reads as different forever no matter how
+## many times it is installed: em_log.php and .gitignore reinstalled on every
+## single run. hashing the content is index independent, and an absent file
+## hashes to "" so a new file still registers as a change.
+
+function ref_blob( $ref, $path ) {
+    $out = git( "rev-parse --verify --quiet " . escapeshellarg( "$ref:$path" ), $code );
+    return ( !$code && count( $out ) ) ? trim( $out[ 0 ] ) : "";
+}
+
+function work_blob( $file ) {
+    if ( !file_exists( $file ) ) {
+        return "";
+    }
+
+    $out = run( "git hash-object " . escapeshellarg( $file ), $code );
+    return ( !$code && count( $out ) ) ? trim( $out[ 0 ] ) : "";
+}
+
+## scope_of() - restart impact for a file, classified or not.
+## an unlisted file is only treated as possibly needing a restart when the
+## daemon could actually load it: it requires php and reads json config, so a
+## .gitignore, a README or a shell script cannot change how it runs and saying
+## otherwise just trains the operator to ignore the warning.
+
+function scope_of( $f ) {
+    global $em_scope;
+
+    if ( isset( $em_scope[ $f ] ) ) {
+        return $em_scope[ $f ];
+    }
+
+    return in_array( pathinfo( $f, PATHINFO_EXTENSION ), [ "php", "json" ] )
+         ? EM_UNCLASSIFIED
+         : "standalone";
+}
+
 ## runtime_files() - names that belong to a running manager, never installed.
 ## taken from em_config.json where it names them, so a renamed state file or
 ## logfile is still protected, plus what em_start.sh produces.
@@ -653,9 +693,7 @@ foreach ( $reffiles as $f ) {
         continue;
     }
 
-    git( "diff --quiet " . escapeshellarg( $ref ) . " -- " . escapeshellarg( "$prefix$f" ), $code );
-
-    if ( $code == 1 ) {
+    if ( ref_blob( $ref, "$prefix$f" ) !== work_blob( "$emdir/$f" ) ) {
         $changed[] = $f;
     }
 }
@@ -674,7 +712,7 @@ echo "pending changes:\n\n";
 $scopes_seen = [];
 
 foreach ( $changed as $f ) {
-    $scope = isset( $em_scope[ $f ] ) ? $em_scope[ $f ] : EM_UNCLASSIFIED;
+    $scope = scope_of( $f );
     $scopes_seen[ $scope ] = true;
     echo sprintf( "  %-18s %-11s %s\n", $f, "[$scope]", $em_scope_notes[ $scope ] );
 }
@@ -714,11 +752,31 @@ if ( in_array( "em_config.json", $changed ) ) {
 
 if ( $action == "diff" ) {
     foreach ( $changed as $f ) {
-        ## -R so the diff reads working tree -> ref, the direction install applies
 
-        $d = git( "diff -R --no-color " . escapeshellarg( $ref ) . " -- " . escapeshellarg( "$prefix$f" ) );
+        ## plain diff against the ref content, for the same reason the
+        ## comparison above does not use git diff: it must not depend on
+        ## whether this clone happens to track the file
+
+        $tmp = "$emdir/$f.diff." . getmypid();
+
+        system( "git -C " . escapeshellarg( $gitdir ) . " show " . escapeshellarg( "{$ref}:{$prefix}{$f}" ) . " > " . escapeshellarg( $tmp ) . " 2>/dev/null", $code );
 
         echo str_repeat( "-", 72 ) . "\n";
+
+        if ( $code ) {
+            echo "  could not read $f from $ref\n";
+            @unlink( $tmp );
+            continue;
+        }
+
+        $d = run( sprintf( "diff -u --label %s --label %s %s %s"
+                           ,escapeshellarg( "$f  (installed)" )
+                           ,escapeshellarg( "$f  ($ref)" )
+                           ,escapeshellarg( file_exists( "$emdir/$f" ) ? "$emdir/$f" : "/dev/null" )
+                           ,escapeshellarg( $tmp ) ) );
+
+        @unlink( $tmp );
+
         if ( count( $d ) ) {
             echo implode( "\n", $d ) . "\n";
         }
@@ -846,7 +904,7 @@ echo "rollback : php $self --rollback\n\n";
 if ( count( $needs_restart ) ) {
     echo "A DAEMON RESTART IS REQUIRED for these changes to take effect:\n";
     foreach ( $changed as $f ) {
-        if ( in_array( isset( $em_scope[ $f ] ) ? $em_scope[ $f ] : EM_UNCLASSIFIED, [ "daemon", "config", EM_UNCLASSIFIED ] ) ) {
+        if ( in_array( scope_of( $f ), [ "daemon", "config", EM_UNCLASSIFIED ] ) ) {
             echo "  $f\n";
         }
     }
