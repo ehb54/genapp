@@ -143,6 +143,28 @@ function git_mode( $ref, $path ) {
     return ( count( $out ) && substr( $out[ 0 ], 0, 6 ) == "100755" ) ? 0755 : 0644;
 }
 
+## ref_blob() / work_blob() - object ids for the two sides of a comparison.
+##
+## these exist because "git diff <ref> -- <path>" consults the index, so a file
+## that is not tracked in this clone reads as different forever no matter how
+## many times it is installed: em_log.php and .gitignore reinstalled on every
+## single run. hashing the content is index independent, and an absent file
+## hashes to "" so a new file still registers as a change.
+
+function ref_blob( $ref, $path ) {
+    $out = git( "rev-parse --verify --quiet " . escapeshellarg( "$ref:$path" ), $code );
+    return ( !$code && count( $out ) ) ? trim( $out[ 0 ] ) : "";
+}
+
+function work_blob( $file ) {
+    if ( !file_exists( $file ) ) {
+        return "";
+    }
+
+    $out = run( "git hash-object " . escapeshellarg( $file ), $code );
+    return ( !$code && count( $out ) ) ? trim( $out[ 0 ] ) : "";
+}
+
 ## scope_of() - restart impact for a file, classified or not.
 ## an unlisted file is only treated as possibly needing a restart when the
 ## daemon could actually load it: it requires php and reads json config, so a
@@ -671,9 +693,7 @@ foreach ( $reffiles as $f ) {
         continue;
     }
 
-    git( "diff --quiet " . escapeshellarg( $ref ) . " -- " . escapeshellarg( "$prefix$f" ), $code );
-
-    if ( $code == 1 ) {
+    if ( ref_blob( $ref, "$prefix$f" ) !== work_blob( "$emdir/$f" ) ) {
         $changed[] = $f;
     }
 }
@@ -732,11 +752,31 @@ if ( in_array( "em_config.json", $changed ) ) {
 
 if ( $action == "diff" ) {
     foreach ( $changed as $f ) {
-        ## -R so the diff reads working tree -> ref, the direction install applies
 
-        $d = git( "diff -R --no-color " . escapeshellarg( $ref ) . " -- " . escapeshellarg( "$prefix$f" ) );
+        ## plain diff against the ref content, for the same reason the
+        ## comparison above does not use git diff: it must not depend on
+        ## whether this clone happens to track the file
+
+        $tmp = "$emdir/$f.diff." . getmypid();
+
+        system( "git -C " . escapeshellarg( $gitdir ) . " show " . escapeshellarg( "{$ref}:{$prefix}{$f}" ) . " > " . escapeshellarg( $tmp ) . " 2>/dev/null", $code );
 
         echo str_repeat( "-", 72 ) . "\n";
+
+        if ( $code ) {
+            echo "  could not read $f from $ref\n";
+            @unlink( $tmp );
+            continue;
+        }
+
+        $d = run( sprintf( "diff -u --label %s --label %s %s %s"
+                           ,escapeshellarg( "$f  (installed)" )
+                           ,escapeshellarg( "$f  ($ref)" )
+                           ,escapeshellarg( file_exists( "$emdir/$f" ) ? "$emdir/$f" : "/dev/null" )
+                           ,escapeshellarg( $tmp ) ) );
+
+        @unlink( $tmp );
+
         if ( count( $d ) ) {
             echo implode( "\n", $d ) . "\n";
         }
