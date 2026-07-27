@@ -14,6 +14,10 @@
         ,"service_loop" : 30
         ,"acquire_wait" : 15
     }
+    ,"probe" : {
+        "interval"  : 300
+        ,"history"  : "em_probe.log"
+    }
     ,"flavors" : {
         "m3.2xl" : {
             "idle" : 1

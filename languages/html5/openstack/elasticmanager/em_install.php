@@ -196,6 +196,7 @@ function runtime_files() {
         ,isset( $cfg->files->state )    ? $cfg->files->state     : ""
         ,isset( $cfg->files->appconfig )? $cfg->files->appconfig : ""
         ,isset( $cfg->files->secrets )  ? $cfg->files->secrets   : ""
+        ,isset( $cfg->probe->history )  ? $cfg->probe->history   : ""
         ];
 
     foreach ( $from_cfg as $n ) {

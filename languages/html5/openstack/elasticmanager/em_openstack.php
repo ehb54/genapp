@@ -41,6 +41,9 @@ class em_openstack {
     private $global_putenv_done = false;
 
     private $run_cmd_last_error_code;
+
+    ## why the last probe_instance() failed, so --probe can say more than "?"
+    public $probe_error = "";
     
     function __construct( $debug = false, $configfile = "em_config.json" ) {
         $this->debug       = $debug;
@@ -420,6 +423,66 @@ class em_openstack {
 
 
     # status() - compute status info, optionally update os status
+    ## load_pct() - load15 as a percentage of the machine.
+    ## the raw figure means nothing without the core count, and the core count
+    ## changes with the flavor, so everything downstream should use this
+
+    function load_pct( $load, $cores ) {
+        if ( !is_numeric( $load ) || !is_numeric( $cores ) || $cores <= 0 ) {
+            return "?";
+        }
+
+        return (string) round( 100 * $load / $cores );
+    }
+
+    ## probe_sample() - probe every ACTIVE instance and append one line each to
+    ## the probe history. records every sample, not just interesting ones: no
+    ## threshold can be chosen honestly until we know what a working job and an
+    ## idle gap actually look like over time.
+
+    function probe_sample() {
+        if ( !isset( $this->em_config->probe->history ) ) {
+            return false;
+        }
+
+        $this->em_state->read_no_lock();
+
+        if ( !isset( $this->em_state->state ) ) {
+            return false;
+        }
+
+        $lines = [];
+
+        foreach ( (array) $this->em_state->state as $k => $v ) {
+            if ( !isset( $v->status ) || $v->status != "ACTIVE" || !isset( $v->network ) ) {
+                continue;
+            }
+
+            $ok = $this->probe_instance( $v->network, $load, $waxsis, $cores );
+
+            $lines[] = sprintf( "%s slot=%s cores=%s load15=%s pct=%s waxsis=%s use=%s ip=%s tag=%s%s"
+                                ,$this->timestamp()
+                                ,$k
+                                ,$cores
+                                ,$load
+                                ,$this->load_pct( $load, $cores )
+                                ,$waxsis
+                                ,( isset( $v->use_status ) && $v->use_status == "in use" ) ? "inuse" : "idle"
+                                ,$v->network
+                                ,empty( $v->use_id ) ? "-" : $v->use_id
+                                ,$ok ? "" : " error=" . str_replace( " ", "_", $this->probe_error )
+                );
+        }
+
+        if ( count( $lines ) ) {
+            file_put_contents( $this->em_config->probe->history, implode( "\n", $lines ) . "\n", LOCK_EX | FILE_APPEND );
+        }
+
+        $this->debug_echo( "probe_sample: recorded " . count( $lines ) . " samples" );
+
+        return true;
+    }
+
     ## held_for() - how long a slot has been held, from acquired_at
     function held_for( $ts ) {
         if ( !$ts || ( $s = time() - $ts ) < 0 ) {
@@ -433,9 +496,10 @@ class em_openstack {
     ## finalmodel.php runs one waxsis container per frame, so an instantaneous
     ## check reads idle in the gaps between frames
 
-    function probe_instance( $ip, &$load, &$waxsis ) {
+    function probe_instance( $ip, &$load, &$waxsis, &$cores = null ) {
         $load   = "?";
         $waxsis = "?";
+        $cores  = "?";
 
         if ( !$this->appconfig_loaded ) {
             $this->load_appconfig();
@@ -451,9 +515,22 @@ class em_openstack {
         $probe_timeout         = 6;
         $probe_connect_timeout = 4;
 
-        $remote = 'echo L $(cut -d" " -f3 /proc/loadavg); if docker ps >/dev/null 2>&1; then echo W $(docker ps | grep -ci waxsis); else echo W ?; fi';
+        ## nproc so the reading can be a fraction of the machine rather than a
+        ## bare number: a flavor change must not silently invalidate it
 
-        $cmd = sprintf( "timeout %d ssh -i %s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=%d %s %s 2>/dev/null"
+        $remote = 'echo L $(cut -d" " -f3 /proc/loadavg); echo C $(nproc); if docker ps >/dev/null 2>&1; then echo W $(docker ps | grep -ci waxsis); else echo W ?; fi';
+
+        ## UserKnownHostsFile=/dev/null is not optional here. shelve and unshelve
+        ## recycle addresses, so the same ip legitimately belongs to a different
+        ## instance with a different host key over time; persisting keys would
+        ## eventually fail every probe against a recycled address.
+        ##
+        ## LogLevel=ERROR suppresses the "Permanently added ... to the list of
+        ## known hosts" line at the source. It used to be swallowed by sending
+        ## all of stderr to /dev/null, which threw away the real errors too, so
+        ## an unreachable instance reported "?" with no reason attached.
+
+        $cmd = sprintf( "timeout %d ssh -i %s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR -o BatchMode=yes -o ConnectTimeout=%d %s %s 2>&1"
                         ,$probe_timeout
                         ,escapeshellarg( $p->sshidentity )
                         ,$probe_connect_timeout
@@ -467,18 +544,31 @@ class em_openstack {
         ## outcome here, not something to log as a command failure
 
         $out = [];
-        exec( $cmd, $out );
+        exec( $cmd, $out, $code );
+
+        $noise = [];
 
         foreach ( $out as $line ) {
             if ( preg_match( '/^L\s+(\S+)/', $line, $m ) ) {
                 $load = $m[ 1 ];
-            }
-            if ( preg_match( '/^W\s+(\S+)/', $line, $m ) ) {
+            } else if ( preg_match( '/^C\s+(\d+)/', $line, $m ) ) {
+                $cores = $m[ 1 ];
+            } else if ( preg_match( '/^W\s+(\S+)/', $line, $m ) ) {
                 $waxsis = $m[ 1 ] == "?" ? "?" : ( intval( $m[ 1 ] ) > 0 ? "yes" : "no" );
+            } else if ( strlen( trim( $line ) ) ) {
+                $noise[] = trim( $line );
             }
         }
 
-        return $load != "?";
+        if ( $load == "?" ) {
+            $this->probe_error = count( $noise )
+                               ? implode( " | ", $noise )
+                               : ( $code == 124 ? "timed out after {$probe_timeout}s" : "no answer, ssh exit $code" );
+            return false;
+        }
+
+        $this->probe_error = "";
+        return true;
     }
 
     function status( $update = false, $probe = false ) {
@@ -527,6 +617,8 @@ class em_openstack {
                 ,"held"   => $this->held_for( isset( $v->acquired_at ) ? $v->acquired_at : 0 )
                 ,"load"   => "-"
                 ,"waxsis" => "-"
+                ,"cores"  => "-"
+                ,"pct"    => "-"
                 ];
 
             switch( $v->status ) {
@@ -597,29 +689,42 @@ class em_openstack {
         ## probing is one ssh per instance, so only on request and only where
         ## there is a running OS to answer
 
+        $probe_errors = [];
+
         if ( $probe ) {
             foreach ( $instances as $k => $v ) {
                 if ( $v->status != "ACTIVE" ) {
                     continue;
                 }
-                $this->probe_instance( $v->ip, $load, $waxsis );
+
+                if ( !$this->probe_instance( $v->ip, $load, $waxsis, $cores ) && strlen( $this->probe_error ) ) {
+                    $probe_errors[] = sprintf( "  slot %-4s %-15s %s", $k, $v->ip, $this->probe_error );
+                }
+
                 $v->load   = $load;
                 $v->waxsis = $waxsis;
+                $v->cores  = $cores;
+                $v->pct    = $this->load_pct( $load, $cores );
             }
         }
 
         $fmt = $probe
-             ? "%-4s %-15s %-17s %-6s %7s %-6s %-8s %s\n"
+             ? "%-4s %-15s %-17s %-6s %7s %-5s %5s %-6s %-8s %s\n"
              : "%-4s %-15s %-17s %-6s %-8s %s\n";
 
         $instance_table = $probe
-                        ? sprintf( $fmt, "slot", "ip", "status", "use", "load15", "waxsis", "held", "tag" )
+                        ? sprintf( $fmt, "slot", "ip", "status", "use", "load15", "cores", "%cpu", "waxsis", "held", "tag" )
                         : sprintf( $fmt, "slot", "ip", "status", "use", "held", "tag" );
 
         foreach ( $instances as $k => $v ) {
             $instance_table .= $probe
-                             ? sprintf( $fmt, $k, $v->ip, $v->status, $v->use, $v->load, $v->waxsis, $v->held, $v->tag )
+                             ? sprintf( $fmt, $k, $v->ip, $v->status, $v->use, $v->load, $v->cores
+                                        ,$v->pct == "-" || $v->pct == "?" ? $v->pct : $v->pct . "%", $v->waxsis, $v->held, $v->tag )
                              : sprintf( $fmt, $k, $v->ip, $v->status, $v->use, $v->held, $v->tag );
+        }
+
+        if ( count( $probe_errors ) ) {
+            $instance_table .= "\nprobe failures:\n" . implode( "\n", $probe_errors ) . "\n";
         }
 
         if ( $update ) {
@@ -1098,8 +1203,20 @@ class em_openstack {
 
         $this->debug_echo( $this->status( true ) );
 
+        $last_probe = 0;
+
         while( 1 ) {
             $this->debug_echo( $this->status( true ) );
+
+            ## probing is one ssh per active instance, far too slow for every
+            ## service loop, so it runs on its own interval
+
+            if ( isset( $this->em_config->probe->interval )
+                 && time() - $last_probe >= $this->em_config->probe->interval ) {
+                $last_probe = time();
+                $this->probe_sample();
+            }
+
             sleep( $this->em_config->sleep->service_loop );
         }            
     }
