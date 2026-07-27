@@ -408,7 +408,68 @@ class em_openstack {
 
 
     # status() - compute status info, optionally update os status
-    function status( $update = false ) {
+    ## held_for() - how long a slot has been held, from acquired_at
+    function held_for( $ts ) {
+        if ( !$ts || ( $s = time() - $ts ) < 0 ) {
+            return "-";
+        }
+        return sprintf( "%dd %02dh", intdiv( $s, 86400 ), intdiv( $s % 86400, 3600 ) );
+    }
+
+    ## probe_instance() - ask the instance what it is actually doing.
+    ## the 15 minute load average is the signal, not a container check:
+    ## finalmodel.php runs one waxsis container per frame, so an instantaneous
+    ## check reads idle in the gaps between frames
+
+    function probe_instance( $ip, &$load, &$waxsis ) {
+        $load   = "?";
+        $waxsis = "?";
+
+        if ( !$this->appconfig_loaded ) {
+            $this->load_appconfig();
+        }
+
+        $p = $this->appconfig->resources->oscluster->properties;
+
+        if ( !isset( $p->sshidentity ) || !isset( $p->sshadmin ) ) {
+            $this->debug_echo( "probe_instance: sshidentity or sshadmin not defined, cannot probe" );
+            return false;
+        }
+
+        $probe_timeout         = 6;
+        $probe_connect_timeout = 4;
+
+        $remote = 'echo L $(cut -d" " -f3 /proc/loadavg); if docker ps >/dev/null 2>&1; then echo W $(docker ps | grep -ci waxsis); else echo W ?; fi';
+
+        $cmd = sprintf( "timeout %d ssh -i %s -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=%d %s %s 2>/dev/null"
+                        ,$probe_timeout
+                        ,escapeshellarg( $p->sshidentity )
+                        ,$probe_connect_timeout
+                        ,escapeshellarg( "$p->sshadmin@$ip" )
+                        ,escapeshellarg( $remote )
+            );
+
+        $this->debug_echo( "probe_instance: $cmd" );
+
+        ## deliberately not run_cmd(): an unreachable instance is an expected
+        ## outcome here, not something to log as a command failure
+
+        $out = [];
+        exec( $cmd, $out );
+
+        foreach ( $out as $line ) {
+            if ( preg_match( '/^L\s+(\S+)/', $line, $m ) ) {
+                $load = $m[ 1 ];
+            }
+            if ( preg_match( '/^W\s+(\S+)/', $line, $m ) ) {
+                $waxsis = $m[ 1 ] == "?" ? "?" : ( intval( $m[ 1 ] ) > 0 ? "yes" : "no" );
+            }
+        }
+
+        return $load != "?";
+    }
+
+    function status( $update = false, $probe = false ) {
         $this->debug_echo( "em_openstack: status()" );
 
         $this->em_state->read_lock();
@@ -451,6 +512,9 @@ class em_openstack {
                 ,"status" => isset( $v->status )     ? $v->status     : "?"
                 ,"use"    => isset( $v->use_status ) ? $v->use_status : "?"
                 ,"tag"    => empty( $v->use_id )     ? ""             : $v->use_id
+                ,"held"   => $this->held_for( isset( $v->acquired_at ) ? $v->acquired_at : 0 )
+                ,"load"   => "-"
+                ,"waxsis" => "-"
                 ];
 
             switch( $v->status ) {
@@ -518,17 +582,32 @@ class em_openstack {
 
         ksort( $instances, SORT_NUMERIC );
 
-        $instance_table = sprintf( "%-4s %-15s %-17s %-6s %s\n", "slot", "ip", "status", "use", "tag" );
+        ## probing is one ssh per instance, so only on request and only where
+        ## there is a running OS to answer
+
+        if ( $probe ) {
+            foreach ( $instances as $k => $v ) {
+                if ( $v->status != "ACTIVE" ) {
+                    continue;
+                }
+                $this->probe_instance( $v->ip, $load, $waxsis );
+                $v->load   = $load;
+                $v->waxsis = $waxsis;
+            }
+        }
+
+        $fmt = $probe
+             ? "%-4s %-15s %-17s %-6s %7s %-6s %-8s %s\n"
+             : "%-4s %-15s %-17s %-6s %-8s %s\n";
+
+        $instance_table = $probe
+                        ? sprintf( $fmt, "slot", "ip", "status", "use", "load15", "waxsis", "held", "tag" )
+                        : sprintf( $fmt, "slot", "ip", "status", "use", "held", "tag" );
 
         foreach ( $instances as $k => $v ) {
-            $instance_table .=
-                sprintf( "%-4s %-15s %-17s %-6s %s\n"
-                         ,$k
-                         ,$v->ip
-                         ,$v->status
-                         ,$v->use
-                         ,$v->tag
-                );
+            $instance_table .= $probe
+                             ? sprintf( $fmt, $k, $v->ip, $v->status, $v->use, $v->load, $v->waxsis, $v->held, $v->tag )
+                             : sprintf( $fmt, $k, $v->ip, $v->status, $v->use, $v->held, $v->tag );
         }
 
         if ( $update ) {
@@ -950,7 +1029,7 @@ class em_openstack {
                     $this->debug_echo( "error: $v has no ip address defined\n" );
                     exit(-1);
                 }
-                $this->debug_echo("checking for ready $v $os_ip[$v] time waiting ${os_ready_time_waiting}s\n" );
+                $this->debug_echo("checking for ready $v $os_ip[$v] time waiting {$os_ready_time_waiting}s\n" );
 
                 ob_start();
 
@@ -1178,8 +1257,9 @@ class em_openstack {
             foreach ( (array) $this->em_state->state as $k => $v ) {
                 if ( $v->status == "ACTIVE"
                      && $v->use_status == "idle" ) {
-                    $v->use_status = "in use";
-                    $v->use_id     = $tag;
+                    $v->use_status  = "in use";
+                    $v->use_id      = $tag;
+                    $v->acquired_at = time();
                     $this->em_state->save();
                     $number = $k;
                     $ip     = $this->em_state->state->$k->network;
@@ -1209,8 +1289,9 @@ class em_openstack {
             $this->echo_warn( "release $number was not in use" );
             return false;
         }
-        $this->em_state->state->$number->use_status = "idle";
-        $this->em_state->state->$number->use_id     = "";
+        $this->em_state->state->$number->use_status  = "idle";
+        $this->em_state->state->$number->use_id      = "";
+        $this->em_state->state->$number->acquired_at = 0;
         $this->em_state->save();
         return true;
     }
