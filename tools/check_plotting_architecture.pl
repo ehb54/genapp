@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use File::Basename qw(basename);
-use File::Find qw(find);
 use File::Spec;
 use JSON::PP qw(decode_json);
 
@@ -144,22 +143,39 @@ push @errors, 'plotting registry modules must be an object'
     unless ref $registered eq 'HASH';
 $registered = {} unless ref $registered eq 'HASH';
 
-find(
-    {
-    no_chdir => 1,
-    wanted => sub {
-        return unless -f $_ && $_ =~ /\.json\z/;
-        my $path = $File::Find::name;
-        my $text = read_text($path);
-        return unless $text =~ /"type"\s*:\s*"(?:plotly|semantic_plot)"/
-            || $text =~ /"plot_spec"\s*:/;
-        my $module = basename($path, '.json');
-        push @plot_modules, $module;
-    },
-    },
-    $modules_dir,
-);
+sub tracked_module_json_files {
+    my ($app_dir, $modules_dir) = @_;
+    my @files;
+    my $quoted_app = $app_dir;
+    $quoted_app =~ s/'/'\\''/g;
+    my $command = "git -C '$quoted_app' ls-files modules/*.json";
+    if (open my $handle, '-|', $command) {
+        while (my $relative = <$handle>) {
+            chomp $relative;
+            next unless length $relative;
+            push @files, File::Spec->catfile($app_dir, $relative);
+        }
+        close $handle;
+    }
+    if (!@files) {
+        opendir my $dir, $modules_dir
+            or die "cannot read $modules_dir: $!\n";
+        @files = map { File::Spec->catfile($modules_dir, $_) }
+            grep { /\.json\z/ && -f File::Spec->catfile($modules_dir, $_) }
+            readdir $dir;
+        closedir $dir;
+    }
+    return @files;
+}
 
+@plot_modules = ();
+for my $path (tracked_module_json_files($app_dir, $modules_dir)) {
+    my $text = read_text($path);
+    next unless $text =~ /"type"\s*:\s*"(?:plotly|semantic_plot)"/
+        || $text =~ /"plot_spec"\s*:/;
+    my $module = basename($path, '.json');
+    push @plot_modules, $module;
+}
 my %plot_module = map { $_ => 1 } @plot_modules;
 for my $module (sort @plot_modules) {
     push @errors, "plot module $module is missing from the migration registry"
