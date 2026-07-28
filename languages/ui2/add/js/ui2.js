@@ -8540,9 +8540,11 @@
       const style = neutral_plot_series_style(series_spec, index);
       const x_field = series_spec.x || "x";
       const y_field = series_spec.y || "y";
+      const y_values = neutral_plot_series_values(
+        rows, y_field, series_spec.normalization);
       const trace = Object.assign({}, style, {
         x: rows.map((row) => row?.[x_field]),
-        y: rows.map((row) => row?.[y_field]),
+        y: y_values,
         name: stringValue(series_spec.label || series_spec.name || series_spec.dataset_id),
         xaxis: axes.xaxis,
         yaxis: axes.yaxis,
@@ -8562,6 +8564,42 @@
       layout,
       config: neutral_plot_config(),
     };
+  }
+
+  function neutral_plot_series_values(rows, field, normalization) {
+    const values = rows.map((row) => row?.[field]);
+    const mode = stringValue(normalization || "");
+    if (!mode) {
+      return values;
+    }
+    const grouped = new Map();
+    rows.forEach((row, index) => {
+      const key = row?.profile_id ?? row?.series_id ?? "__all__";
+      if (!grouped.has(key)) {
+        grouped.set(key, []);
+      }
+      grouped.get(key).push(index);
+    });
+    const normalized = values.slice();
+    grouped.forEach((indices) => {
+      const numeric = indices
+        .map((index) => Number(values[index]))
+        .filter((value) => Number.isFinite(value));
+      let scale = null;
+      if (mode === "first_positive") {
+        scale = numeric.find((value) => value > 0);
+      } else if (mode === "max_abs") {
+        scale = numeric.reduce((best, value) => Math.max(best, Math.abs(value)), 0);
+      }
+      if (!scale || !Number.isFinite(scale) || scale <= 0) {
+        return;
+      }
+      indices.forEach((index) => {
+        const value = Number(values[index]);
+        normalized[index] = Number.isFinite(value) ? value / scale : values[index];
+      });
+    });
+    return normalized;
   }
 
   function neutral_plot_series_rows(rows, series_spec) {
