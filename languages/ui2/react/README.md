@@ -5,11 +5,18 @@ shadcn-style component source for UI2. The first vertical slice renders the
 `monomer_monte_carlo` module. Other modules continue through the plain
 JavaScript UI2 renderer.
 
-The React workbench deliberately reuses the existing UI2 field and output DOM
-producers through a narrow bridge in `languages/ui2/add/js/ui2.js`. This keeps
-GenApp field semantics, local/server file selection, repeat visibility,
-submission, polling, Plotly, NGL, and reattachment behavior authoritative in
-the established runtime while React owns workspace composition.
+The React workbench reuses existing UI2 field producers and runtime transport
+through a narrow bridge in `languages/ui2/add/js/ui2.js`. This keeps GenApp
+field semantics, local/server file selection, repeat visibility, submission,
+polling, ordered event delivery, and reattachment authoritative in the
+established runtime while React owns workspace composition.
+
+Plotting follows `doc/Plotting-Architecture.md` and `ehb54/zazzie#193`.
+Semantic dataset events cross the bridge, while the native React plot component
+owns normalized plot state, responsive behavior, accessibility, visual policy,
+and renderer translation. Plotly is an adapter below that component, not a
+module, driver, or cross-repository contract. NGL remains a separate viewer
+concern.
 
 Theme styling is owned by the UI2 shell. React components consume the shared
 semantic `--ui2-*` CSS variables and should not introduce Bootstrap,

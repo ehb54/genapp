@@ -187,6 +187,11 @@ test "$core_head" = "$required_commit"
 test -f languages/html5/js/dynamic_output.js
 grep -q 'ga.dynamicOutput' languages/html5/add/js/ga.min.js
 
+if [[ -f "$gz_dir/plotting_migration.json" ]]; then
+    stamp "Plotting architecture verification"
+    "$core_dir/tools/check_plotting_architecture.pl" "$gz_dir"
+fi
+
 if [[ "$generate_mode" = "check" ]]; then
     echo "Check-only requested; not regenerating $gz_dir"
     exit 0

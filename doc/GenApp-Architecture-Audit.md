@@ -119,14 +119,17 @@ ids, defaults, or backend request shape.
 inside that target, not a separate target language. The target definition lives
 in `languages/ui2.json`; the plain JavaScript runtime in
 `languages/ui2/add/js/ui2.js` owns module loading, field production, values,
-repeat visibility, submission, polling, output rendering, reattachment, and the
-bridge exposed to React.
+repeat visibility, submission, polling, ordered runtime-event transport,
+reattachment, and the bridge exposed to React.
 
 React source under `languages/ui2/react/` owns curated workspace composition and
-visual presentation. Its README states that React deliberately reuses the
-existing UI2 field and output DOM producers through a narrow bridge so GenApp
-field semantics, file selection, repeat behavior, submission, polling, Plotly,
-NGL, and reattachment remain authoritative in the established UI2 runtime.
+visual presentation. Plotting follows the reviewed architecture in
+`ehb54/zazzie#193` and `doc/Plotting-Architecture.md`: the native React plot
+component owns normalized plot state, responsive behavior, accessibility,
+visual policy, and renderer translation. The bridge transports semantic
+dataset events and durable state; it does not make Plotly figures a module or
+cross-repository contract. NGL and other molecular-structure viewers remain
+separate viewer concerns.
 
 Action/precheck consequence: if a module-level action or pre-run check is added
 for UI2, implement the behavior in the UI2 core target/runtime first. Let React
@@ -135,6 +138,11 @@ only when a custom React view needs to invoke the same UI2-owned action without
 rendering the standard field producer. Do not create a standalone
 `ui2-react` target, move semantics into `views`, or make React own the backend
 request/response contract for this feature.
+
+Plotting consequence: do not add module-specific Plotly construction to the
+core runtime, application drivers, helpers, or views. When a scientific dataset
+or renderer-neutral `plot_spec` cannot express a requested plot, stop and
+extend the shared reviewed contract before migrating the module.
 
 Reattach consequence for future module work: treat live streaming and durable
 reattachment as separate responsibilities. Transient WebSocket updates may
