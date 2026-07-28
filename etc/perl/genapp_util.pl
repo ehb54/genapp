@@ -1507,8 +1507,9 @@ sub check_files {
             {
                 my %ids;
                 my %dynamic_output_supported = map { $_ => 1 } qw(
-                    html plotly image video file textarea text integer float email
-                    progress plot2d bokeh matplotlib plot3d ngl atomicstructure
+                    html plotly semantic_plot image video file textarea text
+                    integer float email progress plot2d bokeh matplotlib
+                    plot3d ngl atomicstructure
                 );
 
                 foreach my $field ( @{ $$json{ 'fields' } || [] } )

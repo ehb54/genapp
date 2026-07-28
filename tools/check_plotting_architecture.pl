@@ -136,6 +136,9 @@ push @errors, 'plotting registry must govern ehb54/zazzie issue 193'
 my %allowed_status = map { $_ => 1 } qw(
     not_migrated semantic_data_ready harness_candidate accepted
 );
+my %shared_harness_status = map { $_ => 1 } qw(
+    harness_candidate accepted
+);
 my $registered = $registry->{modules};
 push @errors, 'plotting registry modules must be an object'
     unless ref $registered eq 'HASH';
@@ -148,7 +151,7 @@ find(
         return unless -f $_ && $_ =~ /\.json\z/;
         my $path = $File::Find::name;
         my $text = read_text($path);
-        return unless $text =~ /"type"\s*:\s*"plotly"/
+        return unless $text =~ /"type"\s*:\s*"(?:plotly|semantic_plot)"/
             || $text =~ /"plot_spec"\s*:/;
         my $module = basename($path, '.json');
         push @plot_modules, $module;
@@ -176,7 +179,7 @@ for my $module (sort keys %{$registered}) {
     my $status = $entry->{status} // '';
     push @errors, "registry module $module has invalid status '$status'"
         unless $allowed_status{$status};
-    next unless $status eq 'accepted';
+    next unless $shared_harness_status{$status};
 
     my @required_acceptance = qw(
         dataset_schema plot_spec_schema shared_reducer native_react_renderer
@@ -184,16 +187,18 @@ for my $module (sort keys %{$registered}) {
         reattach scientific_value_parity responsive accessibility
         non_color_cues
     );
-    my $acceptance = $entry->{acceptance};
-    if (ref $acceptance ne 'HASH') {
-        push @errors,
-            "accepted module $module is missing acceptance evidence";
-    } else {
-        for my $gate (@required_acceptance) {
+    if ($status eq 'accepted') {
+        my $acceptance = $entry->{acceptance};
+        if (ref $acceptance ne 'HASH') {
             push @errors,
-                "accepted module $module has not passed $gate"
-                unless exists $acceptance->{$gate}
-                    && $acceptance->{$gate};
+                "accepted module $module is missing acceptance evidence";
+        } else {
+            for my $gate (@required_acceptance) {
+                push @errors,
+                    "accepted module $module has not passed $gate"
+                    unless exists $acceptance->{$gate}
+                        && $acceptance->{$gate};
+            }
         }
     }
 
@@ -201,30 +206,30 @@ for my $module (sort keys %{$registered}) {
         $modules_dir, "$module.json");
     my $module_text = read_text($module_file);
     push @errors,
-        "accepted module $module still declares renderer-specific type plotly"
+        "$status module $module still declares renderer-specific type plotly"
         if $module_text =~ /"type"\s*:\s*"plotly"/;
     my @specs = collect_plot_specs($module_text, $module_file);
-    push @errors, "accepted module $module has no plot_spec"
+    push @errors, "$status module $module has no plot_spec"
         unless @specs;
     inspect_spec($_, $module_file, 'plot_spec') for @specs;
 
     my $driver_paths = $entry->{driver_paths};
     if (ref $driver_paths ne 'ARRAY' || !@{$driver_paths}) {
         push @errors,
-            "accepted module $module must list every application driver/helper path";
+            "$status module $module must list every application driver/helper path";
         next;
     }
     for my $relative (@{$driver_paths}) {
         my $path = File::Spec->catfile($app_dir, $relative);
         if (!-f $path) {
             push @errors,
-                "accepted module $module implementation path does not exist: "
+                "$status module $module implementation path does not exist: "
                 . $relative;
             next;
         }
         my $text = read_text($path);
         push @errors,
-            "accepted module $module implementation mentions Plotly: $relative"
+            "$status module $module implementation mentions Plotly: $relative"
             if $text =~ /plotly/i;
     }
 }

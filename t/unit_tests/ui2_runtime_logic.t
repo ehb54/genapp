@@ -2249,6 +2249,86 @@ assert.strictEqual(JSON.stringify(datasetFigure.data[0].y), JSON.stringify([20.4
 assert.strictEqual(JSON.stringify(datasetFigure.data[1].x), JSON.stringify([2]), "UI2 plot_state renders a second trace from its dataset_id");
 assert.strictEqual(datasetFigure.layout.height, undefined, "UI2 plot_state does not require hand-carved plot height");
 
+const neutralDatasetPlotOutput = createNode("div");
+neutralDatasetPlotOutput.dataset.outputFieldId = "plotout4_stream";
+neutralDatasetPlotOutput.dataset.outputType = "semantic_plot";
+neutralDatasetPlotOutput._ui2_plot_spec = {
+  title: "Monomer Monte Carlo Progress",
+  panels: [{
+    id: "rg",
+    x: { quantity: "trial", label: "Trial number" },
+    y: { quantity: "rg", label: "Rg", display_unit: "Angstrom" }
+  }, {
+    id: "coverage",
+    x: { quantity: "trial", label: "Trial number" },
+    y: { quantity: "occupied_cells", label: "Convergence cells" }
+  }, {
+    id: "residual",
+    optional: true,
+    x: { quantity: "q", label: "q" },
+    y: { quantity: "residual", label: "normalized residual" }
+  }],
+  series: [{
+    dataset_id: "all_rg",
+    panel: "rg",
+    x: "trial",
+    y: "rg",
+    role: "points",
+    label: "all structures"
+  }, {
+    dataset_id: "convergence_cells",
+    panel: "coverage",
+    x: "trial",
+    y: "occupied_cells",
+    role: "line",
+    label: "occupied convergence cells"
+  }, {
+    dataset_id: "all_rg",
+    panel: "rg",
+    x: "trial",
+    y: "rg",
+    role: "line",
+    label: "accepted structures",
+    where: { field: "accepted", equals: true }
+  }, {
+    dataset_id: "missing_residuals",
+    panel: "residual",
+    x: "q",
+    y: "residual",
+    role: "line",
+    label: "residual"
+  }]
+};
+hooks.apply_plot_dataset_event(neutralDatasetPlotOutput, {
+  operation: "replace",
+  payload: {
+    datasets: [{
+      dataset_id: "all_rg",
+      rows: [
+        { trial: 1, rg: 20.1 },
+        { trial: 2, rg: 20.4, accepted: true }
+      ]
+    }, {
+      dataset_id: "convergence_cells",
+      rows: [
+        { trial: 1, occupied_cells: 12 },
+        { trial: 2, occupied_cells: 15 }
+      ]
+    }]
+  }
+});
+const neutralDatasetFigure = hooks.plotly_figure_from_plot_state(neutralDatasetPlotOutput);
+assert.strictEqual(JSON.stringify(neutralDatasetFigure.data[0].x), JSON.stringify([1, 2]), "neutral plot_spec maps the first semantic series to x values");
+assert.strictEqual(JSON.stringify(neutralDatasetFigure.data[1].y), JSON.stringify([12, 15]), "neutral plot_spec maps a second semantic panel to y values");
+assert.strictEqual(JSON.stringify(neutralDatasetFigure.data[2].x), JSON.stringify([2]), "neutral plot_spec filters semantic rows for a derived series");
+assert.strictEqual(neutralDatasetFigure.data[0].type, "scatter", "semantic_plot translates to Plotly only inside the UI2 renderer");
+assert.strictEqual(neutralDatasetFigure.layout.xaxis.title, "Trial number", "neutral plot_spec derives axis labels without module Plotly layout");
+assert.strictEqual(neutralDatasetFigure.layout.yaxis.title, "Rg (Angstrom)", "neutral plot_spec derives display units without module Plotly layout");
+assert.strictEqual(neutralDatasetFigure.layout.xaxis2.title, "Trial number", "neutral plot_spec creates shared renderer panel axes");
+assert.strictEqual(neutralDatasetFigure.layout.xaxis3, undefined, "neutral plot_spec omits optional panels without data");
+assert.strictEqual(neutralDatasetFigure.layout.margin, undefined, "neutral plot_spec does not require module-owned margins");
+assert.strictEqual(neutralDatasetFigure.config.responsive, true, "neutral plot_spec keeps renderer config in UI2");
+
 const scatteringPreviewRow = createNode("div");
 scatteringPreviewRow.className = "ui2-field ui2-output-field ui2-dynamic-output-row";
 scatteringPreviewRow.hidden = true;
