@@ -161,7 +161,11 @@ sub tracked_module_json_files {
         opendir my $dir, $modules_dir
             or die "cannot read $modules_dir: $!\n";
         @files = map { File::Spec->catfile($modules_dir, $_) }
-            grep { /\.json\z/ && -f File::Spec->catfile($modules_dir, $_) }
+            grep {
+                /\.json\z/
+                    && $_ !~ /(?:_new|_old|\.before|\.pre|backup)/i
+                    && -f File::Spec->catfile($modules_dir, $_)
+            }
             readdir $dir;
         closedir $dir;
     }
