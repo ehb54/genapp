@@ -8263,6 +8263,7 @@
       renderTextOutput(output, value);
       return;
     }
+    output._ui2PlotlyLastFigure = cloneUi2Value(figure);
     output.classList.add("ui2-output-rendered", "ui2-output-plotly-ready");
     const updateExisting = Boolean(output.data && window.Plotly?.react);
     if (!updateExisting) {
@@ -8301,6 +8302,8 @@
         if (!output.data || typeof window.Plotly?.extendTraces !== "function") {
           if (payload.figure) {
             renderPlotlyOutput(output, payload.figure);
+          } else if (output._ui2PlotlyLastFigure) {
+            renderPlotlyOutput(output, output._ui2PlotlyLastFigure);
           }
           return;
         }
@@ -8320,9 +8323,11 @@
           return;
         }
         const max_points = Number(payload.max_points ?? payload.maxPoints);
-        return Number.isInteger(max_points) && max_points > 0
+        const extended = Number.isInteger(max_points) && max_points > 0
           ? window.Plotly.extendTraces(output, { x, y }, indices, max_points)
           : window.Plotly.extendTraces(output, { x, y }, indices);
+        rememberPlotlyAppend(output, indices, x, y, max_points);
+        return extended;
       })
       .then(() => {
         resizePlotlyOutputWhenVisible(output);
@@ -8406,7 +8411,50 @@
     // Pane-fitted figures are autosized.  Plotly's resize routine reads the
     // CSS box; writing a fixed width/height back with relayout makes the plot
     // participate in its own size calculation and can grow the pane.
+    const refreshed = refreshPlotlyOutputIfNeeded(output);
+    if (refreshed?.then) {
+      refreshed.then(() => window.Plotly?.Plots?.resize?.(output));
+      return;
+    }
     window.Plotly?.Plots?.resize?.(output);
+  }
+
+  function rememberPlotlyAppend(output, indices, x_values, y_values, max_points) {
+    const figure = output?._ui2PlotlyLastFigure;
+    if (!figure || !Array.isArray(figure.data)) {
+      return;
+    }
+    indices.forEach((trace_index, position) => {
+      const trace = figure.data[trace_index];
+      if (!trace || !Array.isArray(x_values[position]) || !Array.isArray(y_values[position])) {
+        return;
+      }
+      trace.x = Array.isArray(trace.x) ? trace.x.concat(x_values[position]) : x_values[position].slice();
+      trace.y = Array.isArray(trace.y) ? trace.y.concat(y_values[position]) : y_values[position].slice();
+      if (Number.isInteger(max_points) && max_points > 0 && trace.x.length > max_points) {
+        trace.x = trace.x.slice(trace.x.length - max_points);
+        trace.y = trace.y.slice(trace.y.length - max_points);
+      }
+    });
+  }
+
+  function refreshPlotlyOutputIfNeeded(output) {
+    const figure = output?._ui2PlotlyLastFigure;
+    if (!figure || !Array.isArray(figure.data) || typeof window.Plotly?.react !== "function") {
+      return null;
+    }
+    const has_plot = Boolean(output.data && output.querySelector?.(".svg-container"));
+    if (has_plot) {
+      return null;
+    }
+    const layout = plotlyLayoutForOutput(output, figure.layout);
+    if (layout.uirevision == null) {
+      layout.uirevision = output.dataset.outputFieldId || "ui2-plot";
+    }
+    applyPlotlyTheme(layout);
+    const config = Object.assign({ responsive: true }, figure.config || {});
+    applyPlotlyModebarHooks(figure, config);
+    return window.Plotly.react(output, figure.data, layout, config);
   }
 
   function debugPlotlyResize(label, output, width, height) {
@@ -9539,6 +9587,8 @@
       ngl_active_frame_index,
       applyPlotlyTheme,
       appendPlotlyOutput,
+      rememberPlotlyAppend,
+      refreshPlotlyOutputIfNeeded,
       plotlyLayoutForOutput,
       plotlyThemeColors,
       repeatIsCondition,

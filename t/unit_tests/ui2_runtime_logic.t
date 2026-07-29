@@ -2199,6 +2199,45 @@ assert.strictEqual(
   "successive dynamic Plotly snapshots retain the existing canvas instead of recreating it"
 );
 
+const rememberedPlot = createNode("div");
+rememberedPlot.dataset.outputFieldId = "plotout4_stream";
+rememberedPlot.dataset.outputType = "plotly";
+rememberedPlot.dataset.plotFit = "pane";
+rememberedPlot._ui2PlotlyLastFigure = {
+  data: [{ x: [1], y: [10], type: "scatter" }],
+  layout: { width: 900, height: 600, title: "Remembered" },
+  config: { responsive: true }
+};
+hooks.rememberPlotlyAppend(rememberedPlot, [0], [[2, 3, 4]], [[20, 30, 40]], 3);
+assert.deepStrictEqual(
+  rememberedPlot._ui2PlotlyLastFigure.data[0].x,
+  [2, 3, 4],
+  "Plotly append events update the remembered snapshot used for hidden-pane recovery"
+);
+let refreshCount = 0;
+window.Plotly.react = function(output, data, layout, config) {
+  refreshCount += 1;
+  output.data = data;
+  output.layout = layout;
+  output.config = config;
+  const svg = createNode("div");
+  svg.className = "svg-container";
+  output.appendChild(svg);
+  return output;
+};
+hooks.refreshPlotlyOutputIfNeeded(rememberedPlot);
+assert.strictEqual(refreshCount, 1, "blank Plotly nodes can be refreshed from the remembered snapshot before resize");
+assert.strictEqual(
+  rememberedPlot.layout.height,
+  undefined,
+  "refreshed pane-fitted Plotly output keeps producer height out of the client layout"
+);
+assert.deepStrictEqual(
+  rememberedPlot.data[0].y,
+  [20, 30, 40],
+  "refreshed Plotly output uses the latest remembered appended data"
+);
+
 const futureEventStore = hooks.createJobEventStore();
 futureEventStore.reset("event-run", "monomer_monte_carlo");
 assert.strictEqual(
