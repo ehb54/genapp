@@ -13,16 +13,6 @@ my $repo_root = repo_root($FindBin::Bin);
 my $ga_min    = File::Spec->catfile( $repo_root, 'languages', 'html5', 'add', 'js', 'ga.min.js' );
 my $before    = -f $ga_min ? read_file($ga_min) : undef;
 
-for my $direction (qw(input output)) {
-    ok(
-        -f File::Spec->catfile(
-            $repo_root, 'languages', 'html5', 'types',
-            "semantic_plot.$direction"
-        ),
-        "html5 semantic_plot has its required $direction type template"
-    );
-}
-
 my $generated = generate_fixture_app(
     repo_root    => $repo_root,
     fixture_name => 'minimal_html5',

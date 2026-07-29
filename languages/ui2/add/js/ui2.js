@@ -1959,12 +1959,8 @@
     return value == null ? value : JSON.parse(JSON.stringify(value));
   }
 
-  function is_plot_output_type(type) {
-    return type === "plotly" || type === "semantic_plot";
-  }
-
   function resizeWorkbenchOutputs() {
-    document.querySelectorAll('[data-output-type="plotly"], [data-output-type="semantic_plot"]').forEach((output) => {
+    document.querySelectorAll('[data-output-type="plotly"]').forEach((output) => {
       resizePlotlyOutputWhenVisible(output);
     });
     document.querySelectorAll('[data-output-type="ngl"]').forEach((output) => {
@@ -1988,7 +1984,7 @@
   function releaseReactWorkbenchField(fieldNode) {
     fieldNode?.querySelectorAll?.("[data-output-field-id]").forEach((output) => {
       disconnectPlotlyOutputObserver(output);
-      if (is_plot_output_type(output.dataset.outputType) && window.Plotly?.purge) {
+      if (output.dataset.outputType === "plotly" && window.Plotly?.purge) {
         window.Plotly.purge(output);
       }
       if (output.dataset.outputType === "ngl") {
@@ -3367,7 +3363,6 @@
     const output = el("div", outputClassForType(type), outputPlaceholderForType(type));
     output.dataset.outputFieldId = field.id || "";
     output.dataset.outputType = type;
-    attach_plot_spec(output, field);
     return output;
   }
 
@@ -3381,14 +3376,6 @@
     output.dataset.dynamicLabel = field.label || field.id || "Dynamic output";
     output.dataset.dynamicWidth = field.width || "";
     output.dataset.dynamicHeight = field.height || "";
-    attach_plot_spec(output, field);
-    return output;
-  }
-
-  function attach_plot_spec(output, field) {
-    if (output && field?.plot_spec != null) {
-      output._ui2_plot_spec = cloneUi2Value(field.plot_spec);
-    }
     return output;
   }
 
@@ -3402,7 +3389,7 @@
 
   function outputClassForType(type) {
     const classes = ["ui2-output"];
-    if (is_plot_output_type(type)) {
+    if (type === "plotly") {
       classes.push("ui2-output-plotly");
     } else if (type === "html" || type === "file") {
       classes.push("ui2-output-html");
@@ -3415,7 +3402,7 @@
   }
 
   function outputPlaceholderForType(type) {
-    if (is_plot_output_type(type)) {
+    if (type === "plotly") {
       return "Plot will appear here at runtime.";
     }
     if (type === "html") {
@@ -6000,10 +5987,9 @@
         return;
       }
       delete output.dataset.runtimeText;
-      output._ui2_plot_state = null;
       output.classList.remove("ui2-output-rendered", "ui2-output-plotly-ready");
       output.dataset.status = "";
-      if (window.Plotly?.purge && is_plot_output_type(output.dataset.outputType)) {
+      if (window.Plotly?.purge && output.dataset.outputType === "plotly") {
         window.Plotly.purge(output);
       }
       if (output.dataset.outputType === "ngl") {
@@ -6794,20 +6780,12 @@
   }
 
   function applyJobEventToOutput(event) {
-    if (!event || !["dataset", "plot", "structure"].includes(event.channel)) {
+    if (!event || !["plot", "structure"].includes(event.channel)) {
       return;
     }
     markRuntimeOutputAvailable(event.topic);
     const output = document.querySelector(`[data-output-field-id="${cssEscape(event.topic)}"]`);
     if (!output) {
-      return;
-    }
-    if (event.channel === "dataset") {
-      if (output.dataset.dynamicOutput === "true") {
-        apply_dynamic_plot_dataset_event(output, event);
-        return;
-      }
-      apply_plot_dataset_event(output, event);
       return;
     }
     if (event.channel === "plot") {
@@ -7047,14 +7025,7 @@
       updateProgressOutputs(value);
       return;
     }
-    if (is_plot_output_type(type)) {
-      if (is_plot_dataset_payload(value)) {
-        apply_plot_dataset_event(output, {
-          operation: "snapshot",
-          payload: value
-        });
-        return;
-      }
+    if (type === "plotly") {
       renderPlotlyOutput(output, value);
       return;
     }
@@ -7108,8 +7079,7 @@
           id: item.id,
           type: group.dataset.outputType || "html",
           width: group.dataset.dynamicWidth || "",
-          height: group.dataset.dynamicHeight || "",
-          plot_spec: item.plot_spec || group._ui2_plot_spec || null
+          height: group.dataset.dynamicHeight || ""
         });
         output.dataset.dynamicChild = "true";
         instance.append(label, output);
@@ -7142,15 +7112,9 @@
       return {
         id: safeDynamicId(item.id) || generatedId,
         label: item.label || `${label} ${index + 1}`,
-        value: item.value ?? item.data ?? "",
-        plot_spec: item.plot_spec || null
+        value: item.value ?? item.data ?? ""
       };
     });
-  }
-
-  function dynamic_output_item_id(group, payload) {
-    const prefix = safeDynamicId(group?.dataset?.dynamicIdPrefix || group?.dataset?.outputFieldId || "dynamic_output");
-    return safeDynamicId(payload?.item_id || payload?.itemId || payload?.id) || `${prefix}_1`;
   }
 
   function safeDynamicId(value) {
@@ -8368,394 +8332,6 @@
       });
   }
 
-  function apply_dynamic_plot_dataset_event(group, event) {
-    if (!group || !is_plot_output_type(group.dataset.outputType)) {
-      return;
-    }
-    const payload = event.payload || {};
-    const item_id = dynamic_output_item_id(group, payload);
-    updateDynamicOutput(group, {
-      items: [{
-        id: item_id,
-        label: payload.item_label || payload.itemLabel || group.dataset.dynamicLabel || item_id,
-        value: { data: [] },
-        plot_spec: payload.plot_spec || group._ui2_plot_spec || null
-      }]
-    });
-    const output = group.querySelector(`[data-output-field-id="${cssEscape(item_id)}"]`);
-    if (!output) {
-      return;
-    }
-    apply_plot_dataset_event(output, event);
-  }
-
-  function apply_plot_dataset_event(output, event) {
-    if (!output || !is_plot_output_type(output.dataset.outputType)) {
-      return;
-    }
-    const payload = event.payload || {};
-    if (payload.plot_spec) {
-      output._ui2_plot_spec = cloneUi2Value(payload.plot_spec);
-    }
-    if (event.operation === "clear") {
-      output._ui2_plot_state = { datasets: {} };
-      render_plot_state(output);
-      return;
-    }
-    const state_value = output._ui2_plot_state || { datasets: {} };
-    const next_state = {
-      datasets: Object.assign({}, state_value.datasets || {})
-    };
-    normalize_plot_dataset_payload(payload).forEach((dataset) => {
-      const dataset_id = dataset.dataset_id;
-      if (!dataset_id) {
-        return;
-      }
-      const previous = next_state.datasets[dataset_id] || { rows: [] };
-      const rows = dataset.rows || [];
-      const max_points = Number(dataset.max_points ?? payload.max_points);
-      let next_rows = event.operation === "append"
-        ? (previous.rows || []).concat(rows)
-        : rows.slice();
-      if (Number.isInteger(max_points) && max_points > 0 && next_rows.length > max_points) {
-        next_rows = next_rows.slice(next_rows.length - max_points);
-      }
-      next_state.datasets[dataset_id] = Object.assign({}, previous, {
-        rows: next_rows,
-        complete: event.operation === "complete" || dataset.complete === true,
-        metadata: cloneUi2Value(dataset.metadata || previous.metadata || {})
-      });
-    });
-    output._ui2_plot_state = next_state;
-    render_plot_state(output);
-  }
-
-  function is_plot_dataset_payload(value) {
-    return Boolean(value && typeof value === "object" && (
-      Array.isArray(value.datasets) || value.dataset_id
-    ));
-  }
-
-  function normalize_plot_dataset_payload(payload) {
-    if (!payload || typeof payload !== "object") {
-      return [];
-    }
-    const datasets = Array.isArray(payload.datasets)
-      ? payload.datasets
-      : (payload.dataset_id ? [payload] : []);
-    return datasets.map((dataset) => {
-      const dataset_id = stringValue(dataset.dataset_id || dataset.id);
-      const rows = Array.isArray(dataset.rows)
-        ? dataset.rows
-        : (dataset.row && typeof dataset.row === "object" ? [dataset.row] : []);
-      return {
-        dataset_id,
-        rows: rows.map(normalize_plot_dataset_row).filter(Boolean),
-        max_points: dataset.max_points,
-        complete: dataset.complete === true,
-        metadata: dataset.metadata || {}
-      };
-    }).filter((dataset) => dataset.dataset_id);
-  }
-
-  function normalize_plot_dataset_row(row) {
-    if (!row || typeof row !== "object" || Array.isArray(row)) {
-      return null;
-    }
-    return cloneUi2Value(row);
-  }
-
-  function render_plot_state(output) {
-    const figure = plotly_figure_from_plot_state(output);
-    if (!figure) {
-      return;
-    }
-    renderPlotlyOutput(output, figure);
-  }
-
-  function plotly_figure_from_plot_state(output) {
-    const spec = output?._ui2_plot_spec || {};
-    const state_value = output?._ui2_plot_state || { datasets: {} };
-    if (Array.isArray(spec.series)) {
-      return plotly_figure_from_neutral_plot_spec(spec, state_value);
-    }
-    const trace_specs = Array.isArray(spec.traces) ? spec.traces : [];
-    if (!trace_specs.length) {
-      return null;
-    }
-    const traces = trace_specs.map((trace_spec) => {
-      const dataset = state_value.datasets?.[trace_spec.dataset_id] || { rows: [] };
-      const rows = Array.isArray(dataset.rows) ? dataset.rows : [];
-      const trace = cloneUi2Value(trace_spec);
-      const x_field = trace.x || "x";
-      const y_field = trace.y || "y";
-      trace.x = rows.map((row) => row?.[x_field]);
-      trace.y = rows.map((row) => row?.[y_field]);
-      if (trace.error_y?.array_field) {
-        trace.error_y = Object.assign({}, trace.error_y, {
-          array: rows.map((row) => row?.[trace.error_y.array_field])
-        });
-        delete trace.error_y.array_field;
-      }
-      delete trace.dataset_id;
-      return trace;
-    });
-    return {
-      data: traces,
-      layout: cloneUi2Value(spec.layout || {}),
-      config: cloneUi2Value(spec.config || {})
-    };
-  }
-
-  function plotly_figure_from_neutral_plot_spec(spec, state_value) {
-    const series_specs = Array.isArray(spec.series) ? spec.series : [];
-    if (!series_specs.length) {
-      return null;
-    }
-    const series_rows = series_specs.map((series_spec) => {
-      const dataset = state_value.datasets?.[series_spec.dataset_id] || { rows: [] };
-      return neutral_plot_series_rows(
-        Array.isArray(dataset.rows) ? dataset.rows : [], series_spec);
-    });
-    let panels = normalize_neutral_plot_panels(spec, series_specs);
-    const active_panel_ids = new Set();
-    series_specs.forEach((series_spec, index) => {
-      if (series_rows[index]?.length) {
-        active_panel_ids.add(stringValue(series_spec.panel || panels[0]?.id || "main"));
-      }
-    });
-    const unfiltered_panels = panels;
-    panels = panels.filter((panel) => !panel.optional || active_panel_ids.has(panel.id));
-    if (!panels.length) {
-      panels = unfiltered_panels.slice(0, 1);
-    }
-    const panel_axes = neutral_plot_panel_axes(panels);
-    const traces = series_specs.map((series_spec, index) => {
-      const rows = series_rows[index] || [];
-      const panel_id = stringValue(series_spec.panel || panels[0]?.id || "main");
-      const axes = panel_axes.get(panel_id);
-      if (!axes) {
-        return null;
-      }
-      const style = neutral_plot_series_style(series_spec, index);
-      const x_field = series_spec.x || "x";
-      const y_field = series_spec.y || "y";
-      const y_values = neutral_plot_series_values(
-        rows, y_field, series_spec.normalization);
-      const trace = Object.assign({}, style, {
-        x: rows.map((row) => row?.[x_field]),
-        y: y_values,
-        name: stringValue(series_spec.label || series_spec.name || series_spec.dataset_id),
-        xaxis: axes.xaxis,
-        yaxis: axes.yaxis,
-      });
-      if (series_spec.y_uncertainty) {
-        trace.error_y = {
-          type: "data",
-          array: rows.map((row) => row?.[series_spec.y_uncertainty]),
-          visible: true,
-        };
-      }
-      return trace;
-    }).filter(Boolean);
-    const layout = neutral_plot_layout(spec, panels, panel_axes);
-    return {
-      data: traces,
-      layout,
-      config: neutral_plot_config(),
-    };
-  }
-
-  function neutral_plot_series_values(rows, field, normalization) {
-    const values = rows.map((row) => row?.[field]);
-    const mode = stringValue(normalization || "");
-    if (!mode) {
-      return values;
-    }
-    const grouped = new Map();
-    rows.forEach((row, index) => {
-      const key = row?.profile_id ?? row?.series_id ?? "__all__";
-      if (!grouped.has(key)) {
-        grouped.set(key, []);
-      }
-      grouped.get(key).push(index);
-    });
-    const normalized = values.slice();
-    grouped.forEach((indices) => {
-      const numeric = indices
-        .map((index) => Number(values[index]))
-        .filter((value) => Number.isFinite(value));
-      let scale = null;
-      if (mode === "first_positive") {
-        scale = numeric.find((value) => value > 0);
-      } else if (mode === "max_abs") {
-        scale = numeric.reduce((best, value) => Math.max(best, Math.abs(value)), 0);
-      }
-      if (!scale || !Number.isFinite(scale) || scale <= 0) {
-        return;
-      }
-      indices.forEach((index) => {
-        const value = Number(values[index]);
-        normalized[index] = Number.isFinite(value) ? value / scale : values[index];
-      });
-    });
-    return normalized;
-  }
-
-  function neutral_plot_series_rows(rows, series_spec) {
-    const where = series_spec?.where;
-    if (!where || typeof where !== "object") {
-      return rows;
-    }
-    const field = where.field;
-    if (!field) {
-      return rows;
-    }
-    if (Object.prototype.hasOwnProperty.call(where, "equals")) {
-      return rows.filter((row) => row?.[field] === where.equals);
-    }
-    if (Object.prototype.hasOwnProperty.call(where, "not_equals")) {
-      return rows.filter((row) => row?.[field] !== where.not_equals);
-    }
-    return rows;
-  }
-
-  function normalize_neutral_plot_panels(spec, series_specs) {
-    const declared = Array.isArray(spec.panels) ? spec.panels : [];
-    const panels = declared.map((panel, index) => ({
-      id: stringValue(panel.id || (index === 0 ? "main" : `panel_${index + 1}`)),
-      title: stringValue(panel.title || ""),
-      x_label: neutral_axis_label(panel.x),
-      y_label: neutral_axis_label(panel.y),
-      y_scale: stringValue(panel.y?.scale || panel.y_scale || ""),
-      optional: panel.optional === true,
-    })).filter((panel) => panel.id);
-    if (panels.length) {
-      return panels;
-    }
-    const seen = new Set();
-    series_specs.forEach((series) => {
-      const id = stringValue(series.panel || "main");
-      if (!seen.has(id)) {
-        seen.add(id);
-        panels.push({ id, title: "", x_label: "", y_label: "", y_scale: "" });
-      }
-    });
-    return panels.length ? panels : [{ id: "main", title: "", x_label: "", y_label: "", y_scale: "" }];
-  }
-
-  function neutral_axis_label(axis) {
-    if (!axis || typeof axis !== "object") {
-      return "";
-    }
-    const label = stringValue(axis.label || axis.quantity || "");
-    const unit = stringValue(axis.display_unit || axis.unit || "");
-    return unit ? `${label} (${unit})` : label;
-  }
-
-  function neutral_plot_panel_axes(panels) {
-    const axes = new Map();
-    panels.forEach((panel, index) => {
-      axes.set(panel.id, {
-        xaxis: index === 0 ? "x" : `x${index + 1}`,
-        yaxis: index === 0 ? "y" : `y${index + 1}`,
-      });
-    });
-    return axes;
-  }
-
-  function neutral_plot_series_style(series_spec, index) {
-    const role = stringValue(series_spec.role || "line");
-    const colors = plotlyThemeColors();
-    const palette = [
-      colors.accent,
-      "#d62728",
-      "#2ca02c",
-      "#9467bd",
-      "#d2691e",
-      "#17becf",
-    ];
-    const color = palette[index % palette.length];
-    if (role === "points" || role === "observed") {
-      return {
-        type: "scatter",
-        mode: "markers",
-        marker: { color, size: 6, symbol: index % 2 === 0 ? "circle" : "diamond" },
-      };
-    }
-    if (role === "sample" || role === "ensemble") {
-      return {
-        type: "scatter",
-        mode: "lines",
-        line: { color: color.replace(")", ", 0.2)").replace("rgb(", "rgba("), width: 1 },
-        hoverinfo: "skip",
-        showlegend: false,
-      };
-    }
-    return {
-      type: "scatter",
-      mode: "lines",
-      line: { color, width: role === "average" || role === "reference" ? 3 : 2 },
-    };
-  }
-
-  function neutral_plot_layout(spec, panels, panel_axes) {
-    const title = stringValue(spec.title || "");
-    const layout = {
-      title: title ? { text: title } : undefined,
-      hovermode: "closest",
-      showlegend: true,
-      legend: { orientation: "h" },
-    };
-    const domains = neutral_plot_domains(panels.length);
-    panels.forEach((panel, index) => {
-      const axes = panel_axes.get(panel.id);
-      const x_key = axes.xaxis === "x" ? "xaxis" : `xaxis${axes.xaxis.slice(1)}`;
-      const y_key = axes.yaxis === "y" ? "yaxis" : `yaxis${axes.yaxis.slice(1)}`;
-      layout[x_key] = {
-        title: panel.x_label,
-        domain: domains[index].x,
-        anchor: axes.yaxis,
-      };
-      layout[y_key] = {
-        title: panel.y_label,
-        domain: domains[index].y,
-        anchor: axes.xaxis,
-        autorange: true,
-      };
-      if (panel.y_scale === "log") {
-        layout[y_key].type = "log";
-      }
-    });
-    return layout;
-  }
-
-  function neutral_plot_domains(count) {
-    if (count <= 1) {
-      return [{ x: [0.0, 1.0], y: [0.0, 1.0] }];
-    }
-    if (count === 2) {
-      return [
-        { x: [0.0, 0.48], y: [0.0, 1.0] },
-        { x: [0.52, 1.0], y: [0.0, 1.0] },
-      ];
-    }
-    return [
-      { x: [0.0, 1.0], y: [0.56, 1.0] },
-      { x: [0.0, 0.48], y: [0.0, 0.40] },
-      { x: [0.52, 1.0], y: [0.0, 0.40] },
-    ].concat(Array.from({ length: Math.max(0, count - 3) }, () => ({ x: [0.0, 1.0], y: [0.0, 1.0] })));
-  }
-
-  function neutral_plot_config() {
-    return {
-      responsive: true,
-      scrollZoom: true,
-      displaylogo: false,
-      modeBarButtonsToRemove: ["select2d", "lasso2d"],
-    };
-  }
-
   function plotlyLayoutForOutput(output, sourceLayout) {
     const layout = Object.assign(defaultPlotlyLayout(), sourceLayout || {});
     layout.font = Object.assign(defaultPlotlyLayout().font, sourceLayout?.font || {});
@@ -9963,9 +9539,6 @@
       ngl_active_frame_index,
       applyPlotlyTheme,
       appendPlotlyOutput,
-      apply_dynamic_plot_dataset_event,
-      apply_plot_dataset_event,
-      plotly_figure_from_plot_state,
       plotlyLayoutForOutput,
       plotlyThemeColors,
       repeatIsCondition,

@@ -30,50 +30,44 @@ them for GenApp concepts, schema details, and historical context, but treat old
 install paths, SVN URLs, host names, OS versions, and deployment commands as
 stale unless verified against current local files or explicit user direction.
 
-## Plotting Architecture Prime Directive
+## Plotting Recovery Guardrails
 
-All new or migrated SASSIE-web plotting work is governed by
-`ehb54/zazzie#193`. The checked-in summary is
+The rejected plotting experiment tracked in `ehb54/zazzie#193` must not be
+used as an implementation guide. Do not introduce `semantic_plot` GenApp field
+types, SASSIE scientific dataset recorders, plot-specific replay stores,
+`.scientific_datasets.json` reattachment requirements, or migration-status
+registries for SASSIE-web plotting work.
+
+The corrected governing issue is `ehb54/zazzie#184`. The checked-in summary is
 `doc/Plotting-Architecture.md`.
 
-A plotting migration is not complete merely because a plot renders, SASSIE
-emits semantic data, or Plotly construction moved into a GenApp driver. The
-required UI2 path is:
+Use the existing sassie-wide bin/driver runtime contract as the foundation:
+drivers publish JSON output, ordered runtime events, progress, completion, and
+reattachment through the established GenApp mechanisms. SASSIE stays focused on
+science calculations and normal scientific output files. If a plotting
+migration appears to require SASSIE changes beyond ordinary science output,
+stop and prepare a plain-language SASSIE-team request instead of changing the
+GenApp/UI code around the gap.
 
-```text
-SASSIE semantic dataset/event
-  -> thin GenApp transport adapter
-  -> shared normalized plot_state reducer
-  -> validated renderer-neutral plot_spec
-  -> native ui2_react plot component
-  -> Plotly renderer adapter
-```
+For migrated web plots:
 
-For plotting work, this reviewed architecture overrides older driver examples,
-Plotly helpers, wiki pages, progress notes, and the bridge-ownership description
-in older architecture records. Plotly is an implementation detail, not a module
-or cross-repository contract.
-This is a forward-only replacement. Do not add or retain a module-local Plotly
-path as an HTML compatibility exception when migrating a module.
+- module drivers/helpers may prepare web-facing series from available SASSIE
+  outputs or streamed values;
+- shared GenApp/`genapp_zazzie` helpers should remove duplicated Plotly figure
+  assembly where that is actually useful;
+- UI2 owns responsive sizing, font policy, colors, labels, legends, modebar
+  behavior, empty states, and reattach display behavior;
+- producers must not hand-carve pixel sizes or duplicate visual policy;
+- live plotting should use runtime events rather than file polling. A driver
+  may read completed output files once at the end of a run when that is the
+  practical source of final plot data.
 
-Before changing a plotted module:
-
-1. Read the applicable `AGENTS.md` in this repository, `genapp_zazzie`, and
-   `madscatt/zazzie`.
-2. Report the three guardrail hashes, the governing issue, the module's
-   migration status, whether SASSIE changes are required, and whether the
-   shared harness has a gap.
-3. Stop if SASSIE lacks the required semantic dataset/event or if the shared
-   contracts cannot represent the plot. Do not solve either gap with
-   module-specific Plotly construction.
-
-No plotted module may be called migrated, complete, or a reference
-implementation until the architecture checker and issue #193 acceptance tests
-pass. NGL and other molecular-structure viewers are separate viewer concerns
-and are not plot contracts.
-The application migration registry is
-`../genapp_zazzie/plotting_migration.json`; validate it with
-`tools/check_plotting_architecture.pl ../genapp_zazzie`.
+Before changing a plotted module, read the applicable `AGENTS.md` files in this
+repository, `genapp_zazzie`, and `madscatt/zazzie`. Report the three guardrail
+hashes, the governing issue, whether SASSIE changes are required, and whether a
+shared driver/helper gap exists. Do not migrate another module group until the
+current reference module passes normal, expanded, completion, and reattach
+checks on the deployed server.
 
 ## GenApp Working Model
 
@@ -119,10 +113,6 @@ columns, or generated runtime assets.
   experimenting with `ui2`.
 - Regenerate `html5` only when the task explicitly calls for a legacy change or
   legacy verification.
-- Plotting migrations approved under issue #193 are forward-only and do not
-  require a parallel renderer-specific HTML Plotly path. State and test any
-  resulting target change explicitly rather than preserving the rejected
-  architecture.
 - Treat ignored runtime files such as an app's `directives.json` as deploy
   state; refresh them only from the tracked source intended for that app and
   verify legacy-facing directives before regeneration.
@@ -132,13 +122,11 @@ columns, or generated runtime assets.
 - If a UI2 experiment needs shared GenApp core changes, add tests proving
   target filtering and legacy generation behavior remain intact.
 - For UI2 runtime features, keep transport, field behavior, submission,
-  polling, and reattachment in the UI2 core target/runtime and let
-  React/shadcn consume them through the existing bridge unless a reviewed
-  architecture decision says otherwise. Plotting issue #193 is such a reviewed
-  decision: normalized plot state, plotting presentation, accessibility, and
-  renderer translation belong to the native React plot component. `ui2-react`
-  is not a separate target language. See `doc/GenApp-Architecture-Audit.md`
-  for the current action/precheck guidance.
+  polling, output rendering, and reattachment in the UI2 core target/runtime and
+  let React/shadcn consume them through the existing bridge unless a reviewed
+  architecture decision says otherwise. `ui2-react` is not a separate target
+  language. See `doc/GenApp-Architecture-Audit.md` for the current
+  action/precheck guidance.
 
 Zazzie3 has a non-admin SASSIE-web test user named `codex` for UI2 runtime
 timing and reattach checks. Do not store its password in this file or any

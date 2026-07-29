@@ -1,79 +1,65 @@
-# SASSIE-web Plotting Architecture
+# SASSIE-Web Plotting Recovery
 
-GitHub issue `ehb54/zazzie#193` is the governing decision. This file is the
-local, reviewable entry point for work that spans `madscatt/zazzie`,
-`ehb54/zazzie` (`genapp_zazzie`), and `ehb54/genapp`.
+GitHub issue `ehb54/zazzie#184` is the corrected governing issue. The
+architecture attempted in `ehb54/zazzie#193` is rejected for this work.
 
-## Required ownership
+## Ownership
 
-- SASSIE owns scientific calculations, versioned semantic datasets/events,
-  canonical numeric artifacts, units, uncertainties, sequence/revision,
-  operation, completeness, availability, and scientific metadata.
-- `genapp_zazzie` owns validated renderer-neutral `plot_spec` definitions and
-  the mapping from scientific datasets and quantities to panels and semantic
-  series roles.
-- UI2 transport owns ordered delivery and durable reattachment.
-- `ui2_react` owns normalized `plot_state`, responsive layout, typography,
-  palettes, redundant visual cues, legends, toolbars, accessibility,
-  throttling, export, and renderer translation.
-- Plotly is a renderer adapter only.
+- SASSIE owns scientific calculations and normal scientific output files.
+- GenApp and `genapp_zazzie` bin drivers own web-only plot preparation when a
+  GUI workflow needs sampled, interpolated, combined, or streamed values.
+- The existing driver/runtime contract owns JSON output, runtime events,
+  progress, completion, and reattachment.
+- UI2 owns responsive sizing, fonts, colors, labels, legends, modebar behavior,
+  empty states, and the final Plotly rendering adapter.
 
-## Required path
+Plotly remains the current browser renderer for web plots. It is not a SASSIE
+contract and should not leak producer-specific sizing or theme policy.
 
-```text
-SASSIE semantic dataset/event
-  -> thin GenApp transport adapter
-  -> shared normalized plot_state reducer
-  -> validated renderer-neutral plot_spec
-  -> native ui2_react plot component
-  -> Plotly renderer adapter
-```
+## Explicit Rejections
 
-Moving Plotly construction from SASSIE into a module-specific driver or helper
-does not satisfy this architecture.
+Do not add or require:
 
-This is a forward-only replacement. A migrated module does not retain a
-module-local Plotly construction path for legacy HTML compatibility.
+- a GenApp `semantic_plot` field type;
+- a SASSIE `scientific_dataset.py` plotting layer;
+- dataset recorder, revision, or replay machinery in SASSIE;
+- `.scientific_datasets.json` as a GUI reattachment requirement;
+- a second plot-specific reattach store;
+- a migration-status registry as a completion gate;
+- file polling on the live plotting path.
 
-## Prohibited contracts
+## Migration Rule
 
-SASSIE output and module `plot_spec` definitions must not contain Plotly traces,
-trace indexes, `data`/`layout`/`config` figure objects, renderer axis names,
-literal theme colors, fonts, hand-built margins, pixel dimensions, legend
-placement, toolbar policy, or transport configuration.
+A module is not considered migrated just because a plot renders. It is migrated
+when the module uses the current bin/driver contract cleanly, removes
+unnecessary duplicated plot-building code, leaves visual policy to UI2, and
+passes deployed browser checks for normal view, expanded view, completion, and
+reattach.
 
-Module-specific drivers and helpers must not construct Plotly objects for UI2.
-They may map a runtime destination, but they must preserve the scientific
-dataset identifiers, quantities, units, revisions, operations, and values.
+If a module cannot produce the needed plotting values from existing SASSIE
+outputs or existing stream data, stop and write a plain-language request for the
+SASSIE team. Do not build a GenApp workaround that hides a missing science-side
+capability.
 
-## Lifecycle
+## Practical Contract
 
-Live, completed, failed, and reattached plots use one reducer and one
-`plot_spec`:
+Drivers/helpers may prepare data series and may read a completed output file
+once at the end of a run when that is the practical source of final plot data.
+They should use stable snake_case identifiers and shared helper code where it
+reduces duplicated Plotly assembly.
 
-1. initial dataset snapshot;
-2. bounded append or replace;
-3. periodic resynchronization snapshots;
-4. authoritative completion or partial-failure state;
-5. persisted normalized state for reattach;
-6. clear on a new run.
+Producers must not hand-code plot dimensions, fonts, theme colors, margins,
+legend placement, or toolbar policy. Those belong in UI2.
 
-The live path must not poll files. A completed semantic artifact may be read
-once only when direct final delivery is unavailable.
+## Reference Gate
 
-## Completion gate
+MMC is the reference recovery module. No next module group should be migrated
+until MMC works on the deployed server for:
 
-A plot migration is complete only when schema validation, scientific-value
-parity, event replay, bounded load, resynchronization, failure recovery,
-completion, reattach, responsive/mobile behavior, accessibility, and
-non-color-only series identification are verified.
-
-The application migration registry records one of:
-
-- `not_migrated`
-- `semantic_data_ready`
-- `harness_candidate`
-- `accepted`
-
-Only `accepted` modules may be used as plotting implementation references.
-Scientific module port status and plotting migration status are independent.
+- live Rg and convergence plots;
+- SAS and P(r) average plus representative sample behavior;
+- optional experimental-data residuals only when experimental data is selected;
+- normal view and expanded view;
+- transitions between views;
+- completed-run output;
+- new-window reattach.

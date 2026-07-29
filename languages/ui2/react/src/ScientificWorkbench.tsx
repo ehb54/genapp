@@ -7,10 +7,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { JobRuntimeSnapshot, ScientificWorkbenchBridge, ScientificWorkbenchMountProps, Ui2Field, WorkbenchResultGroup, WorkbenchSection } from "@/types"
 
-function isPlotField(field?: Ui2Field): boolean {
-  return field?.type === "plotly" || field?.type === "semantic_plot"
-}
-
 function NativeHost({ create, release, mounted, className }: { create: () => HTMLElement; release?: (node: HTMLElement) => void; mounted?: () => void; className?: string }) {
   const hostRef = React.useRef<HTMLDivElement>(null)
 
@@ -37,12 +33,12 @@ function FieldGroup({ fields, bridge, role = "input", fitPlot = false }: { field
   const create = React.useCallback(() => {
     const node = bridge.createFieldGroup(plannedFields, role)
     if (fitPlot) {
-      // Dynamic outputs create their plot child later.  Mark the native field
+      // Dynamic outputs create their Plotly child later.  Mark the native field
       // root too, so those children inherit the allocated MMC pane size.
       node.setAttribute("data-plot-fit", "pane")
-      const plot = node.matches('[data-output-type="plotly"], [data-output-type="semantic_plot"]')
+      const plot = node.matches('[data-output-type="plotly"]')
         ? node
-        : node.querySelector<HTMLElement>('[data-output-type="plotly"], [data-output-type="semantic_plot"]')
+        : node.querySelector<HTMLElement>('[data-output-type="plotly"]')
       plot?.setAttribute("data-plot-fit", "pane")
     }
     return node
@@ -602,7 +598,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
                     const groupFields = group.outputs.map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]
                     const panelKind = group.fit === "wide" || group.layout === "gallery"
                       ? "wide"
-                      : groupFields.some(isPlotField)
+                      : groupFields.some((field) => field.type === "plotly")
                       ? "plot"
                       : groupFields.some((field) => field.type === "ngl" || field.type === "atomicstructure")
                         ? "structure"
@@ -621,7 +617,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
                         <FieldGroup
                           bridge={bridge}
                           fields={groupFields}
-                          fitPlot={(group.fit === "pane" || group.fit === "wide") && groupFields.some(isPlotField)}
+                          fitPlot={(group.fit === "pane" || group.fit === "wide") && groupFields.some((field) => field.type === "plotly")}
                           role="output"
                         />
                       </TabsContent>
