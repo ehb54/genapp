@@ -5319,8 +5319,8 @@
     return row;
   }
 
-  function syncValues() {
-    const form = document.getElementById("ui2-form");
+  function syncValues(formOverride = null) {
+    const form = formOverride || document.getElementById("ui2-form");
     if (!form) {
       return;
     }
@@ -5356,7 +5356,7 @@
   }
 
   async function submitModule(form) {
-    syncValues();
+    syncValues(form);
     const endpoint = moduleSubmitEndpoint();
     const status = document.getElementById("ui2-submit-status");
     if (!endpoint) {
@@ -9148,7 +9148,8 @@
   }
 
   function fieldControls(scope) {
-    return Array.from(scope.querySelectorAll(FIELD_CONTROL_SELECTOR));
+    return Array.from(scope.querySelectorAll(FIELD_CONTROL_SELECTOR))
+      .filter((control) => !String(control.className || "").split(/\s+/).includes("ui2-native-file"));
   }
 
   function fieldId(field) {

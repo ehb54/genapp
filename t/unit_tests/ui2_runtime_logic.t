@@ -205,9 +205,6 @@ function matchesSelector(node, selector) {
   if (selector.startsWith("#")) {
     return node.id === selector.slice(1);
   }
-  if (selector.startsWith(".")) {
-    return String(node.className || "").split(/\\s+/).includes(selector.slice(1));
-  }
   const compound = new RegExp('^([A-Za-z][A-Za-z0-9_-]*)?(\\\\.[A-Za-z0-9_-]+)?\\\\[data-([A-Za-z0-9_-]+)(?:="([^"]*)")?\\\\]\$').exec(selector);
   if (compound) {
     const [, tag, className, dataName, expected] = compound;
@@ -222,6 +219,9 @@ function matchesSelector(node, selector) {
       return false;
     }
     return expected == null || String(node.dataset[key]) === expected;
+  }
+  if (selector.startsWith(".")) {
+    return String(node.className || "").split(/\\s+/).includes(selector.slice(1));
   }
   if (selector.startsWith("[data-") && selector.endsWith("]")) {
     const body = selector.slice(6, -1);
@@ -473,6 +473,19 @@ assert.match(
   missingRequiredFile.message,
   /pdbfile.*Please select a file/,
   "UI2 shared validation reports the missing required file field"
+);
+const localFileControl = hooks.renderFileControl({ id: "input_pdbfile", type: "lrfile", required: "true" });
+const localFileDisplay = localFileControl.children[0];
+const localFilePicker = localFileControl.children[1];
+localFileDisplay.value = "hiv1_gag_charmm27.pdb";
+localFilePicker.value = "";
+localFilePicker.files = ["hiv1_gag_charmm27.pdb"];
+const localFileForm = createNode("form");
+localFileForm.appendChild(localFileControl);
+assert.strictEqual(
+  hooks.collectControlValues(localFileForm, () => true).input_pdbfile,
+  "hiv1_gag_charmm27.pdb",
+  "UI2 value collection keeps the visible lrfile selection instead of the hidden native file input value"
 );
 
 function conditionRow(id, type, value) {
@@ -1666,6 +1679,40 @@ hooks.submitModule(missingFileSubmitForm).then((result) => {
   assert.strictEqual(missingFileStatus.dataset.status, "error", "UI2 scientific submit marks the status as an input error");
   assert.strictEqual(scientificSubmitFetches, 0, "UI2 scientific submit does not contact the runtime after required-field failure");
 });
+
+document.body.children = [];
+const staleForm = createNode("form");
+staleForm.id = "ui2-form";
+const staleInput = createNode("input");
+staleInput.dataset.fieldId = "input_pdbfile";
+staleInput.value = "";
+staleForm.appendChild(staleInput);
+document.body.appendChild(staleForm);
+const selectedFileSubmitForm = createNode("form");
+selectedFileSubmitForm.id = "ui2-form";
+const selectedFileControl = hooks.renderFileControl({ id: "input_pdbfile", type: "lrfile", required: "true" });
+selectedFileControl.children[0].value = "hiv1_gag_charmm27.pdb";
+selectedFileControl.children[1].value = "";
+selectedFileControl.children[1].files = ["hiv1_gag_charmm27.pdb"];
+selectedFileSubmitForm.appendChild(selectedFileControl);
+document.body.appendChild(selectedFileSubmitForm);
+hooks.state.module = {
+  fields: [{ id: "input_pdbfile", type: "lrfile", required: "true" }]
+};
+hooks.syncValues(selectedFileSubmitForm);
+assert.strictEqual(
+  hooks.state.values.input_pdbfile,
+  "hiv1_gag_charmm27.pdb",
+  "UI2 syncValues reads the submitted React form instead of an older document-level ui2-form"
+);
+hooks.state.session = { logon: "Joseph", project: "no_project_specified" };
+hooks.state.serverSelections = {};
+const selectedFileFormData = hooks.buildSubmitFormData(selectedFileSubmitForm, "selected-file-test-uuid");
+assert.deepStrictEqual(
+  selectedFileFormData.get("input_pdbfile"),
+  ["hiv1_gag_charmm27.pdb"],
+  "UI2 submit FormData sends the selected local lrfile after preserving the visible value"
+);
 
 hooks.state.values = { interval: 5 };
 hooks.state.session = { logon: "Joseph", project: "no_project_specified" };

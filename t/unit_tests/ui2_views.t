@@ -318,6 +318,7 @@ like( $ui2_js, qr/function replaceSelectOptions\(select, values\)/, 'ui2 Setting
 like( $ui2_js, qr/function setLegacyProject\(project\).*?sys_project\.php/s, 'ui2 Settings uses the legacy project session endpoint' );
 like( $ui2_js, qr/fieldControls\(form\)[\s\S]+dataset\.pullKey[\s\S]+sys_pull\.php/s, 'ui2 Settings pulls only fields declared with legacy pull metadata' );
 like( $ui2_js, qr/function fieldControls\(scope\)/, 'ui2 runtime scans actual form controls instead of field wrapper rows' );
+like( $ui2_js, qr/function fieldControls\(scope\)[\s\S]+ui2-native-file/s, 'ui2 runtime excludes hidden native file inputs from normal value collection' );
 like( $ui2_js, qr/parts\.unshift\(expected\)[\s\S]+parts\.unshift\(parent\)/, 'ui2 Settings preserves legacy nested repeat field names' );
 like( $ui2_js, qr/form\.noValidate = true/, 'ui2 Settings uses inline validation inside the modal instead of browser-native validation bubbles' );
 like( $ui2_js, qr/function validateModuleForm\(form\)/, 'ui2 runtime validates active controls through a shared form validator' );
