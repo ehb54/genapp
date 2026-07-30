@@ -4019,7 +4019,7 @@
   async function submitUtilityModule(form, module, endpointPath, options = {}) {
     const status = form.querySelector(".ui2-submit-status");
     const submitButton = form.querySelector('button[type="submit"]');
-    const invalid = validateUtilityForm(form);
+    const invalid = validateModuleForm(form);
     if (invalid) {
       setSubmitStatus(status, invalid.message, "error");
       applyUtilityOutputs(form, { status: invalid.message });
@@ -4096,7 +4096,7 @@
     return payload;
   }
 
-  function validateUtilityForm(form) {
+  function validateModuleForm(form) {
     syncFormValues(form);
     const invalid = fieldControls(form).find((control) => (
       !control.disabled
@@ -4112,6 +4112,10 @@
       control: invalid,
       message: `${fieldLabelForControl(invalid)}: ${invalid.validationMessage || "Invalid value."}`
     };
+  }
+
+  function validateUtilityForm(form) {
+    return validateModuleForm(form);
   }
 
   function validateMatchedUtilityControls(form) {
@@ -5343,6 +5347,14 @@
     if (!endpoint) {
       setSubmitStatus(status, "This module does not have a runtime endpoint yet.", "error");
       return { ok: false, error: "No runtime endpoint" };
+    }
+
+    const invalid = validateModuleForm(form);
+    if (invalid) {
+      setSubmitStatus(status, invalid.message, "error");
+      showLegacyMessagePayload({ error: invalid.message }, { force: true });
+      invalid.control?.focus();
+      return { ok: false, error: invalid.message };
     }
 
     const submitButton = form.querySelector('button[type="submit"]');
@@ -9533,6 +9545,9 @@
       buildHookFormData,
       applyActionPayload,
       applyActionFields,
+      validateModuleForm,
+      validateUtilityForm,
+      submitModule,
       moduleSubmitEndpointFor,
       buildSubmitFormData,
       serverFileInitialDir,

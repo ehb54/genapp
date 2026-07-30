@@ -24,6 +24,7 @@ source = source.replace(/\\n  init\\(\\);\\n\\}\\(\\)\\);\\s*\$/, "\\n}());\\n")
 
 function createNode(tag) {
   const classes = new Set();
+  const normalizedTag = String(tag || "div").toLowerCase();
   function syncClassesFromName() {
     String(node.className || "").split(/\\s+/).filter(Boolean).forEach((name) => classes.add(name));
   }
@@ -86,6 +87,18 @@ function createNode(tag) {
     addEventListener() {},
     removeEventListener() {},
     dispatchEvent() {},
+    focus() {
+      this.focused = true;
+      document.activeElement = this;
+    },
+    checkValidity() {
+      if (this.required && !String(this.value || "").trim()) {
+        this.validationMessage = "Please fill out this field.";
+        return false;
+      }
+      this.validationMessage = "";
+      return true;
+    },
     querySelector(selector) {
       return querySelectorFrom(this, selector);
     },
@@ -104,6 +117,9 @@ function createNode(tag) {
     },
     setAttribute(name, value) {
       this.attributes[name] = String(value);
+    },
+    removeAttribute(name) {
+      delete this.attributes[name];
     },
     getAttribute(name) {
       return Object.prototype.hasOwnProperty.call(this.attributes, name) ? this.attributes[name] : null;
@@ -145,6 +161,9 @@ function createNode(tag) {
       }
     }
   };
+  if (normalizedTag === "template") {
+    node.content = createNode("fragment");
+  }
   return node;
 }
 
@@ -435,6 +454,22 @@ assert.strictEqual(hooks.serverFileDirLabel(btoa("./project/subdir")), "User fil
   assert.strictEqual(display.autocomplete, "off", `UI2 \${type} control suppresses browser history suggestions`);
   assert.strictEqual(display.spellcheck, false, `UI2 \${type} control does not spellcheck file names or paths`);
 });
+const requiredLrfile = hooks.renderFileControl({ id: "pdbfile", type: "lrfile", required: "true" });
+const requiredLrfileDisplay = requiredLrfile.children[0];
+assert.strictEqual(requiredLrfileDisplay.required, true, "UI2 marks required top-level lrfile controls for shared submit validation");
+const requiredFileForm = createNode("form");
+requiredFileForm.appendChild(requiredLrfile);
+const missingRequiredFile = hooks.validateModuleForm(requiredFileForm);
+assert.strictEqual(
+  missingRequiredFile.control,
+  requiredLrfileDisplay,
+  "UI2 shared validation rejects an empty required top-level lrfile before submit"
+);
+assert.match(
+  missingRequiredFile.message,
+  /pdbfile.*Please fill out this field/,
+  "UI2 shared validation reports the missing required file field"
+);
 
 function conditionRow(id, type, value) {
   const row = createNode("div");
@@ -1600,6 +1635,33 @@ assert.strictEqual(
   "/sassie3/ajax/admin/jobmonitor.php",
   "admin system module submit endpoints resolve through the generated admin wrapper"
 );
+
+document.body.children = [];
+document.getElementById = function(id) {
+  return querySelectorFrom(this.body, `#\${id}`) || querySelectorFrom(this.head, `#\${id}`);
+};
+const missingFileSubmitForm = createNode("form");
+missingFileSubmitForm.id = "ui2-form";
+const missingFileStatus = createNode("div");
+missingFileStatus.id = "ui2-submit-status";
+const missingFileControl = hooks.renderFileControl({ id: "pdbfile", type: "lrfile", required: "true" });
+missingFileSubmitForm.append(missingFileControl, missingFileStatus);
+document.body.appendChild(missingFileSubmitForm);
+hooks.state.menuId = "build";
+hooks.state.moduleId = "build_utilities";
+hooks.state.module = { executable: "build_utilities" };
+hooks.state.session = { logon: "Joseph", project: "no_project_specified" };
+let scientificSubmitFetches = 0;
+context.fetch = async () => {
+  scientificSubmitFetches += 1;
+  throw new Error("scientific submit should not fetch with a missing required file");
+};
+hooks.submitModule(missingFileSubmitForm).then((result) => {
+  assert.strictEqual(result.ok, false, "UI2 scientific submit rejects missing required lrfile input");
+  assert.match(result.error, /pdbfile.*Please fill out this field/, "UI2 scientific submit returns the required file validation message");
+  assert.strictEqual(missingFileStatus.dataset.status, "error", "UI2 scientific submit marks the status as an input error");
+  assert.strictEqual(scientificSubmitFetches, 0, "UI2 scientific submit does not contact the runtime after required-field failure");
+});
 
 hooks.state.values = { interval: 5 };
 hooks.state.session = { logon: "Joseph", project: "no_project_specified" };
