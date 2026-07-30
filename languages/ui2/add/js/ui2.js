@@ -4098,6 +4098,21 @@
 
   function validateModuleForm(form) {
     syncFormValues(form);
+    const missingRequiredFile = fieldControls(form).find((control) => (
+      !control.disabled
+        && control.required
+        && control.readOnly
+        && control.closest(".ui2-file-control")
+        && !control.closest(".ui2-output-field")
+        && !control.closest(".ui2-hidden")
+        && !String(control.value || "").trim()
+    ));
+    if (missingRequiredFile) {
+      return {
+        control: missingRequiredFile,
+        message: `${fieldLabelForControl(missingRequiredFile)}: Please select a file.`
+      };
+    }
     const invalid = fieldControls(form).find((control) => (
       !control.disabled
         && !control.closest(".ui2-output-field")

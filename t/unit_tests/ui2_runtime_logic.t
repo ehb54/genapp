@@ -92,6 +92,10 @@ function createNode(tag) {
       document.activeElement = this;
     },
     checkValidity() {
+      if (this.readOnly) {
+        this.validationMessage = "";
+        return true;
+      }
       if (this.required && !String(this.value || "").trim()) {
         this.validationMessage = "Please fill out this field.";
         return false;
@@ -467,7 +471,7 @@ assert.strictEqual(
 );
 assert.match(
   missingRequiredFile.message,
-  /pdbfile.*Please fill out this field/,
+  /pdbfile.*Please select a file/,
   "UI2 shared validation reports the missing required file field"
 );
 
@@ -1658,7 +1662,7 @@ context.fetch = async () => {
 };
 hooks.submitModule(missingFileSubmitForm).then((result) => {
   assert.strictEqual(result.ok, false, "UI2 scientific submit rejects missing required lrfile input");
-  assert.match(result.error, /pdbfile.*Please fill out this field/, "UI2 scientific submit returns the required file validation message");
+  assert.match(result.error, /pdbfile.*Please select a file/, "UI2 scientific submit returns the required file validation message");
   assert.strictEqual(missingFileStatus.dataset.status, "error", "UI2 scientific submit marks the status as an input error");
   assert.strictEqual(scientificSubmitFetches, 0, "UI2 scientific submit does not contact the runtime after required-field failure");
 });
