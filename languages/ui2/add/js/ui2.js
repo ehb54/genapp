@@ -7433,9 +7433,11 @@
     output._ui2NglSpecs = null;
     output._ui2NglAxesRep = null;
     output._ui2_ngl_density_payload = null;
-    output._ui2_ngl_frames = null;
-    output._ui2_ngl_pending_frame = null;
-    output._ui2_ngl_frame_scheduled = false;
+    if (!options.preserveFrames) {
+      output._ui2_ngl_frames = null;
+      output._ui2_ngl_pending_frame = null;
+      output._ui2_ngl_frame_scheduled = false;
+    }
     if (options.resetDensityPreferences) {
       output._ui2_ngl_density_user_isovalue = null;
       output._ui2_ngl_density_user_opacity = null;
@@ -7475,10 +7477,9 @@
       return;
     }
     const preserveLiveFrames = payload?.preserve_live_frames === true
-      && output._ui2NglComponent
       && Array.isArray(output._ui2_ngl_frames)
       && output._ui2_ngl_frames.length;
-    if (preserveLiveFrames) {
+    if (preserveLiveFrames && output._ui2NglComponent) {
       output._ui2NglRenderRevision = (output._ui2NglRenderRevision || 0) + 1;
       if (densityPayload?.loadname) {
         renderNglDensityUpdate(output, densityPayload);
@@ -7486,7 +7487,10 @@
       render_ngl_frame_controls(output);
       return;
     }
-    clearNglOutput(output);
+    // Completion can arrive before the initial topology has finished loading.
+    // Keep the already-received coordinate history in that race so the newly
+    // loaded component can apply it and expose its frame controls.
+    clearNglOutput(output, { preserveFrames: preserveLiveFrames });
     const renderRevision = (output._ui2NglRenderRevision || 0) + 1;
     output._ui2NglRenderRevision = renderRevision;
     plot.hidden = false;
