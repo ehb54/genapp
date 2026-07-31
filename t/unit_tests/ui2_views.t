@@ -130,7 +130,9 @@ like( $ui2_react_css, qr/\.ui2-workbench-result-card \.ui2-ngl-frame-scrubber/, 
 like( $ui2_js, qr/output\._ui2_ngl_scrubbing.*?pointerdown.*?pointerup/s, 'streamed-frame scrubber remains mounted while the user drags it' );
 unlike( $ui2_js, qr/function ngl_stream_telemetry_label\(output\).*?last_dropped_reason.*?parts\.push/s, 'stream telemetry does not expose internal dropped-frame reasons to users' );
 unlike( $ui2_js, qr/function ngl_frame_label\(frame, index\)\s*\{[^}]*milestone_percent/s, 'streamed-frame selection does not repeat trial progress percentage' );
-like( $ui2_js, qr/function ngl_stream_telemetry_label\(output\).*?Rendered \$\{percent\}% of accepted structures/s, 'stream telemetry reports rendering coverage of accepted structures' );
+like( $ui2_js, qr/function ngl_stream_telemetry_label\(output\).*?Rendered \$\{rendered\} streamed/s, 'stream telemetry uses generic streamed-frame wording' );
+like( $ui2_js, qr/function renderNglViewerControls\(output, component, specs, layered\).*?representation_controls.*?viewer_settings.*?layer_editor/s, 'NGL viewers can hide representation, scene, and layer controls per output' );
+like( $ui2_js, qr/function render_ngl_frame_controls\(output\).*?frame_playback !== false/s, 'NGL viewers can retain frame scrubbing while suppressing playback controls per output' );
 like( $ui2_js, qr/function renderTabs\(inputCount, outputCount\)/, 'ui2 runtime keeps input/output jump tabs with counts' );
 like( $ui2_js, qr/tabButton\("Inputs", inputCount, true, "ui2-input-section"\)/, 'ui2 input jump tab keeps its field count for accessibility' );
 like( $ui2_js, qr/const button = el\("button", "ui2-tab", label\)/, 'ui2 jump tabs display labels without count text' );

@@ -7560,15 +7560,21 @@
     const buttons = output?.querySelector?.(".ui2-ngl-buttons");
     if (!buttons || !component) return;
     buttons.textContent = "";
-    if (layered) {
-      renderNglLayerButtons(buttons, component, output._ui2NglReps, specs);
-    } else {
-      renderNglButtons(buttons, component, output._ui2NglReps);
+    const capabilities = nglViewerConfig(output).capabilities || {};
+    if (capabilities.representation_controls !== false) {
+      if (layered) {
+        renderNglLayerButtons(buttons, component, output._ui2NglReps, specs);
+      } else {
+        renderNglButtons(buttons, component, output._ui2NglReps);
+      }
     }
-    renderNglSceneControls(output, component);
-    if (nglViewerConfig(output).capabilities?.layer_editor !== false) {
+    if (capabilities.viewer_settings !== false) {
+      renderNglSceneControls(output, component);
+    }
+    if (capabilities.layer_editor !== false) {
       renderNglLayerEditor(output, component, specs);
     }
+    buttons.hidden = !buttons.childElementCount;
   }
 
   function renderNglSceneControls(output, component) {
@@ -8186,14 +8192,11 @@
     if (!telemetry) {
       return "";
     }
-    const latest = latest_ngl_retained_frame(output);
-    const accepted = Number(latest?.accepted_structure ?? telemetry.last_accepted_structure ?? 0);
     const rendered = Math.max(0, Number(telemetry.rendered_frames || 0));
-    if (!Number.isFinite(accepted) || accepted <= 0) {
+    if (!rendered) {
       return "";
     }
-    const percent = Math.max(0, Math.min(100, Math.round((rendered / accepted) * 100)));
-    return `Rendered ${percent}% of accepted structures`;
+    return `Rendered ${rendered} streamed ${rendered === 1 ? "frame" : "frames"}`;
   }
 
   function render_ngl_frame_controls(output) {
@@ -8250,41 +8253,43 @@
       controls.appendChild(scrubber);
       controls.appendChild(selected_label);
 
-      const previous = el("button", "ui2-button ui2-button-quiet ui2-ngl-button", "Previous");
-      previous.type = "button";
-      previous.addEventListener("click", () => setNglActiveFrame(output, Math.max(0, ngl_active_frame_index(output, frames) - 1)));
-      const next = el("button", "ui2-button ui2-button-quiet ui2-ngl-button", "Next");
-      next.type = "button";
-      next.addEventListener("click", () => setNglActiveFrame(output, Math.min(frames.length - 1, Math.max(0, ngl_active_frame_index(output, frames)) + 1)));
-      const play = el("button", "ui2-button ui2-button-quiet ui2-ngl-button", output._ui2_ngl_playback?.timer ? "Pause" : "Play");
-      play.type = "button";
-      play.setAttribute("aria-pressed", output._ui2_ngl_playback?.timer ? "true" : "false");
-      play.addEventListener("click", () => {
-        if (output._ui2_ngl_playback?.timer) {
-          stopNglFramePlayback(output);
-        } else {
-          startNglFramePlayback(output);
-        }
-        render_ngl_frame_controls(output);
-      });
-      const mode = document.createElement("select");
-      [["loop", "Loop"], ["once", "Once"], ["bounce", "Bounce"]].forEach(([value, label]) => mode.appendChild(new Option(label, value)));
-      mode.value = output._ui2_ngl_playback?.mode || "loop";
-      mode.setAttribute("aria-label", "Trajectory playback mode");
-      mode.addEventListener("change", () => {
-        output._ui2_ngl_playback = Object.assign({}, output._ui2_ngl_playback || {}, { mode: mode.value });
-      });
-      const speed = document.createElement("input");
-      speed.type = "number";
-      speed.min = "20";
-      speed.step = "10";
-      speed.value = String(output._ui2_ngl_playback?.interval || 100);
-      speed.setAttribute("aria-label", "Trajectory frame interval milliseconds");
-      speed.addEventListener("change", () => {
-        const interval = Math.max(20, Number(speed.value) || 100);
-        output._ui2_ngl_playback = Object.assign({}, output._ui2_ngl_playback || {}, { interval });
-      });
-      controls.append(previous, next, play, mode, speed);
+      if (nglViewerConfig(output).capabilities?.frame_playback !== false) {
+        const previous = el("button", "ui2-button ui2-button-quiet ui2-ngl-button", "Previous");
+        previous.type = "button";
+        previous.addEventListener("click", () => setNglActiveFrame(output, Math.max(0, ngl_active_frame_index(output, frames) - 1)));
+        const next = el("button", "ui2-button ui2-button-quiet ui2-ngl-button", "Next");
+        next.type = "button";
+        next.addEventListener("click", () => setNglActiveFrame(output, Math.min(frames.length - 1, Math.max(0, ngl_active_frame_index(output, frames)) + 1)));
+        const play = el("button", "ui2-button ui2-button-quiet ui2-ngl-button", output._ui2_ngl_playback?.timer ? "Pause" : "Play");
+        play.type = "button";
+        play.setAttribute("aria-pressed", output._ui2_ngl_playback?.timer ? "true" : "false");
+        play.addEventListener("click", () => {
+          if (output._ui2_ngl_playback?.timer) {
+            stopNglFramePlayback(output);
+          } else {
+            startNglFramePlayback(output);
+          }
+          render_ngl_frame_controls(output);
+        });
+        const mode = document.createElement("select");
+        [["loop", "Loop"], ["once", "Once"], ["bounce", "Bounce"]].forEach(([value, label]) => mode.appendChild(new Option(label, value)));
+        mode.value = output._ui2_ngl_playback?.mode || "loop";
+        mode.setAttribute("aria-label", "Trajectory playback mode");
+        mode.addEventListener("change", () => {
+          output._ui2_ngl_playback = Object.assign({}, output._ui2_ngl_playback || {}, { mode: mode.value });
+        });
+        const speed = document.createElement("input");
+        speed.type = "number";
+        speed.min = "20";
+        speed.step = "10";
+        speed.value = String(output._ui2_ngl_playback?.interval || 100);
+        speed.setAttribute("aria-label", "Trajectory frame interval milliseconds");
+        speed.addEventListener("change", () => {
+          const interval = Math.max(20, Number(speed.value) || 100);
+          output._ui2_ngl_playback = Object.assign({}, output._ui2_ngl_playback || {}, { interval });
+        });
+        controls.append(previous, next, play, mode, speed);
+      }
     }
     const telemetry_label = ngl_stream_telemetry_label(output);
     if (telemetry_label) {
