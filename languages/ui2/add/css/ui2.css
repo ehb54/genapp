@@ -960,12 +960,15 @@ code {
   gap: 0.5rem;
 }
 
-.ui2-repeat-table-wrap {
-  overflow-x: auto;
+.ui2-repeat-table-wrap,
+.ui2-matrix-wrap {
+  overflow-x: hidden;
 }
 
-.ui2-repeat-table {
+.ui2-repeat-table,
+.ui2-matrix-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0 0.35rem;
 }
@@ -974,50 +977,43 @@ code {
   color: var(--ui2-muted);
   font-size: 0.82rem;
   font-weight: 650;
+  overflow-wrap: anywhere;
   text-align: left;
   padding: 0 0.35rem;
 }
 
 .ui2-repeat-table td {
   padding: 0 0.35rem;
-  min-width: 9rem;
+  min-width: 0;
 }
 
 .ui2-repeat-table-input {
-  min-width: 8rem;
-}
-
-.ui2-matrix-wrap {
-  overflow-x: auto;
-}
-
-.ui2-matrix-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 0.35rem;
+  min-width: 0;
 }
 
 .ui2-matrix-table th {
   color: var(--ui2-muted);
   font-size: 0.82rem;
   font-weight: 650;
+  overflow-wrap: anywhere;
   text-align: left;
   padding: 0 0.35rem;
 }
 
 .ui2-matrix-table td {
   padding: 0 0.35rem;
-  min-width: 8rem;
+  min-width: 0;
 }
 
 .ui2-matrix-corner,
 .ui2-matrix-row-header {
-  min-width: 8rem;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .ui2-matrix-input {
-  min-width: 7rem;
+  min-width: 0;
 }
 
 .ui2-repeat-list-body {

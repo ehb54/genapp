@@ -3,6 +3,7 @@
 @source "./**/*.{ts,tsx}";
 
 .ui2-workbench-react {
+  container-type: inline-size;
   display: flex;
   min-height: 100%;
   flex-direction: column;
@@ -46,6 +47,12 @@
   flex: 1 1 auto;
   grid-template-columns: minmax(20rem, 0.8fr) minmax(24rem, 1.2fr);
   gap: 1rem;
+}
+
+/* Before a run, scientific repeaters need room to be edited.  Submitted runs
+ * retain the output-favored split above so progress and results stay prominent. */
+.ui2-workbench-react-editing .ui2-workbench-grid {
+  grid-template-columns: minmax(28rem, 1.2fr) minmax(18rem, 0.8fr);
 }
 
 .ui2-workbench-grid-inputs-hidden {
@@ -472,6 +479,10 @@
     grid-template-columns: 1fr;
   }
 
+  .ui2-workbench-react-editing .ui2-workbench-grid {
+    grid-template-columns: 1fr;
+  }
+
   .ui2-workbench-react-workspace-expanded .ui2-workbench-result-panel-plot,
   .ui2-workbench-react-workspace-expanded .ui2-workbench-result-panel-structure {
     min-width: 0;
@@ -484,6 +495,21 @@
 
   .ui2-workbench-results-pane {
     grid-template-rows: auto minmax(28rem, auto);
+  }
+}
+
+/* The application sidebar can make the workbench narrower than the browser
+ * viewport.  Use its actual width to avoid trading a horizontal table scroll
+ * for a squeezed split view. */
+@container (max-width: 52rem) {
+  .ui2-workbench-grid,
+  .ui2-workbench-react-editing .ui2-workbench-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ui2-workbench-input-scroll {
+    max-height: none;
+    overflow: visible;
   }
 }
 

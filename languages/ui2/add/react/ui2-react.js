@@ -11007,6 +11007,7 @@ function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 		g,
 		b,
 		ge,
+		O,
 		S
 	]), C.useLayoutEffect(() => {
 		let e = te.current;
@@ -11046,7 +11047,7 @@ function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 		}, e.id);
 	};
 	return /* @__PURE__ */ (0, L.jsxs)("form", {
-		className: `ui2-workbench-react${S ? " ui2-workbench-react-workspace-expanded" : ""}`,
+		className: `ui2-workbench-react${O ? "" : " ui2-workbench-react-editing"}${S ? " ui2-workbench-react-workspace-expanded" : ""}`,
 		id: "ui2-form",
 		onChange: pe,
 		onInput: pe,

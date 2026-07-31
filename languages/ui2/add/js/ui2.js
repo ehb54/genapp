@@ -2454,7 +2454,10 @@
   function renderTableizedRepeater(item, role) {
     const controller = item.controller;
     const row = isHiddenField(controller) ? renderHiddenTableRepeater(controller, item.fields || []) : renderField(controller, role);
-    row.classList.add("ui2-tableized-repeater");
+    // A table needs the full field width.  Keeping it in the usual right-hand
+    // control column makes ordinary five-column scientific tables scroll even
+    // when the input card itself has sufficient room.
+    row.classList.add("ui2-tableized-repeater", "ui2-field-wide");
 
     const stack = row.querySelector(".ui2-control-stack");
     const fields = repeatTableFields(item.fields || []);

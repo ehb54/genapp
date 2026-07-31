@@ -403,7 +403,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
 
   React.useLayoutEffect(() => {
     scheduleOutputResize()
-  }, [activeResult, inputRailCollapsed, scheduleOutputResize, workspaceExpanded])
+  }, [activeResult, inputRailCollapsed, scheduleOutputResize, submitted, workspaceExpanded])
 
   React.useLayoutEffect(() => {
     const target = resultCardRef.current
@@ -483,7 +483,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
 
   return (
     <form
-      className={`ui2-workbench-react${workspaceExpanded ? " ui2-workbench-react-workspace-expanded" : ""}`}
+      className={`ui2-workbench-react${submitted ? "" : " ui2-workbench-react-editing"}${workspaceExpanded ? " ui2-workbench-react-workspace-expanded" : ""}`}
       id="ui2-form"
       onChange={syncLiveValues}
       onInput={syncLiveValues}

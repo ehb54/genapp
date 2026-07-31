@@ -66,6 +66,7 @@ like( $app_map_js, qr/directives\.docsbaseurl = "docs"/, 'ui2 app map records do
 like( $app_map_js, qr/app\.help\.feedback = "Feedback help"/, 'ui2 app map records legacy feedback help text' );
 
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
+my $ui2_css = read_file( File::Spec->catfile( $ui2, qw(css ui2.css) ) );
 like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declares a module submit endpoint helper' );
 like( $ui2_js, qr/isReactWorkbenchView\(state\.view\) && renderReactWorkbench\(module, fields\)/, 'ui2 delegates modules to React only through explicit view metadata' );
 like( $ui2_js, qr/function renderReactWorkbench\(module, fields\).*?createFieldGroup:.*?renderReactWorkbenchFieldGroup\(groupFields, role\).*?fieldGroupMounted:.*?scheduleReactWorkbenchSync\(\).*?submit:.*?submitModule\(form\)/s, 'scientific workbench bridge mounts native field groups and reuses canonical UI2 submission' );
@@ -90,6 +91,7 @@ like( $ui2_react_js, qr/Submitted inputs/, 'React bundle contains the workbench 
 like( $ui2_react_js, qr/Return to inputs/, 'React bundle exposes the shared return-to-inputs action' );
 like( $ui2_react_source, qr/fields\s*\.filter\(\(field\)\s*=>\s*field\.id\s*&&\s*field\.role\s*!==\s*"output"/, 'workbench all-input view filters reattached values to declared input fields' );
 like( $ui2_react_source, qr/<aside className="ui2-workbench-input-pane" hidden=\{inputRailCollapsed \|\| workspaceExpanded\}>.*?<div className="ui2-workbench-input-scroll" hidden=\{Boolean\(submitted\)\}>/s, 'workbench keeps the complete input form mounted while the submitted summary is shown' );
+like( $ui2_react_source, qr/ui2-workbench-react\$\{submitted \? "" : " ui2-workbench-react-editing"\}/, 'workbench gives editing inputs a distinct layout state and restores the submitted layout after a run starts' );
 like( $ui2_react_source, qr/const returnToInputs = React\.useCallback\(\(\) => \{\s*bridge\.returnToInputs\(\)\s*setInputRailCollapsed\(false\)\s*setWorkspaceExpanded\(false\)/s, 'return-to-inputs restores the normal workbench layout without resetting values' );
 unlike( $ui2_react_source, qr/clearSubmitted/, 'workbench no longer models return-to-inputs as clearing form state' );
 like( $ui2_js, qr/returnToInputs: \(\) => \{\s*setSubmittedRunContext\(null\)/s, 'UI2 core return action clears only the submitted summary context' );
@@ -112,6 +114,12 @@ like( $ui2_react_source, qr/function FieldGroup\(.*?fieldIds.*?plannedFields.*?b
 unlike( $ui2_react_source, qr/\[activeResult, inputRailCollapsed, runtime\.lastSequence, scheduleOutputResize, workspaceExpanded\]/, 'runtime events do not schedule global output resizes' );
 like( $ui2_react_source, qr/pendingOutputResizeRef.*?requestAnimationFrame.*?bridge\.resizeOutputs/s, 'workbench coalesces geometry-driven output resizes into one animation frame' );
 like( $ui2_react_css, qr/\.ui2-workbench-grid/, 'React stylesheet contains the scientific workbench grid' );
+like( $ui2_react_css, qr/\.ui2-workbench-react-editing \.ui2-workbench-grid\{grid-template-columns:minmax\(28rem,1\.2fr\) minmax\(18rem,\.8fr\)\}/, 'editing state favors the input pane while submitted runs retain the standard split' );
+like( $ui2_react_css, qr/\@container \(width<=52rem\).*?grid-template-columns:1fr/s, 'workbench stacks from its available width rather than allowing sidebar-constrained tables to scroll' );
+like( $ui2_js, qr/row\.classList\.add\("ui2-tableized-repeater", "ui2-field-wide"\)/, 'tableized repeaters use the full input-card width instead of only the control column' );
+like( $ui2_css, qr/\.ui2-repeat-table-wrap,\s*\.ui2-matrix-wrap\s*\{\s*overflow-x: hidden;/s, 'repeat and matrix tables suppress horizontal scrolling' );
+like( $ui2_css, qr/\.ui2-repeat-table,\s*\.ui2-matrix-table\s*\{\s*width: 100%;\s*table-layout: fixed;/s, 'repeat and matrix tables fit their available card width' );
+like( $ui2_css, qr/\.ui2-repeat-table td\s*\{\s*padding: 0 0\.35rem;\s*min-width: 0;/s, 'repeat table cells can shrink within the available input card' );
 like( $ui2_react_css, qr/\.ui2-workbench-result-card \.ui2-output-plotly\{[^}]*overflow:hidden/, 'workbench fitted Plotly output suppresses internal scrollbars' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded/, 'workbench expanded workspace styles are present' );
 like( $ui2_react_css, qr/grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,30rem\),1fr\)\)/, 'expanded workspace uses an open-ended result-group grid' );
@@ -393,7 +401,6 @@ like( $ui2_js, qr/function renderSubmitResponse\(payload\) \{\s+if \(!devMode\) 
 like( $ui2_js, qr/type === "float"[\s\S]+input\.step = "any"/, 'ui2 float inputs allow decimal values' );
 like( $ui2_js, qr/type === "integer"[\s\S]+input\.step = "1"/, 'ui2 integer inputs keep whole-number stepping' );
 
-my $ui2_css = read_file( File::Spec->catfile( $ui2, qw(css ui2.css) ) );
 like( $ui2_css, qr/:root\[data-ui2-theme="system"\]/, 'ui2 stylesheet declares an explicit native system theme mode' );
 like( $ui2_css, qr/:root\[data-ui2-theme="slate"\]/, 'ui2 stylesheet declares the Slate legacy-continuity theme mode' );
 like( $ui2_css, qr/:root\[data-ui2-theme="dark"\]/, 'ui2 stylesheet declares an explicit native dark theme mode' );
