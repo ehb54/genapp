@@ -77,7 +77,7 @@ like( $ui2_js, qr/function plotlyLayoutForOutput\(output, sourceLayout\).*?plotl
 like( $ui2_js, qr/function plotlyFitMode\(output\).*?closest\?\.\("\[data-plot-fit\]"\)/s, 'dynamic Plotly children inherit their workbench pane-fit setting' );
 like( $ui2_js, qr/function observeFitPlotlyOutput\(output\).*?fittedAncestor.*?observer\.observe\(target\)/s, 'workbench fitted Plotly surfaces observe their stable pane container' );
 like( $ui2_js, qr/function releaseReactWorkbenchField\(fieldNode\).*?disconnectPlotlyOutputObserver.*?Plotly\.purge/s, 'workbench unmount cleans up Plotly resize observation and graph state' );
-like( $ui2_js, qr/function notifyWorkbenchReattached\(uuid, savedValues = null, restoreError = ""\).*?setSubmittedRunContext\(\{\s*uuid,\s*values,/s, 'workbench reattachment publishes the restored submitted-input snapshot' );
+like( $ui2_js, qr/function notifyWorkbenchReattached\(uuid, savedValues = null, restoreError = "", restoreWarnings = \[\]\).*?setSubmittedRunContext\(\{\s*uuid,\s*values,/s, 'workbench reattachment publishes the restored submitted-input snapshot and nonfatal warnings' );
 like( $ui2_js, qr/outputSnapshot: \(\) => state\.runtimeOutputAvailability.*?subscribeOutputs: \(listener\) => subscribeRuntimeOutputs\(listener\)/s, 'workbench bridge exposes runtime output availability without module-specific state' );
 like( $ui2_js, qr/function markRuntimeOutputAvailable\(id\).*?state\.runtimeOutputAvailability\[id\].*?\[id\]: true/s, 'runtime output availability publishes a new snapshot only for a newly available output' );
 unlike( $ui2_js, qr/function applyRuntimePayload\(payload, contextToken = null\).*?state\.runtimeOutputs = \{\s*\.\.\.state\.runtimeOutputs/s, 'repeated runtime payload values do not recreate the React workbench snapshot' );
@@ -93,7 +93,9 @@ like( $ui2_react_source, qr/<aside className="ui2-workbench-input-pane" hidden=\
 like( $ui2_react_source, qr/const returnToInputs = React\.useCallback\(\(\) => \{\s*bridge\.returnToInputs\(\)\s*setInputRailCollapsed\(false\)\s*setWorkspaceExpanded\(false\)/s, 'return-to-inputs restores the normal workbench layout without resetting values' );
 unlike( $ui2_react_source, qr/clearSubmitted/, 'workbench no longer models return-to-inputs as clearing form state' );
 like( $ui2_js, qr/returnToInputs: \(\) => \{\s*setSubmittedRunContext\(null\)/s, 'UI2 core return action clears only the submitted summary context' );
-like( $ui2_js, qr/function savedInputRestoreError\(payload, uuid, inputs = null\).*?cannot be restored after refresh/s, 'UI2 reports an actionable local-file restore limitation instead of opening a misleading form' );
+like( $ui2_js, qr/function savedInputRestoreWarnings\(inputs\).*?must be selected again before submitting a new run/s, 'UI2 reports an actionable local-file reselect warning without blocking other restored inputs' );
+like( $ui2_react_source, qr/restoreWarnings\.length > 0.*?Some local files must be selected again before submitting a new run/s, 'workbench renders local-file restoration as a nonfatal warning alongside submitted inputs' );
+unlike( $ui2_react_source, qr/disabled=\{Boolean\(restoreWarnings\)/, 'local-file reselect warnings do not disable show-all or return-to-inputs actions' );
 unlike( $ui2_react_source, qr/showAll\s*\?\s*Object\.keys\(values\)/, 'workbench all-input view does not expose runtime or session payload keys' );
 like( $ui2_react_js, qr/results\?\.runtimeLog/, 'React bundle places the runtime log from view metadata' );
 like( $ui2_react_js, qr/\.outputs\.map|outputs\.map|[A-Za-z]\.outputs\.map/, 'React bundle places declared module outputs from view tab metadata' );
@@ -216,7 +218,8 @@ like( $ui2_js, qr/preserve_live_frames === true.*?render_ngl_frame_controls\(out
 like( $ui2_js, qr/function renderNglOutputShell\(field, type\).*?_plot.*?_buttons/s, 'ui2 NGL outputs render the legacy plot and buttons shell' );
 like( $ui2_js, qr/function renderNglOutput\(output, value\).*?new window\.NGL\.Stage\(plot\.id, nglViewerStageParams\(output\)\).*?stage\.loadFile\(normalizeNglLoadName\(structurePayload\.loadname\), structurePayload\.loadparams/s, 'ui2 NGL outputs load rebased legacy NGL payloads into a configured stage' );
 like( $ui2_js, qr/function nglViewerConfig\(output\).*?capabilities: Object\.assign.*?display: Object\.assign/s, 'ui2 merges module and runtime NGL viewer configuration' );
-like( $ui2_js, qr/function renderNglSceneControls\(output, component\).*?Perspective.*?Orthographic.*?Background.*?Molecular axes/s, 'ui2 NGL viewer exposes camera, background, and axes controls' );
+like( $ui2_js, qr/function nglViewerStageParams\(output\).*?const params = \{ cameraType: "orthographic" \};.*?params\.cameraType = display\.camera/s, 'ui2 NGL viewer defaults stage cameras to orthographic while preserving explicit camera configuration' );
+like( $ui2_js, qr/function renderNglSceneControls\(output, component\).*?Orthographic.*?Perspective.*?camera\.value = display\.camera === "perspective" \? "perspective" : "orthographic";.*?Background.*?Molecular axes/s, 'ui2 NGL viewer exposes camera, background, and axes controls with orthographic selected by default' );
 like( $ui2_js, qr/function renderNglLayerEditor\(output, component, specs\).*?Add layer.*?rebuildNglRepresentations/s, 'ui2 NGL viewer exposes editable representation layers' );
 like( $ui2_js, qr/function nglDensitySurfaceSpecs\(payload\).*?payload\?\.surfaces.*?function renderNglDensitySurfaceList/s, 'ui2 NGL viewer supports multiple editable volume surfaces' );
 like( $ui2_js, qr/function startNglFramePlayback\(output\).*?window\.setTimeout/s, 'ui2 NGL viewer can play retained streamed frames' );

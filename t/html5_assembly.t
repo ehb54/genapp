@@ -73,6 +73,12 @@ like(
     'sys_user_config project name input carries explicit pattern guidance'
 );
 
+like(
+    $ga_js,
+    qr/new NGL\.Stage\( id \+ "_plot", \{ cameraType: "orthographic" \} \)/,
+    'assembled html5 NGL runtime defaults viewers to orthographic projection'
+);
+
 my $module_php = read_file( File::Spec->catfile( $app_dir, qw(output html5 ajax demo echo.php) ) );
 my $job_event_cache = File::Spec->catfile( $app_dir, qw(output html5 util job-event-cache.php) );
 ok( -f $job_event_cache, 'bounded job-event replay helper was generated' );

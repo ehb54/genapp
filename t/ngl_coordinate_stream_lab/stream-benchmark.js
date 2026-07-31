@@ -4,7 +4,7 @@
   const atomCount = 1000;
   const frameCount = 120;
   const result = document.getElementById("benchmark-result");
-  const stage = new NGL.Stage("viewport", { backgroundColor: "#0d1513" });
+  const stage = new NGL.Stage("viewport", { backgroundColor: "#0d1513", cameraType: "orthographic" });
 
   function pdbLine(index) {
     const serial = String(index + 1).padStart(5, " ");

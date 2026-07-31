@@ -92,6 +92,7 @@
     view: {},
     values: {},
     serverSelections: {},
+    fileReselectionWarnings: {},
     lastServerFileDir: "",
     lastServerFileSessionKey: "",
     jobSelections: {},
@@ -876,6 +877,8 @@
       state.module = payload.module;
       state.view = payload.viewjson || {};
       state.values = {};
+      state.serverSelections = {};
+      clearFileReselectionWarnings();
       setSubmittedRunContext(null);
       state.jobEvents.reset("", moduleId);
       beginViewReady();
@@ -2975,6 +2978,7 @@
     }
     localPicker.addEventListener("change", () => {
       clearServerSelection(field, options?.repeatTableIndex);
+      clearFileReselectionWarning(field.id, options?.repeatTableIndex);
       input.value = localPicker.files && localPicker.files[0] ? localPicker.files[0].name : "";
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
@@ -2998,7 +3002,14 @@
       actions.appendChild(server);
     }
 
-    wrap.append(input, localPicker, actions);
+    const reselectWarning = el("p", "ui2-file-reselect-warning", "");
+    reselectWarning.dataset.fieldId = field.id || "";
+    if (options?.repeatTableIndex != null) {
+      reselectWarning.dataset.repeatTableIndex = String(options.repeatTableIndex);
+    }
+    reselectWarning.hidden = true;
+    wrap.append(input, localPicker, actions, reselectWarning);
+    refreshFileReselectionWarning(reselectWarning);
     return wrap;
   }
 
@@ -3305,6 +3316,7 @@
       encodedPath: entry.id,
       path: decodeServerFileId(entry.id).replace(/^\.\//, "")
     };
+    clearFileReselectionWarning(field.id, repeatIndex);
   }
 
   function clearServerSelection(field, repeatIndex) {
@@ -3312,6 +3324,68 @@
       return;
     }
     delete state.serverSelections[serverSelectionKey(field, repeatIndex)];
+  }
+
+  function fileReselectionWarningKey(id, repeatIndex) {
+    return `${id || ""}:${repeatIndex == null ? "" : repeatIndex}`;
+  }
+
+  function setFileReselectionWarnings(warnings) {
+    state.fileReselectionWarnings = {};
+    (warnings || []).forEach((warning) => {
+      if (warning?.id) {
+        state.fileReselectionWarnings[fileReselectionWarningKey(warning.id, warning.repeatIndex)] = warning;
+      }
+    });
+    refreshFileReselectionWarnings();
+  }
+
+  function clearFileReselectionWarnings() {
+    state.fileReselectionWarnings = {};
+    refreshFileReselectionWarnings();
+  }
+
+  function clearFileReselectionWarning(id, repeatIndex) {
+    if (!id) {
+      return;
+    }
+    delete state.fileReselectionWarnings[fileReselectionWarningKey(id, repeatIndex)];
+    refreshFileReselectionWarnings(id, repeatIndex);
+  }
+
+  function fileReselectionWarning(id, repeatIndex) {
+    return state.fileReselectionWarnings[fileReselectionWarningKey(id, repeatIndex)] || null;
+  }
+
+  function fileReselectionWarningText(warning) {
+    if (!warning) {
+      return "";
+    }
+    const name = warning.savedValue ? ` (${warning.savedValue})` : "";
+    const field = moduleFieldById(warning.id);
+    const alternative = fileModes(field?.type).includes("server") ? " or choose a server file" : "";
+    return `This browser cannot restore the saved local file${name}. Select it again${alternative} before submitting a new run.`;
+  }
+
+  function refreshFileReselectionWarning(node) {
+    if (!node) {
+      return;
+    }
+    const warning = fileReselectionWarning(node.dataset.fieldId, repeatIndexValue(node.dataset.repeatTableIndex));
+    node.textContent = fileReselectionWarningText(warning);
+    node.hidden = !warning;
+  }
+
+  function refreshFileReselectionWarnings(id = null, repeatIndex = null) {
+    const selector = id
+      ? `.ui2-file-reselect-warning[data-field-id="${cssEscape(id)}"]`
+      : ".ui2-file-reselect-warning";
+    Array.from(document.querySelectorAll(selector)).forEach((node) => {
+      if (id && repeatIndex != null && String(node.dataset.repeatTableIndex ?? "") !== String(repeatIndex)) {
+        return;
+      }
+      refreshFileReselectionWarning(node);
+    });
   }
 
   function decodeServerFileId(id) {
@@ -4106,6 +4180,20 @@
 
   function validateModuleForm(form) {
     syncFormValues(form);
+    const fileNeedingReselection = fieldControls(form).find((control) => (
+      !control.disabled
+        && control.readOnly
+        && control.closest(".ui2-file-control")
+        && !control.closest(".ui2-output-field")
+        && !control.closest(".ui2-hidden")
+        && fileReselectionWarning(control.dataset.fieldId, repeatIndexValue(control.dataset.repeatTableIndex))
+    ));
+    if (fileNeedingReselection) {
+      return {
+        control: fileNeedingReselection,
+        message: `${fieldLabelForControl(fileNeedingReselection)}: Select the local file again or choose a server file before submitting.`
+      };
+    }
     const missingRequiredFile = fieldControls(form).find((control) => (
       !control.disabled
         && control.required
@@ -5353,6 +5441,7 @@
       return;
     }
     state.serverSelections = {};
+    clearFileReselectionWarnings();
     state.jobSelections = {};
     setSubmittedRunContext(null);
     state.jobEvents.reset("", state.moduleId);
@@ -6131,12 +6220,13 @@
       showLegacyMessagePayload(payload);
       if (getInput) {
         if (payload?._getinput) {
-          applyInputPayload(payload._getinput);
+          applyInputPayload(payload._getinput, { reselectLocalFiles: true });
           if (isReactWorkbenchView(state.view)) {
             notifyWorkbenchReattached(
               uuid,
               payload._getinput,
-              savedInputRestoreError(payload, uuid, payload._getinput)
+              savedInputRestoreError(payload, uuid, payload._getinput),
+              savedInputRestoreWarnings(payload._getinput)
             );
           }
         } else if (isReactWorkbenchView(state.view)) {
@@ -6193,7 +6283,7 @@
     if (!payload?._getinput) {
       return null;
     }
-    applyInputPayload(payload._getinput);
+    applyInputPayload(payload._getinput, { reselectLocalFiles: true });
     return payload._getinput;
   }
 
@@ -6202,47 +6292,59 @@
     if (detail) {
       return `Could not restore inputs for run ${uuid}: ${detail}`;
     }
-    const localFileField = unrecoverableSavedLocalFile(inputs);
-    if (localFileField) {
-      return `${localFileField.label || localFileField.id} was selected from this browser and cannot be restored after refresh. Select that file again to create a new run; the original run remains available in Job Manager.`;
-    }
     if (inputs && typeof inputs === "object") {
       return "";
     }
     return `Could not restore inputs for run ${uuid}. The saved input record is unavailable; return to Job Manager or contact an administrator.`;
   }
 
-  function unrecoverableSavedLocalFile(inputs) {
+  function unrecoverableSavedLocalFiles(inputs) {
     if (!inputs || typeof inputs !== "object") {
-      return null;
+      return [];
     }
-    const selections = Object.values(state.serverSelections || {});
-    return (state.module?.fields || []).find((field) => {
+    return (state.module?.fields || []).flatMap((field) => {
       if (!fieldIsFileLike(field) || !fileModes(field.type).includes("local") || !Object.prototype.hasOwnProperty.call(inputs, field.id)) {
-        return false;
+        return [];
       }
       const savedValues = valueList(inputs[field.id]).filter((value) => stringValue(value));
       if (!savedValues.length) {
-        return false;
+        return [];
       }
-      return !selections.some((selection) => selection?.id === field.id && selection?.encodedPath);
-    }) || null;
+      return savedValues.flatMap((savedValue, index) => {
+        const repeatIndex = savedValues.length > 1 ? index : null;
+        const selection = state.serverSelections[`${field.id}:${repeatIndex == null ? "" : repeatIndex}`];
+        return selection?.encodedPath ? [] : [{
+          id: field.id,
+          label: field.label || field.id,
+          repeatIndex,
+          savedValue: stringValue(savedValue)
+        }];
+      });
+    });
   }
 
-  function notifyWorkbenchReattached(uuid, savedValues = null, restoreError = "") {
+  function savedInputRestoreWarnings(inputs) {
+    return unrecoverableSavedLocalFiles(inputs).map((warning) => (
+      `${warning.label} (${warning.savedValue}) was selected from this browser and must be selected again before submitting a new run.`
+    ));
+  }
+
+  function notifyWorkbenchReattached(uuid, savedValues = null, restoreError = "", restoreWarnings = []) {
     const values = savedValues && typeof savedValues === "object"
       ? cloneUi2Value(savedValues)
       : {};
     setSubmittedRunContext({
       uuid,
       values,
-      restoreError: stringValue(restoreError)
+      restoreError: stringValue(restoreError),
+      restoreWarnings: Array.isArray(restoreWarnings) ? restoreWarnings.map(stringValue).filter(Boolean) : []
     });
     dispatchUi2Event("ui2:workbench-reattached", {
       moduleId: state.moduleId,
       uuid,
       values,
-      restoreError: stringValue(restoreError)
+      restoreError: stringValue(restoreError),
+      restoreWarnings: Array.isArray(restoreWarnings) ? restoreWarnings.map(stringValue).filter(Boolean) : []
     });
   }
 
@@ -6377,6 +6479,9 @@
       clearMissingInputValues(new Set(entries.map(([id]) => id)));
     }
     syncValues();
+    if (options.reselectLocalFiles) {
+      setFileReselectionWarnings(unrecoverableSavedLocalFiles(inputs));
+    }
   }
 
   function defaultInputPayload() {
@@ -7439,7 +7544,7 @@
 
   function nglViewerStageParams(output) {
     const display = nglViewerConfig(output).display || {};
-    const params = {};
+    const params = { cameraType: "orthographic" };
     if (display.background) params.backgroundColor = display.background;
     if (display.camera === "orthographic" || display.camera === "perspective") {
       params.cameraType = display.camera;
@@ -7485,10 +7590,10 @@
     grid.appendChild(nglViewerControl("Molecule", visible));
 
     const camera = document.createElement("select");
-    [["perspective", "Perspective"], ["orthographic", "Orthographic"]].forEach(([value, label]) => {
+    [["orthographic", "Orthographic"], ["perspective", "Perspective"]].forEach(([value, label]) => {
       camera.appendChild(new Option(label, value));
     });
-    camera.value = display.camera === "orthographic" ? "orthographic" : "perspective";
+    camera.value = display.camera === "perspective" ? "perspective" : "orthographic";
     camera.addEventListener("change", () => {
       stage.setParameters?.({ cameraType: camera.value });
       requestNglRender(stage);
@@ -9769,6 +9874,11 @@
       applyInputPayload,
       applySavedJobInput,
       savedInputRestoreError,
+      savedInputRestoreWarnings,
+      unrecoverableSavedLocalFiles,
+      setFileReselectionWarnings,
+      clearFileReselectionWarning,
+      fileReselectionWarning,
       renderSessionState,
       sessionProjectName,
       state

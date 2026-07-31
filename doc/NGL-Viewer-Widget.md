@@ -19,7 +19,7 @@ Add optional `viewer` metadata to the NGL output field in a module JSON file:
     "additional_components": false
   },
   "display": {
-    "camera": "perspective",
+    "camera": "orthographic",
     "background": "#050909",
     "axes": false,
     "mouse_preset": "default"
@@ -31,7 +31,8 @@ The configuration is intentionally declarative.  It sets module defaults and
 records what a module can provide; it does not cause a density map or trajectory
 to be created.  A driver may provide a top-level `viewer` object in its output
 payload to refine these settings for one job.  Runtime settings override module
-settings, with `capabilities` and `display` merged by key.
+settings, with `capabilities` and `display` merged by key.  When no camera is
+declared, the viewer defaults to orthographic projection.
 
 `additional_components` is reserved for a future multi-molecule input contract.
 The current widget supports one primary structure component plus zero or more
@@ -52,7 +53,7 @@ The existing structure contract remains valid:
 }
 ```
 
-Users can show or hide the molecule, choose perspective or orthographic camera,
+Users can show or hide the molecule, choose orthographic or perspective camera,
 choose a background and mouse preset, reset/spin/fullscreen the view, and edit
 representation layers and selections locally.  Those adjustments are local UI
 state, not changes to a SASSIE result file.

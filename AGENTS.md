@@ -203,6 +203,11 @@ When working on GenApp itself:
    check," or "workflow check."
 5. Keep generated-output changes separate from generator/template changes unless
    the user explicitly asks for generated artifacts.
+   `languages/html5/add/js/ga.min.js` is recreated from the HTML5 JavaScript
+   assembly, including `languages/html5/js/value.js`, whenever `genapp.pl`
+   compiles an HTML5 app. Treat it as a generated runtime asset; updates can
+   safely replace it, and deployment helpers may restore or regenerate it when
+   it appears as generated drift.
 6. Validate JSON changes with `bin/check_json.pl` where applicable.
 7. Validate application directories with `bin/genapp_check.pl` or by running
    `genapp` from the application base directory when an application fixture is

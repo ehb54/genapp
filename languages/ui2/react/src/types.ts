@@ -129,6 +129,7 @@ export type SubmittedRunContext = {
   values: Record<string, unknown>
   uuid?: string
   restoreError?: string
+  restoreWarnings?: string[]
 } | null
 
 export type ScientificWorkbenchMountProps = {

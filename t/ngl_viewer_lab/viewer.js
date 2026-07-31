@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const stage = new NGL.Stage("viewport", { backgroundColor: "#050909" });
+  const stage = new NGL.Stage("viewport", { backgroundColor: "#050909", cameraType: "orthographic" });
   const streamingAvailable = new URLSearchParams(window.location.search).get("streaming") !== "off";
   const state = {
     structure: null,

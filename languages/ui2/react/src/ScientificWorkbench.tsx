@@ -183,6 +183,7 @@ function SubmittedInputs({
   summaryFieldIds,
   uuid,
   restoreError,
+  restoreWarnings = [],
   onEdit,
   onHide,
 }: {
@@ -191,6 +192,7 @@ function SubmittedInputs({
   summaryFieldIds: string[]
   uuid?: string
   restoreError?: string
+  restoreWarnings?: string[]
   onEdit: () => void
   onHide: () => void
 }) {
@@ -213,9 +215,14 @@ function SubmittedInputs({
         <span className="ui2-workbench-status-badge">Submitted</span>
       </CardHeader>
       <CardContent>
-        {restoreError ? (
-          <p className="ui2-workbench-restore-error" role="alert">{restoreError}</p>
-        ) : (
+        {restoreError && <p className="ui2-workbench-restore-error" role="alert">{restoreError}</p>}
+        {restoreWarnings.length > 0 && (
+          <div className="ui2-workbench-restore-warning" role="alert">
+            <p>Some local files must be selected again before submitting a new run.</p>
+            <ul>{restoreWarnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
+          </div>
+        )}
+        {!restoreError && (
           <dl className="ui2-workbench-summary-list">
             {ids.map((id) => (
               <div key={id}>
@@ -494,7 +501,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
       <div className={`ui2-workbench-grid${inputRailCollapsed || workspaceExpanded ? " ui2-workbench-grid-inputs-hidden" : ""}`}>
         <aside className="ui2-workbench-input-pane" hidden={inputRailCollapsed || workspaceExpanded}>
           {submitted && (
-            <SubmittedInputs fields={fields} summaryFieldIds={summaryFieldIds} onEdit={returnToInputs} onHide={() => setInputRailCollapsed(true)} restoreError={submitted.restoreError} uuid={submitted.uuid} values={submitted.values} />
+            <SubmittedInputs fields={fields} summaryFieldIds={summaryFieldIds} onEdit={returnToInputs} onHide={() => setInputRailCollapsed(true)} restoreError={submitted.restoreError} restoreWarnings={submitted.restoreWarnings} uuid={submitted.uuid} values={submitted.values} />
           )}
           <div className="ui2-workbench-input-scroll" hidden={Boolean(submitted)}>
               {inputSections.map((section) => renderInputSection(section))}

@@ -10867,44 +10867,53 @@ function ei(e) {
 	}
 	return !0;
 }
-function ti({ values: e, fields: t, summaryFieldIds: n, uuid: r, restoreError: i, onEdit: a, onHide: o }) {
-	let [s, c] = C.useState(!1), l = C.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), u = s ? t.filter((t) => t.id && t.role !== "output" && t.type !== "label" && Object.prototype.hasOwnProperty.call(e, t.id)).map((e) => e.id) : n.filter((t) => Object.prototype.hasOwnProperty.call(e, t));
+function ti({ values: e, fields: t, summaryFieldIds: n, uuid: r, restoreError: i, restoreWarnings: a = [], onEdit: o, onHide: s }) {
+	let [c, l] = C.useState(!1), u = C.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), d = c ? t.filter((t) => t.id && t.role !== "output" && t.type !== "label" && Object.prototype.hasOwnProperty.call(e, t.id)).map((e) => e.id) : n.filter((t) => Object.prototype.hasOwnProperty.call(e, t));
 	return /* @__PURE__ */ (0, L.jsxs)(Qt, {
 		className: "ui2-workbench-submitted",
 		children: [/* @__PURE__ */ (0, L.jsxs)($t, { children: [/* @__PURE__ */ (0, L.jsxs)("div", { children: [/* @__PURE__ */ (0, L.jsx)(en, { children: "Submitted inputs" }), /* @__PURE__ */ (0, L.jsx)(tn, { children: r ? `Run ${r}` : "Values associated with this run" })] }), /* @__PURE__ */ (0, L.jsx)("span", {
 			className: "ui2-workbench-status-badge",
 			children: "Submitted"
-		})] }), /* @__PURE__ */ (0, L.jsxs)(nn, { children: [i ? /* @__PURE__ */ (0, L.jsx)("p", {
-			className: "ui2-workbench-restore-error",
-			role: "alert",
-			children: i
-		}) : /* @__PURE__ */ (0, L.jsx)("dl", {
-			className: "ui2-workbench-summary-list",
-			children: u.map((t) => /* @__PURE__ */ (0, L.jsxs)("div", { children: [/* @__PURE__ */ (0, L.jsx)("dt", { children: l.get(t)?.label || t }), /* @__PURE__ */ (0, L.jsx)("dd", { children: Wr(e[t], l.get(t)) })] }, t))
-		}), /* @__PURE__ */ (0, L.jsxs)("div", {
-			className: "ui2-workbench-summary-actions",
-			children: [
-				/* @__PURE__ */ (0, L.jsx)(Zt, {
-					disabled: !!i,
-					type: "button",
-					variant: "outline",
-					onClick: () => c((e) => !e),
-					children: s ? "Show key inputs" : "Show all inputs"
-				}),
-				/* @__PURE__ */ (0, L.jsx)(Zt, {
-					type: "button",
-					variant: "outline",
-					onClick: o,
-					children: "Hide inputs"
-				}),
-				/* @__PURE__ */ (0, L.jsx)(Zt, {
-					disabled: !!i,
-					type: "button",
-					onClick: a,
-					children: "Return to inputs"
-				})
-			]
-		})] })]
+		})] }), /* @__PURE__ */ (0, L.jsxs)(nn, { children: [
+			i && /* @__PURE__ */ (0, L.jsx)("p", {
+				className: "ui2-workbench-restore-error",
+				role: "alert",
+				children: i
+			}),
+			a.length > 0 && /* @__PURE__ */ (0, L.jsxs)("div", {
+				className: "ui2-workbench-restore-warning",
+				role: "alert",
+				children: [/* @__PURE__ */ (0, L.jsx)("p", { children: "Some local files must be selected again before submitting a new run." }), /* @__PURE__ */ (0, L.jsx)("ul", { children: a.map((e) => /* @__PURE__ */ (0, L.jsx)("li", { children: e }, e)) })]
+			}),
+			!i && /* @__PURE__ */ (0, L.jsx)("dl", {
+				className: "ui2-workbench-summary-list",
+				children: d.map((t) => /* @__PURE__ */ (0, L.jsxs)("div", { children: [/* @__PURE__ */ (0, L.jsx)("dt", { children: u.get(t)?.label || t }), /* @__PURE__ */ (0, L.jsx)("dd", { children: Wr(e[t], u.get(t)) })] }, t))
+			}),
+			/* @__PURE__ */ (0, L.jsxs)("div", {
+				className: "ui2-workbench-summary-actions",
+				children: [
+					/* @__PURE__ */ (0, L.jsx)(Zt, {
+						disabled: !!i,
+						type: "button",
+						variant: "outline",
+						onClick: () => l((e) => !e),
+						children: c ? "Show key inputs" : "Show all inputs"
+					}),
+					/* @__PURE__ */ (0, L.jsx)(Zt, {
+						type: "button",
+						variant: "outline",
+						onClick: s,
+						children: "Hide inputs"
+					}),
+					/* @__PURE__ */ (0, L.jsx)(Zt, {
+						disabled: !!i,
+						type: "button",
+						onClick: o,
+						children: "Return to inputs"
+					})
+				]
+			})
+		] })]
 	});
 }
 function ni({ snapshot: e, title: t, description: n, defaultOpen: r = !1, open: i, onOpenChange: a, cue: o }) {
@@ -11072,6 +11081,7 @@ function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						onEdit: be,
 						onHide: () => x(!0),
 						restoreError: O.restoreError,
+						restoreWarnings: O.restoreWarnings,
 						uuid: O.uuid,
 						values: O.values
 					}),

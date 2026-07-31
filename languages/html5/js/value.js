@@ -1464,7 +1464,7 @@ ga.value.nglshow = function( mod, id, v ) {
         var specs = ga.ngl.representationSpecs( v );
         var layered = v.representations && Array.isArray( v.representations ) && v.representations.length;
         ga.ngl[ savekey ] = {};
-        ga.ngl[ savekey ].stage = new NGL.Stage( id + "_plot" );
+        ga.ngl[ savekey ].stage = new NGL.Stage( id + "_plot", { cameraType: "orthographic" } );
         ga.ngl[ savekey ].stage.loadFile( v.loadname, v.loadparams ).then( function (component) {
             ga.ngl[ savekey ].component = component;
             ga.ngl[ savekey ].reps = {};

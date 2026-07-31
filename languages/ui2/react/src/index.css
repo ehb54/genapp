@@ -413,6 +413,33 @@
   padding: 0.75rem;
 }
 
+.ui2-workbench-restore-warning,
+.ui2-file-reselect-warning {
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--ui2-warn, #a15c00) 45%, var(--ui2-border));
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--ui2-warn, #a15c00) 10%, var(--ui2-panel));
+  color: var(--ui2-warn, #a15c00);
+  padding: 0.75rem;
+}
+
+.ui2-workbench-restore-warning p {
+  margin: 0;
+  font-weight: 700;
+}
+
+.ui2-workbench-restore-warning ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.ui2-file-reselect-warning {
+  grid-column: 1 / -1;
+  margin-top: 0.15rem;
+  padding: 0.55rem 0.65rem;
+  font-size: 0.85rem;
+}
+
 .ui2-workbench-summary-list > div {
   display: grid;
   grid-template-columns: minmax(9rem, 0.65fr) minmax(0, 1fr);

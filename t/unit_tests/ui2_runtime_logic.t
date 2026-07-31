@@ -496,6 +496,26 @@ assert.strictEqual(
   "hiv1_gag_charmm27.pdb",
   "UI2 value collection keeps the visible lrfile selection instead of the hidden native file input value"
 );
+hooks.state.fileReselectionWarnings = {
+  "input_pdbfile:": {
+    id: "input_pdbfile",
+    label: "Coordinate file",
+    repeatIndex: null,
+    savedValue: "hiv1_gag_charmm27.pdb"
+  }
+};
+const staleLocalFile = hooks.validateModuleForm(localFileForm);
+assert.strictEqual(
+  staleLocalFile.control,
+  localFileDisplay,
+  "UI2 rejects a restored local filename until the browser receives a real file or server selection"
+);
+assert.match(
+  staleLocalFile.message,
+  /Select the local file again or choose a server file before submitting/,
+  "UI2 explains why a restored local filename cannot be submitted"
+);
+hooks.state.fileReselectionWarnings = {};
 
 function conditionRow(id, type, value) {
   const row = createNode("div");
@@ -1853,10 +1873,15 @@ hooks.state.module = {
   ]
 };
 hooks.state.serverSelections = {};
-assert.match(
+assert.strictEqual(
   hooks.savedInputRestoreError({}, "local-file-run", { pdbfile: ["coordinate.pdb"] }),
-  /Coordinate file was selected from this browser and cannot be restored after refresh/,
-  "UI2 leaves an attached run in place when a browser-local file cannot be restored"
+  "",
+  "UI2 reserves a restore error for unavailable saved input instead of a browser-local file"
+);
+assert.deepStrictEqual(
+  hooks.savedInputRestoreWarnings({ pdbfile: ["coordinate.pdb"] }),
+  ["Coordinate file (coordinate.pdb) was selected from this browser and must be selected again before submitting a new run."],
+  "UI2 reports a browser-local file as a nonfatal reselect warning"
 );
 hooks.state.serverSelections = {
   "pdbfile:": {
@@ -1865,9 +1890,20 @@ hooks.state.serverSelections = {
   }
 };
 assert.strictEqual(
-  hooks.savedInputRestoreError({}, "server-file-run", { pdbfile: ["coordinate.pdb"] }),
-  "",
-  "UI2 permits return-to-inputs when the saved file selection has a server replay token"
+  hooks.savedInputRestoreWarnings({ pdbfile: ["coordinate.pdb"] }).length,
+  0,
+  "UI2 does not warn when the saved file selection has a server replay token"
+);
+hooks.state.serverSelections = {
+  "pdbfile:1": {
+    id: "pdbfile",
+    encodedPath: "Li4vcHJvamVjdC9jb29yZGluYXRlMi5wZGI="
+  }
+};
+assert.deepStrictEqual(
+  hooks.savedInputRestoreWarnings({ pdbfile: ["coordinate_1.pdb", "coordinate_2.pdb"] }),
+  ["Coordinate file (coordinate_1.pdb) was selected from this browser and must be selected again before submitting a new run."],
+  "UI2 preserves per-row local-file warnings when a repeated field mixes local and server selections"
 );
 
 replayControl.value = "";
