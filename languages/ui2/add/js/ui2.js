@@ -105,6 +105,7 @@
     viewReady: null,
     viewReadyGeneration: 0,
     runtimeOutputs: {},
+    nglFrameHistories: {},
     runtimeOutputContext: {
       moduleId: "",
       jobUuid: "",
@@ -6107,6 +6108,7 @@
 
   function clearRuntimeOutputs(scope) {
     state.runtimeOutputs = {};
+    state.nglFrameHistories = {};
     clearRuntimeOutputAvailability();
     (scope || document).querySelectorAll("[data-output-field-id]").forEach((output) => {
       if (output.dataset.dynamicOutput === "true") {
@@ -6159,6 +6161,7 @@
       generation: (state.runtimeOutputContext.generation || 0) + 1
     };
     state.runtimeOutputs = {};
+    state.nglFrameHistories = {};
     clearRuntimeOutputAvailability();
     return runtimeOutputToken();
   }
@@ -7397,6 +7400,11 @@
     // `viewer` is presentation-only field metadata.  A driver may refine it
     // per job with a top-level `viewer` object in the NGL payload.
     output._ui2NglViewerConfig = cloneUi2Value(field.viewer || {});
+    const savedFrames = state.nglFrameHistories[field.id || ""];
+    if (Array.isArray(savedFrames) && savedFrames.length) {
+      output._ui2_ngl_frames = savedFrames;
+      output._ui2_ngl_pending_frame = savedFrames[savedFrames.length - 1];
+    }
 
     const plot = el("div", "ui2-ngl-plot");
     plot.id = `${field.id || "ngl_output"}_plot`;
@@ -8171,6 +8179,10 @@
       }
     }
     prune_ngl_frame_history(output);
+    const outputId = output.dataset?.outputFieldId || "";
+    if (outputId) {
+      state.nglFrameHistories[outputId] = output._ui2_ngl_frames;
+    }
     output._ui2_ngl_pending_frame = frame;
     render_ngl_frame_controls(output);
     schedule_ngl_coordinate_frame(output);
