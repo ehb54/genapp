@@ -113,7 +113,7 @@ export type ScientificWorkbenchBridge = {
   fieldGroupMounted: () => void
   syncValues: () => Record<string, unknown>
   reset: (form: HTMLFormElement) => void
-  clearSubmitted: () => void
+  returnToInputs: () => void
   submit: (form: HTMLFormElement) => Promise<SubmitResult>
   resizeOutputs: () => void
   viewReady: () => void
@@ -128,6 +128,7 @@ export type ScientificWorkbenchBridge = {
 export type SubmittedRunContext = {
   values: Record<string, unknown>
   uuid?: string
+  restoreError?: string
 } | null
 
 export type ScientificWorkbenchMountProps = {

@@ -10867,35 +10867,41 @@ function ei(e) {
 	}
 	return !0;
 }
-function ti({ values: e, fields: t, summaryFieldIds: n, uuid: r, onEdit: i, onHide: a }) {
-	let [o, s] = C.useState(!1), c = C.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), l = o ? t.filter((t) => t.id && t.role !== "output" && t.type !== "label" && Object.prototype.hasOwnProperty.call(e, t.id)).map((e) => e.id) : n.filter((t) => Object.prototype.hasOwnProperty.call(e, t));
+function ti({ values: e, fields: t, summaryFieldIds: n, uuid: r, restoreError: i, onEdit: a, onHide: o }) {
+	let [s, c] = C.useState(!1), l = C.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), u = s ? t.filter((t) => t.id && t.role !== "output" && t.type !== "label" && Object.prototype.hasOwnProperty.call(e, t.id)).map((e) => e.id) : n.filter((t) => Object.prototype.hasOwnProperty.call(e, t));
 	return /* @__PURE__ */ (0, L.jsxs)(Qt, {
 		className: "ui2-workbench-submitted",
 		children: [/* @__PURE__ */ (0, L.jsxs)($t, { children: [/* @__PURE__ */ (0, L.jsxs)("div", { children: [/* @__PURE__ */ (0, L.jsx)(en, { children: "Submitted inputs" }), /* @__PURE__ */ (0, L.jsx)(tn, { children: r ? `Run ${r}` : "Values associated with this run" })] }), /* @__PURE__ */ (0, L.jsx)("span", {
 			className: "ui2-workbench-status-badge",
 			children: "Submitted"
-		})] }), /* @__PURE__ */ (0, L.jsxs)(nn, { children: [/* @__PURE__ */ (0, L.jsx)("dl", {
+		})] }), /* @__PURE__ */ (0, L.jsxs)(nn, { children: [i ? /* @__PURE__ */ (0, L.jsx)("p", {
+			className: "ui2-workbench-restore-error",
+			role: "alert",
+			children: i
+		}) : /* @__PURE__ */ (0, L.jsx)("dl", {
 			className: "ui2-workbench-summary-list",
-			children: l.map((t) => /* @__PURE__ */ (0, L.jsxs)("div", { children: [/* @__PURE__ */ (0, L.jsx)("dt", { children: c.get(t)?.label || t }), /* @__PURE__ */ (0, L.jsx)("dd", { children: Wr(e[t], c.get(t)) })] }, t))
+			children: u.map((t) => /* @__PURE__ */ (0, L.jsxs)("div", { children: [/* @__PURE__ */ (0, L.jsx)("dt", { children: l.get(t)?.label || t }), /* @__PURE__ */ (0, L.jsx)("dd", { children: Wr(e[t], l.get(t)) })] }, t))
 		}), /* @__PURE__ */ (0, L.jsxs)("div", {
 			className: "ui2-workbench-summary-actions",
 			children: [
 				/* @__PURE__ */ (0, L.jsx)(Zt, {
+					disabled: !!i,
 					type: "button",
 					variant: "outline",
-					onClick: () => s((e) => !e),
-					children: o ? "Show key inputs" : "Show all inputs"
+					onClick: () => c((e) => !e),
+					children: s ? "Show key inputs" : "Show all inputs"
 				}),
 				/* @__PURE__ */ (0, L.jsx)(Zt, {
 					type: "button",
 					variant: "outline",
-					onClick: a,
+					onClick: o,
 					children: "Hide inputs"
 				}),
 				/* @__PURE__ */ (0, L.jsx)(Zt, {
+					disabled: !!i,
 					type: "button",
-					onClick: i,
-					children: "Edit for new run"
+					onClick: a,
+					children: "Return to inputs"
 				})
 			]
 		})] })]
@@ -11017,7 +11023,9 @@ function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 		e.preventDefault(), r.reset(e.currentTarget), c(r.syncValues()), o(!1), x(!1), w(!1);
 	}, ye = () => {
 		w((e) => (e && x(!1), !e));
-	}, be = String(ce.lifecycle?.state || (v ? "submitting" : "editing")), xe = String(ce.lifecycle?.error || ce.lifecycle?.message || be), Se = O || ce.run ? Qr(ce) : void 0, Ce = (e, t = 0) => {
+	}, be = C.useCallback(() => {
+		r.returnToInputs(), x(!1), w(!1);
+	}, [r]), xe = String(ce.lifecycle?.state || (v ? "submitting" : "editing")), Se = String(ce.lifecycle?.error || ce.lifecycle?.message || xe), Ce = O || ce.run ? Qr(ce) : void 0, we = (e, t = 0) => {
 		if (!qr(e.repeat, s)) return null;
 		let n = (e.fields || []).map((e) => oe.get(e)).filter(Boolean);
 		return /* @__PURE__ */ (0, L.jsxs)(Qt, {
@@ -11025,7 +11033,7 @@ function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 			children: [/* @__PURE__ */ (0, L.jsx)($t, { children: /* @__PURE__ */ (0, L.jsxs)("div", { children: [/* @__PURE__ */ (0, L.jsx)(en, { children: e.title }), e.description && /* @__PURE__ */ (0, L.jsx)(tn, { children: e.description })] }) }), /* @__PURE__ */ (0, L.jsxs)(nn, { children: [n.length > 0 && /* @__PURE__ */ (0, L.jsx)(Hr, {
 				bridge: r,
 				fields: n
-			}), (e.children || []).map((e) => Ce(e, t + 1))] })]
+			}), (e.children || []).map((e) => we(e, t + 1))] })]
 		}, e.id);
 	};
 	return /* @__PURE__ */ (0, L.jsxs)("form", {
@@ -11054,88 +11062,93 @@ function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 			] })
 		}), /* @__PURE__ */ (0, L.jsxs)("div", {
 			className: `ui2-workbench-grid${b || S ? " ui2-workbench-grid-inputs-hidden" : ""}`,
-			children: [!b && !S && /* @__PURE__ */ (0, L.jsxs)("aside", {
+			children: [/* @__PURE__ */ (0, L.jsxs)("aside", {
 				className: "ui2-workbench-input-pane",
-				children: [O ? /* @__PURE__ */ (0, L.jsx)(ti, {
-					fields: t,
-					summaryFieldIds: f,
-					onEdit: () => {
-						r.clearSubmitted(), x(!1);
-					},
-					onHide: () => x(!0),
-					uuid: O.uuid,
-					values: O.values
-				}) : /* @__PURE__ */ (0, L.jsxs)("div", {
-					className: "ui2-workbench-input-scroll",
-					children: [
-						l.map((e) => Ce(e)),
-						A.length > 0 && /* @__PURE__ */ (0, L.jsxs)(Qt, { children: [/* @__PURE__ */ (0, L.jsx)($t, { children: /* @__PURE__ */ (0, L.jsx)(en, { children: "Additional inputs" }) }), /* @__PURE__ */ (0, L.jsx)(nn, { children: /* @__PURE__ */ (0, L.jsx)(Hr, {
-							bridge: r,
-							fields: A
-						}) })] }),
-						u && /* @__PURE__ */ (0, L.jsx)(Rn, {
-							open: a,
-							onOpenChange: o,
-							children: /* @__PURE__ */ (0, L.jsxs)(Qt, { children: [/* @__PURE__ */ (0, L.jsx)(zn, {
-								asChild: !0,
-								children: /* @__PURE__ */ (0, L.jsxs)("button", {
-									className: "ui2-workbench-collapsible-trigger",
-									type: "button",
-									children: [/* @__PURE__ */ (0, L.jsxs)("span", { children: [
-										/* @__PURE__ */ (0, L.jsx)(se, {
+				hidden: b || S,
+				children: [
+					O && /* @__PURE__ */ (0, L.jsx)(ti, {
+						fields: t,
+						summaryFieldIds: f,
+						onEdit: be,
+						onHide: () => x(!0),
+						restoreError: O.restoreError,
+						uuid: O.uuid,
+						values: O.values
+					}),
+					/* @__PURE__ */ (0, L.jsxs)("div", {
+						className: "ui2-workbench-input-scroll",
+						hidden: !!O,
+						children: [
+							l.map((e) => we(e)),
+							A.length > 0 && /* @__PURE__ */ (0, L.jsxs)(Qt, { children: [/* @__PURE__ */ (0, L.jsx)($t, { children: /* @__PURE__ */ (0, L.jsx)(en, { children: "Additional inputs" }) }), /* @__PURE__ */ (0, L.jsx)(nn, { children: /* @__PURE__ */ (0, L.jsx)(Hr, {
+								bridge: r,
+								fields: A
+							}) })] }),
+							u && /* @__PURE__ */ (0, L.jsx)(Rn, {
+								open: a,
+								onOpenChange: o,
+								children: /* @__PURE__ */ (0, L.jsxs)(Qt, { children: [/* @__PURE__ */ (0, L.jsx)(zn, {
+									asChild: !0,
+									children: /* @__PURE__ */ (0, L.jsxs)("button", {
+										className: "ui2-workbench-collapsible-trigger",
+										type: "button",
+										children: [/* @__PURE__ */ (0, L.jsxs)("span", { children: [
+											/* @__PURE__ */ (0, L.jsx)(se, {
+												"aria-hidden": "true",
+												size: 17
+											}),
+											" ",
+											u.title
+										] }), /* @__PURE__ */ (0, L.jsx)(E, {
 											"aria-hidden": "true",
-											size: 17
-										}),
-										" ",
-										u.title
-									] }), /* @__PURE__ */ (0, L.jsx)(E, {
-										"aria-hidden": "true",
-										className: a ? "rotate-180" : "",
-										size: 18
-									})]
-								})
-							}), /* @__PURE__ */ (0, L.jsx)(Bn, {
-								forceMount: !0,
-								className: "data-[state=closed]:hidden",
-								children: /* @__PURE__ */ (0, L.jsxs)(nn, { children: [u.description && /* @__PURE__ */ (0, L.jsx)("p", {
-									className: "ui2-workbench-section-description",
-									children: u.description
-								}), /* @__PURE__ */ (0, L.jsx)(Hr, {
-									bridge: r,
-									fields: d.map((e) => oe.get(e)).filter(Boolean)
+											className: a ? "rotate-180" : "",
+											size: 18
+										})]
+									})
+								}), /* @__PURE__ */ (0, L.jsx)(Bn, {
+									forceMount: !0,
+									className: "data-[state=closed]:hidden",
+									children: /* @__PURE__ */ (0, L.jsxs)(nn, { children: [u.description && /* @__PURE__ */ (0, L.jsx)("p", {
+										className: "ui2-workbench-section-description",
+										children: u.description
+									}), /* @__PURE__ */ (0, L.jsx)(Hr, {
+										bridge: r,
+										fields: d.map((e) => oe.get(e)).filter(Boolean)
+									})] })
 								})] })
-							})] })
-						})
-					]
-				}), !O && /* @__PURE__ */ (0, L.jsxs)("div", {
-					className: "ui2-workbench-actions",
-					children: [/* @__PURE__ */ (0, L.jsxs)("div", {
-						className: "ui2-workbench-action-buttons",
-						children: [/* @__PURE__ */ (0, L.jsx)(Zt, {
-							disabled: v,
-							type: "submit",
-							children: v ? "Submitting…" : n.actions?.submitLabel || "Run"
-						}), /* @__PURE__ */ (0, L.jsxs)(Zt, {
-							disabled: v,
-							type: "reset",
-							variant: "outline",
-							children: [
-								/* @__PURE__ */ (0, L.jsx)(ae, {
-									"aria-hidden": "true",
-									size: 16
-								}),
-								" ",
-								n.actions?.resetLabel || "Reset inputs"
-							]
+							})
+						]
+					}),
+					!O && /* @__PURE__ */ (0, L.jsxs)("div", {
+						className: "ui2-workbench-actions",
+						children: [/* @__PURE__ */ (0, L.jsxs)("div", {
+							className: "ui2-workbench-action-buttons",
+							children: [/* @__PURE__ */ (0, L.jsx)(Zt, {
+								disabled: v,
+								type: "submit",
+								children: v ? "Submitting…" : n.actions?.submitLabel || "Run"
+							}), /* @__PURE__ */ (0, L.jsxs)(Zt, {
+								disabled: v,
+								type: "reset",
+								variant: "outline",
+								children: [
+									/* @__PURE__ */ (0, L.jsx)(ae, {
+										"aria-hidden": "true",
+										size: 16
+									}),
+									" ",
+									n.actions?.resetLabel || "Reset inputs"
+								]
+							})]
+						}), /* @__PURE__ */ (0, L.jsx)("div", {
+							"aria-live": "polite",
+							className: "ui2-submit-status",
+							id: "ui2-submit-status",
+							role: "status",
+							children: xe === "editing" ? "Not submitted" : Se
 						})]
-					}), /* @__PURE__ */ (0, L.jsx)("div", {
-						"aria-live": "polite",
-						className: "ui2-submit-status",
-						id: "ui2-submit-status",
-						role: "status",
-						children: be === "editing" ? "Not submitted" : xe
-					})]
-				})]
+					})
+				]
 			}), /* @__PURE__ */ (0, L.jsxs)("main", {
 				className: "ui2-workbench-results-pane",
 				children: [
@@ -11157,7 +11170,7 @@ function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						}) })]
 					}),
 					n.results?.runtimeLog && /* @__PURE__ */ (0, L.jsx)(ni, {
-						cue: Se,
+						cue: Ce,
 						defaultOpen: n.results.runtimeLog.defaultOpen,
 						description: n.results.runtimeLog.description,
 						open: T,
@@ -11176,26 +11189,35 @@ function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 							value: g,
 							children: [/* @__PURE__ */ (0, L.jsxs)("div", {
 								className: "ui2-workbench-result-toolbar",
-								children: [/* @__PURE__ */ (0, L.jsx)(Rr, {
-									"aria-label": `${e.label || "Module"} results`,
-									className: "ui2-workbench-result-tab-list",
-									children: M.map((e) => /* @__PURE__ */ (0, L.jsx)(zr, {
-										value: e.id,
-										children: e.label
-									}, e.id))
-								}), /* @__PURE__ */ (0, L.jsxs)(Zt, {
-									"aria-pressed": S,
-									onClick: ye,
-									type: "button",
-									variant: "outline",
-									children: [S ? /* @__PURE__ */ (0, L.jsx)(ie, {
-										"aria-hidden": "true",
-										size: 16
-									}) : /* @__PURE__ */ (0, L.jsx)(re, {
-										"aria-hidden": "true",
-										size: 16
-									}), S ? "Restore split view" : "Expand workspace"]
-								})]
+								children: [
+									/* @__PURE__ */ (0, L.jsx)(Rr, {
+										"aria-label": `${e.label || "Module"} results`,
+										className: "ui2-workbench-result-tab-list",
+										children: M.map((e) => /* @__PURE__ */ (0, L.jsx)(zr, {
+											value: e.id,
+											children: e.label
+										}, e.id))
+									}),
+									/* @__PURE__ */ (0, L.jsxs)(Zt, {
+										"aria-pressed": S,
+										onClick: ye,
+										type: "button",
+										variant: "outline",
+										children: [S ? /* @__PURE__ */ (0, L.jsx)(ie, {
+											"aria-hidden": "true",
+											size: 16
+										}) : /* @__PURE__ */ (0, L.jsx)(re, {
+											"aria-hidden": "true",
+											size: 16
+										}), S ? "Restore split view" : "Expand workspace"]
+									}),
+									O && /* @__PURE__ */ (0, L.jsx)(Zt, {
+										disabled: !!O.restoreError,
+										onClick: be,
+										type: "button",
+										children: "Return to inputs"
+									})
+								]
 							}), M.map((e) => {
 								let t = e.outputs.map((e) => oe.get(e)).filter(Boolean), n = e.fit === "wide" || e.layout === "gallery" ? "wide" : t.some((e) => e.type === "plotly") ? "plot" : t.some((e) => e.type === "ngl" || e.type === "atomicstructure") ? "structure" : "other";
 								return /* @__PURE__ */ (0, L.jsxs)(Br, {

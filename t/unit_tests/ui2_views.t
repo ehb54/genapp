@@ -77,7 +77,7 @@ like( $ui2_js, qr/function plotlyLayoutForOutput\(output, sourceLayout\).*?plotl
 like( $ui2_js, qr/function plotlyFitMode\(output\).*?closest\?\.\("\[data-plot-fit\]"\)/s, 'dynamic Plotly children inherit their workbench pane-fit setting' );
 like( $ui2_js, qr/function observeFitPlotlyOutput\(output\).*?fittedAncestor.*?observer\.observe\(target\)/s, 'workbench fitted Plotly surfaces observe their stable pane container' );
 like( $ui2_js, qr/function releaseReactWorkbenchField\(fieldNode\).*?disconnectPlotlyOutputObserver.*?Plotly\.purge/s, 'workbench unmount cleans up Plotly resize observation and graph state' );
-like( $ui2_js, qr/function notifyWorkbenchReattached\(uuid, savedValues = null\).*?setSubmittedRunContext\(\{\s*uuid,\s*values/s, 'workbench reattachment publishes the restored submitted-input snapshot' );
+like( $ui2_js, qr/function notifyWorkbenchReattached\(uuid, savedValues = null, restoreError = ""\).*?setSubmittedRunContext\(\{\s*uuid,\s*values,/s, 'workbench reattachment publishes the restored submitted-input snapshot' );
 like( $ui2_js, qr/outputSnapshot: \(\) => state\.runtimeOutputAvailability.*?subscribeOutputs: \(listener\) => subscribeRuntimeOutputs\(listener\)/s, 'workbench bridge exposes runtime output availability without module-specific state' );
 like( $ui2_js, qr/function markRuntimeOutputAvailable\(id\).*?state\.runtimeOutputAvailability\[id\].*?\[id\]: true/s, 'runtime output availability publishes a new snapshot only for a newly available output' );
 unlike( $ui2_js, qr/function applyRuntimePayload\(payload, contextToken = null\).*?state\.runtimeOutputs = \{\s*\.\.\.state\.runtimeOutputs/s, 'repeated runtime payload values do not recreate the React workbench snapshot' );
@@ -87,7 +87,13 @@ my $ui2_react_js = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.js) 
 my $ui2_react_css = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.css) ) );
 my $ui2_react_source = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 react src ScientificWorkbench.tsx) ) );
 like( $ui2_react_js, qr/Submitted inputs/, 'React bundle contains the workbench submitted-input summary' );
+like( $ui2_react_js, qr/Return to inputs/, 'React bundle exposes the shared return-to-inputs action' );
 like( $ui2_react_source, qr/fields\s*\.filter\(\(field\)\s*=>\s*field\.id\s*&&\s*field\.role\s*!==\s*"output"/, 'workbench all-input view filters reattached values to declared input fields' );
+like( $ui2_react_source, qr/<aside className="ui2-workbench-input-pane" hidden=\{inputRailCollapsed \|\| workspaceExpanded\}>.*?<div className="ui2-workbench-input-scroll" hidden=\{Boolean\(submitted\)\}>/s, 'workbench keeps the complete input form mounted while the submitted summary is shown' );
+like( $ui2_react_source, qr/const returnToInputs = React\.useCallback\(\(\) => \{\s*bridge\.returnToInputs\(\)\s*setInputRailCollapsed\(false\)\s*setWorkspaceExpanded\(false\)/s, 'return-to-inputs restores the normal workbench layout without resetting values' );
+unlike( $ui2_react_source, qr/clearSubmitted/, 'workbench no longer models return-to-inputs as clearing form state' );
+like( $ui2_js, qr/returnToInputs: \(\) => \{\s*setSubmittedRunContext\(null\)/s, 'UI2 core return action clears only the submitted summary context' );
+like( $ui2_js, qr/function savedInputRestoreError\(payload, uuid, inputs = null\).*?cannot be restored after refresh/s, 'UI2 reports an actionable local-file restore limitation instead of opening a misleading form' );
 unlike( $ui2_react_source, qr/showAll\s*\?\s*Object\.keys\(values\)/, 'workbench all-input view does not expose runtime or session payload keys' );
 like( $ui2_react_js, qr/results\?\.runtimeLog/, 'React bundle places the runtime log from view metadata' );
 like( $ui2_react_js, qr/\.outputs\.map|outputs\.map|[A-Za-z]\.outputs\.map/, 'React bundle places declared module outputs from view tab metadata' );

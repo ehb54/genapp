@@ -182,6 +182,7 @@ function SubmittedInputs({
   fields,
   summaryFieldIds,
   uuid,
+  restoreError,
   onEdit,
   onHide,
 }: {
@@ -189,6 +190,7 @@ function SubmittedInputs({
   fields: Ui2Field[]
   summaryFieldIds: string[]
   uuid?: string
+  restoreError?: string
   onEdit: () => void
   onHide: () => void
 }) {
@@ -211,20 +213,24 @@ function SubmittedInputs({
         <span className="ui2-workbench-status-badge">Submitted</span>
       </CardHeader>
       <CardContent>
-        <dl className="ui2-workbench-summary-list">
-          {ids.map((id) => (
-            <div key={id}>
-              <dt>{fieldMap.get(id)?.label || id}</dt>
-              <dd>{displayValue(values[id], fieldMap.get(id))}</dd>
-            </div>
-          ))}
-        </dl>
+        {restoreError ? (
+          <p className="ui2-workbench-restore-error" role="alert">{restoreError}</p>
+        ) : (
+          <dl className="ui2-workbench-summary-list">
+            {ids.map((id) => (
+              <div key={id}>
+                <dt>{fieldMap.get(id)?.label || id}</dt>
+                <dd>{displayValue(values[id], fieldMap.get(id))}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
         <div className="ui2-workbench-summary-actions">
-          <Button type="button" variant="outline" onClick={() => setShowAll((current) => !current)}>
+          <Button disabled={Boolean(restoreError)} type="button" variant="outline" onClick={() => setShowAll((current) => !current)}>
             {showAll ? "Show key inputs" : "Show all inputs"}
           </Button>
           <Button type="button" variant="outline" onClick={onHide}>Hide inputs</Button>
-          <Button type="button" onClick={onEdit}>Edit for new run</Button>
+          <Button disabled={Boolean(restoreError)} type="button" onClick={onEdit}>Return to inputs</Button>
         </div>
       </CardContent>
     </Card>
@@ -439,6 +445,12 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
     })
   }
 
+  const returnToInputs = React.useCallback(() => {
+    bridge.returnToInputs()
+    setInputRailCollapsed(false)
+    setWorkspaceExpanded(false)
+  }, [bridge])
+
   const lifecycleState = String(runtime.lifecycle?.state || (submitting ? "submitting" : "editing"))
   const lifecycleMessage = String(runtime.lifecycle?.error || runtime.lifecycle?.message || lifecycleState)
   const hasRunContext = Boolean(submitted || runtime.run)
@@ -480,14 +492,11 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
       </header>
 
       <div className={`ui2-workbench-grid${inputRailCollapsed || workspaceExpanded ? " ui2-workbench-grid-inputs-hidden" : ""}`}>
-        {!inputRailCollapsed && !workspaceExpanded && <aside className="ui2-workbench-input-pane">
-          {submitted ? (
-            <SubmittedInputs fields={fields} summaryFieldIds={summaryFieldIds} onEdit={() => {
-              bridge.clearSubmitted()
-              setInputRailCollapsed(false)
-            }} onHide={() => setInputRailCollapsed(true)} uuid={submitted.uuid} values={submitted.values} />
-          ) : (
-            <div className="ui2-workbench-input-scroll">
+        <aside className="ui2-workbench-input-pane" hidden={inputRailCollapsed || workspaceExpanded}>
+          {submitted && (
+            <SubmittedInputs fields={fields} summaryFieldIds={summaryFieldIds} onEdit={returnToInputs} onHide={() => setInputRailCollapsed(true)} restoreError={submitted.restoreError} uuid={submitted.uuid} values={submitted.values} />
+          )}
+          <div className="ui2-workbench-input-scroll" hidden={Boolean(submitted)}>
               {inputSections.map((section) => renderInputSection(section))}
 
               {extraInputs.length > 0 && (
@@ -516,8 +525,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
                 </Collapsible>
               )}
 
-            </div>
-          )}
+          </div>
 
           {!submitted && (
             <div className="ui2-workbench-actions">
@@ -534,7 +542,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
               </div>
             </div>
           )}
-        </aside>}
+        </aside>
 
         <main className="ui2-workbench-results-pane">
           {submitted && inputRailCollapsed && (
@@ -593,6 +601,11 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
                       {workspaceExpanded ? <Minimize2 aria-hidden="true" size={16} /> : <Maximize2 aria-hidden="true" size={16} />}
                       {workspaceExpanded ? "Restore split view" : "Expand workspace"}
                     </Button>
+                    {submitted && (
+                      <Button disabled={Boolean(submitted.restoreError)} onClick={returnToInputs} type="button">
+                        Return to inputs
+                      </Button>
+                    )}
                   </div>
                   {visibleOutputGroups.map((group: WorkbenchResultGroup) => {
                     const groupFields = group.outputs.map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]

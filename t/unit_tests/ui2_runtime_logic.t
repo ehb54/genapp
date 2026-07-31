@@ -1847,7 +1847,35 @@ assert.strictEqual(
   "attach replay restores the server selection payload for later submit"
 );
 
+hooks.state.module = {
+  fields: [
+    { id: "pdbfile", label: "Coordinate file", type: "lrfile" }
+  ]
+};
+hooks.state.serverSelections = {};
+assert.match(
+  hooks.savedInputRestoreError({}, "local-file-run", { pdbfile: ["coordinate.pdb"] }),
+  /Coordinate file was selected from this browser and cannot be restored after refresh/,
+  "UI2 leaves an attached run in place when a browser-local file cannot be restored"
+);
+hooks.state.serverSelections = {
+  "pdbfile:": {
+    id: "pdbfile",
+    encodedPath: "Li4vcHJvamVjdC9jb29yZGluYXRlLnBkYg=="
+  }
+};
+assert.strictEqual(
+  hooks.savedInputRestoreError({}, "server-file-run", { pdbfile: ["coordinate.pdb"] }),
+  "",
+  "UI2 permits return-to-inputs when the saved file selection has a server replay token"
+);
+
 replayControl.value = "";
+hooks.state.module = {
+  fields: [
+    { id: "data_file_name", type: "lrfile" }
+  ]
+};
 hooks.state.serverSelections = {};
 hooks.applyInputPayload({
   data_file_name_altval: ["Li9zYW5zX2RhdGEuc3Vi"],

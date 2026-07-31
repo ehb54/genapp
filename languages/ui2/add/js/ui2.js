@@ -1888,7 +1888,7 @@
         return cloneUi2Value(state.values);
       },
       reset: (form) => resetModuleForm(form),
-      clearSubmitted: () => {
+      returnToInputs: () => {
         setSubmittedRunContext(null);
       },
       submit: (form) => submitModule(form),
@@ -6129,10 +6129,18 @@
       }
       state.submitResponse = payload;
       showLegacyMessagePayload(payload);
-      if (getInput && payload?._getinput) {
-        applyInputPayload(payload._getinput);
-        if (isReactWorkbenchView(state.view)) {
-          notifyWorkbenchReattached(uuid, payload._getinput);
+      if (getInput) {
+        if (payload?._getinput) {
+          applyInputPayload(payload._getinput);
+          if (isReactWorkbenchView(state.view)) {
+            notifyWorkbenchReattached(
+              uuid,
+              payload._getinput,
+              savedInputRestoreError(payload, uuid, payload._getinput)
+            );
+          }
+        } else if (isReactWorkbenchView(state.view)) {
+          notifyWorkbenchReattached(uuid, null, savedInputRestoreError(payload, uuid));
         }
         if (state.activeJob?.uuid === uuid) {
           state.activeJob.getInput = false;
@@ -6189,18 +6197,52 @@
     return payload._getinput;
   }
 
-  function notifyWorkbenchReattached(uuid, savedValues = null) {
+  function savedInputRestoreError(payload, uuid, inputs = null) {
+    const detail = stringValue(payload?._getinputerror || payload?.saved_input_error).trim();
+    if (detail) {
+      return `Could not restore inputs for run ${uuid}: ${detail}`;
+    }
+    const localFileField = unrecoverableSavedLocalFile(inputs);
+    if (localFileField) {
+      return `${localFileField.label || localFileField.id} was selected from this browser and cannot be restored after refresh. Select that file again to create a new run; the original run remains available in Job Manager.`;
+    }
+    if (inputs && typeof inputs === "object") {
+      return "";
+    }
+    return `Could not restore inputs for run ${uuid}. The saved input record is unavailable; return to Job Manager or contact an administrator.`;
+  }
+
+  function unrecoverableSavedLocalFile(inputs) {
+    if (!inputs || typeof inputs !== "object") {
+      return null;
+    }
+    const selections = Object.values(state.serverSelections || {});
+    return (state.module?.fields || []).find((field) => {
+      if (!fieldIsFileLike(field) || !fileModes(field.type).includes("local") || !Object.prototype.hasOwnProperty.call(inputs, field.id)) {
+        return false;
+      }
+      const savedValues = valueList(inputs[field.id]).filter((value) => stringValue(value));
+      if (!savedValues.length) {
+        return false;
+      }
+      return !selections.some((selection) => selection?.id === field.id && selection?.encodedPath);
+    }) || null;
+  }
+
+  function notifyWorkbenchReattached(uuid, savedValues = null, restoreError = "") {
     const values = savedValues && typeof savedValues === "object"
       ? cloneUi2Value(savedValues)
-      : cloneUi2Value(state.values);
+      : {};
     setSubmittedRunContext({
       uuid,
-      values
+      values,
+      restoreError: stringValue(restoreError)
     });
     dispatchUi2Event("ui2:workbench-reattached", {
       moduleId: state.moduleId,
       uuid,
-      values
+      values,
+      restoreError: stringValue(restoreError)
     });
   }
 
@@ -6444,6 +6486,22 @@
       encodedPaths.forEach((encodedPath, index) => {
         const repeatIndex = encodedPaths.length > 1 ? index : null;
         restoreServerSelection(id, encodedPath, stringValue(displayValues[index] ?? displayValues[0]), repeatIndex);
+      });
+    });
+
+    Object.entries(inputs || {}).forEach(([key]) => {
+      const match = /^_decodepath_(.+)$/.exec(key);
+      if (!match) {
+        return;
+      }
+      const id = match[1];
+      const field = moduleFieldById(id);
+      if (String(field?.type || "").toLowerCase() !== "rpath") {
+        return;
+      }
+      const encodedPaths = valueList(inputs[id]).map(stringValue).filter(Boolean);
+      encodedPaths.forEach((encodedPath, index) => {
+        restoreServerSelection(id, encodedPath, "", encodedPaths.length > 1 ? index : null);
       });
     });
   }
@@ -9710,6 +9768,7 @@
       applyRuntimePayload,
       applyInputPayload,
       applySavedJobInput,
+      savedInputRestoreError,
       renderSessionState,
       sessionProjectName,
       state

@@ -404,6 +404,15 @@
   margin: 0;
 }
 
+.ui2-workbench-restore-error {
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--ui2-danger, #b42318) 45%, var(--ui2-border));
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--ui2-danger, #b42318) 10%, var(--ui2-panel));
+  color: var(--ui2-danger, #b42318);
+  padding: 0.75rem;
+}
+
 .ui2-workbench-summary-list > div {
   display: grid;
   grid-template-columns: minmax(9rem, 0.65fr) minmax(0, 1fr);
