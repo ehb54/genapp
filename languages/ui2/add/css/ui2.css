@@ -1970,6 +1970,26 @@ code {
   color: var(--ui2-text);
 }
 
+.ui2-output-image {
+  min-height: 12rem;
+  display: grid;
+  place-items: center;
+  white-space: normal;
+}
+
+.ui2-output-image-content {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  height: auto;
+  object-fit: contain;
+}
+
+.ui2-output-image-placeholder {
+  color: var(--ui2-muted);
+  text-align: center;
+}
+
 .ui2-output-plotly {
   min-height: 28rem;
   white-space: normal;

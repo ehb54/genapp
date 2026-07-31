@@ -348,6 +348,15 @@ vm.runInContext(source, context, { filename: "ui2.js" });
 const hooks = context.window.GenAppUi2TestHooks;
 assert(hooks, "test hooks were exposed");
 
+const imageOutput = hooks.renderImageOutputShell({ id: "density_slice_xy", type: "image", label: "density XY center slice" }, "image");
+hooks.renderImageOutput(imageOutput, "results/run_0/density_slice_xy.png");
+const imageNode = imageOutput.querySelector(".ui2-output-image-content");
+assert.strictEqual(imageNode.src, "/sassie3/results/run_0/density_slice_xy.png", "UI2 image output assigns a returned PNG path to an img element at the application root");
+assert.strictEqual(imageNode.hidden, false, "UI2 image output reveals the image when a path is available");
+assert.strictEqual(imageOutput.querySelector(".ui2-output-image-placeholder").hidden, true, "UI2 image output hides its placeholder after a path arrives");
+hooks.renderImageOutput(imageOutput, "");
+assert.strictEqual(imageNode.hidden, true, "UI2 image output returns to an empty state when the path is cleared");
+
 window.GenAppUi2App.menus = [{
   id: "simulate",
   modules: [{ id: "monomer_monte_carlo" }]

@@ -3360,6 +3360,9 @@
     if (type === "ngl") {
       return renderNglOutputShell(field, type);
     }
+    if (type === "image") {
+      return renderImageOutputShell(field, type);
+    }
     const output = el("div", outputClassForType(type), outputPlaceholderForType(type));
     output.dataset.outputFieldId = field.id || "";
     output.dataset.outputType = type;
@@ -3397,6 +3400,8 @@
       classes.push("ui2-output-text");
     } else if (type === "ngl") {
       classes.push("ui2-output-ngl");
+    } else if (type === "image") {
+      classes.push("ui2-output-image");
     }
     return classes.join(" ");
   }
@@ -3410,6 +3415,9 @@
     }
     if (type === "ngl") {
       return "Structure will appear here at runtime.";
+    }
+    if (type === "image") {
+      return "Image will appear here at runtime.";
     }
     return `${type || "output"} output will appear here at runtime.`;
   }
@@ -6023,6 +6031,10 @@
         clearNglOutput(output);
         return;
       }
+      if (output.dataset.outputType === "image") {
+        renderImageOutput(output, "");
+        return;
+      }
       if (output instanceof HTMLProgressElement || output.dataset.outputType === "progress") {
         output.value = 0;
         return;
@@ -7060,6 +7072,10 @@
       renderNglOutput(output, value);
       return;
     }
+    if (type === "image") {
+      renderImageOutput(output, value);
+      return;
+    }
     if (type === "html" || type === "file") {
       renderHtmlOutput(output, value);
       return;
@@ -7152,6 +7168,55 @@
     const html = stringValue(value);
     output.classList.add("ui2-output-rendered");
     output.innerHTML = html;
+  }
+
+  function imageSource(value) {
+    let source;
+    if (value && typeof value === "object") {
+      source = stringValue(value.src || value.file || value.url || value.path);
+    } else {
+      source = stringValue(value);
+    }
+    if (!source || /^(?:data:|blob:|https?:|\/)/i.test(source)) {
+      return source;
+    }
+    // Result paths are rooted at the generated application, not at /ui2/.
+    return legacyEndpoint("", source);
+  }
+
+  function renderImageOutputShell(field, type) {
+    const output = el("div", outputClassForType(type));
+    output.dataset.outputFieldId = field.id || "";
+    output.dataset.outputType = type;
+    const image = document.createElement("img");
+    image.className = "ui2-output-image-content";
+    image.alt = field.label || field.id || "Generated image";
+    image.hidden = true;
+    const placeholder = el("div", "ui2-output-image-placeholder", outputPlaceholderForType(type));
+    output.append(image, placeholder);
+    return output;
+  }
+
+  function renderImageOutput(output, value) {
+    const image = output.querySelector(".ui2-output-image-content");
+    const placeholder = output.querySelector(".ui2-output-image-placeholder");
+    const source = imageSource(value);
+    if (!image) {
+      return;
+    }
+    if (!source) {
+      image.hidden = true;
+      if (placeholder) {
+        placeholder.hidden = false;
+      }
+      return;
+    }
+    image.src = source;
+    image.hidden = false;
+    if (placeholder) {
+      placeholder.hidden = true;
+    }
+    output.classList.add("ui2-output-rendered");
   }
 
   function renderTextOutput(output, value) {
@@ -9578,6 +9643,8 @@
       fileEntryDetails,
       renderFileControl,
       renderHookButtonControl,
+      renderImageOutputShell,
+      renderImageOutput,
       dynamicOutputItems,
       updateDynamicOutput,
       mergeSavedInputPayloads,
