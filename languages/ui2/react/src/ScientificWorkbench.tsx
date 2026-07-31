@@ -237,7 +237,7 @@ function SubmittedInputs({
             {showAll ? "Show key inputs" : "Show all inputs"}
           </Button>
           <Button type="button" variant="outline" onClick={onHide}>Hide inputs</Button>
-          <Button disabled={Boolean(restoreError)} type="button" onClick={onEdit}>Return to inputs</Button>
+          <Button disabled={Boolean(restoreError)} type="button" onClick={onEdit}>Edit inputs</Button>
         </div>
       </CardContent>
     </Card>
@@ -306,6 +306,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
   const [activeResult, setActiveResult] = React.useState(initialResult)
   const [submitting, setSubmitting] = React.useState(false)
   const [inputRailCollapsed, setInputRailCollapsed] = React.useState(false)
+  const [inputEditOpen, setInputEditOpen] = React.useState(false)
   const [workspaceExpanded, setWorkspaceExpanded] = React.useState(false)
   const [runLogOpen, setRunLogOpen] = React.useState(Boolean(view.results?.runtimeLog?.defaultOpen))
   const resultCardRef = React.useRef<HTMLElement>(null)
@@ -371,6 +372,12 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
     if (submitted?.values) setLiveValues(submitted.values)
   }, [submitted])
 
+  React.useEffect(() => {
+    // A newly submitted or reattached run starts in its compact submitted
+    // layout.  Opening the editor below is a reversible local view choice.
+    setInputEditOpen(false)
+  }, [submitted])
+
   const pendingOutputResizeRef = React.useRef<number | null>(null)
   const pendingOutputResizeTimerRef = React.useRef<number | null>(null)
 
@@ -429,6 +436,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
       if (result.ok) {
         const values = result.values || bridge.syncValues()
         setLiveValues(values)
+        setInputEditOpen(false)
         setInputRailCollapsed(false)
       }
     } finally {
@@ -441,6 +449,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
     bridge.reset(event.currentTarget)
     setLiveValues(bridge.syncValues())
     setAdvancedOpen(false)
+    setInputEditOpen(true)
     setInputRailCollapsed(false)
     setWorkspaceExpanded(false)
   }
@@ -452,11 +461,17 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
     })
   }
 
-  const returnToInputs = React.useCallback(() => {
-    bridge.returnToInputs()
+  const editInputs = React.useCallback(() => {
+    setInputEditOpen(true)
     setInputRailCollapsed(false)
     setWorkspaceExpanded(false)
-  }, [bridge])
+  }, [])
+
+  const showSubmittedInputs = React.useCallback(() => {
+    setInputEditOpen(false)
+    setInputRailCollapsed(false)
+    setWorkspaceExpanded(false)
+  }, [])
 
   const lifecycleState = String(runtime.lifecycle?.state || (submitting ? "submitting" : "editing"))
   const lifecycleMessage = String(runtime.lifecycle?.error || runtime.lifecycle?.message || lifecycleState)
@@ -483,7 +498,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
 
   return (
     <form
-      className={`ui2-workbench-react${submitted ? "" : " ui2-workbench-react-editing"}${workspaceExpanded ? " ui2-workbench-react-workspace-expanded" : ""}`}
+      className={`ui2-workbench-react${!submitted || inputEditOpen ? " ui2-workbench-react-editing" : ""}${workspaceExpanded ? " ui2-workbench-react-workspace-expanded" : ""}`}
       id="ui2-form"
       onChange={syncLiveValues}
       onInput={syncLiveValues}
@@ -500,10 +515,10 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
 
       <div className={`ui2-workbench-grid${inputRailCollapsed || workspaceExpanded ? " ui2-workbench-grid-inputs-hidden" : ""}`}>
         <aside className="ui2-workbench-input-pane" hidden={inputRailCollapsed || workspaceExpanded}>
-          {submitted && (
-            <SubmittedInputs fields={fields} summaryFieldIds={summaryFieldIds} onEdit={returnToInputs} onHide={() => setInputRailCollapsed(true)} restoreError={submitted.restoreError} restoreWarnings={submitted.restoreWarnings} uuid={submitted.uuid} values={submitted.values} />
+          {submitted && !inputEditOpen && (
+            <SubmittedInputs fields={fields} summaryFieldIds={summaryFieldIds} onEdit={editInputs} onHide={() => setInputRailCollapsed(true)} restoreError={submitted.restoreError} restoreWarnings={submitted.restoreWarnings} uuid={submitted.uuid} values={submitted.values} />
           )}
-          <div className="ui2-workbench-input-scroll" hidden={Boolean(submitted)}>
+          <div className="ui2-workbench-input-scroll" hidden={Boolean(submitted) && !inputEditOpen}>
               {inputSections.map((section) => renderInputSection(section))}
 
               {extraInputs.length > 0 && (
@@ -534,7 +549,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
 
           </div>
 
-          {!submitted && (
+          {(!submitted || inputEditOpen) && (
             <div className="ui2-workbench-actions">
               <div className="ui2-workbench-action-buttons">
                 <Button disabled={submitting} type="submit">
@@ -543,6 +558,11 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
                 <Button disabled={submitting} type="reset" variant="outline">
                   <RotateCcw aria-hidden="true" size={16} /> {view.actions?.resetLabel || "Reset inputs"}
                 </Button>
+                {submitted && inputEditOpen && (
+                  <Button disabled={submitting} onClick={showSubmittedInputs} type="button" variant="outline">
+                    Show submitted inputs
+                  </Button>
+                )}
               </div>
               <div aria-live="polite" className="ui2-submit-status" id="ui2-submit-status" role="status">
                 {lifecycleState === "editing" ? "Not submitted" : lifecycleMessage}
@@ -554,7 +574,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
         <main className="ui2-workbench-results-pane">
           {submitted && inputRailCollapsed && (
             <div className="ui2-workbench-show-inputs-row">
-              <Button type="button" variant="outline" onClick={() => setInputRailCollapsed(false)}>
+              <Button type="button" variant="outline" onClick={showSubmittedInputs}>
                 Show submitted inputs
               </Button>
             </div>
@@ -608,11 +628,6 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
                       {workspaceExpanded ? <Minimize2 aria-hidden="true" size={16} /> : <Maximize2 aria-hidden="true" size={16} />}
                       {workspaceExpanded ? "Restore split view" : "Expand workspace"}
                     </Button>
-                    {submitted && (
-                      <Button disabled={Boolean(submitted.restoreError)} onClick={returnToInputs} type="button">
-                        Return to inputs
-                      </Button>
-                    )}
                   </div>
                   {visibleOutputGroups.map((group: WorkbenchResultGroup) => {
                     const groupFields = group.outputs.map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]
