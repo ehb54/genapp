@@ -7418,6 +7418,7 @@
   }
 
   function clearNglOutput(output, options = {}) {
+    output._ui2NglRenderRevision = (output._ui2NglRenderRevision || 0) + 1;
     stopNglFramePlayback(output);
     if (output._ui2NglStage?.dispose) {
       output._ui2NglStage.dispose();
@@ -7478,6 +7479,7 @@
       && Array.isArray(output._ui2_ngl_frames)
       && output._ui2_ngl_frames.length;
     if (preserveLiveFrames) {
+      output._ui2NglRenderRevision = (output._ui2NglRenderRevision || 0) + 1;
       if (densityPayload?.loadname) {
         renderNglDensityUpdate(output, densityPayload);
       }
@@ -7485,6 +7487,8 @@
       return;
     }
     clearNglOutput(output);
+    const renderRevision = (output._ui2NglRenderRevision || 0) + 1;
+    output._ui2NglRenderRevision = renderRevision;
     plot.hidden = false;
     buttons.hidden = false;
     if (placeholder) {
@@ -7492,9 +7496,16 @@
     }
     ensureNglLoaded()
       .then(() => {
+        if (output._ui2NglRenderRevision !== renderRevision) {
+          return null;
+        }
         const stage = new window.NGL.Stage(plot.id, nglViewerStageParams(output));
         output._ui2NglStage = stage;
         return stage.loadFile(normalizeNglLoadName(structurePayload.loadname), structurePayload.loadparams || {}).then((component) => {
+          if (output._ui2NglRenderRevision !== renderRevision) {
+            stage.dispose?.();
+            return null;
+          }
           output._ui2NglComponent = component;
           output._ui2NglReps = {};
           const specs = nglRepresentationSpecs(structurePayload);
@@ -7518,6 +7529,9 @@
         });
       })
       .catch((error) => {
+        if (output._ui2NglRenderRevision !== renderRevision) {
+          return;
+        }
         clearNglOutput(output);
         const message = output.querySelector(".ui2-ngl-placeholder");
         if (message) {
