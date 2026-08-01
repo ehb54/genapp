@@ -385,7 +385,7 @@ like( $ui2_js, qr/function stripUi2RuntimeStatus\(text\)/, 'ui2 runtime bridge s
 like( $ui2_js, qr/function isRuntimeDividerText\(text\)/, 'ui2 runtime bridge preserves repeated textarea divider lines' );
 like( $ui2_js, qr/output\.dataset\.runtimeText = merged/, 'ui2 runtime bridge keeps runtime text across later output redraws' );
 like( $ui2_js, qr/function renderPlotlyOutput\(output, value\)/, 'ui2 runtime bridge has a dedicated Plotly output renderer' );
-like( $ui2_js, qr/Plotly\.react\(output, figure\.data, layout, config\)/, 'ui2 authoritative plot snapshots update the existing Plotly graph' );
+like( $ui2_js, qr/Plotly\.react\(output, plotlyDataForOutput\(figure\.data\), layout, config\)/, 'ui2 authoritative plot snapshots update the existing Plotly graph through UI2 presentation policy' );
 like( $ui2_js, qr/Plotly\.extendTraces\(output, \{ x, y \}, indices/, 'ui2 plot append events extend existing traces incrementally' );
 like( $ui2_js, qr/function applyPlotlyModebarHooks\(figure, config\)/, 'ui2 runtime bridge honors legacy Plotly Chart Editor config' );
 like( $ui2_js, qr/Edit in Chart Editor/, 'ui2 Plotly modebar exposes the Chart Editor action when configured' );
