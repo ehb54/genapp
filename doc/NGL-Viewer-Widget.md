@@ -13,7 +13,6 @@ Add optional `viewer` metadata to the NGL output field in a module JSON file:
 "viewer": {
   "capabilities": {
     "trajectory": true,
-    "streaming": true,
     "volume": true,
     "layer_editor": true,
     "additional_components": false
@@ -99,8 +98,7 @@ The topology is loaded first and the trajectory is attached with NGL's
 the bundled NGL parser and include DCD, TRR, XTC, and NCTRAJ/NetCDF.  The
 topology and trajectory must have matching atom order and atom count.  The
 widget exposes frame selection and playback once NGL reports the trajectory
-frame count.  The existing `preserve_live_frames` streaming contract remains
-separate and is still useful for frames produced during a running calculation.
+frame count.
 
 ## Selection expressions
 
@@ -116,20 +114,10 @@ Use `and`, `or`, and `not` to combine terms, for example
 these as `sele` values in its `representations` payload, while users can edit
 them in the viewer's layer editor.
 
-## Streaming and retained trajectory
-
-The widget accepts the existing coordinate-frame event format: topology is
-loaded once, then a frame carries a Float32-compatible `coordinates` array and
-matching `atom_count`.  The viewer updates the component positions in place and
-coalesces renders.  It retains a bounded history for review controls, so a
-long-running calculation does not grow browser memory without limit.  Drivers
-should stream meaningful milestones rather than every high-frequency simulation
-step.
-
 Use `t/ngl_viewer_lab/` for local exploration.  It can load local PDB/mmCIF and
-Gaussian cube files and includes a synthetic streaming benchmark with retained
-frame playback.  Start it with:
+Gaussian cube files, then attach a matching trajectory file to the loaded
+structure.  Start it with:
 
 ```sh
-python3 t/ngl_viewer_lab/stream_server.py --host 127.0.0.1 --port 8765
+python3 -m http.server 8000
 ```

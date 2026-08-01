@@ -18,16 +18,6 @@ output contract.
 
 Use **Demo molecule** and **Demo cube** to exercise the controls immediately.
 
-For coordinate streaming benchmarks, use the included endpoint server instead:
-
-```sh
-python3 t/ngl_viewer_lab/stream_server.py --host 127.0.0.1 --port 8765
-```
-
-Then open `http://127.0.0.1:8765/t/ngl_viewer_lab/` and run the **Streaming
-benchmark** panel. Current findings are recorded in
-`STREAMING_BENCHMARK_RESULTS.md`.
-
 ## Current capabilities
 
 - local PDB, mmCIF, SDF, MOL2, PQR, and GRO structure loading;
@@ -36,5 +26,6 @@ benchmark** panel. Current findings are recorded in
 - representation, coloring, opacity, and visibility controls;
 - positive and negative volume isosurfaces;
 - atom picking, centering, spinning, and clearing;
+- load a DCD, TRR, XTC, or NetCDF trajectory after its matching structure,
+  with frame selection and playback;
 - GenApp-compatible structure payload preview;
-- synthetic JSON and float32 binary coordinate-stream benchmarking.

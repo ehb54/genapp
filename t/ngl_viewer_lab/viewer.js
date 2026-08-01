@@ -2,7 +2,6 @@
   "use strict";
 
   const stage = new NGL.Stage("viewport", { backgroundColor: "#050909", cameraType: "orthographic" });
-  const streamingAvailable = new URLSearchParams(window.location.search).get("streaming") !== "off";
   const state = {
     structure: null,
     structureName: "",
@@ -10,8 +9,7 @@
     axes: null,
     fileTrajectory: null,
     moleculeLayers: [],
-    volumeLayers: [],
-    trajectory: { frames: [], cursor: 0, timer: null }
+    volumeLayers: []
   };
 
   const elements = {
@@ -25,25 +23,10 @@
     status: document.getElementById("status"),
     picked: document.getElementById("picked"),
     payload: document.getElementById("payload"),
-    benchmarkRun: document.getElementById("benchmark-run"),
-    benchmarkAtoms: document.getElementById("benchmark-atoms"),
-    benchmarkFrames: document.getElementById("benchmark-frames"),
-    benchmarkInterval: document.getElementById("benchmark-interval"),
-    benchmarkTransport: document.getElementById("benchmark-transport"),
-    benchmarkTopology: document.getElementById("benchmark-topology"),
-    benchmarkRepresentation: document.getElementById("benchmark-representation"),
-    benchmarkScale: document.getElementById("benchmark-scale"),
-    benchmarkResults: document.getElementById("benchmark-results"),
     cameraMode: document.getElementById("camera-mode"),
     backgroundColor: document.getElementById("background-color"),
     mousePreset: document.getElementById("mouse-preset"),
     showAxes: document.getElementById("show-axes"),
-    trajectoryStatus: document.getElementById("trajectory-status"),
-    trajectoryPrevious: document.getElementById("trajectory-previous"),
-    trajectoryPlay: document.getElementById("trajectory-play"),
-    trajectoryNext: document.getElementById("trajectory-next"),
-    trajectoryFrame: document.getElementById("trajectory-frame"),
-    trajectorySpeed: document.getElementById("trajectory-speed"),
     fileTrajectoryStatus: document.getElementById("file-trajectory-status"),
     fileTrajectoryPrevious: document.getElementById("file-trajectory-previous"),
     fileTrajectoryPlay: document.getElementById("file-trajectory-play"),
@@ -103,50 +86,6 @@
       updateFileTrajectoryControls();
       setStatus(`Could not load ${name}: ${err.message}`, true);
     }
-  }
-
-  function stopTrajectory() {
-    if (state.trajectory.timer) window.clearTimeout(state.trajectory.timer);
-    state.trajectory.timer = null;
-    elements.trajectoryPlay.textContent = "Play";
-    elements.trajectoryPlay.setAttribute("aria-pressed", "false");
-  }
-
-  function updateTrajectoryControls() {
-    const count = state.trajectory.frames.length;
-    const enabled = count > 1 && Boolean(state.structure);
-    [elements.trajectoryPrevious, elements.trajectoryPlay, elements.trajectoryNext, elements.trajectoryFrame].forEach((control) => { control.disabled = !enabled; });
-    elements.trajectoryFrame.max = String(Math.max(1, count));
-    elements.trajectoryFrame.value = String(Math.min(count || 1, state.trajectory.cursor + 1));
-    elements.trajectoryStatus.textContent = count ? `${count} retained frame${count === 1 ? "" : "s"}; frame ${state.trajectory.cursor + 1}.` : "No frames retained.";
-  }
-
-  function showTrajectoryFrame(index) {
-    const frames = state.trajectory.frames;
-    if (!state.structure || !frames.length) return;
-    state.trajectory.cursor = Math.max(0, Math.min(frames.length - 1, index));
-    applyCoordinateFrame(state.structure, frames[state.trajectory.cursor]);
-    updateTrajectoryControls();
-  }
-
-  function playTrajectory() {
-    stopTrajectory();
-    if (state.trajectory.frames.length < 2 || !state.structure) return;
-    elements.trajectoryPlay.textContent = "Pause";
-    elements.trajectoryPlay.setAttribute("aria-pressed", "true");
-    const tick = () => {
-      if (!state.trajectory.timer) return;
-      showTrajectoryFrame((state.trajectory.cursor + 1) % state.trajectory.frames.length);
-      state.trajectory.timer = window.setTimeout(tick, Math.max(20, Number(elements.trajectorySpeed.value) || 250));
-    };
-    state.trajectory.timer = window.setTimeout(tick, Math.max(20, Number(elements.trajectorySpeed.value) || 250));
-  }
-
-  function clearTrajectory() {
-    stopTrajectory();
-    state.trajectory.frames = [];
-    state.trajectory.cursor = 0;
-    updateTrajectoryControls();
   }
 
   function setStatus(message, isError) {
@@ -293,7 +232,6 @@
     state.fileTrajectory = null;
     state.fileTrajectoryName = "";
     state.axes = null;
-    clearTrajectory();
     state.moleculeLayers = [];
     elements.moleculeLayers.textContent = "";
     elements.moleculeLayers.classList.add("empty");
@@ -342,175 +280,6 @@
     return ext === "mmcif" ? "cif" : ext;
   }
 
-  function nowMs() {
-    return window.performance?.now ? window.performance.now() : Date.now();
-  }
-
-  function sleep(ms) {
-    return new Promise((resolve) => window.setTimeout(resolve, ms));
-  }
-
-  function setBenchmarkResults(lines) {
-    elements.benchmarkResults.textContent = Array.isArray(lines) ? lines.join("\n") : String(lines);
-  }
-
-  function applyCoordinateFrame(component, coordinates) {
-    const started = nowMs();
-    component.structure.updatePosition(coordinates);
-    if (typeof component.updateRepresentations === "function") {
-      component.updateRepresentations({ position: true });
-    }
-    stage.viewer.requestRender();
-    return nowMs() - started;
-  }
-
-  function summarizeMetric(values) {
-    const sorted = values.slice().sort((a, b) => a - b);
-    const sum = sorted.reduce((total, value) => total + value, 0);
-    const pick = (fraction) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * fraction))] || 0;
-    return {
-      avg: sorted.length ? sum / sorted.length : 0,
-      p50: pick(0.50),
-      p95: pick(0.95),
-      max: sorted[sorted.length - 1] || 0
-    };
-  }
-
-  function metricLine(label, values, unit) {
-    const metric = summarizeMetric(values);
-    return `${label}: avg ${metric.avg.toFixed(2)} ${unit}, p50 ${metric.p50.toFixed(2)}, p95 ${metric.p95.toFixed(2)}, max ${metric.max.toFixed(2)}`;
-  }
-
-  async function fetchBenchmarkFrame(atoms, frame, transport, topology) {
-    const fetchStarted = nowMs();
-    const topologyParam = topology && topology !== "synthetic"
-      ? `&topology=${encodeURIComponent(topology)}`
-      : "";
-    if (transport === "binary") {
-      const response = await fetch(`/stream/frame.bin?atoms=${atoms}&frame=${frame}${topologyParam}`);
-      const bytes = Number(response.headers.get("Content-Length") || 0);
-      const buffer = await response.arrayBuffer();
-      return {
-        coordinates: new Float32Array(buffer),
-        fetchMs: nowMs() - fetchStarted,
-        parseMs: 0,
-        bytes: bytes || buffer.byteLength
-      };
-    }
-    const response = await fetch(`/stream/frame.json?atoms=${atoms}&frame=${frame}${topologyParam}`);
-    const bytes = Number(response.headers.get("Content-Length") || 0);
-    const text = await response.text();
-    const fetchedAt = nowMs();
-    const payload = JSON.parse(text);
-    const parsedAt = nowMs();
-    return {
-      coordinates: new Float32Array(payload.coordinates),
-      fetchMs: fetchedAt - fetchStarted,
-      parseMs: parsedAt - fetchedAt,
-      bytes: bytes || text.length
-    };
-  }
-
-  async function runBenchmark() {
-    if (!streamingAvailable) {
-      setBenchmarkResults("Streaming is disabled for this static preview. Use the local lab server or a live GenApp job to exercise coordinate streaming.");
-      return;
-    }
-    const requestedAtoms = Math.max(1, Number(elements.benchmarkAtoms.value) || 6730);
-    const topology = elements.benchmarkTopology.value;
-    const scale = elements.benchmarkScale.value;
-    const topologyAtomCounts = {
-      hiv1_gag: 6730,
-      hiv1_gag_reduced: 431
-    };
-    const topologyAtoms = topologyAtomCounts[topology] || requestedAtoms;
-    const atoms = scale === "reduced" ? Math.max(1, Math.round(topologyAtoms / 8)) : topologyAtoms;
-    const frames = Math.max(1, Number(elements.benchmarkFrames.value) || 1);
-    const interval = Math.max(0, Number(elements.benchmarkInterval.value) || 0);
-    const transport = elements.benchmarkTransport.value;
-    const representation = elements.benchmarkRepresentation.value;
-    const fetchTimes = [];
-    const parseTimes = [];
-    const renderTimes = [];
-    let totalBytes = 0;
-
-    elements.benchmarkRun.disabled = true;
-    setBenchmarkResults([
-      `Starting benchmark: ${atoms} rendered atoms (${scale}, requested ${requestedAtoms}), ${frames} frames, ${transport}, ${interval} ms interval.`,
-      `Loading ${topology} PDB from the serving host...`
-    ]);
-    try {
-      const topologyFiles = {
-        hiv1_gag: "fixtures/hiv1_gag_charmm27.pdb",
-        hiv1_gag_reduced: "fixtures/hiv1_gag_charmm27_reduced_ca_p.pdb"
-      };
-      const topologyNames = {
-        hiv1_gag: "hiv1_gag_charmm27.pdb",
-        hiv1_gag_reduced: "hiv1_gag_charmm27_reduced_ca_p.pdb"
-      };
-      const structureUrl = topologyFiles[topology] || `/stream/pdb?atoms=${atoms}`;
-      const structureName = topologyNames[topology] || `synthetic_${atoms}.pdb`;
-      const loadStarted = nowMs();
-      await loadStructure(structureUrl, structureName);
-      const loadMs = nowMs() - loadStarted;
-      if (!state.structure) throw new Error("synthetic structure did not load");
-      state.moleculeLayers.slice().forEach((layer) => {
-        if (layer.representation) state.structure.removeRepresentation(layer.representation);
-        layer.node.remove();
-      });
-      state.moleculeLayers = [];
-      elements.moleculeLayers.textContent = "";
-      elements.moleculeLayers.classList.add("empty");
-      addMoleculeLayer({ name: "benchmark", selection: "all", representation, colorScheme: "chainid" });
-      stage.autoView(250);
-
-      const started = nowMs();
-      for (let frame = 1; frame <= frames; frame += 1) {
-        const framePayload = await fetchBenchmarkFrame(atoms, frame, transport, topology);
-        if (framePayload.coordinates.length !== atoms * 3) {
-          throw new Error(`frame ${frame} had ${framePayload.coordinates.length / 3} atoms, expected ${atoms}`);
-        }
-        fetchTimes.push(framePayload.fetchMs);
-        parseTimes.push(framePayload.parseMs);
-        totalBytes += framePayload.bytes;
-        renderTimes.push(applyCoordinateFrame(state.structure, framePayload.coordinates));
-        state.trajectory.frames.push(framePayload.coordinates.slice());
-        if (state.trajectory.frames.length > 40) state.trajectory.frames.shift();
-        state.trajectory.cursor = state.trajectory.frames.length - 1;
-        const elapsed = (nowMs() - started) / 1000;
-        const mb = totalBytes / (1024 * 1024);
-        setBenchmarkResults([
-          `Running ${transport} stream: frame ${frame}/${frames}`,
-          `Atoms: ${atoms} (${scale}); topology: ${topology}`,
-          `Structure load/setup: ${loadMs.toFixed(2)} ms`,
-          `Transferred: ${mb.toFixed(2)} MiB in ${elapsed.toFixed(2)} s`,
-          metricLine("Fetch", fetchTimes, "ms"),
-          metricLine("Parse", parseTimes, "ms"),
-          metricLine("NGL update", renderTimes, "ms")
-        ]);
-        if (frame < frames && interval > 0) await sleep(interval);
-      }
-      updateTrajectoryControls();
-      const totalSeconds = (nowMs() - started) / 1000;
-      const mb = totalBytes / (1024 * 1024);
-      setBenchmarkResults([
-        `Completed ${transport} stream.`,
-        `Atoms: ${atoms} (${scale}; requested ${requestedAtoms}); topology: ${topology}`,
-        `Frames: ${frames}; interval: ${interval} ms`,
-        `Structure load/setup: ${loadMs.toFixed(2)} ms`,
-        `Transferred: ${mb.toFixed(2)} MiB; effective rate: ${(mb / Math.max(totalSeconds, 0.001)).toFixed(2)} MiB/s`,
-        metricLine("Fetch", fetchTimes, "ms"),
-        metricLine("Parse", parseTimes, "ms"),
-        metricLine("NGL update", renderTimes, "ms")
-      ]);
-    } catch (err) {
-      setBenchmarkResults(`Benchmark failed: ${err.message}`);
-      setStatus(`Benchmark failed: ${err.message}`, true);
-    } finally {
-      elements.benchmarkRun.disabled = false;
-    }
-  }
-
   function updatePayload() {
     if (!state.structure) {
       elements.payload.value = "";
@@ -544,7 +313,6 @@
   document.getElementById("demo-volume").addEventListener("click", () => loadVolume("fixtures/demo.cube", "demo.cube"));
   elements.addLayer.addEventListener("click", () => addMoleculeLayer());
   elements.addSurface.addEventListener("click", () => addVolumeLayer());
-  elements.benchmarkRun.addEventListener("click", runBenchmark);
   document.getElementById("center-view").addEventListener("click", () => stage.autoView(500));
   document.getElementById("toggle-spin").addEventListener("click", function () {
     const enabled = this.getAttribute("aria-pressed") !== "true";
@@ -563,10 +331,6 @@
       try { state.axes = state.structure.addRepresentation("axes", { color: "white" }); } catch (_error) { elements.showAxes.checked = false; }
     }
   });
-  elements.trajectoryPrevious.addEventListener("click", () => showTrajectoryFrame(state.trajectory.cursor - 1));
-  elements.trajectoryNext.addEventListener("click", () => showTrajectoryFrame(state.trajectory.cursor + 1));
-  elements.trajectoryFrame.addEventListener("input", () => showTrajectoryFrame(Number(elements.trajectoryFrame.value) - 1));
-  elements.trajectoryPlay.addEventListener("click", () => state.trajectory.timer ? stopTrajectory() : playTrajectory());
   elements.fileTrajectoryPrevious.addEventListener("click", () => setFileTrajectoryFrame(Number(elements.fileTrajectoryFrame.value) - 1));
   elements.fileTrajectoryNext.addEventListener("click", () => setFileTrajectoryFrame(Number(elements.fileTrajectoryFrame.value) + 1));
   elements.fileTrajectoryFrame.addEventListener("input", () => setFileTrajectoryFrame(elements.fileTrajectoryFrame.value));
@@ -580,7 +344,6 @@
     state.fileTrajectoryName = "";
     state.moleculeLayers = [];
     state.volumeLayers = [];
-    clearTrajectory();
     updateFileTrajectoryControls();
     elements.addLayer.disabled = true;
     elements.addSurface.disabled = true;
@@ -606,9 +369,5 @@
   });
   window.addEventListener("resize", () => stage.handleResize());
   elements.payload.value = "";
-  if (!streamingAvailable) {
-    elements.benchmarkRun.disabled = true;
-    setBenchmarkResults("Streaming is disabled for this static preview. Use the local lab server or a live GenApp job to exercise coordinate streaming.");
-  }
   setStatus(`Ready. GenApp bundled NGL ${NGL.Version}.`);
 }());

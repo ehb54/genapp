@@ -10,7 +10,7 @@
   <header>
     <div>
       <h1>NGL Viewer Lab</h1>
-      <p>Load structures and Gaussian cube volumes locally. Nothing is uploaded.</p>
+      <p>Load a structure, its matching trajectory, and Gaussian cube volumes locally. Nothing is uploaded.</p>
     </div>
     <div class="toolbar">
       <label class="file-button">Open structure<input id="structure-file" type="file" accept=".pdb,.ent,.cif,.mmcif,.sdf,.mol2,.pqr,.gro"></label>
@@ -38,25 +38,10 @@
     <aside>
       <section class="card">
         <div class="section-title">
-          <h2>Retained trajectory</h2>
-          <span id="trajectory-status" class="hint">No frames retained.</span>
+          <h2>Trajectory</h2>
+          <span id="file-trajectory-status" class="hint">First open a structure, then add a DCD/TRR/XTC file.</span>
         </div>
-        <p class="hint">The benchmark keeps the most recent 40 coordinate frames so they can be reviewed after streaming completes.</p>
-        <div class="trajectory-controls">
-          <button id="trajectory-previous" type="button" disabled>Previous</button>
-          <button id="trajectory-play" type="button" disabled aria-pressed="false">Play</button>
-          <button id="trajectory-next" type="button" disabled>Next</button>
-          <label>Frame<input id="trajectory-frame" type="range" min="1" max="1" value="1" disabled></label>
-          <label>Speed ms<input id="trajectory-speed" type="number" min="20" max="10000" step="20" value="250"></label>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="section-title">
-          <h2>File trajectory</h2>
-          <span id="file-trajectory-status" class="hint">Load a structure, then add a DCD/TRR/XTC file.</span>
-        </div>
-        <p class="hint">The trajectory must use the same atom order and count as the loaded structure.</p>
+        <p class="hint">The trajectory supplies coordinates for the loaded structure, so it must use the same atom order and count.</p>
         <div class="trajectory-controls">
           <button id="file-trajectory-previous" type="button" disabled>Previous</button>
           <button id="file-trajectory-play" type="button" disabled aria-pressed="false">Play</button>
@@ -81,40 +66,6 @@
         </div>
         <p class="hint">Gaussian cube data can be shown as positive and negative isosurfaces.</p>
         <div id="volume-layers" class="layer-list empty">Load a cube file to add isosurfaces.</div>
-      </section>
-
-      <section class="card">
-        <div class="section-title">
-          <h2>Streaming benchmark</h2>
-          <button id="benchmark-run" type="button">Run</button>
-        </div>
-        <p class="hint">Fetches synthetic structures and coordinate frames from the serving host, then updates the active NGL structure in place.</p>
-        <div class="controls benchmark-controls">
-          <label>Atoms<input id="benchmark-atoms" type="number" min="100" max="250000" step="1000" value="6730"></label>
-          <label>Frames<input id="benchmark-frames" type="number" min="1" max="200" step="1" value="20"></label>
-          <label>Interval ms<input id="benchmark-interval" type="number" min="0" max="10000" step="100" value="1000"></label>
-          <label>Transport<select id="benchmark-transport">
-            <option value="json">JSON float array</option>
-            <option value="binary">float32 binary</option>
-          </select></label>
-          <label>Topology<select id="benchmark-topology">
-            <option value="synthetic">synthetic CA grid</option>
-            <option value="hiv1_gag">hiv1_gag_charmm27.pdb</option>
-            <option value="hiv1_gag_reduced">hiv1_gag CA/P reduced</option>
-          </select></label>
-          <label>Representation<select id="benchmark-representation">
-            <option value="point">point</option>
-            <option value="backbone">backbone</option>
-            <option value="cartoon">cartoon</option>
-            <option value="line">line</option>
-            <option value="ball+stick">ball + stick</option>
-          </select></label>
-          <label>Scale<select id="benchmark-scale">
-            <option value="all">all atoms</option>
-            <option value="reduced">reduced CA/P proxy</option>
-          </select></label>
-        </div>
-        <pre id="benchmark-results" class="benchmark-results">Benchmark not run yet.</pre>
       </section>
 
       <details class="card">
