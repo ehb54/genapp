@@ -10,7 +10,7 @@
   <header>
     <div>
       <h1>NGL Viewer Lab</h1>
-      <p>Load a structure, its matching trajectory, and Gaussian cube volumes locally. Nothing is uploaded.</p>
+      <p>Load a structure, its matching trajectory, and Gaussian cube volumes locally. Nothing leaves your computer.</p>
     </div>
     <div class="toolbar">
       <label class="file-button">Open structure<input id="structure-file" type="file" accept=".pdb,.ent,.cif,.mmcif,.sdf,.mol2,.pqr,.gro"></label>
@@ -39,7 +39,7 @@
       <section class="card">
         <div class="section-title">
           <h2>Trajectory</h2>
-          <span id="file-trajectory-status" class="hint">First open a structure, then add a DCD/TRR/XTC file.</span>
+          <span id="file-trajectory-status" class="hint">First open a structure, then add a trajectory. Local DCD uses the Sasmol helper.</span>
         </div>
         <p class="hint">The trajectory supplies coordinates for the loaded structure, so it must use the same atom order and count.</p>
         <div class="trajectory-controls">

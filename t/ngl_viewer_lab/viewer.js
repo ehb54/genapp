@@ -5,6 +5,7 @@
   const state = {
     structure: null,
     structureName: "",
+    structureSource: null,
     volume: null,
     axes: null,
     fileTrajectory: null,
@@ -36,7 +37,7 @@
 
   function updateFileTrajectoryControls() {
     const trajectory = state.fileTrajectory?.trajectory || state.fileTrajectory;
-    const count = Number(trajectory?.frameCount ?? trajectory?._frameCount ?? 0);
+    const count = Number(trajectory?.frameCount ?? trajectory?._frameCount ?? trajectory?.numframes ?? 0);
     const current = Number(trajectory?.currentFrame ?? trajectory?._currentFrame ?? 0);
     const enabled = Boolean(trajectory) && count > 0;
     [elements.fileTrajectoryPrevious, elements.fileTrajectoryPlay, elements.fileTrajectoryNext, elements.fileTrajectoryFrame].forEach((control) => { control.disabled = !enabled; });
@@ -78,11 +79,12 @@
     setStatus(`Loading trajectory ${name}…`);
     try {
       disposeFileTrajectory();
-      const frames = await NGL.autoLoad(source, { ext: extension(name) });
+      const frames = await loadTrajectoryFrames(source, name);
       state.fileTrajectory = state.structure.addTrajectory(frames, { defaultMode: "loop" });
       state.fileTrajectoryName = name;
       const trajectory = state.fileTrajectory.trajectory || state.fileTrajectory;
       trajectory.signals?.countChanged?.add(updateFileTrajectoryControls);
+      trajectory.signals?.gotNumframes?.add(updateFileTrajectoryControls);
       trajectory.signals?.frameChanged?.add(updateFileTrajectoryControls);
       updateFileTrajectoryControls();
       updatePayload();
@@ -92,6 +94,49 @@
       updateFileTrajectoryControls();
       setStatus(`Could not load ${name}: ${err.message}`, true);
     }
+  }
+
+  async function loadTrajectoryFrames(source, name) {
+    if (extension(name) === "dcd" && typeof source !== "string" && typeof state.structureSource !== "string") {
+      return loadLocalSasmolDcd(state.structureSource, source, name);
+    }
+    return NGL.autoLoad(source, { ext: extension(name) });
+  }
+
+  async function loadLocalSasmolDcd(structureSource, trajectorySource, name) {
+    const localHost = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+    if (!localHost) {
+      throw new Error("Local DCD files require the localhost Sasmol helper. Start local_sasmol_helper.py and open its URL.");
+    }
+    const form = new FormData();
+    form.append("structure", structureSource, structureSource.name || "structure.pdb");
+    form.append("trajectory", trajectorySource, trajectorySource.name || name);
+    const response = await fetch("/local-sasmol/trajectory", { method: "POST", body: form });
+    if (!response.ok) {
+      let message = `local Sasmol helper returned ${response.status}`;
+      try { message = (await response.json()).error || message; } catch (_error) { /* keep status text */ }
+      throw new Error(message);
+    }
+    const buffer = await response.arrayBuffer();
+    const header = new DataView(buffer);
+    const magic = String.fromCharCode(header.getUint8(0), header.getUint8(1), header.getUint8(2), header.getUint8(3));
+    const frameCount = header.getUint32(4, true);
+    const atomCount = header.getUint32(8, true);
+    const expectedBytes = 12 + frameCount * atomCount * 3 * 4;
+    if (magic !== "NGLF" || frameCount < 1 || atomCount < 1 || buffer.byteLength !== expectedBytes) {
+      throw new Error("local Sasmol helper returned invalid trajectory data");
+    }
+    const structureAtomCount = Number(state.structure?.structure?.atomCount || 0);
+    if (structureAtomCount && atomCount !== structureAtomCount) {
+      throw new Error(`trajectory has ${atomCount} atoms but the structure has ${structureAtomCount}`);
+    }
+    const values = new Float32Array(buffer, 12);
+    const frameSize = atomCount * 3;
+    const coordinates = [];
+    for (let frame = 0; frame < frameCount; frame += 1) {
+      coordinates.push(values.subarray(frame * frameSize, (frame + 1) * frameSize));
+    }
+    return { type: "Frames", name, path: "", coordinates, boxes: [] };
   }
 
   function setStatus(message, isError) {
@@ -243,6 +288,7 @@
     try {
       state.structure = await stage.loadFile(source, { ext: extension(name) });
       state.structureName = name;
+      state.structureSource = source;
       elements.addLayer.disabled = false;
       if (elements.showAxes.checked) {
         try { state.axes = state.structure.addRepresentation("axes", { color: "white" }); } catch (_error) { elements.showAxes.checked = false; }
@@ -252,6 +298,7 @@
       setStatus(`Loaded structure ${name}.`);
     } catch (err) {
       state.structure = null;
+      state.structureSource = null;
       elements.addLayer.disabled = true;
       restoreEmptyState(elements.moleculeLayers, "Could not load the structure.");
       setStatus(`Could not load ${name}: ${err.message}`, true);
@@ -343,6 +390,7 @@
   document.getElementById("clear-all").addEventListener("click", function () {
     stage.removeAllComponents();
     state.structure = null;
+    state.structureSource = null;
     state.volume = null;
     state.axes = null;
     disposeFileTrajectory();
