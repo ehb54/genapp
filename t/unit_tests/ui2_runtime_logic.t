@@ -992,6 +992,52 @@ assert.strictEqual(
   "UI2 keeps layered selected NGL payloads on distinct layer keys"
 );
 
+const nglVisibilityCalls = [];
+const nglVisibilityPlot = {
+  hidden: false,
+  offsetParent: null,
+  getBoundingClientRect() {
+    return { width: 0, height: 0 };
+  }
+};
+const nglVisibilityOutput = {
+  _ui2NglNeedsVisibleAutoView: true,
+  _ui2NglStage: {
+    handleResize() { nglVisibilityCalls.push("resize"); },
+    viewer: { requestRender() { nglVisibilityCalls.push("render"); } }
+  },
+  _ui2NglComponent: {
+    autoView() { nglVisibilityCalls.push("autoview"); }
+  },
+  querySelector(selector) {
+    return selector === ".ui2-ngl-plot" ? nglVisibilityPlot : null;
+  }
+};
+assert.strictEqual(
+  hooks.resizeNglOutputWhenVisible(nglVisibilityOutput),
+  false,
+  "UI2 defers NGL fitting while a result tab has no visible geometry"
+);
+assert.deepStrictEqual(nglVisibilityCalls, [], "hidden NGL output does not fit against a zero-size stage");
+nglVisibilityPlot.offsetParent = {};
+nglVisibilityPlot.getBoundingClientRect = () => ({ width: 640, height: 480 });
+assert.strictEqual(
+  hooks.resizeNglOutputWhenVisible(nglVisibilityOutput),
+  true,
+  "UI2 fits NGL when the result tab first receives usable geometry"
+);
+assert.deepStrictEqual(
+  nglVisibilityCalls,
+  ["resize", "render", "autoview"],
+  "first visible NGL fit resizes, renders, and centers the loaded structure"
+);
+hooks.resizeNglOutputWhenVisible(nglVisibilityOutput);
+assert.deepStrictEqual(
+  nglVisibilityCalls,
+  ["resize", "render", "autoview", "resize", "render"],
+  "later layout changes resize NGL without resetting the user's camera"
+);
+
 window.__styleVars = {
   "--ui2-panel": "#1a201f",
   "--ui2-bg": "#111615",

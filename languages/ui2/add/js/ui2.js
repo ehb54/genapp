@@ -2154,7 +2154,7 @@
       resizePlotlyOutputWhenVisible(output);
     });
     document.querySelectorAll('[data-output-type="ngl"]').forEach((output) => {
-      resizeNglStage(output._ui2NglStage);
+      resizeNglOutputWhenVisible(output);
       refreshNglOutputFrame(output);
     });
   }
@@ -2165,6 +2165,53 @@
     }
     stage.handleResize?.();
     requestNglRender(stage);
+  }
+
+  function disconnectNglOutputObserver(output) {
+    output?._ui2NglResizeObserver?.disconnect?.();
+    if (output) {
+      output._ui2NglResizeObserver = null;
+    }
+  }
+
+  function observeNglOutput(output) {
+    disconnectNglOutputObserver(output);
+    if (!output || typeof ResizeObserver !== "function") {
+      return;
+    }
+    const target = output.parentElement || output;
+    let width = 0;
+    let height = 0;
+    const observer = new ResizeObserver((entries) => {
+      const rect = entries?.[0]?.contentRect;
+      if (!rect || Math.abs(rect.width - width) < 1 && Math.abs(rect.height - height) < 1) {
+        return;
+      }
+      width = rect.width;
+      height = rect.height;
+      const schedule = window.requestAnimationFrame || ((callback) => window.setTimeout(callback, 0));
+      schedule(() => resizeNglOutputWhenVisible(output));
+    });
+    observer.observe(target);
+    output._ui2NglResizeObserver = observer;
+  }
+
+  function resizeNglOutputWhenVisible(output) {
+    const plot = output?.querySelector?.(".ui2-ngl-plot");
+    const stage = output?._ui2NglStage;
+    if (!plot || !stage || plot.hidden || plot.offsetParent === null) {
+      return false;
+    }
+    const rect = plot.getBoundingClientRect?.();
+    if (!rect || rect.width <= 1 || rect.height <= 1) {
+      return false;
+    }
+    resizeNglStage(stage);
+    if (output._ui2NglNeedsVisibleAutoView && output._ui2NglComponent?.autoView) {
+      output._ui2NglComponent.autoView();
+      output._ui2NglNeedsVisibleAutoView = false;
+    }
+    return true;
   }
 
   function requestNglRender(stage) {
@@ -7618,6 +7665,7 @@
 
   function clearNglOutput(output, options = {}) {
     output._ui2NglRenderRevision = (output._ui2NglRenderRevision || 0) + 1;
+    disconnectNglOutputObserver(output);
     stopNglFramePlayback(output);
     if (output._ui2NglStage?.dispose) {
       output._ui2NglStage.dispose();
@@ -7632,6 +7680,7 @@
     output._ui2NglSpecs = null;
     output._ui2NglTrajectory = null;
     output._ui2NglAxesRep = null;
+    output._ui2NglNeedsVisibleAutoView = false;
     output._ui2_ngl_density_payload = null;
     if (!options.preserveFrames) {
       output._ui2_ngl_frames = null;
@@ -7695,6 +7744,8 @@
     output._ui2NglRenderRevision = renderRevision;
     plot.hidden = false;
     buttons.hidden = false;
+    output._ui2NglNeedsVisibleAutoView = true;
+    observeNglOutput(output);
     if (placeholder) {
       placeholder.hidden = true;
     }
@@ -7719,11 +7770,7 @@
           specs.forEach((spec, index) => {
             output._ui2NglReps[nglRepresentationStoreKey(spec, index, layered)] = component.addRepresentation(spec.type, spec.params || {});
           });
-          resizeNglStage(stage);
-          if (component.autoView) {
-            component.autoView();
-          }
-          requestNglRender(stage);
+          resizeNglOutputWhenVisible(output);
           schedule_ngl_coordinate_frame(output);
           renderNglViewerControls(output, component, specs, layered);
           const trajectoryPayload = structurePayload.trajectory || payload.trajectory;
@@ -10180,6 +10227,8 @@
       userConfigGroupVisible,
       parseNglPayload,
       normalizeNglLoadName,
+      observeNglOutput,
+      resizeNglOutputWhenVisible,
       nglRepresentationSpecs,
       nglRepresentationKey,
       nglRepresentationStoreKey,
