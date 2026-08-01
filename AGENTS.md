@@ -38,8 +38,9 @@ types, SASSIE scientific dataset recorders, plot-specific replay stores,
 `.scientific_datasets.json` reattachment requirements, or migration-status
 registries for SASSIE-web plotting work.
 
-The corrected governing issue is `ehb54/zazzie#184`. The checked-in summary is
-`doc/Plotting-Architecture.md`.
+The corrected governing issue is `ehb54/zazzie#184`. The normative guide is
+`doc/Plotting-Architecture.md`; the current GitHub wiki page is
+`Reference-Plotly`.
 
 Use the existing sassie-wide bin/driver runtime contract as the foundation:
 drivers publish JSON output, ordered runtime events, progress, completion, and
@@ -49,18 +50,36 @@ migration appears to require SASSIE changes beyond ordinary science output,
 stop and prepare a plain-language SASSIE-team request instead of changing the
 GenApp/UI code around the gap.
 
-For migrated web plots:
+### Mandatory contract for every new SASSIE-web plot
 
-- module drivers/helpers may prepare web-facing series from available SASSIE
-  outputs or streamed values;
-- shared GenApp/`genapp_zazzie` helpers should remove duplicated Plotly figure
-  assembly where that is actually useful;
-- UI2 owns responsive sizing, font policy, colors, labels, legends, modebar
-  behavior, empty states, and reattach display behavior;
-- producers must not hand-carve pixel sizes or duplicate visual policy;
-- live plotting should use runtime events rather than file polling. A driver
-  may read completed output files once at the end of a run when that is the
-  practical source of final plot data.
+- SASSIE owns scientific calculations, units, canonical outputs, and ordinary
+  GUI-neutral scientific stream values. It must not import Plotly, emit
+  renderer objects, or implement GUI-only plotting/replay state.
+- Declare a stable `snake_case` module output id using the existing GenApp
+  `plotly` type. Drivers/helpers may prepare bounded web-facing series from
+  existing SASSIE outputs or stream values; they must not redefine science.
+- The producer supplies scientific values, series identity, titles, axis names
+  and units, scale types, uncertainty, and required subplot relationships.
+  UI2 owns responsive sizing, fonts, colors, line/marker styling, margins,
+  legend placement, modebar, interaction, accessibility, empty-state display,
+  and final rendering.
+- Producers must not emit fixed width/height, pixel margins, fonts, theme or
+  trace colors, line widths, marker sizes, fixed legend coordinates, or
+  general Plotly config.
+- Live plots use ordered, bounded runtime events through the established
+  `SASSIE_STREAM` and driver-runtime path. Never poll files during a run, send
+  unbounded history, or copy structured events into report text.
+- The driver's final stdout JSON must include the completed plot under the
+  declared output id. It may read a completed scientific output once. Normal
+  saved final output is the only plot reattachment source; do not depend on
+  browser memory, event replay, or a plot-specific sidecar.
+- Omit an unavailable or disabled optional plot. Do not fabricate zero data or
+  blank placeholder figures. Use an ordinary dynamic `plotly` output only when
+  the number of plots is genuinely runtime-dependent.
+- Verify scientific value/unit parity, optional and empty modes, bounded live
+  updates, completion, failure, normal view, expanded/restore, and fresh-window
+  reattachment. The SASSIE GUI mimic must remain independent of GenApp and
+  Plotly.
 
 Before changing a plotted module, read the applicable `AGENTS.md` files in this
 repository, `genapp_zazzie`, and `madscatt/zazzie`. Report the three guardrail
