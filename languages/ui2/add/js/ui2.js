@@ -9039,7 +9039,8 @@
       return [];
     }
     return data.map((trace) => {
-      if (trace?.meta?.series_role !== "ensemble_profile") {
+      const role = trace?.meta?.series_role;
+      if (role !== "ensemble_profile" && role !== "ensemble_residual") {
         return trace;
       }
       // Series roles express scientific identity. UI2 owns the corresponding

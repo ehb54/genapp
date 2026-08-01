@@ -1054,14 +1054,17 @@ assert.strictEqual(multiAxisLayout.xaxis4.gridcolor, "rgba(238, 244, 241, 0.12)"
 assert.strictEqual(multiAxisLayout.yaxis4.gridcolor, "rgba(238, 244, 241, 0.12)", "UI2 themes fourth-and-later y axes");
 const scientificSeries = [
   { name: "frame 00001", meta: { series_role: "ensemble_profile" }, x: [0.01], y: [1.0] },
+  { name: "frame 00001 residual", meta: { series_role: "ensemble_residual" }, x: [0.01], y: [0.2] },
   { name: "all-frame mean", meta: { series_role: "ensemble_mean" }, x: [0.01], y: [1.1] },
   { name: "experimental", meta: { series_role: "experimental" }, x: [0.01], y: [1.2] }
 ];
 const renderedScientificSeries = hooks.plotlyDataForOutput(scientificSeries);
 assert.strictEqual(renderedScientificSeries[0].showlegend, false, "UI2 hides individual ensemble profiles from the legend");
 assert.strictEqual(renderedScientificSeries[0].line.color, "rgba(113, 196, 232, 0.42)", "UI2 gives ensemble profiles a consistent translucent light-blue line");
-assert.strictEqual(renderedScientificSeries[1].showlegend, undefined, "UI2 leaves the average visible to the Plotly legend");
-assert.strictEqual(renderedScientificSeries[2].showlegend, undefined, "UI2 leaves experimental data visible to the Plotly legend");
+assert.strictEqual(renderedScientificSeries[1].showlegend, false, "UI2 hides individual ensemble residuals from the legend");
+assert.strictEqual(renderedScientificSeries[1].line.color, "rgba(113, 196, 232, 0.42)", "UI2 gives ensemble residuals the same translucent light-blue line");
+assert.strictEqual(renderedScientificSeries[2].showlegend, undefined, "UI2 leaves the average visible to the Plotly legend");
+assert.strictEqual(renderedScientificSeries[3].showlegend, undefined, "UI2 leaves experimental data visible to the Plotly legend");
 assert.strictEqual(scientificSeries[0].showlegend, undefined, "UI2 does not mutate the saved scientific figure");
 assert.strictEqual(scientificSeries[0].line, undefined, "UI2 does not put visual policy into the saved scientific figure");
 assert.strictEqual(
