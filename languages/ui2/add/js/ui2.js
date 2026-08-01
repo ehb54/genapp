@@ -7514,7 +7514,8 @@
         }
         const stage = new window.NGL.Stage(plot.id, nglViewerStageParams(output));
         output._ui2NglStage = stage;
-        return stage.loadFile(normalizeNglLoadName(structurePayload.loadname), structurePayload.loadparams || {}).then((component) => {
+        const structureLoadParams = Object.assign({}, structurePayload.loadparams || {}, { defaultRepresentation: false });
+        return stage.loadFile(normalizeNglLoadName(structurePayload.loadname), structureLoadParams).then((component) => {
           if (output._ui2NglRenderRevision !== renderRevision) {
             stage.dispose?.();
             return null;

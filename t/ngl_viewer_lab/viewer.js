@@ -236,15 +236,20 @@
     elements.moleculeLayers.textContent = "";
     elements.moleculeLayers.classList.add("empty");
     try {
-      state.structure = await stage.loadFile(source, { ext: extension(name) });
+      state.structure = await stage.loadFile(source, {
+        ext: extension(name),
+        defaultRepresentation: false
+      });
       state.structureName = name;
       elements.addLayer.disabled = false;
       if (elements.showAxes.checked) {
         try { state.axes = state.structure.addRepresentation("axes", { color: "white" }); } catch (_error) { elements.showAxes.checked = false; }
       }
-      addMoleculeLayer({ name: "molecule", selection: "all", representation: "ball+stick", colorScheme: "element" });
+      const atomCount = Number(state.structure.structure?.atomCount || 0);
+      const representation = atomCount > 15000 ? "line" : "ball+stick";
+      addMoleculeLayer({ name: "molecule", selection: "all", representation, colorScheme: "element" });
       state.structure.autoView();
-      setStatus(`Loaded structure ${name}.`);
+      setStatus(`Loaded structure ${name}${atomCount ? ` (${atomCount.toLocaleString()} atoms; ${representation} display)` : ""}.`);
     } catch (err) {
       state.structure = null;
       elements.addLayer.disabled = true;
