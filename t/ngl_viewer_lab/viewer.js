@@ -8,6 +8,7 @@
     volume: null,
     axes: null,
     fileTrajectory: null,
+    fileTrajectoryUrl: "",
     moleculeLayers: [],
     volumeLayers: []
   };
@@ -63,6 +64,16 @@
     elements.fileTrajectoryPlay.setAttribute("aria-pressed", player.isRunning ? "true" : "false");
   }
 
+  function disposeFileTrajectory() {
+    state.fileTrajectory?.dispose?.();
+    if (state.fileTrajectoryUrl) {
+      URL.revokeObjectURL(state.fileTrajectoryUrl);
+    }
+    state.fileTrajectory = null;
+    state.fileTrajectoryUrl = "";
+    state.fileTrajectoryName = "";
+  }
+
   async function loadTrajectory(source, displayName) {
     if (!state.structure) {
       setStatus("Load a structure before loading a trajectory.", true);
@@ -71,8 +82,11 @@
     const name = displayName || source.name || "trajectory";
     setStatus(`Loading trajectory ${name}…`);
     try {
-      if (state.fileTrajectory?.dispose) state.fileTrajectory.dispose();
-      state.fileTrajectory = state.structure.addTrajectory(source, { ext: extension(name), defaultMode: "loop" });
+      disposeFileTrajectory();
+      const localFile = typeof source !== "string";
+      const trajectorySource = localFile ? URL.createObjectURL(source) : source;
+      state.fileTrajectoryUrl = localFile ? trajectorySource : "";
+      state.fileTrajectory = state.structure.addTrajectory(trajectorySource, { ext: extension(name), defaultMode: "loop" });
       state.fileTrajectoryName = name;
       const trajectory = state.fileTrajectory.trajectory || state.fileTrajectory;
       trajectory.signals?.countChanged?.add(updateFileTrajectoryControls);
@@ -81,8 +95,7 @@
       updatePayload();
       setStatus(`Loaded trajectory ${name}.`);
     } catch (err) {
-      state.fileTrajectory = null;
-      state.fileTrajectoryName = "";
+      disposeFileTrajectory();
       updateFileTrajectoryControls();
       setStatus(`Could not load ${name}: ${err.message}`, true);
     }
@@ -228,9 +241,8 @@
   async function loadStructure(source, displayName) {
     const name = displayName || source.name;
     setStatus(`Loading structure ${name}…`);
+    disposeFileTrajectory();
     if (state.structure) stage.removeComponent(state.structure);
-    state.fileTrajectory = null;
-    state.fileTrajectoryName = "";
     state.axes = null;
     state.moleculeLayers = [];
     elements.moleculeLayers.textContent = "";
@@ -340,8 +352,7 @@
     state.structure = null;
     state.volume = null;
     state.axes = null;
-    state.fileTrajectory = null;
-    state.fileTrajectoryName = "";
+    disposeFileTrajectory();
     state.moleculeLayers = [];
     state.volumeLayers = [];
     updateFileTrajectoryControls();
