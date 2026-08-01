@@ -8,7 +8,6 @@
     volume: null,
     axes: null,
     fileTrajectory: null,
-    fileTrajectoryUrl: "",
     moleculeLayers: [],
     volumeLayers: []
   };
@@ -66,11 +65,7 @@
 
   function disposeFileTrajectory() {
     state.fileTrajectory?.dispose?.();
-    if (state.fileTrajectoryUrl) {
-      URL.revokeObjectURL(state.fileTrajectoryUrl);
-    }
     state.fileTrajectory = null;
-    state.fileTrajectoryUrl = "";
     state.fileTrajectoryName = "";
   }
 
@@ -83,10 +78,8 @@
     setStatus(`Loading trajectory ${name}…`);
     try {
       disposeFileTrajectory();
-      const localFile = typeof source !== "string";
-      const trajectorySource = localFile ? URL.createObjectURL(source) : source;
-      state.fileTrajectoryUrl = localFile ? trajectorySource : "";
-      state.fileTrajectory = state.structure.addTrajectory(trajectorySource, { ext: extension(name), defaultMode: "loop" });
+      const frames = await NGL.autoLoad(source, { ext: extension(name) });
+      state.fileTrajectory = state.structure.addTrajectory(frames, { defaultMode: "loop" });
       state.fileTrajectoryName = name;
       const trajectory = state.fileTrajectory.trajectory || state.fileTrajectory;
       trajectory.signals?.countChanged?.add(updateFileTrajectoryControls);
