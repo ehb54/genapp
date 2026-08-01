@@ -8824,9 +8824,10 @@
         applyPlotlyTheme(layout);
         const config = plotlyConfigForOutput(figure);
         applyPlotlyModebarHooks(figure, config);
+        const data = plotlyDataForOutput(figure.data);
         return updateExisting
-          ? window.Plotly.react(output, figure.data, layout, config)
-          : window.Plotly.newPlot(output, figure.data, layout, config);
+          ? window.Plotly.react(output, data, layout, config)
+          : window.Plotly.newPlot(output, data, layout, config);
       })
       .then(() => {
         observeFitPlotlyOutput(output);
@@ -9019,7 +9020,26 @@
     applyPlotlyTheme(layout);
     const config = plotlyConfigForOutput(figure);
     applyPlotlyModebarHooks(figure, config);
-    return window.Plotly.react(output, figure.data, layout, config);
+    return window.Plotly.react(output, plotlyDataForOutput(figure.data), layout, config);
+  }
+
+  function plotlyDataForOutput(data) {
+    if (!Array.isArray(data)) {
+      return [];
+    }
+    return data.map((trace) => {
+      if (trace?.meta?.series_role !== "ensemble_profile") {
+        return trace;
+      }
+      // Series roles express scientific identity. UI2 owns the corresponding
+      // visual treatment so producers do not encode a renderer policy.
+      return Object.assign({}, trace, {
+        line: Object.assign({}, trace.line || {}, {
+          color: "rgba(113, 196, 232, 0.42)"
+        }),
+        showlegend: false
+      });
+    });
   }
 
   function debugPlotlyResize(label, output, width, height) {
@@ -10157,6 +10177,7 @@
       refreshNglOutputFrame,
       ngl_active_frame_index,
       applyPlotlyTheme,
+      plotlyDataForOutput,
       appendPlotlyOutput,
       rememberPlotlyAppend,
       refreshPlotlyOutputIfNeeded,
