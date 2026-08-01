@@ -78,7 +78,7 @@
     setStatus(`Loading trajectory ${name}…`);
     try {
       disposeFileTrajectory();
-      const frames = await NGL.autoLoad(source, { ext: extension(name) });
+      const frames = await loadTrajectoryFrames(source, name);
       state.fileTrajectory = state.structure.addTrajectory(frames, { defaultMode: "loop" });
       state.fileTrajectoryName = name;
       const trajectory = state.fileTrajectory.trajectory || state.fileTrajectory;
@@ -92,6 +92,70 @@
       updateFileTrajectoryControls();
       setStatus(`Could not load ${name}: ${err.message}`, true);
     }
+  }
+
+  async function loadTrajectoryFrames(source, name) {
+    if (extension(name) === "dcd" && typeof source !== "string" && typeof source.arrayBuffer === "function") {
+      return parseLocalDcd(await source.arrayBuffer(), name);
+    }
+    return NGL.autoLoad(source, { ext: extension(name) });
+  }
+
+  function parseLocalDcd(buffer, name) {
+    const view = new DataView(buffer);
+    const littleEndian = view.getInt32(0, true) === 84;
+    const readInt = (offset) => view.getInt32(offset, littleEndian);
+    let offset = 0;
+    const readRecord = () => {
+      if (offset + 8 > buffer.byteLength) return null;
+      const length = readInt(offset);
+      const start = offset + 4;
+      const end = start + length;
+      if (length < 0 || end + 4 > buffer.byteLength || readInt(end) !== length) {
+        throw new Error("invalid DCD record");
+      }
+      offset = end + 4;
+      return { length, start };
+    };
+    const header = readRecord();
+    const title = readRecord();
+    const atomCountRecord = readRecord();
+    if (!header || header.length !== 84 || !title || !atomCountRecord || atomCountRecord.length !== 4) {
+      throw new Error("unsupported DCD header");
+    }
+    const atomCount = readInt(atomCountRecord.start);
+    if (!Number.isInteger(atomCount) || atomCount < 1) {
+      throw new Error("invalid DCD atom count");
+    }
+    const coordinateBytes = atomCount * 4;
+    const frames = { type: "Frames", name, path: "", coordinates: [], boxes: [] };
+    const readCoordinates = (record) => {
+      if (!record || record.length !== coordinateBytes) throw new Error("DCD frame does not match its atom count");
+      const values = new Float32Array(atomCount);
+      for (let index = 0; index < atomCount; index += 1) {
+        values[index] = view.getFloat32(record.start + index * 4, littleEndian);
+      }
+      return values;
+    };
+    while (offset < buffer.byteLength) {
+      let xRecord = readRecord();
+      if (!xRecord) break;
+      if (xRecord.length === 48 || xRecord.length === 56) {
+        xRecord = readRecord();
+      }
+      const x = readCoordinates(xRecord);
+      const y = readCoordinates(readRecord());
+      const z = readCoordinates(readRecord());
+      const coordinates = new Float32Array(atomCount * 3);
+      for (let index = 0; index < atomCount; index += 1) {
+        coordinates[index * 3] = x[index];
+        coordinates[index * 3 + 1] = y[index];
+        coordinates[index * 3 + 2] = z[index];
+      }
+      frames.coordinates.push(coordinates);
+    }
+    if (!frames.coordinates.length) throw new Error("DCD contains no coordinate frames");
+    return frames;
   }
 
   function setStatus(message, isError) {
