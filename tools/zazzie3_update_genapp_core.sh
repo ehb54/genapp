@@ -11,6 +11,7 @@ ref="${GENAPP_ZAZZIE_CORE_REF:-HEAD}"
 generate_mode=""
 generate_language=""
 stash_dirty=0
+allow_branch_switch=0
 
 usage() {
     cat <<EOF
@@ -39,6 +40,8 @@ Options:
   --generate-language LANG
                        Regenerate only one language target, e.g. ui2 or html5
   --stash-dirty        Stash dirty server core changes before updating
+  --allow-branch-switch
+                       Permit switching the container core checkout to --branch
   -h, --help           Show this help
 
 Environment:
@@ -94,6 +97,10 @@ while [[ $# -gt 0 ]]; do
             stash_dirty=1
             shift
             ;;
+        --allow-branch-switch)
+            allow_branch_switch=1
+            shift
+            ;;
         -h|--help)
             usage
             exit 0
@@ -127,7 +134,7 @@ required_commit="$(git -C "$repo_root" rev-parse --verify "${ref}^{commit}")"
 echo "Updating $host:$container:$core_dir to $branch @ $required_commit"
 
 ssh "$host" docker exec -i "$container" bash -s -- \
-    "$core_dir" "$gz_dir" "$branch" "$required_commit" "$generate_mode" "$stash_dirty" "$generate_language" <<'REMOTE'
+    "$core_dir" "$gz_dir" "$branch" "$required_commit" "$generate_mode" "$stash_dirty" "$generate_language" "$allow_branch_switch" <<'REMOTE'
 set -euo pipefail
 
 core_dir="$1"
@@ -137,6 +144,7 @@ required_commit="$4"
 generate_mode="$5"
 stash_dirty="$6"
 generate_language="${7:-}"
+allow_branch_switch="${8:-0}"
 
 stamp() {
     printf '\n== %s ==\n' "$1"
@@ -148,9 +156,12 @@ test -d "$gz_dir"
 cd "$core_dir"
 
 current_branch="$(git branch --show-current)"
-if [[ "$current_branch" != "$branch" ]]; then
-    echo "Switching GenApp core branch: $current_branch -> $branch"
-    git checkout "$branch"
+if [[ "$current_branch" != "$branch" && "$allow_branch_switch" != "1" ]]; then
+    cat >&2 <<EOF
+Refusing to switch GenApp core branch from '$current_branch' to '$branch'.
+Rerun with --allow-branch-switch only after explicitly approving that server branch change.
+EOF
+    exit 1
 fi
 
 dirty="$(git status --porcelain)"
@@ -170,6 +181,11 @@ fi
 
 stamp "Fetch"
 git fetch origin "$branch"
+
+if [[ "$current_branch" != "$branch" ]]; then
+    echo "Switching GenApp core branch: $current_branch -> $branch"
+    git checkout "$branch"
+fi
 
 if ! git cat-file -e "${required_commit}^{commit}" 2>/dev/null; then
     echo "Required commit is not present after fetch: $required_commit" >&2

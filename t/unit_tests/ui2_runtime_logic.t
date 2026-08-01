@@ -2735,6 +2735,28 @@ assert.strictEqual(
   "failed",
   "verification reports an absent required final output without fabricating data"
 );
+const scenarioSnapshotBefore = hooks.testScenarioSnapshot();
+const scenarioSnapshotRepeated = hooks.testScenarioSnapshot();
+assert.strictEqual(
+  scenarioSnapshotBefore,
+  scenarioSnapshotRepeated,
+  "test-scenario snapshot identity remains stable between reads for React subscriptions"
+);
+let scenarioNotifications = 0;
+const unsubscribeTestScenarios = hooks.subscribeTestScenarios(() => { scenarioNotifications += 1; });
+assert.strictEqual(
+  scenarioNotifications,
+  0,
+  "registering a test-scenario subscriber does not publish a synthetic state change"
+);
+hooks.clearTestScenarios();
+assert.strictEqual(scenarioNotifications, 1, "clearing test scenarios publishes exactly one state transition");
+assert.notStrictEqual(
+  hooks.testScenarioSnapshot(),
+  scenarioSnapshotBefore,
+  "test-scenario snapshot identity changes after a real state transition"
+);
+unsubscribeTestScenarios();
 JS
 close $fh;
 

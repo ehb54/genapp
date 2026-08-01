@@ -103,13 +103,7 @@
     workbenchRunContextListeners: new Set(),
     runtimeOutputListeners: new Set(),
     testScenarioListeners: new Set(),
-    testScenarios: {
-      available: false,
-      loading: false,
-      catalog: null,
-      selectedId: "",
-      verification: { state: "not_run", checks: [] }
-    },
+    testScenarios: initialTestScenarioState(),
     runtimeOutputAvailability: {},
     pendingSwitch: "",
     viewReady: null,
@@ -920,12 +914,11 @@
   }
 
   async function loadTestScenarios(moduleId) {
-    clearTestScenarios();
+    clearTestScenarios(false);
     if (!moduleId || !state.session.logon) {
       return;
     }
-    state.testScenarios.loading = true;
-    notifyTestScenarios();
+    updateTestScenarioState({ loading: true });
     try {
       const url = new URL(legacyEndpoint("", TEST_SCENARIO_ENDPOINT), window.location.href);
       url.searchParams.set("module", moduleId);
@@ -937,25 +930,39 @@
       }
       const payload = await parseJsonResponse(response, "Test scenarios");
       if (payload?.available && validTestScenarioCatalog(payload.catalog, moduleId)) {
-        state.testScenarios.available = true;
-        state.testScenarios.catalog = cloneUi2Value(payload.catalog);
+        updateTestScenarioState({
+          available: true,
+          catalog: cloneUi2Value(payload.catalog)
+        });
       }
     } catch (error) {
       // This is a privileged optional facility.  Ordinary UI2 use must remain
       // quiet if an application has no catalog endpoint or no administrator.
     } finally {
-      state.testScenarios.loading = false;
-      notifyTestScenarios();
+      updateTestScenarioState({ loading: false });
     }
   }
 
-  function clearTestScenarios() {
-    state.testScenarios.available = false;
-    state.testScenarios.loading = false;
-    state.testScenarios.catalog = null;
-    state.testScenarios.selectedId = "";
-    state.testScenarios.verification = { state: "not_run", checks: [] };
+  function initialTestScenarioState() {
+    return {
+      available: false,
+      loading: false,
+      catalog: null,
+      selectedId: "",
+      verification: { state: "not_run", checks: [] }
+    };
+  }
+
+  function updateTestScenarioState(patch) {
+    state.testScenarios = Object.assign({}, state.testScenarios, patch);
     notifyTestScenarios();
+  }
+
+  function clearTestScenarios(notify = true) {
+    state.testScenarios = initialTestScenarioState();
+    if (notify) {
+      notifyTestScenarios();
+    }
   }
 
   function validTestScenarioCatalog(catalog, moduleId) {
@@ -977,7 +984,9 @@
   }
 
   function testScenarioSnapshot() {
-    return cloneUi2Value(state.testScenarios);
+    // useSyncExternalStore compares snapshots by identity.  This reference
+    // changes only through updateTestScenarioState()/clearTestScenarios().
+    return state.testScenarios;
   }
 
   function notifyTestScenarios() {
@@ -989,7 +998,6 @@
   function subscribeTestScenarios(listener) {
     if (typeof listener !== "function") return () => {};
     state.testScenarioListeners.add(listener);
-    listener();
     return () => state.testScenarioListeners.delete(listener);
   }
 
@@ -1003,9 +1011,10 @@
       ([id, value]) => Object.prototype.hasOwnProperty.call(inputs, id) && JSON.stringify(inputs[id]) === JSON.stringify(value)
     ));
     if (!scenario) return;
-    state.testScenarios.selectedId = scenario.id;
-    state.testScenarios.verification = { state: "not_run", checks: [] };
-    notifyTestScenarios();
+    updateTestScenarioState({
+      selectedId: scenario.id,
+      verification: { state: "not_run", checks: [] }
+    });
   }
 
   function applyTestScenario(id, form = document.getElementById("ui2-form")) {
@@ -1019,9 +1028,10 @@
     }
     applyInputPayload(scenario.inputs, { clearMissing: false });
     syncValues(form);
-    state.testScenarios.selectedId = scenario.id;
-    state.testScenarios.verification = { state: "not_run", checks: [] };
-    notifyTestScenarios();
+    updateTestScenarioState({
+      selectedId: scenario.id,
+      verification: { state: "not_run", checks: [] }
+    });
     return { ok: true, values: cloneUi2Value(state.values) };
   }
 
@@ -1074,8 +1084,9 @@
   function refreshTestScenarioVerification(jobStatus) {
     const scenario = selectedTestScenario();
     if (!scenario) return;
-    state.testScenarios.verification = evaluateTestScenarioVerification(scenario, jobStatus, state.runtimeOutputs);
-    notifyTestScenarios();
+    updateTestScenarioState({
+      verification: evaluateTestScenarioVerification(scenario, jobStatus, state.runtimeOutputs)
+    });
   }
 
   async function openUtilityModule(rawId) {
@@ -10188,6 +10199,8 @@
       testScenarioOutputNonempty,
       applyTestScenario,
       testScenarioSnapshot,
+      clearTestScenarios,
+      subscribeTestScenarios,
       applySavedJobInput,
       savedInputRestoreError,
       savedInputRestoreWarnings,
