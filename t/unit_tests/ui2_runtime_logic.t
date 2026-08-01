@@ -1081,6 +1081,18 @@ const fixedPlotLayout = hooks.plotlyLayoutForOutput(
 );
 assert.strictEqual(fixedPlotLayout.width, undefined, "ordinary UI2 Plotly outputs remove producer width");
 assert.strictEqual(fixedPlotLayout.height, undefined, "ordinary UI2 Plotly outputs remove producer height");
+const residualSummaryLayout = hooks.plotlyLayoutForOutput(
+  { dataset: {} },
+  {
+    meta: { ui2_fit_summary_annotation: 0 },
+    annotations: [{ text: "best reduced X2: 1.2" }],
+    yaxis: { domain: [0.36, 1.0] },
+    yaxis2: { domain: [0.0, 0.25] }
+  }
+);
+assert.strictEqual(residualSummaryLayout.annotations[0].xref, "paper", "UI2 anchors the fit summary to figure space");
+assert.strictEqual(residualSummaryLayout.annotations[0].y, 0.305, "UI2 centers the fit summary in the residual-panel gap");
+assert.strictEqual(residualSummaryLayout.annotations[0].showarrow, false, "UI2 renders the fit summary without an arrow");
 const centralizedPlotConfig = hooks.plotlyConfigForOutput({
   config: {
     responsive: false,

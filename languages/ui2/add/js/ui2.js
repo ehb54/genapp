@@ -8954,6 +8954,48 @@
     layout.font = Object.assign({}, defaults.font);
     layout.paper_bgcolor = defaults.paper_bgcolor;
     layout.plot_bgcolor = defaults.plot_bgcolor;
+    applyFitSummaryAnnotationPolicy(layout);
+    return layout;
+  }
+
+  function applyFitSummaryAnnotationPolicy(layout) {
+    const index = Number(layout?.meta?.ui2_fit_summary_annotation);
+    if (!Number.isInteger(index) || !Array.isArray(layout?.annotations) ||
+        !layout.annotations[index]) {
+      return layout;
+    }
+    const mainDomain = layout.yaxis?.domain;
+    const residualDomain = layout.yaxis2?.domain;
+    if (!Array.isArray(mainDomain) || !Array.isArray(residualDomain) ||
+        mainDomain.length !== 2 || residualDomain.length !== 2) {
+      return layout;
+    }
+    const gapStart = Number(residualDomain[1]);
+    const gapEnd = Number(mainDomain[0]);
+    if (!Number.isFinite(gapStart) || !Number.isFinite(gapEnd) ||
+        gapEnd <= gapStart) {
+      return layout;
+    }
+    const colors = plotlyThemeColors();
+    layout.annotations = layout.annotations.map((annotation, annotationIndex) => {
+      if (annotationIndex !== index) {
+        return annotation;
+      }
+      return Object.assign({}, annotation, {
+        xref: "paper",
+        yref: "paper",
+        x: 0.99,
+        y: (gapStart + gapEnd) / 2,
+        xanchor: "right",
+        yanchor: "middle",
+        align: "right",
+        showarrow: false,
+        bgcolor: colors.panel,
+        bordercolor: colors.border,
+        borderwidth: 1,
+        borderpad: 4,
+      });
+    });
     return layout;
   }
 

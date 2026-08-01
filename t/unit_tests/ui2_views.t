@@ -72,7 +72,7 @@ like( $ui2_js, qr/isReactWorkbenchView\(state\.view\) && renderReactWorkbench\(m
 like( $ui2_js, qr/function renderReactWorkbench\(module, fields\).*?createFieldGroup:.*?renderReactWorkbenchFieldGroup\(groupFields, role\).*?fieldGroupMounted:.*?scheduleReactWorkbenchSync\(\).*?submit:.*?submitModule\(form\)/s, 'scientific workbench bridge mounts native field groups and reuses canonical UI2 submission' );
 like( $ui2_js, qr/function renderReactWorkbenchFieldGroup\(groupFields, role\).*?planFields\(Array\.isArray\(groupFields\) \? groupFields : \[\]\).*?renderTableizedRepeater\(item, role\).*?renderField\(item\.field, role\)/s, 'React workbench field groups retain native repeater, matrix, and ordinary-field rendering' );
 like( $ui2_js, qr/function scheduleReactWorkbenchSync\(\).*?requestAnimationFrame.*?syncValues\(\)/s, 'React-mounted input groups receive one native dependency synchronization after mounting' );
-like( $ui2_js, qr/function resizeWorkbenchOutputs\(\).*?resizePlotlyOutputWhenVisible\(output\).*?resizeNglStage\(output\._ui2NglStage\).*?refreshNglOutputFrame\(output\)/s, 'workbench result groups resize existing Plotly and refresh active NGL frames' );
+like( $ui2_js, qr/function resizeWorkbenchOutputs\(\).*?resizePlotlyOutputWhenVisible\(output\).*?resizeNglOutputWhenVisible\(output\).*?refreshNglOutputFrame\(output\)/s, 'workbench result groups resize existing Plotly and refresh active NGL frames' );
 like( $ui2_js, qr/function resizeNglStage\(stage\).*?stage\.handleResize\?\.\(\).*?requestNglRender\(stage\)/s, 'workbench result groups resize NGL stages through the shared helper' );
 like( $ui2_js, qr/function plotlyLayoutForOutput\(output, sourceLayout\).*?delete layout\.width;.*?delete layout\.height;.*?layout\.margin = Object\.assign\(\{\}, defaults\.margin\);/s, 'workbench Plotly layouts remove producer dimensions and use shared margins' );
 like( $ui2_js, qr/function plotlyFitMode\(output\).*?closest\?\.\("\[data-plot-fit\]"\)/s, 'dynamic Plotly children inherit their workbench pane-fit setting' );
@@ -108,6 +108,7 @@ like( $ui2_react_js, qr/Expand workspace/, 'React bundle contains the view-drive
 like( $ui2_react_js, qr/Restore split view/, 'React bundle contains an explicit expanded-workspace restore control' );
 like( $ui2_react_source, qr/\{extraInputs\.length > 0.*?Additional inputs.*?\}\s*\{advancedSection/s, 'workbench places additional inputs before advanced input' );
 like( $ui2_react_source, qr/group\.fit === "pane" \|\| group\.fit === "wide"/, 'workbench fits wide Plotly groups to their allocated panel' );
+like( $ui2_react_source, qr/outputLayout=\{group\.layout \|\| ""\}/, 'workbench passes result-group layout metadata to native dynamic outputs' );
 like( $ui2_react_source, qr/view\.results\?\.groups \|\| view\.results\?\.tabs/, 'workbench keeps existing tab views compatible while accepting result groups' );
 like( $ui2_react_source, qr/group\.visibility !== "available".*?outputHasContent\(runtimeOutputs\[id\]\)/s, 'available result groups appear only when core publishes output availability' );
 unlike( $ui2_react_source, qr/outputHasRuntimeEvent\(id, runtime\)/, 'live job-event snapshots do not control result-pane membership' );
@@ -126,6 +127,7 @@ like( $ui2_css, qr/\.ui2-repeat-table td\s*\{\s*padding: 0 0\.35rem;\s*min-width
 like( $ui2_react_css, qr/\.ui2-workbench-result-card \.ui2-output-plotly\{[^}]*overflow:hidden/, 'workbench fitted Plotly output suppresses internal scrollbars' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded/, 'workbench expanded workspace styles are present' );
 like( $ui2_react_css, qr/grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,30rem\),1fr\)\)/, 'expanded workspace uses an open-ended result-group grid' );
+like( $ui2_react_css, qr/data-output-layout=gallery\].*?grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,28rem\),1fr\)\)/, 'gallery result groups place generated dynamic plots side by side when space permits' );
 like( $ui2_react_css, qr/\.ui2-workbench-result-card \.ui2-ngl-frame-scrubber/, 'React stylesheet owns the streamed-frame scrubber dimensions' );
 like( $ui2_js, qr/output\._ui2_ngl_scrubbing.*?pointerdown.*?pointerup/s, 'streamed-frame scrubber remains mounted while the user drags it' );
 unlike( $ui2_js, qr/function ngl_stream_telemetry_label\(output\).*?last_dropped_reason.*?parts\.push/s, 'stream telemetry does not expose internal dropped-frame reasons to users' );
@@ -428,6 +430,7 @@ like( $ui2_css, qr/\.ui2-output-plotly/, 'ui2 stylesheet includes a stable Plotl
 like( $ui2_css, qr/\.ui2-output-ngl\s*\{[^}]*white-space:\s*normal/s, 'ui2 stylesheet gives NGL outputs a non-text viewer container' );
 like( $ui2_css, qr/\.ui2-ngl-button\[aria-pressed="true"\]/, 'ui2 stylesheet makes active NGL layer buttons visible' );
 like( $ui2_css, qr/\.ui2-dynamic-output\s*\{[^}]*display:\s*grid/s, 'ui2 stylesheet stacks dynamic output instances' );
+like( $ui2_js, qr/function applyFitSummaryAnnotationPolicy\(layout\).*?ui2_fit_summary_annotation.*?xref: "paper"/s, 'UI2 owns placement of producer-identified fit summaries' );
 like( $ui2_css, qr/\.ui2-field\[hidden\],[\s\n]*\.ui2-dynamic-output-row\[hidden\]\s*\{[^}]*display:\s*none !important/s, 'ui2 stylesheet really hides inactive dynamic output rows' );
 like( $ui2_css, qr/\.ui2-output-rendered/, 'ui2 stylesheet distinguishes rendered runtime output from placeholders' );
 like( $ui2_css, qr/\.ui2-output-field/, 'ui2 stylesheet lets output rows use the full default width' );

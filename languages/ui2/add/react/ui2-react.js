@@ -10747,22 +10747,23 @@ function Hr({ create: e, release: t, mounted: n, className: r }) {
 		ref: i
 	});
 }
-function Ur({ fields: e, bridge: t, role: n = "input", fitPlot: r = !1 }) {
-	let i = e.map((e) => e.id || "").join("\0"), a = S.useMemo(() => e, [i]), o = S.useCallback(() => {
-		let e = t.createFieldGroup(a, n);
-		return r && (e.setAttribute("data-plot-fit", "pane"), (e.matches("[data-output-type=\"plotly\"]") ? e : e.querySelector("[data-output-type=\"plotly\"]"))?.setAttribute("data-plot-fit", "pane")), e;
+function Ur({ fields: e, bridge: t, role: n = "input", fitPlot: r = !1, outputLayout: i = "" }) {
+	let a = e.map((e) => e.id || "").join("\0"), o = S.useMemo(() => e, [a]), s = S.useCallback(() => {
+		let e = t.createFieldGroup(o, n);
+		return n === "output" && i && (e.dataset.outputLayout = i), r && (e.setAttribute("data-plot-fit", "pane"), (e.matches("[data-output-type=\"plotly\"]") ? e : e.querySelector("[data-output-type=\"plotly\"]"))?.setAttribute("data-plot-fit", "pane")), e;
 	}, [
 		t,
-		a,
+		o,
 		r,
+		i,
 		n
-	]), s = S.useCallback(() => {
+	]), c = S.useCallback(() => {
 		n === "input" && t.fieldGroupMounted();
 	}, [t, n]);
 	return /* @__PURE__ */ (0, I.jsx)(Hr, {
-		create: o,
+		create: s,
 		release: t.releaseField,
-		mounted: s,
+		mounted: c,
 		className: "ui2-workbench-field-group"
 	});
 }
@@ -11299,6 +11300,7 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 										bridge: r,
 										fields: t,
 										fitPlot: (e.fit === "pane" || e.fit === "wide") && t.some((e) => e.type === "plotly"),
+										outputLayout: e.layout || "",
 										role: "output"
 									})]
 								}, e.id);

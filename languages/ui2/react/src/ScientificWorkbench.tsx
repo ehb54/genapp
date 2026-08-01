@@ -25,13 +25,16 @@ function NativeHost({ create, release, mounted, className }: { create: () => HTM
   return <div className={className} ref={hostRef} />
 }
 
-function FieldGroup({ fields, bridge, role = "input", fitPlot = false }: { fields: Ui2Field[]; bridge: ScientificWorkbenchBridge; role?: "input" | "output"; fitPlot?: boolean }) {
+function FieldGroup({ fields, bridge, role = "input", fitPlot = false, outputLayout = "" }: { fields: Ui2Field[]; bridge: ScientificWorkbenchBridge; role?: "input" | "output"; fitPlot?: boolean; outputLayout?: string }) {
   // View JSON is decoded into new arrays on every parent render.  Keep the
   // native group mounted while its declared field membership is unchanged.
   const fieldIds = fields.map((field) => field.id || "").join("\u0000")
   const plannedFields = React.useMemo(() => fields, [fieldIds])
   const create = React.useCallback(() => {
     const node = bridge.createFieldGroup(plannedFields, role)
+    if (role === "output" && outputLayout) {
+      node.dataset.outputLayout = outputLayout
+    }
     if (fitPlot) {
       // Dynamic outputs create their Plotly child later.  Mark the native field
       // root too, so those children inherit the allocated MMC pane size.
@@ -42,7 +45,7 @@ function FieldGroup({ fields, bridge, role = "input", fitPlot = false }: { field
       plot?.setAttribute("data-plot-fit", "pane")
     }
     return node
-  }, [bridge, plannedFields, fitPlot, role])
+  }, [bridge, plannedFields, fitPlot, outputLayout, role])
   const mounted = React.useCallback(() => {
     if (role === "input") bridge.fieldGroupMounted()
   }, [bridge, role])
@@ -716,6 +719,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
                           bridge={bridge}
                           fields={groupFields}
                           fitPlot={(group.fit === "pane" || group.fit === "wide") && groupFields.some((field) => field.type === "plotly")}
+                          outputLayout={group.layout || ""}
                           role="output"
                         />
                       </TabsContent>

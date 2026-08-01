@@ -334,6 +334,17 @@
   overflow: hidden;
 }
 
+/* A view can request a gallery without teaching the native dynamic-output
+ * renderer anything module-specific.  Each generated Plotly child still
+ * inherits its UI2-owned responsive sizing and stacks when its pane narrows. */
+.ui2-workbench-field-group [data-output-layout="gallery"] .ui2-dynamic-output {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 28rem), 1fr));
+}
+
+.ui2-workbench-field-group [data-output-layout="gallery"] .ui2-dynamic-output-instance {
+  min-width: 0;
+}
+
 .ui2-workbench-react-workspace-expanded .ui2-workbench-result-card {
   min-height: auto;
 }
