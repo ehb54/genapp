@@ -8642,7 +8642,7 @@
           layout.uirevision = output.dataset.outputFieldId || "ui2-plot";
         }
         applyPlotlyTheme(layout);
-        const config = Object.assign({ responsive: true }, figure.config || {});
+        const config = plotlyConfigForOutput(figure);
         applyPlotlyModebarHooks(figure, config);
         return updateExisting
           ? window.Plotly.react(output, figure.data, layout, config)
@@ -8704,14 +8704,33 @@
   }
 
   function plotlyLayoutForOutput(output, sourceLayout) {
-    const layout = Object.assign(defaultPlotlyLayout(), sourceLayout || {});
-    layout.font = Object.assign(defaultPlotlyLayout().font, sourceLayout?.font || {});
-    if (plotlyFitMode(output) === "pane") {
-      layout.autosize = true;
-      delete layout.width;
-      delete layout.height;
-    }
+    const defaults = defaultPlotlyLayout();
+    const layout = Object.assign({}, defaults, sourceLayout || {});
+    // Geometry and theme are UI2 policy. Producers describe scientific
+    // content, but must not freeze a workbench pane or bring a second theme.
+    layout.autosize = true;
+    delete layout.width;
+    delete layout.height;
+    layout.margin = Object.assign({}, defaults.margin);
+    layout.font = Object.assign({}, defaults.font);
+    layout.paper_bgcolor = defaults.paper_bgcolor;
+    layout.plot_bgcolor = defaults.plot_bgcolor;
     return layout;
+  }
+
+  function plotlyConfigForOutput(figure) {
+    const editor = figure?.config?.genapp_chart_editor;
+    const config = {
+      responsive: true,
+      scrollZoom: true,
+      displaylogo: false,
+      modeBarButtonsToRemove: ["select2d", "lasso2d"]
+    };
+    // Availability is module metadata; the shared renderer owns the button.
+    if (editor?.enabled && editor.url) {
+      config.genapp_chart_editor = editor;
+    }
+    return config;
   }
 
   function plotlyFitMode(output) {
@@ -8818,7 +8837,7 @@
       layout.uirevision = output.dataset.outputFieldId || "ui2-plot";
     }
     applyPlotlyTheme(layout);
-    const config = Object.assign({ responsive: true }, figure.config || {});
+    const config = plotlyConfigForOutput(figure);
     applyPlotlyModebarHooks(figure, config);
     return window.Plotly.react(output, figure.data, layout, config);
   }
@@ -9962,6 +9981,7 @@
       rememberPlotlyAppend,
       refreshPlotlyOutputIfNeeded,
       plotlyLayoutForOutput,
+      plotlyConfigForOutput,
       plotlyThemeColors,
       repeatIsCondition,
       repeatConditionTokens,

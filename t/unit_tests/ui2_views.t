@@ -74,7 +74,7 @@ like( $ui2_js, qr/function renderReactWorkbenchFieldGroup\(groupFields, role\).*
 like( $ui2_js, qr/function scheduleReactWorkbenchSync\(\).*?requestAnimationFrame.*?syncValues\(\)/s, 'React-mounted input groups receive one native dependency synchronization after mounting' );
 like( $ui2_js, qr/function resizeWorkbenchOutputs\(\).*?resizePlotlyOutputWhenVisible\(output\).*?resizeNglStage\(output\._ui2NglStage\).*?refreshNglOutputFrame\(output\)/s, 'workbench result groups resize existing Plotly and refresh active NGL frames' );
 like( $ui2_js, qr/function resizeNglStage\(stage\).*?stage\.handleResize\?\.\(\).*?requestNglRender\(stage\)/s, 'workbench result groups resize NGL stages through the shared helper' );
-like( $ui2_js, qr/function plotlyLayoutForOutput\(output, sourceLayout\).*?plotlyFitMode\(output\) === "pane".*?delete layout\.width;.*?delete layout\.height;/s, 'workbench fitted Plotly layouts remove fixed producer dimensions' );
+like( $ui2_js, qr/function plotlyLayoutForOutput\(output, sourceLayout\).*?delete layout\.width;.*?delete layout\.height;.*?layout\.margin = Object\.assign\(\{\}, defaults\.margin\);/s, 'workbench Plotly layouts remove producer dimensions and use shared margins' );
 like( $ui2_js, qr/function plotlyFitMode\(output\).*?closest\?\.\("\[data-plot-fit\]"\)/s, 'dynamic Plotly children inherit their workbench pane-fit setting' );
 like( $ui2_js, qr/function observeFitPlotlyOutput\(output\).*?fittedAncestor.*?observer\.observe\(target\)/s, 'workbench fitted Plotly surfaces observe their stable pane container' );
 like( $ui2_js, qr/function releaseReactWorkbenchField\(fieldNode\).*?disconnectPlotlyOutputObserver.*?Plotly\.purge/s, 'workbench unmount cleans up Plotly resize observation and graph state' );

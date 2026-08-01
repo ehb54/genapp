@@ -1002,7 +1002,10 @@ const producerPlotLayout = {
   width: 1200,
   height: 760,
   title: "Monomer Monte Carlo Progress",
-  font: { size: 14 }
+  font: { size: 14 },
+  margin: { l: 3, r: 4, t: 5, b: 6 },
+  paper_bgcolor: "#ff0000",
+  plot_bgcolor: "#00ff00"
 };
 const fittedPlotLayout = hooks.plotlyLayoutForOutput(
   { dataset: { plotFit: "pane" } },
@@ -1011,6 +1014,10 @@ const fittedPlotLayout = hooks.plotlyLayoutForOutput(
 assert.strictEqual(fittedPlotLayout.width, undefined, "MMC fit-to-pane removes producer Plotly width from the client copy");
 assert.strictEqual(fittedPlotLayout.height, undefined, "MMC fit-to-pane removes producer Plotly height from the client copy");
 assert.strictEqual(fittedPlotLayout.autosize, true, "MMC fit-to-pane keeps Plotly autosizing enabled");
+assert.strictEqual(JSON.stringify(fittedPlotLayout.margin), JSON.stringify({ l: 72, r: 32, t: 72, b: 72 }), "UI2 owns fitted Plotly margins");
+assert.strictEqual(fittedPlotLayout.font.size, undefined, "UI2 does not inherit producer font sizing");
+assert.strictEqual(fittedPlotLayout.paper_bgcolor, "#1a201f", "UI2 owns fitted Plotly surface color");
+assert.strictEqual(fittedPlotLayout.plot_bgcolor, "#1a201f", "UI2 owns fitted Plotly plot color");
 assert.strictEqual(producerPlotLayout.width, 1200, "MMC fit-to-pane does not mutate the producer Plotly width");
 assert.strictEqual(producerPlotLayout.height, 760, "MMC fit-to-pane does not mutate the producer Plotly height");
 const inheritedFitHost = {
@@ -1026,8 +1033,21 @@ const fixedPlotLayout = hooks.plotlyLayoutForOutput(
   { dataset: {} },
   producerPlotLayout
 );
-assert.strictEqual(fixedPlotLayout.width, 1200, "ordinary UI2 Plotly outputs preserve producer width");
-assert.strictEqual(fixedPlotLayout.height, 760, "ordinary UI2 Plotly outputs preserve producer height");
+assert.strictEqual(fixedPlotLayout.width, undefined, "ordinary UI2 Plotly outputs remove producer width");
+assert.strictEqual(fixedPlotLayout.height, undefined, "ordinary UI2 Plotly outputs remove producer height");
+const centralizedPlotConfig = hooks.plotlyConfigForOutput({
+  config: {
+    responsive: false,
+    displaylogo: true,
+    modeBarButtonsToAdd: ["drawline"],
+    genapp_chart_editor: { enabled: true, url: "_cedit/_chart_edit.html" }
+  }
+});
+assert.strictEqual(centralizedPlotConfig.responsive, true, "UI2 owns Plotly responsive behavior");
+assert.strictEqual(centralizedPlotConfig.displaylogo, false, "UI2 owns Plotly branding behavior");
+assert.strictEqual(JSON.stringify(centralizedPlotConfig.modeBarButtonsToRemove), JSON.stringify(["select2d", "lasso2d"]), "UI2 owns the standard Plotly toolbar");
+assert.strictEqual(centralizedPlotConfig.modeBarButtonsToAdd, undefined, "UI2 ignores producer toolbar additions");
+assert.strictEqual(centralizedPlotConfig.genapp_chart_editor.enabled, true, "UI2 preserves explicit Chart Editor availability metadata");
 const multiAxisLayout = { xaxis4: {}, yaxis4: {} };
 hooks.applyPlotlyTheme(multiAxisLayout);
 assert.strictEqual(multiAxisLayout.xaxis4.gridcolor, "rgba(238, 244, 241, 0.12)", "UI2 themes fourth-and-later x axes");
