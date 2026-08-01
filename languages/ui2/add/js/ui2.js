@@ -3681,7 +3681,8 @@
   }
 
   function renderDynamicOutputGroup(field, type) {
-    const output = el("div", `${outputClassForType(type)} ui2-dynamic-output`, dynamicOutputPlaceholder(field));
+    const output = el("div", `${outputClassForType(type)} ui2-dynamic-output`);
+    output.append(el("div", "ui2-dynamic-output-placeholder", dynamicOutputPlaceholder(field)));
     output.dataset.outputFieldId = field.id || "";
     output.dataset.outputType = type;
     output.dataset.dynamicOutput = "true";
@@ -7495,21 +7496,23 @@
     const items = dynamicOutputItems(group, payload);
     if (!items.length) {
       group.querySelectorAll(".ui2-dynamic-output-instance").forEach((node) => node.remove());
+      group.querySelectorAll(".ui2-dynamic-output-placeholder").forEach((node) => node.remove());
       group.classList.remove("ui2-output-rendered");
       group.textContent = "";
       if (parentRow) {
         parentRow.hidden = true;
       }
-      group.textContent = dynamicOutputPlaceholder({
+      group.append(el("div", "ui2-dynamic-output-placeholder", dynamicOutputPlaceholder({
         label: group.dataset.dynamicLabel,
         id: group.dataset.outputFieldId
-      });
+      })));
       return;
     }
     if (parentRow) {
       parentRow.hidden = false;
     }
     group.classList.add("ui2-output-rendered");
+    group.querySelectorAll(".ui2-dynamic-output-placeholder").forEach((node) => node.remove());
     const existing = new Map();
     group.querySelectorAll(".ui2-dynamic-output-instance").forEach((instance) => {
       const output = instance.querySelector("[data-output-field-id]");
