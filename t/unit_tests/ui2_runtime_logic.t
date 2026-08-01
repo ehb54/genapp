@@ -1081,18 +1081,6 @@ const fixedPlotLayout = hooks.plotlyLayoutForOutput(
 );
 assert.strictEqual(fixedPlotLayout.width, undefined, "ordinary UI2 Plotly outputs remove producer width");
 assert.strictEqual(fixedPlotLayout.height, undefined, "ordinary UI2 Plotly outputs remove producer height");
-const residualSummaryLayout = hooks.plotlyLayoutForOutput(
-  { dataset: {} },
-  {
-    meta: { ui2_fit_summary_annotation: 0 },
-    annotations: [{ text: "best reduced X2: 1.2" }],
-    yaxis: { domain: [0.36, 1.0] },
-    yaxis2: { domain: [0.0, 0.25] }
-  }
-);
-assert.strictEqual(residualSummaryLayout.annotations[0].xref, "paper", "UI2 anchors the fit summary to figure space");
-assert.strictEqual(residualSummaryLayout.annotations[0].y, 0.305, "UI2 centers the fit summary in the residual-panel gap");
-assert.strictEqual(residualSummaryLayout.annotations[0].showarrow, false, "UI2 renders the fit summary without an arrow");
 const centralizedPlotConfig = hooks.plotlyConfigForOutput({
   config: {
     responsive: false,
@@ -1110,21 +1098,18 @@ const multiAxisLayout = { xaxis4: {}, yaxis4: {} };
 hooks.applyPlotlyTheme(multiAxisLayout);
 assert.strictEqual(multiAxisLayout.xaxis4.gridcolor, "rgba(238, 244, 241, 0.12)", "UI2 themes fourth-and-later x axes");
 assert.strictEqual(multiAxisLayout.yaxis4.gridcolor, "rgba(238, 244, 241, 0.12)", "UI2 themes fourth-and-later y axes");
-const scientificSeries = [
-  { name: "frame 00001", meta: { series_role: "ensemble_profile" }, x: [0.01], y: [1.0] },
-  { name: "frame 00001 residual", meta: { series_role: "ensemble_residual" }, x: [0.01], y: [0.2] },
-  { name: "all-frame mean", meta: { series_role: "ensemble_mean" }, x: [0.01], y: [1.1] },
-  { name: "experimental", meta: { series_role: "experimental" }, x: [0.01], y: [1.2] }
+const neutralSeries = [
+  { name: "sample 00001", meta: { series_role: "replicate" }, x: [0.01], y: [1.0] },
+  { name: "reference", meta: { series_role: "reference" }, x: [0.01], y: [1.1] }
 ];
-const renderedScientificSeries = hooks.plotlyDataForOutput(scientificSeries);
-assert.strictEqual(renderedScientificSeries[0].showlegend, false, "UI2 hides individual ensemble profiles from the legend");
-assert.strictEqual(renderedScientificSeries[0].line.color, "rgba(113, 196, 232, 0.42)", "UI2 gives ensemble profiles a consistent translucent light-blue line");
-assert.strictEqual(renderedScientificSeries[1].showlegend, false, "UI2 hides individual ensemble residuals from the legend");
-assert.strictEqual(renderedScientificSeries[1].line.color, "rgba(113, 196, 232, 0.42)", "UI2 gives ensemble residuals the same translucent light-blue line");
-assert.strictEqual(renderedScientificSeries[2].showlegend, undefined, "UI2 leaves the average visible to the Plotly legend");
-assert.strictEqual(renderedScientificSeries[3].showlegend, undefined, "UI2 leaves experimental data visible to the Plotly legend");
-assert.strictEqual(scientificSeries[0].showlegend, undefined, "UI2 does not mutate the saved scientific figure");
-assert.strictEqual(scientificSeries[0].line, undefined, "UI2 does not put visual policy into the saved scientific figure");
+const neutralPresentationHost = { dataset: { plotPresentation: JSON.stringify({ traceRoles: { replicate: { token: "context", legend: "hide" } } }) } };
+const neutralPresentationOutput = { closest: () => neutralPresentationHost };
+const renderedNeutralSeries = hooks.plotlyDataForOutput(neutralPresentationOutput, neutralSeries);
+assert.strictEqual(renderedNeutralSeries[0].showlegend, false, "an opted-in neutral context series can be hidden from the legend");
+assert.strictEqual(renderedNeutralSeries[0].line.color, "rgba(113, 196, 232, 0.42)", "UI2 gives a neutral context token a consistent translucent line");
+assert.strictEqual(renderedNeutralSeries[1].showlegend, undefined, "a role without view presentation remains unchanged");
+assert.strictEqual(neutralSeries[0].showlegend, undefined, "UI2 does not mutate the saved scientific figure");
+assert.strictEqual(neutralSeries[0].line, undefined, "UI2 does not put visual policy into the saved scientific figure");
 assert.strictEqual(
   hooks.normalizeJobEvent({ version: 2, run: "run-1", module: "mmc", sequence: 1, channel: "log", topic: "run" }),
   null,
@@ -2702,21 +2687,17 @@ assert.strictEqual(finalNativeLogTopic.complete, true, "React marks the final te
 
 const normalized_frame = hooks.normalize_ngl_coordinate_frame({
   atom_count: 2,
-  frame: 7,
-  accepted_structure: 7,
-  frame_index: 3,
-  milestone_percent: 30,
-  milestone_trial: 600,
-  trial: 612,
+  frame_id: "snapshot-7",
+  label: "Snapshot 7",
+  metadata: { source_step: 612 },
   coordinate_dtype: "float32",
   coordinates: [0, 1, 2, 3, 4, 5]
 });
 assert.strictEqual(Object.prototype.toString.call(normalized_frame.coordinates), "[object Float32Array]", "structure frames normalize to compact Float32 coordinates");
 assert.strictEqual(normalized_frame.atom_count, 2, "structure frames retain their topology atom count");
-assert.strictEqual(normalized_frame.accepted_structure, 7, "structure frames retain their accepted structure index");
-assert.strictEqual(normalized_frame.frame_index, 3, "structure frames retain their streamed milestone frame index");
-assert.strictEqual(normalized_frame.milestone_percent, 30, "structure frames retain their milestone percent");
-assert.strictEqual(normalized_frame.milestone_trial, 600, "structure frames retain their milestone trial");
+assert.strictEqual(normalized_frame.frame_id, "snapshot-7", "structure frames retain a generic frame identity");
+assert.strictEqual(normalized_frame.label, "Snapshot 7", "structure frames retain an optional generic label");
+assert.strictEqual(normalized_frame.metadata.source_step, 612, "structure frames retain opaque producer metadata");
 assert.strictEqual(normalized_frame.coordinate_dtype, "float32", "structure frames retain their coordinate dtype marker");
 assert.strictEqual(normalized_frame.byte_length, 24, "structure frame telemetry records retained byte size");
 assert.strictEqual(
@@ -2739,9 +2720,7 @@ const frameOutput = {
 assert.strictEqual(hooks.apply_ngl_coordinate_frame(frameOutput, normalized_frame), true, "NGL accepts an in-place coordinate frame");
 assert.deepStrictEqual(nglCalls[0], ["coordinates", [0, 1, 2, 3, 4, 5]], "NGL updates the existing Structure coordinates");
 assert.strictEqual(JSON.stringify(nglCalls[1]), JSON.stringify(["representations", { position: true }]), "NGL updates representation positions without rebuilding topology");
-assert.strictEqual(frameOutput.dataset.ngl_frame, "7", "NGL records the displayed frame without recentering");
-assert.strictEqual(frameOutput.dataset.ngl_frame_index, "3", "NGL records the displayed streamed-frame index");
-assert.strictEqual(frameOutput.dataset.ngl_milestone_percent, "30", "NGL records the displayed milestone percent");
+assert.strictEqual(frameOutput.dataset.ngl_frame_id, "snapshot-7", "NGL records the displayed generic frame identity without recentering");
 assert.strictEqual(frameOutput.dataset.ngl_frames_rendered, "1", "NGL telemetry records applied coordinate frames");
 assert.strictEqual(frameOutput.dataset.ngl_coordinate_dtype, "float32", "NGL telemetry records the active coordinate dtype");
 assert.strictEqual(hooks.ngl_active_frame_index(frameOutput, [normalized_frame]), 0, "NGL active-frame selection follows the last successfully rendered frame");
@@ -2783,13 +2762,13 @@ assert.strictEqual(failed_render_output.dataset.ngl_last_dropped_reason, "render
 const scheduledFrames = [];
 window.requestAnimationFrame = (callback) => { scheduledFrames.push(callback); };
 nglCalls.length = 0;
-hooks.queue_ngl_coordinate_frame(frameOutput, { atom_count: 2, frame: 8, coordinates: [1, 1, 1, 2, 2, 2] });
-hooks.queue_ngl_coordinate_frame(frameOutput, { atom_count: 2, frame: 9, coordinates: [3, 3, 3, 4, 4, 4] });
+hooks.queue_ngl_coordinate_frame(frameOutput, { atom_count: 2, frame_id: "snapshot-8", coordinates: [1, 1, 1, 2, 2, 2] });
+hooks.queue_ngl_coordinate_frame(frameOutput, { atom_count: 2, frame_id: "snapshot-9", coordinates: [3, 3, 3, 4, 4, 4] });
 assert.strictEqual(frameOutput._ui2_ngl_frames.length, 2, "queued structure frames are retained for post-run NGL review");
 assert.strictEqual(scheduledFrames.length, 1, "rapid structure frames coalesce into one animation-frame render");
 scheduledFrames.shift()();
 assert.deepStrictEqual(nglCalls[0], ["coordinates", [3, 3, 3, 4, 4, 4]], "coalescing renders the newest available structure frame");
-assert.strictEqual(frameOutput.dataset.ngl_frame, "9", "coalescing skips stale previews but retains the latest frame identity");
+assert.strictEqual(frameOutput.dataset.ngl_frame_id, "snapshot-9", "coalescing skips stale previews but retains the latest frame identity");
 assert.strictEqual(frameOutput.dataset.ngl_frames_received, "2", "NGL telemetry records queued coordinate frames");
 assert.strictEqual(frameOutput.dataset.ngl_frames_retained, "2", "NGL telemetry records retained coordinate frames");
 assert.strictEqual(frameOutput.dataset.ngl_frames_dropped, "1", "NGL telemetry records a coalesced stale render");
@@ -2799,15 +2778,15 @@ assert.strictEqual(hooks.refreshNglOutputFrame(frameOutput), true, "NGL refresh 
 assert.deepStrictEqual(nglCalls[refreshStart], ["coordinates", [3, 3, 3, 4, 4, 4]], "NGL resize refresh keeps the visible structure on the active streamed frame");
 frameOutput._ui2_ngl_frame_history_max_bytes = 24 * 10;
 for (let i = 0; i < 12; i += 1) {
-  hooks.queue_ngl_coordinate_frame(frameOutput, { atom_count: 2, frame: 20 + i, coordinates: [i, i, i, i + 1, i + 1, i + 1] });
+  hooks.queue_ngl_coordinate_frame(frameOutput, { atom_count: 2, frame_id: "snapshot-" + (20 + i), coordinates: [i, i, i, i + 1, i + 1, i + 1] });
 }
 assert.strictEqual(frameOutput._ui2_ngl_frames.length, 10, "UI2 trims retained NGL frames when the memory budget is reached");
 assert.strictEqual(frameOutput.dataset.ngl_frames_dropped, "16", "NGL telemetry records stale-render and memory-budget frame drops");
 assert.strictEqual(frameOutput.dataset.ngl_bytes_retained, String(24 * 10), "NGL telemetry records retained coordinate bytes");
 frameOutput._ui2_ngl_frame_history_max_bytes = 1;
-hooks.queue_ngl_coordinate_frame(frameOutput, { atom_count: 2, frame: 99, coordinates: [9, 9, 9, 10, 10, 10] });
+hooks.queue_ngl_coordinate_frame(frameOutput, { atom_count: 2, frame_id: "snapshot-99", coordinates: [9, 9, 9, 10, 10, 10] });
 assert.strictEqual(frameOutput._ui2_ngl_frames.length, 1, "UI2 keeps only the latest NGL frame when the memory budget is tiny");
-assert.strictEqual(frameOutput._ui2_ngl_frames[0].frame, 99, "UI2 does not preserve the old ten-frame experiment under memory pressure");
+assert.strictEqual(frameOutput._ui2_ngl_frames[0].frame_id, "snapshot-99", "UI2 does not preserve the old ten-frame experiment under memory pressure");
 
 const scenario = {
   id: "basic_documented_example",

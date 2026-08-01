@@ -28,10 +28,10 @@ Add optional `viewer` metadata to the NGL output field in a module JSON file:
 
 The configuration is intentionally declarative.  It sets module defaults and
 records what a module can provide; it does not cause a density map or trajectory
-to be created.  A driver may provide a top-level `viewer` object in its output
-payload to refine these settings for one job.  Runtime settings override module
-settings, with `capabilities` and `display` merged by key.  When no camera is
-declared, the viewer defaults to orthographic projection.
+to be created.  It is the only source of viewer presentation policy. Drivers
+must not send runtime `viewer` overrides, camera choices, browser-control
+settings, or other renderer policy. When no camera is declared, the viewer
+defaults to orthographic projection.
 
 `additional_components` is reserved for a future multi-molecule input contract.
 The current widget supports one primary structure component plus zero or more
@@ -99,6 +99,16 @@ the bundled NGL parser and include DCD, TRR, XTC, and NCTRAJ/NetCDF.  The
 topology and trajectory must have matching atom order and atom count.  The
 widget exposes frame selection and playback once NGL reports the trajectory
 frame count.
+
+## Live coordinate frames
+
+For a capability-gated live preview, send a topology/snapshot once and then
+append coordinates with the same declared NGL output id. A frame contains
+`atom_count`, `coordinates`, and optional generic `frame_id`, `label`,
+`timestamp`, and opaque `metadata`. UI2 validates topology compatibility and
+retains bounded history automatically when the completed snapshot uses the same
+topology. Drivers must not request browser retention or encode module-specific
+viewer behavior such as accepted/trial/milestone fields.
 
 ## Selection expressions
 

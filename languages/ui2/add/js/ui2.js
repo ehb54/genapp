@@ -1,17 +1,7 @@
 (function () {
   "use strict";
 
-  const fallbackModules = [
-    "data_interpolation",
-    "align",
-    "extract_utilities",
-    "merge_utilities",
-    "multi_component_analysis",
-    "sas_assembly",
-    "shared",
-    "plain",
-    "typed"
-  ];
+  const fallbackModules = ["shared", "plain", "typed"];
 
   const appMap = window.GenAppUi2App || { menus: [] };
   const candidateModules = moduleCandidates();
@@ -7652,8 +7642,7 @@
     const output = el("div", outputClassForType(type));
     output.dataset.outputFieldId = field.id || "";
     output.dataset.outputType = type;
-    // `viewer` is presentation-only field metadata.  A driver may refine it
-    // per job with a top-level `viewer` object in the NGL payload.
+    // Viewer settings are presentation-only field metadata.
     output._ui2NglViewerConfig = cloneUi2Value(field.viewer || {});
     const savedFrames = state.nglFrameHistories[field.id || ""];
     if (Array.isArray(savedFrames) && savedFrames.length) {
@@ -7697,6 +7686,7 @@
     output._ui2NglSpecs = null;
     output._ui2NglTrajectory = null;
     output._ui2NglAxesRep = null;
+    output._ui2NglTopologyLoadName = null;
     output._ui2NglNeedsVisibleAutoView = false;
     output._ui2_ngl_density_payload = null;
     if (!options.preserveFrames) {
@@ -7729,7 +7719,6 @@
     const payload = parseNglPayload(value);
     const structurePayload = payload?.structure || payload;
     const densityPayload = payload?.density || null;
-    output._ui2NglViewerRuntimeConfig = cloneUi2Value(payload?.viewer || {});
     if (!structurePayload?.loadname) {
       renderTextOutput(output, value);
       return;
@@ -7742,9 +7731,11 @@
       renderTextOutput(output, value);
       return;
     }
-    const preserveLiveFrames = payload?.preserve_live_frames === true
+    const topologyLoadName = normalizeNglLoadName(structurePayload.loadname);
+    const preserveLiveFrames = output._ui2NglTopologyLoadName === topologyLoadName
       && Array.isArray(output._ui2_ngl_frames)
-      && output._ui2_ngl_frames.length;
+      && output._ui2_ngl_frames.length
+      && output._ui2NglComponent;
     if (preserveLiveFrames && output._ui2NglComponent) {
       output._ui2NglRenderRevision = (output._ui2NglRenderRevision || 0) + 1;
       if (densityPayload?.loadname) {
@@ -7773,12 +7764,13 @@
         }
         const stage = new window.NGL.Stage(plot.id, nglViewerStageParams(output));
         output._ui2NglStage = stage;
-        return stage.loadFile(normalizeNglLoadName(structurePayload.loadname), structurePayload.loadparams || {}).then((component) => {
+        return stage.loadFile(topologyLoadName, structurePayload.loadparams || {}).then((component) => {
           if (output._ui2NglRenderRevision !== renderRevision) {
             stage.dispose?.();
             return null;
           }
           output._ui2NglComponent = component;
+          output._ui2NglTopologyLoadName = topologyLoadName;
           output._ui2NglReps = {};
           const specs = nglRepresentationSpecs(structurePayload);
           specs.forEach((spec) => { spec.visible = spec.visible !== false; });
@@ -7892,10 +7884,9 @@
 
   function nglViewerConfig(output) {
     const base = output?._ui2NglViewerConfig || {};
-    const runtime = output?._ui2NglViewerRuntimeConfig || {};
-    return Object.assign({}, base, runtime, {
-      capabilities: Object.assign({}, base.capabilities || {}, runtime.capabilities || {}),
-      display: Object.assign({}, base.display || {}, runtime.display || {})
+    return Object.assign({}, base, {
+      capabilities: Object.assign({}, base.capabilities || {}),
+      display: Object.assign({}, base.display || {})
     });
   }
 
@@ -8370,23 +8361,16 @@
     if (!Number.isInteger(atom_count) || atom_count < 1 || coordinates.length !== atom_count * 3) {
       return null;
     }
+    const frame_id = stringValue(
+      payload?.frame_id ?? payload?.frameId ?? payload?.frame ??
+      payload?.frame_index ?? payload?.frameIndex
+    );
     return {
       coordinates,
       atom_count,
-      frame: Number.isInteger(Number(payload?.frame)) ? Number(payload.frame) : null,
-      accepted_structure: Number.isInteger(Number(payload?.accepted_structure ?? payload?.acceptedStructure))
-        ? Number(payload?.accepted_structure ?? payload?.acceptedStructure)
-        : null,
-      frame_index: Number.isInteger(Number(payload?.frame_index ?? payload?.frameIndex))
-        ? Number(payload?.frame_index ?? payload?.frameIndex)
-        : null,
-      milestone_percent: Number.isFinite(Number(payload?.milestone_percent ?? payload?.milestonePercent))
-        ? Number(payload?.milestone_percent ?? payload?.milestonePercent)
-        : null,
-      milestone_trial: Number.isInteger(Number(payload?.milestone_trial ?? payload?.milestoneTrial))
-        ? Number(payload?.milestone_trial ?? payload?.milestoneTrial)
-        : null,
-      trial: Number.isInteger(Number(payload?.trial)) ? Number(payload.trial) : null,
+      frame_id: frame_id || null,
+      label: stringValue(payload?.label ?? payload?.frame_label ?? payload?.frameLabel),
+      metadata: cloneUi2Value(payload?.metadata || {}),
       timestamp: stringValue(payload?.timestamp),
       coordinate_dtype: stringValue(payload?.coordinate_dtype || payload?.coordinateDtype || "float32") || "float32",
       byte_length: coordinates.byteLength,
@@ -8411,9 +8395,7 @@
       bytes_retained: 0,
       last_atom_count: null,
       last_coordinate_dtype: "",
-      last_frame_index: null,
-      last_accepted_structure: null,
-      last_trial: null,
+      last_frame_id: null,
       last_queue_age_ms: null,
       last_render_ms: null,
       last_dropped_reason: ""
@@ -8446,9 +8428,7 @@
     set_ngl_output_value(output, "ngl_frames_rendered", telemetry.rendered_frames);
     set_ngl_output_value(output, "ngl_bytes_retained", telemetry.bytes_retained);
     set_ngl_output_value(output, "ngl_coordinate_dtype", telemetry.last_coordinate_dtype);
-    set_ngl_output_value(output, "ngl_last_frame_index", telemetry.last_frame_index);
-    set_ngl_output_value(output, "ngl_last_accepted_structure", telemetry.last_accepted_structure);
-    set_ngl_output_value(output, "ngl_last_trial", telemetry.last_trial);
+    set_ngl_output_value(output, "ngl_last_frame_id", telemetry.last_frame_id);
     set_ngl_output_value(output, "ngl_last_queue_age_ms", telemetry.last_queue_age_ms);
     set_ngl_output_value(output, "ngl_last_render_ms", telemetry.last_render_ms);
     set_ngl_output_value(output, "ngl_last_dropped_reason", telemetry.last_dropped_reason);
@@ -8498,9 +8478,7 @@
       telemetry.received_frames += 1;
       telemetry.last_atom_count = frame.atom_count;
       telemetry.last_coordinate_dtype = frame.coordinate_dtype;
-      telemetry.last_frame_index = frame.frame_index;
-      telemetry.last_accepted_structure = frame.accepted_structure ?? frame.frame;
-      telemetry.last_trial = frame.trial;
+      telemetry.last_frame_id = frame.frame_id;
       if (output._ui2_ngl_pending_frame) {
         telemetry.dropped_frames += 1;
         telemetry.last_dropped_reason = "stale_frame";
@@ -8518,9 +8496,7 @@
   }
 
   function ngl_frame_label(frame, index) {
-    const prefix = frame?.frame_index != null ? `Frame ${frame.frame_index}` : `Frame ${index + 1}`;
-    const trial = frame?.trial == null ? "" : ` / trial ${frame.trial}`;
-    return `${prefix}${trial}`;
+    return frame?.label || (frame?.frame_id != null ? `Frame ${frame.frame_id}` : `Frame ${index + 1}`);
   }
 
   function latest_ngl_retained_frame(output) {
@@ -8758,9 +8734,7 @@
       render_ngl_frame_controls(output);
       return false;
     }
-    set_ngl_output_value(output, "ngl_frame", frame.frame);
-    set_ngl_output_value(output, "ngl_frame_index", frame.frame_index);
-    set_ngl_output_value(output, "ngl_milestone_percent", frame.milestone_percent);
+    set_ngl_output_value(output, "ngl_frame_id", frame.frame_id);
     output._ui2_ngl_last_frame = frame;
     if (telemetry) {
       if (!is_same_active_frame) {
@@ -8768,9 +8742,7 @@
       }
       telemetry.last_atom_count = frame.atom_count;
       telemetry.last_coordinate_dtype = frame.coordinate_dtype;
-      telemetry.last_frame_index = frame.frame_index;
-      telemetry.last_accepted_structure = frame.accepted_structure ?? frame.frame;
-      telemetry.last_trial = frame.trial;
+      telemetry.last_frame_id = frame.frame_id;
       telemetry.last_queue_age_ms = Math.max(0, started_at_ms - Number(frame.received_at_ms || started_at_ms));
       telemetry.last_render_ms = Math.max(0, ui2_now_ms() - started_at_ms);
       sync_ngl_stream_telemetry(output);
@@ -8899,7 +8871,7 @@
         applyPlotlyTheme(layout);
         const config = plotlyConfigForOutput(figure);
         applyPlotlyModebarHooks(figure, config);
-        const data = plotlyDataForOutput(figure.data);
+        const data = plotlyDataForOutput(output, figure.data);
         return updateExisting
           ? window.Plotly.react(output, data, layout, config)
           : window.Plotly.newPlot(output, data, layout, config);
@@ -8971,48 +8943,6 @@
     layout.font = Object.assign({}, defaults.font);
     layout.paper_bgcolor = defaults.paper_bgcolor;
     layout.plot_bgcolor = defaults.plot_bgcolor;
-    applyFitSummaryAnnotationPolicy(layout);
-    return layout;
-  }
-
-  function applyFitSummaryAnnotationPolicy(layout) {
-    const index = Number(layout?.meta?.ui2_fit_summary_annotation);
-    if (!Number.isInteger(index) || !Array.isArray(layout?.annotations) ||
-        !layout.annotations[index]) {
-      return layout;
-    }
-    const mainDomain = layout.yaxis?.domain;
-    const residualDomain = layout.yaxis2?.domain;
-    if (!Array.isArray(mainDomain) || !Array.isArray(residualDomain) ||
-        mainDomain.length !== 2 || residualDomain.length !== 2) {
-      return layout;
-    }
-    const gapStart = Number(residualDomain[1]);
-    const gapEnd = Number(mainDomain[0]);
-    if (!Number.isFinite(gapStart) || !Number.isFinite(gapEnd) ||
-        gapEnd <= gapStart) {
-      return layout;
-    }
-    const colors = plotlyThemeColors();
-    layout.annotations = layout.annotations.map((annotation, annotationIndex) => {
-      if (annotationIndex !== index) {
-        return annotation;
-      }
-      return Object.assign({}, annotation, {
-        xref: "paper",
-        yref: "paper",
-        x: 0.99,
-        y: (gapStart + gapEnd) / 2,
-        xanchor: "right",
-        yanchor: "middle",
-        align: "right",
-        showarrow: false,
-        bgcolor: colors.panel,
-        bordercolor: colors.border,
-        borderwidth: 1,
-        borderpad: 4,
-      });
-    });
     return layout;
   }
 
@@ -9137,26 +9067,43 @@
     applyPlotlyTheme(layout);
     const config = plotlyConfigForOutput(figure);
     applyPlotlyModebarHooks(figure, config);
-    return window.Plotly.react(output, plotlyDataForOutput(figure.data), layout, config);
+    return window.Plotly.react(output, plotlyDataForOutput(output, figure.data), layout, config);
   }
 
-  function plotlyDataForOutput(data) {
+  function plotPresentationForOutput(output) {
+    const raw = output?.closest?.("[data-plot-presentation]")?.dataset?.plotPresentation;
+    if (!raw) {
+      return {};
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (_error) {
+      return {};
+    }
+  }
+
+  function plotlyDataForOutput(output, data) {
     if (!Array.isArray(data)) {
       return [];
     }
+    const traceRoles = plotPresentationForOutput(output).traceRoles || {};
     return data.map((trace) => {
       const role = trace?.meta?.series_role;
-      if (role !== "ensemble_profile" && role !== "ensemble_residual") {
+      const policy = role ? traceRoles[role] : null;
+      if (!policy || typeof policy !== "object") {
         return trace;
       }
-      // Series roles express scientific identity. UI2 owns the corresponding
-      // visual treatment so producers do not encode a renderer policy.
-      return Object.assign({}, trace, {
-        line: Object.assign({}, trace.line || {}, {
+      const styled = Object.assign({}, trace);
+      if (policy.token === "context") {
+        styled.line = Object.assign({}, trace.line || {}, {
           color: "rgba(113, 196, 232, 0.42)"
-        }),
-        showlegend: false
-      });
+        });
+      }
+      if (policy.legend === "hide") {
+        styled.showlegend = false;
+      }
+      return styled;
     });
   }
 

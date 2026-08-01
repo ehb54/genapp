@@ -25,15 +25,19 @@ function NativeHost({ create, release, mounted, className }: { create: () => HTM
   return <div className={className} ref={hostRef} />
 }
 
-function FieldGroup({ fields, bridge, role = "input", fitPlot = false, outputLayout = "" }: { fields: Ui2Field[]; bridge: ScientificWorkbenchBridge; role?: "input" | "output"; fitPlot?: boolean; outputLayout?: string }) {
+function FieldGroup({ fields, bridge, role = "input", fitPlot = false, outputLayout = "", plotPresentation }: { fields: Ui2Field[]; bridge: ScientificWorkbenchBridge; role?: "input" | "output"; fitPlot?: boolean; outputLayout?: string; plotPresentation?: WorkbenchResultGroup["plotPresentation"] }) {
   // View JSON is decoded into new arrays on every parent render.  Keep the
   // native group mounted while its declared field membership is unchanged.
   const fieldIds = fields.map((field) => field.id || "").join("\u0000")
   const plannedFields = React.useMemo(() => fields, [fieldIds])
+  const plotPresentationKey = JSON.stringify(plotPresentation || {})
   const create = React.useCallback(() => {
     const node = bridge.createFieldGroup(plannedFields, role)
     if (role === "output" && outputLayout) {
       node.dataset.outputLayout = outputLayout
+    }
+    if (role === "output" && plotPresentationKey !== "{}") {
+      node.dataset.plotPresentation = plotPresentationKey
     }
     if (fitPlot) {
       // Dynamic outputs create their Plotly child later.  Mark the native field
@@ -45,7 +49,7 @@ function FieldGroup({ fields, bridge, role = "input", fitPlot = false, outputLay
       plot?.setAttribute("data-plot-fit", "pane")
     }
     return node
-  }, [bridge, plannedFields, fitPlot, outputLayout, role])
+  }, [bridge, plannedFields, fitPlot, outputLayout, plotPresentationKey, role])
   const mounted = React.useCallback(() => {
     if (role === "input") bridge.fieldGroupMounted()
   }, [bridge, role])
@@ -524,7 +528,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
       <header className="ui2-workbench-heading">
         <div>
           <span className="ui2-workbench-kicker"><FlaskConical aria-hidden="true" size={16} /> {view.heading?.kicker || "Scientific workbench"}</span>
-          <h2>{module.label || "Monomer Monte Carlo"}</h2>
+          <h2>{module.label || "Scientific workbench"}</h2>
           {view.heading?.description && <p>{view.heading.description}</p>}
         </div>
       </header>
@@ -720,6 +724,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
                           fields={groupFields}
                           fitPlot={(group.fit === "pane" || group.fit === "wide") && groupFields.some((field) => field.type === "plotly")}
                           outputLayout={group.layout || ""}
+                          plotPresentation={group.plotPresentation}
                           role="output"
                         />
                       </TabsContent>

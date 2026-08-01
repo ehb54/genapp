@@ -230,11 +230,11 @@ like( $ui2_js, qr/const number = el\("input", "ui2-ngl-density-input"\);\s+numbe
 like( $ui2_js, qr/const opacityNumber = el\("input", "ui2-ngl-density-input"\);\s+opacityNumber\.type = "text";\s+opacityNumber\.inputMode = "decimal";/s, 'density opacity display control does not participate in native number validation' );
 like( $ui2_js, qr/const activeSurface = output\?\._ui2NglDensitySurface;\s+if \(typeof activeSurface\?\.setParameters === "function"\) \{\s+activeSurface\.setParameters\(\{ isolevel: clamped, isolevelType: "value" \}\);/s, 'density contour updates the current NGL surface rather than a captured stale surface' );
 like( $ui2_js, qr/const activeSurface = output\?\._ui2NglDensitySurface;\s+if \(typeof activeSurface\?\.setParameters === "function"\) \{\s+activeSurface\.setParameters\(\{ opacity: clamped \}\);/s, 'density opacity updates the current NGL surface rather than a captured stale surface' );
-like( $ui2_js, qr/preserve_live_frames === true.*?render_ngl_frame_controls\(output\)/s, 'the final MMC structure snapshot can retain streamed-frame controls' );
+like( $ui2_js, qr/output\._ui2NglTopologyLoadName === topologyLoadName.*?render_ngl_frame_controls\(output\)/s, 'a compatible final topology retains generic streamed-frame controls' );
 like( $ui2_js, qr/function renderNglOutputShell\(field, type\).*?_plot.*?_buttons/s, 'ui2 NGL outputs render the legacy plot and buttons shell' );
-like( $ui2_js, qr/function renderNglOutput\(output, value\).*?new window\.NGL\.Stage\(plot\.id, nglViewerStageParams\(output\)\).*?stage\.loadFile\(normalizeNglLoadName\(structurePayload\.loadname\), structurePayload\.loadparams/s, 'ui2 NGL outputs load rebased legacy NGL payloads into a configured stage' );
+like( $ui2_js, qr/function renderNglOutput\(output, value\).*?const topologyLoadName = normalizeNglLoadName\(structurePayload\.loadname\).*?new window\.NGL\.Stage\(plot\.id, nglViewerStageParams\(output\)\).*?stage\.loadFile\(topologyLoadName, structurePayload\.loadparams/s, 'ui2 NGL outputs load a normalized topology into a configured stage' );
 like( $ui2_js, qr/function renderNglOutput\(output, value\).*?renderRevision.*?_ui2NglRenderRevision.*?stage\.dispose/s, 'ui2 NGL discards stale asynchronous viewer loads when a newer snapshot arrives' );
-like( $ui2_js, qr/function nglViewerConfig\(output\).*?capabilities: Object\.assign.*?display: Object\.assign/s, 'ui2 merges module and runtime NGL viewer configuration' );
+like( $ui2_js, qr/function nglViewerConfig\(output\).*?capabilities: Object\.assign.*?display: Object\.assign/s, 'ui2 reads NGL viewer configuration from field metadata' );
 like( $ui2_js, qr/function nglViewerStageParams\(output\).*?const params = \{ cameraType: "orthographic" \};.*?params\.cameraType = display\.camera/s, 'ui2 NGL viewer defaults stage cameras to orthographic while preserving explicit camera configuration' );
 like( $ui2_js, qr/function renderNglSceneControls\(output, component\).*?Orthographic.*?Perspective.*?camera\.value = display\.camera === "perspective" \? "perspective" : "orthographic";.*?Background.*?Molecular axes/s, 'ui2 NGL viewer exposes camera, background, and axes controls with orthographic selected by default' );
 like( $ui2_js, qr/function renderNglLayerEditor\(output, component, specs\).*?Add layer.*?rebuildNglRepresentations/s, 'ui2 NGL viewer exposes editable representation layers' );
@@ -388,7 +388,7 @@ like( $ui2_js, qr/function stripUi2RuntimeStatus\(text\)/, 'ui2 runtime bridge s
 like( $ui2_js, qr/function isRuntimeDividerText\(text\)/, 'ui2 runtime bridge preserves repeated textarea divider lines' );
 like( $ui2_js, qr/output\.dataset\.runtimeText = merged/, 'ui2 runtime bridge keeps runtime text across later output redraws' );
 like( $ui2_js, qr/function renderPlotlyOutput\(output, value\)/, 'ui2 runtime bridge has a dedicated Plotly output renderer' );
-like( $ui2_js, qr/Plotly\.react\(output, plotlyDataForOutput\(figure\.data\), layout, config\)/, 'ui2 authoritative plot snapshots update the existing Plotly graph through UI2 presentation policy' );
+like( $ui2_js, qr/Plotly\.react\(output, plotlyDataForOutput\(output, figure\.data\), layout, config\)/, 'ui2 authoritative plot snapshots update the existing Plotly graph through UI2 presentation policy' );
 like( $ui2_js, qr/Plotly\.extendTraces\(output, \{ x, y \}, indices/, 'ui2 plot append events extend existing traces incrementally' );
 like( $ui2_js, qr/function applyPlotlyModebarHooks\(figure, config\)/, 'ui2 runtime bridge honors legacy Plotly Chart Editor config' );
 like( $ui2_js, qr/Edit in Chart Editor/, 'ui2 Plotly modebar exposes the Chart Editor action when configured' );
@@ -431,7 +431,10 @@ like( $ui2_css, qr/\.ui2-output-plotly/, 'ui2 stylesheet includes a stable Plotl
 like( $ui2_css, qr/\.ui2-output-ngl\s*\{[^}]*white-space:\s*normal/s, 'ui2 stylesheet gives NGL outputs a non-text viewer container' );
 like( $ui2_css, qr/\.ui2-ngl-button\[aria-pressed="true"\]/, 'ui2 stylesheet makes active NGL layer buttons visible' );
 like( $ui2_css, qr/\.ui2-dynamic-output\s*\{[^}]*display:\s*grid/s, 'ui2 stylesheet stacks dynamic output instances' );
-like( $ui2_js, qr/function applyFitSummaryAnnotationPolicy\(layout\).*?ui2_fit_summary_annotation.*?xref: "paper"/s, 'UI2 owns placement of producer-identified fit summaries' );
+like( $ui2_js, qr/function plotPresentationForOutput\(output\).*?data-plot-presentation.*?function plotlyDataForOutput\(output, data\).*?traceRoles/s, 'UI2 consumes generic view-declared plot presentation tokens without scientific role branches' );
+unlike( $ui2_js, qr/ensemble_profile|ensemble_residual|ui2_fit_summary_annotation/, 'UI2 core does not recognize a scientific module plot role or annotation directive' );
+unlike( $ui2_js, qr/preserve_live_frames|accepted_structure|milestone_percent|milestone_trial|_ui2NglViewerRuntimeConfig/, 'UI2 core does not recognize module-specific live-viewer lifecycle fields' );
+like( $ui2_js, qr/const preserveLiveFrames = output\._ui2NglTopologyLoadName === topologyLoadName.*?output\._ui2NglTopologyLoadName = topologyLoadName/s, 'live NGL-frame retention is a generic same-topology lifecycle rule' );
 like( $ui2_css, qr/\.ui2-field\[hidden\],[\s\n]*\.ui2-dynamic-output-row\[hidden\]\s*\{[^}]*display:\s*none !important/s, 'ui2 stylesheet really hides inactive dynamic output rows' );
 like( $ui2_css, qr/\.ui2-output-rendered/, 'ui2 stylesheet distinguishes rendered runtime output from placeholders' );
 like( $ui2_css, qr/\.ui2-output-field/, 'ui2 stylesheet lets output rows use the full default width' );

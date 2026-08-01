@@ -10747,23 +10747,24 @@ function Hr({ create: e, release: t, mounted: n, className: r }) {
 		ref: i
 	});
 }
-function Ur({ fields: e, bridge: t, role: n = "input", fitPlot: r = !1, outputLayout: i = "" }) {
-	let a = e.map((e) => e.id || "").join("\0"), o = S.useMemo(() => e, [a]), s = S.useCallback(() => {
-		let e = t.createFieldGroup(o, n);
-		return n === "output" && i && (e.dataset.outputLayout = i), r && (e.setAttribute("data-plot-fit", "pane"), (e.matches("[data-output-type=\"plotly\"]") ? e : e.querySelector("[data-output-type=\"plotly\"]"))?.setAttribute("data-plot-fit", "pane")), e;
+function Ur({ fields: e, bridge: t, role: n = "input", fitPlot: r = !1, outputLayout: i = "", plotPresentation: a }) {
+	let o = e.map((e) => e.id || "").join("\0"), s = S.useMemo(() => e, [o]), c = JSON.stringify(a || {}), l = S.useCallback(() => {
+		let e = t.createFieldGroup(s, n);
+		return n === "output" && i && (e.dataset.outputLayout = i), n === "output" && c !== "{}" && (e.dataset.plotPresentation = c), r && (e.setAttribute("data-plot-fit", "pane"), (e.matches("[data-output-type=\"plotly\"]") ? e : e.querySelector("[data-output-type=\"plotly\"]"))?.setAttribute("data-plot-fit", "pane")), e;
 	}, [
 		t,
-		o,
+		s,
 		r,
 		i,
+		c,
 		n
-	]), c = S.useCallback(() => {
+	]), u = S.useCallback(() => {
 		n === "input" && t.fieldGroupMounted();
 	}, [t, n]);
 	return /* @__PURE__ */ (0, I.jsx)(Hr, {
-		create: s,
+		create: l,
 		release: t.releaseField,
-		mounted: c,
+		mounted: u,
 		className: "ui2-workbench-field-group"
 	});
 }
@@ -11077,7 +11078,7 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						n.heading?.kicker || "Scientific workbench"
 					]
 				}),
-				/* @__PURE__ */ (0, I.jsx)("h2", { children: e.label || "Monomer Monte Carlo" }),
+				/* @__PURE__ */ (0, I.jsx)("h2", { children: e.label || "Scientific workbench" }),
 				n.heading?.description && /* @__PURE__ */ (0, I.jsx)("p", { children: n.heading.description })
 			] })
 		}), /* @__PURE__ */ (0, I.jsxs)("div", {
@@ -11301,6 +11302,7 @@ function ii({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 										fields: t,
 										fitPlot: (e.fit === "pane" || e.fit === "wide") && t.some((e) => e.type === "plotly"),
 										outputLayout: e.layout || "",
+										plotPresentation: e.plotPresentation,
 										role: "output"
 									})]
 								}, e.id);

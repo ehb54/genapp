@@ -88,6 +88,24 @@ shared driver/helper gap exists. Do not migrate another module group until the
 current reference module passes normal, expanded, completion, and reattach
 checks on the deployed server.
 
+## UI2 Core Extension Gate
+
+Read `doc/UI2-Core-Extension-Policy.md` before changing UI2 runtime, React
+workbench, generated UI2 assets, or their tests for an application module. An
+application task must begin with its view/module/driver boundary. It may change
+GenApp core only after producing the required neutral shared-gap reproduction,
+schema/contract, opted-in and non-opted-in tests, and explicit user approval.
+
+Never add module ids, output ids, SASSIE-specific scientific roles, or
+undeclared `ui2_*` producer keys to UI2 core. Keep series-role presentation
+mapping in application views; UI2 styles only documented generic presentation
+tokens. Keep NGL application display defaults in application metadata and do
+not make the renderer interpret trials, acceptance counts, or milestones.
+
+Do not create a permanent exception list or migration-status registry to bypass
+this gate. Existing debt must be removed before a zero-exception boundary check
+is enabled.
+
 ## GenApp Working Model
 
 GenApp is a generator for science gateway and application interfaces. An

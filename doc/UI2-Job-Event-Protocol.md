@@ -158,9 +158,9 @@ For the migration period, a legacy adapter emits the existing `_textarea`,
 events are additive and capability-gated. The React path never depends on the
 legacy adapter.
 
-## MMC Topics
+## Example Topics
 
-The first vertical slice uses:
+An early application uses:
 
 - `lifecycle/run`
 - `progress/run`
@@ -211,8 +211,9 @@ Coordinate append payloads use the declared structure output as their topic:
   "operation": "append",
   "payload": {
     "atomCount": 1000,
-    "frame": 17,
-    "trial": 50,
+    "frame_id": "17",
+    "label": "Snapshot 17",
+    "metadata": { "source_step": 50 },
     "coordinates": [0.0, 1.0, 2.0]
   }
 }
