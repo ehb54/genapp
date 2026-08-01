@@ -14,6 +14,7 @@
     </div>
     <div class="toolbar">
       <label class="file-button">Open structure<input id="structure-file" type="file" accept=".pdb,.ent,.cif,.mmcif,.sdf,.mol2,.pqr,.gro"></label>
+      <label class="file-button">Open trajectory<input id="trajectory-file" type="file" accept=".dcd,.trr,.xtc,.nctraj,.ncdf,.nc"></label>
       <label class="file-button">Open cube<input id="volume-file" type="file" accept=".cube,.cub"></label>
       <button id="demo-structure" type="button">Demo molecule</button>
       <button id="demo-volume" type="button">Demo cube</button>
@@ -52,10 +53,24 @@
 
       <section class="card">
         <div class="section-title">
+          <h2>File trajectory</h2>
+          <span id="file-trajectory-status" class="hint">Load a structure, then add a DCD/TRR/XTC file.</span>
+        </div>
+        <p class="hint">The trajectory must use the same atom order and count as the loaded structure.</p>
+        <div class="trajectory-controls">
+          <button id="file-trajectory-previous" type="button" disabled>Previous</button>
+          <button id="file-trajectory-play" type="button" disabled aria-pressed="false">Play</button>
+          <button id="file-trajectory-next" type="button" disabled>Next</button>
+          <label>Frame<input id="file-trajectory-frame" type="range" min="0" max="0" value="0" disabled></label>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
           <h2>Molecule layers</h2>
           <button id="add-layer" type="button" disabled>Add layer</button>
         </div>
-        <p class="hint">Selections use NGL syntax, for example <code>protein</code>, <code>:A</code>, <code>10-30</code>, <code>water</code>, or <code>ion</code>.</p>
+        <p class="hint">Selections use NGL syntax, for example <code>protein</code>, <code>:A</code>, <code>segname PROA</code>, <code>name CA</code>, <code>resid 10-30</code>, <code>beta &gt; 0</code>, or <code>backbone</code>.</p>
         <div id="molecule-layers" class="layer-list empty">Load a structure to add molecular layers.</div>
       </section>
 
@@ -164,24 +179,7 @@
     </article>
   </template>
 
-  <script>
-    (function () {
-      const ngl = document.createElement("script");
-      const loadViewer = function () {
-        const viewer = document.createElement("script");
-        viewer.src = "viewer.js";
-        document.body.appendChild(viewer);
-      };
-      // Generated UI2 pages expose NGL at ../../js/ngl.js.  The repository
-      // lab server exposes the source bundle at the fallback path.
-      ngl.src = "../../js/ngl.js";
-      ngl.onload = loadViewer;
-      ngl.onerror = function () {
-        ngl.onerror = null;
-        ngl.src = "../../languages/html5/add/js/ngl.js";
-      };
-      document.head.appendChild(ngl);
-    }());
-  </script>
+  <script src="../../js/ngl.js"></script>
+  <script src="viewer.js"></script>
 </body>
 </html>

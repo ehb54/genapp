@@ -7439,6 +7439,7 @@
     output._ui2NglDensitySpecs = null;
     output._ui2NglReps = null;
     output._ui2NglSpecs = null;
+    output._ui2NglTrajectory = null;
     output._ui2NglAxesRep = null;
     output._ui2_ngl_density_payload = null;
     if (!options.preserveFrames) {
@@ -7534,6 +7535,22 @@
           requestNglRender(stage);
           schedule_ngl_coordinate_frame(output);
           renderNglViewerControls(output, component, specs, layered);
+          const trajectoryPayload = structurePayload.trajectory || payload.trajectory;
+          if (trajectoryPayload?.loadname && typeof component.addTrajectory === "function") {
+            const trajectoryParams = Object.assign({}, trajectoryPayload.loadparams || {});
+            if (trajectoryPayload.loadparams?.ext) {
+              trajectoryParams.ext = trajectoryPayload.loadparams.ext;
+            }
+            try {
+              output._ui2NglTrajectory = component.addTrajectory(
+                normalizeNglLoadName(trajectoryPayload.loadname),
+                trajectoryParams
+              );
+              renderNglTrajectoryControls(output, output._ui2NglTrajectory);
+            } catch (error) {
+              renderNglTrajectoryError(output, error);
+            }
+          }
           if (densityPayload?.loadname) {
             return loadNglDensitySurface(output, densityPayload);
           }
@@ -7550,6 +7567,62 @@
           message.textContent = `Could not render structure output: ${error.message}`;
         }
       });
+  }
+
+  function renderNglTrajectoryError(output, error) {
+    const buttons = output?.querySelector?.(".ui2-ngl-buttons");
+    if (!buttons) return;
+    buttons.querySelector(".ui2-ngl-trajectory-error")?.remove();
+    buttons.appendChild(el("span", "ui2-ngl-trajectory-error", `Trajectory could not be loaded: ${error.message}`));
+  }
+
+  function renderNglTrajectoryControls(output, trajectoryComponent) {
+    if (nglViewerConfig(output).capabilities?.frame_playback === false) return;
+    const buttons = output?.querySelector?.(".ui2-ngl-buttons");
+    const trajectory = trajectoryComponent?.trajectory || trajectoryComponent;
+    if (!buttons || !trajectory) return;
+    buttons.querySelector(".ui2-ngl-file-trajectory")?.remove();
+    const controls = el("details", "ui2-ngl-file-trajectory");
+    controls.appendChild(el("summary", null, "Trajectory"));
+    const row = el("div", "ui2-ngl-control-grid");
+    const status = el("span", "ui2-muted", "Loading trajectory frames…");
+    const slider = document.createElement("input");
+    slider.type = "range";
+    slider.min = "0";
+    slider.max = "0";
+    slider.value = "0";
+    slider.disabled = true;
+    slider.setAttribute("aria-label", "Trajectory frame");
+    const frameLabel = el("span", "ui2-muted", "Frame —");
+    const play = el("button", "ui2-button ui2-button-quiet", "Play");
+    play.type = "button";
+    play.disabled = true;
+    const update = () => {
+      const count = Number(trajectory.frameCount ?? trajectory._frameCount ?? 0);
+      const current = Number(trajectory.currentFrame ?? trajectory._currentFrame ?? 0);
+      if (count > 0) {
+        slider.disabled = false;
+        slider.max = String(Math.max(0, count - 1));
+        slider.value = String(Math.max(0, Math.min(count - 1, current)));
+        play.disabled = !trajectory.player;
+        status.textContent = `${count} frame${count === 1 ? "" : "s"}`;
+        frameLabel.textContent = `Frame ${Math.max(1, current + 1)} / ${count}`;
+      }
+    };
+    slider.addEventListener("input", () => trajectory.setFrame?.(Number(slider.value)));
+    play.addEventListener("click", () => {
+      const player = trajectory.player;
+      if (!player) return;
+      player.toggle?.();
+      play.textContent = player.isRunning ? "Pause" : "Play";
+      play.setAttribute("aria-pressed", player.isRunning ? "true" : "false");
+    });
+    trajectory.signals?.countChanged?.add(update);
+    trajectory.signals?.frameChanged?.add(update);
+    row.append(status, frameLabel, slider, play);
+    controls.appendChild(row);
+    buttons.appendChild(controls);
+    update();
   }
 
   function renderNglDensityUpdate(output, payload) {
@@ -8857,7 +8930,7 @@
         });
       });
     }
-    ["xaxis", "yaxis", "xaxis2", "yaxis2", "xaxis3", "yaxis3"].forEach((axisName) => {
+    Object.keys(layout || {}).filter((axisName) => /^(xaxis|yaxis)\d*$/.test(axisName)).forEach((axisName) => {
       if (!layout[axisName]) {
         return;
       }

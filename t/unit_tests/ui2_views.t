@@ -237,6 +237,9 @@ like( $ui2_js, qr/function renderNglSceneControls\(output, component\).*?Orthogr
 like( $ui2_js, qr/function renderNglLayerEditor\(output, component, specs\).*?Add layer.*?rebuildNglRepresentations/s, 'ui2 NGL viewer exposes editable representation layers' );
 like( $ui2_js, qr/function nglDensitySurfaceSpecs\(payload\).*?payload\?\.surfaces.*?function renderNglDensitySurfaceList/s, 'ui2 NGL viewer supports multiple editable volume surfaces' );
 like( $ui2_js, qr/function startNglFramePlayback\(output\).*?window\.setTimeout/s, 'ui2 NGL viewer can play retained streamed frames' );
+like( $ui2_js, qr/structurePayload\.trajectory \|\| payload\.trajectory.*?component\.addTrajectory/s, 'ui2 NGL viewer attaches a file trajectory to the loaded structure' );
+like( $ui2_js, qr/function renderNglTrajectoryControls\(output, trajectoryComponent\).*?Trajectory frame.*?trajectory\.setFrame/s, 'ui2 NGL viewer exposes file trajectory frame controls' );
+like( $ui2_js, qr/function renderNglTrajectoryError\(output, error\).*?Trajectory could not be loaded/s, 'ui2 NGL viewer reports file trajectory load errors' );
 like( $ui2_js, qr/function normalizeNglLoadName\(loadname\).*?value\.startsWith\("results\/"\).*?`\.\.\/\$\{value\}`/s, 'ui2 NGL renderer rebases legacy result-relative paths from the ui2 directory' );
 like( $ui2_js, qr/function ensureNglLoaded\(\).*?loadScript\("\.\.\/js\/ngl\.js"\)/s, 'ui2 NGL renderer reuses the generated legacy NGL bundle' );
 like( $ui2_js, qr/const NGL_REPRESENTATION_TYPES = \[[\s\S]*"backbone"[\s\S]*"ball\+stick"[\s\S]*"cartoon"[\s\S]*"tube"[\s\S]*\]/, 'ui2 NGL renderer uses the legacy representation button list' );

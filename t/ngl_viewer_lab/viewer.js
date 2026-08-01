@@ -8,6 +8,7 @@
     structureName: "",
     volume: null,
     axes: null,
+    fileTrajectory: null,
     moleculeLayers: [],
     volumeLayers: [],
     trajectory: { frames: [], cursor: 0, timer: null }
@@ -15,6 +16,7 @@
 
   const elements = {
     structureFile: document.getElementById("structure-file"),
+    trajectoryFile: document.getElementById("trajectory-file"),
     volumeFile: document.getElementById("volume-file"),
     moleculeLayers: document.getElementById("molecule-layers"),
     volumeLayers: document.getElementById("volume-layers"),
@@ -41,8 +43,67 @@
     trajectoryPlay: document.getElementById("trajectory-play"),
     trajectoryNext: document.getElementById("trajectory-next"),
     trajectoryFrame: document.getElementById("trajectory-frame"),
-    trajectorySpeed: document.getElementById("trajectory-speed")
+    trajectorySpeed: document.getElementById("trajectory-speed"),
+    fileTrajectoryStatus: document.getElementById("file-trajectory-status"),
+    fileTrajectoryPrevious: document.getElementById("file-trajectory-previous"),
+    fileTrajectoryPlay: document.getElementById("file-trajectory-play"),
+    fileTrajectoryNext: document.getElementById("file-trajectory-next"),
+    fileTrajectoryFrame: document.getElementById("file-trajectory-frame")
   };
+
+  function updateFileTrajectoryControls() {
+    const trajectory = state.fileTrajectory?.trajectory || state.fileTrajectory;
+    const count = Number(trajectory?.frameCount ?? trajectory?._frameCount ?? 0);
+    const current = Number(trajectory?.currentFrame ?? trajectory?._currentFrame ?? 0);
+    const enabled = Boolean(trajectory) && count > 0;
+    [elements.fileTrajectoryPrevious, elements.fileTrajectoryPlay, elements.fileTrajectoryNext, elements.fileTrajectoryFrame].forEach((control) => { control.disabled = !enabled; });
+    elements.fileTrajectoryFrame.max = String(Math.max(0, count - 1));
+    elements.fileTrajectoryFrame.value = String(Math.max(0, Math.min(Math.max(0, count - 1), current)));
+    elements.fileTrajectoryStatus.textContent = enabled
+      ? `${count} frame${count === 1 ? "" : "s"}; frame ${current + 1}.`
+      : "Load a structure, then add a DCD/TRR/XTC file.";
+  }
+
+  function setFileTrajectoryFrame(index) {
+    const trajectory = state.fileTrajectory?.trajectory || state.fileTrajectory;
+    if (!trajectory?.setFrame) return;
+    trajectory.setFrame(Number(index));
+    updateFileTrajectoryControls();
+  }
+
+  function toggleFileTrajectoryPlayback() {
+    const trajectory = state.fileTrajectory?.trajectory || state.fileTrajectory;
+    const player = trajectory?.player;
+    if (!player) return;
+    player.toggle?.();
+    elements.fileTrajectoryPlay.textContent = player.isRunning ? "Pause" : "Play";
+    elements.fileTrajectoryPlay.setAttribute("aria-pressed", player.isRunning ? "true" : "false");
+  }
+
+  async function loadTrajectory(source, displayName) {
+    if (!state.structure) {
+      setStatus("Load a structure before loading a trajectory.", true);
+      return;
+    }
+    const name = displayName || source.name || "trajectory";
+    setStatus(`Loading trajectory ${name}…`);
+    try {
+      if (state.fileTrajectory?.dispose) state.fileTrajectory.dispose();
+      state.fileTrajectory = state.structure.addTrajectory(source, { ext: extension(name), defaultMode: "loop" });
+      state.fileTrajectoryName = name;
+      const trajectory = state.fileTrajectory.trajectory || state.fileTrajectory;
+      trajectory.signals?.countChanged?.add(updateFileTrajectoryControls);
+      trajectory.signals?.frameChanged?.add(updateFileTrajectoryControls);
+      updateFileTrajectoryControls();
+      updatePayload();
+      setStatus(`Loaded trajectory ${name}.`);
+    } catch (err) {
+      state.fileTrajectory = null;
+      state.fileTrajectoryName = "";
+      updateFileTrajectoryControls();
+      setStatus(`Could not load ${name}: ${err.message}`, true);
+    }
+  }
 
   function stopTrajectory() {
     if (state.trajectory.timer) window.clearTimeout(state.trajectory.timer);
@@ -229,6 +290,8 @@
     const name = displayName || source.name;
     setStatus(`Loading structure ${name}…`);
     if (state.structure) stage.removeComponent(state.structure);
+    state.fileTrajectory = null;
+    state.fileTrajectoryName = "";
     state.axes = null;
     clearTrajectory();
     state.moleculeLayers = [];
@@ -467,9 +530,15 @@
       representationParams: first.params,
       representations: representations.map(({ visible, ...rep }) => rep)
     }, null, 2);
+    if (state.fileTrajectoryName) {
+      const payload = JSON.parse(elements.payload.value);
+      payload.trajectory = { loadname: state.fileTrajectoryName, loadparams: { ext: extension(state.fileTrajectoryName) } };
+      elements.payload.value = JSON.stringify(payload, null, 2);
+    }
   }
 
   elements.structureFile.addEventListener("change", (event) => event.target.files[0] && loadStructure(event.target.files[0]));
+  elements.trajectoryFile.addEventListener("change", (event) => event.target.files[0] && loadTrajectory(event.target.files[0]));
   elements.volumeFile.addEventListener("change", (event) => event.target.files[0] && loadVolume(event.target.files[0]));
   document.getElementById("demo-structure").addEventListener("click", () => loadStructure("fixtures/demo.pdb", "demo.pdb"));
   document.getElementById("demo-volume").addEventListener("click", () => loadVolume("fixtures/demo.cube", "demo.cube"));
@@ -498,14 +567,21 @@
   elements.trajectoryNext.addEventListener("click", () => showTrajectoryFrame(state.trajectory.cursor + 1));
   elements.trajectoryFrame.addEventListener("input", () => showTrajectoryFrame(Number(elements.trajectoryFrame.value) - 1));
   elements.trajectoryPlay.addEventListener("click", () => state.trajectory.timer ? stopTrajectory() : playTrajectory());
+  elements.fileTrajectoryPrevious.addEventListener("click", () => setFileTrajectoryFrame(Number(elements.fileTrajectoryFrame.value) - 1));
+  elements.fileTrajectoryNext.addEventListener("click", () => setFileTrajectoryFrame(Number(elements.fileTrajectoryFrame.value) + 1));
+  elements.fileTrajectoryFrame.addEventListener("input", () => setFileTrajectoryFrame(elements.fileTrajectoryFrame.value));
+  elements.fileTrajectoryPlay.addEventListener("click", toggleFileTrajectoryPlayback);
   document.getElementById("clear-all").addEventListener("click", function () {
     stage.removeAllComponents();
     state.structure = null;
     state.volume = null;
     state.axes = null;
+    state.fileTrajectory = null;
+    state.fileTrajectoryName = "";
     state.moleculeLayers = [];
     state.volumeLayers = [];
     clearTrajectory();
+    updateFileTrajectoryControls();
     elements.addLayer.disabled = true;
     elements.addSurface.disabled = true;
     elements.moleculeLayers.textContent = "";

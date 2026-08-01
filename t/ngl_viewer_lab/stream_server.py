@@ -122,6 +122,9 @@ class StreamHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
         params = parse_qs(parsed.query)
+        if parsed.path == "/js/ngl.js":
+            self.path = "/languages/html5/add/js/ngl.js"
+            return super().do_GET()
         if parsed.path == "/stream/pdb":
             atoms = bounded_int(params.get("atoms"), 6730, 1, 250000)
             self.write_bytes(pdb_text(atoms).encode("utf-8"), "chemical/x-pdb")

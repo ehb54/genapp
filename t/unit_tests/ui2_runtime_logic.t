@@ -1028,6 +1028,10 @@ const fixedPlotLayout = hooks.plotlyLayoutForOutput(
 );
 assert.strictEqual(fixedPlotLayout.width, 1200, "ordinary UI2 Plotly outputs preserve producer width");
 assert.strictEqual(fixedPlotLayout.height, 760, "ordinary UI2 Plotly outputs preserve producer height");
+const multiAxisLayout = { xaxis4: {}, yaxis4: {} };
+hooks.applyPlotlyTheme(multiAxisLayout);
+assert.strictEqual(multiAxisLayout.xaxis4.gridcolor, "rgba(238, 244, 241, 0.12)", "UI2 themes fourth-and-later x axes");
+assert.strictEqual(multiAxisLayout.yaxis4.gridcolor, "rgba(238, 244, 241, 0.12)", "UI2 themes fourth-and-later y axes");
 assert.strictEqual(
   hooks.normalizeJobEvent({ version: 2, run: "run-1", module: "mmc", sequence: 1, channel: "log", topic: "run" }),
   null,

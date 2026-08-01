@@ -79,6 +79,43 @@ Place a density payload alongside the structure payload:
 The older single `density.surface` form is still supported.  Each surface has
 its own on/off switch, isolevel, colour, and opacity control.
 
+## File-backed trajectories
+
+A structure payload may attach a coordinate trajectory to the same structure:
+
+```json
+{
+  "loadname": "results/reference.pdb",
+  "loadparams": { "ext": "pdb" },
+  "trajectory": {
+    "loadname": "results/accepted.dcd",
+    "loadparams": { "ext": "dcd" }
+  }
+}
+```
+
+The topology is loaded first and the trajectory is attached with NGL's
+`StructureComponent.addTrajectory` API.  Supported trajectory formats depend on
+the bundled NGL parser and include DCD, TRR, XTC, and NCTRAJ/NetCDF.  The
+topology and trajectory must have matching atom order and atom count.  The
+widget exposes frame selection and playback once NGL reports the trajectory
+frame count.  The existing `preserve_live_frames` streaming contract remains
+separate and is still useful for frames produced during a running calculation.
+
+## Selection expressions
+
+Representation layer selections are passed directly to NGL's selection parser.
+In addition to common protein/residue selections, the layer editor accepts
+expressions using atom and trajectory metadata such as:
+
+`name CA`, `index 0-20`, `resid 10-30`, `segname SYSTEM`, `beta > 0`,
+`backbone`, and `charge > 0`.
+
+Use `and`, `or`, and `not` to combine terms, for example
+`segname PROA and backbone` or `name CA and resid 10-40`.  A module can provide
+these as `sele` values in its `representations` payload, while users can edit
+them in the viewer's layer editor.
+
 ## Streaming and retained trajectory
 
 The widget accepts the existing coordinate-frame event format: topology is

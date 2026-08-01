@@ -2028,6 +2028,30 @@ code {
   background: var(--ui2-panel-soft);
 }
 
+.ui2-ngl-file-trajectory {
+  flex-basis: 100%;
+  border: 1px solid var(--ui2-border);
+  border-radius: 4px;
+  padding: 0.45rem 0.55rem;
+  background: var(--ui2-panel-soft);
+}
+
+.ui2-ngl-file-trajectory summary {
+  cursor: pointer;
+  color: var(--ui2-text);
+  font-weight: 600;
+}
+
+.ui2-ngl-file-trajectory input[type="range"] {
+  min-width: 8rem;
+}
+
+.ui2-ngl-trajectory-error {
+  flex-basis: 100%;
+  color: var(--ui2-danger, #c94a4a);
+  font-size: 0.82rem;
+}
+
 .ui2-ngl-scene-controls summary,
 .ui2-ngl-layer-editor summary,
 .ui2-ngl-density-surface-list summary {
