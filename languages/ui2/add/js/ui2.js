@@ -6696,7 +6696,6 @@
     if (!inputs || typeof inputs !== "object") {
       return;
     }
-    restoreServerSelections(inputs);
     const entries = Object.entries(inputs).filter(([id]) => id && !id.startsWith("_"));
     const dependencyIds = new Set([
       ...conditionalRepeatDependencyIds(document.getElementById("ui2-form")),
@@ -6722,6 +6721,10 @@
     if (options.clearMissing) {
       clearMissingInputValues(new Set(entries.map(([id]) => id)));
     }
+    // Repeat controllers may create the file controls needed for a restored
+    // server selection.  Apply the encoded selection after all saved values
+    // have rebuilt those rows so it wins over the decoded backend path.
+    restoreServerSelections(inputs);
     syncValues();
     if (options.reselectLocalFiles) {
       setFileReselectionWarnings(unrecoverableSavedLocalFiles(inputs));
@@ -6812,7 +6815,7 @@
       }
       const displayValues = valueList(inputs[`_html_${altId}`] ?? inputs[`_html_${id}_altval`]);
       encodedPaths.forEach((encodedPath, index) => {
-        const repeatIndex = encodedPaths.length > 1 ? index : null;
+        const repeatIndex = serverSelectionRepeatIndex(field, encodedPaths, index);
         restoreServerSelection(id, encodedPath, stringValue(displayValues[index] ?? displayValues[0]), repeatIndex);
       });
       restored.add(id);
@@ -6833,7 +6836,7 @@
       }
       const displayValues = valueList(inputs[`_html_${key}`]);
       encodedPaths.forEach((encodedPath, index) => {
-        const repeatIndex = encodedPaths.length > 1 ? index : null;
+        const repeatIndex = serverSelectionRepeatIndex(moduleFieldById(id), encodedPaths, index);
         restoreServerSelection(id, encodedPath, stringValue(displayValues[index] ?? displayValues[0]), repeatIndex);
       });
     });
@@ -6850,9 +6853,20 @@
       }
       const encodedPaths = valueList(inputs[id]).map(stringValue).filter(Boolean);
       encodedPaths.forEach((encodedPath, index) => {
-        restoreServerSelection(id, encodedPath, "", encodedPaths.length > 1 ? index : null);
+        restoreServerSelection(
+          id,
+          encodedPath,
+          "",
+          serverSelectionRepeatIndex(field, encodedPaths, index));
       });
     });
+  }
+
+  function serverSelectionRepeatIndex(field, encodedPaths, index) {
+    if (repeatControllerId(field?.repeat || "")) {
+      return index;
+    }
+    return encodedPaths.length > 1 ? index : null;
   }
 
   function restoreServerSelection(id, encodedPath, displayHtml, repeatIndex) {

@@ -2324,6 +2324,43 @@ assert.strictEqual(
   "UI2 reattach restores the second repeated server-file payload"
 );
 
+const singleRepeatedReplayControl = {
+  type: "text",
+  value: "",
+  dataset: { fieldId: "experimental_data_file_array", repeatTableIndex: "0" },
+  closest(selector) {
+    return selector === "#ui2-form" ? {} : null;
+  },
+  dispatchEvent(event) {
+    this.lastEvent = event.type;
+  }
+};
+document.querySelectorAll = (selector) => (
+  selector === "[data-field-id=\\\"experimental_data_file_array\\\"]" ? [singleRepeatedReplayControl] : []
+);
+hooks.state.module = {
+  fields: [
+    { id: "experimental_number_contrast_points", type: "integer", repeater: "true", tableize: "true" },
+    { id: "experimental_data_file_array", type: "lrfile", repeat: "experimental_number_contrast_points" }
+  ]
+};
+hooks.state.serverSelections = {};
+hooks.applyInputPayload({
+  _selaltval_experimental_data_file_array: "experimental_data_file_array_altval",
+  experimental_data_file_array_altval: [serverRepeatOne],
+  _html_experimental_data_file_array_altval: "<i>Server</i>: sans_data.sub"
+});
+assert.strictEqual(
+  singleRepeatedReplayControl.value,
+  "sans_data.sub",
+  "UI2 reattach restores a single repeated server-file label"
+);
+assert.strictEqual(
+  hooks.state.serverSelections["experimental_data_file_array:0"].encodedPath,
+  serverRepeatOne,
+  "UI2 reattach keeps a single repeated server-file selection in row zero"
+);
+
 hooks.state.values = { component_count: 3, note: "hook note" };
 hooks.state.session = { logon: "Joseph", project: "hook_project" };
 hooks.state.serverSelections = {};
