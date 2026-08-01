@@ -1,0 +1,5 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use JSON qw(encode_json);
+print encode_json({ interpolated_file => 'interpolated.dat', lineplot => { items => [ { value => 1 } ] } });

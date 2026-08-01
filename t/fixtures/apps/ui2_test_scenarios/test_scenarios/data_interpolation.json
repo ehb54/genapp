@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "module_id": "data_interpolation",
+  "scenarios": [
+    {
+      "id": "basic_documented_example",
+      "label": "Basic documented example",
+      "provenance": ["legacy_docs"],
+      "maturity": "draft",
+      "inputs": { "run_name": "interpolation_example", "mode": "automatic" },
+      "verification": {
+        "schema_version": 1,
+        "checks": [
+          { "id": "completed", "kind": "job_status", "equals": "complete" },
+          { "id": "interpolated_file", "kind": "output_present", "output_id": "interpolated_file" },
+          { "id": "lineplot", "kind": "output_nonempty", "output_id": "lineplot" }
+        ]
+      }
+    },
+    {
+      "id": "manual_mode",
+      "label": "Manual mode",
+      "provenance": ["gui_mimic"],
+      "maturity": "candidate",
+      "inputs": { "run_name": "manual_interpolation", "mode": "manual" }
+    },
+    {
+      "id": "advanced_branch",
+      "label": "Advanced branch",
+      "provenance": ["developer"],
+      "maturity": "draft",
+      "inputs": { "run_name": "advanced_interpolation", "mode": "automatic", "advanced": true }
+    }
+  ]
+}

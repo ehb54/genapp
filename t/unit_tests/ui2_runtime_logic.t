@@ -2698,6 +2698,43 @@ frameOutput._ui2_ngl_frame_history_max_bytes = 1;
 hooks.queue_ngl_coordinate_frame(frameOutput, { atom_count: 2, frame: 99, coordinates: [9, 9, 9, 10, 10, 10] });
 assert.strictEqual(frameOutput._ui2_ngl_frames.length, 1, "UI2 keeps only the latest NGL frame when the memory budget is tiny");
 assert.strictEqual(frameOutput._ui2_ngl_frames[0].frame, 99, "UI2 does not preserve the old ten-frame experiment under memory pressure");
+
+const scenario = {
+  id: "basic_documented_example",
+  verification: {
+    schema_version: 1,
+    checks: [
+      { id: "completed", kind: "job_status", equals: "complete" },
+      { id: "report", kind: "output_present", output_id: "interpolated_file" },
+      { id: "plot", kind: "output_nonempty", output_id: "lineplot" }
+    ]
+  }
+};
+assert.strictEqual(
+  hooks.validTestScenarioCatalog({ schema_version: 1, module_id: "data_interpolation", scenarios: [{ ...scenario, label: "Basic", inputs: { run_name: "example" } }] }, "data_interpolation"),
+  true,
+  "UI2 accepts a declarative scenario catalog with allowed verification checks"
+);
+assert.strictEqual(
+  hooks.validTestScenarioCatalog({ schema_version: 1, module_id: "data_interpolation", scenarios: [{ ...scenario, id: "bad id", label: "Bad", inputs: {} }] }, "data_interpolation"),
+  false,
+  "UI2 rejects unsafe scenario identifiers"
+);
+assert.strictEqual(
+  hooks.evaluateTestScenarioVerification(scenario, "running", { interpolated_file: "result" }).state,
+  "running",
+  "verification remains running until a terminal result is durable"
+);
+assert.strictEqual(
+  hooks.evaluateTestScenarioVerification(scenario, "complete", { interpolated_file: "result", lineplot: { items: [{ value: 1 }] } }).state,
+  "passed",
+  "verification passes from durable final output values"
+);
+assert.strictEqual(
+  hooks.evaluateTestScenarioVerification(scenario, "complete", { interpolated_file: "result", lineplot: { items: [] } }).state,
+  "failed",
+  "verification reports an absent required final output without fabricating data"
+);
 JS
 close $fh;
 

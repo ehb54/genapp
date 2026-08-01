@@ -1,0 +1,8 @@
+{
+  "header": "UI2 Test Scenario Fixture",
+  "menu": [{
+    "id": "data",
+    "label": "Data",
+    "modules": [{ "id": "data_interpolation", "label": "Data Interpolation" }]
+  }]
+}

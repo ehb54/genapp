@@ -2177,6 +2177,37 @@ code {
   padding: 1rem;
 }
 
+.ui2-test-scenarios {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0.85rem 0;
+  padding: 0.75rem;
+  border: 1px solid var(--ui2-border);
+  border-radius: 8px;
+  background: var(--ui2-panel);
+}
+
+.ui2-test-scenarios h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.ui2-test-scenarios select,
+.ui2-workbench-test-scenarios select {
+  min-width: 15rem;
+  max-width: 100%;
+}
+
+.ui2-test-scenario-verification {
+  margin: 0.6rem 0 0;
+  font-weight: 600;
+}
+
+.ui2-test-scenario-passed { color: var(--ui2-success); }
+.ui2-test-scenario-failed { color: var(--ui2-danger); }
+.ui2-test-scenario-running { color: var(--ui2-warn); }
+
 .ui2-hidden {
   display: none !important;
 }

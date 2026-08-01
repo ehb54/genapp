@@ -107,6 +107,28 @@ export type SubmitResult = {
   error?: string
 }
 
+export type TestScenarioVerification = {
+  state: "not_run" | "running" | "passed" | "failed" | "unsupported" | string
+  checks: Array<{ id: string; passed?: boolean; unsupported?: boolean }>
+}
+
+export type TestScenario = {
+  id: string
+  label: string
+  provenance?: string[]
+  maturity?: string
+  inputs: Record<string, unknown>
+  verification?: { schema_version: number; checks: Array<Record<string, unknown>> }
+}
+
+export type TestScenarioSnapshot = {
+  available: boolean
+  loading: boolean
+  catalog: { scenarios?: TestScenario[] } | null
+  selectedId: string
+  verification: TestScenarioVerification
+}
+
 export type ScientificWorkbenchBridge = {
   createFieldGroup: (fields: Ui2Field[], role: "input" | "output") => HTMLElement
   releaseField: (field: HTMLElement) => void
@@ -123,6 +145,9 @@ export type ScientificWorkbenchBridge = {
   subscribeOutputs: (listener: () => void) => () => void
   runContextSnapshot: () => SubmittedRunContext
   subscribeRunContext: (listener: () => void) => () => void
+  testScenarioSnapshot: () => TestScenarioSnapshot
+  subscribeTestScenarios: (listener: () => void) => () => void
+  applyTestScenario: (id: string, form: HTMLFormElement) => SubmitResult
 }
 
 export type SubmittedRunContext = {

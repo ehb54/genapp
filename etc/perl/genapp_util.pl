@@ -812,6 +812,99 @@ sub module_override_file {
     return -e $override ? $override : undef;
 }
 
+sub check_test_scenario_catalogs {
+    return '' if !-d 'test_scenarios';
+
+    my $error = '';
+    my %allowed_provenance = map { $_ => 1 } qw(
+        current_docs legacy_docs gui_mimic test_sassie developer scientist
+    );
+    my %allowed_maturity = map { $_ => 1 } qw(
+        draft candidate verified_cli verified_ui release_ready deferred
+    );
+    my %allowed_check_kind = map { $_ => 1 } qw(
+        job_status output_present output_nonempty
+    );
+
+    foreach my $catalog_file ( glob 'test_scenarios/*.json' ) {
+        my $catalog = get_plain_json( $catalog_file, 'test scenario catalog' );
+        my $module_id = $$catalog{ 'module_id' } || '';
+        if ( $$catalog{ 'schema_version' } != 1 ||
+             $module_id !~ /^[A-Za-z0-9_-]+$/ ||
+             ref( $$catalog{ 'scenarios' } ) ne 'ARRAY' ) {
+            $error .= "$catalog_file has an invalid root shape\n";
+            next;
+        }
+        my $expected_name = $catalog_file;
+        $expected_name =~ s{^test_scenarios/}{};
+        $expected_name =~ s{\.json$}{};
+        $error .= "$catalog_file module_id '$module_id' must match filename '$expected_name'\n"
+            if $module_id ne $expected_name;
+
+        my $module_file = "modules/$module_id.json";
+        $module_file = "$gap/modules/$module_id.json" if !-e $module_file && -e "$gap/modules/$module_id.json";
+        if ( !-e $module_file ) {
+            $error .= "$catalog_file references missing module '$module_id'\n";
+            next;
+        }
+        my $module = get_file_json( $module_file );
+        my ( %input_ids, %output_ids );
+        foreach my $field ( @{ $$module{ 'fields' } || [] } ) {
+            next if !$$field{ 'id' };
+            if ( ( $$field{ 'role' } || '' ) eq 'output' ) {
+                $output_ids{ $$field{ 'id' } } = 1;
+            } else {
+                $input_ids{ $$field{ 'id' } } = 1;
+            }
+        }
+
+        my %seen;
+        foreach my $scenario ( @{ $$catalog{ 'scenarios' } } ) {
+            if ( ref( $scenario ) ne 'HASH' ||
+                 !$$scenario{ 'id' } || $$scenario{ 'id' } !~ /^[A-Za-z0-9_-]+$/ ||
+                 $seen{ $$scenario{ 'id' } }++ ||
+                 !defined $$scenario{ 'label' } ||
+                 ref( $$scenario{ 'inputs' } ) ne 'HASH' ||
+                 !keys %{ $$scenario{ 'inputs' } } ) {
+                $error .= "$catalog_file has an invalid scenario\n";
+                next;
+            }
+            foreach my $field_id ( keys %{ $$scenario{ 'inputs' } } ) {
+                $error .= "$catalog_file scenario '$$scenario{id}' references unknown input '$field_id'\n"
+                    if !$input_ids{ $field_id };
+            }
+            foreach my $source ( @{ $$scenario{ 'provenance' } || [] } ) {
+                $error .= "$catalog_file scenario '$$scenario{id}' has invalid provenance '$source'\n"
+                    if !$allowed_provenance{ $source };
+            }
+            $error .= "$catalog_file scenario '$$scenario{id}' has invalid maturity '$$scenario{maturity}'\n"
+                if defined $$scenario{ 'maturity' } && !$allowed_maturity{ $$scenario{ 'maturity' } };
+
+            next if !$$scenario{ 'verification' };
+            my $verification = $$scenario{ 'verification' };
+            if ( ref( $verification ) ne 'HASH' || $$verification{ 'schema_version' } != 1 ||
+                 ref( $$verification{ 'checks' } ) ne 'ARRAY' ) {
+                $error .= "$catalog_file scenario '$$scenario{id}' has an invalid verification block\n";
+                next;
+            }
+            foreach my $check ( @{ $$verification{ 'checks' } } ) {
+                if ( ref( $check ) ne 'HASH' || !$$check{ 'id' } || $$check{ 'id' } !~ /^[A-Za-z0-9_-]+$/ ||
+                     !$allowed_check_kind{ $$check{ 'kind' } } ) {
+                    $error .= "$catalog_file scenario '$$scenario{id}' has an invalid verification check\n";
+                    next;
+                }
+                if ( $$check{ 'kind' } eq 'job_status' ) {
+                    $error .= "$catalog_file scenario '$$scenario{id}' job_status check requires equals\n"
+                        if !defined $$check{ 'equals' };
+                } elsif ( !$$check{ 'output_id' } || !$output_ids{ $$check{ 'output_id' } } ) {
+                    $error .= "$catalog_file scenario '$$scenario{id}' references unknown output '$$check{output_id}'\n";
+                }
+            }
+        }
+    }
+    return $error;
+}
+
 sub get_optional_view_json {
     my ( $module_id, $l ) = @_;
 
@@ -1886,6 +1979,10 @@ sub check_files {
         }
     }
     
+
+# Validate optional UI2 test catalogs before returning from the normal GenApp
+# check path.  Catalogs are application data, but invalid ids must fail early.
+    $error .= check_test_scenario_catalogs();
 
 # ------------------------------------------------------------------
 

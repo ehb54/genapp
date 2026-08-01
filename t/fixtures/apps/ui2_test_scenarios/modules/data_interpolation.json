@@ -1,0 +1,12 @@
+{
+  "moduleid": "data_interpolation",
+  "label": "Data Interpolation",
+  "executable": "bin/data_interpolation",
+  "fields": [
+    { "id": "run_name", "label": "Run name", "type": "text", "default": "interpolation_example" },
+    { "id": "mode", "label": "Mode", "type": "select", "values": "Automatic~automatic~Manual~manual", "default": "automatic" },
+    { "id": "advanced", "label": "Advanced", "type": "checkbox", "default": false },
+    { "id": "interpolated_file", "label": "Interpolated file", "type": "text", "role": "output" },
+    { "id": "lineplot", "label": "Line plot", "type": "plotly", "role": "output" }
+  ]
+}

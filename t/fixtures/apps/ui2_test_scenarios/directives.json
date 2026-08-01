@@ -1,0 +1,6 @@
+{
+  "title": "UI2 Test Scenario Fixture",
+  "application": "ui2_test_scenarios",
+  "version": "0.01",
+  "languages": ["ui2"]
+}

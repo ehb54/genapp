@@ -309,11 +309,13 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
   const [inputEditOpen, setInputEditOpen] = React.useState(false)
   const [workspaceExpanded, setWorkspaceExpanded] = React.useState(false)
   const [runLogOpen, setRunLogOpen] = React.useState(Boolean(view.results?.runtimeLog?.defaultOpen))
+  const [scenarioChoice, setScenarioChoice] = React.useState("")
   const resultCardRef = React.useRef<HTMLElement>(null)
   const fieldsById = React.useMemo(() => new Map(fields.map((field) => [field.id, field])), [fields])
   const runtime = React.useSyncExternalStore(bridge.subscribeRuntime, bridge.runtimeSnapshot, bridge.runtimeSnapshot)
   const runtimeOutputs = React.useSyncExternalStore(bridge.subscribeOutputs, bridge.outputSnapshot, bridge.outputSnapshot)
   const submitted = React.useSyncExternalStore(bridge.subscribeRunContext, bridge.runContextSnapshot, bridge.runContextSnapshot)
+  const testScenarios = React.useSyncExternalStore(bridge.subscribeTestScenarios, bridge.testScenarioSnapshot, bridge.testScenarioSnapshot)
   const resultGroupValues = submitted?.values || liveValues
   const visibleResultGroups = React.useMemo(
     () => resultGroups.filter((group) => {
@@ -454,6 +456,17 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
     setWorkspaceExpanded(false)
   }
 
+  const loadTestScenario = (id: string) => {
+    const form = document.getElementById("ui2-form") as HTMLFormElement | null
+    if (!form || !id) return
+    const result = bridge.applyTestScenario(id, form)
+    if (result.ok) {
+      setLiveValues(result.values || bridge.syncValues())
+      setInputEditOpen(true)
+      setInputRailCollapsed(false)
+    }
+  }
+
   const toggleWorkspaceExpanded = () => {
     setWorkspaceExpanded((current) => {
       if (current) setInputRailCollapsed(false)
@@ -519,6 +532,37 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
             <SubmittedInputs fields={fields} summaryFieldIds={summaryFieldIds} onEdit={editInputs} onHide={() => setInputRailCollapsed(true)} restoreError={submitted.restoreError} restoreWarnings={submitted.restoreWarnings} uuid={submitted.uuid} values={submitted.values} />
           )}
           <div className="ui2-workbench-input-scroll" hidden={Boolean(submitted) && !inputEditOpen}>
+              {testScenarios.available && testScenarios.catalog?.scenarios && (
+                <Card className="ui2-workbench-test-scenarios">
+                  <CardHeader>
+                    <CardTitle>Test scenario</CardTitle>
+                    <CardDescription>Loads inputs only; review them before running.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <select aria-label="Test scenario" value={scenarioChoice} onChange={(event) => setScenarioChoice(event.target.value)}>
+                      <option value="">Select a documented or test case</option>
+                      {testScenarios.catalog.scenarios.map((scenario) => (
+                        <option key={scenario.id} value={scenario.id}>{scenario.label}</option>
+                      ))}
+                    </select>
+                    <Button disabled={!scenarioChoice} onClick={() => loadTestScenario(scenarioChoice)} type="button" variant="outline">
+                      Load scenario
+                    </Button>
+                    {testScenarios.selectedId && (
+                      <p className="ui2-help">
+                        {testScenarios.catalog.scenarios.find((scenario) => scenario.id === testScenarios.selectedId)?.maturity || "draft"}
+                        {" · "}
+                        {(testScenarios.catalog.scenarios.find((scenario) => scenario.id === testScenarios.selectedId)?.provenance || []).join(", ") || "source pending"}
+                      </p>
+                    )}
+                    {testScenarios.verification.state !== "not_run" && (
+                      <p className={`ui2-test-scenario-verification ui2-test-scenario-${testScenarios.verification.state}`}>
+                        Verification: {testScenarios.verification.state}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
               {inputSections.map((section) => renderInputSection(section))}
 
               {extraInputs.length > 0 && (
@@ -578,6 +622,25 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
                 Show submitted inputs
               </Button>
             </div>
+          )}
+
+          {testScenarios.selectedId && (
+            <Card className="ui2-workbench-test-scenarios">
+              <CardHeader>
+                <div>
+                  <CardTitle>Scenario verification</CardTitle>
+                  <CardDescription>Checks durable final outputs for the selected test scenario.</CardDescription>
+                </div>
+                <span className={`ui2-workbench-status-badge ui2-test-scenario-${testScenarios.verification.state}`}>
+                  {testScenarios.verification.state}
+                </span>
+              </CardHeader>
+              <CardContent>
+                {testScenarios.verification.checks.length > 0
+                  ? testScenarios.verification.checks.map((check) => <p key={check.id}>{check.id}: {check.passed ? "passed" : check.unsupported ? "unsupported" : "failed"}</p>)
+                  : <p>Verification will run after the job reaches a terminal state.</p>}
+              </CardContent>
+            </Card>
           )}
 
           {progressSection && (

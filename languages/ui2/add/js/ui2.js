@@ -51,6 +51,8 @@
   const AI_HELPER_SENSITIVE_FIELD_RE = /(?:password|passwd|passphrase|secret|token|apikey|api_key|auth|credential)/i;
   const AI_HELPER_OUTPUT_MAX_FIELDS = 6;
   const AI_HELPER_OUTPUT_MAX_CHARS = 400;
+  const TEST_SCENARIO_ENDPOINT = "ajax/ui2_test_scenarios.php";
+  const TEST_SCENARIO_CHECK_KINDS = new Set(["job_status", "output_present", "output_nonempty"]);
   const AI_HELPER_KATEX_CSS_URL = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css";
   const AI_HELPER_KATEX_SCRIPT_URL = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js";
   const requestedUi2Theme = params.get("ui2theme");
@@ -100,6 +102,14 @@
     submittedRunContext: null,
     workbenchRunContextListeners: new Set(),
     runtimeOutputListeners: new Set(),
+    testScenarioListeners: new Set(),
+    testScenarios: {
+      available: false,
+      loading: false,
+      catalog: null,
+      selectedId: "",
+      verification: { state: "not_run", checks: [] }
+    },
     runtimeOutputAvailability: {},
     pendingSwitch: "",
     viewReady: null,
@@ -882,6 +892,7 @@
       clearFileReselectionWarnings();
       setSubmittedRunContext(null);
       state.jobEvents.reset("", moduleId);
+      await loadTestScenarios(moduleId);
       beginViewReady();
       renderModule();
       await waitForViewReady();
@@ -906,6 +917,165 @@
       module: payload.modulejson || payload,
       viewjson: payload.viewjson || {}
     };
+  }
+
+  async function loadTestScenarios(moduleId) {
+    clearTestScenarios();
+    if (!moduleId || !state.session.logon) {
+      return;
+    }
+    state.testScenarios.loading = true;
+    notifyTestScenarios();
+    try {
+      const url = new URL(legacyEndpoint("", TEST_SCENARIO_ENDPOINT), window.location.href);
+      url.searchParams.set("module", moduleId);
+      url.searchParams.set("_window", window.name);
+      url.searchParams.set("_logon", state.session.logon);
+      const response = await fetch(url.toString(), { cache: "no-cache", credentials: "same-origin" });
+      if (!response.ok) {
+        return;
+      }
+      const payload = await parseJsonResponse(response, "Test scenarios");
+      if (payload?.available && validTestScenarioCatalog(payload.catalog, moduleId)) {
+        state.testScenarios.available = true;
+        state.testScenarios.catalog = cloneUi2Value(payload.catalog);
+      }
+    } catch (error) {
+      // This is a privileged optional facility.  Ordinary UI2 use must remain
+      // quiet if an application has no catalog endpoint or no administrator.
+    } finally {
+      state.testScenarios.loading = false;
+      notifyTestScenarios();
+    }
+  }
+
+  function clearTestScenarios() {
+    state.testScenarios.available = false;
+    state.testScenarios.loading = false;
+    state.testScenarios.catalog = null;
+    state.testScenarios.selectedId = "";
+    state.testScenarios.verification = { state: "not_run", checks: [] };
+    notifyTestScenarios();
+  }
+
+  function validTestScenarioCatalog(catalog, moduleId) {
+    if (!catalog || Number(catalog.schema_version) !== 1 || catalog.module_id !== moduleId || !Array.isArray(catalog.scenarios)) {
+      return false;
+    }
+    const ids = new Set();
+    return catalog.scenarios.every((scenario) => {
+      if (!scenario || !/^[A-Za-z0-9_-]+$/.test(String(scenario.id || "")) || ids.has(scenario.id) ||
+          typeof scenario.label !== "string" || !scenario.inputs || typeof scenario.inputs !== "object" || Array.isArray(scenario.inputs) || !Object.keys(scenario.inputs).length) {
+        return false;
+      }
+      ids.add(scenario.id);
+      const verification = scenario.verification;
+      return !verification || (Number(verification.schema_version) === 1 && Array.isArray(verification.checks) &&
+        verification.checks.every((check) => check && /^[A-Za-z0-9_-]+$/.test(String(check.id || "")) &&
+          TEST_SCENARIO_CHECK_KINDS.has(check.kind)));
+    });
+  }
+
+  function testScenarioSnapshot() {
+    return cloneUi2Value(state.testScenarios);
+  }
+
+  function notifyTestScenarios() {
+    state.testScenarioListeners.forEach((listener) => {
+      try { listener(); } catch (error) { window.setTimeout(() => { throw error; }, 0); }
+    });
+  }
+
+  function subscribeTestScenarios(listener) {
+    if (typeof listener !== "function") return () => {};
+    state.testScenarioListeners.add(listener);
+    listener();
+    return () => state.testScenarioListeners.delete(listener);
+  }
+
+  function selectedTestScenario() {
+    return state.testScenarios.catalog?.scenarios?.find((scenario) => scenario.id === state.testScenarios.selectedId) || null;
+  }
+
+  function selectTestScenarioForInputs(inputs) {
+    if (!inputs || typeof inputs !== "object" || !state.testScenarios.catalog?.scenarios?.length) return;
+    const scenario = state.testScenarios.catalog.scenarios.find((candidate) => Object.entries(candidate.inputs || {}).every(
+      ([id, value]) => Object.prototype.hasOwnProperty.call(inputs, id) && JSON.stringify(inputs[id]) === JSON.stringify(value)
+    ));
+    if (!scenario) return;
+    state.testScenarios.selectedId = scenario.id;
+    state.testScenarios.verification = { state: "not_run", checks: [] };
+    notifyTestScenarios();
+  }
+
+  function applyTestScenario(id, form = document.getElementById("ui2-form")) {
+    const scenario = state.testScenarios.catalog?.scenarios?.find((item) => item.id === id);
+    if (!scenario || !form) return { ok: false, error: "Scenario is unavailable." };
+    syncValues(form);
+    const defaults = defaultInputPayload();
+    const dirty = Object.keys(state.values).some((key) => JSON.stringify(state.values[key]) !== JSON.stringify(defaults[key]));
+    if (dirty && typeof window.confirm === "function" && !window.confirm("Replace the current module inputs with this test scenario?")) {
+      return { ok: false, error: "Scenario load cancelled." };
+    }
+    applyInputPayload(scenario.inputs, { clearMissing: false });
+    syncValues(form);
+    state.testScenarios.selectedId = scenario.id;
+    state.testScenarios.verification = { state: "not_run", checks: [] };
+    notifyTestScenarios();
+    return { ok: true, values: cloneUi2Value(state.values) };
+  }
+
+  function renderTestScenarioPanel() {
+    if (!state.testScenarios.available || !state.testScenarios.catalog?.scenarios?.length) return el("div", "ui2-test-scenarios-empty");
+    const panel = el("section", "ui2-test-scenarios");
+    panel.appendChild(el("h3", null, "Test scenario"));
+    const select = document.createElement("select");
+    select.dataset.testScenario = "true";
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select a documented or test case";
+    select.appendChild(placeholder);
+    state.testScenarios.catalog.scenarios.forEach((scenario) => {
+      const option = document.createElement("option");
+      option.value = scenario.id;
+      option.textContent = scenario.label;
+      option.selected = scenario.id === state.testScenarios.selectedId;
+      select.appendChild(option);
+    });
+    const load = el("button", "ui2-button", "Load scenario");
+    load.type = "button";
+    load.addEventListener("click", () => applyTestScenario(select.value));
+    const detail = el("p", "ui2-help", "Loads inputs only; review them before running.");
+    panel.append(select, load, detail);
+    return panel;
+  }
+
+  function testScenarioOutputNonempty(value) {
+    if (value == null || value === "") return false;
+    if (Array.isArray(value)) return value.length > 0;
+    if (typeof value === "object" && Array.isArray(value.items)) return value.items.length > 0;
+    return true;
+  }
+
+  function evaluateTestScenarioVerification(scenario, jobStatus, outputs) {
+    const checks = scenario?.verification?.checks;
+    if (!scenario?.verification) return { state: "not_run", checks: [] };
+    if (!Array.isArray(checks) || Number(scenario.verification.schema_version) !== 1) return { state: "unsupported", checks: [] };
+    if (!isTerminalStatus(jobStatus)) return { state: "running", checks: [] };
+    const results = checks.map((check) => {
+      if (!TEST_SCENARIO_CHECK_KINDS.has(check.kind)) return { id: check.id, passed: false, unsupported: true };
+      if (check.kind === "job_status") return { id: check.id, passed: String(jobStatus) === String(check.equals) };
+      const present = Object.prototype.hasOwnProperty.call(outputs || {}, check.output_id);
+      return { id: check.id, passed: check.kind === "output_present" ? present : present && testScenarioOutputNonempty(outputs[check.output_id]) };
+    });
+    return { state: results.every((result) => result.passed) ? "passed" : "failed", checks: results };
+  }
+
+  function refreshTestScenarioVerification(jobStatus) {
+    const scenario = selectedTestScenario();
+    if (!scenario) return;
+    state.testScenarios.verification = evaluateTestScenarioVerification(scenario, jobStatus, state.runtimeOutputs);
+    notifyTestScenarios();
   }
 
   async function openUtilityModule(rawId) {
@@ -1720,6 +1890,7 @@
     const form = el("form");
     form.id = "ui2-form";
     form.appendChild(renderSection("Inputs", inputFields, "input"));
+    form.appendChild(renderTestScenarioPanel());
     if (module.executable) {
       form.appendChild(renderActionBar());
     }
@@ -1860,6 +2031,7 @@
     state.view = {};
     state.values = {};
     state.submitResponse = null;
+    clearTestScenarios();
     setSubmittedRunContext(null);
     beginRuntimeOutputContext("");
     state.activeJob = null;
@@ -1903,7 +2075,10 @@
       outputSnapshot: () => state.runtimeOutputAvailability,
       subscribeOutputs: (listener) => subscribeRuntimeOutputs(listener),
       runContextSnapshot: () => state.submittedRunContext,
-      subscribeRunContext: (listener) => subscribeWorkbenchRunContext(listener)
+      subscribeRunContext: (listener) => subscribeWorkbenchRunContext(listener),
+      testScenarioSnapshot: () => testScenarioSnapshot(),
+      subscribeTestScenarios: (listener) => subscribeTestScenarios(listener),
+      applyTestScenario: (id, form) => applyTestScenario(id, form)
     };
     window.GenAppUi2Workbench.mount(root, {
       module,
@@ -5490,6 +5665,7 @@
       const contextToken = beginJobOutputContext(state.moduleId, uuid);
       state.jobEvents.reset(uuid, state.moduleId);
       state.jobEvents.setLifecycle({ state: "submitting" });
+      refreshTestScenarioVerification("submitting");
       const response = await fetch(endpoint, {
         method: "POST",
         body: buildSubmitFormData(form, uuid),
@@ -5510,6 +5686,7 @@
         state.runtimeOutputContext.jobUuid = jobUuid;
       }
       state.jobEvents.setLifecycle({ state: "running", run: jobUuid });
+      refreshTestScenarioVerification("running");
       applyRuntimePayload(payload, contextToken);
       setSubmitStatus(status, `Started${jobUuid ? ` (${jobUuid})` : ""}`, "ok");
       renderSubmitResponse(payload);
@@ -6227,6 +6404,7 @@
       if (getInput) {
         if (payload?._getinput) {
           applyInputPayload(payload._getinput, { reselectLocalFiles: true });
+          selectTestScenarioForInputs(payload._getinput);
           if (isReactWorkbenchView(state.view)) {
             notifyWorkbenchReattached(
               uuid,
@@ -6290,6 +6468,7 @@
       return null;
     }
     applyInputPayload(payload._getinput, { reselectLocalFiles: true });
+    selectTestScenarioForInputs(payload._getinput);
     return payload._getinput;
   }
 
@@ -7068,6 +7247,7 @@
       markRuntimeOutputAvailable(id);
       updateOutputField(id, value);
     });
+    refreshTestScenarioVerification(runtimeStatus(payload));
   }
 
   function replayRuntimeOutput(id) {
@@ -10003,6 +10183,11 @@
       runtimeOutputContextMatches,
       applyRuntimePayload,
       applyInputPayload,
+      validTestScenarioCatalog,
+      evaluateTestScenarioVerification,
+      testScenarioOutputNonempty,
+      applyTestScenario,
+      testScenarioSnapshot,
       applySavedJobInput,
       savedInputRestoreError,
       savedInputRestoreWarnings,
