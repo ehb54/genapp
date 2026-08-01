@@ -65,7 +65,18 @@
   }
 
   function disposeFileTrajectory() {
-    state.fileTrajectory?.dispose?.();
+    const trajectoryComponent = state.fileTrajectory;
+    const trajectory = trajectoryComponent?.trajectory || trajectoryComponent;
+    // In NGL 0.10.4, Trajectory.dispose() calls player.stop(), which resets a
+    // frame and can redraw the just-removed structure.  Pause and detach the
+    // player first, then remove the trajectory from the structure's own list.
+    trajectory?.player?.pause?.();
+    trajectory?.setPlayer?.(null);
+    if (trajectoryComponent && state.structure?.trajList?.indexOf(trajectoryComponent) !== -1) {
+      state.structure.removeTrajectory(trajectoryComponent);
+    } else {
+      trajectoryComponent?.dispose?.();
+    }
     state.fileTrajectory = null;
     state.fileTrajectoryName = "";
   }
@@ -388,12 +399,18 @@
   elements.fileTrajectoryFrame.addEventListener("input", () => setFileTrajectoryFrame(elements.fileTrajectoryFrame.value));
   elements.fileTrajectoryPlay.addEventListener("click", toggleFileTrajectoryPlayback);
   document.getElementById("clear-all").addEventListener("click", function () {
+    // The bundled NGL trajectory must be disposed while its structure still
+    // exists.  Removing all components first leaves it half-disposed and
+    // prevents the rest of this reset handler from running.
+    disposeFileTrajectory();
     stage.removeAllComponents();
+    // NGL does not schedule an empty-scene redraw when its last component is
+    // removed, so ask its viewer to paint the cleared background now.
+    stage.viewer.requestRender();
     state.structure = null;
     state.structureSource = null;
     state.volume = null;
     state.axes = null;
-    disposeFileTrajectory();
     state.moleculeLayers = [];
     state.volumeLayers = [];
     updateFileTrajectoryControls();
@@ -403,6 +420,9 @@
     elements.volumeLayers.textContent = "";
     restoreEmptyState(elements.moleculeLayers, "Load a structure to add molecular layers.");
     restoreEmptyState(elements.volumeLayers, "Load a cube file to add isosurfaces.");
+    elements.structureFile.value = "";
+    elements.trajectoryFile.value = "";
+    elements.volumeFile.value = "";
     updatePayload();
     setStatus("Viewer cleared.");
   });
