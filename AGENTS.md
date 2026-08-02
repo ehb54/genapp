@@ -223,6 +223,10 @@ GenApp core checkout and regenerate the configured app. If the server core
 checkout is dirty, inspect the reported files; rerun with `--stash-dirty` only
 when preserving those server-side changes in a stash is acceptable.
 
+ROAPT/roapt means read-only audit/adapt plan for Terra: inspect the relevant
+repositories and instructions, identify required adaptations, and report a
+concrete plan without changing files or remote state.
+
 ## Common Workflows
 
 When working on GenApp itself:
