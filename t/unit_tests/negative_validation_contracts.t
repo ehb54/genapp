@@ -207,6 +207,117 @@ _invalid_app(
     pattern => qr/unsupported choice 'false'|repeat condition/i,
 );
 
+_valid_app(
+    'row-local repeatcondition on a shared integer repeater is accepted',
+    menu_modules => [ 'row_condition' ],
+    modules      => {
+        row_condition => _module_json(
+            moduleid => 'row_condition',
+            fields   => [
+                {
+                    role     => 'input',
+                    id       => 'row_count',
+                    label    => 'Rows',
+                    type     => 'integer',
+                    default  => '1',
+                    repeater => 'true',
+                },
+                {
+                    role    => 'input',
+                    id      => 'source_kind',
+                    label   => 'Source kind',
+                    type    => 'listbox',
+                    values  => 'Prepared~prepared~Raw~raw',
+                    default => 'prepared',
+                    repeat  => 'row_count',
+                },
+                _text_field( 'prepared_file', repeat => 'row_count', repeatcondition => 'source_kind:prepared' ),
+            ],
+        ),
+    },
+);
+
+_invalid_app(
+    'repeatcondition requires a structural repeat controller',
+    menu_modules => [ 'bad_repeatcondition_parent' ],
+    modules      => {
+        bad_repeatcondition_parent => _module_json(
+            fields => [
+                _text_field( 'child', repeatcondition => 'mode:one' ),
+            ],
+        ),
+    },
+    pattern => qr/repeatcondition.*repeat controller/i,
+);
+
+_invalid_app(
+    'repeatcondition dependency must share the row controller',
+    menu_modules => [ 'bad_repeatcondition_scope' ],
+    modules      => {
+        bad_repeatcondition_scope => _module_json(
+            fields => [
+                {
+                    role     => 'input',
+                    id       => 'row_count',
+                    label    => 'Rows',
+                    type     => 'integer',
+                    default  => '1',
+                    repeater => 'true',
+                },
+                {
+                    role     => 'input',
+                    id       => 'other_count',
+                    label    => 'Other rows',
+                    type     => 'integer',
+                    default  => '1',
+                    repeater => 'true',
+                },
+                {
+                    role    => 'input',
+                    id      => 'source_kind',
+                    label   => 'Source kind',
+                    type    => 'listbox',
+                    values  => 'Prepared~prepared~Raw~raw',
+                    default => 'prepared',
+                    repeat  => 'other_count',
+                },
+                _text_field( 'child', repeat => 'row_count', repeatcondition => 'source_kind:prepared' ),
+            ],
+        ),
+    },
+    pattern => qr/repeatcondition.*must repeat on 'row_count'/i,
+);
+
+_invalid_app(
+    'repeatcondition validates listbox choices',
+    menu_modules => [ 'bad_repeatcondition_choice' ],
+    modules      => {
+        bad_repeatcondition_choice => _module_json(
+            fields => [
+                {
+                    role     => 'input',
+                    id       => 'row_count',
+                    label    => 'Rows',
+                    type     => 'integer',
+                    default  => '1',
+                    repeater => 'true',
+                },
+                {
+                    role    => 'input',
+                    id      => 'source_kind',
+                    label   => 'Source kind',
+                    type    => 'listbox',
+                    values  => 'Prepared~prepared~Raw~raw',
+                    default => 'prepared',
+                    repeat  => 'row_count',
+                },
+                _text_field( 'child', repeat => 'row_count', repeatcondition => 'source_kind:missing' ),
+            ],
+        ),
+    },
+    pattern => qr/repeatcondition.*missing listbox choice/i,
+);
+
 _invalid_app(
     'listbox without values is rejected',
     menu_modules => [ 'bad_listbox' ],
@@ -325,6 +436,17 @@ sub _invalid_app {
     );
     isnt( $status, 0, $name );
     like( $output, $args{pattern}, "$name reports useful context" );
+}
+
+sub _valid_app {
+    my ( $name, %args ) = @_;
+    my $app = _make_app( menu_modules => $args{menu_modules}, modules => $args{modules} );
+    my ( $status, $output ) = run_command(
+        cwd => $app,
+        env => \%env,
+        cmd => [ File::Spec->catfile( $repo_root, qw(bin genapp_check.pl) ) ],
+    );
+    is( $status, 0, $name ) or diag($output);
 }
 
 sub _make_app {

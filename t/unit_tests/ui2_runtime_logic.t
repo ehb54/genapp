@@ -628,6 +628,36 @@ assert.strictEqual(
   "UI2 fails closed on malformed repeat condition expressions"
 );
 
+const rowConditionFields = new Map([
+  ["source_kind", { id: "source_kind", type: "listbox", repeat: "row_count" }],
+  ["enabled", { id: "enabled", type: "checkbox", repeat: "row_count" }]
+]);
+const rowConditionValues = {
+  source_kind: ["prepared", "raw", "prepared"],
+  enabled: [true, false, true]
+};
+assert.strictEqual(
+  hooks.repeatTableConditionValue("source_kind:prepared", rowConditionValues, rowConditionFields, 0),
+  true,
+  "UI2 evaluates a row-local listbox condition for the first row"
+);
+assert.strictEqual(
+  hooks.repeatTableConditionValue("source_kind:prepared", rowConditionValues, rowConditionFields, 1),
+  false,
+  "UI2 evaluates a mixed row-local listbox condition independently per row"
+);
+assert.strictEqual(
+  hooks.repeatTableConditionValue("source_kind:raw && !enabled", rowConditionValues, rowConditionFields, 1),
+  true,
+  "UI2 evaluates combined row-local listbox and checkbox conditions"
+);
+rowConditionValues.source_kind[1] = "prepared";
+assert.strictEqual(
+  hooks.repeatTableConditionValue("source_kind:prepared", rowConditionValues, rowConditionFields, 1),
+  true,
+  "UI2 reevaluates the changed row choice without changing other rows"
+);
+
 const repeatScope = createNode("form");
 const repeatRow = createNode("div");
 repeatRow.className = "ui2-field ui2-tableized-repeater";
@@ -2304,6 +2334,72 @@ assert.strictEqual(
   "UI2 local repeated file rows clear only the matching server selection row"
 );
 
+hooks.state.values = {
+  row_count: "3",
+  source_kind: ["prepared", "raw", "prepared"],
+  prepared_file: ["prepared_local.dat", "", ""],
+  raw_file: ["", "raw_server.dat", ""],
+  scale: ["", "1.25", ""]
+};
+hooks.state.module = {
+  fields: [
+    { id: "row_count", type: "integer", repeater: "true", tableize: "true" },
+    { id: "source_kind", type: "listbox", repeat: "row_count" },
+    { id: "prepared_file", type: "lrfile", repeat: "row_count", repeatcondition: "source_kind:prepared" },
+    { id: "raw_file", type: "lrfile", repeat: "row_count", repeatcondition: "source_kind:raw" },
+    { id: "scale", type: "float", repeat: "row_count", repeatcondition: "source_kind:raw" }
+  ]
+};
+hooks.state.serverSelections = {
+  "raw_file:1": {
+    id: "raw_file",
+    type: "lrfile",
+    repeatIndex: 1,
+    encodedPath: serverRepeatTwo,
+    path: "raw_server.dat"
+  }
+};
+const conditionedFileFormData = hooks.buildSubmitFormData({
+  querySelectorAll(selector) {
+    if (selector === ".ui2-native-file[data-field-id]") {
+      return [{
+        dataset: { fieldId: "prepared_file", repeatTableIndex: "0" },
+        disabled: false,
+        files: ["prepared_local.dat"]
+      }];
+    }
+    if (selector === '[data-field-id="raw_file"]') {
+      return [{ dataset: { repeatTableIndex: "1" }, disabled: false }];
+    }
+    return [];
+  }
+}, "conditioned-file-test-uuid");
+assert.deepStrictEqual(
+  conditionedFileFormData.get("row_count-prepared_file-0"),
+  ["prepared_local.dat"],
+  "UI2 submits an opted-in local file through the indexed legacy repeater key"
+);
+assert.deepStrictEqual(
+  conditionedFileFormData.get("row_count-raw_file-1_altval[]"),
+  [serverRepeatTwo],
+  "UI2 submits an opted-in server file through the indexed legacy repeater key"
+);
+assert.strictEqual(
+  conditionedFileFormData.get("prepared_file[]"),
+  undefined,
+  "UI2 replaces dense display placeholders with indexed conditional file transport"
+);
+assert.deepStrictEqual(
+  conditionedFileFormData.get("scale[]"),
+  ["", "1.25", ""],
+  "UI2 preserves dense scalar row alignment for conditioned table cells"
+);
+
+hooks.state.module = {
+  fields: [
+    { id: "data_file_name", type: "lrfile", repeat: "row_count" }
+  ]
+};
 const repeatedReplayControls = [0, 1].map((repeatIndex) => ({
   type: "text",
   value: "",
@@ -2335,6 +2431,43 @@ assert.strictEqual(
   hooks.state.serverSelections["data_file_name:1"].encodedPath,
   serverRepeatTwo,
   "UI2 reattach restores the second repeated server-file payload"
+);
+
+hooks.state.module = {
+  fields: [
+    { id: "row_count", type: "integer", repeater: "true", tableize: "true" },
+    { id: "prepared_file", type: "lrfile", repeat: "row_count", repeatcondition: "source_kind:prepared" }
+  ]
+};
+const conditionedReplayControl = {
+  type: "text",
+  value: "",
+  dataset: { fieldId: "prepared_file", repeatTableIndex: "2" },
+  closest(selector) {
+    return selector === "#ui2-form" ? {} : null;
+  },
+  dispatchEvent(event) {
+    this.lastEvent = event.type;
+  }
+};
+document.querySelectorAll = (selector) => (
+  selector === "[data-field-id=\\\"prepared_file\\\"]" ? [conditionedReplayControl] : []
+);
+hooks.state.serverSelections = {};
+hooks.applyInputPayload({
+  "_selaltval_row_count-prepared_file-2": "row_count-prepared_file-2_altval",
+  "row_count-prepared_file-2_altval": [serverRepeatTwo],
+  "_html_row_count-prepared_file-2_altval": "<i>Server</i>: prepared_row_3.dat"
+});
+assert.strictEqual(
+  conditionedReplayControl.value,
+  "prepared_row_3.dat",
+  "UI2 reattach restores a row-conditioned server-file label at its original row"
+);
+assert.strictEqual(
+  hooks.state.serverSelections["prepared_file:2"].encodedPath,
+  serverRepeatTwo,
+  "UI2 reattach restores a row-conditioned server-file payload at its original row"
 );
 
 const singleRepeatedReplayControl = {

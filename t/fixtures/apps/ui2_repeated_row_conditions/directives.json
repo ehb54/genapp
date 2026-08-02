@@ -1,0 +1,6 @@
+{
+    "title"       : "UI2 Repeated Row Conditions",
+    "application" : "ui2_repeated_row_conditions",
+    "version"     : "0.01",
+    "languages"   : [ "ui2" ]
+}

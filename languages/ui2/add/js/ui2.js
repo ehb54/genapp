@@ -2776,6 +2776,11 @@
     const tr = document.createElement("tr");
     fields.forEach((field) => {
       const td = document.createElement("td");
+      td.dataset.repeatTableField = field.id || "";
+      td.dataset.repeatTableIndex = String(rowIndex);
+      if (field.repeatcondition) {
+        td.dataset.repeatcondition = field.repeatcondition;
+      }
       td.appendChild(renderRepeatTableControl(field, rowIndex));
       tr.appendChild(td);
     });
@@ -4263,9 +4268,10 @@
     const activeRows = evaluateRepeatVisibility(form, rawValues);
     updateRepeats(form, activeRows, rawValues);
     updateRepeatTables(form, rawValues, activeRows);
+    updateRepeatTableCellConditions(form, rawValues);
     return collectControlValues(form, (control) => {
       const row = control.closest(".ui2-field");
-      return !row || activeRows.get(row) !== false;
+      return !control.disabled && (!row || activeRows.get(row) !== false);
     });
   }
 
@@ -5654,9 +5660,10 @@
     const activeRows = evaluateRepeatVisibility(form, rawValues);
     updateRepeats(form, activeRows, rawValues);
     updateRepeatTables(form, rawValues, activeRows);
+    updateRepeatTableCellConditions(form, rawValues);
     state.values = collectControlValues(form, (control) => {
       const row = control.closest(".ui2-field");
-      return !row || activeRows.get(row) !== false;
+      return !control.disabled && (!row || activeRows.get(row) !== false);
     });
     const preview = document.getElementById("ui2-preview");
     if (preview) {
@@ -6105,7 +6112,7 @@
     const groups = new Map();
     form.querySelectorAll(".ui2-native-file[data-field-id]").forEach((picker) => {
       const id = picker.dataset.fieldId;
-      if (!id || !picker.files || !picker.files.length) {
+      if (!id || picker.disabled || !picker.files || !picker.files.length) {
         return;
       }
       const repeatIndex = repeatIndexValue(picker.dataset.repeatTableIndex);
@@ -6114,6 +6121,7 @@
       group.local.push({
         id,
         repeatIndex,
+        submitId: repeatFileSubmitId(moduleFieldById(id), repeatIndex),
         files: Array.from(picker.files)
       });
     });
@@ -6122,7 +6130,12 @@
       if (!selection?.id || !selection.encodedPath || !fieldIsFileLike(field)) {
         return;
       }
-      fileSelectionGroup(groups, selection.id).server.push(selection);
+      if (!repeatFileSelectionIsActive(form, selection.id, selection.repeatIndex)) {
+        return;
+      }
+      fileSelectionGroup(groups, selection.id).server.push(Object.assign({}, selection, {
+        submitId: repeatFileSubmitId(field, selection.repeatIndex)
+      }));
     });
     groups.forEach((group, id) => {
       clearFormDataFileField(formData, id);
@@ -6162,7 +6175,9 @@
   }
 
   function appendLocalFileSelection(formData, selection) {
-    const key = selection.repeatIndex == null ? selection.id : `${selection.id}[]`;
+    const key = selection.submitId === selection.id && selection.repeatIndex != null
+      ? `${selection.id}[]`
+      : selection.submitId;
     selection.files.forEach((file) => formData.append(key, file));
   }
 
@@ -6171,14 +6186,44 @@
     if (!selection?.id || !selection.encodedPath || !fieldIsFileLike(field)) {
       return;
     }
+    const submitId = selection.submitId || selection.id;
     if (selection.type === "rpath") {
-      formData.append(`${selection.id}[]`, selection.encodedPath);
-      formData.append(`_decodepath_${selection.id}`, "");
+      if (submitId === selection.id) {
+        formData.append(selection.repeatIndex != null ? `${selection.id}[]` : selection.id, selection.encodedPath);
+        formData.append(`_decodepath_${selection.id}`, "");
+      } else {
+        formData.append(submitId, selection.encodedPath);
+        formData.append(`_decodepath_${submitId}`, "");
+      }
       return;
     }
-    formData.set(`_selaltval_${selection.id}`, `${selection.id}_altval`);
-    formData.append(`${selection.id}_altval[]`, selection.encodedPath);
-    formData.set(`_html_${selection.id}_altval`, `<i>Server</i>: ${selection.path || "selected file"}`);
+    if (submitId === selection.id) {
+      formData.set(`_selaltval_${selection.id}`, `${selection.id}_altval`);
+      formData.append(`${selection.id}_altval[]`, selection.encodedPath);
+      formData.set(`_html_${selection.id}_altval`, `<i>Server</i>: ${selection.path || "selected file"}`);
+    } else {
+      formData.set(`_selaltval_${submitId}`, `${submitId}_altval`);
+      formData.append(`${submitId}_altval[]`, selection.encodedPath);
+      formData.set(`_html_${submitId}_altval`, `<i>Server</i>: ${selection.path || "selected file"}`);
+    }
+  }
+
+  function repeatFileSubmitId(field, repeatIndex) {
+    const controller = repeatControllerId(field?.repeat || "");
+    if (!field?.repeatcondition || !controller || repeatIndex == null) {
+      return field?.id || "";
+    }
+    return `${controller}-${field.id}-${repeatIndex}`;
+  }
+
+  function repeatFileSelectionIsActive(form, id, repeatIndex) {
+    if (repeatIndex == null || !form) {
+      return true;
+    }
+    const control = Array.from(form.querySelectorAll(`[data-field-id="${cssEscape(id)}"]`)).find((item) => {
+      return String(item.dataset.repeatTableIndex ?? "") === String(repeatIndex);
+    });
+    return !control || !control.disabled;
   }
 
   function removeServerSelection(id, repeatIndex) {
@@ -6793,22 +6838,28 @@
       if (!match) {
         return;
       }
-      const id = match[1];
-      const field = moduleFieldById(id);
+      const submittedId = match[1];
+      const submittedField = submittedFileField(submittedId);
+      if (!submittedField) {
+        return;
+      }
+      const { id, field, repeatIndex: submittedRepeatIndex } = submittedField;
       if (!fieldIsFileLike(field)) {
         return;
       }
-      const altId = stringValue(firstValue(altField)) || `${id}_altval`;
-      const encodedPaths = valueList(inputs[altId] ?? inputs[`${id}_altval`]).map(stringValue).filter(Boolean);
+      const altId = stringValue(firstValue(altField)) || `${submittedId}_altval`;
+      const encodedPaths = valueList(inputs[altId] ?? inputs[`${submittedId}_altval`]).map(stringValue).filter(Boolean);
       if (!encodedPaths.length) {
         return;
       }
-      const displayValues = valueList(inputs[`_html_${altId}`] ?? inputs[`_html_${id}_altval`]);
+      const displayValues = valueList(inputs[`_html_${altId}`] ?? inputs[`_html_${submittedId}_altval`]);
       encodedPaths.forEach((encodedPath, index) => {
-        const repeatIndex = serverSelectionRepeatIndex(field, encodedPaths, index);
+        const repeatIndex = submittedRepeatIndex == null
+          ? serverSelectionRepeatIndex(field, encodedPaths, index)
+          : submittedRepeatIndex;
         restoreServerSelection(id, encodedPath, stringValue(displayValues[index] ?? displayValues[0]), repeatIndex);
       });
-      restored.add(id);
+      restored.add(submittedId);
     });
 
     Object.entries(inputs || {}).forEach(([key, value]) => {
@@ -6816,17 +6867,24 @@
       if (!match || key.startsWith("_html_")) {
         return;
       }
-      const id = match[1];
-      if (restored.has(id)) {
+      const submittedId = match[1];
+      if (restored.has(submittedId)) {
         return;
       }
+      const submittedField = submittedFileField(submittedId);
+      if (!submittedField) {
+        return;
+      }
+      const { id, field, repeatIndex: submittedRepeatIndex } = submittedField;
       const encodedPaths = valueList(value).map(stringValue).filter(Boolean);
-      if (!encodedPaths.length || !fieldIsFileLike(moduleFieldById(id))) {
+      if (!encodedPaths.length || !fieldIsFileLike(field)) {
         return;
       }
       const displayValues = valueList(inputs[`_html_${key}`]);
       encodedPaths.forEach((encodedPath, index) => {
-        const repeatIndex = serverSelectionRepeatIndex(moduleFieldById(id), encodedPaths, index);
+        const repeatIndex = submittedRepeatIndex == null
+          ? serverSelectionRepeatIndex(field, encodedPaths, index)
+          : submittedRepeatIndex;
         restoreServerSelection(id, encodedPath, stringValue(displayValues[index] ?? displayValues[0]), repeatIndex);
       });
     });
@@ -6836,18 +6894,24 @@
       if (!match) {
         return;
       }
-      const id = match[1];
-      const field = moduleFieldById(id);
+      const submittedId = match[1];
+      const submittedField = submittedFileField(submittedId);
+      if (!submittedField) {
+        return;
+      }
+      const { id, field, repeatIndex: submittedRepeatIndex } = submittedField;
       if (String(field?.type || "").toLowerCase() !== "rpath") {
         return;
       }
-      const encodedPaths = valueList(inputs[id]).map(stringValue).filter(Boolean);
+      const encodedPaths = valueList(inputs[submittedId] ?? inputs[id]).map(stringValue).filter(Boolean);
       encodedPaths.forEach((encodedPath, index) => {
         restoreServerSelection(
           id,
           encodedPath,
           "",
-          serverSelectionRepeatIndex(field, encodedPaths, index));
+          submittedRepeatIndex == null
+            ? serverSelectionRepeatIndex(field, encodedPaths, index)
+            : submittedRepeatIndex);
       });
     });
   }
@@ -6857,6 +6921,27 @@
       return index;
     }
     return encodedPaths.length > 1 ? index : null;
+  }
+
+  function submittedFileField(submittedId) {
+    const field = moduleFieldById(submittedId);
+    if (field) {
+      return { id: submittedId, field, repeatIndex: null };
+    }
+    const fields = Array.isArray(state.module?.fields) ? state.module.fields : [];
+    for (const candidate of fields) {
+      const controller = repeatControllerId(candidate?.repeat || "");
+      if (!candidate?.repeatcondition || !controller || !candidate?.id) {
+        continue;
+      }
+      const prefix = `${controller}-${candidate.id}-`;
+      const suffix = submittedId.startsWith(prefix) ? submittedId.slice(prefix.length) : "";
+      const match = /^\d+$/.test(suffix) ? [suffix, suffix] : null;
+      if (match) {
+        return { id: candidate.id, field: candidate, repeatIndex: Number(match[1]) };
+      }
+    }
+    return null;
   }
 
   function restoreServerSelection(id, encodedPath, displayHtml, repeatIndex) {
@@ -9574,7 +9659,17 @@
     const values = {};
     fieldControls(scope).forEach((control) => {
       const id = control.dataset.fieldId;
-      if (!id || control.type === "radio" && !control.checked || !includeControl(control)) {
+      if (!id || control.type === "radio" && !control.checked) {
+        return;
+      }
+      const included = includeControl(control);
+      if (!included) {
+        if (control.dataset.repeatTableField && control.dataset.matrixRow == null) {
+          if (!Array.isArray(values[id])) {
+            values[id] = [];
+          }
+          values[id][Number(control.dataset.repeatTableIndex || 0)] = "";
+        }
         return;
       }
       if (control.dataset.repeatTableField) {
@@ -9711,6 +9806,28 @@
         tbody.deleteRow(tbody.rows.length - 1);
       }
       applyRepeatTableValues(tbody, fields, rawValues);
+    });
+  }
+
+  function updateRepeatTableCellConditions(scope, rawValues) {
+    scope.querySelectorAll(".ui2-tableized-repeater").forEach((row) => {
+      const fields = repeatTableFields(row._ui2RepeatTableFields || []);
+      const fieldsById = new Map(fields.map((field) => [field.id, field]));
+      row.querySelectorAll("[data-repeatcondition]").forEach((cell) => {
+        const active = repeatTableConditionValue(
+          cell.dataset.repeatcondition,
+          rawValues,
+          fieldsById,
+          Number(cell.dataset.repeatTableIndex || 0)
+        );
+        cell.classList.toggle("ui2-hidden", !active);
+        fieldControls(cell).forEach((control) => {
+          control.disabled = !active;
+        });
+        cell.querySelectorAll(".ui2-native-file").forEach((control) => {
+          control.disabled = !active;
+        });
+      });
     });
   }
 
@@ -9851,6 +9968,74 @@
       return value;
     };
 
+    const result = orExpr();
+    return pos === tokens.length ? result : false;
+  }
+
+  function repeatTableConditionValue(expression, rawValues, fieldsById, repeatIndex) {
+    const tokens = repeatConditionTokens(expression);
+    let pos = 0;
+    if (!tokens || !tokens.length) {
+      return false;
+    }
+
+    const peek = () => tokens[pos];
+    const take = (token) => {
+      if (tokens[pos] === token) {
+        pos += 1;
+        return true;
+      }
+      return false;
+    };
+    const atom = (token) => {
+      const parts = String(token || "").split(":");
+      const id = parts[0].trim();
+      const choice = parts.length > 1 ? parts.slice(1).join(":") : null;
+      const field = fieldsById?.get(id);
+      if (!field) {
+        return false;
+      }
+      const actual = inputControlValue(rawValues?.[id], {
+        dataset: { repeatTableIndex: String(repeatIndex) }
+      }, repeatIndex);
+      if (choice !== null) {
+        if (String(field.type || "").toLowerCase() === "checkbox") {
+          return choice === "true" && (actual === true || String(actual).toLowerCase() === "true" || String(actual) === "1");
+        }
+        return String(actual) === choice;
+      }
+      return String(field.type || "").toLowerCase() === "checkbox"
+        && (actual === true || String(actual).toLowerCase() === "true" || String(actual) === "1");
+    };
+    const primary = () => {
+      if (take("!")) {
+        return !primary();
+      }
+      if (take("(")) {
+        const value = orExpr();
+        return take(")") ? value : false;
+      }
+      const token = peek();
+      if (token && /^[A-Za-z_]/.test(token)) {
+        pos += 1;
+        return atom(token);
+      }
+      return false;
+    };
+    const andExpr = () => {
+      let value = primary();
+      while (take("&&")) {
+        value = primary() && value;
+      }
+      return value;
+    };
+    const orExpr = () => {
+      let value = andExpr();
+      while (take("||")) {
+        value = andExpr() || value;
+      }
+      return value;
+    };
     const result = orExpr();
     return pos === tokens.length ? result : false;
   }
@@ -10384,6 +10569,7 @@
       serverFileDirLabel,
       serverSelectionDisplayPath,
       serverFileTreeSelectable,
+      repeatFileSubmitId,
       serverFileEntryIsFolder,
       fileEntryName,
       fileEntryDetails,
@@ -10447,6 +10633,8 @@
       repeatConditionTokens,
       repeatConditionDeps,
       repeatConditionValue,
+      repeatTableConditionValue,
+      updateRepeatTableCellConditions,
       repeatControllerId,
       repeatTableFields,
       repeatCount,

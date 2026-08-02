@@ -1,0 +1,26 @@
+{
+    "moduleid"   : "plain_repeater",
+    "label"      : "Plain Repeater",
+    "executable" : "plain_repeater",
+    "resource"   : "local",
+    "fields"     : [
+        {
+            "role"     : "input",
+            "id"       : "row_count",
+            "label"    : "Rows",
+            "type"     : "integer",
+            "default"  : "2",
+            "min"      : "1",
+            "repeater" : "true",
+            "tableize" : "true"
+        },
+        {
+            "role"   : "input",
+            "id"     : "row_value",
+            "label"  : "Row value",
+            "type"   : "text",
+            "default": "value",
+            "repeat" : "row_count"
+        }
+    ]
+}

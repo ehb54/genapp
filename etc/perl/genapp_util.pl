@@ -1644,23 +1644,33 @@ sub check_files {
                 my %repeater;
                 my %repeat;
                 my %repeat_condition;
+                my %repeatcondition;
                 my %repeattype;
                 my %field_type;
+                my %field_role;
+                my %field_repeat;
                 my %listbox_choice;
                 my $modname = $f;
                 do {
                     $field_type{ $$mod_info{ 'fields:id' } } = $$mod_info{ 'fields:type' }
                         if $$mod_info{ 'fields:id' };
+                    $field_role{ $$mod_info{ 'fields:id' } } = $$mod_info{ 'fields:role' }
+                        if $$mod_info{ 'fields:id' };
+                    if ( $$mod_info{ 'fields:type' } eq 'listbox' ) {
+                        my @lbvalues = split '~', $$mod_info{ 'fields:values' };
+                        $error .= "Module $f field " . $$mod_info{ 'fields:id' } . " is a listbox but the values are incorrect.  They must contain an even number of ~ separated words\n" if @lbvalues % 2;
+                        for ( my $i = 1; $i < @lbvalues; $i += 2 ) {
+                            $listbox_choice{ $$mod_info{ 'fields:id' } }{ $lbvalues[ $i ] } = 1;
+                        }
+                    }
                     if ( $$mod_info{ 'fields:repeater' } ||
                          $$mod_info{ 'fields:reverserepeater' } )
                     {
                         $repeater{ $$mod_info{ 'fields:id' } } = $$mod_info{ 'fields:type' };
                         if ( $$mod_info{ 'fields:type' } eq 'listbox' ) {
                             my @lbvalues = split '~', $$mod_info{ 'fields:values' };
-                            $error .= "Module $f field " . $$mod_info{ 'fields:id' } . " is a listbox but the values are incorrect.  They must contain an even number of ~ separated words\n" if @lbvalues % 2;
                             for ( my $i = 1; $i < @lbvalues; $i += 2 ) {
                                 my $k = $$mod_info{ 'fields:id' } . ":" . $lbvalues[ $i ];
-                                $listbox_choice{ $$mod_info{ 'fields:id' } }{ $lbvalues[ $i ] } = 1;
                                 $repeater  { $k } = $$mod_info{ 'fields:type' } . " choice " . ( 1 + ( ( $i - 1 ) / 2 ) );
                                 $repeat    { $k } = $$mod_info{ 'fields:id' };
                                 $repeattype{ $k } = $$mod_info{ 'fields:type' } . " choice " . ( 1 + ( ( $i - 1 ) / 2 ) );
@@ -1676,7 +1686,10 @@ sub check_files {
                         }
 #                        $repeat{ $$mod_info{ 'fields:id' } } =~ s/:.*$//;
                         $repeattype{ $$mod_info{ 'fields:id' } } = $$mod_info{ 'fields:type' };
+                        $field_repeat{ $$mod_info{ 'fields:id' } } = $$mod_info{ 'fields:repeat' };
                     }
+                    $repeatcondition{ $$mod_info{ 'fields:id' } } = $$mod_info{ 'fields:repeatcondition' }
+                        if $$mod_info{ 'fields:repeatcondition' };
                 } while( $mod_info = next_json( $ref_mod, 'fields:id' ) );
 
                 foreach my $k ( keys %repeat )
@@ -1713,6 +1726,56 @@ sub check_files {
                             }
                         } elsif ( $field_type{ $base } ne 'checkbox' ) {
                             $error .= "Module $f field '$k' repeat condition '$repeat_condition{ $k }' uses bare non-checkbox field '$base'; use checkbox fields or listbox_id:choice atoms\n";
+                        }
+                    }
+                }
+
+                # A repeatcondition is intentionally separate from repeat: repeat
+                # establishes the repeated row/table parent, while repeatcondition
+                # evaluates visibility against fields in that same row.
+                foreach my $k ( keys %repeatcondition )
+                {
+                    my $condition = $repeatcondition{ $k };
+                    my $controller = $field_repeat{ $k } || q{};
+                    if ( !$controller || repeat_condition_is_expression( $controller ) || $controller =~ /:/ ) {
+                        $error .= "Module $f field '$k' repeatcondition requires a simple repeat controller\n";
+                        next;
+                    }
+                    if ( ( $field_role{ $k } || q{} ) ne 'input' ) {
+                        $error .= "Module $f field '$k' repeatcondition is supported only for input fields\n";
+                    }
+                    if ( ( $repeater{ $controller } || q{} ) ne 'integer' ) {
+                        $error .= "Module $f field '$k' repeatcondition requires integer repeater '$controller'\n";
+                    }
+                    my ( $condition_error, @atoms ) = repeat_condition_atoms( $condition );
+                    if ( $condition_error ) {
+                        $error .= "Module $f field '$k' repeatcondition '$condition' : $condition_error\n";
+                        next;
+                    }
+                    foreach my $atom ( @atoms ) {
+                        my ( $base, $choice ) = split /:/, $atom, 2;
+                        if ( !$field_type{ $base } ) {
+                            $error .= "Module $f field '$k' repeatcondition '$condition' references missing field '$base'\n";
+                            next;
+                        }
+                        if ( ( $field_repeat{ $base } || q{} ) ne $controller ) {
+                            $error .= "Module $f field '$k' repeatcondition '$condition' dependency '$base' must repeat on '$controller'\n";
+                        }
+                        if ( $repeatcondition{ $base } ) {
+                            $error .= "Module $f field '$k' repeatcondition '$condition' dependency '$base' must not itself have repeatcondition\n";
+                        }
+                        if ( defined $choice ) {
+                            if ( $field_type{ $base } eq 'checkbox' ) {
+                                $error .= "Module $f field '$k' repeatcondition '$condition' uses checkbox field '$base' with unsupported choice '$choice'; use '$base' or '!$base'\n"
+                                    if $choice ne 'true';
+                            } elsif ( $field_type{ $base } eq 'listbox' ) {
+                                $error .= "Module $f field '$k' repeatcondition '$condition' references missing listbox choice '$atom'\n"
+                                    if !$listbox_choice{ $base }{ $choice };
+                            } else {
+                                $error .= "Module $f field '$k' repeatcondition '$condition' uses choice syntax on non-listbox/non-checkbox field '$base'\n";
+                            }
+                        } elsif ( $field_type{ $base } ne 'checkbox' ) {
+                            $error .= "Module $f field '$k' repeatcondition '$condition' uses bare non-checkbox field '$base'; use checkbox fields or listbox_id:choice atoms\n";
                         }
                     }
                 }

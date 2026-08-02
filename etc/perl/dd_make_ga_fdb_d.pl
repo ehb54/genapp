@@ -122,6 +122,7 @@ for $k ( keys %$obj ) {
     "pull",
     "readonly",
     "repeat",
+    "repeatcondition",
     "repeater",
     "report",
     "reportpath",

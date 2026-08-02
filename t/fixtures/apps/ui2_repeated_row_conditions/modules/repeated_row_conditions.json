@@ -1,0 +1,54 @@
+{
+    "moduleid"   : "repeated_row_conditions",
+    "label"      : "Repeated Row Conditions",
+    "executable" : "repeated_row_conditions",
+    "resource"   : "local",
+    "fields"     : [
+        {
+            "role"     : "input",
+            "id"       : "row_count",
+            "label"    : "Rows",
+            "type"     : "integer",
+            "default"  : "2",
+            "min"      : "1",
+            "repeater" : "true",
+            "tableize" : "true"
+        },
+        {
+            "role"    : "input",
+            "id"      : "source_kind",
+            "label"   : "Source kind",
+            "type"    : "listbox",
+            "values"  : "Prepared~prepared~Raw~raw",
+            "default" : "prepared",
+            "repeat"  : "row_count"
+        },
+        {
+            "role"            : "input",
+            "id"              : "prepared_file",
+            "label"           : "Prepared file",
+            "type"            : "lrfile",
+            "required"        : "true",
+            "repeat"          : "row_count",
+            "repeatcondition" : "source_kind:prepared"
+        },
+        {
+            "role"            : "input",
+            "id"              : "raw_file",
+            "label"           : "Raw file",
+            "type"            : "lrfile",
+            "required"        : "true",
+            "repeat"          : "row_count",
+            "repeatcondition" : "source_kind:raw"
+        },
+        {
+            "role"            : "input",
+            "id"              : "scale",
+            "label"           : "Scale",
+            "type"            : "float",
+            "required"        : "true",
+            "repeat"          : "row_count",
+            "repeatcondition" : "source_kind:raw"
+        }
+    ]
+}

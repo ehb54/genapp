@@ -1,0 +1,19 @@
+{
+    "header" : "UI2 Repeated Row Conditions",
+    "menu"   : [
+        {
+            "id"      : "contracts",
+            "label"   : "Contracts",
+            "modules" : [
+                {
+                    "id"    : "repeated_row_conditions",
+                    "label" : "Repeated Row Conditions"
+                },
+                {
+                    "id"    : "plain_repeater",
+                    "label" : "Plain Repeater"
+                }
+            ]
+        }
+    ]
+}
