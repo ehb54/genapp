@@ -43,6 +43,7 @@ my $sys_status_php = read_file( File::Spec->catfile( $repo_root, qw(languages ht
 like( $index, qr/js\/app-map\.js/, 'ui2 index loads the generated app map' );
 like( $index, qr/\.\.\/js\/autobahn\.min\.js/, 'ui2 index preloads the existing legacy Autobahn websocket client' );
 like( $index, qr/\.\.\/js\/plotly-2\.35\.2\.min\.js/, 'ui2 index preloads the existing generated Plotly bundle' );
+like( $index, qr/js\/plot-presentations\.js/, 'ui2 index loads the optional application plot presentation catalog before the UI2 renderer' );
 like( $index, qr/js\/ui2\.js/, 'ui2 index loads the plain JavaScript playground' );
 like( $index, qr/css\/ui2\.css/, 'ui2 index loads the ui2 stylesheet' );
 like( $index, qr/react\/ui2-react\.css/, 'ui2 index loads the React workbench stylesheet' );

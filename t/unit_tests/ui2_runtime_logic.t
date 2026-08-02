@@ -1110,6 +1110,34 @@ assert.strictEqual(renderedNeutralSeries[0].line.color, "rgba(113, 196, 232, 0.4
 assert.strictEqual(renderedNeutralSeries[1].showlegend, undefined, "a role without view presentation remains unchanged");
 assert.strictEqual(neutralSeries[0].showlegend, undefined, "UI2 does not mutate the saved scientific figure");
 assert.strictEqual(neutralSeries[0].line, undefined, "UI2 does not put visual policy into the saved scientific figure");
+window.GENAPP_PLOT_PRESENTATIONS = {
+  house: {
+    font: { family: "Artist Sans", title_size: 19, label_size: 13, tick_size: 11 },
+    background: { page: "#fdfcf8", plot: "#ffffff" },
+    grid: { appearance: "subtle", width: 2 },
+    legend: { background: "translucent", border: "subtle", font_size: 10 },
+    palette: { primary: "#204a87" },
+    styles: { focal: { color: "primary", line_width: 4, marker: "diamond", marker_size: 8 } }
+  },
+  accent: {
+    inherits: "house",
+    styles: { focal: { color: "#a51d2d", line_width: 5 } }
+  }
+};
+const catalogPresentationHost = { dataset: { plotPresentation: JSON.stringify({ profile: "accent", traceRoles: { replicate: { token: "focal" } } }) } };
+const catalogPresentationOutput = { closest: () => catalogPresentationHost };
+const catalogSeries = hooks.plotlyDataForOutput(catalogPresentationOutput, neutralSeries);
+assert.strictEqual(catalogSeries[0].line.color, "#a51d2d", "an opted-in profile overrides a house token color");
+assert.strictEqual(catalogSeries[0].line.width, 5, "an opted-in profile overrides a house token width");
+assert.strictEqual(catalogSeries[0].marker.symbol, "diamond", "a profile inherits the house marker style");
+assert.strictEqual(catalogSeries[0].marker.size, 8, "a profile inherits the house marker size");
+const catalogLayout = hooks.plotlyLayoutForOutput(catalogPresentationOutput, { title: "Neutral figure", xaxis: { title: "x" }, yaxis: { title: "y" } });
+assert.strictEqual(catalogLayout.paper_bgcolor, "#fdfcf8", "a presentation profile controls its plot surface without producer geometry");
+assert.strictEqual(catalogLayout.font.family, "Artist Sans", "a presentation profile controls its font family");
+assert.strictEqual(catalogLayout.xaxis.gridwidth, 2, "a presentation profile controls grid thickness");
+assert.strictEqual(catalogLayout.xaxis.title.font.size, 13, "a presentation profile controls axis label size");
+const unoptedLayout = hooks.plotlyLayoutForOutput({ dataset: {}, closest: () => null }, { xaxis: {} });
+assert.strictEqual(unoptedLayout.paper_bgcolor, "#1a201f", "a non-opted-in plot retains the UI2 theme surface");
 assert.strictEqual(
   hooks.normalizeJobEvent({ version: 2, run: "run-1", module: "mmc", sequence: 1, channel: "log", topic: "run" }),
   null,

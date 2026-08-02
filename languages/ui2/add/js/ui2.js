@@ -8943,6 +8943,7 @@
     layout.font = Object.assign({}, defaults.font);
     layout.paper_bgcolor = defaults.paper_bgcolor;
     layout.plot_bgcolor = defaults.plot_bgcolor;
+    applyPlotPresentationLayout(layout, plotPresentationProfileForOutput(output));
     return layout;
   }
 
@@ -9083,28 +9084,215 @@
     }
   }
 
+  function plotPresentationProfileForOutput(output) {
+    const selection = plotPresentationForOutput(output);
+    const profileName = String(selection.profile || "").trim();
+    if (!profileName) {
+      return {};
+    }
+    const profiles = window.GENAPP_PLOT_PRESENTATIONS;
+    if (!profiles || typeof profiles !== "object") {
+      return {};
+    }
+    const resolve = (name, seen = new Set()) => {
+      if (!name || seen.has(name)) {
+        return {};
+      }
+      seen.add(name);
+      const profile = profiles[name];
+      if (!profile || typeof profile !== "object") {
+        console.warn(`[ui2] unknown plot presentation profile: ${name}`);
+        return {};
+      }
+      const inherited = resolve(String(profile.inherits || "").trim(), seen);
+      return mergePlotPresentationProfiles(inherited, profile);
+    };
+    return resolve(profileName);
+  }
+
+  function mergePlotPresentationProfiles(base, override) {
+    const merged = Object.assign({}, base || {});
+    ["font", "background", "grid", "legend", "palette"].forEach((key) => {
+      merged[key] = Object.assign({}, base?.[key] || {}, override?.[key] || {});
+    });
+    merged.styles = Object.assign({}, base?.styles || {});
+    Object.entries(override?.styles || {}).forEach(([name, style]) => {
+      merged.styles[name] = Object.assign({}, merged.styles[name] || {}, style || {});
+    });
+    return merged;
+  }
+
+  function presentationColor(value, presentation, colors) {
+    if (typeof value !== "string" || !value.trim()) {
+      return null;
+    }
+    const token = value.trim();
+    const paletteValue = presentation?.palette?.[token];
+    if (typeof paletteValue === "string" && paletteValue.trim()) {
+      return paletteValue.trim();
+    }
+    if (token === "panel") {
+      return colors.panel;
+    }
+    if (token === "background") {
+      return colors.background;
+    }
+    if (token === "text") {
+      return colors.text;
+    }
+    if (token === "border") {
+      return colors.border;
+    }
+    if (token === "grid") {
+      return colors.grid;
+    }
+    return token;
+  }
+
+  function presentationNumber(value) {
+    const number = Number(value);
+    return Number.isFinite(number) && number >= 0 ? number : null;
+  }
+
+  function applyPlotPresentationLayout(layout, presentation) {
+    if (!presentation || typeof presentation !== "object") {
+      return layout;
+    }
+    const colors = plotlyThemeColors();
+    const font = presentation.font || {};
+    const background = presentation.background || {};
+    const grid = presentation.grid || {};
+    const legend = presentation.legend || {};
+    const paper = presentationColor(background.page, presentation, colors);
+    const plot = presentationColor(background.plot, presentation, colors);
+    if (paper) {
+      layout.paper_bgcolor = paper;
+    }
+    if (plot) {
+      layout.plot_bgcolor = plot;
+    }
+    if (typeof font.family === "string" && font.family.trim()) {
+      layout.font = Object.assign({}, layout.font || {}, { family: font.family.trim() });
+    }
+    const labelSize = presentationNumber(font.label_size);
+    const tickSize = presentationNumber(font.tick_size);
+    const titleSize = presentationNumber(font.title_size);
+    if (titleSize !== null) {
+      layout.title = Object.assign({}, typeof layout.title === "object" ? layout.title : {}, {
+        text: typeof layout.title === "string" ? layout.title : (layout.title?.text || ""),
+        font: Object.assign({}, layout.title?.font || {}, { size: titleSize })
+      });
+    }
+    if (legend.font_size != null) {
+      const legendSize = presentationNumber(legend.font_size);
+      if (legendSize !== null) {
+        plotlyLegendKeys(layout).forEach((key) => {
+          layout[key] = Object.assign({}, layout[key] || {}, {
+            font: Object.assign({}, layout[key]?.font || {}, { size: legendSize })
+          });
+        });
+      }
+    }
+    const legendBackground = legend.background === "translucent"
+      ? colors.legendBackground
+      : presentationColor(legend.background, presentation, colors);
+    const legendBorder = legend.border === "subtle"
+      ? colors.border
+      : presentationColor(legend.border, presentation, colors);
+    if (legendBackground || legendBorder) {
+      plotlyLegendKeys(layout).forEach((key) => {
+        layout[key] = Object.assign({}, layout[key] || {},
+          legendBackground ? { bgcolor: legendBackground } : {},
+          legendBorder ? { bordercolor: legendBorder } : {});
+      });
+    }
+    Object.keys(layout || {}).filter((axisName) => /^(xaxis|yaxis)\d*$/.test(axisName)).forEach((axisName) => {
+      const axis = Object.assign({}, layout[axisName] || {});
+      if (grid.appearance === "none") {
+        axis.showgrid = false;
+      } else if (grid.appearance === "subtle") {
+        axis.showgrid = true;
+        axis.gridcolor = colors.grid;
+      }
+      const gridColor = presentationColor(grid.color, presentation, colors);
+      if (gridColor) {
+        axis.gridcolor = gridColor;
+      }
+      const gridWidth = presentationNumber(grid.width);
+      if (gridWidth !== null) {
+        axis.gridwidth = gridWidth;
+      }
+      if (labelSize !== null) {
+        axis.title = Object.assign({}, typeof axis.title === "object" ? axis.title : {}, {
+          text: typeof axis.title === "string" ? axis.title : (axis.title?.text || ""),
+          font: Object.assign({}, axis.title?.font || {}, { size: labelSize })
+        });
+      }
+      if (tickSize !== null) {
+        axis.tickfont = Object.assign({}, axis.tickfont || {}, { size: tickSize });
+      }
+      layout[axisName] = axis;
+    });
+    return layout;
+  }
+
   function plotlyDataForOutput(output, data) {
     if (!Array.isArray(data)) {
       return [];
     }
-    const traceRoles = plotPresentationForOutput(output).traceRoles || {};
+    const selection = plotPresentationForOutput(output);
+    const traceRoles = selection.traceRoles || {};
+    const presentation = plotPresentationProfileForOutput(output);
     return data.map((trace) => {
       const role = trace?.meta?.series_role;
       const policy = role ? traceRoles[role] : null;
       if (!policy || typeof policy !== "object") {
         return trace;
       }
-      const styled = Object.assign({}, trace);
-      if (policy.token === "context") {
-        styled.line = Object.assign({}, trace.line || {}, {
-          color: "rgba(113, 196, 232, 0.42)"
-        });
-      }
-      if (policy.legend === "hide") {
-        styled.showlegend = false;
-      }
-      return styled;
+      return applyPlotPresentationStyle(trace, policy, presentation);
     });
+  }
+
+  function applyPlotPresentationStyle(trace, policy, presentation) {
+    const styled = Object.assign({}, trace);
+    const token = String(policy?.token || "").trim();
+    const defaultStyles = {
+      context: { color: "rgba(113, 196, 232, 0.42)" }
+    };
+    const style = token ? (presentation?.styles?.[token] || defaultStyles[token]) : null;
+    const colors = plotlyThemeColors();
+    if (style && typeof style === "object") {
+      const color = presentationColor(style.color, presentation, colors);
+      const opacity = presentationNumber(style.opacity);
+      const lineWidth = presentationNumber(style.line_width);
+      const markerSize = presentationNumber(style.marker_size);
+      if (color || lineWidth !== null || typeof style.line_style === "string") {
+        styled.line = Object.assign({}, trace.line || {},
+          color ? { color } : {},
+          lineWidth !== null ? { width: lineWidth } : {},
+          typeof style.line_style === "string" ? { dash: style.line_style } : {});
+      }
+      if (color || markerSize !== null || typeof style.marker === "string") {
+        styled.marker = Object.assign({}, trace.marker || {},
+          color ? { color } : {},
+          markerSize !== null ? { size: markerSize } : {},
+          typeof style.marker === "string" ? { symbol: style.marker } : {});
+      }
+      if (opacity !== null) {
+        styled.opacity = opacity;
+      }
+      if (style.legend === "hidden") {
+        styled.showlegend = false;
+      } else if (style.legend === "shown") {
+        styled.showlegend = true;
+      }
+    }
+    if (policy?.legend === "hide") {
+      styled.showlegend = false;
+    } else if (policy?.legend === "show") {
+      styled.showlegend = true;
+    }
+    return styled;
   }
 
   function debugPlotlyResize(label, output, width, height) {
@@ -10244,6 +10432,10 @@
       refreshNglOutputFrame,
       ngl_active_frame_index,
       applyPlotlyTheme,
+      plotPresentationForOutput,
+      plotPresentationProfileForOutput,
+      applyPlotPresentationLayout,
+      applyPlotPresentationStyle,
       plotlyDataForOutput,
       appendPlotlyOutput,
       rememberPlotlyAppend,

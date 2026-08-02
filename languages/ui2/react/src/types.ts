@@ -39,6 +39,7 @@ export type WorkbenchResultGroup = {
   repeat?: string
   layout?: "auto" | "tabs" | "grid" | "comparison" | "gallery" | string
   plotPresentation?: {
+    profile?: string
     traceRoles?: Record<string, { token?: "primary" | "reference" | "context" | "experimental" | "uncertainty" | "residual" | string; legend?: "show" | "hide" | string }>
   }
   visibility?: "declared" | "available"
