@@ -128,6 +128,8 @@ like( $ui2_react_css, qr/\.ui2-workbench-result-card \.ui2-output-plotly\{[^}]*o
 like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded/, 'workbench expanded workspace styles are present' );
 like( $ui2_react_css, qr/grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,30rem\),1fr\)\)/, 'expanded workspace uses an open-ended result-group grid' );
 like( $ui2_react_css, qr/data-output-layout=gallery\].*?grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,28rem\),1fr\)\)/, 'gallery result groups place generated dynamic plots side by side when space permits' );
+like( $ui2_react_css, qr/\.ui2-workbench-input-pane,\.ui2-workbench-results-pane\{min-width:0\}/, 'result panes may shrink below their gallery content width on narrow screens' );
+like( $ui2_react_css, qr/\.ui2-workbench-field-group \[data-output-layout=gallery\] \.ui2-dynamic-output\{grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,28rem\),1fr\)\);min-width:0\}/, 'gallery width is constrained by its available result pane before auto-fit selects columns' );
 like( $ui2_react_css, qr/\.ui2-workbench-result-card \.ui2-ngl-frame-scrubber/, 'React stylesheet owns the streamed-frame scrubber dimensions' );
 like( $ui2_js, qr/output\._ui2_ngl_scrubbing.*?pointerdown.*?pointerup/s, 'streamed-frame scrubber remains mounted while the user drags it' );
 unlike( $ui2_js, qr/function ngl_stream_telemetry_label\(output\).*?last_dropped_reason.*?parts\.push/s, 'stream telemetry does not expose internal dropped-frame reasons to users' );

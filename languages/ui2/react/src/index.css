@@ -88,6 +88,7 @@
 
 .ui2-workbench-results-pane {
   display: flex;
+  min-width: 0;
   min-height: 0;
   flex-direction: column;
   gap: 0.75rem;
@@ -100,12 +101,16 @@
 
 .ui2-workbench-result-card {
   flex: 1 1 auto;
+  min-width: 0;
   overflow-x: hidden;
 }
 
 .ui2-workbench-result-card,
 .ui2-workbench-result-card > div,
-.ui2-workbench-result-card [role="tabpanel"] {
+.ui2-workbench-result-card [role="tabpanel"],
+.ui2-workbench-result-tabs,
+.ui2-workbench-field-group {
+  min-width: 0;
   min-height: 0;
 }
 
@@ -338,6 +343,7 @@
  * renderer anything module-specific.  Each generated Plotly child still
  * inherits its UI2-owned responsive sizing and stacks when its pane narrows. */
 .ui2-workbench-field-group [data-output-layout="gallery"] .ui2-dynamic-output {
+  min-width: 0;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 28rem), 1fr));
 }
 
