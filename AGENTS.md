@@ -25,6 +25,17 @@ before planning, recommending architecture, or changing code.
   report a concrete plan without changing files or remote state.
 - gacp means stage, commit, and push only intended changes.
 
+### Generated HTML5 artifact policy
+
+`languages/html5/add/js/ga.min.js` is a tracked artifact of the GenApp HTML5
+assembly. During GenApp generation, `gacp`, `gacpu`, or deployment work, do not
+stop or request confirmation solely because this file has a diff. Record whether
+it was already dirty before generation: preserve and do not stage a pre-existing
+diff unless it is in scope. If a clean file is regenerated from intended HTML5
+source changes, include it in that same GenApp commit. If generation creates
+artifact-only drift unrelated to the intended commit, restore it automatically.
+Do not add it to `.gitignore` or mark it assume-unchanged.
+
 ## Documentation Source Of Truth
 
 The GitHub wiki is the current source of truth for GenApp documentation. Prefer
