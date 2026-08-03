@@ -131,7 +131,7 @@ like( $ui2_css, qr/\.ui2-repeat-table,\s*\.ui2-matrix-table\s*\{\s*width: 100%;\
 like( $ui2_css, qr/\.ui2-repeat-table td\s*\{\s*padding: 0 0\.35rem;\s*min-width: 0;/s, 'repeat table cells can shrink within the available input card' );
 like( $ui2_react_css, qr/\.ui2-workbench-result-card \.ui2-output-plotly\{[^}]*overflow:hidden/, 'workbench fitted Plotly output suppresses internal scrollbars' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded/, 'workbench expanded workspace styles are present' );
-like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded \.ui2-workbench-result-tabs\{(?=[^}]*display:flex)(?=[^}]*flex-wrap:wrap)[^}]*\}/, 'expanded workspace wraps generic result panels without phantom grid tracks' );
+like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded \.ui2-workbench-result-tabs\{(?=[^}]*display:flex)(?=[^}]*flex-flow:wrap)[^}]*\}/, 'expanded workspace overrides the normal column direction so generic result panels wrap across rows without phantom grid tracks' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded \.ui2-workbench-result-toolbar\{flex:1 0 100%\}/, 'expanded workspace keeps its toolbar on a full row without occupying result tracks' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded \.ui2-workbench-expanded-panel\{(?=[^}]*display:flex)(?=[^}]*flex:30rem)(?=[^}]*min-width:0)[^}]*\}/, 'ordinary expanded result panels share their available row width' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded \.ui2-workbench-result-panel-wide\{flex-basis:100%\}/, 'wide expanded result panels occupy their own row without reserving columns' );
