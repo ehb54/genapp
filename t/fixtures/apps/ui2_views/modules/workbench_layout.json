@@ -1,0 +1,33 @@
+{
+    "moduleid"   : "workbench_layout",
+    "label"      : "Workbench Layout",
+    "executable" : "plain",
+    "resource"   : "local",
+    "fields"     : [
+        {
+            "role"    : "input",
+            "id"      : "input_value",
+            "label"   : "Input value",
+            "type"    : "text",
+            "default" : "neutral fixture"
+        },
+        {
+            "role"  : "output",
+            "id"    : "primary_plot",
+            "label" : "Primary plot",
+            "type"  : "plotly"
+        },
+        {
+            "role"  : "output",
+            "id"    : "structure_view",
+            "label" : "Structure view",
+            "type"  : "ngl"
+        },
+        {
+            "role"  : "output",
+            "id"    : "wide_plot",
+            "label" : "Wide plot",
+            "type"  : "plotly"
+        }
+    ]
+}

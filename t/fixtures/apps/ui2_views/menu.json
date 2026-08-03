@@ -19,6 +19,10 @@
                 {
                     "id"    : "typed",
                     "label" : "Typed"
+                },
+                {
+                    "id"    : "workbench_layout",
+                    "label" : "Workbench layout"
                 }
             ]
         }

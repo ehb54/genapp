@@ -32,6 +32,7 @@ ok( -f File::Spec->catfile( $ui2, qw(react ui2-react.js) ), 'ui2 React bundle wa
 ok( -f File::Spec->catfile( $ui2, qw(modules shared.json) ), 'ui2 shared module summary was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(modules plain.json) ), 'ui2 plain module summary was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(modules typed.json) ), 'ui2 typed module summary was generated without ui2 type templates' );
+ok( -f File::Spec->catfile( $ui2, qw(modules workbench_layout.json) ), 'ui2 neutral mixed-width workbench fixture was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(modules sys_user_config.json) ), 'ui2 config system module summary was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(modules sys_file_manager.json) ), 'ui2 configbase system module summary was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(modules sys_feedback.json) ), 'ui2 feedback system module summary was generated' );
@@ -130,7 +131,11 @@ like( $ui2_css, qr/\.ui2-repeat-table,\s*\.ui2-matrix-table\s*\{\s*width: 100%;\
 like( $ui2_css, qr/\.ui2-repeat-table td\s*\{\s*padding: 0 0\.35rem;\s*min-width: 0;/s, 'repeat table cells can shrink within the available input card' );
 like( $ui2_react_css, qr/\.ui2-workbench-result-card \.ui2-output-plotly\{[^}]*overflow:hidden/, 'workbench fitted Plotly output suppresses internal scrollbars' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded/, 'workbench expanded workspace styles are present' );
-like( $ui2_react_css, qr/grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,30rem\),1fr\)\)/, 'expanded workspace uses an open-ended result-group grid' );
+like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded \.ui2-workbench-result-tabs\{(?=[^}]*display:flex)(?=[^}]*flex-wrap:wrap)[^}]*\}/, 'expanded workspace wraps generic result panels without phantom grid tracks' );
+like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded \.ui2-workbench-result-toolbar\{flex:1 0 100%\}/, 'expanded workspace keeps its toolbar on a full row without occupying result tracks' );
+like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded \.ui2-workbench-expanded-panel\{(?=[^}]*display:flex)(?=[^}]*flex:30rem)(?=[^}]*min-width:0)[^}]*\}/, 'ordinary expanded result panels share their available row width' );
+like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded \.ui2-workbench-result-panel-wide\{flex-basis:100%\}/, 'wide expanded result panels occupy their own row without reserving columns' );
+unlike( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded \.ui2-workbench-result-tabs\{[^}]*grid-template-columns:repeat\(auto-fit/s, 'expanded workspace does not combine auto-fit tracks with full-row children' );
 like( $ui2_react_css, qr/data-output-layout=gallery\].*?grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,28rem\),1fr\)\)/, 'gallery result groups place generated dynamic plots side by side when space permits' );
 like( $ui2_react_css, qr/\.ui2-workbench-input-pane,\.ui2-workbench-results-pane\{min-width:0\}/, 'result panes may shrink below their gallery content width on narrow screens' );
 like( $ui2_react_css, qr/\.ui2-workbench-field-group \[data-output-layout=gallery\] \.ui2-dynamic-output\{grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,28rem\),1fr\)\);min-width:0\}/, 'gallery width is constrained by its available result pane before auto-fit selects columns' );
@@ -478,6 +483,14 @@ is( $shared->{viewjson}{labels}{basis}, 'target neutral', 'general view nested d
 is( $shared->{viewjson}{labels}{title}, 'UI2 View', 'target-specific ui2 view overrides general view data' );
 is( $shared->{viewjson}{renderers}{shared_input}, 'compact', 'target-specific ui2 view adds target-only data' );
 is( $shared->{viewjson}{sections}[0]{id}, 'general', 'general view sections are available to ui2' );
+
+my $workbench_layout = decode_json( read_file( File::Spec->catfile( $ui2, qw(modules workbench_layout.json) ) ) );
+is( $workbench_layout->{viewjson}{renderer}, 'react-workbench', 'neutral layout fixture uses the generic React workbench' );
+is_deeply(
+    [ map { $_->{fit} || 'default' } @{ $workbench_layout->{viewjson}{results}{groups} || [] } ],
+    [ 'pane', 'default', 'wide' ],
+    'neutral layout fixture preserves mixed ordinary and wide result groups',
+);
 
 my $plain = decode_json( read_file( File::Spec->catfile( $ui2, qw(modules plain.json) ) ) );
 is( $plain->{module}, 'plain', 'plain summary records module id' );

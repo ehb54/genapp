@@ -1,0 +1,35 @@
+{
+    "renderer" : "react-workbench",
+    "layout"   : "scientific-workbench",
+    "inputs"   : {
+        "sections" : [
+            {
+                "id"     : "inputs",
+                "title"  : "Inputs",
+                "fields" : ["input_value"]
+            }
+        ]
+    },
+    "results" : {
+        "groups" : [
+            {
+                "id"      : "primary",
+                "label"   : "Primary plot",
+                "outputs" : ["primary_plot"],
+                "primary" : true,
+                "fit"     : "pane"
+            },
+            {
+                "id"      : "structure",
+                "label"   : "Structure",
+                "outputs" : ["structure_view"]
+            },
+            {
+                "id"      : "wide",
+                "label"   : "Wide plot",
+                "outputs" : ["wide_plot"],
+                "fit"     : "wide"
+            }
+        ]
+    }
+}
