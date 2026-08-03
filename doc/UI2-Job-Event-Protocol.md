@@ -1,6 +1,7 @@
 # UI2 Job Event Protocol
 
-Status: initial vertical-slice contract for the UI2 scientific workbench.
+Status: adopted protocol version 1. Updated 2026-08-03 to describe the current
+shared runtime implementation.
 
 This protocol carries runtime information from a GenApp application driver to
 UI2. It does not replace SASSIE `pgui()`. Scientific code may continue to put
@@ -16,6 +17,11 @@ SASSIE pgui() -> driver queue parser -> normalized job event -> UI2 store -> Rea
 Legacy html5 output remains an adapter fed from the same driver interpretation.
 The new UI2 path must not use `_textarea`, DOM discovery, or widget injection as
 its semantic model.
+
+The current GenApp implementation advertises capabilities and consumes events
+in `languages/ui2/add/js/ui2.js`; the generated message server maintains the
+bounded journal through `languages/html5/util/job-event-cache.php`. Application
+publishers own their envelopes and scientific topics.
 
 ## Layering
 
@@ -88,11 +94,16 @@ Initial operations:
 - Sequence numbers provide ordering and duplicate suppression across WebSocket
   and polling delivery.
 - UI2 ignores an event it has already applied.
-- A sequence gap is recorded and must be recoverable from a bounded server-side
-  journal or an authoritative topic snapshot.
+- A sequence gap is recorded and may be recovered from a bounded server-side
+  journal or a later topic snapshot.
 - Live delivery may broadcast one `_job_event`.
-- Polling and reattachment may return a cumulative `_job_events` array.
-- Terminal lifecycle, errors, summaries, and artifact availability are durable.
+- Polling and reattachment may return a bounded `_job_events` array.
+- The journal is a delivery and runtime-display cache, not authoritative
+  scientific storage or a complete history.
+- An event with `replay: false` is delivered live; the journal retains only an
+  omitted marker carrying its sequence identity.
+- Terminal lifecycle, errors, summaries, and artifact availability may remain
+  in the bounded journal, but ordinary final outputs own completed-job state.
 - Intermediate progress and structure previews may be coalesced when an
   authoritative later snapshot exists.
 - Live-display sampling never changes the calculation or the complete stored
@@ -153,14 +164,14 @@ publisher.warning(topic, payload)
 publisher.error(topic, payload)
 ```
 
-For the migration period, a legacy adapter emits the existing `_textarea`,
+The legacy adapter emits the existing `_textarea`,
 `_progress`, `progress_html`, declared output ids, and final stdout JSON. UI2
 events are additive and capability-gated. The React path never depends on the
 legacy adapter.
 
 ## Example Topics
 
-An early application uses:
+Applications may use topics such as:
 
 - `lifecycle/run`
 - `progress/run`
@@ -172,9 +183,9 @@ An early application uses:
 - `structure/structure_ngl`
 - `artifact/<declared-output-id>`
 
-Upcoming SAS, p(r), energy, and other MMC series should use additional stable
-topics and declared output ids without changing the envelope or creating new
-transport conventions.
+Additional SAS, P(r), energy, simulation-observable, and analysis series use
+stable topics and declared output ids without changing the envelope or creating
+new transport conventions.
 
 ## Plot Streaming
 
@@ -183,6 +194,9 @@ transport conventions.
 - Use `Plotly.react` for an authoritative snapshot or trace-set change.
 - Keep the graph DOM node, CSS pane size, and `uirevision` stable.
 - Batch updates when event frequency would otherwise make the browser lag.
+- Treat journaled plot state as a bounded live-display aid. Final stdout JSON
+  under the declared `plotly` output id is authoritative for completion and
+  fresh-window reattachment; do not require event replay or a plot sidecar.
 
 ## Structure Streaming
 
@@ -252,7 +266,10 @@ Before a shared driver refactor is accepted:
 5. Generate html5 and verify no target output changed unintentionally.
 6. Run an actual legacy job before deployment.
 
-## Verified Vertical-Slice Evidence
+## Historical Vertical-Slice Evidence
+
+The following evidence established protocol version 1 in July 2026. It is
+historical validation, not the current module inventory or migration plan.
 
 - The capability-off MMC driver characterization emits only the established
   legacy runtime keys and final stdout behavior.

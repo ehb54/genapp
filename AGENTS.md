@@ -1,375 +1,382 @@
 # Agent Guardrails
 
-## Communication
+Guidance for developers and automated agents working on GenApp generator and
+runtime code. These rules are maintained on the `php7designer` branch; they do
+not imply authority over other branches or upstream development.
 
-When summarizing work or handing off state, use plain language first. Say what
-changed, what was verified, what remains uncertain, and the next concrete
-steps. Include an approximate count of remaining steps when the work spans more
-than one action, so the user can quickly judge scope and progress.
-For multi-step work, final responses must include a short next-steps note with
-an approximate remaining-step count, even when the immediate requested task is
-complete.
+If a task concerns SASSIE, Zazzie, the Zazzie3 deployment, or SASSIE-driven use
+of GenApp, read the branch-specific SASSIE-web addendum at the end of this file
+before planning, recommending architecture, or changing code.
 
-## Source Of Truth
+## Authority And Communication
+
+- Use plain language first. State what changed, what was verified, remaining
+  uncertainty, and the next concrete steps.
+- For multi-step work, include an approximate count of remaining steps, even
+  when the immediate request is complete.
+- When the requesting user is `madscatt`, obtain explicit permission before
+  creating or switching to a Git branch.
+- Preserve unrelated dirty files and another contributor's work. Do not stage,
+  commit, deploy, or rewrite shared history unless requested or included in the
+  agreed workflow.
+- ROA/rao means inspect and report without changing local or remote state.
+- ROAPTG/roaptg means read-only audit/adapt planning for Terra guardrails:
+  inspect applicable repositories and instructions, identify adaptations, and
+  report a concrete plan without changing files or remote state.
+- gacp means stage, commit, and push only intended changes.
+
+## Documentation Source Of Truth
 
 The GitHub wiki is the current source of truth for GenApp documentation. Prefer
-the local sibling checkout at `../genapp.wiki` for fast, token-efficient reads.
+the local sibling checkout at `../genapp.wiki` for efficient reads.
 
-- Refresh the local wiki checkout with `tools/refresh_github_wiki.sh` before
-  relying on freshness-sensitive documentation.
-- The refresh script clones or updates `../genapp.wiki` from
-  `https://github.com/ehb54/genapp.wiki.git` by default.
-- Use `GENAPP_WIKI_DIR`, `GENAPP_WIKI_URL`, `GENAPP_WIKI_REMOTE`, or
-  `GENAPP_WIKI_BRANCH` only when the user explicitly needs an alternate wiki
-  checkout or remote.
-- Current entry points include `Home.md`, `Start-Here.md`, `Developer-Guide.md`,
-  `Reference.md`, `Wrap-an-Application.md`, and `Tutorial-Demo-App.md`.
-
-Many promoted wiki pages were mechanically imported from old Trac pages. Use
-them for GenApp concepts, schema details, and historical context, but treat old
-install paths, SVN URLs, host names, OS versions, and deployment commands as
-stale unless verified against current local files or explicit user direction.
-
-## Plotting Recovery Guardrails
-
-The rejected plotting experiment tracked in `ehb54/zazzie#193` must not be
-used as an implementation guide. Do not introduce `semantic_plot` GenApp field
-types, SASSIE scientific dataset recorders, plot-specific replay stores,
-`.scientific_datasets.json` reattachment requirements, or migration-status
-registries for SASSIE-web plotting work.
-
-The corrected governing issue is `ehb54/zazzie#184`. The normative guide is
-`doc/Plotting-Architecture.md`; the current GitHub wiki page is
-`Reference-Plotly`.
-
-Use the existing sassie-wide bin/driver runtime contract as the foundation:
-drivers publish JSON output, ordered runtime events, progress, completion, and
-reattachment through the established GenApp mechanisms. SASSIE stays focused on
-science calculations and normal scientific output files. If a plotting
-migration appears to require SASSIE changes beyond ordinary science output,
-stop and prepare a plain-language SASSIE-team request instead of changing the
-GenApp/UI code around the gap.
-
-### Mandatory contract for every new SASSIE-web plot
-
-- SASSIE owns scientific calculations, units, canonical outputs, and ordinary
-  GUI-neutral scientific stream values. It must not import Plotly, emit
-  renderer objects, or implement GUI-only plotting/replay state.
-- Declare a stable `snake_case` module output id using the existing GenApp
-  `plotly` type. Drivers/helpers may prepare bounded web-facing series from
-  existing SASSIE outputs or stream values; they must not redefine science.
-- The producer supplies scientific values, series identity, titles, axis names
-  and units, scale types, uncertainty, and required subplot relationships.
-  UI2 owns responsive sizing, fonts, colors, line/marker styling, margins,
-  legend placement, modebar, interaction, accessibility, empty-state display,
-  and final rendering.
-- Producers must not emit fixed width/height, pixel margins, fonts, theme or
-  trace colors, line widths, marker sizes, fixed legend coordinates, or
-  general Plotly config.
-- Live plots use ordered, bounded runtime events through the established
-  `SASSIE_STREAM` and driver-runtime path. Never poll files during a run, send
-  unbounded history, or copy structured events into report text.
-- The driver's final stdout JSON must include the completed plot under the
-  declared output id. It may read a completed scientific output once. Normal
-  saved final output is the only plot reattachment source; do not depend on
-  browser memory, event replay, or a plot-specific sidecar.
-- Omit an unavailable or disabled optional plot. Do not fabricate zero data or
-  blank placeholder figures. Use an ordinary dynamic `plotly` output only when
-  the number of plots is genuinely runtime-dependent.
-- Verify scientific value/unit parity, optional and empty modes, bounded live
-  updates, completion, failure, normal view, expanded/restore, and fresh-window
-  reattachment. The SASSIE GUI mimic must remain independent of GenApp and
-  Plotly.
-
-Before changing a plotted module, read the applicable `AGENTS.md` files in this
-repository, `genapp_zazzie`, and `madscatt/zazzie`. Report the three guardrail
-hashes, the governing issue, whether SASSIE changes are required, and whether a
-shared driver/helper gap exists. Do not migrate another module group until the
-current reference module passes normal, expanded, completion, and reattach
-checks on the deployed server.
-
-## UI2 Core Extension Gate
-
-Read `doc/UI2-Core-Extension-Policy.md` before changing UI2 runtime, React
-workbench, generated UI2 assets, or their tests for an application module. An
-application task must begin with its view/module/driver boundary. It may change
-GenApp core only after producing the required neutral shared-gap reproduction,
-schema/contract, opted-in and non-opted-in tests, and explicit user approval.
-
-Never add module ids, output ids, SASSIE-specific scientific roles, or
-undeclared `ui2_*` producer keys to UI2 core. Keep series-role presentation
-mapping in application views; UI2 styles only documented generic presentation
-tokens. Keep NGL application display defaults in application metadata and do
-not make the renderer interpret trials, acceptance counts, or milestones.
-
-Do not create a permanent exception list or migration-status registry to bypass
-this gate. Existing debt must be removed before a zero-exception boundary check
-is enabled.
+- Refresh it with `tools/refresh_github_wiki.sh` before relying on
+  freshness-sensitive documentation.
+- Current entry points include `Home.md`, `Start-Here.md`,
+  `Developer-Guide.md`, `Reference.md`, `Wrap-an-Application.md`, and
+  `Tutorial-Demo-App.md`.
+- Many promoted pages were mechanically imported from Trac. Use them for
+  concepts and schema details, but treat old paths, SVN URLs, hosts, OS versions,
+  and deployment commands as historical until verified.
+- Checked-in `doc/` policies govern repository architecture and support
+  boundaries when they explicitly identify themselves as normative.
+- Before planning a shared change, search the affected target and application
+  for current `*POLICY*`, `*CONTRACT*`, README, schema, and maintained test
+  documentation. Do not treat an old design plan or audit as adopted policy.
 
 ## GenApp Working Model
 
-GenApp is a generator for science gateway and application interfaces. An
-application is described by JSON files plus executable wrappers; GenApp reads
-those definitions and emits target-specific application code.
+GenApp generates science-gateway and application interfaces from application
+JSON plus executable wrappers. For generator/runtime architecture, new widgets,
+new usage patterns, target behavior, or substantial runtime changes, read
+`doc/GenApp-Architecture-Audit.md`. Keep detailed call graphs and open questions
+there rather than expanding this guardrail file.
 
-For generator/runtime architecture work, especially new widgets, new usage
-patterns, new target behavior, or substantial runtime changes, read
-`doc/GenApp-Architecture-Audit.md`. Keep deeper call graphs, extension
-checklists, and open architecture questions there rather than expanding this
-guardrails file.
+Application layout:
 
-Core application layout:
-
-- `directives.json`: global generation and application directives, including
-  target languages.
+- `directives.json`: global generation and application directives.
 - `menu.json`: menu hierarchy, module grouping, startup/autorun behavior, and
-  optional menu restrictions.
-- `modules/*.json`: module input/output field definitions and module-level
-  behavior such as resource, submit policy, job weighting, help, autosubmit,
-  notification, and output fields.
+  optional restrictions.
+- `modules/*.json`: module inputs, outputs, resources, submit policy, help,
+  notification, and related behavior.
 - `bin/`: executable wrappers or programs invoked by modules.
 - `add/`: optional static files copied into generated output.
-- `<language>/`: optional language-specific overrides. A language-specific
-  `directives.json` appends/replaces top-level settings, `menu.json` replaces
-  the base menu, `modules/*.json` replaces matching modules, and `add/`
-  overwrites after the base `add/` copy.
+- `<language>/`: target-specific overrides. Target `directives.json` augments or
+  replaces settings, `menu.json` replaces the base menu, matching module JSON
+  replaces the base module, and target `add/` content overwrites base copies.
 - `output/<language>/`: generated application output.
 
 Executable wrappers must write valid JSON to stdout. Put diagnostics on stderr
-or in files, not stdout, unless the module contract explicitly expects them in
-the JSON output.
-
-## Legacy Target Prime Directive
-
-The existing `html5` generated application is production legacy behavior. New
-target work such as `ui2` must not silently change `html5` output, deployment
-directives, system modules, login/splash behavior, theme selection, Job Manager
-columns, or generated runtime assets.
-
-- Prefer target-filtered generation such as `genapp --language ui2` while
-  experimenting with `ui2`.
-- Regenerate `html5` only when the task explicitly calls for a legacy change or
-  legacy verification.
-- Treat ignored runtime files such as an app's `directives.json` as deploy
-  state; refresh them only from the tracked source intended for that app and
-  verify legacy-facing directives before regeneration.
-- For Zazzie3, keep `directives.json.docker` and its guardrail checker aligned
-  so theme selection, splash docs, Job Manager Details, and other legacy UI
-  expectations cannot drift unnoticed.
-- If a UI2 experiment needs shared GenApp core changes, add tests proving
-  target filtering and legacy generation behavior remain intact.
-- For UI2 runtime features, keep transport, field behavior, submission,
-  polling, output rendering, and reattachment in the UI2 core target/runtime and
-  let React/shadcn consume them through the existing bridge unless a reviewed
-  architecture decision says otherwise. `ui2-react` is not a separate target
-  language. See `doc/GenApp-Architecture-Audit.md` for the current
-  action/precheck guidance.
-
-Zazzie3 has a non-admin SASSIE-web test user named `codex` for UI2 runtime
-timing and reattach checks. Do not store its password in this file or any
-tracked repository file; ask the user or use an approved secret channel when
-credentials are needed.
+or in files unless the declared application contract explicitly includes them
+in JSON output.
 
 ## Repository Map
 
 This repository is the GenApp generator/runtime source, not an application
 instance and not the live wiki.
 
-- `bin/`: command-line entry points such as `genapp`, `genapp.pl`,
-  `genapp_run.pl`, `genapp_check.pl`, and `check_json.pl`.
-- `languages/`: target definitions and templates for generated output
-  (`html5`, `docker`, `nodeapi`, `qt*`, `java`, etc.).
-- `modules/`: built-in/system module definitions.
-- `etc/`: Perl utilities, config samples, tests, templates, and support files.
+- `bin/`: entry points including `genapp`, `genapp.pl`, `genapp_run.pl`,
+  `genapp_check.pl`, and `check_json.pl`.
+- `languages/`: target definitions and generation templates.
+- `modules/`: built-in and system module definitions.
+- `etc/`: Perl utilities, configuration samples, tests, templates, and support
+  files.
 - `sbin/`: installer and application-management scripts.
 - `dockerfiles/`: container build material.
-- `tools/`: local maintenance helpers, including GitHub wiki refresh hooks.
+- `tools/`: maintenance helpers, including wiki refresh tooling.
 - `projects/`, `tmp/`, and `supplementary/`: examples, experiments, migrated
   assets, or support material; inspect freshness before relying on them.
 
-The `genapp` and `genapp.pl` entry points require `GENAPP` to point at this
-repository and dispatch to `bin/genapp_run.pl`. `genapp_run.pl` validates the
-application directory, reads the language definitions, and assembles generated
-files from replacement templates.
+The `genapp` and `genapp.pl` entry points require `GENAPP` to identify this
+repository and dispatch to `bin/genapp_run.pl`. The runner validates the
+application directory, reads target definitions, and assembles generated files
+from templates and overrides.
+
+## UI2 Core Extension Gate
+
+Read `doc/UI2-Core-Extension-Policy.md` before planning or changing UI2 runtime,
+React workbench core, generated UI2 core assets, or their tests for an
+application module.
+
+- Begin at the application view, schema, wrapper, or application-owned helper.
+- Change GenApp core only after a neutral shared-gap reproduction, a generic
+  schema/contract, opted-in and non-opted-in tests, and explicit user approval.
+- Core behavior must not depend on application module ids, output ids, or
+  application-specific scientific meaning.
+- Use documented generic presentation and capability tokens. Keep application
+  role mapping and display defaults in application-owned metadata.
+- Do not add permanent exception lists, per-application core branches, or
+  migration-status registries to bypass this gate.
+- A screenshot from one application is not proof of a shared core defect.
+
+## Legacy Target Prime Directive
+
+The generated `html5` application is production legacy behavior. New target
+work such as `ui2` must not silently change HTML5 output, deployment directives,
+system modules, login/splash behavior, themes, Job Manager columns, or generated
+runtime assets.
+
+The authoritative lifecycle and compatibility decision is
+`doc/UI2-Support-Policy.md`: UI2 with React workbenches is the primary web
+surface, native UI2 is the fallback/reference renderer, and HTML5 is in legacy
+maintenance mode. Preserving HTML5 does not require new UI2 widgets, workflows,
+layouts, or presentation features to be backported.
+
+- Prefer target-filtered generation such as `genapp --language ui2` during UI2
+  work.
+- Regenerate HTML5 only when the task explicitly calls for legacy change or
+  verification.
+- Treat ignored runtime files such as application `directives.json` as deployed
+  state. Refresh them only from the tracked source intended for that app.
+- Keep tracked deployment directives and their guardrail checks aligned.
+- Shared UI2 changes require tests proving target filtering and legacy
+  generation remain intact.
+- Keep transport, fields, submission, polling, output rendering, and reattachment
+  in generic UI2 core/runtime. React workbenches consume those facilities through
+  the existing bridge; `ui2-react` is not a separate target language.
 
 ## Cross-Repository Work
 
-When a task touches files outside this repository, read and follow the
-applicable `AGENTS.md` in each repository or working tree before editing,
-testing, deploying, or drawing runtime conclusions about that code. The target
-repository's instructions control its interpreter, branch, deployment, testing,
-and ownership rules. Do not assume GenApp-local conventions apply to sibling
-repositories such as `genapp_zazzie` or `zazzie`.
+Before planning, editing, testing, deploying, or drawing runtime conclusions
+about another repository, read and follow its applicable `AGENTS.md`. The target
+repository controls its interpreter, branch, deployment, testing, ownership,
+and scientific rules. Do not assume GenApp conventions control an application
+repository or scientific backend.
 
-## GitHub Workflow Preference
+For requests to make application B behave like application A, inspect both
+current implementations, maintained tests and policies, and recent relevant
+commits before presenting a plan. Report which generic GenApp contracts are
+reused and demonstrate any proposed shared-core gap.
 
-For this repository, do not use the Codex GitHub app/connector unless the user
-explicitly asks for that connector. Do not probe it first and then fall back to
-`gh`; that wastes context and can hit avoidable permission errors.
+## GitHub Workflow
 
-Use:
+For this repository, do not use the Codex GitHub connector unless the user
+explicitly requests it. Use:
 
-- local `git` for branch, status, history, and diff work
-- authenticated `gh` CLI for GitHub reads and writes, including issues, pull
-  requests, comments, labels, and API calls
+- local `git` for status, branches, history, and diffs;
+- authenticated `gh` CLI for GitHub issues, pull requests, comments, labels,
+  reviews, and API operations.
 
-Treat the local checkout plus `gh` as the authoritative GitHub workflow for
-this repo. For issue or pull request comments, labels, edits, reviews, and other
-GitHub writes, go directly to `gh api` or another appropriate `gh` command.
-
-Local shorthand: `gacpu` means `gacp` for the intended GenApp changes, followed
-by `tools/zazzie3_update_genapp_core.sh` to update the Zazzie3 container's
-GenApp core checkout and regenerate the configured app. If the server core
-checkout is dirty, inspect the reported files; rerun with `--stash-dirty` only
-when preserving those server-side changes in a stash is acceptable.
-
-ROAPT/roapt means read-only audit/adapt plan for Terra: inspect the relevant
-repositories and instructions, identify required adaptations, and report a
-concrete plan without changing files or remote state.
+Do not probe the connector and then fall back to `gh`. Treat the local checkout
+plus `gh` as the normal GitHub workflow for this branch.
 
 ## Common Workflows
 
-When working on GenApp itself:
+When changing GenApp itself:
 
-1. Read the relevant current wiki page and the corresponding local source or
-   template before editing.
+1. Read the relevant current wiki page and corresponding source or template.
 2. Prefer existing generator patterns in `bin/`, `etc/perl/`, and `languages/`.
-3. Prefer Perl for new GenApp maintenance code, tests, and harnesses when it is
-   practical. GenApp already uses Perl heavily because that matched the original
-   author's preference; staying in that language helps keep future maintenance
-   sane. Use another language only when it clearly fits the target runtime or
-   existing local tooling better.
-4. Avoid calling preliminary validation a "smoke test." Prefer clearer phrases
-   such as "basic validation," "initial verification," "generation sanity
-   check," or "workflow check."
+3. Prefer Perl for repository maintenance code, tests, and harnesses when it
+   fits existing architecture. Use another language when the target runtime or
+   established local tooling clearly requires it.
+4. Use specific validation language such as `basic validation`, `generation
+   check`, or `workflow check`; do not use the prohibited informal two-word
+   validation phrase in documentation, comments, issues, commits, or user-facing
+   summaries.
 5. Keep generated-output changes separate from generator/template changes unless
-   the user explicitly asks for generated artifacts.
-   `languages/html5/add/js/ga.min.js` is recreated from the HTML5 JavaScript
-   assembly, including `languages/html5/js/value.js`, whenever `genapp.pl`
-   compiles an HTML5 app. Treat it as a generated runtime asset; updates can
-   safely replace it, and deployment helpers may restore or regenerate it when
-   it appears as generated drift.
-6. Validate JSON changes with `bin/check_json.pl` where applicable.
-7. Validate application directories with `bin/genapp_check.pl` or by running
-   `genapp` from the application base directory when an application fixture is
-   available.
-8. Put new automated tests under the Perl-native `t/` tree. New additions that
-   need coverage should extend that harness unless there is a strong,
-   documented reason to use a different test location.
-9. For JavaScript-oriented test helpers, prefer a minimal repo-local Node.js
-   LTS setup with bundled `npm`, and drive it from the Perl harness instead of
-   introducing a separate test runner stack unless the coverage need clearly
-   requires it.
-10. Treat Linux CI or a Linux container as the authoritative environment for
-    JavaScript test results because GenApp production runs on Linux servers.
-    Mac results are useful for local developer feedback, syntax checks, and
-    quick runtime validation, but they are convenience checks rather than the
-    source of truth.
+   the task requires generated artifacts.
+6. Treat `languages/html5/add/js/ga.min.js` as generated from the HTML5 assembly;
+   generator runs may replace it.
+7. Validate JSON with `bin/check_json.pl` where applicable.
+8. Validate application directories with `bin/genapp_check.pl` or the normal
+   `genapp` workflow when an application fixture is available.
+9. Put new automated tests under the Perl-native `t/` tree unless a documented
+   target-specific reason requires another harness.
+10. For JavaScript helpers, prefer a minimal repository-local Node LTS setup and
+    drive it from the Perl harness unless the coverage need requires more.
+11. Treat Linux CI or a Linux container as authoritative for JavaScript runtime
+    results. Mac checks are useful local evidence, not production authority.
 
 When wrapping or debugging an application:
 
-- Confirm the app base directory contains `directives.json`, `menu.json`, and
+- Confirm the application base contains `directives.json`, `menu.json`, and
   `modules/`.
-- Confirm `directives.json` has the expected target language list and an
-  `application` value matching the base directory name when required.
-- Confirm every menu module id has a matching module JSON file after
-  language-specific overrides are considered.
-- Confirm module executables exist, are executable where needed, and emit valid
-  JSON to stdout.
-- Use `safefile` for text fields that represent user-provided paths. Do not
-  weaken path validation or allow traversal outside the job tree.
+- Confirm directives identify the expected target languages and application.
+- Confirm every active menu module has a matching module JSON after target
+  overrides.
+- Confirm module executables exist, have required permissions, and emit valid
+  JSON stdout.
+- Use `safefile` for text fields representing user paths. Do not weaken path
+  validation or allow traversal outside the job tree.
 
 ## Runtime And Jobs
 
-For HTML/PHP-style generated applications, `appconfig.json` controls runtime
-behavior such as mail, host identity, messaging ports, compute resources,
-restricted user groups, default submit policy, job limits, submit blocks, and
-MOTD.
+Before planning or changing UI2 job-event envelopes, capability negotiation,
+bounded journals, replay behavior, or runtime delivery, read
+`doc/UI2-Job-Event-Protocol.md`. Application drivers may define target-neutral
+scientific topics, but a bounded event journal is delivery/display state, not
+authoritative completed output.
+
+For HTML/PHP-style generated applications, `appconfig.json` controls mail, host
+identity, messaging ports, compute resources, restricted groups, submit policy,
+job limits, submit blocks, and MOTD.
 
 - Treat `appconfig.json` as environment-sensitive. Do not invent mail, OAuth,
   host, port, credential, or resource settings.
-- A module-level `resource` can override `resourcedefault`.
-- A module-level `submitpolicy` can override the global submit policy.
-- Job limits apply only to modules that define `jobweight`.
-- Job reattach can become confusing if module input/output fields change after
-  jobs have run. Preserve ids where possible and call out compatibility risk.
-- Project locks and stale jobs may indicate module executable failures; avoid
-  clearing locks unless the user explicitly asks and the affected project is
-  understood.
+- Module `resource` and `submitpolicy` may override global defaults.
+- Job limits apply only to modules defining `jobweight`.
+- Preserve input/output ids where possible; schema changes can break completed
+  job reattachment.
+- Project locks and stale jobs may indicate executable failure. Do not clear
+  locks without explicit user direction and an understood target project.
+
+Before adding or changing the optional administrator scenario catalog, read
+`doc/Test-Scenario-Architecture.md`. Test scenarios hydrate and verify an
+application-owned workflow; they do not replace scientific tests, bypass PHP
+session authorization, or become public UI2 assets.
 
 ## Wiki Updates
 
-To update the current documentation:
+To update current GenApp documentation:
 
-1. Edit pages in the sibling wiki checkout at `../genapp.wiki`.
-2. Commit and push from that wiki checkout with normal Git commands. The local
-   shorthand `gacp` means `git add`, `git commit`, `git push`.
-3. Return to this repo and run `tools/refresh_github_wiki.sh` so the sync marker
-   records the pushed wiki commit.
+1. Edit the sibling checkout at `../genapp.wiki`.
+2. Commit and push from that checkout when requested.
+3. Return here and run `tools/refresh_github_wiki.sh` so the sync marker records
+   the pushed wiki commit.
 
-Do not use old Trac mirror content or `wiki_trac/` material to override the
+Do not use old Trac mirrors or `wiki_trac/` material to override the current
 GitHub wiki. Archive pages are historical unless the current wiki explicitly
-points to them for a specific concept.
+points to them.
 
 ## Trac And SVN
 
-Trac and SVN are legacy systems. For normal GenApp work, do not use them, do not
-consult them as authoritative sources, and do not plan changes around them.
+Trac and SVN are legacy systems. Do not use them as normal authority or plan
+current work around them.
 
-Use Trac/SVN only when the user explicitly asks for read-only archaeology or
-server inventory. In that case:
+Use them only when the user explicitly requests read-only archaeology or server
+inventory. Never commit to SVN, edit Trac pages/databases, change legacy access
+files, or modify old server/container state without a separately approved plan.
+Do not assume repository files are the live Trac wiki; verify any historical
+inventory at the source before relying on it.
 
-- Treat access as read-only. If a task appears to require writing to Trac, SVN,
-  or old server state, stop and ask for an explicit new plan that prefers the
-  current Git/GitHub wiki workflow.
-- Do not commit to SVN, edit Trac pages, edit Trac databases, change `.htpasswd`
-  files, or modify server/container state.
-- Do not assume local repo files are the live Trac wiki. Old Trac wiki pages
-  live in a Trac SQLite database on the server, not in this Git repo and not in
-  SVN.
-- Do not use stale server copies such as `/srv/wiki/genapp.old`,
-  `/srv/wiki/genapp.1`, `/srv/wiki/genapp.2`, `/srv/trac/embargo*`,
-  `/srv/svn.old`, or `/srv/old`.
+## Security And Scientific Computing
 
-Known legacy inventory from June 2026, for read-only context only:
+- Do not commit passwords, cookies, OAuth or SMTP secrets, access files, private
+  keys, database dumps, or server tokens. Be especially careful with
+  `appconfig.json`, deployment notes, and imported archive content.
+- Verify backups before risky server-side work; do not assume backup status.
+- Do not introduce parameter reductions, approximations, or workflow
+  simplifications solely to save time in scientific applications.
+- Propose optimizations separately with expected impact and obtain approval for
+  scientific tradeoffs.
+- Prefer correctness, reproducibility, and scientific validity over runtime
+  reduction.
+- Long-running applications should provide a heartbeat with elapsed time and
+  useful progress when available.
+- State assumptions and never silently substitute a simpler workflow.
 
-- Public Trac URL: `https://genapp.rocks/wiki`.
-- Public host: `genapp.rocks`, IP `149.165.155.215`.
-- Reported wiki/SVN host name: `genapp-home-wiki-svn`.
-- Persistent server state lives under `/srv`.
-- Main Docker container: `genapphome` from image `genapphome:2_u18.04`.
-- Live Trac environment: `/srv/wiki/genapp`.
-- Trac runs as an old Python 2.7 Apache/mod_wsgi install.
-- The old SVN repository is `/srv/svn/base`, also available as `/svn -> /srv/svn`.
+## php7designer SASSIE-Web Addendum
 
-## Security
+This addendum applies only when work concerns SASSIE, Zazzie, the Zazzie3
+deployment, or SASSIE-driven use of GenApp. Do not apply SASSIE-specific module,
+science, deployment, or presentation requirements to unrelated GenApp
+applications.
 
-Do not commit passwords, cookies, OAuth secrets, SMTP credentials, `.htpasswd`
-content, Trac DB dumps, wiki credential files, private keys, or server-specific
-tokens. Be especially careful with `appconfig.json`, mail settings, deployment
-notes, old credential pages, and imported archive content.
+### Required cross-repository preflight
 
-If backup status matters for any risky server-side action, verify backups
-explicitly first. No automated Trac/SVN backup status should be assumed.
+Before planning, recommending architecture for, or changing SASSIE-web behavior:
 
-## Scientific Computing Guidance
+1. Read the applicable `AGENTS.md` in this repository,
+   `../genapp_zazzie`, and `../zazzie`.
+2. Report their three guardrail Git blob hashes, the governing issue, whether
+   SASSIE changes are required, and whether a shared GenApp core or driver/helper
+   gap has actually been demonstrated.
+3. Inspect the current SASSIE output/stream, application driver, module JSON,
+   view, tests, and applicable policy before proposing a new abstraction.
+4. Search the affected SASSIE and application packages for current policy,
+   contract, README, schema, and maintained test documentation.
 
-Do not introduce shortcuts, parameter reductions, approximations, or workflow
-simplifications solely to save time. Preserve the requested physics, parameter
-space, and analysis unless explicitly directed otherwise.
+Detailed driver, interpolation, simulation, viewer, and module rules belong in
+the paired SASSIE repositories. This addendum supplies only the GenApp boundary.
+When a shared boundary changes, update its governing policy and the short
+routing blocks in every affected repository in the same coordinated change.
 
-When a shortcut or optimization is possible, propose it separately and explain
-the expected impact. Do not apply it without approval.
+### SASSIE-web plotting boundary
 
-Prefer correctness, reproducibility, and scientific validity over runtime
-reduction.
+The rejected experiment in `ehb54/zazzie#193` is not an implementation guide.
+Do not introduce a GenApp `semantic_plot` type, SASSIE scientific-dataset
+recorders, plot replay stores, `.scientific_datasets.json`, live file polling,
+a second plotting transport, or a migration registry.
 
-For long-running jobs, implement a periodic heartbeat ("pulse") indicating the
-process is still active. Include elapsed time and useful progress metrics when
-available.
+The governing issue is `ehb54/zazzie#184`; read
+`doc/Plotting-Architecture.md`, consult
+`doc/Plotting-Acceptance-Matrix.md` for recorded deployed evidence, and read the
+current wiki page `Reference-Plotly`.
 
-Clearly identify all assumptions. Never silently replace requested behavior with
-a simpler alternative.
+- SASSIE owns calculations, units, canonical outputs, and GUI-neutral scientific
+  values. The application driver/helper prepares bounded web-facing series.
+  GenApp supplies generic output and rendering mechanisms.
+- Use stable declared `plotly` output ids, ordered bounded `SASSIE_STREAM`
+  updates through the established application driver runtime, and authoritative
+  final stdout JSON for completion and reattachment.
+- Producers provide scientific identity and relationships, not fixed geometry,
+  colors, fonts, line/marker styling, legend policy, modebar, or browser
+  lifecycle state.
+- Stop when required scientific values are absent; do not reconstruct missing
+  science in GenApp core or teach the renderer module-specific meaning.
+- Do not migrate another SASSIE module group until the current reference work
+  passes deployed normal, expanded/restore, completion, and fresh-window
+  reattachment checks.
 
-Algorithmic and computational improvements are encouraged, but should be
-presented as recommendations for review before adoption.
+### Shared simulation-data reporting boundary
+
+Before changing shared SASSIE simulation observations, read
+`../zazzie/docs/source/simulation_observables_policy.rst`.
+
+Simulation and analysis producers own unit-labelled energies, temperatures,
+pressures, densities, cell geometry, scattering values, uncertainties, and
+other scientific observations. Application drivers carry those records and may
+prepare bounded display series. GenApp core renders declared generic fields and
+plots without learning simulation-module ids, scientific role names, ensemble
+semantics, accepted/trial meanings, or physical derivation rules.
+
+New generic transport or renderer work requires a neutral reproduction usable
+by opted-in non-SASSIE applications. Missing or inconsistent SASSIE observations
+are application/backend gaps, not by themselves GenApp core gaps.
+
+### Plot presentation
+
+Artist-facing SASSIE-web plot presentation is application-owned. Before
+changing it, read `../genapp_zazzie/docs/plot_presentation.md` and rollout issue
+`ehb54/zazzie#203`.
+
+- Artists edit `../genapp_zazzie/plot_presentations/*.yaml`.
+- SASSIE-web views map stable scientific identities to named presentation
+  styles; drivers do not emit visual styling.
+- Responsive geometry is owned by generic UI2 and the application view, not
+  presentation YAML.
+- The application compiler generates
+  `../genapp_zazzie/ui2/add/js/plot-presentations.js`; authored YAML and the
+  generated application asset are committed together when requested.
+- GenApp core must remain application-neutral; do not add SASSIE profiles,
+  palette names, or scientific roles to core.
+
+### Other SASSIE policy routing
+
+- Runtime-event work is governed by `doc/UI2-Job-Event-Protocol.md` and
+  `../genapp_zazzie/docs/runtime_event_contract.md`. Their bounded journal is a
+  delivery/display cache; normal final outputs own completed-job reattachment.
+- SAS interpolation is governed by
+  `../zazzie/docs/source/sas_interpolation_policy.rst` and its SASSIE
+  implementation. Do not reproduce that policy in GenApp core.
+- SasCalc HDF5 writing, derived files, and downstream consumers are governed by
+  `../zazzie/docs/source/sascalc_hdf5_policy.rst`. GenApp must not define or
+  reinterpret the scientific schema.
+- Molecular viewer and NGL payload rules belong to `genapp_zazzie` and the
+  generic contract in `doc/NGL-Viewer-Widget.md`; also read
+  `../genapp_zazzie/docs/ngl_layered_viewer_contract.md` and the current wiki
+  page `Reference-NGL`. GenApp renderers must not interpret SASSIE trials,
+  acceptance, milestones, or molecular science.
+- UI2 application defects begin in the SASSIE-web view/schema/driver boundary.
+  Core changes require the generic shared-gap gate above.
+
+### Zazzie3 operations
+
+- The non-admin Zazzie3 test user is `codex`; never store its password in a
+  tracked file. Obtain credentials only through an approved channel.
+- gacpu for `ehb54/genapp` means the requested gacp followed by
+  `tools/zazzie3_update_genapp_core.sh`. If the server core checkout is dirty,
+  inspect it and use `--stash-dirty` only when preserving those server-side
+  changes in a stash is acceptable.
+- Do not deploy unreviewed core changes or use Zazzie3 regeneration as a
+  substitute for local generic and application-specific validation.

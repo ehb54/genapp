@@ -32,7 +32,8 @@ Status values are `not_recorded`, `passed`, `failed`, or `not_applicable`.
 | Contrast | contrast_variation_analysis | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
 | Contrast | rg_center_of_mass_distance_calculator | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
 | Simulate | torsion_angle_monte_carlo | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
-| Simulate | monomer_monte_carlo | Plotly and NGL | not_recorded | not_recorded | not_recorded | not_recorded | Reference module |
+| Simulate | monomer_monte_carlo | Plotly | passed | passed | passed | passed | Reference plot module; cleared 2026-08-03 for plot-presentation rollout under `ehb54/zazzie#203` |
+| Simulate | monomer_monte_carlo | NGL | not_recorded | not_recorded | not_recorded | not_recorded | Separate molecular-viewer contract; plot-presentation clearance does not assert NGL acceptance |
 | Simulate | tamd | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | Native live stream integrated; deployed check pending |
 | Simulate | sas_assembly | Plotly and images | not_recorded | not_recorded | not_recorded | not_recorded | Density images remain ordinary outputs |
 | Calculate | sascalc | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
@@ -48,6 +49,9 @@ Status values are `not_recorded`, `passed`, `failed`, or `not_applicable`.
 
 ## Tracking boundaries
 
+- The MMC Plotly reference has passed the required deployed normal,
+  expanded/restore, completion, and fresh-window reattachment checks. Its NGL
+  viewer remains a separately recorded concern.
 - The shared driver/runtime migration is complete when the module has the
   normal driver final-output and reattachment path.  Detailed browser results
   are recorded above as they are obtained.

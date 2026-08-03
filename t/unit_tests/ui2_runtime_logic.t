@@ -2122,8 +2122,8 @@ assert.strictEqual(dcdFormData.get("dcdfile_altval[]"), undefined, "submit omits
 assert.strictEqual(dcdFormData.get("_runtime_protocol"), "1", "UI2 submit advertises the versioned runtime protocol");
 assert.deepStrictEqual(
   JSON.parse(dcdFormData.get("_runtime_capabilities")),
-  ["job-events", "dataset-events", "plot-append", "structure-frames"],
-  "UI2 submit advertises event, dataset, incremental plot, and structure-frame capabilities"
+  ["job-events", "plot-append", "structure-frames"],
+  "UI2 submit advertises event, incremental plot, and structure-frame capabilities"
 );
 
 hooks.state.values = {

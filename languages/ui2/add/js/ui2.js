@@ -6095,7 +6095,6 @@
     formData.set("_runtime_protocol", "1");
     formData.set("_runtime_capabilities", JSON.stringify([
       "job-events",
-      "dataset-events",
       "plot-append",
       "structure-frames"
     ]));
