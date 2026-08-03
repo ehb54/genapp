@@ -1,0 +1,14 @@
+{
+    "renderer" : "react-workbench",
+    "layout"   : "scientific-workbench",
+    "inputs"   : {
+        "layout" : "wide",
+        "sections" : [
+            {
+                "id"     : "rows",
+                "title"  : "Rows",
+                "fields" : [ "row_count", "source_kind", "prepared_file", "raw_file", "scale" ]
+            }
+        ]
+    }
+}

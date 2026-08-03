@@ -47,6 +47,10 @@ function createNode(tag) {
         names.forEach((name) => classes.delete(name));
         node.className = Array.from(classes).join(" ");
       },
+      contains(name) {
+        syncClassesFromName();
+        return classes.has(name);
+      },
       toggle(name, force) {
         syncClassesFromName();
         if (force === true || (force == null && !classes.has(name))) {
@@ -2394,6 +2398,68 @@ assert.deepStrictEqual(
   ["", "1.25", ""],
   "UI2 preserves dense scalar row alignment for conditioned table cells"
 );
+
+function conditionedTableCell(fieldId, condition, index) {
+  const cell = createNode("td");
+  cell.dataset.repeatTableField = fieldId;
+  cell.dataset.repeatTableIndex = String(index);
+  if (condition) cell.dataset.repeatcondition = condition;
+  return cell;
+}
+
+function conditionedTableHeader(fieldId) {
+  const header = createNode("th");
+  header.dataset.repeatTableHeader = fieldId;
+  return header;
+}
+
+const conditionedTable = createNode("div");
+conditionedTable.classList.add("ui2-tableized-repeater");
+conditionedTable._ui2RepeatTableFields = [
+  { id: "source_kind", type: "listbox", repeat: "row_count" },
+  { id: "prepared_file", type: "lrfile", repeat: "row_count", repeatcondition: "source_kind:prepared" },
+  { id: "raw_file", type: "lrfile", repeat: "row_count", repeatcondition: "source_kind:raw" },
+  { id: "scale", type: "float", repeat: "row_count", repeatcondition: "source_kind:raw" }
+];
+const conditionedHeaderRow = createNode("tr");
+const sourceHeader = conditionedTableHeader("source_kind");
+const preparedHeader = conditionedTableHeader("prepared_file");
+const rawHeader = conditionedTableHeader("raw_file");
+const scaleHeader = conditionedTableHeader("scale");
+conditionedHeaderRow.append(sourceHeader, preparedHeader, rawHeader, scaleHeader);
+const conditionedHead = createNode("thead");
+conditionedHead.appendChild(conditionedHeaderRow);
+const conditionedBody = createNode("tbody");
+for (let index = 0; index < 2; index += 1) {
+  const tableRow = createNode("tr");
+  tableRow.append(
+    conditionedTableCell("source_kind", "", index),
+    conditionedTableCell("prepared_file", "source_kind:prepared", index),
+    conditionedTableCell("raw_file", "source_kind:raw", index),
+    conditionedTableCell("scale", "source_kind:raw", index)
+  );
+  conditionedBody.appendChild(tableRow);
+}
+const conditionedNativeTable = createNode("table");
+conditionedNativeTable.append(conditionedHead, conditionedBody);
+conditionedTable.appendChild(conditionedNativeTable);
+const conditionedScope = createNode("div");
+conditionedScope.appendChild(conditionedTable);
+
+hooks.updateRepeatTableCellConditions(conditionedScope, {
+  source_kind: ["prepared", "prepared"]
+});
+assert.strictEqual(preparedHeader.classList.contains("ui2-hidden"), false, "UI2 keeps the active conditional column header visible");
+assert.strictEqual(rawHeader.classList.contains("ui2-hidden"), true, "UI2 collapses a conditional column with no active row cells");
+assert.strictEqual(scaleHeader.classList.contains("ui2-hidden"), true, "UI2 collapses every inactive conditional scalar column");
+assert.strictEqual(sourceHeader.classList.contains("ui2-hidden"), false, "UI2 leaves unconditional column headers visible");
+
+hooks.updateRepeatTableCellConditions(conditionedScope, {
+  source_kind: ["prepared", "raw"]
+});
+assert.strictEqual(preparedHeader.classList.contains("ui2-hidden"), false, "UI2 retains the prepared header for a mixed conditional table");
+assert.strictEqual(rawHeader.classList.contains("ui2-hidden"), false, "UI2 retains the raw header when one row requires it");
+assert.strictEqual(scaleHeader.classList.contains("ui2-hidden"), false, "UI2 retains a scalar header when one row requires it");
 
 hooks.state.module = {
   fields: [

@@ -897,6 +897,14 @@ code {
   padding: 0.45rem 0.65rem;
 }
 
+.ui2-select {
+  min-width: 0;
+  overflow: hidden;
+  padding-inline-end: 2rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .ui2-textarea {
   min-height: 6rem;
   resize: vertical;

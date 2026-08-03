@@ -304,6 +304,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
   const [liveValues, setLiveValues] = React.useState<Record<string, unknown>>(initialSubmitted?.values || {})
   const inputSections = view.inputs?.sections || []
   const advancedSection = view.inputs?.advanced
+  const wideInputLayout = view.inputs?.layout === "wide"
   const advancedFieldIds = advancedSection?.fields || []
   const summaryFieldIds = view.inputs?.submittedSummary?.fields || []
   const progressSection = view.results?.progress
@@ -533,7 +534,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
         </div>
       </header>
 
-      <div className={`ui2-workbench-grid${inputRailCollapsed || workspaceExpanded ? " ui2-workbench-grid-inputs-hidden" : ""}`}>
+      <div className={`ui2-workbench-grid${inputRailCollapsed || workspaceExpanded ? " ui2-workbench-grid-inputs-hidden" : ""}${wideInputLayout && (!submitted || inputEditOpen) ? " ui2-workbench-grid-inputs-wide" : ""}`}>
         <aside className="ui2-workbench-input-pane" hidden={inputRailCollapsed || workspaceExpanded}>
           {submitted && !inputEditOpen && (
             <SubmittedInputs fields={fields} summaryFieldIds={summaryFieldIds} onEdit={editInputs} onHide={() => setInputRailCollapsed(true)} restoreError={submitted.restoreError} restoreWarnings={submitted.restoreWarnings} uuid={submitted.uuid} values={submitted.values} />

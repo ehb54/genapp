@@ -120,6 +120,9 @@ unlike( $ui2_react_source, qr/\[activeResult, inputRailCollapsed, runtime\.lastS
 like( $ui2_react_source, qr/pendingOutputResizeRef.*?requestAnimationFrame.*?bridge\.resizeOutputs/s, 'workbench coalesces geometry-driven output resizes into one animation frame' );
 like( $ui2_react_css, qr/\.ui2-workbench-grid/, 'React stylesheet contains the scientific workbench grid' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-editing \.ui2-workbench-grid\{grid-template-columns:minmax\(28rem,1\.2fr\) minmax\(18rem,\.8fr\)\}/, 'editing state favors the input pane while submitted runs retain the standard split' );
+like( $ui2_react_source, qr/const wideInputLayout = view\.inputs\?\.layout === "wide"/, 'workbench accepts a presentation-only wide input layout opt-in' );
+like( $ui2_react_source, qr/wideInputLayout && \(!submitted \|\| inputEditOpen\).*?ui2-workbench-grid-inputs-wide/s, 'wide input layout applies only while the editor is visible' );
+like( $ui2_react_css, qr/\.ui2-workbench-react-editing \.ui2-workbench-grid\.ui2-workbench-grid-inputs-wide.*?grid-template-columns:minmax\(0,1fr\)/, 'wide input layout gives dense editors the full workbench width' );
 like( $ui2_react_css, qr/\@container \(width<=52rem\).*?grid-template-columns:1fr/s, 'workbench stacks from its available width rather than allowing sidebar-constrained tables to scroll' );
 like( $ui2_js, qr/row\.classList\.add\("ui2-tableized-repeater", "ui2-field-wide"\)/, 'tableized repeaters use the full input-card width instead of only the control column' );
 like( $ui2_css, qr/\.ui2-repeat-table-wrap,\s*\.ui2-matrix-wrap\s*\{\s*overflow-x: hidden;/s, 'repeat and matrix tables suppress horizontal scrolling' );

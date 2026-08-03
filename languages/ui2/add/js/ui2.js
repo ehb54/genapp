@@ -2709,7 +2709,9 @@
     const thead = document.createElement("thead");
     const headRow = document.createElement("tr");
     fields.forEach((field) => {
-      headRow.appendChild(el("th", null, field.label || field.id || field.type || "field"));
+      const header = el("th", null, field.label || field.id || field.type || "field");
+      header.dataset.repeatTableHeader = field.id || "";
+      headRow.appendChild(header);
     });
     thead.appendChild(headRow);
     table.appendChild(thead);
@@ -9826,6 +9828,17 @@
         });
         cell.querySelectorAll(".ui2-native-file").forEach((control) => {
           control.disabled = !active;
+        });
+      });
+      fields.filter((field) => field.repeatcondition).forEach((field) => {
+        const fieldId = field.id || "";
+        const hasActiveCell = Array.from(row.querySelectorAll(
+          `td[data-repeat-table-field="${cssEscape(fieldId)}"]`
+        )).some((cell) => !cell.classList.contains("ui2-hidden"));
+        row.querySelectorAll(
+          `th[data-repeat-table-header="${cssEscape(fieldId)}"]`
+        ).forEach((header) => {
+          header.classList.toggle("ui2-hidden", !hasActiveCell);
         });
       });
     });

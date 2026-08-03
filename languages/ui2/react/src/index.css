@@ -55,6 +55,13 @@
   grid-template-columns: minmax(28rem, 1.2fr) minmax(18rem, 0.8fr);
 }
 
+/* A view may request a full-width editor for dense tableized inputs.  The
+ * results pane remains mounted beneath it, while submitted views keep the
+ * standard compact split. */
+.ui2-workbench-react-editing .ui2-workbench-grid.ui2-workbench-grid-inputs-wide {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .ui2-workbench-grid-inputs-hidden {
   grid-template-columns: minmax(0, 1fr);
 }

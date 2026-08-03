@@ -40,5 +40,9 @@ ok( !exists $plain_fields{row_value}{repeatcondition}, 'non-opted-in repeater ha
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
 like( $ui2_js, qr/function updateRepeatTableCellConditions\(scope, rawValues\)/, 'generated UI2 runtime contains generic table-cell condition handling' );
 like( $ui2_js, qr/function repeatTableConditionValue\(expression, rawValues, fieldsById, repeatIndex\)/, 'generated UI2 runtime evaluates conditions at the row index' );
+like( $ui2_js, qr/header\.dataset\.repeatTableHeader = field\.id \|\| ""/, 'generated UI2 runtime identifies repeat-table headers by generic field id' );
+like( $ui2_js, qr/hasActiveCell.*?td\[data-repeat-table-field=/s, 'generated UI2 runtime collapses a conditional column only when every row cell is inactive' );
+
+is( $condition_module->{viewjson}{inputs}{layout}, 'wide', 'neutral repeated-row fixture opts into the wide input layout' );
 
 done_testing();
