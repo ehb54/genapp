@@ -14,9 +14,12 @@ from pathlib import Path
 
 import numpy
 from sasmol.system import Molecule
+from sassie.interface import basis_to_python_filter
+from sassie.util import basis_to_python
 
 
 MAX_UPLOAD_BYTES = 512 * 1024 * 1024
+MAX_SELECTION_ATOMS = 100_000
 
 
 class LocalSasmolHandler(SimpleHTTPRequestHandler):
@@ -32,11 +35,15 @@ class LocalSasmolHandler(SimpleHTTPRequestHandler):
         super().do_GET()
 
     def do_POST(self):
-        if self.path.split("?", 1)[0] != "/local-sasmol/trajectory":
+        endpoint = self.path.split("?", 1)[0]
+        if endpoint not in {"/local-sasmol/trajectory", "/local-sasmol/selection"}:
             self.send_error(404)
             return
         try:
-            self.write_trajectory()
+            if endpoint == "/local-sasmol/trajectory":
+                self.write_trajectory()
+            else:
+                self.write_selection()
         except Exception as error:
             self.write_json(400, {"error": str(error)})
 
@@ -70,6 +77,40 @@ class LocalSasmolHandler(SimpleHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    def write_selection(self):
+        content_length = int(self.headers.get("Content-Length", "0"))
+        if content_length < 1 or content_length > MAX_UPLOAD_BYTES:
+            raise ValueError("structure upload must be between 1 byte and 512 MiB")
+        form = cgi.FieldStorage(
+            fp=self.rfile,
+            headers=self.headers,
+            environ={"REQUEST_METHOD": "POST", "CONTENT_TYPE": self.headers.get("Content-Type", "")},
+        )
+        pdb_bytes = form.getvalue("structure")
+        basis = form.getvalue("basis")
+        if not isinstance(pdb_bytes, bytes):
+            raise ValueError("a PDB structure file is required")
+        if not isinstance(basis, str) or not basis.strip():
+            raise ValueError("a SasMol basis expression is required")
+        syntax_errors = basis_to_python_filter.check_basis_syntax(basis)
+        if syntax_errors:
+            raise ValueError(" ".join(str(error) for error in syntax_errors))
+        with tempfile.TemporaryDirectory(prefix="ngl_sasmol_") as temporary_directory:
+            pdb_path = Path(temporary_directory, "structure.pdb")
+            pdb_path.write_bytes(pdb_bytes)
+            molecule = Molecule(0)
+            molecule.read_pdb(str(pdb_path))
+            errors, mask = molecule.get_subset_mask(basis_to_python.parse_basis(basis))
+        if errors:
+            raise ValueError(" ".join(str(error) for error in errors))
+        indices = numpy.flatnonzero(mask).astype(int).tolist()
+        if len(indices) > MAX_SELECTION_ATOMS:
+            raise ValueError(
+                "selection matches %d atoms; refine it to at most %d atoms"
+                % (len(indices), MAX_SELECTION_ATOMS)
+            )
+        self.write_json(200, {"basis": basis, "count": len(indices), "indices": indices})
 
     def write_json(self, status, payload):
         body = json.dumps(payload).encode("utf-8")

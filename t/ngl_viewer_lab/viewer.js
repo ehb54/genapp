@@ -170,7 +170,7 @@
   }
 
   function representationParams(layer) {
-    const selection = layer.node.querySelector(".selection").value.trim() || "all";
+    const selection = layer.resolvedSelection || "all";
     const colorScheme = layer.node.querySelector(".color-scheme").value;
     const params = {
       sele: selection,
@@ -185,12 +185,74 @@
   }
 
   function layerPayloadName(layer) {
-    return layer.node.querySelector(".selection").value.trim() || "all";
+    return layer.basis || "all atoms";
+  }
+
+  function setLayerMessage(layer, message, isError) {
+    const messageNode = layer.node.querySelector(".layer-error");
+    messageNode.textContent = message || "";
+    messageNode.style.color = isError ? "#ff9c92" : "";
+  }
+
+  async function structureFileForSasmol() {
+    if (!["pdb", "ent"].includes(extension(state.structureName))) {
+      throw new Error("SasMol basis selections currently require a PDB structure");
+    }
+    if (typeof state.structureSource !== "string") return state.structureSource;
+    const response = await fetch(state.structureSource);
+    if (!response.ok) throw new Error(`could not read ${state.structureName}`);
+    const blob = await response.blob();
+    return new File([blob], state.structureName, { type: "chemical/x-pdb" });
+  }
+
+  async function applySasmolSelection(layer) {
+    const basis = layer.node.querySelector(".selection").value.trim();
+    const count = layer.node.querySelector(".selection-count");
+    setLayerMessage(layer, "");
+    if (!basis) {
+      layer.basis = "";
+      layer.resolvedSelection = "all";
+      count.value = "All atoms";
+      count.textContent = "All atoms";
+      replaceMoleculeRepresentation(layer);
+      return;
+    }
+    const localHost = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+    if (!localHost) {
+      setLayerMessage(layer, "SasMol selections require the local Sasmol helper. Open the helper URL on your local machine.", true);
+      return;
+    }
+    const apply = layer.node.querySelector(".apply-basis");
+    apply.disabled = true;
+    count.value = "Checking…";
+    count.textContent = "Checking…";
+    try {
+      const structureFile = await structureFileForSasmol();
+      const form = new FormData();
+      form.append("structure", structureFile, structureFile.name || "structure.pdb");
+      form.append("basis", basis);
+      const response = await fetch("/local-sasmol/selection", { method: "POST", body: form });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || `local Sasmol helper returned ${response.status}`);
+      if (!Array.isArray(payload.indices) || !payload.indices.length) {
+        throw new Error("selection matches no atoms");
+      }
+      layer.basis = basis;
+      layer.resolvedSelection = `@${payload.indices.join(",")}`;
+      count.value = `${payload.count} atom${payload.count === 1 ? "" : "s"}`;
+      count.textContent = count.value;
+      replaceMoleculeRepresentation(layer);
+    } catch (err) {
+      count.value = "Not applied";
+      count.textContent = "Not applied";
+      setLayerMessage(layer, err.message, true);
+    } finally {
+      apply.disabled = false;
+    }
   }
 
   function replaceMoleculeRepresentation(layer) {
-    const error = layer.node.querySelector(".layer-error");
-    error.textContent = "";
+    setLayerMessage(layer, "");
     if (layer.representation) {
       state.structure.removeRepresentation(layer.representation);
       layer.representation = null;
@@ -203,7 +265,7 @@
       layer.representation.setVisibility(layer.node.querySelector(".layer-visible").checked);
       updatePayload();
     } catch (err) {
-      error.textContent = err.message;
+      setLayerMessage(layer, err.message, true);
     }
   }
 
@@ -211,8 +273,8 @@
     if (!state.structure) return;
     removeEmptyState(elements.moleculeLayers);
     const node = document.getElementById("molecule-layer-template").content.firstElementChild.cloneNode(true);
-    const layer = { node: node, representation: null };
-    node.querySelector(".selection").value = options?.selection || "all";
+    const layer = { node: node, representation: null, basis: options?.basis || "", resolvedSelection: "all" };
+    node.querySelector(".selection").value = layer.basis;
     node.querySelector(".representation").value = options?.representation || "ball+stick";
     node.querySelector(".color-scheme").value = options?.colorScheme || "element";
     node.querySelector(".color").value = options?.color || "#4ca6ff";
@@ -220,12 +282,20 @@
     elements.moleculeLayers.appendChild(node);
 
     node.querySelectorAll("input, select").forEach((control) => {
+      if (control.classList.contains("selection")) return;
       control.addEventListener("input", function () {
         const output = control.parentElement.querySelector("output");
         if (output) output.value = Number(control.value).toFixed(2);
         replaceMoleculeRepresentation(layer);
       });
       control.addEventListener("change", function () { replaceMoleculeRepresentation(layer); });
+    });
+    node.querySelector(".apply-basis").addEventListener("click", () => applySasmolSelection(layer));
+    node.querySelector(".selection").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        applySasmolSelection(layer);
+      }
     });
     node.querySelector(".remove-layer").addEventListener("click", function () {
       if (layer.representation) state.structure.removeRepresentation(layer.representation);
@@ -310,7 +380,7 @@
       if (elements.showAxes.checked) {
         try { state.axes = state.structure.addRepresentation("axes", { color: "white" }); } catch (_error) { elements.showAxes.checked = false; }
       }
-      addMoleculeLayer({ selection: "all", representation: "ball+stick", colorScheme: "element" });
+      addMoleculeLayer({ representation: "ball+stick", colorScheme: "element" });
       state.structure.autoView();
       setStatus(`Loaded structure ${name}.`);
     } catch (err) {

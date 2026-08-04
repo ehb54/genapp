@@ -112,17 +112,18 @@ viewer behavior such as accepted/trial/milestone fields.
 
 ## Selection expressions
 
-Representation layer selections are passed directly to NGL's selection parser.
-In addition to common protein/residue selections, the layer editor accepts
-expressions using atom and trajectory metadata such as:
+The local NGL viewer lab accepts user-facing SASSIE/SasMol basis syntax, for
+example `name CA`, `resname GLY`, `segname SYSTEM and resid >= 10`, or
+`moltype protein`. It resolves the basis with SASSIE's `basis_to_python` and
+`Molecule.get_subset_mask` path; it must not implement a second parser in the
+browser.
 
-`name CA`, `index 0-20`, `resid 10-30`, `segname SYSTEM`, `beta > 0`,
-`backbone`, and `charge > 0`.
-
-Use `and`, `or`, and `not` to combine terms, for example
-`segname PROA and backbone` or `name CA and resid 10-40`.  A module can provide
-these as `sele` values in its `representations` payload, while users can edit
-them in the viewer's layer editor.
+The output payload still carries NGL's resolved selector, normally an atom-index
+list such as `@4,11,21`. This keeps the normal NGL structure contract intact.
+For generated jobs, a driver or server-side helper must resolve a SasMol basis
+against its display PDB before returning the payload and before exposing this
+same editor. Do not send a SasMol basis expression as `params.sele`: NGL does
+not understand that language.
 
 Use `t/ngl_viewer_lab/` for local exploration.  It can load local PDB/mmCIF and
 Gaussian cube files, then attach a matching trajectory file to the loaded

@@ -55,7 +55,7 @@
           <h2>Molecule layers</h2>
           <button id="add-layer" type="button" disabled>Add layer</button>
         </div>
-        <p class="hint">Selections use the bundled NGL syntax, for example <code>protein</code>, <code>:A</code>, <code>.CA</code>, <code>10-30</code>, <code>[ALA,GLY]</code>, or <code>backbone</code>.</p>
+        <p class="hint">Selections use SasMol basis syntax: <code>name CA</code>, <code>resname GLY</code>, <code>segname PAI1 and resid &gt;= 10</code>, or <code>moltype protein</code>. Start the local Sasmol helper to apply a basis selection.</p>
         <div id="molecule-layers" class="layer-list empty">Load a structure to add molecular layers.</div>
       </section>
 
@@ -84,7 +84,9 @@
         <button class="remove-layer" type="button" aria-label="Remove layer">Remove</button>
       </div>
       <div class="controls">
-        <label>Selection (NGL syntax)<input class="selection" value="all"></label>
+        <label>SasMol basis selection <input class="selection" placeholder="All atoms when blank" spellcheck="false"></label>
+        <button class="apply-basis" type="button">Apply selection</button>
+        <output class="selection-count" aria-live="polite">All atoms</output>
         <label>Representation<select class="representation">
           <option value="cartoon">cartoon</option>
           <option value="ball+stick">ball + stick</option>

@@ -11,40 +11,32 @@ python3 -m http.server 8000
 
 Then open `http://localhost:8000/t/ngl_viewer_lab/`.
 
-The page reads selected files directly in the browser. It does not upload them
-or require a generated GenApp application. Structure views produce a preview of
-the current GenApp NGL payload. Volume payloads are not yet part of the GenApp
-output contract.
+The page reads selected files directly in the browser. It does not require a
+generated GenApp application. Structure views produce a preview of the current
+GenApp NGL payload. Volume payloads are not yet part of the GenApp output
+contract.
 
 Use **Demo molecule** and **Demo cube** to exercise the controls immediately.
 
-To load a local DCD trajectory, start the local Sasmol helper instead of the
-static server. It listens only on `127.0.0.1`; selected files stay on your
-computer and Sasmol reads the DCD.
+To use SasMol basis selections or load a local DCD trajectory, start the local
+Sasmol helper instead of the static server. It listens only on `127.0.0.1`;
+selected files stay on your computer. The helper uses SASSIE's existing
+`basis_to_python` and `Molecule.get_subset_mask` path for selections, and
+SasMol reads the DCD.
 
 ```sh
 PYTHONPATH=/path/to/zazzie/src /path/to/anaconda3/bin/python t/ngl_viewer_lab/local_sasmol_helper.py
 ```
 
-Then open `http://127.0.0.1:8765/t/ngl_viewer_lab/`, select a PDB, and select
-the matching DCD file.
-
-To load a local DCD trajectory, start the local Sasmol helper instead of the
-static server. It accepts requests only on `127.0.0.1`; selected files stay on
-your computer and are read by Sasmol.
-
-```sh
-PYTHONPATH=/path/to/zazzie/src /path/to/anaconda3/bin/python t/ngl_viewer_lab/local_sasmol_helper.py
-```
-
-Then open `http://127.0.0.1:8765/t/ngl_viewer_lab/`, select a PDB, and select
-the matching DCD file.
+Then open `http://127.0.0.1:8765/t/ngl_viewer_lab/`. Leave a layer selection
+blank for all atoms, or enter a SasMol basis such as `name CA`, `resname GLY`,
+or `segname PAI1 and resid >= 10`, then choose **Apply selection**.
 
 ## Current capabilities
 
 - local PDB, mmCIF, SDF, MOL2, PQR, and GRO structure loading;
 - local Gaussian cube loading;
-- multiple selection-specific molecular representations;
+- multiple SasMol-basis molecular representations;
 - representation, coloring, opacity, and visibility controls;
 - positive and negative volume isosurfaces;
 - atom picking, centering, spinning, and clearing;
