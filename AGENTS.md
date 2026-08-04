@@ -24,6 +24,7 @@ before planning, recommending architecture, or changing code.
   inspect applicable repositories and instructions, identify adaptations, and
   report a concrete plan without changing files or remote state.
 - gacp means stage, commit, and push only intended changes.
+- Do not use the phrase "smoke test" in communications, chat, Markdown, or documentation.
 
 ### Generated HTML5 artifact policy
 
