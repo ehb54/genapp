@@ -343,7 +343,7 @@ like( $ui2_js, qr/function applyInputPayload\(inputs, options = \{\}\).*?conditi
 like( $ui2_js, qr/function renderFileManagerTool\(module, fields\)/, 'ui2 has a dedicated File Manager shell' );
 like( $ui2_js, qr/function downloadFileManagerSelection\(table, status, links, module\)/, 'ui2 File Manager submits selected files for download and renders returned links' );
 like( $ui2_js, qr/function renderUserConfigTool\(module, fields\)/, 'ui2 has a dedicated Settings shell' );
-like( $ui2_js, qr/afterSuccess: \(\) => setSessionProjectFromSettings\(form\)/, 'ui2 Settings updates the legacy session project after submit' );
+like( $ui2_js, qr/afterSuccess: \(payload\) => setSessionProjectFromSettings\(form, payload\)/, 'ui2 Settings reconciles the session project from the successful settings response' );
 like( $ui2_js, qr/function renderRegisterTool\(module, fields\)/, 'ui2 has a dedicated Register shell' );
 like( $ui2_js, qr/function legacyUtilityFieldName\(control\)/, 'ui2 Settings submits legacy repeat-prefixed field names' );
 like( $ui2_js, qr/function userConfigFields\(fields\)/, 'ui2 Settings filters fields through legacy directive visibility' );
@@ -357,6 +357,7 @@ like( $ui2_js, qr/control\.type === "checkbox" && !control\.checked[\s\S]+return
 like( $ui2_js, qr/dataset\.pullKey = field\.pull/, 'ui2 Settings records legacy pull keys separately from field ids' );
 like( $ui2_js, qr/function replaceSelectOptions\(select, values\)/, 'ui2 Settings rebuilds pulled listbox options from legacy array payloads' );
 like( $ui2_js, qr/function setLegacyProject\(project\).*?sys_project\.php/s, 'ui2 Settings uses the legacy project session endpoint' );
+like( $ui2_js, qr/function settingsProjectFromResponse\(form, payload = \{\}\).*?payload\?\._project.*?return responseProject/s, 'ui2 Settings keeps a successful server-selected project ahead of the stale selector value' );
 like( $ui2_js, qr/fieldControls\(form\)[\s\S]+dataset\.pullKey[\s\S]+sys_pull\.php/s, 'ui2 Settings pulls only fields declared with legacy pull metadata' );
 like( $ui2_js, qr/function fieldControls\(scope\)/, 'ui2 runtime scans actual form controls instead of field wrapper rows' );
 like( $ui2_js, qr/function fieldControls\(scope\)[\s\S]+ui2-native-file/s, 'ui2 runtime excludes hidden native file inputs from normal value collection' );

@@ -3938,7 +3938,7 @@
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       await submitUtilityModule(form, module, "ajax/sys_config/sys_user_config.php", {
-        afterSuccess: () => setSessionProjectFromSettings(form)
+        afterSuccess: (payload) => setSessionProjectFromSettings(form, payload)
       });
     });
     form.addEventListener("reset", () => window.setTimeout(() => syncFormValues(form), 0));
@@ -4384,13 +4384,26 @@
     return moduleId === "sys_register" || moduleId === "sys_feedback" || moduleId === "sys_feedback2";
   }
 
-  async function setSessionProjectFromSettings(form) {
+  function settingsProjectFromResponse(form, payload = {}) {
+    const responseProject = stringValue(payload?._project).trim();
+    if (responseProject) {
+      return responseProject;
+    }
     const projectControl = fieldControls(form).find((control) => {
       return control.dataset.fieldId === "project" && control.dataset.pullKey === "project";
     });
-    const project = stringValue(projectControl?.value).trim();
+    return stringValue(projectControl?.value).trim();
+  }
+
+  async function setSessionProjectFromSettings(form, payload = {}) {
+    const project = settingsProjectFromResponse(form, payload);
     if (!project) {
       return null;
+    }
+    if (stringValue(payload?._project).trim()) {
+      updateSessionIdentity({ _logon: state.session.logon, _project: project });
+      renderSessionState();
+      return payload;
     }
     return setLegacyProject(project);
   }
@@ -10616,6 +10629,7 @@
       aiHelperUsageSummary,
       normalizeAiHelperUsage,
       replaceSelectOptions,
+      settingsProjectFromResponse,
       userConfigGroupVisible,
       parseNglPayload,
       normalizeNglLoadName,

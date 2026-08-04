@@ -424,6 +424,26 @@ assert.strictEqual(
   true,
   "UI2 marks the native theme Settings field as a local preference"
 );
+const settingsProjectControl = {
+  className: "",
+  dataset: { fieldId: "project", pullKey: "project" },
+  value: "test4"
+};
+const settingsProjectForm = {
+  querySelectorAll() {
+    return [settingsProjectControl];
+  }
+};
+assert.strictEqual(
+  hooks.settingsProjectFromResponse(settingsProjectForm, { _project: "blah2" }),
+  "blah2",
+  "UI2 Settings keeps the project selected by a successful project-creation response"
+);
+assert.strictEqual(
+  hooks.settingsProjectFromResponse(settingsProjectForm, {}),
+  "test4",
+  "UI2 Settings retains the selected-project fallback for legacy responses"
+);
 
 hooks.state.session = { logon: "Joseph", project: "" };
 hooks.renderSessionState();
