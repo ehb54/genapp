@@ -7351,14 +7351,6 @@
     }
     if (event.channel === "structure" && event.payload) {
       if (event.payload.preview_type === "density" || event.payload.type === "density") {
-        // A user-selected contour is valid only for the density range of its
-        // current job. Retain it for updates in that job, but reset it before
-        // loading the first density volume from another job.
-        if (output._ui2_ngl_density_run !== event.run) {
-          output._ui2_ngl_density_run = event.run;
-          output._ui2_ngl_density_user_isovalue = null;
-          output._ui2_ngl_density_user_opacity = null;
-        }
         renderNglDensityUpdate(output, event.payload.density || event.payload);
         return;
       }
