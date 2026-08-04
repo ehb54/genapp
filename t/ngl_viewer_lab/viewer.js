@@ -184,6 +184,10 @@
     return params;
   }
 
+  function layerPayloadName(layer) {
+    return layer.node.querySelector(".selection").value.trim() || "all";
+  }
+
   function replaceMoleculeRepresentation(layer) {
     const error = layer.node.querySelector(".layer-error");
     error.textContent = "";
@@ -208,7 +212,6 @@
     removeEmptyState(elements.moleculeLayers);
     const node = document.getElementById("molecule-layer-template").content.firstElementChild.cloneNode(true);
     const layer = { node: node, representation: null };
-    node.querySelector(".layer-name").value = options?.name || "selection";
     node.querySelector(".selection").value = options?.selection || "all";
     node.querySelector(".representation").value = options?.representation || "ball+stick";
     node.querySelector(".color-scheme").value = options?.colorScheme || "element";
@@ -300,11 +303,14 @@
       state.structure = await stage.loadFile(source, { ext: extension(name) });
       state.structureName = name;
       state.structureSource = source;
+      // The lab owns its representations.  NGL adds an automatic full-structure
+      // representation during load, which otherwise hides changes to Selection.
+      state.structure.reprList.slice().forEach((representation) => state.structure.removeRepresentation(representation));
       elements.addLayer.disabled = false;
       if (elements.showAxes.checked) {
         try { state.axes = state.structure.addRepresentation("axes", { color: "white" }); } catch (_error) { elements.showAxes.checked = false; }
       }
-      addMoleculeLayer({ name: "molecule", selection: "all", representation: "ball+stick", colorScheme: "element" });
+      addMoleculeLayer({ selection: "all", representation: "ball+stick", colorScheme: "element" });
       state.structure.autoView();
       setStatus(`Loaded structure ${name}.`);
     } catch (err) {
@@ -349,7 +355,7 @@
       return;
     }
     const representations = state.moleculeLayers.map((layer) => ({
-      name: layer.node.querySelector(".layer-name").value || "selection",
+      name: layerPayloadName(layer),
       type: layer.node.querySelector(".representation").value,
       params: representationParams(layer),
       visible: layer.node.querySelector(".layer-visible").checked

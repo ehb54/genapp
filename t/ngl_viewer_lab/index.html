@@ -55,7 +55,7 @@
           <h2>Molecule layers</h2>
           <button id="add-layer" type="button" disabled>Add layer</button>
         </div>
-        <p class="hint">Selections use NGL syntax, for example <code>protein</code>, <code>:A</code>, <code>segname PROA</code>, <code>name CA</code>, <code>resid 10-30</code>, <code>beta &gt; 0</code>, or <code>backbone</code>.</p>
+        <p class="hint">Selections use the bundled NGL syntax, for example <code>protein</code>, <code>:A</code>, <code>.CA</code>, <code>10-30</code>, <code>[ALA,GLY]</code>, or <code>backbone</code>.</p>
         <div id="molecule-layers" class="layer-list empty">Load a structure to add molecular layers.</div>
       </section>
 
@@ -80,12 +80,11 @@
   <template id="molecule-layer-template">
     <article class="layer molecule-layer">
       <div class="layer-heading">
-        <input class="layer-name" aria-label="Layer name" value="selection">
         <label class="visible"><input class="layer-visible" type="checkbox" checked> visible</label>
         <button class="remove-layer" type="button" aria-label="Remove layer">Remove</button>
       </div>
       <div class="controls">
-        <label>Selection<input class="selection" value="all"></label>
+        <label>Selection (NGL syntax)<input class="selection" value="all"></label>
         <label>Representation<select class="representation">
           <option value="cartoon">cartoon</option>
           <option value="ball+stick">ball + stick</option>
