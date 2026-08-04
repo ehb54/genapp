@@ -29,6 +29,14 @@
                 "label"   : "Wide plot",
                 "outputs" : ["wide_plot"],
                 "fit"     : "wide"
+            },
+            {
+                "id"         : "dynamic-gallery",
+                "label"      : "Dynamic gallery",
+                "outputs"    : ["dynamic_gallery"],
+                "fit"        : "wide",
+                "layout"     : "gallery",
+                "visibility" : "available"
             }
         ]
     }

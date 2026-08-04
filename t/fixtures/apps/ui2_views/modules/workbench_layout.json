@@ -28,6 +28,15 @@
             "id"    : "wide_plot",
             "label" : "Wide plot",
             "type"  : "plotly"
+        },
+        {
+            "role"          : "output",
+            "id"            : "dynamic_gallery",
+            "label"         : "Dynamic gallery",
+            "type"          : "plotly",
+            "dynamicoutput" : "true",
+            "idprefix"      : "fixture_plot",
+            "max"           : "2"
         }
     ]
 }

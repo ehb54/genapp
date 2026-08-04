@@ -2627,11 +2627,11 @@ assert.strictEqual(
 
 const dynamicGroup = {
   dataset: {
-    outputFieldId: "dynamic_plots",
+    outputFieldId: "dynamic_gallery",
     outputType: "plotly",
-    dynamicIdPrefix: "sascalc_dyn_plot",
+    dynamicIdPrefix: "fixture_plot",
     dynamicMax: "2",
-    dynamicLabel: "Additional plots"
+    dynamicLabel: "Dynamic gallery"
   }
 };
 const dynamicItems = hooks.dynamicOutputItems(dynamicGroup, {
@@ -2642,7 +2642,7 @@ const dynamicItems = hooks.dynamicOutputItems(dynamicGroup, {
   ]
 });
 assert.strictEqual(dynamicItems.length, 2, "dynamic output items honor the declared max");
-assert.strictEqual(dynamicItems[0].id, "sascalc_dyn_plot_1", "dynamic output items generate ids from idprefix");
+assert.strictEqual(dynamicItems[0].id, "fixture_plot_1", "dynamic output items generate ids from idprefix");
 assert.strictEqual(dynamicItems[1].id, "custom_plot", "dynamic output items honor explicit safe ids");
 assert.deepStrictEqual(dynamicItems[1].value, { data: [] }, "dynamic output items accept legacy data payload values");
 
@@ -2656,12 +2656,12 @@ dynamicPlotRow.className = "ui2-field ui2-output-field ui2-dynamic-output-row";
 dynamicPlotRow.hidden = true;
 const dynamicPlotGroup = createNode("div");
 dynamicPlotGroup.dataset.plotFit = "pane";
-dynamicPlotGroup.dataset.outputFieldId = "stream_dynamic_plot";
+dynamicPlotGroup.dataset.outputFieldId = "dynamic_gallery";
 dynamicPlotGroup.dataset.outputType = "plotly";
 dynamicPlotGroup.dataset.dynamicOutput = "true";
-dynamicPlotGroup.dataset.dynamicIdPrefix = "stream_plot";
-dynamicPlotGroup.dataset.dynamicMax = "1";
-dynamicPlotGroup.dataset.dynamicLabel = "Streaming plots";
+dynamicPlotGroup.dataset.dynamicIdPrefix = "fixture_plot";
+dynamicPlotGroup.dataset.dynamicMax = "2";
+dynamicPlotGroup.dataset.dynamicLabel = "Dynamic gallery";
 dynamicPlotRow.appendChild(dynamicPlotGroup);
 document.body.appendChild(dynamicPlotRow);
 window.Plotly = {
@@ -2679,22 +2679,26 @@ window.Plotly = {
   },
   Plots: { resize() {} }
 };
-hooks.state.jobEvents.reset("run-dynamic-plot", "monomer_monte_carlo");
+hooks.state.jobEvents.reset("run-dynamic-gallery", "fixture_module");
 hooks.applyRuntimePayload({
   _job_event: {
     version: 1,
-    run: "run-dynamic-plot",
-    module: "monomer_monte_carlo",
+    run: "run-dynamic-gallery",
+    module: "fixture_module",
     sequence: 1,
     timestamp: "2026-07-12T12:00:00Z",
     channel: "plot",
-    topic: "stream_dynamic_plot",
+    topic: "dynamic_gallery",
     operation: "snapshot",
     payload: {
       items: [{
-        id: "profile",
-        label: "Profile",
-        value: { data: [], layout: { title: "Profile" } }
+        id: "series_one",
+        label: "Series one",
+        value: { data: [], layout: { title: "Series one" } }
+      }, {
+        id: "series_two",
+        label: "Series two",
+        value: { data: [], layout: { title: "Series two" } }
       }]
     }
   }
@@ -2702,33 +2706,63 @@ hooks.applyRuntimePayload({
 assert.strictEqual(dynamicPlotRow.hidden, false, "plot job events reveal dynamic plot output rows");
 assert.strictEqual(
   dynamicPlotGroup.querySelectorAll(".ui2-dynamic-output-instance").length,
-  1,
-  "plot job events populate dynamic plot output groups instead of rendering on the group shell"
+  2,
+  "dynamic plot output groups retain two generated children instead of rendering on the group shell"
 );
-const retainedDynamicPlot = dynamicPlotGroup.querySelector('[data-output-field-id="profile"]');
+const retainedDynamicPlot = dynamicPlotGroup.querySelector('[data-output-field-id="series_one"]');
 hooks.applyRuntimePayload({
   _job_event: {
     version: 1,
-    run: "run-dynamic-plot",
-    module: "monomer_monte_carlo",
+    run: "run-dynamic-gallery",
+    module: "fixture_module",
     sequence: 2,
     timestamp: "2026-07-12T12:00:01Z",
     channel: "plot",
-    topic: "stream_dynamic_plot",
+    topic: "dynamic_gallery",
     operation: "snapshot",
     payload: {
       items: [{
-        id: "profile",
-        label: "Updated profile",
-        value: { data: [], layout: { title: "Updated profile" } }
+        id: "series_one",
+        label: "Updated series one",
+        value: { data: [], layout: { title: "Updated series one" } }
+      }, {
+        id: "series_two",
+        label: "Updated series two",
+        value: { data: [], layout: { title: "Updated series two" } }
       }]
     }
   }
 });
 assert.strictEqual(
-  dynamicPlotGroup.querySelector('[data-output-field-id="profile"]'),
+  dynamicPlotGroup.querySelector('[data-output-field-id="series_one"]'),
   retainedDynamicPlot,
   "successive dynamic Plotly snapshots retain the existing canvas instead of recreating it"
+);
+hooks.applyRuntimePayload({ dynamic_gallery: { items: [] } });
+assert.strictEqual(dynamicPlotRow.hidden, true, "clearing a dynamic gallery hides its output row");
+assert.strictEqual(
+  dynamicPlotGroup.querySelectorAll(".ui2-dynamic-output-instance").length,
+  0,
+  "clearing a dynamic gallery removes generated children"
+);
+hooks.applyRuntimePayload({
+  dynamic_gallery: {
+    items: [{
+      id: "series_one",
+      label: "Restored series one",
+      value: { data: [], layout: { title: "Restored series one" } }
+    }, {
+      id: "series_two",
+      label: "Restored series two",
+      value: { data: [], layout: { title: "Restored series two" } }
+    }]
+  }
+});
+assert.strictEqual(dynamicPlotRow.hidden, false, "repopulating a dynamic gallery reveals its output row");
+assert.strictEqual(
+  dynamicPlotGroup.querySelectorAll(".ui2-dynamic-output-instance").length,
+  2,
+  "repopulating a dynamic gallery restores both generated children"
 );
 
 const rememberedPlot = createNode("div");

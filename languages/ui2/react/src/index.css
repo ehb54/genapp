@@ -340,7 +340,7 @@
   display: inline-block;
 }
 
-.ui2-workbench-result-card .ui2-output-plotly {
+.ui2-workbench-result-card .ui2-output-plotly:not(.ui2-dynamic-output) {
   height: clamp(30rem, 58dvh, 44rem);
   min-height: 0;
   overflow: hidden;
@@ -412,7 +412,7 @@
   min-height: clamp(26rem, 48dvh, 42rem);
 }
 
-.ui2-workbench-react-workspace-expanded .ui2-workbench-result-card .ui2-output-plotly {
+.ui2-workbench-react-workspace-expanded .ui2-workbench-result-card .ui2-output-plotly:not(.ui2-dynamic-output) {
   height: clamp(26rem, 48dvh, 42rem);
 }
 

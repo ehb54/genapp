@@ -129,12 +129,13 @@ like( $ui2_js, qr/row\.classList\.add\("ui2-tableized-repeater", "ui2-field-wide
 like( $ui2_css, qr/\.ui2-repeat-table-wrap,\s*\.ui2-matrix-wrap\s*\{\s*overflow-x: hidden;/s, 'repeat and matrix tables suppress horizontal scrolling' );
 like( $ui2_css, qr/\.ui2-repeat-table,\s*\.ui2-matrix-table\s*\{\s*width: 100%;\s*table-layout: fixed;/s, 'repeat and matrix tables fit their available card width' );
 like( $ui2_css, qr/\.ui2-repeat-table td\s*\{\s*padding: 0 0\.35rem;\s*min-width: 0;/s, 'repeat table cells can shrink within the available input card' );
-like( $ui2_react_css, qr/\.ui2-workbench-result-card \.ui2-output-plotly\{[^}]*overflow:hidden/, 'workbench fitted Plotly output suppresses internal scrollbars' );
+like( $ui2_react_css, qr/\.ui2-workbench-result-card \.ui2-output-plotly:not\(\.ui2-dynamic-output\)\{[^}]*overflow:hidden/, 'workbench fitted Plotly leaves suppress internal scrollbars without constraining dynamic output groups' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded/, 'workbench expanded workspace styles are present' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded \.ui2-workbench-result-tabs\{(?=[^}]*display:flex)(?=[^}]*flex-flow:wrap)[^}]*\}/, 'expanded workspace overrides the normal column direction so generic result panels wrap across rows without phantom grid tracks' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded \.ui2-workbench-result-toolbar\{flex:1 0 100%\}/, 'expanded workspace keeps its toolbar on a full row without occupying result tracks' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded \.ui2-workbench-expanded-panel\{(?=[^}]*display:flex)(?=[^}]*flex:30rem)(?=[^}]*min-width:0)[^}]*\}/, 'ordinary expanded result panels share their available row width' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded \.ui2-workbench-result-panel-wide\{flex-basis:100%\}/, 'wide expanded result panels occupy their own row without reserving columns' );
+like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded \.ui2-workbench-result-card \.ui2-output-plotly:not\(\.ui2-dynamic-output\)\{height:clamp\(26rem,48dvh,42rem\)\}/, 'expanded workbench keeps fixed height on Plotly leaves without clipping dynamic output groups' );
 unlike( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded \.ui2-workbench-result-tabs\{[^}]*grid-template-columns:repeat\(auto-fit/s, 'expanded workspace does not combine auto-fit tracks with full-row children' );
 like( $ui2_react_css, qr/data-output-layout=gallery\].*?grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,28rem\),1fr\)\)/, 'gallery result groups place generated dynamic plots side by side when space permits' );
 like( $ui2_react_css, qr/\.ui2-workbench-input-pane,\.ui2-workbench-results-pane\{min-width:0\}/, 'result panes may shrink below their gallery content width on narrow screens' );
@@ -488,9 +489,15 @@ my $workbench_layout = decode_json( read_file( File::Spec->catfile( $ui2, qw(mod
 is( $workbench_layout->{viewjson}{renderer}, 'react-workbench', 'neutral layout fixture uses the generic React workbench' );
 is_deeply(
     [ map { $_->{fit} || 'default' } @{ $workbench_layout->{viewjson}{results}{groups} || [] } ],
-    [ 'pane', 'default', 'wide' ],
-    'neutral layout fixture preserves mixed ordinary and wide result groups',
+    [ 'pane', 'default', 'wide', 'wide' ],
+    'neutral layout fixture preserves ordinary, wide, and dynamic gallery result groups',
 );
+my ($dynamic_gallery_field) = grep { $_->{id} eq 'dynamic_gallery' } @{ $workbench_layout->{modulejson}{fields} || [] };
+is( $dynamic_gallery_field->{dynamicoutput}, 'true', 'neutral fixture declares a generic dynamic Plotly output' );
+is( $dynamic_gallery_field->{max}, '2', 'neutral fixture allows two generated Plotly children' );
+my ($dynamic_gallery_group) = grep { $_->{id} eq 'dynamic-gallery' } @{ $workbench_layout->{viewjson}{results}{groups} || [] };
+is( $dynamic_gallery_group->{layout}, 'gallery', 'neutral fixture opts into generic gallery layout' );
+is( $dynamic_gallery_group->{visibility}, 'available', 'neutral fixture keeps the optional gallery hidden until dynamic output is present' );
 
 my $plain = decode_json( read_file( File::Spec->catfile( $ui2, qw(modules plain.json) ) ) );
 is( $plain->{module}, 'plain', 'plain summary records module id' );
