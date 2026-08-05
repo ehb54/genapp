@@ -7357,7 +7357,9 @@
       if (event.operation === "append") {
         queue_ngl_coordinate_frame(output, event.payload);
       } else {
-        renderNglOutput(output, event.payload.structure || event.payload);
+        // A structure snapshot may also carry the current live density layer.
+        // Passing only .structure loses that layer before the renderer can load it.
+        renderNglOutput(output, event.payload);
       }
     }
   }
@@ -7818,6 +7820,11 @@
     const payload = parseNglPayload(value);
     const structurePayload = payload?.structure || payload;
     const densityPayload = payload?.density || null;
+    // Density is deliberately transient: final output/reattachment does not
+    // serialize it. Retain it only while this live output element exists.
+    const liveDensityPayload = densityPayload?.loadname
+      ? densityPayload
+      : output._ui2_ngl_density_payload;
     if (!structurePayload?.loadname) {
       renderTextOutput(output, value);
       return;
@@ -7837,8 +7844,8 @@
       && output._ui2NglComponent;
     if (preserveLiveFrames && output._ui2NglComponent) {
       output._ui2NglRenderRevision = (output._ui2NglRenderRevision || 0) + 1;
-      if (densityPayload?.loadname) {
-        renderNglDensityUpdate(output, densityPayload);
+      if (liveDensityPayload?.loadname) {
+        renderNglDensityUpdate(output, liveDensityPayload);
       }
       render_ngl_frame_controls(output);
       return;
@@ -7897,8 +7904,8 @@
               renderNglTrajectoryError(output, error);
             }
           }
-          if (densityPayload?.loadname) {
-            return loadNglDensitySurface(output, densityPayload);
+          if (liveDensityPayload?.loadname) {
+            return loadNglDensitySurface(output, liveDensityPayload);
           }
           return component;
         });
