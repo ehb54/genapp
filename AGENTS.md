@@ -365,6 +365,11 @@ changing it, read `../genapp_zazzie/docs/plot_presentation.md` and rollout issue
 
 ### Other SASSIE policy routing
 
+- One-job diagnostic logging is governed by `doc/Next-Job-Environment-Settings.md`,
+  `../genapp_zazzie/docs/next_job_diagnostic_logging.md`, and
+  `../zazzie/docs/source/logging_policy.rst`. The browser may only arm the
+  fixed application declaration; it must not provide arbitrary environment
+  variables, values, or command fragments.
 - Runtime-event work is governed by `doc/UI2-Job-Event-Protocol.md` and
   `../genapp_zazzie/docs/runtime_event_contract.md`. Their bounded journal is a
   delivery/display cache; normal final outputs own completed-job reattachment.

@@ -65,6 +65,7 @@ like( $index, qr/id="ui2-docs-menu"/, 'ui2 index exposes a docs menu for context
 like( $app_map_js, qr/generatedOn:\s*"Generated on /, 'ui2 app map carries the legacy generated-on splash metadata' );
 like( $app_map_js, qr/genappRevision:\s*"GenApp /, 'ui2 app map carries the GenApp revision splash metadata' );
 like( $app_map_js, qr/directives\.docsbaseurl = "docs"/, 'ui2 app map records docsbaseurl for the docs entry point' );
+like( $app_map_js, qr/directives\.nextjobenvironment = "true"/, 'ui2 app map exposes the opted-in one-job environment setting' );
 like( $app_map_js, qr/app\.help\.feedback = "Feedback help"/, 'ui2 app map records legacy feedback help text' );
 
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
@@ -515,6 +516,7 @@ is_deeply( $plain->{viewjson}, {}, 'missing view files produce an empty view obj
 my $settings = decode_json( read_file( File::Spec->catfile( $ui2, qw(modules sys_user_config.json) ) ) );
 is( $settings->{module}, 'sys_user_config', 'settings summary records system module id' );
 ok( scalar @{ $settings->{modulejson}{fields} || [] }, 'settings summary preserves system module fields' );
+ok( scalar( grep { ($_->{id} || '') eq 'next_job_environment' && ($_->{pull} || '') eq 'next_job_environment' } @{ $settings->{modulejson}{fields} || [] } ), 'ui2 settings summary carries the one-job environment control only when opted in' );
 
 my $file_manager = decode_json( read_file( File::Spec->catfile( $ui2, qw(modules sys_file_manager.json) ) ) );
 is( $file_manager->{module}, 'sys_file_manager', 'file manager summary records configbase module id' );

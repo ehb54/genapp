@@ -17,6 +17,7 @@ __~xsedeproject{app.directives.xsedeproject = "__xsedeproject__";}
 __~sharing{app.directives.sharing = "__sharing__";}
 __~usertheme{app.directives.usertheme = "__usertheme__";}
 __~usercolors{app.directives.usercolors = "__usercolors__";}
+__~nextjobenvironment{app.directives.nextjobenvironment = "__nextjobenvironment__";}
 __~docsbaseurl{app.directives.docsbaseurl = "__docsbaseurl__";}
 __~help:user_config{app.help.user_config = "__help:user_config__";}
 __~help:register{app.help.register = "__help:register__";}

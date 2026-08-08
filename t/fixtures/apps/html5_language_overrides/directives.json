@@ -3,5 +3,9 @@
     "application" : "html5_language_overrides",
     "version"     : "0.01",
     "languages"   : [ "html5" ],
+    "nextjobenvironment" : "true",
+    "nextjobenvironmentid" : "fixture_diagnostics",
+    "nextjobenvironmentvariable" : "GENAPP_FIXTURE_DIAGNOSTICS",
+    "nextjobenvironmentvalue" : "DEBUG",
     "footer"      : "Base footer"
 }

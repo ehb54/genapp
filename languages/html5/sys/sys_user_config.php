@@ -94,6 +94,23 @@ $results[ 'status' ] = "";
 
 $do_update = 0;
 
+if ( "__nextjobenvironment__" == "true" &&
+     isset( $_REQUEST[ 'next_job_environment' ] ) &&
+     in_array( $_REQUEST[ 'next_job_environment' ], array( 'on', 'true', '1' ), true ) )
+{
+   $_SESSION[ $window ][ 'next_job_environment' ] = array(
+       'id'       => '__nextjobenvironmentid__',
+       'variable' => '__nextjobenvironmentvariable__',
+       'value'    => '__nextjobenvironmentvalue__'
+   );
+   $results[ 'next_job_environment' ] = 'on';
+   $results[ 'status' ] .= "Verbose diagnostics are armed for the next submitted job in this browser window. ";
+} else {
+   unset( $_SESSION[ $window ][ 'next_job_environment' ] );
+   $results[ 'next_job_environment' ] = '';
+   $results[ 'status' ] .= "Verbose diagnostics are not armed for the next submitted job. ";
+}
+
 if ( $doc =
      ga_db_output(
          ga_db_findOne( 

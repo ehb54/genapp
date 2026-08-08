@@ -941,6 +941,41 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
     __~sendmodulejson{ $_REQUEST[ "_json" ] = '__modulejson__';}
     $json = json_encode( $_REQUEST );
     $json = str_replace( "'", "_", $json );
+if ( "__nextjobenvironment__" == "true" ) {
+    $next_job_environment = null;
+    $next_job_environment_definition = array(
+        'id'       => '__nextjobenvironmentid__',
+        'variable' => '__nextjobenvironmentvariable__',
+        'value'    => '__nextjobenvironmentvalue__'
+    );
+    if ( !preg_match( '/^[A-Za-z][A-Za-z0-9_]*$/', $next_job_environment_definition[ 'id' ] ) ||
+         !preg_match( '/^[A-Za-z_][A-Za-z0-9_]*$/', $next_job_environment_definition[ 'variable' ] ) ||
+         !preg_match( '/^[A-Za-z0-9_.,:+=\\/-]+$/', $next_job_environment_definition[ 'value' ] ) )
+    {
+        $results[ 'error' ] .= "Invalid next-job environment declaration. ";
+        $results[ '_status' ] = 'failed';
+        echo (json_encode($results));
+        exit();
+    }
+
+    session_name( strtoupper( preg_replace('/[^a-zA-Z0-9_]+/', '_', "GENAPP___application__" ) ) ); session_start();
+    if ( isset( $_SESSION[ $window ][ 'logon' ] ) &&
+         $_SESSION[ $window ][ 'logon' ] == $GLOBALS[ 'logon' ] &&
+         isset( $_SESSION[ $window ][ 'next_job_environment' ] ) )
+    {
+        $candidate = $_SESSION[ $window ][ 'next_job_environment' ];
+        if ( is_array( $candidate ) &&
+             isset( $candidate[ 'id' ], $candidate[ 'variable' ], $candidate[ 'value' ] ) &&
+             $candidate[ 'id' ] == $next_job_environment_definition[ 'id' ] &&
+             $candidate[ 'variable' ] == $next_job_environment_definition[ 'variable' ] &&
+             $candidate[ 'value' ] == $next_job_environment_definition[ 'value' ] )
+        {
+            $next_job_environment = $next_job_environment_definition;
+        } else {
+            unset( $_SESSION[ $window ][ 'next_job_environment' ] );
+        }
+    }
+}
     ob_start();
     if ( !chdir( $dir ) )
     {
@@ -969,6 +1004,21 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
     if ( strlen( $json ) > 129000 ) {
         $fileargs = 1;
         $bigargs = 1;
+    }
+    if ( "__nextjobenvironment__" == "true" ) {
+      if ( $next_job_environment !== null ) {
+          if ( $cmdprefix == "airavatarun" ||
+               $cmdprefix == "oscluster" ||
+               substr( $cmdprefix, 0, 5 ) == "abaco" ||
+               substr( $cmdprefix, 0, 6 ) == "docker" ) {
+              $results[ "error" ] .= "The selected resource does not support next-job diagnostic logging. ";
+              $results[ '_status' ] = 'failed';
+              echo (json_encode($results));
+              exit();
+          }
+          $cmd = "env " . $next_job_environment[ 'variable' ] . "=" . $next_job_environment[ 'value' ] . " " . $cmd;
+          $GLOBALS[ 'next_job_environment' ] = array( 'id' => $next_job_environment[ 'id' ] );
+      }
     }
     if ( isset( $fileargs ) )
     {
@@ -1069,7 +1119,20 @@ __~debug:basemylog{            error_log( "is NOT set request $v1\n", 3, "/tmp/m
 
     details( $_REQUEST, $modjson );
 
-    logjobstart(__~cache{ false, "__cache__" });
+    if ( !logjobstart(__~cache{ false, "__cache__" }) )
+    {
+        $results[ "error" ] .= "Could not create the job record. ";
+        $results[ '_status' ] = 'failed';
+        echo (json_encode($results));
+        exit();
+    }
+
+    if ( "__nextjobenvironment__" == "true" ) {
+    if ( $next_job_environment !== null ) {
+        unset( $_SESSION[ $window ][ 'next_job_environment' ] );
+    }
+    session_write_close();
+    }
 
     $altcmd = "nohup /usr/local/bin/php __docroot:html5__/__application__/util/jobrun.php '" . $GLOBALS[ 'logon' ] . "' " . $_REQUEST[ '_uuid' ] . " " . ( isset( $checkrunning ) ? "1" : "0" ) . " 2>&1 >> /tmp/php_errors &";
 
@@ -1220,4 +1283,3 @@ if ( sizeof( $_FILES ) )
 //   rmdir( $dir );
 }
 echo $results;
-

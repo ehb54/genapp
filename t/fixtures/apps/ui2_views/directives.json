@@ -4,6 +4,10 @@
     "version"     : "0.01",
     "docsbaseurl" : "docs",
     "usertheme"   : "true",
+    "nextjobenvironment" : "true",
+    "nextjobenvironmentid" : "fixture_diagnostics",
+    "nextjobenvironmentvariable" : "GENAPP_FIXTURE_DIAGNOSTICS",
+    "nextjobenvironmentvalue" : "DEBUG",
     "help"        : {
         "docs"     : "Docs help",
         "feedback" : "Feedback help"

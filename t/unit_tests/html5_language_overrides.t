@@ -50,6 +50,25 @@ ok( -f File::Spec->catfile( $html5, qw(etc sys_user_config.html) ), 'html5 confi
 ok( -f File::Spec->catfile( $html5, qw(ajax sys_config sys_user_config.php) ), 'html5 config module php was generated' );
 ok( -f File::Spec->catfile( $html5, qw(ajax sys_config sys_file_manager.php) ), 'html5 configbase module php was generated' );
 
+my $settings_html = read_file( File::Spec->catfile( $html5, qw(etc sys_user_config.html) ) );
+my $settings_php = read_file( File::Spec->catfile( $html5, qw(ajax sys_config sys_user_config.php) ) );
+my $pull_php = read_file( File::Spec->catfile( $html5, qw(ajax sys_config sys_pull.php) ) );
+my $base_php = read_file( File::Spec->catfile( $html5, qw(ajax html5_menu shared.php) ) );
+like( $settings_html, qr/Diagnostic logging for next submitted job/, 'opted-in HTML5 settings include the one-job diagnostic control' );
+like( $settings_php, qr/GENAPP_FIXTURE_DIAGNOSTICS/, 'settings endpoint persists the fixed declared environment assignment in the browser session' );
+like( $pull_php, qr/next_job_environment/, 'settings pull endpoint reports the armed one-job setting' );
+like( $base_php, qr/env GENAPP_FIXTURE_DIAGNOSTICS=DEBUG/, 'submitted commands receive the fixed declared environment assignment' );
+like( $base_php, qr/Could not create the job record/, 'one-job setting is not consumed when job creation fails' );
+for my $php_file (
+    File::Spec->catfile( $html5, qw(ajax sys_config sys_user_config.php) ),
+    File::Spec->catfile( $html5, qw(ajax sys_config sys_pull.php) ),
+    File::Spec->catfile( $html5, qw(ajax html5_menu shared.php) ),
+) {
+    my $lint = qx{php -l '$php_file' 2>&1};
+    is( $? >> 8, 0, "generated " . $php_file . " passes PHP syntax validation" )
+        or diag($lint);
+}
+
 my $override_marker = File::Spec->catfile( $html5, 'override_marker.txt' );
 my $html5_only      = File::Spec->catfile( $html5, 'html5_only.txt' );
 ok( -f $override_marker, 'html5/add overwrite marker exists' );

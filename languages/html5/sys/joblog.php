@@ -34,6 +34,9 @@ function logjobstart( $error_json_exit = false, $cache = "" )
    if ( isset( $GLOBALS[ "xsedeproject" ] ) ) {
        $insert[ 'xsedeproject'  ] = $GLOBALS[ 'xsedeproject' ];
    }
+   if ( isset( $GLOBALS[ 'next_job_environment' ] ) ) {
+       $insert[ 'next_job_environment' ] = $GLOBALS[ 'next_job_environment' ];
+   }
    $insert[ 'when'         ] = Array( $now );
    $insert[ 'start'        ] = $now;
    $insert[ 'status'       ] = Array( "started" );

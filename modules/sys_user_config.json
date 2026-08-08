@@ -206,6 +206,16 @@
                    }
                   ,{
                    "role"     : "input",
+                   "id"       : "next_job_environment",
+                   "label"    : "Diagnostic logging for next submitted job",
+                   "type"     : "checkbox",
+                   "required" : "false",
+                   "pull"     : "next_job_environment",
+                   "help"     : "Enable only when requested for troubleshooting. The application declares the fixed diagnostic setting; it is cleared after the next accepted job.",
+                   "hideifnot" : "nextjobenvironment"
+                   }
+                  ,{
+                   "role"     : "input",
                    "id"       : "groups",
                    "type"     : "group"
                   }

@@ -84,6 +84,13 @@ if ( $_REQUEST[ '_logon' ] != $_SESSION[ $window ][ 'logon' ] )
    echo (json_encode($results));
    exit();
 }
+if ( "__nextjobenvironment__" == "true" &&
+     isset( $_REQUEST[ 'next_job_environment' ] ) )
+{
+   $results[ 'next_job_environment' ] = isset( $_SESSION[ $window ][ 'next_job_environment' ] )
+       ? 'on'
+       : '';
+}
 session_write_close();
 
 if ( !sizeof( $_REQUEST ) )
@@ -269,4 +276,3 @@ __~debug:basemylog{error_log( "syspull: request\n" . print_r( $_REQUEST, true ) 
 __~debug:basemylog{error_log( "syspull: results\n" . print_r( $results, true ) . "\n", 3, "/tmp/mylog.syspull" );}
 echo (json_encode($results));
 exit();
-
