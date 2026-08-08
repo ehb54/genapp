@@ -13,7 +13,7 @@
       <p>Load one or more structures, attach a trajectory to the current molecule, and inspect Gaussian cube volumes locally.</p>
     </div>
     <div class="toolbar">
-      <span class="open-molecule-menu"><button id="open-molecule" type="button" aria-expanded="false">Open molecule</button><span id="molecule-menu" hidden><button id="open-structure" type="button">Load structure</button><button id="open-trajectory" type="button">Add trajectory to current</button></span></span>
+      <span class="open-molecule-menu"><button id="open-molecule" type="button">Open molecule</button><label class="select-control">As<select id="open-molecule-mode"><option value="structure">new structure</option><option value="trajectory">trajectory for current</option></select></label></span>
       <input id="structure-file" type="file" accept=".pdb,.ent,.cif,.mmcif,.sdf,.mol2,.pqr,.gro" hidden>
       <input id="trajectory-file" type="file" accept=".dcd,.trr,.xtc,.nctraj,.ncdf,.nc" hidden>
       <label class="file-button">Open cube<input id="volume-file" type="file" accept=".cube,.cub"></label>

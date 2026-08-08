@@ -584,9 +584,14 @@
   document.getElementById("demo-volume").addEventListener("click", () => loadVolume("fixtures/demo.cube", "demo.cube"));
   elements.addLayer.addEventListener("click", () => addMoleculeLayer());
   elements.addSurface.addEventListener("click", () => addVolumeLayer());
-  document.getElementById("open-molecule").addEventListener("click", function () { const menu = document.getElementById("molecule-menu"); menu.hidden = !menu.hidden; this.setAttribute("aria-expanded", String(!menu.hidden)); });
-  document.getElementById("open-structure").addEventListener("click", () => { document.getElementById("molecule-menu").hidden = true; elements.structureFile.click(); });
-  document.getElementById("open-trajectory").addEventListener("click", () => { document.getElementById("molecule-menu").hidden = true; if (!currentMolecule()) return setStatus("Load or choose a current molecule first.", true); elements.trajectoryFile.click(); });
+  document.getElementById("open-molecule").addEventListener("click", () => {
+    if (document.getElementById("open-molecule-mode").value === "trajectory") {
+      if (!currentMolecule()) return setStatus("Load or choose a current molecule first.", true);
+      elements.trajectoryFile.click();
+    } else {
+      elements.structureFile.click();
+    }
+  });
   document.getElementById("center-view").addEventListener("click", () => stage.autoView(500));
   document.getElementById("toggle-spin").addEventListener("click", function () {
     const enabled = this.getAttribute("aria-pressed") !== "true";
@@ -668,4 +673,5 @@
   window.addEventListener("resize", () => stage.handleResize());
   elements.payload.value = "";
   setStatus(`Ready. GenApp bundled NGL ${NGL.Version}.`);
+  window.addEventListener("error", (event) => setStatus(`Viewer error: ${event.message}`, true));
 }());

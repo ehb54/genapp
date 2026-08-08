@@ -33,9 +33,7 @@ h1 { font-size: 1.25rem; }
 h2 { font-size: 1rem; }
 header p, .hint { color: #aebcb9; font-size: 0.82rem; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.open-molecule-menu { position: relative; display: inline-flex; }
-#molecule-menu { position: absolute; z-index: 5; top: calc(100% + 0.25rem); left: 0; min-width: 13rem; padding: 0.3rem; border: 1px solid #58706c; border-radius: 6px; background: #17211f; box-shadow: 0 6px 18px #0008; }
-#molecule-menu button { display: block; width: 100%; margin: 0.12rem 0; text-align: left; }
+.open-molecule-menu { display: inline-flex; align-items: center; gap: 0.35rem; }
 .file-button input { display: none; }
 .select-control { display: flex; align-items: center; gap: 0.35rem; color: #cbd8d5; font-size: 0.78rem; }
 .select-control select, .select-control input { max-width: 9rem; }
