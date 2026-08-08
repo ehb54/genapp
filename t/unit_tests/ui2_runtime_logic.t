@@ -483,6 +483,45 @@ assert.strictEqual(hooks.serverFileRememberDirForSelection(fileEntry, "lrfile"),
 assert.strictEqual(hooks.serverFileRememberDirForSelection(folderEntry, "rpath"), btoa("./project"), "UI2 remembers the selected folder after selecting a server path");
 assert.strictEqual(hooks.serverFileDirLabel(btoa("./project/subdir")), "User files / project/subdir", "UI2 labels server chooser paths relative to the user file root");
 
+const fileManagerTable = createNode("table");
+const fileManagerBody = createNode("tbody");
+fileManagerTable.appendChild(fileManagerBody);
+function addFileManagerSelection(id, parentId, checked) {
+  const row = createNode("tr");
+  row.dataset.fileId = id;
+  row.dataset.parentId = parentId;
+  const select = createNode("input");
+  select.dataset.fileSelect = "1";
+  select.checked = checked;
+  row.appendChild(select);
+  fileManagerBody.appendChild(row);
+}
+const selectedRootFile = btoa("./project/input.pdb");
+const selectedNestedFile = btoa("./project/subdir/result.dat");
+const nestedParent = btoa("./project/subdir");
+addFileManagerSelection(selectedRootFile, "#", true);
+addFileManagerSelection(selectedNestedFile, nestedParent, true);
+addFileManagerSelection(btoa("./project/other.dat"), "#", false);
+assert.strictEqual(
+  hooks.fileManagerSelectedIds(fileManagerTable).join(","),
+  [selectedRootFile, selectedNestedFile].join(","),
+  "UI2 File Manager collects only checked encoded file ids"
+);
+assert.strictEqual(
+  hooks.fileManagerSelectedParentIds(fileManagerTable).join(","),
+  ["#", nestedParent].join(","),
+  "UI2 File Manager refreshes each selected parent once"
+);
+const fileManagerRemovalPrompt = hooks.fileManagerRemovalPrompt([selectedRootFile, selectedNestedFile]);
+assert(
+  fileManagerRemovalPrompt.includes("project/input.pdb") && fileManagerRemovalPrompt.includes("project/subdir/result.dat"),
+  "UI2 File Manager confirms the decoded selected paths before removal"
+);
+const fileManagerDeleteFormData = hooks.fileManagerDeleteFormData([selectedRootFile, selectedNestedFile]);
+assert.strictEqual(fileManagerDeleteFormData.get("_window"), "ui2-test", "UI2 File Manager delete retains the legacy window id");
+assert.strictEqual(fileManagerDeleteFormData.get("_spec"), "fc_cache", "UI2 File Manager delete uses the legacy file-cache contract");
+assert.strictEqual(fileManagerDeleteFormData.get("_delete"), selectedRootFile + "," + selectedNestedFile, "UI2 File Manager delete sends only the selected encoded ids");
+
 ["file", "lrfile", "rfile", "rpath"].forEach((type) => {
   const control = hooks.renderFileControl({ id: `\${type}_input`, type });
   const display = control.children[0];

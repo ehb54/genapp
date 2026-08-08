@@ -342,6 +342,11 @@ like( $ui2_js, qr/function repeaterControllerIds\(\).*?isRepeater\(field\).*?ids
 like( $ui2_js, qr/function applyInputPayload\(inputs, options = \{\}\).*?conditionalRepeatDependencyIds\(document\.getElementById\("ui2-form"\)\).*?repeaterControllerIds\(\).*?syncValues\(\).*?entries\.forEach/s, 'ui2 reattached input replay restores repeat dependencies before dependent values' );
 like( $ui2_js, qr/function renderFileManagerTool\(module, fields\)/, 'ui2 has a dedicated File Manager shell' );
 like( $ui2_js, qr/function downloadFileManagerSelection\(table, status, links, module\)/, 'ui2 File Manager submits selected files for download and renders returned links' );
+like( $ui2_js, qr/"Refresh all".*?"Refresh selected".*?"Remove selected".*?"Download"/s, 'ui2 File Manager distinguishes all-file refresh from selected refresh and removal' );
+like( $ui2_js, qr/function refreshSelectedFileManagerRows\(table, status\).*?fileManagerSelectedParentIds\(table\).*?loadFileManagerFolderChildren/s, 'ui2 File Manager refreshes the parents of selected entries' );
+like( $ui2_js, qr/function removeSelectedFileManagerRows\(table, status, links\).*?window\.confirm.*?fileManagerDeleteFormData\(ids\)/s, 'ui2 File Manager confirms selected removals before building the legacy request' );
+like( $ui2_js, qr/legacyEndpoint\("filesBase", "ajax\/sys_config\/sys_files\.php"\)/, 'ui2 File Manager removal reuses the legacy file endpoint' );
+like( $ui2_js, qr/row\.dataset\.parentId = entry\.parent \|\| parentId \|\| "#";/, 'ui2 File Manager preserves each child row parent instead of deriving it from a sibling' );
 like( $ui2_js, qr/function renderUserConfigTool\(module, fields\)/, 'ui2 has a dedicated Settings shell' );
 like( $ui2_js, qr/afterSuccess: \(payload\) => setSessionProjectFromSettings\(form, payload\)/, 'ui2 Settings reconciles the session project from the successful settings response' );
 like( $ui2_js, qr/function renderRegisterTool\(module, fields\)/, 'ui2 has a dedicated Register shell' );

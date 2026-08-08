@@ -3897,14 +3897,18 @@
     }
 
     const actions = el("div", "ui2-tool-actions");
-    const refresh = el("button", "ui2-button ui2-button-quiet", "Refresh files");
-    refresh.type = "button";
+    const refreshAll = el("button", "ui2-button ui2-button-quiet", "Refresh all");
+    refreshAll.type = "button";
+    const refreshSelected = el("button", "ui2-button ui2-button-quiet", "Refresh selected");
+    refreshSelected.type = "button";
+    const removeSelected = el("button", "ui2-button ui2-button-quiet", "Remove selected");
+    removeSelected.type = "button";
     const download = el("button", "ui2-button", "Download");
     download.type = "button";
     const status = el("div", "ui2-submit-status", "");
     status.id = "ui2-file-manager-status";
     const links = el("div", "ui2-file-download-links");
-    actions.append(refresh, download, status, links);
+    actions.append(refreshAll, refreshSelected, removeSelected, download, status, links);
     body.appendChild(actions);
 
     ["status", "outfiles"].forEach((id) => {
@@ -3916,7 +3920,9 @@
 
     section.appendChild(body);
     table._ui2UtilityModule = module || {};
-    refresh.addEventListener("click", () => loadFileManagerRows(table));
+    refreshAll.addEventListener("click", () => loadFileManagerRows(table));
+    refreshSelected.addEventListener("click", () => refreshSelectedFileManagerRows(table, status));
+    removeSelected.addEventListener("click", () => removeSelectedFileManagerRows(table, status, links));
     download.addEventListener("click", () => downloadFileManagerSelection(table, status, links, module || {}));
     refreshServerDate(section);
     window.setTimeout(() => loadFileManagerRows(table), 0);
@@ -5277,7 +5283,9 @@
     const isFolder = entry.children === true;
     const row = document.createElement("tr");
     row.dataset.fileId = entry.id || "";
+    row.dataset.parentId = entry.parent || "#";
     row.dataset.depth = String(depth);
+    row._ui2FileEntry = entry;
     const selectCell = document.createElement("td");
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
@@ -5310,13 +5318,7 @@
     button?.replaceChildren("v");
     button?.setAttribute("aria-label", `Close ${fileEntryName(entry)}`);
     try {
-      const children = await fetchServerFileEntries(entry.id);
-      let anchor = row;
-      children.forEach((child) => {
-        const childRow = document.createElement("tr");
-        appendFileManagerRowAfter(tbody, childRow, child, depth + 1, anchor);
-        anchor = childRow;
-      });
+      await loadFileManagerFolderChildren(row, entry, depth);
     } catch (error) {
       const errorRow = document.createElement("tr");
       const cell = el("td", "ui2-table-empty", error.message);
@@ -5327,10 +5329,26 @@
     }
   }
 
-  function appendFileManagerRowAfter(tbody, row, entry, depth, anchor) {
+  async function loadFileManagerFolderChildren(row, entry, depth) {
+    const tbody = row.parentElement;
+    if (!tbody) {
+      return;
+    }
+    removeFileManagerChildren(row);
+    const children = await fetchServerFileEntries(entry.id);
+    let anchor = row;
+    children.forEach((child) => {
+      const childRow = document.createElement("tr");
+      appendFileManagerRowAfter(tbody, childRow, child, depth + 1, anchor, entry.id);
+      anchor = childRow;
+    });
+  }
+
+  function appendFileManagerRowAfter(tbody, row, entry, depth, anchor, parentId) {
     row.dataset.fileId = entry.id || "";
-    row.dataset.parentId = anchor.closest("tr")?.dataset.fileId || "";
+    row.dataset.parentId = entry.parent || parentId || "#";
     row.dataset.depth = String(depth);
+    row._ui2FileEntry = entry;
     const isFolder = entry.children === true;
     const selectCell = document.createElement("td");
     const checkbox = document.createElement("input");
@@ -5369,10 +5387,104 @@
     }
   }
 
-  async function downloadFileManagerSelection(table, status, links, module) {
-    const selected = Array.from(table?.querySelectorAll("input[data-file-select]:checked") || [])
-      .map((input) => input.closest("tr")?.dataset.fileId)
+  function fileManagerSelectedRows(table) {
+    return Array.from(table?.querySelectorAll("input[data-file-select]") || [])
+      .filter((input) => input.checked)
+      .map((input) => input.closest("tr"))
       .filter(Boolean);
+  }
+
+  function fileManagerSelectedIds(table) {
+    return fileManagerSelectedRows(table)
+      .map((row) => row.dataset.fileId)
+      .filter(Boolean);
+  }
+
+  function fileManagerSelectedParentIds(table) {
+    return [...new Set(fileManagerSelectedRows(table)
+      .map((row) => row.dataset.parentId || "#"))];
+  }
+
+  function fileManagerRemovalPrompt(ids) {
+    const paths = ids.map((id) => decodeServerFileId(id).replace(/^\.\//, ""));
+    const noun = ids.length === 1 ? "item" : "items";
+    return `Remove ${ids.length} selected ${noun}? Directories include all of their contents.\n\n${paths.join("\n")}`;
+  }
+
+  function fileManagerDeleteFormData(ids) {
+    const formData = new FormData();
+    formData.set("_window", window.name);
+    formData.set("_spec", "fc_cache");
+    formData.set("_delete", ids.join(","));
+    return formData;
+  }
+
+  function fileManagerRowForId(table, fileId) {
+    return Array.from(table?.querySelectorAll("tr[data-file-id]") || [])
+      .find((row) => row.dataset.fileId === fileId) || null;
+  }
+
+  async function refreshSelectedFileManagerRows(table, status) {
+    const parentIds = fileManagerSelectedParentIds(table);
+    if (!parentIds.length) {
+      setSubmitStatus(status, "No files selected.", "error");
+      return;
+    }
+    setSubmitStatus(status, "Refreshing selected files...", "pending");
+    try {
+      await refreshSessionState();
+      if (parentIds.includes("#")) {
+        await loadFileManagerRows(table);
+      } else {
+        for (const parentId of parentIds) {
+          const parentRow = fileManagerRowForId(table, parentId);
+          const entry = parentRow?._ui2FileEntry;
+          if (!parentRow || !entry) {
+            await loadFileManagerRows(table);
+            break;
+          }
+          await loadFileManagerFolderChildren(parentRow, entry, Number(parentRow.dataset.depth || 0));
+        }
+      }
+      setSubmitStatus(status, "Selected files refreshed.", "ok");
+    } catch (error) {
+      setSubmitStatus(status, error.message, "error");
+    }
+  }
+
+  async function removeSelectedFileManagerRows(table, status, links) {
+    const ids = fileManagerSelectedIds(table);
+    if (!ids.length) {
+      setSubmitStatus(status, "No files selected.", "error");
+      return;
+    }
+    if (!window.confirm(fileManagerRemovalPrompt(ids))) {
+      return;
+    }
+    setSubmitStatus(status, "Removing selected files...", "pending");
+    try {
+      await refreshSessionState();
+      const response = await fetch(legacyEndpoint("filesBase", "ajax/sys_config/sys_files.php"), {
+        method: "POST",
+        body: fileManagerDeleteFormData(ids),
+        credentials: "same-origin"
+      });
+      const payload = await parseJsonResponse(response, "File Manager remove selected");
+      if (payload.error) {
+        throw new Error(payload.error);
+      }
+      if (links) {
+        links.innerHTML = "";
+      }
+      await loadFileManagerRows(table);
+      setSubmitStatus(status, "Selected files removed.", "ok");
+    } catch (error) {
+      setSubmitStatus(status, error.message, "error");
+    }
+  }
+
+  async function downloadFileManagerSelection(table, status, links, module) {
+    const selected = fileManagerSelectedIds(table);
     if (links) {
       links.innerHTML = "";
     }
@@ -10605,6 +10717,10 @@
       serverFileEntryIsFolder,
       fileEntryName,
       fileEntryDetails,
+      fileManagerSelectedIds,
+      fileManagerSelectedParentIds,
+      fileManagerRemovalPrompt,
+      fileManagerDeleteFormData,
       renderFileControl,
       renderHookButtonControl,
       renderImageOutputShell,
