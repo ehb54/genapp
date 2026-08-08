@@ -10,15 +10,17 @@
   <header>
     <div>
       <h1>NGL Viewer Lab</h1>
-      <p>Load a structure, its matching trajectory, and Gaussian cube volumes locally. Nothing leaves your computer.</p>
+      <p>Load one or more structures, attach a trajectory to the current molecule, and inspect Gaussian cube volumes locally.</p>
     </div>
     <div class="toolbar">
-      <label class="file-button">Open structure<input id="structure-file" type="file" accept=".pdb,.ent,.cif,.mmcif,.sdf,.mol2,.pqr,.gro"></label>
-      <label class="file-button">Open trajectory<input id="trajectory-file" type="file" accept=".dcd,.trr,.xtc,.nctraj,.ncdf,.nc"></label>
+      <span class="open-molecule-menu"><button id="open-molecule" type="button" aria-expanded="false">Open molecule</button><span id="molecule-menu" hidden><button id="open-structure" type="button">Load structure</button><button id="open-trajectory" type="button">Add trajectory to current</button></span></span>
+      <input id="structure-file" type="file" accept=".pdb,.ent,.cif,.mmcif,.sdf,.mol2,.pqr,.gro" hidden>
+      <input id="trajectory-file" type="file" accept=".dcd,.trr,.xtc,.nctraj,.ncdf,.nc" hidden>
       <label class="file-button">Open cube<input id="volume-file" type="file" accept=".cube,.cub"></label>
       <button id="demo-structure" type="button">Demo molecule</button>
       <button id="demo-volume" type="button">Demo cube</button>
       <button id="center-view" type="button">Center view</button>
+      <button id="save-coordinates" type="button" disabled>Save coordinates</button>
       <button id="toggle-spin" type="button" aria-pressed="false">Spin</button>
       <label class="select-control">Camera<select id="camera-mode"><option value="orthographic">Orthographic</option><option value="perspective">Perspective</option></select></label>
       <label class="select-control">Background<input id="background-color" type="color" value="#050909"></label>
@@ -37,11 +39,15 @@
 
     <aside>
       <section class="card">
+        <div class="section-title"><h2>Molecules</h2><span class="hint">The current molecule receives trajectories and new layers.</span></div>
+        <div id="molecule-list" class="layer-list empty">Load a structure to begin.</div>
+      </section>
+      <section class="card">
         <div class="section-title">
           <h2>Trajectory</h2>
-          <span id="file-trajectory-status" class="hint">First open a structure, then add a trajectory. Local DCD uses the Sasmol helper.</span>
+          <span id="file-trajectory-status" class="hint">Choose a current molecule, then attach a trajectory.</span>
         </div>
-        <p class="hint">The trajectory supplies coordinates for the loaded structure, so it must use the same atom order and count.</p>
+        <p class="hint">The trajectory supplies coordinates for the current molecule, so it must use the same atom order and count.</p>
         <div class="trajectory-controls">
           <button id="file-trajectory-previous" type="button" disabled>Previous</button>
           <button id="file-trajectory-play" type="button" disabled aria-pressed="false">Play</button>
@@ -55,8 +61,9 @@
           <h2>Molecule layers</h2>
           <button id="add-layer" type="button" disabled>Add layer</button>
         </div>
-        <p class="hint">Selections use SasMol basis syntax: <code>name CA</code>, <code>resname GLY</code>, <code>segname PAI1 and resid &gt;= 10</code>, or <code>moltype protein</code>. Start the local Sasmol helper to apply a basis selection.</p>
+        <p class="hint">Use the basis builder for values that occur in the current PDB, or enter an advanced SasMol basis such as <code>name CA</code> or <code>segname PAI1 and resid &gt;= 10</code>.</p>
         <div id="molecule-layers" class="layer-list empty">Load a structure to add molecular layers.</div>
+        <details id="basis-catalog" class="basis-catalog"><summary>Basis fields and values in current molecule</summary><div id="basis-catalog-list" class="hint">Available when a PDB is open through the local helper.</div></details>
       </section>
 
       <section class="card">
@@ -85,6 +92,9 @@
       </div>
       <div class="controls">
         <label>SasMol basis selection <input class="selection" placeholder="All atoms when blank" spellcheck="false"></label>
+        <label>Basis field<select class="basis-keyword"><option value="">Choose a field</option></select></label>
+        <label>Value<select class="basis-value" disabled><option>Choose a field first</option></select></label>
+        <button class="insert-basis" type="button">Use selected value</button>
         <button class="apply-basis" type="button">Apply selection</button>
         <output class="selection-count" aria-live="polite">All atoms</output>
         <label>Representation<select class="representation">
@@ -100,12 +110,20 @@
           <option value="label">label</option>
         </select></label>
         <label>Color scheme<select class="color-scheme">
-          <option value="chainid">chain</option>
-          <option value="element">element</option>
+          <option value="atomname">name</option>
           <option value="resname">residue</option>
-          <option value="sstruc">secondary structure</option>
-          <option value="bfactor">B-factor</option>
+          <option value="sasmol-resid">residue id</option>
+          <option value="sasmol-segname">segname</option>
+          <option value="chainid">chain</option>
           <option value="uniform">single color</option>
+          <option value="element">element</option>
+          <option value="sasmol-index">index</option>
+          <option value="molecule">molecule</option>
+          <option value="sstruc">secondary structure</option>
+          <option value="sasmol-moltype">molecule type</option>
+          <option value="bfactor">B-factor</option>
+          <option value="occupancy">occupancy</option>
+          <option value="sasmol-charge">charge</option>
         </select></label>
         <label>Color<input class="color" type="color" value="#4ca6ff"></label>
         <label>Opacity<input class="opacity" type="range" min="0" max="1" step="0.05" value="1"><output>1.00</output></label>

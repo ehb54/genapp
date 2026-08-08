@@ -33,6 +33,9 @@ h1 { font-size: 1.25rem; }
 h2 { font-size: 1rem; }
 header p, .hint { color: #aebcb9; font-size: 0.82rem; }
 .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.open-molecule-menu { position: relative; display: inline-flex; }
+#molecule-menu { position: absolute; z-index: 5; top: calc(100% + 0.25rem); left: 0; min-width: 13rem; padding: 0.3rem; border: 1px solid #58706c; border-radius: 6px; background: #17211f; box-shadow: 0 6px 18px #0008; }
+#molecule-menu button { display: block; width: 100%; margin: 0.12rem 0; text-align: left; }
 .file-button input { display: none; }
 .select-control { display: flex; align-items: center; gap: 0.35rem; color: #cbd8d5; font-size: 0.78rem; }
 .select-control select, .select-control input { max-width: 9rem; }
@@ -80,6 +83,11 @@ aside {
 .hint { line-height: 1.4; margin: 0.35rem 0 0.65rem; }
 code { color: #95e0ce; }
 .layer-list { display: grid; gap: 0.6rem; }
+.molecule-row { display: flex; align-items: center; gap: 0.45rem; padding: 0.4rem; border: 1px solid #3a504b; border-radius: 5px; font-size: 0.8rem; }
+.molecule-row span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.molecule-row button { padding: 0.26rem 0.4rem; font-size: 0.72rem; }
+.basis-catalog { margin-top: 0.7rem; font-size: 0.75rem; line-height: 1.45; }
+.basis-catalog > div { max-height: 11rem; overflow: auto; margin-top: 0.45rem; }
 .layer-list.empty { color: #81918d; font-size: 0.85rem; font-style: italic; }
 .layer {
   padding: 0.6rem;

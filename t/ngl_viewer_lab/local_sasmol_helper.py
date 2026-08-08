@@ -20,6 +20,14 @@ from sassie.util import basis_to_python
 
 MAX_UPLOAD_BYTES = 512 * 1024 * 1024
 MAX_SELECTION_ATOMS = 100_000
+MAX_CATALOG_VALUES = 512
+
+CATALOG_FIELDS = (
+    ("index", "integer"), ("name", "text"), ("resname", "text"),
+    ("resid", "integer"), ("segname", "text"), ("chain", "text"),
+    ("occupancy", "decimal"), ("beta", "decimal"), ("element", "text"),
+    ("charge", "text"), ("moltype", "text"),
+)
 
 
 class LocalSasmolHandler(SimpleHTTPRequestHandler):
@@ -36,14 +44,18 @@ class LocalSasmolHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         endpoint = self.path.split("?", 1)[0]
-        if endpoint not in {"/local-sasmol/trajectory", "/local-sasmol/selection"}:
+        if endpoint not in {"/local-sasmol/trajectory", "/local-sasmol/selection", "/local-sasmol/catalog", "/local-sasmol/save"}:
             self.send_error(404)
             return
         try:
             if endpoint == "/local-sasmol/trajectory":
                 self.write_trajectory()
-            else:
+            elif endpoint == "/local-sasmol/selection":
                 self.write_selection()
+            elif endpoint == "/local-sasmol/catalog":
+                self.write_catalog()
+            else:
+                self.write_pdb()
         except Exception as error:
             self.write_json(400, {"error": str(error)})
 
@@ -111,6 +123,76 @@ class LocalSasmolHandler(SimpleHTTPRequestHandler):
                 % (len(indices), MAX_SELECTION_ATOMS)
             )
         self.write_json(200, {"basis": basis, "count": len(indices), "indices": indices})
+
+    def read_form_pdb(self):
+        content_length = int(self.headers.get("Content-Length", "0"))
+        if content_length < 1 or content_length > MAX_UPLOAD_BYTES:
+            raise ValueError("structure upload must be between 1 byte and 512 MiB")
+        form = cgi.FieldStorage(
+            fp=self.rfile, headers=self.headers,
+            environ={"REQUEST_METHOD": "POST", "CONTENT_TYPE": self.headers.get("Content-Type", "")},
+        )
+        pdb_bytes = form.getvalue("structure")
+        if not isinstance(pdb_bytes, bytes):
+            raise ValueError("a PDB structure file is required")
+        return form, pdb_bytes
+
+    def molecule_from_pdb(self, pdb_bytes):
+        with tempfile.TemporaryDirectory(prefix="ngl_sasmol_") as temporary_directory:
+            pdb_path = Path(temporary_directory, "structure.pdb")
+            pdb_path.write_bytes(pdb_bytes)
+            molecule = Molecule(0)
+            molecule.read_pdb(str(pdb_path))
+            return molecule
+
+    def write_catalog(self):
+        _form, pdb_bytes = self.read_form_pdb()
+        molecule = self.molecule_from_pdb(pdb_bytes)
+        fields = {}
+        atom_values = {}
+        for name, kind in CATALOG_FIELDS:
+            values = [str(value).strip() for value in getattr(molecule, name)()]
+            counts = {}
+            for value in values:
+                counts[value] = counts.get(value, 0) + 1
+            numeric = kind in {"integer", "decimal"}
+            def key(item):
+                try:
+                    return (0, float(item[0])) if numeric else (1, item[0].lower())
+                except ValueError:
+                    return (1, item[0])
+            entries = [{"value": value, "count": count} for value, count in sorted(counts.items(), key=key)]
+            fields[name] = {"kind": kind, "distinct_count": len(entries), "truncated": len(entries) > MAX_CATALOG_VALUES, "values": entries[:MAX_CATALOG_VALUES]}
+            if name in {"index", "resid", "segname", "charge", "moltype"}:
+                atom_values[name] = values
+        self.write_json(200, {"atom_count": molecule.natoms(), "fields": fields, "atom_values": atom_values})
+
+    def write_pdb(self):
+        form, pdb_bytes = self.read_form_pdb()
+        coordinate_bytes = form.getvalue("coordinates")
+        if not isinstance(coordinate_bytes, bytes) or len(coordinate_bytes) < 12:
+            raise ValueError("current coordinates are required")
+        magic, frame_count, atom_count = struct.unpack("<4sII", coordinate_bytes[:12])
+        if magic != b"NGLF" or frame_count != 1 or len(coordinate_bytes) != 12 + atom_count * 3 * 4:
+            raise ValueError("invalid coordinate data")
+        molecule = self.molecule_from_pdb(pdb_bytes)
+        if molecule.natoms() != atom_count:
+            raise ValueError("coordinate atom count does not match the structure")
+        coordinates = numpy.frombuffer(coordinate_bytes, dtype="<f4", offset=12).reshape((1, atom_count, 3))
+        molecule.setCoor(coordinates)
+        with tempfile.NamedTemporaryFile(prefix="ngl_coordinates_", suffix=".pdb", delete=False) as output:
+            output_name = output.name
+        try:
+            molecule.write_pdb(output_name, 0, "w")
+            body = Path(output_name).read_bytes()
+        finally:
+            Path(output_name).unlink(missing_ok=True)
+        self.send_response(200)
+        self.send_header("Content-Type", "chemical/x-pdb")
+        self.send_header("Content-Disposition", "attachment; filename=current_frame.pdb")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
     def write_json(self, status, payload):
         body = json.dumps(payload).encode("utf-8")

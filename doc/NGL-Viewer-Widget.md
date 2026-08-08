@@ -33,7 +33,30 @@ must not send runtime `viewer` overrides, camera choices, browser-control
 settings, or other renderer policy. When no camera is declared, the viewer
 defaults to orthographic projection.
 
-`additional_components` is reserved for a future multi-molecule input contract.
+`additional_components` enables the optional multi-molecule contract.  When it
+is absent or false, the legacy single-structure payload remains unchanged.
+
+## Multiple molecular structures
+
+An opted-in payload may provide `components`.  Each item is an independently
+loadable structure with its own representations and optional trajectory.  The
+first item must also be mirrored in the legacy top-level fields so existing
+clients continue to render it.
+
+```json
+{
+  "loadname": "first.pdb",
+  "representation": "cartoon",
+  "components": [
+    {"id": "first", "name": "Reference", "loadname": "first.pdb", "representations": [{"type": "cartoon"}]},
+    {"id": "second", "name": "Comparison", "loadname": "second.pdb", "representations": [{"type": "ball+stick"}], "trajectory": {"loadname": "second.dcd", "loadparams": {"ext": "dcd"}}}
+  ]
+}
+```
+
+The viewer presents a current component.  Visibility, layers, frame playback,
+and coordinate export apply to that component.  A trajectory never transfers
+between structures: its atom order and count must match its own topology.
 The current widget supports one primary structure component plus zero or more
 volume surfaces.
 

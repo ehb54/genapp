@@ -3,6 +3,8 @@
 
   const stage = new NGL.Stage("viewport", { backgroundColor: "#050909", cameraType: "orthographic" });
   const state = {
+    molecules: [],
+    currentMolecule: null,
     structure: null,
     structureName: "",
     structureSource: null,
@@ -32,8 +34,70 @@
     fileTrajectoryPrevious: document.getElementById("file-trajectory-previous"),
     fileTrajectoryPlay: document.getElementById("file-trajectory-play"),
     fileTrajectoryNext: document.getElementById("file-trajectory-next"),
-    fileTrajectoryFrame: document.getElementById("file-trajectory-frame")
+    fileTrajectoryFrame: document.getElementById("file-trajectory-frame"),
+    moleculeList: document.getElementById("molecule-list"),
+    saveCoordinates: document.getElementById("save-coordinates"),
+    basisCatalog: document.getElementById("basis-catalog-list")
   };
+
+  const localHelperAvailable = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+  const moleculeColors = ["#4ca6ff", "#fb9a99", "#8dd3c7", "#fdb462", "#bebada", "#b3de69"];
+
+  function currentMolecule() { return state.currentMolecule; }
+
+  function updateMoleculeList() {
+    elements.moleculeList.textContent = "";
+    if (!state.molecules.length) {
+      elements.moleculeList.classList.add("empty");
+      elements.moleculeList.textContent = "Load a structure to begin.";
+      return;
+    }
+    elements.moleculeList.classList.remove("empty");
+    state.molecules.forEach((molecule, index) => {
+      const row = document.createElement("div"); row.className = "molecule-row";
+      const current = molecule === state.currentMolecule;
+      row.innerHTML = `<button type="button" class="make-current">${current ? "Current" : "Make current"}</button><span>${molecule.name}</span><label class="visible"><input type="checkbox" ${molecule.component.visible ? "checked" : ""}> visible</label><button type="button" class="remove-molecule">Remove</button>`;
+      row.querySelector(".make-current").addEventListener("click", () => activateMolecule(molecule));
+      row.querySelector("input").addEventListener("change", (event) => { molecule.component.setVisibility(event.target.checked); updatePayload(); });
+      row.querySelector(".remove-molecule").addEventListener("click", () => removeMolecule(molecule));
+      elements.moleculeList.appendChild(row);
+    });
+  }
+
+  function activateMolecule(molecule) {
+    if (state.currentMolecule) {
+      state.currentMolecule.axes = state.axes;
+    }
+    state.currentMolecule = molecule || null;
+    state.structure = molecule?.component || null;
+    state.structureName = molecule?.name || "";
+    state.structureSource = molecule?.source || null;
+    state.fileTrajectory = molecule?.trajectory || null;
+    state.fileTrajectoryName = molecule?.trajectoryName || "";
+    state.moleculeLayers = molecule?.layers || [];
+    state.axes = molecule?.axes || null;
+    elements.moleculeLayers.textContent = "";
+    if (molecule?.layers?.length) {
+      elements.moleculeLayers.classList.remove("empty");
+      molecule.layers.forEach((layer) => elements.moleculeLayers.appendChild(layer.node));
+    } else {
+      elements.moleculeLayers.classList.add("empty");
+      elements.moleculeLayers.textContent = molecule ? "Add a layer to display this molecule." : "Load a structure to add molecular layers.";
+    }
+    elements.addLayer.disabled = !molecule;
+    elements.saveCoordinates.disabled = !molecule || !localHelperAvailable || !["pdb", "ent"].includes(extension(molecule.name));
+    updateFileTrajectoryControls(); updateMoleculeList(); renderBasisCatalog(); updatePayload();
+  }
+
+  function removeMolecule(molecule) {
+    if (molecule.trajectory) {
+      activateMolecule(molecule); disposeFileTrajectory(); molecule.trajectory = null;
+    }
+    stage.removeComponent(molecule.component);
+    state.molecules = state.molecules.filter((item) => item !== molecule);
+    activateMolecule(state.molecules[0] || null);
+    setStatus(`Removed ${molecule.name}.`);
+  }
 
   function updateFileTrajectoryControls() {
     const trajectory = state.fileTrajectory?.trajectory || state.fileTrajectory;
@@ -79,6 +143,7 @@
     }
     state.fileTrajectory = null;
     state.fileTrajectoryName = "";
+    if (currentMolecule()) { currentMolecule().trajectory = null; currentMolecule().trajectoryName = ""; }
   }
 
   async function loadTrajectory(source, displayName) {
@@ -93,6 +158,8 @@
       const frames = await loadTrajectoryFrames(source, name);
       state.fileTrajectory = state.structure.addTrajectory(frames, { defaultMode: "loop" });
       state.fileTrajectoryName = name;
+      currentMolecule().trajectory = state.fileTrajectory;
+      currentMolecule().trajectoryName = name;
       const trajectory = state.fileTrajectory.trajectory || state.fileTrajectory;
       trajectory.signals?.countChanged?.add(updateFileTrajectoryControls);
       trajectory.signals?.gotNumframes?.add(updateFileTrajectoryControls);
@@ -169,6 +236,20 @@
     }
   }
 
+  function customColorScheme(field, molecule) {
+    const values = molecule?.catalog?.atom_values?.[field];
+    if (!values) throw new Error(`${field} coloring requires a local PDB catalog`);
+    molecule.colorSchemes ||= {};
+    if (molecule.colorSchemes[field]) return molecule.colorSchemes[field];
+    const palette = [0x4ca6ff, 0xfb9a99, 0x8dd3c7, 0xfdb462, 0xbebada, 0xb3de69, 0xffed6f, 0xbc80bd];
+    const colors = {}; let number = 0;
+    values.forEach((value) => { if (colors[value] === undefined) { colors[value] = palette[number % palette.length]; number += 1; } });
+    molecule.colorSchemes[field] = NGL.ColormakerRegistry.addScheme(function () {
+      this.atomColor = function (atom) { return colors[values[atom.index]] ?? 0xffffff; };
+    }, `sasmol-${field}-${state.molecules.indexOf(molecule)}`);
+    return molecule.colorSchemes[field];
+  }
+
   function representationParams(layer) {
     const selection = layer.resolvedSelection || "all";
     const colorScheme = layer.node.querySelector(".color-scheme").value;
@@ -176,8 +257,10 @@
       sele: selection,
       opacity: Number(layer.node.querySelector(".opacity").value)
     };
-    if (colorScheme === "uniform") {
-      params.color = layer.node.querySelector(".color").value;
+    if (colorScheme === "uniform" || colorScheme === "molecule") {
+      params.color = colorScheme === "molecule" ? currentMolecule().color : layer.node.querySelector(".color").value;
+    } else if (colorScheme.indexOf("sasmol-") === 0) {
+      params.colorScheme = customColorScheme(colorScheme.slice(7), currentMolecule());
     } else {
       params.colorScheme = colorScheme;
     }
@@ -203,6 +286,49 @@
     if (!response.ok) throw new Error(`could not read ${state.structureName}`);
     const blob = await response.blob();
     return new File([blob], state.structureName, { type: "chemical/x-pdb" });
+  }
+
+  async function loadBasisCatalog(molecule) {
+    if (!localHelperAvailable || !["pdb", "ent"].includes(extension(molecule.name))) { renderBasisCatalog(); return; }
+    try {
+      activateMolecule(molecule);
+      const form = new FormData(); const structureFile = await structureFileForSasmol();
+      form.append("structure", structureFile, structureFile.name || "structure.pdb");
+      const response = await fetch("/local-sasmol/catalog", { method: "POST", body: form });
+      const catalog = await response.json();
+      if (!response.ok) throw new Error(catalog.error || "catalog request failed");
+      molecule.catalog = catalog;
+    } catch (error) { molecule.catalogError = error.message; }
+    if (molecule === currentMolecule()) { renderBasisCatalog(); molecule.layers.forEach(populateLayerBasis); }
+  }
+
+  function renderBasisCatalog() {
+    const molecule = currentMolecule(); const catalog = molecule?.catalog;
+    if (!catalog) { elements.basisCatalog.textContent = molecule?.catalogError || "Available for a PDB when opened with local_sasmol_helper.py."; return; }
+    elements.basisCatalog.textContent = "";
+    Object.entries(catalog.fields).forEach(([field, data]) => {
+      const line = document.createElement("div");
+      const shown = data.values.map((item) => `${item.value || "(blank)"} (${item.count})`).join(", ");
+      line.innerHTML = `<code>${field}</code>: ${shown || "no values"}${data.truncated ? `; first ${data.values.length} of ${data.distinct_count}` : ""}`;
+      elements.basisCatalog.appendChild(line);
+    });
+  }
+
+  function populateLayerBasis(layer) {
+    const keyword = layer.node.querySelector(".basis-keyword"); const value = layer.node.querySelector(".basis-value");
+    const catalog = currentMolecule()?.catalog;
+    keyword.textContent = "";
+    keyword.append(new Option(catalog ? "Choose a field" : "Local PDB helper required", ""));
+    if (catalog) Object.keys(catalog.fields).forEach((field) => keyword.append(new Option(field, field)));
+    value.disabled = true; value.textContent = ""; value.append(new Option("Choose a field first", ""));
+  }
+
+  function updateBasisValues(layer) {
+    const field = layer.node.querySelector(".basis-keyword").value; const value = layer.node.querySelector(".basis-value");
+    const data = currentMolecule()?.catalog?.fields?.[field]; value.textContent = "";
+    if (!data) { value.disabled = true; value.append(new Option("Choose a field first", "")); return; }
+    value.disabled = false; value.append(new Option("Choose a value", ""));
+    data.values.forEach((item) => value.append(new Option(`${item.value || "(blank)"} (${item.count})`, item.value)));
   }
 
   async function applySasmolSelection(layer) {
@@ -280,6 +406,7 @@
     node.querySelector(".color").value = options?.color || "#4ca6ff";
     state.moleculeLayers.push(layer);
     elements.moleculeLayers.appendChild(node);
+    populateLayerBasis(layer);
 
     node.querySelectorAll("input, select").forEach((control) => {
       if (control.classList.contains("selection")) return;
@@ -291,6 +418,15 @@
       control.addEventListener("change", function () { replaceMoleculeRepresentation(layer); });
     });
     node.querySelector(".apply-basis").addEventListener("click", () => applySasmolSelection(layer));
+    node.querySelector(".basis-keyword").addEventListener("change", () => updateBasisValues(layer));
+    node.querySelector(".insert-basis").addEventListener("click", () => {
+      const field = node.querySelector(".basis-keyword").value;
+      const value = node.querySelector(".basis-value").value;
+      if (!field || value === "") return;
+      const quoted = /[\s]/.test(value) ? `\"${value.replace(/\"/g, "\\\"")}\"` : value;
+      const selection = node.querySelector(".selection");
+      selection.value = selection.value.trim() ? `${selection.value} and ${field} == ${quoted}` : `${field} == ${quoted}`;
+    });
     node.querySelector(".selection").addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
         event.preventDefault();
@@ -363,31 +499,22 @@
   async function loadStructure(source, displayName) {
     const name = displayName || source.name;
     setStatus(`Loading structure ${name}…`);
-    disposeFileTrajectory();
-    if (state.structure) stage.removeComponent(state.structure);
-    state.axes = null;
-    state.moleculeLayers = [];
-    elements.moleculeLayers.textContent = "";
-    elements.moleculeLayers.classList.add("empty");
     try {
-      state.structure = await stage.loadFile(source, { ext: extension(name) });
-      state.structureName = name;
-      state.structureSource = source;
+      const component = await stage.loadFile(source, { ext: extension(name) });
+      const molecule = { component, name, source, layers: [], trajectory: null, trajectoryName: "", axes: null, catalog: null, color: moleculeColors[state.molecules.length % moleculeColors.length] };
       // The lab owns its representations.  NGL adds an automatic full-structure
       // representation during load, which otherwise hides changes to Selection.
-      state.structure.reprList.slice().forEach((representation) => state.structure.removeRepresentation(representation));
-      elements.addLayer.disabled = false;
+      component.reprList.slice().forEach((representation) => component.removeRepresentation(representation));
+      state.molecules.push(molecule);
+      activateMolecule(molecule);
       if (elements.showAxes.checked) {
-        try { state.axes = state.structure.addRepresentation("axes", { color: "white" }); } catch (_error) { elements.showAxes.checked = false; }
+        try { state.axes = component.addRepresentation("axes", { color: "white" }); molecule.axes = state.axes; } catch (_error) { elements.showAxes.checked = false; }
       }
       addMoleculeLayer({ representation: "ball+stick", colorScheme: "element" });
-      state.structure.autoView();
+      component.autoView();
+      loadBasisCatalog(molecule);
       setStatus(`Loaded structure ${name}.`);
     } catch (err) {
-      state.structure = null;
-      state.structureSource = null;
-      elements.addLayer.disabled = true;
-      restoreEmptyState(elements.moleculeLayers, "Could not load the structure.");
       setStatus(`Could not load ${name}: ${err.message}`, true);
     }
   }
@@ -420,38 +547,46 @@
   }
 
   function updatePayload() {
-    if (!state.structure) {
+    if (!state.molecules.length) {
       elements.payload.value = "";
       return;
     }
-    const representations = state.moleculeLayers.map((layer) => ({
+    const componentPayload = (molecule) => {
+      const representations = molecule.layers.map((layer) => ({
       name: layerPayloadName(layer),
       type: layer.node.querySelector(".representation").value,
       params: representationParams(layer),
       visible: layer.node.querySelector(".layer-visible").checked
-    }));
-    const first = representations[0] || { type: "cartoon", params: {} };
-    elements.payload.value = JSON.stringify({
-      loadname: state.structureName,
-      loadparams: { ext: extension(state.structureName) },
-      representation: first.type,
-      representationParams: first.params,
-      representations: representations.map(({ visible, ...rep }) => rep)
-    }, null, 2);
-    if (state.fileTrajectoryName) {
-      const payload = JSON.parse(elements.payload.value);
-      payload.trajectory = { loadname: state.fileTrajectoryName, loadparams: { ext: extension(state.fileTrajectoryName) } };
-      elements.payload.value = JSON.stringify(payload, null, 2);
-    }
+      }));
+      const first = representations[0] || { type: "cartoon", params: {} };
+      const result = { name: molecule.name, loadname: molecule.name, loadparams: { ext: extension(molecule.name) }, representation: first.type, representationParams: first.params, representations: representations.map(({ visible, ...rep }) => rep) };
+      if (molecule.trajectoryName) result.trajectory = { loadname: molecule.trajectoryName, loadparams: { ext: extension(molecule.trajectoryName) } };
+      return result;
+    };
+    const components = state.molecules.map(componentPayload);
+    const first = components[0];
+    const payload = {
+      loadname: first.loadname,
+      loadparams: first.loadparams,
+      representation: first.representation,
+      representationParams: first.representationParams,
+      representations: first.representations,
+      components
+    };
+    if (first.trajectory) payload.trajectory = first.trajectory;
+    elements.payload.value = JSON.stringify(payload, null, 2);
   }
 
-  elements.structureFile.addEventListener("change", (event) => event.target.files[0] && loadStructure(event.target.files[0]));
-  elements.trajectoryFile.addEventListener("change", (event) => event.target.files[0] && loadTrajectory(event.target.files[0]));
+  elements.structureFile.addEventListener("change", (event) => { if (event.target.files[0]) loadStructure(event.target.files[0]); event.target.value = ""; });
+  elements.trajectoryFile.addEventListener("change", (event) => { if (event.target.files[0]) loadTrajectory(event.target.files[0]); event.target.value = ""; });
   elements.volumeFile.addEventListener("change", (event) => event.target.files[0] && loadVolume(event.target.files[0]));
   document.getElementById("demo-structure").addEventListener("click", () => loadStructure("fixtures/demo.pdb", "demo.pdb"));
   document.getElementById("demo-volume").addEventListener("click", () => loadVolume("fixtures/demo.cube", "demo.cube"));
   elements.addLayer.addEventListener("click", () => addMoleculeLayer());
   elements.addSurface.addEventListener("click", () => addVolumeLayer());
+  document.getElementById("open-molecule").addEventListener("click", function () { const menu = document.getElementById("molecule-menu"); menu.hidden = !menu.hidden; this.setAttribute("aria-expanded", String(!menu.hidden)); });
+  document.getElementById("open-structure").addEventListener("click", () => { document.getElementById("molecule-menu").hidden = true; elements.structureFile.click(); });
+  document.getElementById("open-trajectory").addEventListener("click", () => { document.getElementById("molecule-menu").hidden = true; if (!currentMolecule()) return setStatus("Load or choose a current molecule first.", true); elements.trajectoryFile.click(); });
   document.getElementById("center-view").addEventListener("click", () => stage.autoView(500));
   document.getElementById("toggle-spin").addEventListener("click", function () {
     const enabled = this.getAttribute("aria-pressed") !== "true";
@@ -466,8 +601,9 @@
   elements.showAxes.addEventListener("change", () => {
     if (state.axes && state.structure) state.structure.removeRepresentation(state.axes);
     state.axes = null;
+    if (currentMolecule()) currentMolecule().axes = null;
     if (elements.showAxes.checked && state.structure) {
-      try { state.axes = state.structure.addRepresentation("axes", { color: "white" }); } catch (_error) { elements.showAxes.checked = false; }
+      try { state.axes = state.structure.addRepresentation("axes", { color: "white" }); if (currentMolecule()) currentMolecule().axes = state.axes; } catch (_error) { elements.showAxes.checked = false; }
     }
   });
   elements.fileTrajectoryPrevious.addEventListener("click", () => setFileTrajectoryFrame(Number(elements.fileTrajectoryFrame.value) - 1));
@@ -478,12 +614,14 @@
     // The bundled NGL trajectory must be disposed while its structure still
     // exists.  Removing all components first leaves it half-disposed and
     // prevents the rest of this reset handler from running.
-    disposeFileTrajectory();
+    state.molecules.slice().forEach((molecule) => { activateMolecule(molecule); disposeFileTrajectory(); });
     stage.removeAllComponents();
     // NGL does not schedule an empty-scene redraw when its last component is
     // removed, so ask its viewer to paint the cleared background now.
     stage.viewer.requestRender();
     state.structure = null;
+    state.molecules = [];
+    state.currentMolecule = null;
     state.structureSource = null;
     state.volume = null;
     state.axes = null;
@@ -496,11 +634,23 @@
     elements.volumeLayers.textContent = "";
     restoreEmptyState(elements.moleculeLayers, "Load a structure to add molecular layers.");
     restoreEmptyState(elements.volumeLayers, "Load a cube file to add isosurfaces.");
-    elements.structureFile.value = "";
-    elements.trajectoryFile.value = "";
+    updateMoleculeList();
     elements.volumeFile.value = "";
     updatePayload();
     setStatus("Viewer cleared.");
+  });
+  elements.saveCoordinates.addEventListener("click", async function () {
+    const molecule = currentMolecule();
+    if (!molecule || !localHelperAvailable) return;
+    try {
+      const file = await structureFileForSasmol(); const atomStore = molecule.component.structure.atomStore; const count = molecule.component.structure.atomCount;
+      const coordinates = new Float32Array(count * 3);
+      for (let atom = 0; atom < count; atom += 1) { coordinates[atom * 3] = atomStore.x[atom]; coordinates[atom * 3 + 1] = atomStore.y[atom]; coordinates[atom * 3 + 2] = atomStore.z[atom]; }
+      const frame = new Uint8Array(12 + coordinates.byteLength); const view = new DataView(frame.buffer); view.setUint8(0, 78); view.setUint8(1, 71); view.setUint8(2, 76); view.setUint8(3, 70); view.setUint32(4, 1, true); view.setUint32(8, count, true); frame.set(new Uint8Array(coordinates.buffer), 12);
+      const form = new FormData(); form.append("structure", file, file.name); form.append("coordinates", new Blob([frame]), "coordinates.nglf");
+      const response = await fetch("/local-sasmol/save", { method: "POST", body: form }); if (!response.ok) { const body = await response.json(); throw new Error(body.error || "save failed"); }
+      const url = URL.createObjectURL(await response.blob()); const link = document.createElement("a"); link.href = url; link.download = `${molecule.name.replace(/\.[^.]+$/, "")}_current_frame.pdb`; link.click(); URL.revokeObjectURL(url); setStatus(`Saved current coordinates for ${molecule.name}.`);
+    } catch (error) { setStatus(`Could not save coordinates: ${error.message}`, true); }
   });
   document.getElementById("copy-payload").addEventListener("click", async function () {
     await navigator.clipboard.writeText(elements.payload.value);
