@@ -12,14 +12,14 @@ the permitted filename patterns, and the allowed nesting below the module
 directory:
 
 ```json
-"feedbackjobattachmentrunfield" : "runname",
+"feedbackjobattachmentrunfield" : "run_name",
 "feedbackjobattachmentpatterns" : "*.sassie_log,*.sassie_json",
 "feedbackjobattachmentmaxdepth" : "1"
 ```
 
 The selected job's immutable `_args_<uuid>` record supplies the run field. The
 authorized job record supplies the project directory and module id. GenApp
-therefore searches only `<job directory>/<run field>/<module id>`; it never
+therefore searches only `<job directory>/<run_name>/<module id>`; it never
 uses a path or pattern submitted with the feedback request.
 
 ## Safety and limits
