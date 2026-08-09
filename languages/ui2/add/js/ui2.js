@@ -3169,6 +3169,23 @@
     }
   }
 
+  function clearJobReferenceSelections(form) {
+    form.querySelectorAll(".ui2-job-reference-control").forEach((wrap) => {
+      const id = wrap.dataset.fieldId || "";
+      if (id) {
+        delete state.jobSelections[id];
+      }
+      const summary = wrap.querySelector(".ui2-job-reference-summary");
+      const hidden = wrap.querySelector(".ui2-job-reference-hidden");
+      if (summary) {
+        summary.textContent = "No reference jobs selected.";
+      }
+      if (hidden) {
+        hidden.innerHTML = "";
+      }
+    });
+  }
+
   function renderFileControl(field, options) {
     const type = String(field.type || "").toLowerCase();
     const compact = options?.compact === true;
@@ -4013,7 +4030,8 @@
       event.preventDefault();
       await submitUtilityModule(form, module, `ajax/sys_config/${moduleId}.php`, {
         pendingMessage: "Sending feedback",
-        successMessage: "Feedback sent"
+        successMessage: "Feedback sent",
+        afterSuccess: () => clearJobReferenceSelections(form)
       });
     });
     form.addEventListener("input", () => syncFormValues(form));

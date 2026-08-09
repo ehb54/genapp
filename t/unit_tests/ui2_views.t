@@ -207,6 +207,8 @@ like( $ui2_js, qr/id === "aihelperpreference" && !value[\s\S]+control\.value = "
 like( $ui2_js, qr/dialogClass: \(moduleId === "sys_feedback" \|\| moduleId === "sys_feedback2"\) \? "ui2-feedback-dialog"/, 'ui2 feedback opens in a modal-sized utility dialog' );
 like( $ui2_js, qr/function renderFeedbackTool\(module, fields\)/, 'ui2 runtime has a dedicated Feedback utility renderer' );
 like( $ui2_js, qr/await submitUtilityModule\(form, module, `ajax\/sys_config\/\$\{moduleId\}\.php`/, 'ui2 feedback submits through the generated legacy feedback endpoint' );
+like( $ui2_js, qr/function renderFeedbackTool\(module, fields\)[\s\S]*?afterSuccess:\s*\(\)\s*=>\s*clearJobReferenceSelections\(form\)/, 'successful UI2 feedback clears selected job references' );
+like( $ui2_js, qr/function clearJobReferenceSelections\(form\)[\s\S]*?delete state\.jobSelections\[id\][\s\S]*?No reference jobs selected\./, 'feedback job-reference reset removes retained chooser state and serialized values' );
 like( $ui2_js, qr/function utilityAllowsAnonymous\(module\).*?sys_feedback/s, 'ui2 feedback can be submitted before login like legacy' );
 like( $ui2_js, qr/function showLegacyMessagePayload\(payload, options = \{\}\)/, 'ui2 runtime handles legacy backend _message payloads' );
 like( $ui2_js, qr/function legacyMessageFromPayload\(payload\).*?payload\._message/s, 'ui2 runtime maps legacy _message payloads into dialogs' );
