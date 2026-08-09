@@ -230,21 +230,7 @@ __~debug:basemylog{error_log( "job1_altval $k1 $v1 $logdir checking $f\n", 3, "/
                     $attach[] = $f;
                 }
             }
-__~feedbackjobattachmentpatterns{
-            $feedback_job_attachment_patterns = array_filter( array_map( 'trim', explode( ',', "__feedbackjobattachmentpatterns__" ) ) );
-            ga_feedback_add_job_artifacts(
-                $v,
-                $GLOBALS[ "getmenumoduledir" ],
-                $logdir,
-                $GLOBALS[ "module" ],
-                "__feedbackjobattachmentrunfield__",
-                $feedback_job_attachment_patterns,
-                intval( "__feedbackjobattachmentmaxdepth__" ),
-                $attachdata,
-                $attachinfo,
-                $feedback_job_attachment_state
-            );
-}
+__~feedbackjobattachmentpatterns{$feedback_job_attachment_patterns = array_filter( array_map( 'trim', explode( ',', "__feedbackjobattachmentpatterns__" ) ) ); ga_feedback_add_job_artifacts( $v, $GLOBALS[ "getmenumoduledir" ], $logdir, $GLOBALS[ "module" ], "__feedbackjobattachmentrunfield__", $feedback_job_attachment_patterns, intval( "__feedbackjobattachmentmaxdepth__" ), $attachdata, $attachinfo, $feedback_job_attachment_state );}
         } else {
             $attachinfo .= 
                 "Related job $v information not found in database\n";
