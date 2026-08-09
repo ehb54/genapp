@@ -365,7 +365,8 @@ changing it, read `../genapp_zazzie/docs/plot_presentation.md` and rollout issue
 
 ### Other SASSIE policy routing
 
-- One-job diagnostic logging is governed by `doc/Next-Job-Environment-Settings.md`,
+- One-job diagnostic logging and optional selected-job feedback artifacts are governed by `doc/Next-Job-Environment-Settings.md`,
+  `doc/Feedback-Job-Attachments.md`,
   `../genapp_zazzie/docs/next_job_diagnostic_logging.md`, and
   `../zazzie/docs/source/logging_policy.rst`. The browser may only arm the
   fixed application declaration; it must not provide arbitrary environment

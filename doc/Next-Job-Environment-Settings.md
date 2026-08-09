@@ -35,3 +35,7 @@ process boundary rather than silently claiming the setting took effect.
 This contract is intentionally generic.  Applications own the diagnostic
 meaning, environment assignment, and any scientific/runtime policy behind the
 setting. GenApp supplies the generic Settings Manager label and safety text.
+
+Related selected-job feedback attachments are governed separately by
+`doc/Feedback-Job-Attachments.md`. They are optional bounded diagnostics
+delivery and do not affect the one-job environment lifecycle.

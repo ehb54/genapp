@@ -91,10 +91,117 @@ $_REQUEST[ '_eventlog' ] . "\n"
 
 $ats = array( "json input" => "_args_", "command" => "_cmds_", "output" => "_stdout_", "error output" =>  "_stderr_" ); 
 
+function ga_feedback_safe_component( $value )
+{
+    return is_string( $value ) &&
+        preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]*$/', $value ) &&
+        $value != "." && $value != "..";
+}
+
+function ga_feedback_path_is_within( $path, $root )
+{
+    return $path == $root || strpos( $path, $root . DIRECTORY_SEPARATOR ) === 0;
+}
+
+function ga_feedback_add_job_artifacts( $jobid, $jobdir, $logdir, $module, $run_field, $patterns, $max_depth, &$attachdata, &$attachinfo, &$attachment_state )
+{
+    $maximum_depth = 4;
+    $maximum_files = 16;
+    $maximum_file_bytes = 8 * 1024 * 1024;
+    $maximum_total_bytes = 16 * 1024 * 1024;
+
+    if ( !preg_match( '/^[A-Za-z][A-Za-z0-9_]*$/', $run_field ) ||
+         !ga_feedback_safe_component( $module ) ||
+         !is_int( $max_depth ) || $max_depth < 0 || $max_depth > $maximum_depth ) {
+        $attachinfo .= "  job artifacts: rejected invalid application declaration\n";
+        return;
+    }
+
+    $job_root = realpath( $jobdir );
+    $args_file = $logdir . "/_args_" . $jobid;
+    if ( $job_root === false || !is_file( $args_file ) || is_link( $args_file ) ) {
+        $attachinfo .= "  job artifacts: selected job arguments unavailable\n";
+        return;
+    }
+
+    $args_json = json_decode( file_get_contents( $args_file ), true );
+    $run_name = is_array( $args_json ) && isset( $args_json[ $run_field ] ) ? $args_json[ $run_field ] : "";
+    if ( !ga_feedback_safe_component( $run_name ) ) {
+        $attachinfo .= "  job artifacts: selected job has no safe " . $run_field . " value\n";
+        return;
+    }
+
+    $artifact_root = realpath( $job_root . DIRECTORY_SEPARATOR . $run_name . DIRECTORY_SEPARATOR . $module );
+    if ( $artifact_root === false || !is_dir( $artifact_root ) || !ga_feedback_path_is_within( $artifact_root, $job_root ) ) {
+        $attachinfo .= "  job artifacts: no completed run directory found\n";
+        return;
+    }
+
+    $valid_patterns = array();
+    foreach ( $patterns as $pattern ) {
+        if ( preg_match( '/^[A-Za-z0-9._*?-]+$/', $pattern ) && strpos( $pattern, ".." ) === false ) {
+            $valid_patterns[] = $pattern;
+        }
+    }
+    if ( !count( $valid_patterns ) ) {
+        $attachinfo .= "  job artifacts: no valid application patterns declared\n";
+        return;
+    }
+
+    $args_mtime = filemtime( $args_file );
+    $attached_for_job = 0;
+    try {
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator( $artifact_root, FilesystemIterator::SKIP_DOTS ),
+            RecursiveIteratorIterator::LEAVES_ONLY
+        );
+        foreach ( $iterator as $file_info ) {
+            if ( $iterator->getDepth() > $max_depth || !$file_info->isFile() || $file_info->isLink() ) {
+                continue;
+            }
+            $basename = $file_info->getFilename();
+            $matched = false;
+            foreach ( $valid_patterns as $pattern ) {
+                if ( fnmatch( $pattern, $basename ) ) {
+                    $matched = true;
+                    break;
+                }
+            }
+            if ( !$matched ) {
+                continue;
+            }
+            $path = realpath( $file_info->getPathname() );
+            if ( $path === false || !ga_feedback_path_is_within( $path, $artifact_root ) || isset( $attachment_state[ "seen" ][ $path ] ) ) {
+                continue;
+            }
+            $size = filesize( $path );
+            if ( $args_mtime !== false && filemtime( $path ) < $args_mtime ) {
+                $attachinfo .= "  job artifact omitted (older than selected job): " . $basename . "\n";
+            } elseif ( $attached_for_job >= $maximum_files || $size === false || $size > $maximum_file_bytes || $attachment_state[ "bytes" ] + $size > $maximum_total_bytes ) {
+                $attachinfo .= "  job artifact omitted (attachment limit): " . $basename . "\n";
+            } else {
+                $contents = file_get_contents( $path );
+                if ( $contents === false || strlen( $contents ) != $size ) {
+                    $attachinfo .= "  job artifact omitted (could not read): " . $basename . "\n";
+                } else {
+                    $attachment_state[ "seen" ][ $path ] = true;
+                    $attachment_state[ "bytes" ] += $size;
+                    $attached_for_job++;
+                    $attachdata[] = array( "data" => $contents, "name" => $jobid . "__" . $basename );
+                    $attachinfo .= "  attach : job artifact as " . $jobid . "__" . $basename . "\n";
+                }
+            }
+        }
+    } catch ( UnexpectedValueException $exception ) {
+        $attachinfo .= "  job artifacts: could not inspect run directory\n";
+    }
+}
+
 $attach = array();
 $attachinfo = "";
 
 $attachdata = array();
+__~feedbackjobattachmentpatterns{$feedback_job_attachment_state = array( "seen" => array(), "bytes" => 0 );}
 
 if ( isset( $_REQUEST[ 'job1_altval' ] ) && count( $_REQUEST[ 'job1_altval' ] ) ) {
     require_once "../joblog.php";
@@ -123,6 +230,21 @@ __~debug:basemylog{error_log( "job1_altval $k1 $v1 $logdir checking $f\n", 3, "/
                     $attach[] = $f;
                 }
             }
+__~feedbackjobattachmentpatterns{
+            $feedback_job_attachment_patterns = array_filter( array_map( 'trim', explode( ',', "__feedbackjobattachmentpatterns__" ) ) );
+            ga_feedback_add_job_artifacts(
+                $v,
+                $GLOBALS[ "getmenumoduledir" ],
+                $logdir,
+                $GLOBALS[ "module" ],
+                "__feedbackjobattachmentrunfield__",
+                $feedback_job_attachment_patterns,
+                intval( "__feedbackjobattachmentmaxdepth__" ),
+                $attachdata,
+                $attachinfo,
+                $feedback_job_attachment_state
+            );
+}
         } else {
             $attachinfo .= 
                 "Related job $v information not found in database\n";
