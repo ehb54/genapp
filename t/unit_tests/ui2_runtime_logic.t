@@ -1122,6 +1122,46 @@ hooks.attachNglFileTrajectory(
   );
 });
 
+const embeddedTrajectoryAttachCalls = [];
+const embeddedTrajectoryOutput = { _ui2NglRenderRevision: 18 };
+const embeddedTrajectoryComponent = {
+  structure: { frames: [new Float32Array([0, 0, 0])] },
+  addTrajectory(...args) {
+    embeddedTrajectoryAttachCalls.push(args);
+    return { trajectory: {} };
+  }
+};
+hooks.attachNglEmbeddedTrajectory(
+  embeddedTrajectoryOutput,
+  embeddedTrajectoryComponent,
+  { loadparams: { ext: "pdb", asTrajectory: true } },
+  18
+);
+assert.strictEqual(
+  JSON.stringify(embeddedTrajectoryAttachCalls),
+  JSON.stringify([[]]),
+  "UI2 activates a bounded multi-model PDB through NGL's embedded StructureTrajectory path"
+);
+
+const densityDefaultsPayload = {
+  representationParams: { opacity: 0.45 },
+  surface: { default_isovalue: 0.25, min_positive: 0.25 }
+};
+const densityDefaultsOutput = {
+  _ui2_ngl_density_user_isovalue: null,
+  _ui2_ngl_density_user_opacity: null
+};
+assert.strictEqual(
+  hooks.nglDensityOpacity(densityDefaultsOutput, densityDefaultsPayload),
+  0.45,
+  "UI2 treats a reset density opacity as absent and retains the producer default"
+);
+assert.deepStrictEqual(
+  hooks.nglDensitySurfaceParams(densityDefaultsOutput, densityDefaultsPayload).isolevel,
+  0.25,
+  "UI2 treats a reset density contour as absent and retains the producer default"
+);
+
 const coverageOutput = {
   _ui2NglViewerConfig: {
     stream_preview_coverage: { frame_field: "frame_id", label: "accepted structures" }
@@ -3094,6 +3134,14 @@ assert.strictEqual(frameOutput.dataset.ngl_frame_id, "snapshot-7", "NGL records 
 assert.strictEqual(frameOutput.dataset.ngl_frames_rendered, "1", "NGL telemetry records applied coordinate frames");
 assert.strictEqual(frameOutput.dataset.ngl_coordinate_dtype, "float32", "NGL telemetry records the active coordinate dtype");
 assert.strictEqual(hooks.ngl_active_frame_index(frameOutput, [normalized_frame]), 0, "NGL active-frame selection follows the last successfully rendered frame");
+const rerendered_frame = hooks.normalize_ngl_coordinate_frame({
+  atom_count: 2,
+  frame_id: "snapshot-7",
+  coordinate_dtype: "float32",
+  coordinates: [6, 7, 8, 9, 10, 11]
+});
+assert.strictEqual(hooks.apply_ngl_coordinate_frame(frameOutput, rerendered_frame), true, "NGL can redraw a selected retained frame");
+assert.strictEqual(frameOutput.dataset.ngl_frames_rendered, "1", "NGL preview coverage counts distinct frame identities instead of redraws");
 
 const mismatch_output = {
   dataset: {},

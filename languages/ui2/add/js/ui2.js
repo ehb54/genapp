@@ -7927,6 +7927,9 @@
       output._ui2_ngl_frames = null;
       output._ui2_ngl_pending_frame = null;
       output._ui2_ngl_frame_scheduled = false;
+      output._ui2_ngl_last_frame = null;
+      output._ui2_ngl_rendered_frame_ids = null;
+      output._ui2_ngl_telemetry = null;
     }
     if (options.resetDensityPreferences) {
       output._ui2_ngl_density_user_isovalue = null;
@@ -8021,12 +8024,14 @@
           resizeNglOutputWhenVisible(output);
           schedule_ngl_coordinate_frame(output);
           renderNglViewerControls(output, component, specs, layered);
-          return attachNglFileTrajectory(
+          const embeddedTrajectory = attachNglEmbeddedTrajectory(
+            output, component, structurePayload, renderRevision);
+          return Promise.resolve(embeddedTrajectory).then(() => attachNglFileTrajectory(
             output,
             component,
             structurePayload.trajectory || payload.trajectory,
             renderRevision
-          ).then(() => {
+          )).then(() => {
             if (liveDensityPayload?.loadname) {
               return loadNglDensitySurface(output, liveDensityPayload);
             }
@@ -8083,6 +8088,22 @@
         }
         return null;
       });
+  }
+
+  function attachNglEmbeddedTrajectory(output, component, structurePayload, renderRevision) {
+    const frames = component?.structure?.frames;
+    if (!structurePayload?.loadparams?.asTrajectory || !Array.isArray(frames) || !frames.length) {
+      return null;
+    }
+    if (output._ui2NglRenderRevision !== renderRevision) {
+      return null;
+    }
+    // NGL's PDB parser already owns these bounded, embedded frames. Passing
+    // no source selects its StructureTrajectory path and avoids a second
+    // parser or transport for the completed sampled preview.
+    output._ui2NglTrajectory = component.addTrajectory();
+    renderNglTrajectoryControls(output, output._ui2NglTrajectory);
+    return output._ui2NglTrajectory;
   }
 
   function renderNglTrajectoryControls(output, trajectoryComponent) {
@@ -8422,7 +8443,9 @@
     const source = payload?.surface || payload?.representationParams || {};
     const userValue = payload?._ui2_primary_density_surface === false ? null : output?._ui2_ngl_density_user_isovalue;
     const fallback = Number(source.default_isovalue ?? source.isolevel ?? source.min_positive ?? 1.0);
-    const isolevel = Number.isFinite(Number(userValue)) ? Number(userValue) : fallback;
+    const isolevel = userValue != null && Number.isFinite(Number(userValue))
+      ? Number(userValue)
+      : fallback;
     const opacity = nglDensityOpacity(output, payload);
     const params = Object.assign({}, payload?.representationParams || {}, source || {});
     delete params.name;
@@ -8442,7 +8465,9 @@
   function nglDensityOpacity(output, payload) {
     const userValue = payload?._ui2_primary_density_surface === false ? null : output?._ui2_ngl_density_user_opacity;
     const sourceValue = payload?.representationParams?.opacity ?? payload?.surface?.opacity ?? 0.45;
-    const opacity = Number(Number.isFinite(Number(userValue)) ? userValue : sourceValue);
+    const opacity = Number(userValue != null && Number.isFinite(Number(userValue))
+      ? userValue
+      : sourceValue);
     if (!Number.isFinite(opacity)) {
       return 0.45;
     }
@@ -9029,7 +9054,12 @@
     output._ui2_ngl_last_frame = frame;
     if (telemetry) {
       if (!is_same_active_frame) {
-        telemetry.rendered_frames += 1;
+        const frameKey = frame.frame_id != null
+          ? String(frame.frame_id)
+          : String(frame.received_at_ms || telemetry.received_frames);
+        output._ui2_ngl_rendered_frame_ids = output._ui2_ngl_rendered_frame_ids || new Set();
+        output._ui2_ngl_rendered_frame_ids.add(frameKey);
+        telemetry.rendered_frames = output._ui2_ngl_rendered_frame_ids.size;
       }
       telemetry.last_atom_count = frame.atom_count;
       telemetry.last_coordinate_dtype = frame.coordinate_dtype;
@@ -10835,6 +10865,9 @@
       nglRepresentationKey,
       nglRepresentationStoreKey,
       attachNglFileTrajectory,
+      attachNglEmbeddedTrajectory,
+      nglDensitySurfaceParams,
+      nglDensityOpacity,
       nglStreamCoverageValue,
       ngl_stream_telemetry_label,
       normalize_ngl_coordinate_frame,
