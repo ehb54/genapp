@@ -18,6 +18,7 @@
             "type"       : "action",
             "buttontext" : "Precheck",
             "executable" : "precheck_action",
+            "resource"   : "host",
             "actiondata" : "_allformdata",
             "timeout"    : "10"
         },

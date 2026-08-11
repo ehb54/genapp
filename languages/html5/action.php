@@ -66,6 +66,32 @@ function action_stage_declared_files( $modjson, $action_dir, $user_dir ) {
     }
 }
 
+function action_execution_command( $action, $actionexe ) {
+    if ( !isset( $action[ 'resource' ] ) ) {
+        return $actionexe;
+    }
+    $resource = $action[ 'resource' ];
+    if ( !is_string( $resource ) ||
+         !preg_match( '/^[a-zA-Z0-9_\-]+$/', $resource ) ) {
+        action_error_exit( "Internal error: action has an invalid resource" );
+    }
+    $appconfig = json_decode( file_get_contents( "__appconfig__" ) );
+    if ( !is_object( $appconfig ) || !isset( $appconfig->resources ) ||
+         !isset( $appconfig->resources->{ $resource } ) ) {
+        action_error_exit( "Action resource '$resource' is not defined in appconfig" );
+    }
+    $command_prefix = $appconfig->resources->{ $resource };
+    if ( is_object( $command_prefix ) && isset( $command_prefix->run ) ) {
+        $command_prefix = $command_prefix->run;
+    }
+    if ( !is_string( $command_prefix ) ) {
+        action_error_exit( "Action resource '$resource' has no run command" );
+    }
+    return strlen( trim( $command_prefix ) )
+        ? $command_prefix . " " . escapeshellarg( $actionexe )
+        : $actionexe;
+}
+
 if ( !sizeof( $_REQUEST ) ) {
     action_error_exit( "PHP code received no \$_REQUEST?" );
 }
@@ -175,6 +201,7 @@ $_REQUEST[ '_action_workdir' ] = $action_dir;
 $_REQUEST[ '_module' ] = "__moduleid__";
 action_stage_declared_files( $modjson, $action_dir, $dir );
 $payload = json_encode( $_REQUEST );
+$action_command = action_execution_command( $action, $actionexe );
 
 $descriptors = array(
     0 => array( "pipe", "r" ),
@@ -182,7 +209,7 @@ $descriptors = array(
     2 => array( "pipe", "w" )
 );
 
-$process = proc_open( $actionexe, $descriptors, $pipes, $action_dir );
+$process = proc_open( $action_command, $descriptors, $pipes, $action_dir );
 if ( !is_resource( $process ) ) {
     action_error_exit( "Unable to start action executable" );
 }

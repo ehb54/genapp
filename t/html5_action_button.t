@@ -25,7 +25,8 @@ unlike( $html, qr/ga\.button\.click\("action_demo","precheck"/, 'action input do
 
 my $endpoint = read_file( File::Spec->catfile( $generated->{app_dir}, qw(output html5 ajax action action_demo.php) ) );
 like( $endpoint, qr/type' \] == 'action'/, 'action endpoint recognizes action fields from module JSON' );
-like( $endpoint, qr/proc_open\( \$actionexe/, 'action endpoint runs action executable directly' );
+like( $endpoint, qr/action_execution_command/, 'action endpoint can use a declared application resource' );
+like( $endpoint, qr/proc_open\( \$action_command/, 'action endpoint runs the resolved action command' );
 like( $endpoint, qr/action_stage_declared_files/, 'action endpoint stages declared local or server file inputs for actions' );
 like( $endpoint, qr/\$action_dir = "\$rdir\/_actions\/action_demo\/\$action_id"/, 'action endpoint uses per-user project action directory' );
 unlike( $endpoint, qr/jobrun\.php|sys_joblocked|joblog/, 'action endpoint stays outside job manager submit path' );
@@ -40,6 +41,7 @@ my $ui2_module = decode_json( read_file( File::Spec->catfile( $generated->{app_d
 my ($ui2_action) = grep { $_->{id} eq 'precheck' } @{ $ui2_module->{modulejson}{fields} };
 is( $ui2_action->{type}, 'action', 'ui2 module summary carries action field type' );
 is( $ui2_action->{executable}, 'precheck_action', 'ui2 module summary carries action executable metadata' );
+is( $ui2_action->{resource}, 'host', 'ui2 module summary carries action resource metadata' );
 is( $ui2_action->{actiondata}, '_allformdata', 'ui2 module summary carries action data selection' );
 
 my $ui2_js = read_file( File::Spec->catfile( $generated->{app_dir}, qw(output ui2 js ui2.js) ) );
