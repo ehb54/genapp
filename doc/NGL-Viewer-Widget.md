@@ -36,6 +36,23 @@ defaults to orthographic projection.
 `additional_components` enables the optional multi-molecule contract.  When it
 is absent or false, the legacy single-structure payload remains unchanged.
 
+`stream_preview_coverage` is optional metadata for a bounded live-coordinate
+preview. It declares which generic frame value is the population counter and
+the producer-supplied label for that population:
+
+```json
+"stream_preview_coverage": {
+  "frame_field": "frame_id",
+  "label": "accepted structures"
+}
+```
+
+The supported fields are `frame_id` and `metadata.<name>`. UI2 may show the
+number of rendered preview frames as a percentage of that declared counter. It
+does not infer scientific meaning from a frame id. This label describes a
+bounded live preview only; a completed file-backed trajectory reports its own
+canonical frame count separately.
+
 ## Multiple molecular structures
 
 An opted-in payload may provide `components`.  Each item is an independently
@@ -116,8 +133,9 @@ A structure payload may attach a coordinate trajectory to the same structure:
 }
 ```
 
-The topology is loaded first and the trajectory is attached with NGL's
-`StructureComponent.addTrajectory` API.  Supported trajectory formats depend on
+The topology is loaded first. UI2 loads the trajectory URL through NGL's
+`autoLoad` parser and attaches the resulting frames with
+`StructureComponent.addTrajectory`. Supported trajectory formats depend on
 the bundled NGL parser and include DCD, TRR, XTC, and NCTRAJ/NetCDF.  The
 topology and trajectory must have matching atom order and atom count.  The
 widget exposes frame selection and playback once NGL reports the trajectory

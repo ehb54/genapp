@@ -6537,7 +6537,10 @@
         window.Plotly.purge(output);
       }
       if (output.dataset.outputType === "ngl") {
-        clearNglOutput(output);
+        // Density contour and opacity are browser preferences for one live
+        // job.  This is the actual new-submission boundary; retaining either
+        // value here can make a new density range invalid before submission.
+        clearNglOutput(output, { resetDensityPreferences: true });
         return;
       }
       if (output.dataset.outputType === "image") {
@@ -8018,26 +8021,17 @@
           resizeNglOutputWhenVisible(output);
           schedule_ngl_coordinate_frame(output);
           renderNglViewerControls(output, component, specs, layered);
-          const trajectoryPayload = structurePayload.trajectory || payload.trajectory;
-          if (trajectoryPayload?.loadname && typeof component.addTrajectory === "function") {
-            const trajectoryParams = Object.assign({}, trajectoryPayload.loadparams || {});
-            if (trajectoryPayload.loadparams?.ext) {
-              trajectoryParams.ext = trajectoryPayload.loadparams.ext;
+          return attachNglFileTrajectory(
+            output,
+            component,
+            structurePayload.trajectory || payload.trajectory,
+            renderRevision
+          ).then(() => {
+            if (liveDensityPayload?.loadname) {
+              return loadNglDensitySurface(output, liveDensityPayload);
             }
-            try {
-              output._ui2NglTrajectory = component.addTrajectory(
-                normalizeNglLoadName(trajectoryPayload.loadname),
-                trajectoryParams
-              );
-              renderNglTrajectoryControls(output, output._ui2NglTrajectory);
-            } catch (error) {
-              renderNglTrajectoryError(output, error);
-            }
-          }
-          if (liveDensityPayload?.loadname) {
-            return loadNglDensitySurface(output, liveDensityPayload);
-          }
-          return component;
+            return component;
+          });
         });
       })
       .catch((error) => {
@@ -8057,6 +8051,37 @@
     if (!buttons) return;
     buttons.querySelector(".ui2-ngl-trajectory-error")?.remove();
     buttons.appendChild(el("span", "ui2-ngl-trajectory-error", `Trajectory could not be loaded: ${error.message}`));
+  }
+
+  function attachNglFileTrajectory(output, component, trajectoryPayload, renderRevision) {
+    if (!trajectoryPayload?.loadname || typeof component?.addTrajectory !== "function") {
+      return Promise.resolve(null);
+    }
+    const loader = window.NGL?.autoLoad;
+    if (typeof loader !== "function") {
+      renderNglTrajectoryError(output, new Error("NGL trajectory loader is unavailable"));
+      return Promise.resolve(null);
+    }
+    const loadParams = Object.assign({}, trajectoryPayload.loadparams || {});
+    const trajectoryParams = Object.assign({}, trajectoryPayload.trajectoryparams || {});
+    const loadName = normalizeNglLoadName(trajectoryPayload.loadname);
+    return Promise.resolve(loader(loadName, loadParams))
+      .then((frames) => {
+        if (output._ui2NglRenderRevision !== renderRevision) {
+          return null;
+        }
+        // NGL's StructureComponent expects parsed trajectory frames here, not
+        // a URL string.  autoLoad owns URL fetching and parser selection.
+        output._ui2NglTrajectory = component.addTrajectory(frames, trajectoryParams);
+        renderNglTrajectoryControls(output, output._ui2NglTrajectory);
+        return output._ui2NglTrajectory;
+      })
+      .catch((error) => {
+        if (output._ui2NglRenderRevision === renderRevision) {
+          renderNglTrajectoryError(output, error);
+        }
+        return null;
+      });
   }
 
   function renderNglTrajectoryControls(output, trajectoryComponent) {
@@ -8101,6 +8126,7 @@
       play.setAttribute("aria-pressed", player.isRunning ? "true" : "false");
     });
     trajectory.signals?.countChanged?.add(update);
+    trajectory.signals?.gotNumframes?.add(update);
     trajectory.signals?.frameChanged?.add(update);
     row.append(status, frameLabel, slider, play);
     controls.appendChild(row);
@@ -8447,15 +8473,23 @@
     const label = el("span", "ui2-muted", "Density contour");
     const slider = el("input", "ui2-ngl-density-slider");
     slider.type = "range";
-    slider.min = String(minValue || 0);
-    slider.max = String(maxValue);
-    slider.step = "0.1";
-    slider.value = String(Math.min(maxValue, Math.max(minValue || 0, currentValue)));
+    // This is a presentation-only control inside the module form.  Keep its
+    // native range normalized so an exact scientific lower bound cannot be
+    // rounded below slider.min and block a subsequent scientific submission.
+    slider.min = "0";
+    slider.max = "1";
+    slider.step = "0.001";
+    const densityRange = Math.max(0, maxValue - (minValue || 0));
+    const densityValueToSlider = (value) => densityRange
+      ? (Math.min(maxValue, Math.max(minValue || 0, value)) - (minValue || 0)) / densityRange
+      : 0;
+    const densitySliderToValue = (value) => (minValue || 0) + densityRange * Math.min(1, Math.max(0, Number(value) || 0));
+    slider.value = String(densityValueToSlider(currentValue));
     slider.setAttribute("aria-label", "Density contour");
     const number = el("input", "ui2-ngl-density-input");
     number.type = "text";
     number.inputMode = "decimal";
-    number.value = slider.value;
+    number.value = String(Math.min(maxValue, Math.max(minValue || 0, currentValue)));
     const opacityLabel = el("span", "ui2-muted", "Density opacity");
     const opacitySlider = el("input", "ui2-ngl-density-opacity-slider");
     opacitySlider.type = "range";
@@ -8479,7 +8513,7 @@
       if (userSet) {
         output._ui2_ngl_density_user_isovalue = clamped;
       }
-      slider.value = String(clamped);
+      slider.value = String(densityValueToSlider(clamped));
       number.value = String(clamped);
       const activeSurface = output?._ui2NglDensitySurface;
       if (typeof activeSurface?.setParameters === "function") {
@@ -8506,7 +8540,7 @@
       set_ngl_output_value(output, "ngl_density_opacity", clamped);
       requestNglRender(output._ui2NglStage);
     };
-    slider.addEventListener("input", () => applyValue(slider.value));
+    slider.addEventListener("input", () => applyValue(densitySliderToValue(slider.value)));
     number.addEventListener("change", () => applyValue(number.value));
     opacitySlider.addEventListener("input", () => applyOpacity(opacitySlider.value));
     opacityNumber.addEventListener("change", () => applyOpacity(opacityNumber.value));
@@ -8766,7 +8800,27 @@
     if (!rendered) {
       return "";
     }
+    const coverage = nglViewerConfig(output).stream_preview_coverage;
+    const frame = latest_ngl_retained_frame(output);
+    const denominator = nglStreamCoverageValue(frame, coverage?.frame_field);
+    if (coverage?.label && Number.isFinite(denominator) && denominator > 0) {
+      const percent = Math.max(0, Math.min(100, Math.round((rendered / denominator) * 100)));
+      return `Preview rendered ${rendered} of ${denominator} ${coverage.label} (${percent}%)`;
+    }
     return `Rendered ${rendered} streamed ${rendered === 1 ? "frame" : "frames"}`;
+  }
+
+  function nglStreamCoverageValue(frame, field) {
+    if (!frame || !field) {
+      return NaN;
+    }
+    if (field === "frame_id") {
+      return Number(frame.frame_id);
+    }
+    if (field.startsWith("metadata.")) {
+      return Number(frame.metadata?.[field.slice("metadata.".length)]);
+    }
+    return NaN;
   }
 
   function render_ngl_frame_controls(output) {
@@ -10779,6 +10833,9 @@
       nglRepresentationSpecs,
       nglRepresentationKey,
       nglRepresentationStoreKey,
+      attachNglFileTrajectory,
+      nglStreamCoverageValue,
+      ngl_stream_telemetry_label,
       normalize_ngl_coordinate_frame,
       queue_ngl_coordinate_frame,
       apply_ngl_coordinate_frame,

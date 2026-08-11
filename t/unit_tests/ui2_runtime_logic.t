@@ -1085,6 +1085,56 @@ assert.strictEqual(
   "UI2 keeps layered selected NGL payloads on distinct layer keys"
 );
 
+const parsedTrajectoryFrames = { kind: "parsed-dcd-frames" };
+const trajectoryLoadCalls = [];
+const trajectoryAttachCalls = [];
+window.NGL = {
+  autoLoad(loadname, options) {
+    trajectoryLoadCalls.push([loadname, options]);
+    return Promise.resolve(parsedTrajectoryFrames);
+  }
+};
+const trajectoryOutput = {
+  dataset: {},
+  _ui2NglRenderRevision: 17
+};
+const trajectoryComponent = {
+  addTrajectory(frames, options) {
+    trajectoryAttachCalls.push([frames, options]);
+    return { trajectory: {} };
+  }
+};
+hooks.attachNglFileTrajectory(
+  trajectoryOutput,
+  trajectoryComponent,
+  { loadname: "results/users/Joseph/run_0/accepted.dcd", loadparams: { ext: "dcd" } },
+  17
+).then(() => {
+  assert.strictEqual(
+    JSON.stringify(trajectoryLoadCalls),
+    JSON.stringify([["../results/users/Joseph/run_0/accepted.dcd", { ext: "dcd" }]]),
+    "UI2 parses a URL-backed DCD through NGL autoLoad before attachment"
+  );
+  assert.strictEqual(
+    JSON.stringify(trajectoryAttachCalls),
+    JSON.stringify([[parsedTrajectoryFrames, {}]]),
+    "UI2 attaches parsed trajectory frames rather than passing a URL to StructureComponent"
+  );
+});
+
+const coverageOutput = {
+  _ui2NglViewerConfig: {
+    stream_preview_coverage: { frame_field: "frame_id", label: "accepted structures" }
+  },
+  _ui2_ngl_frames: [{ frame_id: "200" }],
+  _ui2_ngl_telemetry: { rendered_frames: 10 }
+};
+assert.strictEqual(
+  hooks.ngl_stream_telemetry_label(coverageOutput),
+  "Preview rendered 10 of 200 accepted structures (5%)",
+  "UI2 displays a module-declared bounded-preview coverage percentage"
+);
+
 const nglVisibilityCalls = [];
 const nglVisibilityPlot = {
   hidden: false,
