@@ -8065,7 +8065,8 @@
     const loadParams = Object.assign({}, trajectoryPayload.loadparams || {});
     const trajectoryParams = Object.assign({}, trajectoryPayload.trajectoryparams || {});
     const loadName = normalizeNglLoadName(trajectoryPayload.loadname);
-    return Promise.resolve(loader(loadName, loadParams))
+    return Promise.resolve()
+      .then(() => loader(loadName, loadParams))
       .then((frames) => {
         if (output._ui2NglRenderRevision !== renderRevision) {
           return null;
