@@ -3855,7 +3855,7 @@
       ["day", "Day"],
       ["week", "Week"],
       ["month", "Month"]
-    ]));
+    ], "hour"));
     filters.appendChild(renderJobSelectFilter("project", "Project", [["*all*", "*all*"]]));
     filters.appendChild(renderJobSelectFilter("module", "Module", [["*all*", "*all*"]]));
     body.appendChild(filters);
@@ -3882,7 +3882,10 @@
     table._ui2UtilityModuleId = moduleId;
     refresh.addEventListener("click", () => loadJobManagerRows(table));
     deleteMany.addEventListener("click", () => deleteSelectedJobs(table));
-    filters.addEventListener("change", () => applyJobManagerFilters(table));
+    filters.addEventListener("change", () => {
+      table._ui2CompletedDefaultResolved = true;
+      applyJobManagerFilters(table);
+    });
     refreshServerDate(section);
     window.setTimeout(() => loadJobManagerRows(table), 0);
     return section;
@@ -4845,6 +4848,7 @@
       table._ui2JobColumns = columns;
       table._ui2JobRows = rows;
       updateJobFilterChoices(table, rows, columns);
+      resolveInitialCompletedFilter(table, rows, columns);
       applyJobManagerFilters(table);
     } catch (error) {
       renderTableMessage(tbody, 1, error.message);
@@ -4860,6 +4864,18 @@
       return;
     }
     renderJobManagerTable(thead, tbody, columns, filterJobRows(rows, collectJobFilters(table), columns));
+  }
+
+  function resolveInitialCompletedFilter(table, rows, columns) {
+    if (table?._ui2CompletedDefaultResolved) {
+      return;
+    }
+    const section = table?.closest(".ui2-job-manager");
+    const select = toolFieldControl(section, "completed", "select");
+    if (select) {
+      select.value = resolveRecentCompletedWindow(rows, columns);
+    }
+    table._ui2CompletedDefaultResolved = true;
   }
 
   function collectJobFilters(table) {
@@ -4917,6 +4933,15 @@
     }
     const legacyDays = Number(value);
     return legacyDays > 0 ? legacyDays * 24 * 60 * 60 : 0;
+  }
+
+  function resolveRecentCompletedWindow(rows, columns = jobColumns([], []), nowSeconds = Math.floor(Date.now() / 1000)) {
+    return ["hour", "day", "week", "month"].find((completed) => filterJobRows(
+      rows,
+      { running: false, completed, project: "*all*", module: "*all*" },
+      columns,
+      nowSeconds
+    ).length) || "*all*";
   }
 
   function jobCellText(job, index) {
@@ -5744,7 +5769,7 @@
     }
   }
 
-  function renderJobSelectFilter(id, label, options) {
+  function renderJobSelectFilter(id, label, options, selectedValue = "*all*") {
     const row = el("div", "ui2-tool-filter");
     row.dataset.fieldId = id;
     row.appendChild(el("label", "ui2-field-label", label));
@@ -5754,6 +5779,7 @@
     (options || [["*all*", "*all*"]]).forEach(([value, text]) => {
       select.appendChild(new Option(text, value));
     });
+    select.value = selectedValue;
     stack.appendChild(select);
     row.appendChild(stack);
     return row;
@@ -10803,6 +10829,7 @@
   if (window.GenAppUi2ExposeTestHooks) {
     window.GenAppUi2TestHooks = {
       filterJobRows,
+      resolveRecentCompletedWindow,
       jobManagerEndpoint: JOB_MANAGER_ENDPOINT,
       jobColumns,
       jobDisplayColumns,

@@ -226,6 +226,10 @@ like( $ui2_js, qr/function jobReferenceModule\(job, columns\)/, 'ui2 reference j
 like( $ui2_js, qr/sort\(\(left, right\) => jobReferenceStartSeconds\(right, columns\) - jobReferenceStartSeconds\(left, columns\)\)/, 'ui2 reference job chooser sorts jobs newest first like legacy jstree' );
 like( $ui2_js, qr/function jobReferenceTimeLabel\(job, columns\).*?getUTCHours\(\).*?UTC/s, 'ui2 reference job leaf labels use legacy UTC time-of-day text' );
 like( $ui2_js, qr/\["hour", "Hour"\].*?\["day", "Day"\].*?\["week", "Week"\].*?\["month", "Month"\]/s, 'ui2 Job Manager completed filter offers legacy Hour Day Week Month windows' );
+like( $ui2_js, qr/renderJobSelectFilter\("completed", "Completed in the last", \[.*?\], "hour"\)/s, 'ui2 Job Manager initially selects the Hour completed window' );
+like( $ui2_js, qr/function resolveInitialCompletedFilter\(table, rows, columns\).*?resolveRecentCompletedWindow\(rows, columns\)/s, 'ui2 Job Manager resolves its completed default after the first job-feed load' );
+like( $ui2_js, qr/function resolveRecentCompletedWindow\(rows, columns = jobColumns\(\[\], \[\]\), nowSeconds.*?\["hour", "day", "week", "month"\]/s, 'ui2 Job Manager widens the initial completed window from Hour through Month' );
+like( $ui2_js, qr/table\._ui2CompletedDefaultResolved = true;\s+applyJobManagerFilters\(table\);/s, 'ui2 Job Manager preserves an explicit filter interaction before its feed loads' );
 like( $ui2_js, qr/function completedFilterSeconds\(value\).*?hour:\s*60 \* 60.*?month:\s*30 \* 24 \* 60 \* 60/s, 'ui2 Job Manager maps completed windows to legacy time ranges' );
 like( $ui2_js, qr/function completedFilterSeconds\(value\).*?legacyDays \* 24 \* 60 \* 60/s, 'ui2 Job Manager keeps old numeric day filters compatible' );
 like( $ui2_js, qr/function renderJobActionsLegend\(\).*?Actions Legend.*?attach to job.*?attach to job in a new window.*?delete job.*?cancel job.*?clear lock/s, 'ui2 Job Manager renders a legacy-style actions legend' );
@@ -329,7 +333,7 @@ like( $ui2_js, qr/function fallbackUtilityModule\(moduleId\)/, 'ui2 can synthesi
 like( $ui2_js, qr/ajax\/sys_config\/sys_jobs2\.php/, 'ui2 Job Manager loads rows from the legacy details-capable jobs endpoint' );
 like( $ui2_js, qr/function applyJobManagerFilters\(table\)/, 'ui2 Job Manager applies local table filters' );
 like( $ui2_js, qr/function updateJobFilterChoices\(table, rows, columns\)/, 'ui2 Job Manager populates filter choices from loaded rows' );
-like( $ui2_js, qr/function renderJobSelectFilter\(id, label, options\)/, 'ui2 Job Manager renders select filters for job columns' );
+like( $ui2_js, qr/function renderJobSelectFilter\(id, label, options, selectedValue = "\*all\*"\)/, 'ui2 Job Manager renders select filters with an explicit default' );
 like( $ui2_js, qr/function toolFieldControl\(section, id, tagName\)/, 'ui2 Job Manager reads actual filter controls instead of wrapper rows' );
 like( $ui2_js, qr/ajax\/sys_config\/sys_managejob\.php/, 'ui2 Job Manager uses the legacy manage-job endpoint for row actions' );
 like( $ui2_js, qr/function submitSystemModuleAction\(action, jobIds, moduleId = "sys_job_manager"\)/, 'ui2 Job Manager can submit legacy system-module actions' );

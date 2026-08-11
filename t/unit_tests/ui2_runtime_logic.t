@@ -1817,6 +1817,54 @@ assert.deepStrictEqual(
   "completed-hour filter keeps only jobs completed in the last hour"
 );
 
+assert.strictEqual(
+  hooks.resolveRecentCompletedWindow(rows, undefined, now),
+  "hour",
+  "recent default selects Hour when an hour-old completed job exists"
+);
+
+assert.strictEqual(
+  hooks.resolveRecentCompletedWindow(rows.slice(1), undefined, now),
+  "day",
+  "recent default widens to Day when Hour is empty"
+);
+
+assert.strictEqual(
+  hooks.resolveRecentCompletedWindow([job("week-old", "tools/data_interpolation", "hello", now - 3 * 86400)], undefined, now),
+  "week",
+  "recent default widens to Week when Day is empty"
+);
+
+assert.strictEqual(
+  hooks.resolveRecentCompletedWindow([job("month-old", "tools/data_interpolation", "hello", now - 14 * 86400)], undefined, now),
+  "month",
+  "recent default widens to Month when Week is empty"
+);
+
+assert.strictEqual(
+  hooks.resolveRecentCompletedWindow([job("older", "tools/data_interpolation", "hello", now - 31 * 86400)], undefined, now),
+  "*all*",
+  "recent default falls back to All when completed jobs are older than a month"
+);
+
+assert.strictEqual(
+  hooks.resolveRecentCompletedWindow([job("running-only", "tools/data_interpolation", "hello", 0, "", "active")], undefined, now),
+  "*all*",
+  "recent default does not treat a running job as a completed result"
+);
+
+assert.strictEqual(
+  hooks.resolveRecentCompletedWindow([], undefined, now),
+  "*all*",
+  "recent default uses All for an empty job history"
+);
+
+assert.strictEqual(
+  hooks.resolveRecentCompletedWindow([job("hour-boundary", "tools/data_interpolation", "hello", now - 3600)], undefined, now),
+  "hour",
+  "recent default includes a job completed exactly one hour ago"
+);
+
 assert.deepStrictEqual(
   hooks.filterJobRows(rows, { running: false, completed: "1", project: "*all*", module: "*all*" }, now).map((row) => row.id),
   ["recent", "same-day"],
