@@ -1162,6 +1162,36 @@ assert.deepStrictEqual(
   "UI2 treats a reset density contour as absent and retains the producer default"
 );
 
+let resolveStaleDensity;
+const staleDensityComponent = {};
+const staleDensityStage = {
+  loadFile() {
+    return new Promise((resolve) => { resolveStaleDensity = resolve; });
+  },
+  removeComponent(component) {
+    this.removedComponent = component;
+  }
+};
+const staleDensityOutput = {
+  _ui2NglStage: staleDensityStage,
+  _ui2NglRenderRevision: 30
+};
+const staleDensityLoad = hooks.loadNglDensitySurface(
+  staleDensityOutput,
+  Object.assign({ loadname: "results/density.cube", loadparams: { ext: "cube" } }, densityDefaultsPayload),
+  30
+);
+staleDensityOutput._ui2NglStage = {};
+staleDensityOutput._ui2NglRenderRevision = 31;
+resolveStaleDensity(staleDensityComponent);
+staleDensityLoad.then(() => {
+  assert.strictEqual(
+    staleDensityStage.removedComponent,
+    staleDensityComponent,
+    "UI2 discards a density component that finishes after its NGL stage was replaced"
+  );
+});
+
 const coverageOutput = {
   _ui2NglViewerConfig: {
     stream_preview_coverage: { frame_field: "frame_id", label: "accepted structures" }

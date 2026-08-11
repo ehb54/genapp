@@ -7990,6 +7990,14 @@
     // Keep the already-received coordinate history in that race so the newly
     // loaded component can apply it and expose its frame controls.
     clearNglOutput(output, { preserveFrames: preserveLiveFrames });
+    // A completion snapshot carries the last live density cube, while the
+    // authoritative completed JSON intentionally contains only the saved
+    // structure.  Store the cube payload before either asynchronous load can
+    // finish so a following final-JSON render retains this current-session
+    // surface instead of racing it away.
+    if (liveDensityPayload?.loadname) {
+      output._ui2_ngl_density_payload = cloneUi2Value(liveDensityPayload);
+    }
     const renderRevision = (output._ui2NglRenderRevision || 0) + 1;
     output._ui2NglRenderRevision = renderRevision;
     plot.hidden = false;
@@ -8033,7 +8041,7 @@
             renderRevision
           )).then(() => {
             if (liveDensityPayload?.loadname) {
-              return loadNglDensitySurface(output, liveDensityPayload);
+              return loadNglDensitySurface(output, liveDensityPayload, renderRevision);
             }
             return component;
           });
@@ -8160,8 +8168,10 @@
     if (!output?._ui2NglStage || !payload?.loadname) {
       return false;
     }
+    output._ui2_ngl_density_payload = cloneUi2Value(payload);
+    const renderRevision = output._ui2NglRenderRevision;
     ensureNglLoaded()
-      .then(() => loadNglDensitySurface(output, payload))
+      .then(() => loadNglDensitySurface(output, payload, renderRevision))
       .catch(() => {});
     return true;
   }
@@ -8386,7 +8396,7 @@
     requestNglRender(output._ui2NglStage);
   }
 
-  function loadNglDensitySurface(output, payload) {
+  function loadNglDensitySurface(output, payload, renderRevision = output?._ui2NglRenderRevision) {
     const stage = output?._ui2NglStage;
     if (!stage || !payload?.loadname) {
       return Promise.resolve(null);
@@ -8394,6 +8404,10 @@
     const started_at_ms = ui2_now_ms();
     const priorComponent = output._ui2NglDensityComponent;
     return stage.loadFile(normalizeNglLoadName(payload.loadname), payload.loadparams || { ext: "cube" }).then((component) => {
+      if (output._ui2NglRenderRevision !== renderRevision || output._ui2NglStage !== stage) {
+        stage.removeComponent?.(component);
+        return null;
+      }
       const specs = nglDensitySurfaceSpecs(payload);
       const surfaces = specs.map((spec, index) => {
         const surfacePayload = Object.assign({}, payload, {
@@ -10866,6 +10880,8 @@
       nglRepresentationStoreKey,
       attachNglFileTrajectory,
       attachNglEmbeddedTrajectory,
+      renderNglDensityUpdate,
+      loadNglDensitySurface,
       nglDensitySurfaceParams,
       nglDensityOpacity,
       nglStreamCoverageValue,
