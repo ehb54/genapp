@@ -866,6 +866,43 @@ function ui2FormControl(form, fieldId, value, repeatIndex) {
   return control;
 }
 
+const deferredActionForm = createNode("form");
+deferredActionForm.id = "ui2-form";
+const deferredActionControl = ui2FormControl(
+  deferredActionForm, "deferred_repeater_metadata", ""
+);
+const viewBeforeDeferredAction = hooks.state.view;
+hooks.state.view = { renderer: "react-workbench" };
+hooks.state.pendingInputValues = {};
+hooks.deferUnavailableReactWorkbenchInput(
+  "deferred_repeater_metadata", ["0.25", "0.75"], 0
+);
+assert.deepEqual(
+  hooks.state.pendingInputValues.deferred_repeater_metadata,
+  ["0.25", "0.75"],
+  "UI2 retains action values for a repeater field whose React section is not mounted"
+);
+const querySelectorAllBeforeDeferredAction = document.querySelectorAll;
+document.querySelectorAll = function(selector) {
+  return selector === '[data-field-id="deferred_repeater_metadata"]'
+    ? [deferredActionControl]
+    : [];
+};
+hooks.applyPendingReactWorkbenchInputValues();
+document.querySelectorAll = querySelectorAllBeforeDeferredAction;
+hooks.state.view = viewBeforeDeferredAction;
+assert.strictEqual(
+  deferredActionControl.value,
+  "0.25",
+  "UI2 hydrates the first mounted repeater control from deferred action values"
+);
+assert.ok(
+  !Object.prototype.hasOwnProperty.call(
+    hooks.state.pendingInputValues, "deferred_repeater_metadata"
+  ),
+  "UI2 clears a deferred action value after its repeater control mounts"
+);
+
 function ui2IntegerpairMatrixRow() {
   const matrixField = {
     id: "matrix_value",

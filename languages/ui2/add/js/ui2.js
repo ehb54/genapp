@@ -83,6 +83,7 @@
     module: null,
     view: {},
     values: {},
+    pendingInputValues: {},
     serverSelections: {},
     fileReselectionWarnings: {},
     lastServerFileDir: "",
@@ -1843,6 +1844,7 @@
     state.module = null;
     state.view = {};
     state.values = {};
+    state.pendingInputValues = {};
     setSubmittedRunContext(null);
     beginRuntimeOutputContext("");
     state.jobEvents.reset();
@@ -2103,6 +2105,7 @@
     reactWorkbenchSyncFrame = window.requestAnimationFrame(() => {
       reactWorkbenchSyncFrame = null;
       if (reactWorkbenchRoot) {
+        applyPendingReactWorkbenchInputValues();
         syncValues();
       }
     });
@@ -2899,6 +2902,7 @@
 
     const input = el("input", "ui2-input ui2-repeat-table-input");
     input.type = inputType(type);
+    input.readOnly = String(field.readonly || "").toLowerCase() === "true";
     wireRepeatTableControl(input, field, rowIndex);
     input.value = arrayDefaultValue(field.default, rowIndex);
     input.defaultValue = input.value;
@@ -5847,6 +5851,7 @@
       return;
     }
     state.serverSelections = {};
+    state.pendingInputValues = {};
     clearFileReselectionWarnings();
     state.jobSelections = {};
     setSubmittedRunContext(null);
@@ -6924,7 +6929,7 @@
       if (restored.has(id)) {
         return;
       }
-      setInputControlValue(id, value);
+      deferUnavailableReactWorkbenchInput(id, value, setInputControlValue(id, value));
     });
     if (options.clearMissing) {
       clearMissingInputValues(new Set(entries.map(([id]) => id)));
@@ -6937,6 +6942,28 @@
     if (options.reselectLocalFiles) {
       setFileReselectionWarnings(unrecoverableSavedLocalFiles(inputs));
     }
+  }
+
+  function deferUnavailableReactWorkbenchInput(id, value, appliedControls) {
+    if (!isReactWorkbenchView(state.view)) {
+      return;
+    }
+    if (appliedControls > 0) {
+      delete state.pendingInputValues[id];
+      return;
+    }
+    state.pendingInputValues[id] = cloneUi2Value(value);
+  }
+
+  function applyPendingReactWorkbenchInputValues() {
+    if (!isReactWorkbenchView(state.view)) {
+      return;
+    }
+    Object.entries(state.pendingInputValues).forEach(([id, value]) => {
+      if (setInputControlValue(id, value) > 0) {
+        delete state.pendingInputValues[id];
+      }
+    });
   }
 
   function defaultInputPayload() {
@@ -7159,6 +7186,7 @@
   function setInputControlValue(id, value) {
     const controls = Array.from(document.querySelectorAll(`[data-field-id="${cssEscape(id)}"]`))
       .filter((control) => !control.dataset.outputFieldId && control.closest("#ui2-form"));
+    let appliedControls = 0;
     controls.forEach((control, index) => {
       const controlValue = inputControlValue(value, control, index);
       if (control.type === "file") {
@@ -7174,7 +7202,9 @@
       }
       control.dispatchEvent(new Event("input", { bubbles: true }));
       control.dispatchEvent(new Event("change", { bubbles: true }));
+      appliedControls += 1;
     });
+    return appliedControls;
   }
 
   function setInputControlValueAtRepeatIndex(id, repeatIndex, value) {
@@ -10952,6 +10982,8 @@
       runtimeOutputContextMatches,
       applyRuntimePayload,
       applyInputPayload,
+      deferUnavailableReactWorkbenchInput,
+      applyPendingReactWorkbenchInputValues,
       validTestScenarioCatalog,
       evaluateTestScenarioVerification,
       testScenarioOutputNonempty,
