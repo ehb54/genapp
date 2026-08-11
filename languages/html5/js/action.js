@@ -12,19 +12,18 @@ ga.action.escapeHtml = function( value ) {
 };
 
 ga.action.collect = function( mod, id, actiondata ) {
-    let sendobj = {
-        _action  : id
-        ,_logon  : $( "#_state" ).data( "_logon" )
-        ,_window : window.name
-        ,_project : $( "#_state" ).data( "_project" ).length ? $( "#_state" ).data( "_project" ) : "no_project_specified"
-        ,_height : window.screen.height
-        ,_width : window.screen.width
-    };
+    let sendobj = new FormData();
+    sendobj.append( "_action", id );
+    sendobj.append( "_logon", $( "#_state" ).data( "_logon" ) );
+    sendobj.append( "_window", window.name );
+    sendobj.append( "_project", $( "#_state" ).data( "_project" ).length ? $( "#_state" ).data( "_project" ) : "no_project_specified" );
+    sendobj.append( "_height", window.screen.height );
+    sendobj.append( "_width", window.screen.width );
 
     if ( actiondata == "_allformdata" ) {
         let formdata = new FormData( document.getElementById( `${mod}` ) );
         for ( const [key, value] of formdata ) {
-            sendobj[ key ] = value;
+            sendobj.append( key, value );
         }
         return sendobj;
     }
@@ -32,7 +31,7 @@ ga.action.collect = function( mod, id, actiondata ) {
     if ( actiondata && actiondata != "_" + "_fields:actiondata__" ) {
         actiondata.split( "," ).map( item => item.trim() ).filter( item => item.length ).forEach( item => {
             let ele = document.getElementById( item );
-            sendobj[ item ] = ele ? ele.value : `${item} no element`;
+            sendobj.append( item, ele ? ele.value : `${item} no element` );
         } );
     }
 
@@ -43,7 +42,14 @@ ga.action.click = function( mod, id, actiondata ) {
     __~debug:button{console.log( `ga.action.click( ${mod}, ${id}, ${actiondata} )` );}
     ga.loader.show( `action.click.${mod}.${id}` );
 
-    $.post( `ajax/action/${mod}.php`, ga.action.collect( mod, id, actiondata ) )
+    $.ajax( {
+        url: `ajax/action/${mod}.php`,
+        type: "POST",
+        data: ga.action.collect( mod, id, actiondata ),
+        processData: false,
+        contentType: false,
+        dataType: "json"
+    } )
         .done( ( data ) => {
             ga.loader.hide( `action.click.${mod}.${id}` );
             ga.action.process( mod, id, data );

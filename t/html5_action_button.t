@@ -26,11 +26,13 @@ unlike( $html, qr/ga\.button\.click\("action_demo","precheck"/, 'action input do
 my $endpoint = read_file( File::Spec->catfile( $generated->{app_dir}, qw(output html5 ajax action action_demo.php) ) );
 like( $endpoint, qr/type' \] == 'action'/, 'action endpoint recognizes action fields from module JSON' );
 like( $endpoint, qr/proc_open\( \$actionexe/, 'action endpoint runs action executable directly' );
+like( $endpoint, qr/action_stage_declared_files/, 'action endpoint stages declared local or server file inputs for actions' );
 like( $endpoint, qr/\$action_dir = "\$rdir\/_actions\/action_demo\/\$action_id"/, 'action endpoint uses per-user project action directory' );
 unlike( $endpoint, qr/jobrun\.php|sys_joblocked|joblog/, 'action endpoint stays outside job manager submit path' );
 
 my $ga_js = read_file( File::Spec->catfile( $generated->{app_dir}, qw(output html5 js ga.js) ) );
 like( $ga_js, qr/ga\.action\.process = function/, 'shared html5 JavaScript includes action processor' );
+like( $ga_js, qr/new FormData\(\)/, 'action requests preserve declared file inputs in FormData' );
 like( $ga_js, qr/case "set_fields":/, 'action processor supports declarative field updates' );
 like( $ga_js, qr/case "dialog":/, 'action processor supports message and dialog actions' );
 
@@ -45,7 +47,7 @@ like( $ui2_js, qr/type === "action"[\s\S]+renderActionControl\(field\)/, 'ui2 co
 like( $ui2_js, qr/function runModuleAction\(field, button, statusNode\)/, 'ui2 runtime declares action execution helper' );
 like( $ui2_js, qr/function moduleActionEndpointFor\(moduleId\)[\s\S]+ajax\/action/, 'ui2 action endpoint resolves through legacy ajax action root' );
 like( $ui2_js, qr/function applyActionPayload\(payload\)/, 'ui2 runtime declares action response handler' );
-like( $ui2_js, qr/createField: \(field, role\) => renderField\(field, role\)/, 'React bridge will receive action support through canonical UI2 fields' );
+like( $ui2_js, qr/createFieldGroup: \(groupFields, role\) => renderReactWorkbenchFieldGroup\(groupFields, role\)/, 'React bridge will receive action support through canonical UI2 field groups' );
 
 ok( -f File::Spec->catfile( $repo_root, qw(languages qt5 types action.input) ), 'qt5 has additive action input template stub' );
 ok( -f File::Spec->catfile( $repo_root, qw(languages qt5 types action.output) ), 'qt5 has additive action output template stub' );

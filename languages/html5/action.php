@@ -14,6 +14,58 @@ function action_error_exit( $msg ) {
     exit();
 }
 
+function action_stage_declared_files( $modjson, $action_dir, $user_dir ) {
+    if ( !isset( $modjson[ 'fields' ] ) || !is_array( $modjson[ 'fields' ] ) ) {
+        return;
+    }
+    $files_dir = "$action_dir/files";
+    if ( !is_dir( $files_dir ) ) {
+        mkdir( $files_dir, 0775, true );
+    }
+    $user_root = realpath( $user_dir );
+    foreach ( $modjson[ 'fields' ] as $field ) {
+        if ( !isset( $field[ 'id' ] ) || !isset( $field[ 'type' ] ) ||
+             substr( $field[ 'type' ], -4 ) != 'file' ) {
+            continue;
+        }
+        $id = $field[ 'id' ];
+        if ( isset( $_FILES[ $id ] ) && $_FILES[ $id ][ 'error' ] != UPLOAD_ERR_NO_FILE ) {
+            if ( $_FILES[ $id ][ 'error' ] != UPLOAD_ERR_OK ) {
+                action_error_exit( "Error uploading file for $id" );
+            }
+            $name = basename( $_FILES[ $id ][ 'name' ] );
+            if ( !strlen( $name ) ) {
+                action_error_exit( "Uploaded file for $id has no filename" );
+            }
+            $target = "$files_dir/$id-$name";
+            if ( !move_uploaded_file( $_FILES[ $id ][ 'tmp_name' ], $target ) ) {
+                action_error_exit( "Could not stage uploaded file for $id" );
+            }
+            $_REQUEST[ $id ] = $target;
+            continue;
+        }
+        $alt_key = "_selaltval_$id";
+        if ( !isset( $_REQUEST[ $alt_key ] ) ||
+             !isset( $_REQUEST[ $_REQUEST[ $alt_key ] ] ) ) {
+            continue;
+        }
+        $encoded = $_REQUEST[ $_REQUEST[ $alt_key ] ];
+        $encoded = is_array( $encoded ) ? reset( $encoded ) : $encoded;
+        $decoded = base64_decode( $encoded, true );
+        if ( $decoded === false || substr( $decoded, 0, 2 ) != './' ) {
+            action_error_exit( "Invalid server file selection for $id" );
+        }
+        $path = realpath( $user_root . DIRECTORY_SEPARATOR . substr( $decoded, 2 ) );
+        if ( $path === false || strpos( $path, $user_root . DIRECTORY_SEPARATOR ) !== 0 ||
+             !is_file( $path ) ) {
+            action_error_exit( "Missing server file selection for $id" );
+        }
+        $_REQUEST[ $id ] = $path;
+        unset( $_REQUEST[ $_REQUEST[ $alt_key ] ] );
+        unset( $_REQUEST[ $alt_key ] );
+    }
+}
+
 if ( !sizeof( $_REQUEST ) ) {
     action_error_exit( "PHP code received no \$_REQUEST?" );
 }
@@ -121,6 +173,7 @@ if ( !is_dir( $action_dir ) ) {
 
 $_REQUEST[ '_action_workdir' ] = $action_dir;
 $_REQUEST[ '_module' ] = "__moduleid__";
+action_stage_declared_files( $modjson, $action_dir, $dir );
 $payload = json_encode( $_REQUEST );
 
 $descriptors = array(
