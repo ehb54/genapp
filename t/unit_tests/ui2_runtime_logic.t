@@ -1700,7 +1700,7 @@ assert(
 );
 assert(
   source.includes('function handoffSessionToWindow(targetWindowName)') &&
-    source.includes('ajax/ui2_session_handoff.php') &&
+    source.includes('ui2/ajax/ui2_session_handoff.php') &&
     source.includes('formData.set("source_window", window.name);') &&
     source.includes('formData.set("target_window", targetWindowName);'),
   "new-window reattach uses the UI2-local same-origin session handoff endpoint"

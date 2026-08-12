@@ -5188,7 +5188,9 @@
   }
 
   async function handoffSessionToWindow(targetWindowName) {
-    const endpoint = legacyEndpoint("", "ajax/ui2_session_handoff.php");
+    // UI2 assets are exposed below the legacy HTML5 document root. Keep this
+    // endpoint in the UI2 subtree so target-specific generation supplies it.
+    const endpoint = legacyEndpoint("", "ui2/ajax/ui2_session_handoff.php");
     const formData = new FormData();
     formData.set("source_window", window.name);
     formData.set("target_window", targetWindowName);
