@@ -162,6 +162,88 @@
   flex-direction: column;
 }
 
+.ui2-choice-cards {
+  border: 0;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}
+
+.ui2-choice-cards > legend {
+  color: var(--ui2-text);
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: .7rem;
+  padding: 0;
+}
+
+.ui2-choice-cards > .ui2-workbench-field-group {
+  display: none;
+}
+
+.ui2-choice-cards-grid {
+  display: grid;
+  gap: .7rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+}
+
+.ui2-choice-card {
+  background: var(--ui2-panel);
+  border: 1px solid var(--ui2-border);
+  border-radius: .65rem;
+  cursor: pointer;
+  display: block;
+  min-width: 0;
+  padding: .85rem;
+}
+
+.ui2-choice-card:hover {
+  background: var(--ui2-panel-strong);
+}
+
+.ui2-choice-card:has(input:focus-visible) {
+  box-shadow: 0 0 0 2px var(--ui2-accent);
+}
+
+.ui2-choice-card-selected {
+  border-color: var(--ui2-accent);
+  box-shadow: inset 0 0 0 1px var(--ui2-accent);
+}
+
+.ui2-choice-card input {
+  margin: .15rem .55rem 0 0;
+  vertical-align: top;
+}
+
+.ui2-choice-card-content {
+  display: inline-flex;
+  flex-direction: column;
+  gap: .25rem;
+  max-width: calc(100% - 1.8rem);
+}
+
+.ui2-choice-card-title {
+  color: var(--ui2-text);
+  font-weight: 700;
+}
+
+.ui2-choice-card-description {
+  color: var(--ui2-muted);
+  font-size: .88rem;
+  line-height: 1.35;
+}
+
+.ui2-choice-card-badge {
+  align-self: flex-start;
+  background: var(--ui2-accent-soft);
+  border-radius: 999px;
+  color: var(--ui2-accent);
+  font-size: .7rem;
+  font-weight: 800;
+  padding: .15rem .45rem;
+  text-transform: uppercase;
+}
+
 .ui2-workbench-native-field-group > .ui2-field {
   grid-template-columns: minmax(9rem, 0.45fr) minmax(0, 1fr);
   padding-inline: 0;

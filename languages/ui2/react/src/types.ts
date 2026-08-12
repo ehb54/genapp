@@ -29,6 +29,16 @@ export type WorkbenchSection = {
   layout?: "form" | "table" | "wide" | string
 }
 
+export type ChoiceCardPresentation = {
+  control: "choice-cards"
+  title?: string
+  choices?: Record<string, {
+    title?: string
+    description?: string
+    badge?: string
+  }>
+}
+
 export type WorkbenchResultGroup = {
   id: string
   label: string
@@ -59,9 +69,11 @@ export type WorkbenchView = {
   inputs?: {
     sections?: WorkbenchSection[]
     advanced?: WorkbenchSection
+    fieldPresentations?: Record<string, ChoiceCardPresentation>
     layout?: "standard" | "wide" | string
     submittedSummary?: {
       fields?: string[]
+      expanded?: "all" | "active" | string
     }
   }
   actions?: {
@@ -138,6 +150,7 @@ export type ScientificWorkbenchBridge = {
   releaseField: (field: HTMLElement) => void
   fieldGroupMounted: () => void
   syncValues: () => Record<string, unknown>
+  setInputValue: (fieldId: string, value: unknown) => Record<string, unknown>
   reset: (form: HTMLFormElement) => void
   returnToInputs: () => void
   submit: (form: HTMLFormElement) => Promise<SubmitResult>

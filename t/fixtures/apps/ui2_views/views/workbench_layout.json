@@ -6,9 +6,19 @@
             {
                 "id"     : "inputs",
                 "title"  : "Inputs",
-                "fields" : ["input_value"]
+                "fields" : ["input_value", "workflow_choice"]
             }
-        ]
+        ],
+        "fieldPresentations" : {
+            "workflow_choice" : {
+                "control" : "choice-cards",
+                "title" : "Choose a workflow",
+                "choices" : {
+                    "prepare" : {"title" : "Prepare data", "description" : "Create data ready for later work."},
+                    "inspect" : {"title" : "Inspect data", "description" : "Review existing data without changing it."}
+                }
+            }
+        }
     },
     "results" : {
         "groups" : [

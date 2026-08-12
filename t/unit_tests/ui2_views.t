@@ -127,6 +127,9 @@ like( $ui2_react_source, qr/pendingOutputResizeRef.*?requestAnimationFrame.*?bri
 like( $ui2_react_css, qr/\.ui2-workbench-grid/, 'React stylesheet contains the scientific workbench grid' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-editing \.ui2-workbench-grid\{grid-template-columns:minmax\(28rem,1\.2fr\) minmax\(18rem,\.8fr\)\}/, 'editing state favors the input pane while submitted runs retain the standard split' );
 like( $ui2_react_source, qr/const wideInputLayout = view\.inputs\?\.layout === "wide"/, 'workbench accepts a presentation-only wide input layout opt-in' );
+like( $ui2_react_source, qr/function ChoiceCards\(.*?bridge\.setInputValue\(field\.id \|\| "", choice\.value\)/s, 'workbench choice cards update the existing UI2 field rather than owning a second value' );
+like( $ui2_react_source, qr/fieldPresentations = view\.inputs\?\.fieldPresentations \|\| \{\}/, 'workbench reads choice-card presentation metadata from the view' );
+like( $ui2_js, qr/setInputValue: \(fieldId, value\).*?control\.dispatchEvent\(new Event\("change", \{ bubbles: true \}\)\)/s, 'UI2 bridge routes choice-card changes through the normal input lifecycle' );
 like( $ui2_react_source, qr/wideInputLayout && \(!submitted \|\| inputEditOpen\).*?ui2-workbench-grid-inputs-wide/s, 'wide input layout applies only while the editor is visible' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-editing \.ui2-workbench-grid\.ui2-workbench-grid-inputs-wide.*?grid-template-columns:minmax\(0,1fr\)/, 'wide input layout gives dense editors the full workbench width' );
 like( $ui2_react_css, qr/\@container \(width<=52rem\).*?grid-template-columns:1fr/s, 'workbench stacks from its available width rather than allowing sidebar-constrained tables to scroll' );
@@ -512,6 +515,10 @@ is( $shared->{viewjson}{sections}[0]{id}, 'general', 'general view sections are 
 
 my $workbench_layout = decode_json( read_file( File::Spec->catfile( $ui2, qw(modules workbench_layout.json) ) ) );
 is( $workbench_layout->{viewjson}{renderer}, 'react-workbench', 'neutral layout fixture uses the generic React workbench' );
+is( $workbench_layout->{viewjson}{inputs}{fieldPresentations}{workflow_choice}{control}, 'choice-cards', 'neutral fixture opts one ordinary choice field into visible choice cards' );
+is( $workbench_layout->{viewjson}{inputs}{fieldPresentations}{workflow_choice}{choices}{prepare}{title}, 'Prepare data', 'choice-card text remains presentation metadata' );
+my ($workflow_choice_field) = grep { $_->{id} eq 'workflow_choice' } @{ $workbench_layout->{modulejson}{fields} || [] };
+is( $workflow_choice_field->{type}, 'listbox', 'choice-card fixture retains the canonical choice field type' );
 is_deeply(
     [ map { $_->{fit} || 'default' } @{ $workbench_layout->{viewjson}{results}{groups} || [] } ],
     [ 'pane', 'default', 'wide', 'wide' ],

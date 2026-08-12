@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import type { JobRuntimeSnapshot, ScientificWorkbenchBridge, ScientificWorkbenchMountProps, Ui2Field, WorkbenchResultGroup, WorkbenchSection } from "@/types"
+import type { ChoiceCardPresentation, JobRuntimeSnapshot, ScientificWorkbenchBridge, ScientificWorkbenchMountProps, Ui2Field, WorkbenchResultGroup, WorkbenchSection } from "@/types"
 
 function NativeHost({ create, release, mounted, className }: { create: () => HTMLElement; release?: (node: HTMLElement) => void; mounted?: () => void; className?: string }) {
   const hostRef = React.useRef<HTMLDivElement>(null)
@@ -55,6 +55,47 @@ function FieldGroup({ fields, bridge, role = "input", fitPlot = false, outputLay
   }, [bridge, role])
   return (
     <NativeHost create={create} release={bridge.releaseField} mounted={mounted} className="ui2-workbench-field-group" />
+  )
+}
+
+function ChoiceCards({ field, presentation, bridge, values }: {
+  field: Ui2Field
+  presentation: ChoiceCardPresentation
+  bridge: ScientificWorkbenchBridge
+  values: Record<string, unknown>
+}) {
+  const choices = fieldChoices(field)
+  const selected = String(values[field.id || ""] ?? field.default ?? choices[0]?.value ?? "")
+  const label = presentation.title || field.label || "Choose an option"
+
+  return (
+    <fieldset className="ui2-choice-cards">
+      <legend>{label}</legend>
+      <FieldGroup bridge={bridge} fields={[field]} />
+      <div className="ui2-choice-cards-grid">
+        {choices.map((choice) => {
+          const details = presentation.choices?.[choice.value] || {}
+          const id = `${field.id}-${choice.value}`
+          return (
+            <label className={`ui2-choice-card${selected === choice.value ? " ui2-choice-card-selected" : ""}`} htmlFor={id} key={choice.value}>
+              <input
+                checked={selected === choice.value}
+                id={id}
+                name={`${field.id}-choice-cards`}
+                onChange={() => bridge.setInputValue(field.id || "", choice.value)}
+                type="radio"
+                value={choice.value}
+              />
+              <span className="ui2-choice-card-content">
+                <span className="ui2-choice-card-title">{details.title || choice.label}</span>
+                {details.badge && <span className="ui2-choice-card-badge">{details.badge}</span>}
+                {details.description && <span className="ui2-choice-card-description">{details.description}</span>}
+              </span>
+            </label>
+          )
+        })}
+      </div>
+    </fieldset>
   )
 }
 
@@ -188,6 +229,7 @@ function SubmittedInputs({
   values,
   fields,
   summaryFieldIds,
+  expandedMode,
   uuid,
   restoreError,
   restoreWarnings = [],
@@ -197,6 +239,7 @@ function SubmittedInputs({
   values: Record<string, unknown>
   fields: Ui2Field[]
   summaryFieldIds: string[]
+  expandedMode?: string
   uuid?: string
   restoreError?: string
   restoreWarnings?: string[]
@@ -205,11 +248,13 @@ function SubmittedInputs({
 }) {
   const [showAll, setShowAll] = React.useState(false)
   const fieldMap = React.useMemo(() => new Map(fields.map((field) => [field.id, field])), [fields])
+  const allIds = fields
+    .filter((field) => field.id && field.role !== "output" && field.type !== "label"
+      && Object.prototype.hasOwnProperty.call(values, field.id))
+    .filter((field) => expandedMode !== "active" || repeatExpressionActive(field.repeat, values))
+    .map((field) => field.id as string)
   const ids = showAll
-    ? fields
-      .filter((field) => field.id && field.role !== "output" && field.type !== "label"
-        && Object.prototype.hasOwnProperty.call(values, field.id))
-      .map((field) => field.id as string)
+    ? allIds
     : summaryFieldIds.filter((id) => Object.prototype.hasOwnProperty.call(values, id))
 
   return (
@@ -241,7 +286,7 @@ function SubmittedInputs({
         )}
         <div className="ui2-workbench-summary-actions">
           <Button disabled={Boolean(restoreError)} type="button" variant="outline" onClick={() => setShowAll((current) => !current)}>
-            {showAll ? "Show key inputs" : "Show all inputs"}
+            {showAll ? "Show key inputs" : expandedMode === "active" ? `Show active inputs (${allIds.length})` : "Show all inputs"}
           </Button>
           <Button type="button" variant="outline" onClick={onHide}>Hide inputs</Button>
           <Button disabled={Boolean(restoreError)} type="button" onClick={onEdit}>Edit inputs</Button>
@@ -304,6 +349,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
   const [liveValues, setLiveValues] = React.useState<Record<string, unknown>>(initialSubmitted?.values || {})
   const inputSections = view.inputs?.sections || []
   const advancedSection = view.inputs?.advanced
+  const fieldPresentations = view.inputs?.fieldPresentations || {}
   const wideInputLayout = view.inputs?.layout === "wide"
   const advancedFieldIds = advancedSection?.fields || []
   const summaryFieldIds = view.inputs?.submittedSummary?.fields || []
@@ -510,7 +556,10 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
           </div>
         </CardHeader>
         <CardContent>
-          {sectionFields.length > 0 && <FieldGroup bridge={bridge} fields={sectionFields} />}
+          {sectionFields.filter((field) => !fieldPresentations[field.id || ""]).length > 0 && <FieldGroup bridge={bridge} fields={sectionFields.filter((field) => !fieldPresentations[field.id || ""])} />}
+          {sectionFields.filter((field) => fieldPresentations[field.id || ""]).map((field) => (
+            <ChoiceCards bridge={bridge} field={field} key={field.id} presentation={fieldPresentations[field.id || ""]} values={liveValues} />
+          ))}
           {(section.children || []).map((child) => renderInputSection(child, depth + 1))}
         </CardContent>
       </Card>
@@ -537,7 +586,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
       <div className={`ui2-workbench-grid${inputRailCollapsed || workspaceExpanded ? " ui2-workbench-grid-inputs-hidden" : ""}${wideInputLayout && (!submitted || inputEditOpen) ? " ui2-workbench-grid-inputs-wide" : ""}`}>
         <aside className="ui2-workbench-input-pane" hidden={inputRailCollapsed || workspaceExpanded}>
           {submitted && !inputEditOpen && (
-            <SubmittedInputs fields={fields} summaryFieldIds={summaryFieldIds} onEdit={editInputs} onHide={() => setInputRailCollapsed(true)} restoreError={submitted.restoreError} restoreWarnings={submitted.restoreWarnings} uuid={submitted.uuid} values={submitted.values} />
+            <SubmittedInputs expandedMode={view.inputs?.submittedSummary?.expanded} fields={fields} summaryFieldIds={summaryFieldIds} onEdit={editInputs} onHide={() => setInputRailCollapsed(true)} restoreError={submitted.restoreError} restoreWarnings={submitted.restoreWarnings} uuid={submitted.uuid} values={submitted.values} />
           )}
           <div className="ui2-workbench-input-scroll" hidden={Boolean(submitted) && !inputEditOpen}>
               {testScenarios.available && testScenarios.catalog?.scenarios && (

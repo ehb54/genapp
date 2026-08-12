@@ -12,6 +12,14 @@
             "default" : "neutral fixture"
         },
         {
+            "role"    : "input",
+            "id"      : "workflow_choice",
+            "label"   : "Choose a workflow",
+            "type"    : "listbox",
+            "values"  : "Prepare data~prepare~Inspect data~inspect",
+            "default" : "prepare"
+        },
+        {
             "role"  : "output",
             "id"    : "primary_plot",
             "label" : "Primary plot",
