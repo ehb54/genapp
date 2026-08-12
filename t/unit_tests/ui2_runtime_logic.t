@@ -2514,8 +2514,9 @@ hooks.state.values = {
 hooks.state.session = { logon: "Joseph", project: "repeat_project" };
 hooks.state.module = {
   fields: [
-    { id: "data_file_name", type: "lrfile" },
-    { id: "sas_paths", type: "rpath" }
+    { id: "row_count", type: "integer", repeater: "true", tableize: "true" },
+    { id: "data_file_name", type: "lrfile", repeat: "row_count" },
+    { id: "sas_paths", type: "rpath", repeat: "row_count" }
   ]
 };
 const serverRepeatOne = btoa("./server_one.dat");
@@ -2558,6 +2559,16 @@ hooks.state.serverSelections = {
     path: "sas/run_b"
   }
 };
+assert.strictEqual(
+  hooks.repeatFileSubmitId({ id: "data_file_name", type: "lrfile", repeat: "row_count" }, 2),
+  "row_count-data_file_name-2",
+  "UI2 gives every repeated file field a row-specific legacy submit id"
+);
+assert.strictEqual(
+  hooks.repeatFileSubmitId({ id: "top_level_file", type: "lrfile" }, null),
+  "top_level_file",
+  "UI2 preserves the scalar submit id for a non-repeated file"
+);
 const repeatedFileFormData = hooks.buildSubmitFormData({
   querySelectorAll(selector) {
     if (selector !== ".ui2-native-file[data-field-id]") {
@@ -2572,19 +2583,24 @@ const repeatedFileFormData = hooks.buildSubmitFormData({
   }
 }, "repeat-file-test-uuid");
 assert.deepStrictEqual(
-  repeatedFileFormData.get("data_file_name_altval[]"),
-  [serverRepeatOne, serverRepeatThree],
-  "UI2 repeated submit preserves server-file rows not replaced by a local row"
+  repeatedFileFormData.get("row_count-data_file_name-0_altval[]"),
+  [serverRepeatOne],
+  "UI2 submits the first repeated server file through its row-specific legacy key"
 );
 assert.deepStrictEqual(
-  repeatedFileFormData.get("data_file_name[]"),
+  repeatedFileFormData.get("row_count-data_file_name-2_altval[]"),
+  [serverRepeatThree],
+  "UI2 submits the later repeated server file through its row-specific legacy key"
+);
+assert.deepStrictEqual(
+  repeatedFileFormData.get("row_count-data_file_name-1"),
   ["local_two.dat"],
-  "UI2 repeated submit preserves the local-file row"
+  "UI2 submits a repeated local file through its original row-specific legacy key"
 );
 assert.strictEqual(
-  repeatedFileFormData.get("data_file_name"),
+  repeatedFileFormData.get("data_file_name_altval[]"),
   undefined,
-  "UI2 repeated submit clears stale scalar file values before appending row values"
+  "UI2 does not collapse repeated server files into one receiver-incompatible array"
 );
 assert.deepStrictEqual(
   repeatedFileFormData.get("sas_paths[]"),
@@ -2600,6 +2616,24 @@ assert.strictEqual(
   hooks.state.serverSelections["data_file_name:1"],
   undefined,
   "UI2 local repeated file rows clear only the matching server selection row"
+);
+
+const plainFileTable = hooks.renderTableizedRepeater({
+  controller: { id: "row_count", type: "integer", default: 2, repeater: "true", tableize: "true" },
+  fields: [
+    { id: "data_file_name", type: "lrfile", repeat: "row_count" },
+    { id: "concentration", type: "float", repeat: "row_count" }
+  ]
+}, "input");
+assert.strictEqual(
+  plainFileTable.classList.contains("ui2-repeat-table-has-file"),
+  true,
+  "UI2 marks a file-bearing repeated table for generic responsive file-column styling"
+);
+assert.strictEqual(
+  plainFileTable.querySelector(".ui2-repeat-table-file-cell") !== null,
+  true,
+  "UI2 marks each repeated file cell without using a module-specific selector"
 );
 
 hooks.state.values = {

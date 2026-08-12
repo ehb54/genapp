@@ -130,6 +130,8 @@ like( $ui2_js, qr/row\.classList\.add\("ui2-tableized-repeater", "ui2-field-wide
 like( $ui2_css, qr/\.ui2-repeat-table-wrap,\s*\.ui2-matrix-wrap\s*\{\s*overflow-x: hidden;/s, 'repeat and matrix tables suppress horizontal scrolling' );
 like( $ui2_css, qr/\.ui2-repeat-table,\s*\.ui2-matrix-table\s*\{\s*width: 100%;\s*table-layout: fixed;/s, 'repeat and matrix tables fit their available card width' );
 like( $ui2_css, qr/\.ui2-repeat-table td\s*\{\s*padding: 0 0\.35rem;\s*min-width: 0;/s, 'repeat table cells can shrink within the available input card' );
+like( $ui2_css, qr/\.ui2-repeat-table-has-file \.ui2-repeat-table-wrap\s*\{\s*overflow-x: auto;/s, 'file-bearing repeat tables alone restore horizontal access for file controls' );
+like( $ui2_css, qr/\.ui2-repeat-table-has-file \.ui2-repeat-table-file-cell\s*\{\s*min-width: 12rem;/s, 'file-bearing repeat table cells retain a usable minimum width' );
 like( $ui2_react_css, qr/\.ui2-workbench-result-card \.ui2-output-plotly:not\(\.ui2-dynamic-output\)\{[^}]*overflow:hidden/, 'workbench fitted Plotly leaves suppress internal scrollbars without constraining dynamic output groups' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded/, 'workbench expanded workspace styles are present' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded \.ui2-workbench-result-tabs\{(?=[^}]*display:flex)(?=[^}]*flex-flow:wrap)[^}]*\}/, 'expanded workspace overrides the normal column direction so generic result panels wrap across rows without phantom grid tracks' );

@@ -2691,6 +2691,9 @@
     if (!stack || !fields.length || role === "output") {
       return row;
     }
+    if (fields.some((field) => isFileLikeType(String(field?.type || "").toLowerCase()))) {
+      row.classList.add("ui2-repeat-table-has-file");
+    }
     row._ui2RepeatTableController = controller;
     row._ui2RepeatTableFields = fields;
 
@@ -2783,6 +2786,9 @@
       const td = document.createElement("td");
       td.dataset.repeatTableField = field.id || "";
       td.dataset.repeatTableIndex = String(rowIndex);
+      if (isFileLikeType(String(field?.type || "").toLowerCase())) {
+        td.classList.add("ui2-repeat-table-file-cell");
+      }
       if (field.repeatcondition) {
         td.dataset.repeatcondition = field.repeatcondition;
       }
@@ -6385,7 +6391,7 @@
 
   function repeatFileSubmitId(field, repeatIndex) {
     const controller = repeatControllerId(field?.repeat || "");
-    if (!field?.repeatcondition || !controller || repeatIndex == null) {
+    if (String(field?.type || "").toLowerCase() === "rpath" || !controller || repeatIndex == null) {
       return field?.id || "";
     }
     return `${controller}-${field.id}-${repeatIndex}`;
@@ -10968,6 +10974,8 @@
       updateRepeatTableCellConditions,
       repeatControllerId,
       repeatTableFields,
+      renderTableizedRepeater,
+      renderRepeatTableRow,
       repeatCount,
       collectControlValues,
       syncValues,

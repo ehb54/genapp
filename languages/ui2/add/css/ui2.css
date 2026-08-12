@@ -999,6 +999,19 @@ code {
   min-width: 0;
 }
 
+.ui2-repeat-table-has-file .ui2-repeat-table-wrap {
+  overflow-x: auto;
+}
+
+.ui2-repeat-table-has-file .ui2-repeat-table {
+  min-width: 100%;
+  table-layout: auto;
+}
+
+.ui2-repeat-table-has-file .ui2-repeat-table-file-cell {
+  min-width: 12rem;
+}
+
 .ui2-matrix-table th {
   color: var(--ui2-muted);
   font-size: 0.82rem;
