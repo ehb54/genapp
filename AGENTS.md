@@ -303,6 +303,12 @@ the paired SASSIE repositories. This addendum supplies only the GenApp boundary.
 When a shared boundary changes, update its governing policy and the short
 routing blocks in every affected repository in the same coordinated change.
 
+SASSIE-web driver, server, and deployment validation uses the complete SASSIE
+package installed under ``~/anaconda3``.  Do not treat ``PYTHONPATH=src`` as
+runtime evidence for native extensions, and do not repair imports by copying
+source or compiled package files.  The detailed rule is
+``../zazzie/docs/source/python_environment_and_build_policy.rst``.
+
 ### SASSIE-web plotting boundary
 
 The rejected experiment in `ehb54/zazzie#193` is not an implementation guide.
