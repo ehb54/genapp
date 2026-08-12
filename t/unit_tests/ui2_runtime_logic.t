@@ -553,6 +553,22 @@ assert(
   fileManagerRemovalPrompt.includes("project/input.pdb") && fileManagerRemovalPrompt.includes("project/subdir/result.dat"),
   "UI2 File Manager confirms the decoded selected paths before removal"
 );
+const topLevelProjectDirectory = {
+  dataset: { fileId: btoa("./project"), depth: "0" },
+  _ui2FileEntry: { children: true }
+};
+const nestedDirectory = {
+  dataset: { fileId: btoa("./project/run_0"), depth: "1" },
+  _ui2FileEntry: { children: true }
+};
+assert(
+  hooks.fileManagerRemovalPrompt([topLevelProjectDirectory]).includes("prevents affected runs from being reattached"),
+  "UI2 File Manager warns before removing a top-level directory"
+);
+assert(
+  !hooks.fileManagerRemovalPrompt([nestedDirectory]).includes("prevents affected runs from being reattached"),
+  "UI2 File Manager reserves the reattachment warning for top-level directories"
+);
 const fileManagerDeleteFormData = hooks.fileManagerDeleteFormData([selectedRootFile, selectedNestedFile]);
 assert.strictEqual(fileManagerDeleteFormData.get("_window"), "ui2-test", "UI2 File Manager delete retains the legacy window id");
 assert.strictEqual(fileManagerDeleteFormData.get("_spec"), "fc_cache", "UI2 File Manager delete uses the legacy file-cache contract");

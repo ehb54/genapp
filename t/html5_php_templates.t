@@ -38,6 +38,8 @@ like( $results_php, qr/ga_sanitize_validate/, 'get_results php validates request
 like( $results_php, qr/_getinput/, 'get_results php can return replayed input' );
 like( $results_php, qr/_stdout_/, 'get_results php reads job stdout payload' );
 like( $results_php, qr/json_decode/, 'get_results php decodes JSON output' );
+like( $results_php, qr/This run's saved files have been removed/, 'get_results reports a friendly deleted-run message without its filesystem path' );
+like( $results_php, qr/_getinputerror/, 'get_results carries deleted-run restoration failures to the UI2 input replay path' );
 unlike( $results_php, qr/__application__/, 'get_results php has application substitution applied' );
 like( $results_php, qr/__docroot:html5__\/minimal_html5\/ajax\/ga_filter\.php/, 'get_results php retains docroot deployment placeholder with app path' );
 

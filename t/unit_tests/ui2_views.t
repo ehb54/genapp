@@ -368,6 +368,8 @@ like( $ui2_js, qr/function downloadFileManagerSelection\(table, status, links, m
 like( $ui2_js, qr/"Refresh all".*?"Refresh selected".*?"Remove selected".*?"Download"/s, 'ui2 File Manager distinguishes all-file refresh from selected refresh and removal' );
 like( $ui2_js, qr/function refreshSelectedFileManagerRows\(table, status\).*?fileManagerSelectedParentIds\(table\).*?loadFileManagerFolderChildren/s, 'ui2 File Manager refreshes the parents of selected entries' );
 like( $ui2_js, qr/function removeSelectedFileManagerRows\(table, status, links\).*?window\.confirm.*?fileManagerDeleteFormData\(ids\)/s, 'ui2 File Manager confirms selected removals before building the legacy request' );
+like( $ui2_js, qr/function fileManagerSelectionIncludesTopLevelDirectory\(rows\).*?row\?\._ui2FileEntry\?\.children === true/s, 'ui2 File Manager identifies selected top-level directories without inferring project records' );
+like( $ui2_js, qr/Deleting a top-level directory removes its saved files and prevents affected runs from being reattached/, 'ui2 File Manager warns that top-level removal invalidates historical reattachment while retaining the project identity' );
 like( $ui2_js, qr/legacyEndpoint\("filesBase", "ajax\/sys_config\/sys_files\.php"\)/, 'ui2 File Manager removal reuses the legacy file endpoint' );
 like( $ui2_js, qr/row\.dataset\.parentId = entry\.parent \|\| parentId \|\| "#";/, 'ui2 File Manager preserves each child row parent instead of deriving it from a sibling' );
 like( $ui2_js, qr/function renderUserConfigTool\(module, fields\)/, 'ui2 has a dedicated Settings shell' );

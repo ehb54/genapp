@@ -5573,15 +5573,29 @@
       .filter(Boolean);
   }
 
+  function fileManagerSelectionIncludesTopLevelDirectory(rows) {
+    return (rows || []).some((row) => (
+      Number(row?.dataset?.depth || 0) === 0
+      && row?._ui2FileEntry?.children === true
+    ));
+  }
+
   function fileManagerSelectedParentIds(table) {
     return [...new Set(fileManagerSelectedRows(table)
       .map((row) => row.dataset.parentId || "#"))];
   }
 
-  function fileManagerRemovalPrompt(ids) {
+  function fileManagerRemovalPrompt(selection) {
+    const rows = (selection || []).filter((entry) => entry?.dataset?.fileId);
+    const ids = rows.length
+      ? rows.map((row) => row.dataset.fileId)
+      : (selection || []);
     const paths = ids.map((id) => decodeServerFileId(id).replace(/^\.\//, ""));
     const noun = ids.length === 1 ? "item" : "items";
-    return `Remove ${ids.length} selected ${noun}? Directories include all of their contents.\n\n${paths.join("\n")}`;
+    const topLevelDirectoryWarning = fileManagerSelectionIncludesTopLevelDirectory(rows)
+      ? "\n\nDeleting a top-level directory removes its saved files and prevents affected runs from being reattached. The project name will remain available in Settings for future work."
+      : "";
+    return `Remove ${ids.length} selected ${noun}? Directories include all of their contents.${topLevelDirectoryWarning}\n\n${paths.join("\n")}`;
   }
 
   function fileManagerDeleteFormData(ids) {
@@ -5631,7 +5645,7 @@
       setSubmitStatus(status, "No files selected.", "error");
       return;
     }
-    if (!window.confirm(fileManagerRemovalPrompt(ids))) {
+    if (!window.confirm(fileManagerRemovalPrompt(fileManagerSelectedRows(table)))) {
       return;
     }
     setSubmitStatus(status, "Removing selected files...", "pending");
@@ -11019,6 +11033,7 @@
       fileEntryDetails,
       fileManagerSelectedIds,
       fileManagerSelectedParentIds,
+      fileManagerSelectionIncludesTopLevelDirectory,
       fileManagerRemovalPrompt,
       fileManagerDeleteFormData,
       renderFileControl,

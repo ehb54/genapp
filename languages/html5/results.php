@@ -180,7 +180,23 @@ if ( !is_dir( $dir ) || !chdir( $dir ) )
 {
    $cont = ob_get_contents();
    ob_end_clean();
-   $results[ "error" ] = "Could not change to directory " . $dir . " " . $cont;
+   if ( !is_dir( $dir ) )
+   {
+      $message = "This run's saved files have been removed. Its saved inputs and results can no longer be restored.";
+      error_log( "get_results.php missing run directory for job $id: $dir\n" );
+      if ( $getinput )
+      {
+         $results[ "_getinputerror" ] = $message;
+      }
+   } else {
+      $message = "Could not access this run's saved files. Please contact an administrator.";
+      error_log( "get_results.php could not enter run directory for job $id: $dir $cont\n" );
+      if ( $getinput )
+      {
+         $results[ "_getinputerror" ] = $message;
+      }
+   }
+   $results[ "error" ] = $message;
    $results[ '_status' ] = 'failed';
    echo (json_encode($results));
    exit();
