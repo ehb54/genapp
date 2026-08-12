@@ -37,6 +37,16 @@ ok( $status == 0, 'saved input replay restores integer repeater rows in DOM harn
     or diag("command failed ($status): $quoted\n$output");
 like( $output, qr/ok - repeater-replay/, 'DOM harness reports repeater replay scenario success' );
 
+my ( $switch_status, $switch_output, $switch_quoted ) = run_command(
+    cwd => $repo_root,
+    env => {},
+    cmd => [ $node, $harness, 'module-switch-replay', $ga_js, $module_html ],
+);
+
+ok( $switch_status == 0, 'module switch restore keeps repeater controller and rows in sync' )
+    or diag("command failed ($switch_status): $switch_quoted\n$switch_output");
+like( $switch_output, qr/ok - module-switch-replay/, 'DOM harness reports module switch replay scenario success' );
+
 done_testing();
 
 sub find_executable {
