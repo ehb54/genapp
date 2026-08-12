@@ -50,4 +50,8 @@ target sessions omit window-local values; verify both new-window consumers,
 same-window reattach, direct logged-out `_switch`, and unchanged HTML5
 generation. Verify that an attached window keeps `_switch` while its target is
 loading, but ordinary module navigation replaces that one-time command with a
-`module` route so a browser reload does not reattach a stale job.
+`module` route so a browser reload does not reattach a stale job. Verify that
+ordinary module and menu-group selections each record their current UI2 route,
+that same-window attachment records its validated `_switch`, and that startup
+reads the current URL after a logoff/login cycle rather than stale initial
+query state.

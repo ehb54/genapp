@@ -391,13 +391,13 @@ assert.throws(
 window.location.href = "https://example.test/sassie3/ui2/?_switch=simulate%2Fmonomer_monte_carlo%2Fno_project_specified%2Fuuid-123&ui2theme=dark#results";
 window.location.pathname = "/sassie3/ui2/";
 window.location.search = "?_switch=simulate%2Fmonomer_monte_carlo%2Fno_project_specified%2Fuuid-123&ui2theme=dark";
-hooks.replaceStaleSwitchRoute("monomer_monte_carlo", { preserveSwitch: true });
+hooks.syncModuleRoute("monomer_monte_carlo", { preserveSwitch: true });
 assert.strictEqual(
   window.location.search,
   "?_switch=simulate%2Fmonomer_monte_carlo%2Fno_project_specified%2Fuuid-123&ui2theme=dark",
   "UI2 keeps the reattach command while its attached module is loading"
 );
-hooks.replaceStaleSwitchRoute("build_utilities");
+hooks.syncModuleRoute("build_utilities");
 assert.strictEqual(
   window.location.search,
   "?ui2theme=dark&module=build_utilities",
@@ -407,6 +407,14 @@ assert.strictEqual(
   new URL(window.location.href).hash,
   "#results",
   "route cleanup preserves the URL fragment"
+);
+hooks.syncMenuRoute("build");
+assert.strictEqual(window.location.search, "?ui2theme=dark&menu=build", "menu navigation records the visible menu group");
+hooks.syncReattachRoute("simulate/monomer_monte_carlo/no_project_specified/uuid-123");
+assert.strictEqual(
+  window.location.search,
+  "?ui2theme=dark&_switch=simulate%2Fmonomer_monte_carlo%2Fno_project_specified%2Fuuid-123",
+  "same-window reattachment replaces ordinary navigation with the attached job route"
 );
 const ready = hooks.beginViewReady();
 assert.strictEqual(ready.resolved, false, "UI2 core waits until an asynchronous renderer reports mounted hosts");
@@ -1756,11 +1764,18 @@ assert(
   "reattach closes the utility overlay before switching to the attached module"
 );
 assert(
-  source.includes('function replaceStaleSwitchRoute(moduleId, options = {})') &&
-    source.includes('url.searchParams.delete("_switch");') &&
-    source.includes('url.searchParams.set("module", moduleId);') &&
-    source.includes('replaceStaleSwitchRoute(moduleId, options);'),
-  "ordinary module navigation clears a stale reattach route after a successful load"
+  source.includes('function syncModuleRoute(moduleId, options = {})') &&
+    source.includes('routeParams.delete("_switch");') &&
+    source.includes('routeParams.set("module", moduleId);') &&
+    source.includes('syncModuleRoute(moduleId, options);'),
+  "ordinary module navigation records a reloadable module route after a successful load"
+);
+assert(
+  source.includes('function syncMenuRoute(menuId)') &&
+    source.includes('function syncReattachRoute(switchValue)') &&
+    source.includes('syncMenuRoute(state.activeMenuId);') &&
+    source.includes('syncReattachRoute(switchValue);'),
+  "UI2 records mutually exclusive menu and reattachment routes"
 );
 assert(
   source.includes('function openSplashDialog()'),

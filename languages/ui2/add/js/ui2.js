@@ -218,7 +218,8 @@
   }
 
   async function loadStartupModule() {
-    const switchValue = params.get("_switch");
+    const routeParams = new URLSearchParams(window.location.search);
+    const switchValue = routeParams.get("_switch");
     if (switchValue) {
       await refreshSessionState();
       if (!state.session.logon) {
@@ -229,9 +230,14 @@
       await attachSwitchValue(switchValue);
       return;
     }
-    const requested = params.get("module");
+    const requested = routeParams.get("module");
     if (requested) {
       await loadModule(requested);
+      return;
+    }
+    const requestedMenu = stringValue(routeParams.get("menu"));
+    if ((appMap.menus || []).some((menu) => menu.id === requestedMenu)) {
+      selectMenuGroup(requestedMenu);
       return;
     }
     showStartupShell();
@@ -888,27 +894,48 @@
       await waitForViewReady();
       updateSelectedNavigation();
       syncDocsLink();
-      replaceStaleSwitchRoute(moduleId, options);
+      syncModuleRoute(moduleId, options);
     } catch (error) {
       showError(`Could not load ${moduleId}: ${error.message}`);
     }
   }
 
-  function replaceStaleSwitchRoute(moduleId, options = {}) {
-    // A legacy _switch is a one-time reattach command, not the current
-    // navigation state.  Keep it while attachSwitchValue() establishes the
-    // attached run so reload can repeat that attachment; once the user picks
-    // another module, replace it with the ordinary module route.
-    if (options.preserveSwitch || !window.history?.replaceState) {
+  function replaceUi2Route(update) {
+    if (!window.history?.replaceState || typeof update !== "function") {
       return;
     }
     const url = new URL(window.location.href);
-    if (!url.searchParams.has("_switch")) {
+    update(url.searchParams);
+    if (url.toString() !== window.location.href) {
+      window.history.replaceState({}, "", url.toString());
+    }
+  }
+
+  function syncModuleRoute(moduleId, options = {}) {
+    if (options.preserveSwitch) {
       return;
     }
-    url.searchParams.delete("_switch");
-    url.searchParams.set("module", moduleId);
-    window.history.replaceState({}, "", url.toString());
+    replaceUi2Route((routeParams) => {
+      routeParams.delete("_switch");
+      routeParams.delete("menu");
+      routeParams.set("module", moduleId);
+    });
+  }
+
+  function syncMenuRoute(menuId) {
+    replaceUi2Route((routeParams) => {
+      routeParams.delete("_switch");
+      routeParams.delete("module");
+      routeParams.set("menu", menuId);
+    });
+  }
+
+  function syncReattachRoute(switchValue) {
+    replaceUi2Route((routeParams) => {
+      routeParams.delete("menu");
+      routeParams.delete("module");
+      routeParams.set("_switch", switchValue);
+    });
   }
 
   async function fetchModuleDefinition(moduleId) {
@@ -2044,6 +2071,7 @@
   function selectMenuGroup(menuId) {
     state.activeMenuId = stringValue(menuId);
     clearLoadedModule();
+    syncMenuRoute(state.activeMenuId);
     renderMenu();
   }
 
@@ -5281,6 +5309,7 @@
     // Match legacy ga.switch.cb2: the first authoritative result request
     // hydrates inputs and durable output/event state before live subscription.
     startJobPolling(target.uuid, form, status, true, true, false);
+    syncReattachRoute(switchValue);
   }
 
   function switchTargetFromValue(switchValue) {
@@ -11002,7 +11031,10 @@
       menuVisibleForSession,
       moduleIdFromSwitchParts,
       switchTargetFromValue,
-      replaceStaleSwitchRoute,
+      replaceUi2Route,
+      syncModuleRoute,
+      syncMenuRoute,
+      syncReattachRoute,
       beginViewReady,
       markViewReady,
       waitForViewReady,
