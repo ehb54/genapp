@@ -11103,7 +11103,7 @@ function ri({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 					bridge: r,
 					fields: n.filter((e) => !d[e.id || ""])
 				}),
-				n.filter((e) => d[e.id || ""]).map((e) => /* @__PURE__ */ (0, R.jsx)(Hr, {
+				n.filter((e) => d[e.id || ""] && qr(e.repeat, s)).map((e) => /* @__PURE__ */ (0, R.jsx)(Hr, {
 					bridge: r,
 					field: e,
 					presentation: d[e.id || ""],

@@ -557,7 +557,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
         </CardHeader>
         <CardContent>
           {sectionFields.filter((field) => !fieldPresentations[field.id || ""]).length > 0 && <FieldGroup bridge={bridge} fields={sectionFields.filter((field) => !fieldPresentations[field.id || ""])} />}
-          {sectionFields.filter((field) => fieldPresentations[field.id || ""]).map((field) => (
+          {sectionFields.filter((field) => fieldPresentations[field.id || ""] && repeatExpressionActive(field.repeat, liveValues)).map((field) => (
             <ChoiceCards bridge={bridge} field={field} key={field.id} presentation={fieldPresentations[field.id || ""]} values={liveValues} />
           ))}
           {(section.children || []).map((child) => renderInputSection(child, depth + 1))}

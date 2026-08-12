@@ -13,11 +13,20 @@
         },
         {
             "role"    : "input",
+            "id"      : "show_workflow_cards",
+            "label"   : "Show workflow choices",
+            "type"    : "checkbox",
+            "checked" : "true",
+            "repeater" : "true"
+        },
+        {
+            "role"    : "input",
             "id"      : "workflow_choice",
             "label"   : "Choose a workflow",
             "type"    : "listbox",
             "values"  : "Prepare data~prepare~Inspect data~inspect",
-            "default" : "prepare"
+            "default" : "prepare",
+            "repeat"  : "show_workflow_cards"
         },
         {
             "role"  : "output",

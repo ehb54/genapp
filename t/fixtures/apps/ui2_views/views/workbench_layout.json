@@ -6,7 +6,7 @@
             {
                 "id"     : "inputs",
                 "title"  : "Inputs",
-                "fields" : ["input_value", "workflow_choice"]
+                "fields" : ["input_value", "show_workflow_cards", "workflow_choice"]
             }
         ],
         "fieldPresentations" : {
