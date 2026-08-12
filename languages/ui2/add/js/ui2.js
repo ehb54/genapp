@@ -854,7 +854,7 @@
     }
   }
 
-  async function loadModule(rawId) {
+  async function loadModule(rawId, options = {}) {
     const moduleId = sanitizeModuleId(rawId);
     if (!moduleId) {
       showError("Enter a module id.");
@@ -888,9 +888,27 @@
       await waitForViewReady();
       updateSelectedNavigation();
       syncDocsLink();
+      replaceStaleSwitchRoute(moduleId, options);
     } catch (error) {
       showError(`Could not load ${moduleId}: ${error.message}`);
     }
+  }
+
+  function replaceStaleSwitchRoute(moduleId, options = {}) {
+    // A legacy _switch is a one-time reattach command, not the current
+    // navigation state.  Keep it while attachSwitchValue() establishes the
+    // attached run so reload can repeat that attachment; once the user picks
+    // another module, replace it with the ordinary module route.
+    if (options.preserveSwitch || !window.history?.replaceState) {
+      return;
+    }
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("_switch")) {
+      return;
+    }
+    url.searchParams.delete("_switch");
+    url.searchParams.set("module", moduleId);
+    window.history.replaceState({}, "", url.toString());
   }
 
   async function fetchModuleDefinition(moduleId) {
@@ -5252,7 +5270,7 @@
     if (target.project) {
       await setLegacyProject(target.project);
     }
-    await loadModule(target.moduleId);
+    await loadModule(target.moduleId, { preserveSwitch: true });
     const form = document.getElementById("ui2-form");
     const status = document.getElementById("ui2-submit-status");
     if (!form || !status) {
@@ -10984,6 +11002,7 @@
       menuVisibleForSession,
       moduleIdFromSwitchParts,
       switchTargetFromValue,
+      replaceStaleSwitchRoute,
       beginViewReady,
       markViewReady,
       waitForViewReady,

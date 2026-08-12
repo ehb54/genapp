@@ -48,4 +48,6 @@ and expired handoffs. Verify that the generated endpoint uses the application's
 PHP session namespace rather than the `output/ui2` directory; verify that
 target sessions omit window-local values; verify both new-window consumers,
 same-window reattach, direct logged-out `_switch`, and unchanged HTML5
-generation.
+generation. Verify that an attached window keeps `_switch` while its target is
+loading, but ordinary module navigation replaces that one-time command with a
+`module` route so a browser reload does not reattach a stale job.

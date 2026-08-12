@@ -277,6 +277,14 @@ const window = {
     }
   },
   location: { href: "https://example.test/sassie3/ui2/", pathname: "/sassie3/ui2/", search: "" },
+  history: {
+    replaceState(_state, _title, url) {
+      const next = new URL(String(url));
+      window.location.href = next.toString();
+      window.location.pathname = next.pathname;
+      window.location.search = next.search;
+    }
+  },
   name: "ui2-test",
   getComputedStyle() {
     return { getPropertyValue(name) { return window.__styleVars[name] || ""; } };
@@ -379,6 +387,26 @@ assert.throws(
   () => hooks.switchTargetFromValue("simulate/not_generated/no_project_specified/uuid-123"),
   /not a generated UI2 module/,
   "UI2 rejects a switch target outside the generated menu/module map"
+);
+window.location.href = "https://example.test/sassie3/ui2/?_switch=simulate%2Fmonomer_monte_carlo%2Fno_project_specified%2Fuuid-123&ui2theme=dark#results";
+window.location.pathname = "/sassie3/ui2/";
+window.location.search = "?_switch=simulate%2Fmonomer_monte_carlo%2Fno_project_specified%2Fuuid-123&ui2theme=dark";
+hooks.replaceStaleSwitchRoute("monomer_monte_carlo", { preserveSwitch: true });
+assert.strictEqual(
+  window.location.search,
+  "?_switch=simulate%2Fmonomer_monte_carlo%2Fno_project_specified%2Fuuid-123&ui2theme=dark",
+  "UI2 keeps the reattach command while its attached module is loading"
+);
+hooks.replaceStaleSwitchRoute("build_utilities");
+assert.strictEqual(
+  window.location.search,
+  "?ui2theme=dark&module=build_utilities",
+  "ordinary module navigation replaces a stale reattach command with the selected module"
+);
+assert.strictEqual(
+  new URL(window.location.href).hash,
+  "#results",
+  "route cleanup preserves the URL fragment"
 );
 const ready = hooks.beginViewReady();
 assert.strictEqual(ready.resolved, false, "UI2 core waits until an asynchronous renderer reports mounted hosts");
@@ -1724,8 +1752,15 @@ assert.strictEqual(
 );
 assert(
   source.includes('closeUtilityOverlay();\\n    if (target.project) {') &&
-    source.includes('await loadModule(target.moduleId);'),
+    source.includes('await loadModule(target.moduleId, { preserveSwitch: true });'),
   "reattach closes the utility overlay before switching to the attached module"
+);
+assert(
+  source.includes('function replaceStaleSwitchRoute(moduleId, options = {})') &&
+    source.includes('url.searchParams.delete("_switch");') &&
+    source.includes('url.searchParams.set("module", moduleId);') &&
+    source.includes('replaceStaleSwitchRoute(moduleId, options);'),
+  "ordinary module navigation clears a stale reattach route after a successful load"
 );
 assert(
   source.includes('function openSplashDialog()'),

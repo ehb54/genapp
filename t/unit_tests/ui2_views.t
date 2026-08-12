@@ -351,7 +351,7 @@ like( $ui2_js, qr/function toolFieldControl\(section, id, tagName\)/, 'ui2 Job M
 like( $ui2_js, qr/ajax\/sys_config\/sys_managejob\.php/, 'ui2 Job Manager uses the legacy manage-job endpoint for row actions' );
 like( $ui2_js, qr/function submitSystemModuleAction\(action, jobIds, moduleId = "sys_job_manager"\)/, 'ui2 Job Manager can submit legacy system-module actions' );
 like( $ui2_js, qr/function beginViewReady\(\).*?function waitForViewReady\(\)/s, 'ui2 core owns a renderer-ready barrier before reattachment' );
-like( $ui2_js, qr/await loadModule\(target\.moduleId\);\s+const form = document\.getElementById\("ui2-form"\);.*?startJobPolling\(target\.uuid, form, status, true, true, false\)/s, 'ui2 reattachment waits for the mounted view then hydrates through the legacy results path' );
+like( $ui2_js, qr/await loadModule\(target\.moduleId, \{ preserveSwitch: true \}\);\s+const form = document\.getElementById\("ui2-form"\);.*?startJobPolling\(target\.uuid, form, status, true, true, false\)/s, 'ui2 reattachment waits for the mounted view then hydrates through the legacy results path' );
 like( $ui2_js, qr/ajax\/ui2_job_input\.php/, 'ui2 Job Manager has a target-local saved input fallback endpoint' );
 like( $ui2_js, qr/function switchTargetFromValue\(switchValue\).*?parts\.length !== 4.*?entry\.id === menuId/s, 'ui2 Job Manager validates canonical legacy menu/module/project/uuid targets' );
 like( $ui2_js, qr/function applyInputPayload\(inputs, options = \{\}\)/, 'ui2 Job Manager can hydrate form inputs from reattached job payloads' );
