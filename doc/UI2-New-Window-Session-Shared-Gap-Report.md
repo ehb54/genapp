@@ -33,16 +33,19 @@ The target page still obtains its session from the regular status endpoint.
 
 ## Consumers, compatibility, and rollback
 
-The opted-in consumer is generic UI2 Job Manager new-window reattachment.
-Same-window attachment and all HTML5 behavior remain unchanged. Other UI2
-windows are non-opted-in controls. If handoff fails or the session has expired,
-UI2 closes the placeholder window and reports the error; ordinary login remains
-available. Rollback is removal of the UI2 handoff call and endpoint without
-changing job records, drivers, module schemas, or final outputs.
+The opted-in consumers are generic UI2 Job Manager new-window reattachment and
+the generated UI2 application-title action that opens another application
+window. Same-window attachment and all HTML5 behavior remain unchanged. If
+handoff fails or the session has expired, UI2 closes the placeholder window and
+reports the error; ordinary login remains available. Rollback is removal of the
+UI2 handoff call and endpoint without changing job records, drivers, module
+schemas, or final outputs.
 
 ## Required verification
 
 Use a neutral generated UI2 fixture plus endpoint tests for valid, malformed,
-and expired handoffs. Verify that target sessions omit window-local values;
-verify same-window reattach, direct logged-out `_switch`, and HTML5 generation
-remain unchanged.
+and expired handoffs. Verify that the generated endpoint uses the application's
+PHP session namespace rather than the `output/ui2` directory; verify that
+target sessions omit window-local values; verify both new-window consumers,
+same-window reattach, direct logged-out `_switch`, and unchanged HTML5
+generation.

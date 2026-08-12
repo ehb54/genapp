@@ -27,7 +27,7 @@ ok( -f File::Spec->catfile( $ui2, qw(js app-map.js) ), 'ui2 app map was generate
 ok( -f File::Spec->catfile( $ui2, qw(css ui2.css) ), 'ui2 stylesheet was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(js ui2.js) ), 'ui2 script was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(ajax ui2_ai_helper.php) ), 'ui2 AI Helper bridge was copied' );
-ok( -f File::Spec->catfile( $ui2, qw(ajax ui2_session_handoff.php) ), 'UI2-only new-window session handoff endpoint was copied' );
+ok( -f File::Spec->catfile( $ui2, qw(ajax ui2_session_handoff.php) ), 'UI2-only new-window session handoff endpoint was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(react ui2-react.css) ), 'ui2 React stylesheet was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(react ui2-react.js) ), 'ui2 React bundle was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(modules shared.json) ), 'ui2 shared module summary was generated' );
@@ -58,7 +58,7 @@ like( $index, qr/Choose a menu group from the options on the left/, 'ui2 index o
 like( $index, qr/module from the list that appears at the top of the page/, 'ui2 index describes the selected-menu module strip' );
 unlike( $index, qr/<p class="ui2-kicker">Ready<\/p>/, 'ui2 empty shell does not show a Ready kicker' );
 like( $index, qr/class="ui2-nav-icon-button" id="ui2-nav-toggle"/, 'ui2 menu toggle lives in the topbar instead of the collapsed sidebar column' );
-like( $index, qr/<a class="ui2-title-link" href="\?apprun=1" target="_blank" rel="noopener" title="Open another [^"]+ instance">[\s\S]*?<h1>[^<]+<\/h1>[\s\S]*?<\/a>/, 'ui2 title opens another application instance like legacy' );
+like( $index, qr/<a class="ui2-title-link" href="\?apprun=1" title="Open another [^"]+ instance">[\s\S]*?<h1>[^<]+<\/h1>[\s\S]*?<\/a>/, 'ui2 title exposes the generic authenticated new-window action' );
 like( $index, qr/id="ui2-module-strip"/, 'ui2 index exposes a legacy-style selected menu module strip' );
 like( $index, qr/id="ui2-feedback"/, 'ui2 index exposes the legacy feedback utility entry point' );
 like( $index, qr/id="ui2-ai-helper"[^>]*hidden/, 'ui2 index exposes an AI Helper entry point hidden until appconfig allows it' );
@@ -72,6 +72,8 @@ like( $app_map_js, qr/app\.help\.feedback = "Feedback help"/, 'ui2 app map recor
 
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
 my $ui2_css = read_file( File::Spec->catfile( $ui2, qw(css ui2.css) ) );
+like( $session_handoff_php, qr/\$application\s*=\s*"ui2_views"/, 'generated handoff endpoint uses the fixture application session namespace' );
+unlike( $session_handoff_php, qr/dirname\(__DIR__, 2\)/, 'generated handoff endpoint does not mistake output for the application root' );
 like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declares a module submit endpoint helper' );
 like( $ui2_js, qr/isReactWorkbenchView\(state\.view\) && renderReactWorkbench\(module, fields\)/, 'ui2 delegates modules to React only through explicit view metadata' );
 like( $ui2_js, qr/function renderReactWorkbench\(module, fields\).*?createFieldGroup:.*?renderReactWorkbenchFieldGroup\(groupFields, role\).*?fieldGroupMounted:.*?scheduleReactWorkbenchSync\(\).*?submit:.*?submitModule\(form\)/s, 'scientific workbench bridge mounts native field groups and reuses canonical UI2 submission' );

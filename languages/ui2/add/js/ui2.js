@@ -128,6 +128,7 @@
   };
 
   const nodes = {
+    titleLink: document.querySelector(".ui2-title-link"),
     input: document.getElementById("ui2-module-id"),
     load: document.getElementById("ui2-load"),
     refresh: document.getElementById("ui2-refresh"),
@@ -167,6 +168,10 @@
     setSidebarCollapsed(prefs.sidebarCollapsed === true);
     nodes.navToggle?.addEventListener("click", () => {
       setSidebarCollapsed(!document.body.classList.contains("ui2-sidebar-collapsed"), true);
+    });
+    nodes.titleLink?.addEventListener("click", (event) => {
+      event.preventDefault();
+      openAuthenticatedUi2Window();
     });
     nodes.jobs?.addEventListener("click", () => openUtilityModule("sys_job_manager"));
     nodes.files?.addEventListener("click", () => openUtilityModule("sys_file_manager"));
@@ -5150,17 +5155,9 @@
       setSystemMessage("messages", "No job id selected.", true);
       return;
     }
-    let targetWindow = null;
-    let targetWindowName = "";
-    if (newWindow) {
-      targetWindowName = createUuid();
-      targetWindow = window.open("about:blank", targetWindowName);
-      if (!targetWindow) {
-        setSystemMessage("messages", "Your browser blocked the new attachment window. Allow popups for this site and try again.", true);
-        return;
-      }
-      // The target starts same-origin, so sever its opener before navigation.
-      targetWindow.opener = null;
+    const targetWindow = newWindow ? reserveUi2Window() : null;
+    if (newWindow && !targetWindow) {
+      return;
     }
     try {
       const payload = await submitSystemModuleAction("reattach", [jobId], "sys_job_manager");
@@ -5172,10 +5169,7 @@
         throw new Error("Reattach returned no switch target.");
       }
       if (newWindow) {
-        await handoffSessionToWindow(targetWindowName);
-        const url = new URL(window.location.pathname || "index.html", window.location.origin);
-        url.searchParams.set("_switch", switchValue);
-        targetWindow.location.replace(url.toString());
+        await openAuthenticatedUi2Window({ switchValue, targetWindow });
         return;
       }
       await attachSwitchValue(switchValue, jobId);
@@ -5184,6 +5178,38 @@
         targetWindow.close();
       }
       setSystemMessage("messages", error.message, true);
+    }
+  }
+
+  function reserveUi2Window() {
+    const targetWindow = window.open("about:blank", createUuid());
+    if (!targetWindow) {
+      setSystemMessage("messages", "Your browser blocked the new application window. Allow popups for this site and try again.", true);
+      return null;
+    }
+    // The target starts same-origin, so sever its opener before navigation.
+    targetWindow.opener = null;
+    return targetWindow;
+  }
+
+  async function openAuthenticatedUi2Window({ switchValue = "", targetWindow = reserveUi2Window() } = {}) {
+    if (!targetWindow) {
+      return null;
+    }
+    try {
+      await handoffSessionToWindow(targetWindow.name);
+      const url = new URL(window.location.pathname || "index.html", window.location.origin);
+      if (switchValue) {
+        url.searchParams.set("_switch", switchValue);
+      }
+      targetWindow.location.replace(url.toString());
+      return targetWindow;
+    } catch (error) {
+      if (!targetWindow.closed) {
+        targetWindow.close();
+      }
+      setSystemMessage("messages", error.message, true);
+      return null;
     }
   }
 

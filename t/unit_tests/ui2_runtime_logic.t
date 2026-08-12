@@ -1693,10 +1693,13 @@ assert(
   "reattach uses the explicit Job Manager endpoint"
 );
 assert(
-  source.includes('targetWindow = window.open("about:blank", targetWindowName);') &&
-    source.includes('await handoffSessionToWindow(targetWindowName);') &&
+  source.includes('const targetWindow = newWindow ? reserveUi2Window() : null;') &&
+    source.includes('await openAuthenticatedUi2Window({ switchValue, targetWindow });') &&
+    source.includes('async function openAuthenticatedUi2Window({ switchValue = "", targetWindow = reserveUi2Window() } = {})') &&
+    source.includes('const targetWindow = window.open("about:blank", createUuid());') &&
+    source.includes('await handoffSessionToWindow(targetWindow.name);') &&
     source.includes('targetWindow.location.replace(url.toString());'),
-  "new-window reattach reserves its popup before async work, hands off the session, then navigates the target"
+  "new-window reattach uses the shared authenticated popup handoff and navigation path"
 );
 assert(
   source.includes('function handoffSessionToWindow(targetWindowName)') &&
@@ -1704,6 +1707,11 @@ assert(
     source.includes('formData.set("source_window", window.name);') &&
     source.includes('formData.set("target_window", targetWindowName);'),
   "new-window reattach uses the UI2-local same-origin session handoff endpoint"
+);
+assert(
+  source.includes('nodes.titleLink?.addEventListener("click", (event) => {') &&
+    source.includes('openAuthenticatedUi2Window();'),
+  "title-click opens another authenticated UI2 window through the shared handoff path"
 );
 assert(
   !source.includes('url.searchParams.set("_reqlogin", "1");'),

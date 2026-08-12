@@ -9,8 +9,9 @@ use lib File::Spec->catdir( $FindBin::Bin, '..', 'lib' );
 use GenAppTest qw(read_file repo_root);
 
 my $repo_root = repo_root( File::Spec->catdir( $FindBin::Bin, '..' ) );
-my $endpoint = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 add ajax ui2_session_handoff.php) ) );
+my $endpoint = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 ui2_session_handoff.php) ) );
 
+like( $endpoint, qr/\$application\s*=\s*"__application__"/, 'handoff receives the generated application id instead of inferring the output directory name' );
 like( $endpoint, qr/session_name\(strtoupper\(preg_replace/, 'handoff uses the generated application PHP session namespace' );
 like( $endpoint, qr/\$source_window.*?\$target_window/s, 'handoff accepts explicit source and target window ids' );
 like( $endpoint, qr/\^\[A-Za-z0-9_-\]\{1,128\}\$/, 'handoff validates both window identifiers' );

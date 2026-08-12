@@ -1,8 +1,9 @@
 <?php
 header('Content-type: application/json');
 
-$app_root = dirname(__DIR__, 2);
-$application = basename($app_root);
+// This is assembled, not copied from ui2/add/: output/ui2 is not the
+// application root. Keep the session namespace identical to legacy endpoints.
+$application = "__application__";
 session_name(strtoupper(preg_replace('/[^a-zA-Z0-9_]+/', '_', "GENAPP_" . $application)));
 session_start();
 
