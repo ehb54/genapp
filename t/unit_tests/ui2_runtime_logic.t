@@ -1692,6 +1692,23 @@ assert(
   source.includes('submitSystemModuleAction("reattach", [jobId], "sys_job_manager")'),
   "reattach uses the explicit Job Manager endpoint"
 );
+assert(
+  source.includes('targetWindow = window.open("about:blank", targetWindowName);') &&
+    source.includes('await handoffSessionToWindow(targetWindowName);') &&
+    source.includes('targetWindow.location.replace(url.toString());'),
+  "new-window reattach reserves its popup before async work, hands off the session, then navigates the target"
+);
+assert(
+  source.includes('function handoffSessionToWindow(targetWindowName)') &&
+    source.includes('ajax/ui2_session_handoff.php') &&
+    source.includes('formData.set("source_window", window.name);') &&
+    source.includes('formData.set("target_window", targetWindowName);'),
+  "new-window reattach uses the UI2-local same-origin session handoff endpoint"
+);
+assert(
+  !source.includes('url.searchParams.set("_reqlogin", "1");'),
+  "new-window reattach does not force a login after its session handoff"
+);
 assert.strictEqual(
   hooks.jobManagerEndpoint,
   "ajax/sys_config/sys_jobs2.php",

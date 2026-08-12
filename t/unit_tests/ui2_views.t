@@ -27,6 +27,7 @@ ok( -f File::Spec->catfile( $ui2, qw(js app-map.js) ), 'ui2 app map was generate
 ok( -f File::Spec->catfile( $ui2, qw(css ui2.css) ), 'ui2 stylesheet was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(js ui2.js) ), 'ui2 script was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(ajax ui2_ai_helper.php) ), 'ui2 AI Helper bridge was copied' );
+ok( -f File::Spec->catfile( $ui2, qw(ajax ui2_session_handoff.php) ), 'UI2-only new-window session handoff endpoint was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(react ui2-react.css) ), 'ui2 React stylesheet was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(react ui2-react.js) ), 'ui2 React bundle was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(modules shared.json) ), 'ui2 shared module summary was generated' );
@@ -40,6 +41,7 @@ ok( -f File::Spec->catfile( $ui2, qw(modules sys_feedback.json) ), 'ui2 feedback
 my $index      = read_file( File::Spec->catfile( $ui2, 'index.html' ) );
 my $app_map_js = read_file( File::Spec->catfile( $ui2, qw(js app-map.js) ) );
 my $ai_helper_php = read_file( File::Spec->catfile( $ui2, qw(ajax ui2_ai_helper.php) ) );
+my $session_handoff_php = read_file( File::Spec->catfile( $ui2, qw(ajax ui2_session_handoff.php) ) );
 my $sys_status_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_status.php) ) );
 like( $index, qr/js\/app-map\.js/, 'ui2 index loads the generated app map' );
 like( $index, qr/\.\.\/js\/autobahn\.min\.js/, 'ui2 index preloads the existing legacy Autobahn websocket client' );
@@ -270,6 +272,10 @@ like( $ui2_js, qr/function normalizeNglLoadName\(loadname\).*?value\.startsWith\
 like( $ui2_js, qr/function ensureNglLoaded\(\).*?loadScript\("\.\.\/js\/ngl\.js"\)/s, 'ui2 NGL renderer reuses the generated legacy NGL bundle' );
 like( $ui2_js, qr/const NGL_REPRESENTATION_TYPES = \[[\s\S]*"backbone"[\s\S]*"ball\+stick"[\s\S]*"cartoon"[\s\S]*"tube"[\s\S]*\]/, 'ui2 NGL renderer uses the legacy representation button list' );
 like( $ui2_js, qr/function refreshSessionState\(\)/, 'ui2 runtime bridge declares a legacy session status helper' );
+like( $ui2_js, qr/function handoffSessionToWindow\(targetWindowName\)/, 'ui2 runtime bridge declares a same-origin new-window session handoff helper' );
+like( $ui2_js, qr/ajax\/ui2_session_handoff\.php/, 'ui2 runtime bridge uses the UI2-local session handoff endpoint' );
+like( $session_handoff_php, qr/next_job_environment/, 'session handoff documents that window-scoped job settings are excluded' );
+like( $session_handoff_php, qr/'logon'\s*=>\s*\$logon[\s\S]*?'app'\s*=>\s*\$application[\s\S]*?'project'/, 'session handoff copies only the minimal authenticated target session fields' );
 like( $ui2_js, qr/function legacyEndpoint\(paramName, path\)/, 'ui2 runtime bridge builds explicit legacy app-root endpoints' );
 like( $ui2_js, qr/legacyEndpoint\("", "ajax"\)/, 'ui2 runtime bridge defaults submit endpoints to the legacy ajax root' );
 like( $ui2_js, qr/dataset\.appId/, 'ui2 runtime bridge can fall back to the generated application id' );

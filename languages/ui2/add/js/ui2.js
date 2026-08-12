@@ -5150,6 +5150,18 @@
       setSystemMessage("messages", "No job id selected.", true);
       return;
     }
+    let targetWindow = null;
+    let targetWindowName = "";
+    if (newWindow) {
+      targetWindowName = createUuid();
+      targetWindow = window.open("about:blank", targetWindowName);
+      if (!targetWindow) {
+        setSystemMessage("messages", "Your browser blocked the new attachment window. Allow popups for this site and try again.", true);
+        return;
+      }
+      // The target starts same-origin, so sever its opener before navigation.
+      targetWindow.opener = null;
+    }
     try {
       const payload = await submitSystemModuleAction("reattach", [jobId], "sys_job_manager");
       if (payload.error) {
@@ -5160,16 +5172,36 @@
         throw new Error("Reattach returned no switch target.");
       }
       if (newWindow) {
+        await handoffSessionToWindow(targetWindowName);
         const url = new URL(window.location.pathname || "index.html", window.location.origin);
-        url.searchParams.set("_reqlogin", "1");
         url.searchParams.set("_switch", switchValue);
-        window.open(url.toString(), "_blank", "noopener");
+        targetWindow.location.replace(url.toString());
         return;
       }
       await attachSwitchValue(switchValue, jobId);
     } catch (error) {
+      if (targetWindow && !targetWindow.closed) {
+        targetWindow.close();
+      }
       setSystemMessage("messages", error.message, true);
     }
+  }
+
+  async function handoffSessionToWindow(targetWindowName) {
+    const endpoint = legacyEndpoint("", "ajax/ui2_session_handoff.php");
+    const formData = new FormData();
+    formData.set("source_window", window.name);
+    formData.set("target_window", targetWindowName);
+    const response = await fetch(endpoint, {
+      method: "POST",
+      body: formData,
+      credentials: "same-origin"
+    });
+    const payload = await parseJsonResponse(response, "New-window session handoff");
+    if (!response.ok || payload.error || payload.handoff !== true) {
+      throw new Error(payload.error || `New-window session handoff returned HTTP ${response.status}`);
+    }
+    return payload;
   }
 
   async function attachSwitchValue(switchValue, jobId = "") {
