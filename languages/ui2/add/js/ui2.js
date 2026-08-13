@@ -8674,6 +8674,10 @@
         visibility.appendChild(button);
         visibilityButtons.set(id, button);
       });
+      // Keep the broad visibility choices at the top of the viewer controls.
+      // The inspector below is then solely for choosing a region to center and
+      // inspect (and enables the selected-region choice once one is picked).
+      buttons.prepend(visibility);
     }
 
     const all = el("button", "ui2-button ui2-button-quiet ui2-ngl-button",
@@ -8720,11 +8724,6 @@
       row.appendChild(residues);
       sequence.appendChild(row);
     });
-    if (visibility.childElementCount) {
-      controls.append(
-        el("p", "ui2-ngl-selection-control-label", "Show"),
-        visibility);
-    }
     controls.append(
       el("p", "ui2-ngl-selection-control-label", "Center and inspect"),
       picker,

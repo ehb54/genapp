@@ -40,10 +40,11 @@ is absent or false, the legacy single-structure payload remains unchanged.
 structure payload contains a generic `selectionInspector` object.  It can list
 named selections, center the structure on one, and display corresponding
 coordinate residues.  `selection_visibility` is a separate opt-in capability:
-when both capabilities are enabled, the panel may offer **Whole structure**,
-**Flexible regions only**, and **Selected region only**.  The complete
-structure remains the default.  Existing viewers and selection inspectors are
-unchanged unless they opt in to this second capability.
+when both capabilities are enabled, the top viewer controls may offer **Whole
+structure**, **Flexible regions only**, and **Selected region only**.  The
+complete structure remains the default.  The lower inspector is reserved for
+centering and examining a selected region.  Existing viewers and selection
+inspectors are unchanged unless they opt in to this second capability.
 
 The generic payload uses NGL-resolved atom selections, not module-specific
 scientific terms:
