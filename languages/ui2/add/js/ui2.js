@@ -6312,6 +6312,13 @@
       clearActionFields(instruction.fields || []);
       return;
     }
+    if (action === "focus_result") {
+      const id = stringValue(instruction.id || instruction.result || instruction.group);
+      if (id) {
+        window.dispatchEvent(new CustomEvent("ui2-focus-result", { detail: { id } }));
+      }
+      return;
+    }
     if (action === "message" || action === "dialog") {
       showLegacyMessagePayload({
         _message: {

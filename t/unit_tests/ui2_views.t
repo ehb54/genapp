@@ -87,6 +87,7 @@ like( $ui2_js, qr/function observeFitPlotlyOutput\(output\).*?fittedAncestor.*?o
 like( $ui2_js, qr/function releaseReactWorkbenchField\(fieldNode\).*?disconnectPlotlyOutputObserver.*?Plotly\.purge/s, 'workbench unmount cleans up Plotly resize observation and graph state' );
 like( $ui2_js, qr/function notifyWorkbenchReattached\(uuid, savedValues = null, restoreError = "", restoreWarnings = \[\]\).*?setSubmittedRunContext\(\{\s*uuid,\s*values,/s, 'workbench reattachment publishes the restored submitted-input snapshot and nonfatal warnings' );
 like( $ui2_js, qr/outputSnapshot: \(\) => state\.runtimeOutputAvailability.*?subscribeOutputs: \(listener\) => subscribeRuntimeOutputs\(listener\)/s, 'workbench bridge exposes runtime output availability without module-specific state' );
+like( $ui2_js, qr/action === "focus_result".*?new CustomEvent\("ui2-focus-result", \{ detail: \{ id \} \}\)/s, 'a generic action instruction can request focus for a declared result group' );
 like( $ui2_js, qr/function markRuntimeOutputAvailable\(id\).*?state\.runtimeOutputAvailability\[id\].*?\[id\]: true/s, 'runtime output availability publishes a new snapshot only for a newly available output' );
 unlike( $ui2_js, qr/function applyRuntimePayload\(payload, contextToken = null\).*?state\.runtimeOutputs = \{\s*\.\.\.state\.runtimeOutputs/s, 'repeated runtime payload values do not recreate the React workbench snapshot' );
 unlike( $ui2_js, qr/function replayJobEventsForOutput\(/, 'output mounting does not replay retained imperative Plotly or structure events' );
@@ -94,6 +95,7 @@ unlike( $ui2_js, qr/function replayJobEventsForOutput\(/, 'output mounting does 
 my $ui2_react_js = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.js) ) );
 my $ui2_react_css = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.css) ) );
 my $ui2_react_source = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 react src ScientificWorkbench.tsx) ) );
+like( $ui2_react_source, qr/resultGroups\.some\(\(group\) => group\.id === id\).*?setActiveResult\(id\).*?window\.addEventListener\("ui2-focus-result", focusResult\)/s, 'React workbenches accept focus only for a declared result group' );
 like( $ui2_react_js, qr/Submitted inputs/, 'React bundle contains the workbench submitted-input summary' );
 like( $ui2_react_js, qr/Edit inputs/, 'React bundle exposes the reversible submitted-input editor' );
 like( $ui2_react_source, qr/fields\s*\.filter\(\(field\)\s*=>\s*field\.id\s*&&\s*field\.role\s*!==\s*"output"/, 'workbench all-input view filters reattached values to declared input fields' );

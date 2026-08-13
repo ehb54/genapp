@@ -11086,7 +11086,13 @@ function oi({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 	}] : pe;
 	S.useEffect(() => {
 		ye.some((e) => e.id === y) || b(ye.find((e) => e.primary)?.id || ye[0]?.id || "");
-	}, [y, ye]), S.useLayoutEffect(() => {
+	}, [y, ye]), S.useEffect(() => {
+		let e = (e) => {
+			let t = String(e.detail?.id || "");
+			_.some((e) => e.id === t) && b(t);
+		};
+		return window.addEventListener("ui2-focus-result", e), () => window.removeEventListener("ui2-focus-result", e);
+	}, [_]), S.useLayoutEffect(() => {
 		c(r.syncValues());
 	}, [r]), S.useLayoutEffect(() => {
 		let e = window.requestAnimationFrame(() => r.viewReady());

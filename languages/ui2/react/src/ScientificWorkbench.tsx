@@ -463,6 +463,17 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
     }
   }, [activeResult, visibleOutputGroups])
 
+  React.useEffect(() => {
+    // A pre-submit action may reveal one declared result group after it
+    // supplies the group’s output.  The view declares the allowed targets.
+    const focusResult = (event: Event) => {
+      const id = String((event as CustomEvent<{ id?: unknown }>).detail?.id || "")
+      if (resultGroups.some((group) => group.id === id)) setActiveResult(id)
+    }
+    window.addEventListener("ui2-focus-result", focusResult)
+    return () => window.removeEventListener("ui2-focus-result", focusResult)
+  }, [resultGroups])
+
   React.useLayoutEffect(() => {
     setLiveValues(bridge.syncValues())
   }, [bridge])
