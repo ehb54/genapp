@@ -129,6 +129,7 @@ like( $ui2_react_css, qr/\.ui2-workbench-react-editing \.ui2-workbench-grid\{gri
 like( $ui2_react_source, qr/const wideInputLayout = view\.inputs\?\.layout === "wide"/, 'workbench accepts a presentation-only wide input layout opt-in' );
 like( $ui2_react_source, qr/function ChoiceCards\(.*?bridge\.setInputValue\(field\.id \|\| "", choice\.value\)/s, 'workbench choice cards update the existing UI2 field rather than owning a second value' );
 like( $ui2_react_source, qr/function WorkflowChoices\(.*?bridge\.setInputValues\(choice\.values\)/s, 'workflow choices update existing canonical fields rather than owning submitted state' );
+like( $ui2_react_source, qr/presentation\.order \|\| Object\.keys\(presentation\.choices \|\| \{\}\)/, 'workflow choices may declare a presentation order independent of generated JSON key ordering' );
 like( $ui2_react_source, qr/const selected = choices\.find\(\(\[, choice\]\) => Object\.entries\(choice\.matches \|\| \{\}\)\.every/, 'workflow choices derive their selected state from restored canonical values' );
 like( $ui2_react_source, qr/fieldPresentations = view\.inputs\?\.fieldPresentations \|\| \{\}/, 'workbench reads choice-card presentation metadata from the view' );
 like( $ui2_react_source, qr/workflowChoices = view\.inputs\?\.workflowChoices \|\| \{\}/, 'workbench reads opt-in workflow presentation metadata from the view' );

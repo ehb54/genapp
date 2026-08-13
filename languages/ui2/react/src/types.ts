@@ -44,6 +44,7 @@ export type ChoiceCardPresentation = {
 export type WorkflowChoicePresentation = {
   title?: string
   fields: string[]
+  order?: string[]
   choices: Record<string, {
     title: string
     description?: string

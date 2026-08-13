@@ -109,7 +109,9 @@ function WorkflowChoices({ presentation, fields, bridge, values }: {
   bridge: ScientificWorkbenchBridge
   values: Record<string, unknown>
 }) {
-  const choices = Object.entries(presentation.choices || {})
+  const choices = (presentation.order || Object.keys(presentation.choices || {}))
+    .map((choiceId) => [choiceId, presentation.choices?.[choiceId]] as const)
+    .filter(([, choice]) => Boolean(choice)) as Array<[string, NonNullable<WorkflowChoicePresentation["choices"][string]>]>
   const selected = choices.find(([, choice]) => Object.entries(choice.matches || {}).every(([fieldId, value]) => sameValue(values[fieldId], value)))?.[0] || ""
   const label = presentation.title || "Choose a workflow"
 

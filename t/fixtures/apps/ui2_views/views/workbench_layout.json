@@ -6,6 +6,7 @@
             "data-scope" : {
                 "title" : "Choose data to prepare",
                 "fields" : ["include_primary_data", "include_secondary_data"],
+                "order" : ["both", "primary"],
                 "choices" : {
                     "primary" : {
                         "title" : "Primary data only",

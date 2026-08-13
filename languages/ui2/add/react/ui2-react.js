@@ -10819,7 +10819,7 @@ function Ur(e, t) {
 	return String(e ?? "") === String(t ?? "");
 }
 function Wr({ presentation: e, fields: t, bridge: n, values: r }) {
-	let i = Object.entries(e.choices || {}), a = i.find(([, e]) => Object.entries(e.matches || {}).every(([e, t]) => Ur(r[e], t)))?.[0] || "";
+	let i = (e.order || Object.keys(e.choices || {})).map((t) => [t, e.choices?.[t]]).filter(([, e]) => !!e), a = i.find(([, e]) => Object.entries(e.matches || {}).every(([e, t]) => Ur(r[e], t)))?.[0] || "";
 	return /* @__PURE__ */ (0, R.jsxs)("fieldset", {
 		className: "ui2-workflow-choices",
 		children: [
