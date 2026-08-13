@@ -942,6 +942,36 @@ code {
   border-color: var(--ui2-accent);
 }
 
+.ui2-password-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.ui2-password-toggle {
+  min-width: 2.4rem;
+  min-height: 2.4rem;
+  border: 1px solid var(--ui2-border-strong);
+  border-radius: 6px;
+  background: var(--ui2-panel-soft);
+  color: var(--ui2-text);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+
+.ui2-password-toggle:hover,
+.ui2-password-toggle[aria-pressed="true"] {
+  border-color: var(--ui2-accent);
+  color: var(--ui2-accent-strong);
+}
+
+.ui2-password-toggle:focus-visible {
+  outline: 2px solid var(--ui2-focus-ring);
+  outline-offset: 2px;
+}
+
 .ui2-help {
   margin: 0.25rem 0 0;
   color: var(--ui2-muted);

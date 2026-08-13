@@ -89,6 +89,13 @@
                 [ "3", "4" ]
             ],
             "repeat"  : "pair_grid"
+        },
+        {
+            "role"     : "input",
+            "id"       : "credential",
+            "label"    : "Credential",
+            "type"     : "password",
+            "required" : "true"
         }
     ]
 }

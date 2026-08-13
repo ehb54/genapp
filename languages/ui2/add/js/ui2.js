@@ -588,6 +588,7 @@
     let overlay = document.getElementById("ui2-login-dialog");
     if (overlay) {
       applyLoginDialogMode(overlay, mandatory);
+      resetPasswordControls(overlay);
       overlay.hidden = false;
       overlay.querySelector("input[name='userid']")?.focus();
       return;
@@ -674,8 +675,40 @@
       input.maxLength = 100;
       input.autocomplete = "current-password";
     }
-    row.appendChild(input);
+    row.appendChild(type === "password" ? renderPasswordControl(input) : input);
     return row;
+  }
+
+  function renderPasswordControl(input) {
+    const wrap = el("div", "ui2-password-control");
+    const toggle = el("button", "ui2-password-toggle", "👁");
+    toggle.type = "button";
+    toggle.setAttribute("aria-pressed", "false");
+
+    const setVisible = (visible) => {
+      input.type = visible ? "text" : "password";
+      toggle.setAttribute("aria-pressed", String(visible));
+      toggle.setAttribute("aria-label", visible ? "Hide password" : "Show password");
+      toggle.title = visible ? "Hide password" : "Show password";
+    };
+
+    wrap._ui2SetPasswordVisible = setVisible;
+    setVisible(false);
+    toggle.addEventListener("click", () => {
+      setVisible(input.type === "password");
+      input.focus();
+    });
+    queueMicrotask(() => {
+      input.form?.addEventListener("reset", () => setVisible(false));
+    });
+    wrap.append(input, toggle);
+    return wrap;
+  }
+
+  function resetPasswordControls(scope) {
+    scope?.querySelectorAll(".ui2-password-control").forEach((control) => {
+      control._ui2SetPasswordVisible?.(false);
+    });
   }
 
   async function submitLogin(event) {
@@ -2957,7 +2990,7 @@
       input.dataset.sync = field.sync;
     }
     setHoverHelp(input, field.help);
-    return input;
+    return type === "password" ? renderPasswordControl(input) : input;
   }
 
   function renderRepeatTableControl(field, rowIndex) {
@@ -3004,7 +3037,7 @@
     input.value = arrayDefaultValue(field.default, rowIndex);
     input.defaultValue = input.value;
     setHoverHelp(input, field.help);
-    return input;
+    return type === "password" ? renderPasswordControl(input) : input;
   }
 
   function renderControl(field) {
@@ -3128,7 +3161,7 @@
     wireControl(input, field);
     input.value = field.default == null ? "" : field.default;
     input.defaultValue = input.value;
-    return input;
+    return type === "password" ? renderPasswordControl(input) : input;
   }
 
   function renderJobReferenceControl(field) {

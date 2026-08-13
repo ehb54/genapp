@@ -486,6 +486,7 @@ like( $ui2_css, qr/\.ui2-button-action\s*\{[^}]*background:\s*var\(--ui2-accent-
 like( $ui2_css, qr/\.ui2-button-action:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--ui2-focus-ring\);/s, 'ui2 action buttons expose an explicit keyboard focus treatment' );
 like( $ui2_css, qr/\.ui2-action-status\[data-status="ok"\]/, 'ui2 stylesheet scopes successful action status to the semantic success treatment' );
 like( $ui2_css, qr/\.ui2-dialog-overlay/, 'ui2 stylesheet includes login dialog shell styles' );
+like( $ui2_css, qr/\.ui2-password-control.*?\.ui2-password-toggle.*?aria-pressed/s, 'ui2 stylesheet provides an accessible password visibility control' );
 like( $ui2_css, qr/\.ui2-legacy-message-dialog/, 'ui2 stylesheet includes legacy backend message dialog styles' );
 like( $ui2_css, qr/\.ui2-legacy-message-icon/, 'ui2 stylesheet includes legacy backend message icon styling' );
 like( $ui2_css, qr/\.ui2-captcha-dialog/, 'ui2 stylesheet includes a dedicated captcha dialog shell' );
@@ -593,6 +594,7 @@ is( $typed->{modulejson}{fields}[8]{type}, 'integerpair', 'ui2 can carry integer
 is( $typed->{modulejson}{fields}[8]{calc}, 'row_count,column_count', 'ui2 preserves integerpair matrix dimensions' );
 is( $typed->{modulejson}{fields}[8]{headers}{row}[0], 'row_label', 'ui2 preserves matrix row header metadata' );
 is( $typed->{modulejson}{fields}[9]{default}[1][1], '4', 'ui2 preserves matrix field two-dimensional defaults' );
+is( $typed->{modulejson}{fields}[10]{type}, 'password', 'ui2 carries generic password fields without ui2 type templates' );
 is_deeply( $typed->{viewjson}, {}, 'typed module missing view files produce an empty view object' );
 
 my $invalid = generate_fixture_app(

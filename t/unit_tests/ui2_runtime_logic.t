@@ -1824,6 +1824,18 @@ assert(
   "ui2 provides a splash/login dialog helper"
 );
 assert(
+  source.includes('function renderPasswordControl(input)') &&
+    source.includes('toggle.type = "button"') &&
+    source.includes('input.type = visible ? "text" : "password"') &&
+    source.includes('input.form?.addEventListener("reset", () => setVisible(false))') &&
+    source.includes('resetPasswordControls(overlay);'),
+  "ui2 password controls toggle visibility without submitting forms and reset to masked when forms or the Login dialog reset"
+);
+assert(
+  source.includes('type === "password" ? renderPasswordControl(input) : input'),
+  "ui2 applies the generic password control to declared password fields"
+);
+assert(
   source.includes('function splashFooterLines()'),
   "ui2 splash builds footer metadata from generated app details"
 );
