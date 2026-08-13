@@ -281,6 +281,8 @@ like( $ui2_js, qr/function nglViewerConfig\(output\).*?capabilities: Object\.ass
 like( $ui2_js, qr/function nglViewerStageParams\(output\).*?const params = \{ cameraType: "orthographic" \};.*?params\.cameraType = display\.camera/s, 'ui2 NGL viewer defaults stage cameras to orthographic while preserving explicit camera configuration' );
 like( $ui2_js, qr/function renderNglSceneControls\(output, component\).*?Orthographic.*?Perspective.*?camera\.value = display\.camera === "perspective" \? "perspective" : "orthographic";.*?Background.*?Molecular axes/s, 'ui2 NGL viewer exposes camera, background, and axes controls with orthographic selected by default' );
 like( $ui2_js, qr/function renderNglLayerEditor\(output, component, specs\).*?Add layer.*?rebuildNglRepresentations/s, 'ui2 NGL viewer exposes editable representation layers' );
+like( $ui2_js, qr/function renderNglSelectionInspector\(output, component, structurePayload\).*?selectionInspector.*?selection_inspector !== true.*?component\.autoView/s, 'NGL supports an opt-in generic selection inspector that focuses declared groups' );
+like( $ui2_js, qr/function renderNglSelectionInspector\(output, component, structurePayload\).*?residue_ids.*?scrollIntoView.*?inspector\.segments/s, 'the generic selection inspector synchronizes a declared residue strip with focused groups' );
 like( $ui2_js, qr/function nglDensitySurfaceSpecs\(payload\).*?payload\?\.surfaces.*?function renderNglDensitySurfaceList/s, 'ui2 NGL viewer supports multiple editable volume surfaces' );
 like( $ui2_js, qr/function startNglFramePlayback\(output\).*?window\.setTimeout/s, 'ui2 NGL viewer can play retained streamed frames' );
 like( $ui2_js, qr/function attachNglFileTrajectory\(.*?window\.NGL\?\.autoLoad.*?component\.addTrajectory\(frames, trajectoryParams\)/s, 'ui2 NGL viewer parses a file trajectory before attaching it to the loaded structure' );
@@ -490,6 +492,7 @@ like( $ui2_css, qr/\.ui2-ai-helper-math\[data-display="true"\]/, 'ui2 stylesheet
 like( $ui2_css, qr/\.ui2-output-plotly/, 'ui2 stylesheet includes a stable Plotly output surface' );
 like( $ui2_css, qr/\.ui2-output-ngl\s*\{[^}]*white-space:\s*normal/s, 'ui2 stylesheet gives NGL outputs a non-text viewer container' );
 like( $ui2_css, qr/\.ui2-ngl-button\[aria-pressed="true"\]/, 'ui2 stylesheet makes active NGL layer buttons visible' );
+like( $ui2_css, qr/\.ui2-ngl-selection-inspector.*?\.ui2-ngl-residue-row.*?overflow-x:\s*auto/s, 'ui2 stylesheet provides a horizontally scrollable generic residue strip' );
 like( $ui2_css, qr/\.ui2-dynamic-output\s*\{[^}]*display:\s*grid/s, 'ui2 stylesheet stacks dynamic output instances' );
 like( $ui2_js, qr/function plotPresentationForOutput\(output\).*?data-plot-presentation.*?function plotlyDataForOutput\(output, data\).*?traceRoles/s, 'UI2 consumes generic view-declared plot presentation tokens without scientific role branches' );
 unlike( $ui2_js, qr/ensemble_profile|ensemble_residual|ui2_fit_summary_annotation/, 'UI2 core does not recognize a scientific module plot role or annotation directive' );

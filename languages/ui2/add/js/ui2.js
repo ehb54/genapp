@@ -8261,6 +8261,7 @@
           resizeNglOutputWhenVisible(output);
           schedule_ngl_coordinate_frame(output);
           renderNglViewerControls(output, component, specs, layered);
+          renderNglSelectionInspector(output, component, structurePayload);
           const embeddedTrajectory = attachNglEmbeddedTrajectory(
             output, component, structurePayload, renderRevision);
           return Promise.resolve(embeddedTrajectory).then(() => attachNglFileTrajectory(
@@ -8443,6 +8444,108 @@
       renderNglLayerEditor(output, component, specs);
     }
     buttons.hidden = !buttons.childElementCount;
+  }
+
+  function renderNglSelectionInspector(output, component, structurePayload) {
+    const buttons = output?.querySelector?.(".ui2-ngl-buttons");
+    const inspector = structurePayload?.selectionInspector;
+    if (!buttons || !component
+      || nglViewerConfig(output).capabilities?.selection_inspector !== true
+      || !inspector || !Array.isArray(inspector.groups) || !inspector.groups.length) {
+      return;
+    }
+    buttons.querySelector(".ui2-ngl-selection-inspector")?.remove();
+    const controls = el("details", "ui2-ngl-selection-inspector");
+    controls.open = true;
+    controls.appendChild(el("summary", null, inspector.title || "Selection inspector"));
+    if (inspector.description) {
+      controls.appendChild(el("p", "ui2-muted", inspector.description));
+    }
+    const picker = el("div", "ui2-ngl-selection-picker");
+    const sequence = el("div", "ui2-ngl-residue-sequence");
+    const groupButtons = new Map();
+    const residueButtons = new Map();
+
+    const setFocus = (group) => {
+      if (output._ui2NglSelectionFocus) {
+        component.removeRepresentation?.(output._ui2NglSelectionFocus);
+        output._ui2NglSelectionFocus = null;
+      }
+      const selection = group?.selection || inspector.all_selection;
+      if (group && selection && selection !== "none") {
+        const accent = getComputedStyle(document.documentElement)
+          .getPropertyValue("--ui2-accent").trim() || "#61d3c6";
+        output._ui2NglSelectionFocus = component.addRepresentation("ball+stick", {
+          sele: selection,
+          color: accent,
+          radiusScale: 1.25,
+        });
+      }
+      if (selection && selection !== "none") {
+        component.autoView?.(selection, 250);
+      }
+      groupButtons.forEach((button, id) => {
+        const selected = group ? id === group.id : id === "__all__";
+        button.setAttribute("aria-pressed", String(selected));
+      });
+      let firstSelectedResidue = null;
+      residueButtons.forEach((button, residue) => {
+        const selected = !group || (group.residue_ids || []).includes(residue.id);
+        button.classList.toggle("ui2-ngl-residue-selected", selected);
+        if (group && selected && !firstSelectedResidue) {
+          firstSelectedResidue = button;
+        }
+      });
+      firstSelectedResidue?.scrollIntoView?.({ block: "nearest", inline: "center" });
+      requestNglRender(output._ui2NglStage);
+    };
+
+    const all = el("button", "ui2-button ui2-button-quiet ui2-ngl-button",
+      inspector.all_label || "All selections");
+    all.type = "button";
+    all.setAttribute("aria-pressed", "true");
+    all.addEventListener("click", () => setFocus(null));
+    picker.appendChild(all);
+    groupButtons.set("__all__", all);
+    inspector.groups.forEach((group, index) => {
+      if (!group?.id || !group.selection) return;
+      const button = el("button", "ui2-button ui2-button-quiet ui2-ngl-button",
+        group.label || `Selection ${index + 1}`);
+      button.type = "button";
+      button.setAttribute("aria-pressed", "false");
+      button.addEventListener("click", () => setFocus(group));
+      picker.appendChild(button);
+      groupButtons.set(group.id, button);
+    });
+
+    (inspector.segments || []).forEach((segment) => {
+      const row = el("div", "ui2-ngl-residue-segment");
+      row.appendChild(el("span", "ui2-ngl-residue-segment-label", segment.label || "Segment"));
+      const residues = el("div", "ui2-ngl-residue-row");
+      (segment.residues || []).forEach((residue) => {
+        const label = `${residue.symbol || "X"}${residue.residue_number || "?"}`;
+        const button = el("button", "ui2-ngl-residue", label);
+        button.type = "button";
+        button.title = `${segment.label || "Segment"} ${residue.residue_number || "?"} ${residue.residue_name || "?"}`;
+        if ((residue.boundary_region_ids || []).length) {
+          button.classList.add("ui2-ngl-residue-boundary");
+        }
+        if ((residue.region_ids || []).length) {
+          button.classList.add("ui2-ngl-residue-flexible");
+        }
+        button.addEventListener("click", () => {
+          const group = inspector.groups.find((item) =>
+            (item.residue_ids || []).includes(residue.id));
+          if (group) setFocus(group);
+        });
+        residues.appendChild(button);
+        residueButtons.set(residue, button);
+      });
+      row.appendChild(residues);
+      sequence.appendChild(row);
+    });
+    controls.append(picker, sequence);
+    buttons.appendChild(controls);
   }
 
   function renderNglSceneControls(output, component) {

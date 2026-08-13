@@ -2086,7 +2086,8 @@ code {
 
 .ui2-ngl-scene-controls,
 .ui2-ngl-layer-editor,
-.ui2-ngl-density-surface-list {
+.ui2-ngl-density-surface-list,
+.ui2-ngl-selection-inspector {
   flex-basis: 100%;
   border: 1px solid var(--ui2-border);
   border-radius: 4px;
@@ -2120,7 +2121,8 @@ code {
 
 .ui2-ngl-scene-controls summary,
 .ui2-ngl-layer-editor summary,
-.ui2-ngl-density-surface-list summary {
+.ui2-ngl-density-surface-list summary,
+.ui2-ngl-selection-inspector summary {
   cursor: pointer;
   color: var(--ui2-text);
   font-weight: 600;
@@ -2183,6 +2185,88 @@ code {
   border-color: var(--ui2-accent);
   color: var(--ui2-text);
   background: rgba(97, 211, 198, 0.16);
+}
+
+.ui2-ngl-selection-inspector > p {
+  margin: 0.45rem 0 0;
+  font-size: 0.84rem;
+}
+
+.ui2-ngl-selection-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+}
+
+.ui2-ngl-residue-sequence {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.ui2-ngl-residue-segment {
+  display: grid;
+  grid-template-columns: minmax(4.5rem, auto) minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: start;
+}
+
+.ui2-ngl-residue-segment-label {
+  color: var(--ui2-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding-top: 0.35rem;
+}
+
+.ui2-ngl-residue-row {
+  display: flex;
+  gap: 0.25rem;
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+}
+
+.ui2-ngl-residue {
+  flex: 0 0 auto;
+  min-width: 3.35rem;
+  border: 1px solid var(--ui2-border);
+  border-radius: 4px;
+  background: var(--ui2-panel);
+  color: var(--ui2-muted);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  padding: 0.3rem 0.4rem;
+}
+
+.ui2-ngl-residue-flexible {
+  color: #ef6b6b;
+}
+
+.ui2-ngl-residue-boundary {
+  border-color: #e7c750;
+  box-shadow: inset 0 0 0 1px #e7c750;
+  color: #f3d75c;
+}
+
+.ui2-ngl-residue-selected {
+  background: var(--ui2-accent-soft);
+  border-color: var(--ui2-accent);
+  color: var(--ui2-text);
+}
+
+.ui2-ngl-residue-selected.ui2-ngl-residue-boundary {
+  border-color: #e7c750;
+  box-shadow: inset 0 0 0 1px #e7c750;
+  color: #f3d75c;
+}
+
+@media (max-width: 720px) {
+  .ui2-ngl-residue-segment {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
 }
 
 .ui2-ngl-density-controls {
