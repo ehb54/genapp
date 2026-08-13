@@ -1257,6 +1257,16 @@ assert.strictEqual(
   JSON.stringify([[]]),
   "UI2 activates a bounded multi-model PDB through NGL's embedded StructureTrajectory path"
 );
+assert.strictEqual(
+  hooks.nglTrajectoryFrameCount({ numframes: 100 }),
+  100,
+  "UI2 reads NGL StructureTrajectory's native numframes field"
+);
+assert.strictEqual(
+  hooks.nglTrajectoryFrameCount({ frameCount: 5 }),
+  5,
+  "UI2 remains compatible with trajectory adapters exposing frameCount"
+);
 
 const densityDefaultsPayload = {
   representationParams: { opacity: 0.45 },

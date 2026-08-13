@@ -8480,7 +8480,7 @@
     play.type = "button";
     play.disabled = true;
     const update = () => {
-      const count = Number(trajectory.frameCount ?? trajectory._frameCount ?? 0);
+      const count = nglTrajectoryFrameCount(trajectory);
       const current = Number(trajectory.currentFrame ?? trajectory._currentFrame ?? 0);
       if (count > 0) {
         slider.disabled = false;
@@ -8506,6 +8506,12 @@
     controls.appendChild(row);
     buttons.appendChild(controls);
     update();
+  }
+
+  function nglTrajectoryFrameCount(trajectory) {
+    return Number(
+      trajectory?.numframes ?? trajectory?.frameCount ?? trajectory?._frameCount ?? 0
+    );
   }
 
   function renderNglDensityUpdate(output, payload) {
@@ -11409,6 +11415,7 @@
       nglRepresentationStoreKey,
       attachNglFileTrajectory,
       attachNglEmbeddedTrajectory,
+      nglTrajectoryFrameCount,
       renderNglDensityUpdate,
       loadNglDensitySurface,
       nglDensitySurfaceParams,
