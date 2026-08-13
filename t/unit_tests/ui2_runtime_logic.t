@@ -573,6 +573,11 @@ const fileManagerDeleteFormData = hooks.fileManagerDeleteFormData([selectedRootF
 assert.strictEqual(fileManagerDeleteFormData.get("_window"), "ui2-test", "UI2 File Manager delete retains the legacy window id");
 assert.strictEqual(fileManagerDeleteFormData.get("_spec"), "fc_cache", "UI2 File Manager delete uses the legacy file-cache contract");
 assert.strictEqual(fileManagerDeleteFormData.get("_delete"), selectedRootFile + "," + selectedNestedFile, "UI2 File Manager delete sends only the selected encoded ids");
+assert.strictEqual(
+  hooks.legacyInlineStatusText("The following projects are locked:<p>project_one<p>Therefore, no files were deleted<br>Please try again"),
+  "The following projects are locked: project_one Therefore, no files were deleted Please try again",
+  "UI2 File Manager renders legacy paragraph markup as readable inline status text"
+);
 
 ["file", "lrfile", "rfile", "rpath"].forEach((type) => {
   const control = hooks.renderFileControl({ id: `\${type}_input`, type });

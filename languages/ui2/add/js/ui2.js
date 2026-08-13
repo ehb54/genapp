@@ -3730,6 +3730,12 @@
     return div.textContent || "";
   }
 
+  function legacyInlineStatusText(value) {
+    const separated = String(value || "")
+      .replace(/<\s*(?:p\b[^>]*|\/p|br\b[^>]*)>/gi, " ");
+    return stripHtml(separated).replace(/\s+/g, " ").trim();
+  }
+
   function renderActionBar() {
     const actions = el("div", "ui2-form-actions");
     const submit = el("button", "ui2-button ui2-button-primary", "Submit");
@@ -5666,7 +5672,7 @@
       await loadFileManagerRows(table);
       setSubmitStatus(status, "Selected files removed.", "ok");
     } catch (error) {
-      setSubmitStatus(status, error.message, "error");
+      setSubmitStatus(status, legacyInlineStatusText(error.message), "error");
     }
   }
 
@@ -11036,6 +11042,7 @@
       fileManagerSelectionIncludesTopLevelDirectory,
       fileManagerRemovalPrompt,
       fileManagerDeleteFormData,
+      legacyInlineStatusText,
       renderFileControl,
       renderHookButtonControl,
       renderImageOutputShell,

@@ -371,6 +371,7 @@ like( $ui2_js, qr/function removeSelectedFileManagerRows\(table, status, links\)
 like( $ui2_js, qr/function fileManagerSelectionIncludesTopLevelDirectory\(rows\).*?row\?\._ui2FileEntry\?\.children === true/s, 'ui2 File Manager identifies selected top-level directories without inferring project records' );
 like( $ui2_js, qr/Deleting a top-level directory removes its saved files and prevents affected runs from being reattached/, 'ui2 File Manager warns that top-level removal invalidates historical reattachment while retaining the project identity' );
 like( $ui2_js, qr/legacyEndpoint\("filesBase", "ajax\/sys_config\/sys_files\.php"\)/, 'ui2 File Manager removal reuses the legacy file endpoint' );
+like( $ui2_js, qr/function legacyInlineStatusText\(value\).*?stripHtml\(separated\).*?replace/s, 'ui2 File Manager converts legacy HTML separators to readable plain-text status' );
 like( $ui2_js, qr/row\.dataset\.parentId = entry\.parent \|\| parentId \|\| "#";/, 'ui2 File Manager preserves each child row parent instead of deriving it from a sibling' );
 like( $ui2_js, qr/function renderUserConfigTool\(module, fields\)/, 'ui2 has a dedicated Settings shell' );
 like( $ui2_js, qr/afterSuccess: \(payload\) => setSessionProjectFromSettings\(form, payload\)/, 'ui2 Settings reconciles the session project from the successful settings response' );
