@@ -45,6 +45,39 @@
             "repeat"  : "show_workflow_cards"
         },
         {
+            "role"     : "input",
+            "id"       : "sample_count",
+            "label"    : "Number of samples",
+            "type"     : "integer",
+            "default"  : 2,
+            "tableize" : "true",
+            "repeater" : "true"
+        },
+        {
+            "role"    : "input",
+            "id"      : "sample_fraction",
+            "label"   : "Sample fraction",
+            "type"    : "text",
+            "default" : ["0.85", "1.00"],
+            "repeat"  : "sample_count"
+        },
+        {
+            "role"     : "input",
+            "id"       : "input_file",
+            "label"    : "Input file",
+            "type"     : "lrfile",
+            "required" : "true",
+            "repeat"   : "sample_count"
+        },
+        {
+            "role"    : "input",
+            "id"      : "sample_concentration",
+            "label"   : "Sample concentration",
+            "type"    : "text",
+            "default" : ["7.7", "7.7"],
+            "repeat"  : "sample_count"
+        },
+        {
             "role"  : "output",
             "id"    : "primary_plot",
             "label" : "Primary plot",

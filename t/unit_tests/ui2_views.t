@@ -145,6 +145,8 @@ like( $ui2_css, qr/\.ui2-repeat-table,\s*\.ui2-matrix-table\s*\{\s*width: 100%;\
 like( $ui2_css, qr/\.ui2-repeat-table td\s*\{\s*padding: 0 0\.35rem;\s*min-width: 0;/s, 'repeat table cells can shrink within the available input card' );
 like( $ui2_css, qr/\.ui2-repeat-table-has-file \.ui2-repeat-table-wrap\s*\{\s*overflow-x: auto;/s, 'file-bearing repeat tables alone restore horizontal access for file controls' );
 like( $ui2_css, qr/\.ui2-repeat-table-has-file \.ui2-repeat-table-file-cell\s*\{\s*min-width: 12rem;/s, 'file-bearing repeat table cells retain a usable minimum width' );
+like( $ui2_css, qr/\.ui2-repeat-table-has-file \.ui2-repeat-table th\s*\{\s*overflow-wrap: normal;\s*word-break: normal;/s, 'file-bearing repeat tables preserve ordinary-language header words' );
+like( $ui2_css, qr/\.ui2-repeat-table-has-file \.ui2-repeat-table td:not\(\.ui2-repeat-table-file-cell\)\s*\{\s*min-width: 4\.75rem;/s, 'file-bearing repeat tables retain readable neighboring values' );
 like( $ui2_react_css, qr/\.ui2-workbench-result-card \.ui2-output-plotly:not\(\.ui2-dynamic-output\)\{[^}]*overflow:hidden/, 'workbench fitted Plotly leaves suppress internal scrollbars without constraining dynamic output groups' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded/, 'workbench expanded workspace styles are present' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-workspace-expanded \.ui2-workbench-result-tabs\{(?=[^}]*display:flex)(?=[^}]*flex-flow:wrap)[^}]*\}/, 'expanded workspace overrides the normal column direction so generic result panels wrap across rows without phantom grid tracks' );
@@ -529,6 +531,10 @@ is( $workbench_layout->{viewjson}{inputs}{fieldPresentations}{workflow_choice}{c
 my ($workflow_choice_field) = grep { $_->{id} eq 'workflow_choice' } @{ $workbench_layout->{modulejson}{fields} || [] };
 is( $workflow_choice_field->{type}, 'listbox', 'choice-card fixture retains the canonical choice field type' );
 is( $workflow_choice_field->{repeat}, 'show_workflow_cards', 'neutral choice-card fixture exercises a declared visibility condition' );
+my ($sample_fraction_field) = grep { $_->{id} eq 'sample_fraction' } @{ $workbench_layout->{modulejson}{fields} || [] };
+my ($input_file_field) = grep { $_->{id} eq 'input_file' } @{ $workbench_layout->{modulejson}{fields} || [] };
+is_deeply( $sample_fraction_field->{default}, ['0.85', '1.00'], 'neutral fixture includes short decimal values beside a repeated file input' );
+is( $input_file_field->{type}, 'lrfile', 'neutral fixture includes a generic repeated file field' );
 is_deeply(
     [ map { $_->{fit} || 'default' } @{ $workbench_layout->{viewjson}{results}{groups} || [] } ],
     [ 'pane', 'default', 'wide', 'wide' ],

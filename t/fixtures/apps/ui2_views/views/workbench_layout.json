@@ -27,7 +27,7 @@
             {
                 "id"     : "inputs",
                 "title"  : "Inputs",
-                "fields" : ["input_value", "show_workflow_cards", "workflow_choice"],
+                "fields" : ["input_value", "show_workflow_cards", "workflow_choice", "sample_count", "sample_fraction", "input_file", "sample_concentration"],
                 "workflowChoices" : ["data-scope"]
             }
         ],
