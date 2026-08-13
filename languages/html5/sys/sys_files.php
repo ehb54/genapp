@@ -44,8 +44,6 @@ if ( !isset( $_SESSION[ $window ][ 'logon' ] ) ||  !strlen( $_SESSION[ $window ]
   exit();
 }
 
-session_write_close();
-
 function debug_json( $msg, $obj ) {
     return $msg . ":\n" . json_encode( $obj, JSON_PRETTY_PRINT ) . "\n";
 }
@@ -255,6 +253,12 @@ if ( $is_spec_fc &&  count( $to_delete ) )
 {
     require '../joblog.php';
     require '../mail.php';
+    $active_project_names = active_project_names( $_SESSION[ $window ][ 'logon' ], true );
+    if ( $active_project_names === false )
+    {
+        echo '{"error":"Could not verify active projects"}';
+        exit();
+    }
 }
 
 ob_start();
@@ -327,6 +331,22 @@ if ( $is_spec_fc )
        }
 
        $to_delete = $to_delete_new;
+
+       ## A selected, registered top-level directory is a user project root.
+       ## Nested directories and unregistered top-level directories remain
+       ## ordinary file-manager removals.  The browser's tree depth is not an
+       ## authority for this lifecycle decision.
+       $deleted_project_roots = array();
+       foreach ( $to_delete as $file )
+       {
+           if ( array_key_exists( $file, $is_dirs ) &&
+                strpos( $file, '/' ) === false &&
+                $file != 'no_project_specified' &&
+                in_array( $file, $active_project_names, true ) )
+           {
+               $deleted_project_roots[] = $file;
+           }
+       }
 
        ## remove anything starting with a directory from to_delete
 
@@ -660,6 +680,46 @@ if ( $is_spec_fc )
                      echo (json_encode($results));
                      exit();
                   }
+              }
+
+              if ( count( $deleted_project_roots ) )
+              {
+                  if ( !remove_active_projects( $GLOBALS[ 'logon' ], $deleted_project_roots, true ) )
+                  {
+                      $restore_errors = array();
+                      foreach ( $deleted_project_roots as $project_root )
+                      {
+                          if ( file_exists( "$deldir/$project_root" ) &&
+                               !rename( "$deldir/$project_root", $project_root ) )
+                          {
+                              $restore_errors[] = $project_root;
+                          }
+                      }
+                      $results[ 'error' ] = count( $restore_errors )
+                          ? "Could not remove project records; project directories requiring administrator recovery: " . join( ', ', $restore_errors )
+                          : "Could not remove project records; project directories were restored.";
+                      echo json_encode( $results );
+                      exit();
+                  }
+
+                  ## PHP sessions are shared by browser windows.  Do not leave
+                  ## another window pointed at an active project identity that
+                  ## was just deleted.
+                  foreach ( $_SESSION as $session_window => &$session_state )
+                  {
+                      if ( is_array( $session_state ) &&
+                           isset( $session_state[ 'logon' ] ) &&
+                           $session_state[ 'logon' ] == $GLOBALS[ 'logon' ] &&
+                           isset( $session_state[ 'project' ] ) &&
+                           in_array( $session_state[ 'project' ], $deleted_project_roots, true ) )
+                      {
+                          $session_state[ 'project' ] = 'no_project_specified';
+                      }
+                  }
+                  unset( $session_state );
+                  $dosend[ 'deleted_projects' ] = $deleted_project_roots;
+                  $dosend[ '_project' ] = isset( $_SESSION[ $window ][ 'project' ] )
+                      ? $_SESSION[ $window ][ 'project' ] : 'no_project_specified';
               }
               ob_end_clean();
 

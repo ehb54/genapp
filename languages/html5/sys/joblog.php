@@ -546,6 +546,76 @@ function get_projects_locked( $files, $error_json_exit = false )
     return $result;
 }
 
+## Return the active project names recorded for one user.  Project roots are
+## user-owned lifecycle records; they are deliberately distinct from arbitrary
+## directories under results/users/<user>/.
+function active_project_names( $user, $error_json_exit = false )
+{
+    if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
+        return false;
+    }
+
+    $names = array();
+    if ( $doc = ga_db_output(
+             ga_db_findOne( 'users', '', [ 'name' => $user ], [], [], $error_json_exit )
+         ) ) {
+        if ( isset( $doc[ 'project' ] ) &&
+             ( is_array( $doc[ 'project' ] ) || is_object( $doc[ 'project' ] ) ) ) {
+            foreach ( $doc[ 'project' ] as $entry ) {
+                foreach ( (array) $entry as $name => $metadata ) {
+                    if ( preg_match( '/^[a-zA-Z0-9_]+$/', $name ) ) {
+                        $names[] = $name;
+                    }
+                }
+            }
+        }
+    }
+    return array_values( array_unique( $names ) );
+}
+
+## Remove active project identities after their exact registered root
+## directories have been removed.  Historical job records retain their project
+## labels and directories for audit/reporting purposes.
+function remove_active_projects( $user, $projects, $error_json_exit = false )
+{
+    $projects = array_values( array_unique( array_filter( $projects, function( $name ) {
+        return is_string( $name ) && preg_match( '/^[a-zA-Z0-9_]+$/', $name ) && $name != 'no_project_specified';
+    } ) ) );
+    if ( !count( $projects ) ) {
+        return true;
+    }
+    if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
+        return false;
+    }
+    if ( !( $doc = ga_db_output(
+              ga_db_findOne( 'users', '', [ 'name' => $user ], [], [], $error_json_exit )
+          ) ) ) {
+        return false;
+    }
+
+    $remaining = array();
+    $existing_projects = isset( $doc[ 'project' ] ) &&
+        ( is_array( $doc[ 'project' ] ) || is_object( $doc[ 'project' ] ) )
+        ? $doc[ 'project' ] : array();
+    foreach ( $existing_projects as $entry ) {
+        $kept = array();
+        foreach ( (array) $entry as $name => $metadata ) {
+            if ( !in_array( $name, $projects, true ) ) {
+                $kept[ $name ] = $metadata;
+            }
+        }
+        if ( count( $kept ) ) {
+            $remaining[] = $kept;
+        }
+    }
+
+    return ga_db_status(
+        ga_db_update(
+            'users', '', [ 'name' => $user ], [ '$set' => [ 'project' => $remaining ] ], [], $error_json_exit
+        )
+    );
+}
+
 function totalweight( $error_json_exit = false ) {
     global $ga_db_errors;
     __~debug:jobweight{error_log( "totalweight() called:\n", 3, "/tmp/mylog" );}

@@ -158,6 +158,7 @@ ga.fc.delete_node_message = function( ids ) {
         msg += " or directory";
     }
     msg += " and the contents, including subdirectories, of any directory listed below<p>";
+    msg += "Selected top-level directories that are active projects will also be removed from Settings. Historical job entries remain, but their saved files cannot be restored.<p>";
 
     return msg;
 // :<p>" + $.map( $.map( ids.slice( 0, 5 ), $.base64.decode ), strip2 ).join( "<p>" );

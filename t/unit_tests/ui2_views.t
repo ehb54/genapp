@@ -382,9 +382,10 @@ like( $ui2_js, qr/function renderFileManagerTool\(module, fields\)/, 'ui2 has a 
 like( $ui2_js, qr/function downloadFileManagerSelection\(table, status, links, module\)/, 'ui2 File Manager submits selected files for download and renders returned links' );
 like( $ui2_js, qr/"Refresh all".*?"Refresh selected".*?"Remove selected".*?"Download"/s, 'ui2 File Manager distinguishes all-file refresh from selected refresh and removal' );
 like( $ui2_js, qr/function refreshSelectedFileManagerRows\(table, status\).*?fileManagerSelectedParentIds\(table\).*?loadFileManagerFolderChildren/s, 'ui2 File Manager refreshes the parents of selected entries' );
-like( $ui2_js, qr/function removeSelectedFileManagerRows\(table, status, links\).*?window\.confirm.*?fileManagerDeleteFormData\(ids\)/s, 'ui2 File Manager confirms selected removals before building the legacy request' );
+like( $ui2_js, qr/function removeSelectedFileManagerRows\(table, status, links\).*?fileManagerActiveProjectNames\(\).*?window\.confirm.*?fileManagerDeleteFormData\(ids\)/s, 'ui2 File Manager obtains active project roots before confirming a selected removal' );
 like( $ui2_js, qr/function fileManagerSelectionIncludesTopLevelDirectory\(rows\).*?row\?\._ui2FileEntry\?\.children === true/s, 'ui2 File Manager identifies selected top-level directories without inferring project records' );
-like( $ui2_js, qr/Deleting a top-level directory removes its saved files and prevents affected runs from being reattached/, 'ui2 File Manager warns that top-level removal invalidates historical reattachment while retaining the project identity' );
+like( $ui2_js, qr/function fileManagerSelectedProjectRoots\(rows, activeProjects = \[\]\).*?active\.has\(path\)/s, 'ui2 File Manager distinguishes registered project roots from nested and unregistered directories' );
+like( $ui2_js, qr/removes it from Settings and deletes all of its saved files/, 'ui2 File Manager explains the lifecycle result of deleting a registered project root' );
 like( $ui2_js, qr/legacyEndpoint\("filesBase", "ajax\/sys_config\/sys_files\.php"\)/, 'ui2 File Manager removal reuses the legacy file endpoint' );
 like( $ui2_js, qr/function legacyInlineStatusText\(value\).*?stripHtml\(separated\).*?replace/s, 'ui2 File Manager converts legacy HTML separators to readable plain-text status' );
 like( $ui2_js, qr/row\.dataset\.parentId = entry\.parent \|\| parentId \|\| "#";/, 'ui2 File Manager preserves each child row parent instead of deriving it from a sibling' );
@@ -402,7 +403,9 @@ like( $ui2_js, qr/function renderGroupField\(field\)/, 'ui2 Settings renders leg
 like( $ui2_js, qr/control\.type === "checkbox" && !control\.checked[\s\S]+return;/, 'ui2 utility submit skips unchecked checkboxes like native legacy forms' );
 like( $ui2_js, qr/dataset\.pullKey = field\.pull/, 'ui2 Settings records legacy pull keys separately from field ids' );
 like( $ui2_js, qr/function replaceSelectOptions\(select, values\)/, 'ui2 Settings rebuilds pulled listbox options from legacy array payloads' );
-like( $ui2_js, qr/function setLegacyProject\(project\).*?sys_project\.php/s, 'ui2 Settings uses the legacy project session endpoint' );
+like( $ui2_js, qr/function setLegacyProject\(project, options = \{\}\).*?sys_project\.php/s, 'ui2 Settings uses the legacy project session endpoint' );
+like( $ui2_js, qr/function clearReattachRouteForProjectChange\(\).*?routeParams\.delete\("_switch"\)/s, 'ui2 clears a stale reattach command after explicit project context changes' );
+like( $ui2_js, qr/setLegacyProject\(target\.project, \{ allowUnavailable: true, preserveReattachRoute: true \}\)/, 'ui2 reattachment can report deleted job files without restoring a retired project as current' );
 like( $ui2_js, qr/function settingsProjectFromResponse\(form, payload = \{\}\).*?payload\?\._project.*?return responseProject/s, 'ui2 Settings keeps a successful server-selected project ahead of the stale selector value' );
 like( $ui2_js, qr/fieldControls\(form\)[\s\S]+dataset\.pullKey[\s\S]+sys_pull\.php/s, 'ui2 Settings pulls only fields declared with legacy pull metadata' );
 like( $ui2_js, qr/function fieldControls\(scope\)/, 'ui2 runtime scans actual form controls instead of field wrapper rows' );

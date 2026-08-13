@@ -24,6 +24,10 @@ my $module_php = read_file( File::Spec->catfile( $app_dir, qw(output html5 ajax 
 my $results_php = read_file( File::Spec->catfile( $app_dir, qw(output html5 ajax get_results.php) ) );
 my $jobrun_php  = read_file( File::Spec->catfile( $app_dir, qw(output html5 util jobrun.php) ) );
 my $sys_user_config_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_user_config.php) ) );
+my $sys_project_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_project.php) ) );
+my $sys_files_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_files.php) ) );
+my $joblog_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys joblog.php) ) );
+my $file_manager_js = read_file( File::Spec->catfile( $repo_root, qw(languages html5 js fc.js) ) );
 my $project_name_message = 'Project names may contain only letters, numbers, and underscores. Dashes are not allowed; use an underscore instead.';
 
 like( $module_php, qr/require_once ".*ajax\/ga_filter\.php"/, 'module php includes request filter support' );
@@ -53,5 +57,14 @@ like(
     qr/\Q$project_name_message\E/,
     'sys_user_config server-side project-name validation uses explicit guidance'
 );
+
+like( $joblog_php, qr/function active_project_names\( \$user/, 'joblog exposes the active project registry helper' );
+like( $joblog_php, qr/function remove_active_projects\( \$user, \$projects/, 'joblog can retire active project identities without changing job records' );
+like( $sys_project_php, qr/active_project_names\( \$_SESSION\[ \$window \]\[ 'logon' \]/, 'project selection validates non-default projects against the active registry' );
+like( $sys_project_php, qr/project_available.*false/s, 'project selection reports a deleted project without restoring it into the session' );
+like( $sys_files_php, qr/\$deleted_project_roots.*in_array\( \$file, \$active_project_names, true \)/s, 'file removal classifies exact registered roots as project lifecycle removals server-side' );
+like( $sys_files_php, qr/remove_active_projects\( \$GLOBALS\[ 'logon' \], \$deleted_project_roots/, 'file removal retires selected registered project roots from Settings' );
+like( $sys_files_php, qr/\$_SESSION as \$session_window => &\$session_state/, 'project deletion resets matching project selections in every session window' );
+like( $file_manager_js, qr/top-level directories that are active projects will also be removed from Settings/, 'legacy File Manager explains the project-root deletion consequence' );
 
 done_testing();

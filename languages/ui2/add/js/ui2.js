@@ -938,6 +938,25 @@
     });
   }
 
+  // A _switch route is an instruction to reattach to an historical job, which
+  // also carries that job's project.  An explicit Settings selection is newer
+  // user intent and must win across reloads.
+  function clearReattachRouteForProjectChange() {
+    replaceUi2Route((routeParams) => {
+      if (!routeParams.has("_switch")) {
+        return;
+      }
+      routeParams.delete("_switch");
+      if (state.moduleId) {
+        routeParams.delete("menu");
+        routeParams.set("module", state.moduleId);
+      } else if (state.activeMenuId) {
+        routeParams.delete("module");
+        routeParams.set("menu", state.activeMenuId);
+      }
+    });
+  }
+
   async function fetchModuleDefinition(moduleId) {
     const response = await fetch(`modules/${encodeURIComponent(moduleId)}.json`, { cache: "no-cache" });
     if (!response.ok) {
@@ -4518,14 +4537,18 @@
       return null;
     }
     if (stringValue(payload?._project).trim()) {
+      const changed = sessionProjectName() !== project;
       updateSessionIdentity({ _logon: state.session.logon, _project: project });
       renderSessionState();
+      if (changed) {
+        clearReattachRouteForProjectChange();
+      }
       return payload;
     }
     return setLegacyProject(project);
   }
 
-  async function setLegacyProject(project) {
+  async function setLegacyProject(project, options = {}) {
     const selected = stringValue(project).trim() || "no_project_specified";
     const url = new URL(legacyEndpoint("", "ajax/sys_config/sys_project.php"), window.location.href);
     url.searchParams.set("_window", window.name);
@@ -4539,8 +4562,18 @@
     if (!response.ok || payload.error) {
       throw new Error(payload.error || `Project selection returned HTTP ${response.status}`);
     }
-    updateSessionIdentity({ _logon: state.session.logon, _project: selected });
+    if (payload.project_available === false) {
+      if (options.allowUnavailable) {
+        return payload;
+      }
+      throw new Error(`Project ${selected} is no longer active.`);
+    }
+    const changed = sessionProjectName() !== selected;
+    updateSessionIdentity({ _logon: state.session.logon, _project: stringValue(payload._project).trim() || selected });
     renderSessionState();
+    if (changed && !options.preserveReattachRoute) {
+      clearReattachRouteForProjectChange();
+    }
     return payload;
   }
 
@@ -5312,7 +5345,7 @@
     await refreshSessionState();
     closeUtilityOverlay();
     if (target.project) {
-      await setLegacyProject(target.project);
+      await setLegacyProject(target.project, { allowUnavailable: true, preserveReattachRoute: true });
     }
     await loadModule(target.moduleId, { preserveSwitch: true });
     const form = document.getElementById("ui2-form");
@@ -5601,17 +5634,44 @@
       .map((row) => row.dataset.parentId || "#"))];
   }
 
-  function fileManagerRemovalPrompt(selection) {
+  function fileManagerSelectedProjectRoots(rows, activeProjects = []) {
+    const active = new Set((activeProjects || []).map((name) => stringValue(name)));
+    return (rows || []).filter((row) => {
+      if (Number(row?.dataset?.depth || 0) !== 0 || row?._ui2FileEntry?.children !== true) {
+        return false;
+      }
+      const path = decodeServerFileId(row.dataset.fileId || "").replace(/^\.\//, "");
+      return /^[A-Za-z0-9_]+$/.test(path) && active.has(path);
+    }).map((row) => decodeServerFileId(row.dataset.fileId || "").replace(/^\.\//, ""));
+  }
+
+  function fileManagerRemovalPrompt(selection, projectRoots = []) {
     const rows = (selection || []).filter((entry) => entry?.dataset?.fileId);
     const ids = rows.length
       ? rows.map((row) => row.dataset.fileId)
       : (selection || []);
     const paths = ids.map((id) => decodeServerFileId(id).replace(/^\.\//, ""));
     const noun = ids.length === 1 ? "item" : "items";
-    const topLevelDirectoryWarning = fileManagerSelectionIncludesTopLevelDirectory(rows)
-      ? "\n\nDeleting a top-level directory removes its saved files and prevents affected runs from being reattached. The project name will remain available in Settings for future work."
+    const projectWarning = projectRoots.length
+      ? `\n\nDeleting project ${projectRoots.map((name) => `“${name}”`).join(", ")} removes it from Settings and deletes all of its saved files. Historical Job Manager entries remain, but their saved inputs and results cannot be restored.`
       : "";
-    return `Remove ${ids.length} selected ${noun}? Directories include all of their contents.${topLevelDirectoryWarning}\n\n${paths.join("\n")}`;
+    const topLevelDirectoryWarning = !projectRoots.length && fileManagerSelectionIncludesTopLevelDirectory(rows)
+      ? "\n\nDeleting a top-level directory removes its saved files and prevents affected runs from being reattached."
+      : "";
+    return `Remove ${ids.length} selected ${noun}? Directories include all of their contents.${projectWarning}${topLevelDirectoryWarning}\n\n${paths.join("\n")}`;
+  }
+
+  async function fileManagerActiveProjectNames() {
+    const url = new URL(legacyEndpoint("pullBase", "ajax/sys_config/sys_pull.php"), window.location.href);
+    url.searchParams.set("_window", window.name);
+    url.searchParams.set("_logon", state.session.logon || "");
+    url.searchParams.set("project", "0");
+    const response = await fetch(url.toString(), { cache: "no-cache", credentials: "same-origin" });
+    const payload = await parseJsonResponse(response, "Active projects");
+    if (!response.ok || payload.error) {
+      throw new Error(payload.error || `Active projects returned HTTP ${response.status}`);
+    }
+    return Array.isArray(payload.project) ? payload.project : [];
   }
 
   function fileManagerDeleteFormData(ids) {
@@ -5661,12 +5721,16 @@
       setSubmitStatus(status, "No files selected.", "error");
       return;
     }
-    if (!window.confirm(fileManagerRemovalPrompt(fileManagerSelectedRows(table)))) {
-      return;
-    }
     setSubmitStatus(status, "Removing selected files...", "pending");
     try {
       await refreshSessionState();
+      const selectedRows = fileManagerSelectedRows(table);
+      const activeProjects = await fileManagerActiveProjectNames();
+      const projectRoots = fileManagerSelectedProjectRoots(selectedRows, activeProjects);
+      if (!window.confirm(fileManagerRemovalPrompt(selectedRows, projectRoots))) {
+        setSubmitStatus(status, "Removal cancelled.", "");
+        return;
+      }
       const response = await fetch(legacyEndpoint("filesBase", "ajax/sys_config/sys_files.php"), {
         method: "POST",
         body: fileManagerDeleteFormData(ids),
@@ -5675,6 +5739,14 @@
       const payload = await parseJsonResponse(response, "File Manager remove selected");
       if (payload.error) {
         throw new Error(payload.error);
+      }
+      if (Array.isArray(payload.deleted_projects) && payload.deleted_projects.length) {
+        updateSessionIdentity({
+          _logon: state.session.logon,
+          _project: stringValue(payload._project).trim() || "no_project_specified"
+        });
+        renderSessionState();
+        clearReattachRouteForProjectChange();
       }
       if (links) {
         links.innerHTML = "";
@@ -11170,6 +11242,7 @@
       fileManagerSelectedIds,
       fileManagerSelectedParentIds,
       fileManagerSelectionIncludesTopLevelDirectory,
+      fileManagerSelectedProjectRoots,
       fileManagerRemovalPrompt,
       fileManagerDeleteFormData,
       legacyInlineStatusText,
@@ -11187,6 +11260,7 @@
       syncModuleRoute,
       syncMenuRoute,
       syncReattachRoute,
+      clearReattachRouteForProjectChange,
       beginViewReady,
       markViewReady,
       waitForViewReady,

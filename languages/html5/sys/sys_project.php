@@ -37,6 +37,14 @@ if ( !isset( $_SESSION[ $window ][ 'logon' ] ) ||
     exit();
 }
 
+if ( $_REQUEST[ '_logon' ] != $_SESSION[ $window ][ 'logon' ] )
+{
+    $results[ '_logon' ] = "";
+    $results[ 'error' ] .= "Possible security violation user mismatch. ";
+    echo (json_encode($results));
+    exit();
+}
+
 ## set project
 
 if ( !isset( $_REQUEST['_project'] ) ) {
@@ -44,8 +52,33 @@ if ( !isset( $_REQUEST['_project'] ) ) {
     exit();
 }
 
-$_SESSION[ $window ][ 'project' ] = $_REQUEST[ '_project' ];
-echo '{"status":"ok"}';
-exit();    
+$project = $_REQUEST[ '_project' ];
+if ( !preg_match( '/^[a-zA-Z0-9_]+$/', $project ) )
+{
+    echo '{"error":"Invalid project name"}';
+    exit();
+}
 
+if ( $project != 'no_project_specified' )
+{
+    require_once "../joblog.php";
+    $active_projects = active_project_names( $_SESSION[ $window ][ 'logon' ], true );
+    if ( $active_projects === false )
+    {
+        echo '{"error":"Could not verify active projects"}';
+        exit();
+    }
+    if ( !in_array( $project, $active_projects, true ) )
+    {
+        echo json_encode( array(
+            'status' => 'project unavailable',
+            'project_available' => false,
+            '_project' => isset( $_SESSION[ $window ][ 'project' ] ) ? $_SESSION[ $window ][ 'project' ] : 'no_project_specified'
+        ) );
+        exit();
+    }
+}
 
+$_SESSION[ $window ][ 'project' ] = $project;
+echo json_encode( array( 'status' => 'ok', 'project_available' => true, '_project' => $project ) );
+exit();

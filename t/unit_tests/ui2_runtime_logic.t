@@ -416,6 +416,13 @@ assert.strictEqual(
   "?ui2theme=dark&_switch=simulate%2Fmonomer_monte_carlo%2Fno_project_specified%2Fuuid-123",
   "same-window reattachment replaces ordinary navigation with the attached job route"
 );
+hooks.state.moduleId = "monomer_monte_carlo";
+hooks.clearReattachRouteForProjectChange();
+assert.strictEqual(
+  window.location.search,
+  "?ui2theme=dark&module=monomer_monte_carlo",
+  "an explicit project change replaces the reattach command before reload can restore its old project"
+);
 const ready = hooks.beginViewReady();
 assert.strictEqual(ready.resolved, false, "UI2 core waits until an asynchronous renderer reports mounted hosts");
 hooks.markViewReady(ready.generation);
@@ -568,6 +575,20 @@ assert(
 assert(
   !hooks.fileManagerRemovalPrompt([nestedDirectory]).includes("prevents affected runs from being reattached"),
   "UI2 File Manager reserves the reattachment warning for top-level directories"
+);
+assert.deepStrictEqual(
+  hooks.fileManagerSelectedProjectRoots([topLevelProjectDirectory, nestedDirectory], ["project"]),
+  ["project"],
+  "UI2 File Manager identifies only a registered exact top-level directory as a project deletion"
+);
+assert.deepStrictEqual(
+  hooks.fileManagerSelectedProjectRoots([topLevelProjectDirectory], []),
+  [],
+  "UI2 File Manager leaves an unregistered top-level directory as an ordinary file operation"
+);
+assert(
+  hooks.fileManagerRemovalPrompt([topLevelProjectDirectory], ["project"]).includes("removes it from Settings"),
+  "UI2 File Manager explains that deleting a registered root removes its active project identity"
 );
 const fileManagerDeleteFormData = hooks.fileManagerDeleteFormData([selectedRootFile, selectedNestedFile]);
 assert.strictEqual(fileManagerDeleteFormData.get("_window"), "ui2-test", "UI2 File Manager delete retains the legacy window id");
