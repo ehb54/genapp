@@ -5386,6 +5386,7 @@
     if (!form || !status) {
       throw new Error(`UI2 view for ${target.moduleId} did not provide a reattach form.`);
     }
+    clearRuntimeOutputs(form);
     beginJobOutputContext(target.moduleId, target.uuid);
     setSubmitStatus(status, `Attached (${jobId || target.uuid})`, "ok");
     // Match legacy ga.switch.cb2: the first authoritative result request
@@ -5655,11 +5656,8 @@
       .filter(Boolean);
   }
 
-  function fileManagerSelectionIncludesTopLevelDirectory(rows) {
-    return (rows || []).some((row) => (
-      Number(row?.dataset?.depth || 0) === 0
-      && row?._ui2FileEntry?.children === true
-    ));
+  function fileManagerSelectionIncludesDirectory(rows) {
+    return (rows || []).some((row) => row?._ui2FileEntry?.children === true);
   }
 
   function fileManagerSelectedParentIds(table) {
@@ -5688,10 +5686,10 @@
     const projectWarning = projectRoots.length
       ? `\n\nDeleting project ${projectRoots.map((name) => `“${name}”`).join(", ")} removes it from Settings and deletes all of its saved files. Historical Job Manager entries remain, but their saved inputs and results cannot be restored.`
       : "";
-    const topLevelDirectoryWarning = !projectRoots.length && fileManagerSelectionIncludesTopLevelDirectory(rows)
-      ? "\n\nDeleting a top-level directory removes its saved files and prevents affected runs from being reattached."
+    const directoryWarning = !projectRoots.length && fileManagerSelectionIncludesDirectory(rows)
+      ? "\n\nDeleting a directory removes its saved files and can prevent affected runs from being reattached."
       : "";
-    return `Remove ${ids.length} selected ${noun}? Directories include all of their contents.${projectWarning}${topLevelDirectoryWarning}\n\n${paths.join("\n")}`;
+    return `Remove ${ids.length} selected ${noun}? Directories include all of their contents.${projectWarning}${directoryWarning}\n\n${paths.join("\n")}`;
   }
 
   async function fileManagerActiveProjectNames() {

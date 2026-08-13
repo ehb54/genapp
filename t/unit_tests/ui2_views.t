@@ -369,7 +369,7 @@ like( $ui2_js, qr/function toolFieldControl\(section, id, tagName\)/, 'ui2 Job M
 like( $ui2_js, qr/ajax\/sys_config\/sys_managejob\.php/, 'ui2 Job Manager uses the legacy manage-job endpoint for row actions' );
 like( $ui2_js, qr/function submitSystemModuleAction\(action, jobIds, moduleId = "sys_job_manager"\)/, 'ui2 Job Manager can submit legacy system-module actions' );
 like( $ui2_js, qr/function beginViewReady\(\).*?function waitForViewReady\(\)/s, 'ui2 core owns a renderer-ready barrier before reattachment' );
-like( $ui2_js, qr/await loadModule\(target\.moduleId, \{ preserveSwitch: true \}\);\s+const form = document\.getElementById\("ui2-form"\);.*?startJobPolling\(target\.uuid, form, status, true, true, false\)/s, 'ui2 reattachment waits for the mounted view then hydrates through the legacy results path' );
+like( $ui2_js, qr/await loadModule\(target\.moduleId, \{ preserveSwitch: true \}\);\s+const form = document\.getElementById\("ui2-form"\);.*?clearRuntimeOutputs\(form\);.*?startJobPolling\(target\.uuid, form, status, true, true, false\)/s, 'ui2 reattachment clears prior output before hydrating through the legacy results path' );
 like( $ui2_js, qr/ajax\/ui2_job_input\.php/, 'ui2 Job Manager has a target-local saved input fallback endpoint' );
 like( $ui2_js, qr/function switchTargetFromValue\(switchValue\).*?parts\.length !== 4.*?entry\.id === menuId/s, 'ui2 Job Manager validates canonical legacy menu/module/project/uuid targets' );
 like( $ui2_js, qr/function applyInputPayload\(inputs, options = \{\}\)/, 'ui2 Job Manager can hydrate form inputs from reattached job payloads' );
@@ -385,7 +385,7 @@ like( $ui2_js, qr/function downloadFileManagerSelection\(table, status, links, m
 like( $ui2_js, qr/"Refresh all".*?"Refresh selected".*?"Remove selected".*?"Download"/s, 'ui2 File Manager distinguishes all-file refresh from selected refresh and removal' );
 like( $ui2_js, qr/function refreshSelectedFileManagerRows\(table, status\).*?fileManagerSelectedParentIds\(table\).*?loadFileManagerFolderChildren/s, 'ui2 File Manager refreshes the parents of selected entries' );
 like( $ui2_js, qr/function removeSelectedFileManagerRows\(table, status, links\).*?fileManagerActiveProjectNames\(\).*?window\.confirm.*?fileManagerDeleteFormData\(ids\)/s, 'ui2 File Manager obtains active project roots before confirming a selected removal' );
-like( $ui2_js, qr/function fileManagerSelectionIncludesTopLevelDirectory\(rows\).*?row\?\._ui2FileEntry\?\.children === true/s, 'ui2 File Manager identifies selected top-level directories without inferring project records' );
+like( $ui2_js, qr/function fileManagerSelectionIncludesDirectory\(rows\).*?row\?\._ui2FileEntry\?\.children === true/s, 'ui2 File Manager identifies selected directories for deletion warnings' );
 like( $ui2_js, qr/function fileManagerSelectedProjectRoots\(rows, activeProjects = \[\]\).*?active\.has\(path\)/s, 'ui2 File Manager distinguishes registered project roots from nested and unregistered directories' );
 like( $ui2_js, qr/removes it from Settings and deletes all of its saved files/, 'ui2 File Manager explains the lifecycle result of deleting a registered project root' );
 like( $ui2_js, qr/legacyEndpoint\("filesBase", "ajax\/sys_config\/sys_files\.php"\)/, 'ui2 File Manager removal reuses the legacy file endpoint' );

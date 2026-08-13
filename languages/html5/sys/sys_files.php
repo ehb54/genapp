@@ -48,6 +48,128 @@ function debug_json( $msg, $obj ) {
     return $msg . ":\n" . json_encode( $obj, JSON_PRETTY_PRINT ) . "\n";
 }
 
+## File Manager receives identifiers from a browser.  Base64 only transports a
+## value; it is not authorization to address a path outside the authenticated
+## user's result tree.
+function ga_file_manager_relative_path( $encoded, $allow_root = false )
+{
+    if ( !is_string( $encoded ) || !strlen( $encoded ) ) {
+        return false;
+    }
+    $path = base64_decode( $encoded, true );
+    if ( $path === false || strpos( $path, "\0" ) !== false ||
+         strpos( $path, '\\' ) !== false || preg_match( '#^/#', $path ) ) {
+        return false;
+    }
+    $path = preg_replace( '#^\./#', '', $path );
+    if ( $allow_root && ( $path === '' || $path === '.' ) ) {
+        return '';
+    }
+    if ( !strlen( $path ) || preg_match( '#(^|/)\.{1,2}(/|$)#', $path ) ||
+         preg_match( '#//|/$#', $path ) ) {
+        return false;
+    }
+    foreach ( explode( '/', $path ) as $component ) {
+        if ( !preg_match( '/^[A-Za-z0-9][A-Za-z0-9._ -]*$/', $component ) ) {
+            return false;
+        }
+    }
+    return $path;
+}
+
+function ga_file_manager_path_is_within( $path, $root )
+{
+    return $path == $root || strpos( $path, $root . DIRECTORY_SEPARATOR ) === 0;
+}
+
+function ga_file_manager_resolve_path( $root, $relative, $allow_root = false )
+{
+    if ( !is_string( $root ) || !is_string( $relative ) ||
+         ( !$allow_root && !strlen( $relative ) ) ) {
+        return false;
+    }
+    $path = $root . ( strlen( $relative ) ? DIRECTORY_SEPARATOR . $relative : '' );
+    $resolved = realpath( $path );
+    if ( $resolved === false || !ga_file_manager_path_is_within( $resolved, $root ) ) {
+        return false;
+    }
+    $cursor = $root;
+    foreach ( strlen( $relative ) ? explode( '/', $relative ) : array() as $component ) {
+        $cursor .= DIRECTORY_SEPARATOR . $component;
+        if ( is_link( $cursor ) ) {
+            return false;
+        }
+    }
+    return $resolved;
+}
+
+function ga_file_manager_copy_tree( $source, $target )
+{
+    if ( is_link( $source ) ) {
+        return false;
+    }
+    if ( is_file( $source ) ) {
+        return copy( $source, $target );
+    }
+    if ( !is_dir( $source ) || !mkdir( $target, 0775, true ) ) {
+        return false;
+    }
+    foreach ( array_diff( scandir( $source ), array( '.', '..' ) ) as $name ) {
+        if ( !ga_file_manager_copy_tree( $source . DIRECTORY_SEPARATOR . $name, $target . DIRECTORY_SEPARATOR . $name ) ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function ga_file_manager_remove_tree( $path )
+{
+    if ( is_link( $path ) ) {
+        return false;
+    }
+    if ( is_file( $path ) ) {
+        return unlink( $path );
+    }
+    if ( !is_dir( $path ) ) {
+        return false;
+    }
+    foreach ( array_diff( scandir( $path ), array( '.', '..' ) ) as $name ) {
+        if ( !ga_file_manager_remove_tree( $path . DIRECTORY_SEPARATOR . $name ) ) {
+            return false;
+        }
+    }
+    return rmdir( $path );
+}
+
+function ga_file_manager_move( $source, $target )
+{
+    if ( rename( $source, $target ) ) {
+        return true;
+    }
+    if ( !ga_file_manager_copy_tree( $source, $target ) ) {
+        if ( file_exists( $target ) ) {
+            ga_file_manager_remove_tree( $target );
+        }
+        return false;
+    }
+    if ( ga_file_manager_remove_tree( $source ) ) {
+        return true;
+    }
+    ga_file_manager_remove_tree( $target );
+    return false;
+}
+
+function ga_file_manager_restore_moves( $deldir, $paths )
+{
+    $errors = array();
+    foreach ( array_reverse( $paths ) as $path ) {
+        if ( file_exists( "$deldir/$path" ) && !ga_file_manager_move( "$deldir/$path", $path ) ) {
+            $errors[] = $path;
+        }
+    }
+    return $errors;
+}
+
 $to_delete = array();
 
 if ( isset( $_REQUEST[ '_delete' ] ) )
@@ -61,7 +183,14 @@ if ( isset( $_REQUEST[ '_delete' ] ) )
 
    if ( strlen( $_REQUEST[ '_delete' ] ) )
    {
-       $to_delete = preg_replace( '/^\.\//', '', array_map( "base64_decode", explode( ',', $_REQUEST[ '_delete' ] ) ) );
+      foreach ( explode( ',', $_REQUEST[ '_delete' ] ) as $encoded ) {
+          $path = ga_file_manager_relative_path( $encoded );
+          if ( $path === false ) {
+              echo '{"error":"Invalid File Manager path"}';
+              exit();
+          }
+          $to_delete[] = $path;
+      }
    }
 
    if ( !count( $to_delete ) )
@@ -101,6 +230,11 @@ function getDirectoryTree( $outerDir, $depth ) {
         if ( substr( $d, -1 ) != "~" )
         {
            $id = "$outerDir/$d";
+
+           if ( is_link( $id ) )
+           {
+               continue;
+           }
 
            if( is_dir( $id ) )
            {
@@ -170,14 +304,14 @@ function getDirectory( $outerDir64 ) {
     global $pattern;
     global $no_pattern;
 
-    $outerDir = base64_decode( $outerDir64 );
-    if ( $outerDir == '.' )
-    {
-        $outerDir64 = "#";
+    $relative = $outerDir64 == '#'
+        ? '' : ga_file_manager_relative_path( $outerDir64, true );
+    if ( $relative === false ) {
+        return;
     }
-    if ( $outerDir64 == '#' )
-    {
-        $outerDir = ".";
+    $outerDir = strlen( $relative ) ? "./$relative" : ".";
+    if ( $outerDir64 == '#' ) {
+        $outerDir64 = '#';
     }
 
     $dirs = array_diff( scandir( $outerDir ), Array( ".", ".." ) );
@@ -187,6 +321,11 @@ function getDirectory( $outerDir64 ) {
         if ( substr( $d, -1 ) != "~" )
         {
            $id = "$outerDir/$d";
+
+           if ( is_link( $id ) )
+           {
+               continue;
+           }
 
            if( is_dir( $id ) )
            {
@@ -270,11 +409,28 @@ if ( !chdir( $dir ) )
   exit();
 }
 
+$users_root = realpath( $dir );
+$user_root = realpath( $dir . ( isset( $_SESSION[ $window ][ 'logon' ] ) ? $_SESSION[ $window ][ 'logon' ] : '' ) );
+if ( $users_root === false || $user_root === false || !is_dir( $user_root ) ||
+     !ga_file_manager_path_is_within( $user_root, $users_root ) || is_link( $user_root ) || !chdir( $user_root ) )
+{
+  ob_end_clean();
+  echo '{"error":"Could not access File Manager user directory"}';
+  exit();
+}
+
 ## $usedir = isset( $_SESSION[ $window ][ 'logon' ] ) ? $_SESSION[ $window ][ 'logon' ] : ".";
-$usedir = ( isset( $_SESSION[ $window ][ 'logon' ] ) && strlen( $_SESSION[ $window ][ 'logon' ] ) ) ? $_SESSION[ $window ][ 'logon' ] : ".";
+$usedir = ".";
 if ( isset( $_REQUEST[ 'project' ] ) )
 {
-   $usedir .= "/" . $_REQUEST[ 'project' ];
+   if ( !preg_match( '/^[A-Za-z0-9_]+$/', $_REQUEST[ 'project' ] ) ||
+        !is_dir( "./" . $_REQUEST[ 'project' ] ) || is_link( "./" . $_REQUEST[ 'project' ] ) )
+   {
+      ob_end_clean();
+      echo '{"error":"Invalid File Manager project"}';
+      exit();
+   }
+   $usedir = "./" . $_REQUEST[ 'project' ];
 }
 
 if ( $is_spec_fc )
@@ -311,9 +467,7 @@ if ( $is_spec_fc )
        foreach ( $to_delete as $file )
        {
            if ( strlen( $file ) &&
-                $file != "." &&
-                $file != ".." &&
-                file_exists( $file ) )
+                ga_file_manager_resolve_path( $user_root, $file ) !== false )
            {
                if ( is_dir( $file ) )
                {
@@ -325,7 +479,11 @@ if ( $is_spec_fc )
                }
                $to_delete_new[] = $file;
            } else {
-               $msg = "file does not exist";
+               $msg = "file does not exist or is outside the File Manager directory";
+               $results[ $file ] = $msg;
+               $results[ "error" ] = "No files or directories were removed because one selected path is unavailable or invalid";
+               echo json_encode( $results );
+               exit();
            }
            $results[ $file ] = $msg;
        }
@@ -557,6 +715,7 @@ if ( $is_spec_fc )
           if ( $do_it )
           {
               $dosend = array();
+              $moved_paths = array();
               ob_start();
 
               ## make needed directories
@@ -601,26 +760,22 @@ if ( $is_spec_fc )
                       chmod( $makedir, 0775 );
                   }
 
-                  if ( !rename( $file, "$deldir/$file" ) ) 
+                  if ( !ga_file_manager_move( $file, "$deldir/$file" ) )
                   {
                      $cont = ob_get_contents();
                      ob_end_clean();
-                     $error_last = error_get_last();
-                     if ( preg_match( "/Invalid cross-device link/", $error_last[ 'message' ] ) ) {
-                         # special handling for symlinked drives where we can not move a directory
-                         $spec_cmd = "( rsync -a $file/* $deldir/$file/ && rm -fr $file ) >> /tmp/mylog 2>&1";
-                         __~deletefilesnorsync{$spec_cmd = "( rm -fr $file ) >> /tmp/mylog 2>&1";}
-                         error_log( "spec_cmd = " . $spec_cmd . "\n", 3, "/tmp/mylog" );
-                         `$spec_cmd`; 
-                     } else {
-                         $results[ "error" ] = "Could not rename $file to $deldir/$file " . $cont;
-                         error_mail( "sys_files.php\n" .
-                                     "during delete move directories\n" .
-                                     print_r( $results, true ) . "\n" . print_r( error_get_last(), true ));
-                         echo (json_encode($results));
-                         exit();
+                     $restore_errors = ga_file_manager_restore_moves( $deldir, $moved_paths );
+                     $results[ "error" ] = "Could not move $file to $deldir/$file " . $cont;
+                     if ( count( $restore_errors ) ) {
+                         $results[ "error" ] .= " Administrator recovery is required for: " . join( ', ', $restore_errors );
                      }
+                     error_mail( "sys_files.php\n" .
+                                 "during delete move directories\n" .
+                                 print_r( $results, true ) . "\n" . print_r( error_get_last(), true ));
+                     echo (json_encode($results));
+                     exit();
                   }
+                  $moved_paths[] = $file;
               }
 
               $usernps = $dir . $GLOBALS[ 'logon' ] . "/no_project_specified";
@@ -669,32 +824,47 @@ if ( $is_spec_fc )
                       chmod( $makedir, 0775 );
                   }
 
-                  if ( !rename( $file, "$deldir/$file" ) ) 
+                  if ( !ga_file_manager_move( $file, "$deldir/$file" ) )
                   {
                      $cont = ob_get_contents();
                      ob_end_clean();
+                     $restore_errors = ga_file_manager_restore_moves( $deldir, $moved_paths );
                      $results[ "error" ] = "Could not rename $file to $deldir/$file " . $cont;
+                     if ( count( $restore_errors ) ) {
+                         $results[ "error" ] .= " Administrator recovery is required for: " . join( ', ', $restore_errors );
+                     }
                      error_mail( "sys_files.php\n" .
                          "during delete move file\n" .
                              print_r( $results, true ) . "\n" . print_r( error_get_last(), true ));
                      echo (json_encode($results));
                      exit();
                   }
+                  $moved_paths[] = $file;
+              }
+
+              ## A deleted directory must not leave a replayable job behind in
+              ## its retained log directory.  The deletion token lets a later
+              ## rollback undo only the records changed by this request.
+              $invalidated_job_ids = job_saved_path_is_removed(
+                  $GLOBALS[ 'logon' ], $remove_dirs, $uniq, true );
+              if ( $invalidated_job_ids === false )
+              {
+                  $restore_errors = array();
+                  $restore_errors = ga_file_manager_restore_moves( $deldir, $moved_paths );
+                  $results[ 'error' ] = count( $restore_errors )
+                      ? "Could not record removed job files; administrator recovery is required for: " . join( ', ', $restore_errors )
+                      : "Could not record removed job files; the selected files were restored.";
+                  echo json_encode( $results );
+                  exit();
               }
 
               if ( count( $deleted_project_roots ) )
               {
                   if ( !remove_active_projects( $GLOBALS[ 'logon' ], $deleted_project_roots, true ) )
                   {
+                      restore_job_saved_paths( $invalidated_job_ids, $uniq, true );
                       $restore_errors = array();
-                      foreach ( $deleted_project_roots as $project_root )
-                      {
-                          if ( file_exists( "$deldir/$project_root" ) &&
-                               !rename( "$deldir/$project_root", $project_root ) )
-                          {
-                              $restore_errors[] = $project_root;
-                          }
-                      }
+                      $restore_errors = ga_file_manager_restore_moves( $deldir, $moved_paths );
                       $results[ 'error' ] = count( $restore_errors )
                           ? "Could not remove project records; project directories requiring administrator recovery: " . join( ', ', $restore_errors )
                           : "Could not remove project records; project directories were restored.";
@@ -734,12 +904,6 @@ if ( $is_spec_fc )
        getDirectory( $is_spec_fc_dir );
    }
 } else {
-   $usedir = $_SESSION[ $window ][ 'logon' ];
-   if ( isset( $_REQUEST[ 'project' ] ) )
-   {
-      $usedir .= "/" . $_REQUEST[ 'project' ];
-   }
-
    getDirectoryTree( $usedir, 0 );
 
    ## clean up

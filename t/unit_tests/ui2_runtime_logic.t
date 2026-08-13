@@ -569,12 +569,12 @@ const nestedDirectory = {
   _ui2FileEntry: { children: true }
 };
 assert(
-  hooks.fileManagerRemovalPrompt([topLevelProjectDirectory]).includes("prevents affected runs from being reattached"),
+  hooks.fileManagerRemovalPrompt([topLevelProjectDirectory]).includes("can prevent affected runs from being reattached"),
   "UI2 File Manager warns before removing a top-level directory"
 );
 assert(
-  !hooks.fileManagerRemovalPrompt([nestedDirectory]).includes("prevents affected runs from being reattached"),
-  "UI2 File Manager reserves the reattachment warning for top-level directories"
+  hooks.fileManagerRemovalPrompt([nestedDirectory]).includes("can prevent affected runs from being reattached"),
+  "UI2 File Manager warns before removing a nested directory"
 );
 assert.deepStrictEqual(
   hooks.fileManagerSelectedProjectRoots([topLevelProjectDirectory, nestedDirectory], ["project"]),

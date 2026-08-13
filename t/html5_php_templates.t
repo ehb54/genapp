@@ -60,11 +60,20 @@ like(
 
 like( $joblog_php, qr/function active_project_names\( \$user/, 'joblog exposes the active project registry helper' );
 like( $joblog_php, qr/function remove_active_projects\( \$user, \$projects/, 'joblog can retire active project identities without changing job records' );
+like( $joblog_php, qr/function job_detail_directory\( \$directory, \$details \).*?preg_match.*?getmenumoduledetaildir/s, 'joblog derives a run directory only from a validated relative details path' );
+like( $joblog_php, qr/function job_saved_path_is_removed.*?saved_files_removed.*?function restore_job_saved_paths/s, 'joblog records removable saved-job artifacts with rollback support' );
+like( $results_php, qr/\$detaildir = \$GLOBALS\[ 'getmenumoduledetaildir' \].*?!is_dir\( \$detaildir \)/s, 'get_results refuses stale replay when a recorded run directory has been removed' );
+like( $results_php, qr/getmenumodulesavedfilesremoved.*?saved files have been removed/s, 'get_results rejects an invalidated job before cached output can be replayed' );
 like( $sys_project_php, qr/active_project_names\( \$_SESSION\[ \$window \]\[ 'logon' \]/, 'project selection validates non-default projects against the active registry' );
 like( $sys_project_php, qr/project_available.*false/s, 'project selection reports a deleted project without restoring it into the session' );
 like( $sys_files_php, qr/\$deleted_project_roots.*in_array\( \$file, \$active_project_names, true \)/s, 'file removal classifies exact registered roots as project lifecycle removals server-side' );
 like( $sys_files_php, qr/remove_active_projects\( \$GLOBALS\[ 'logon' \], \$deleted_project_roots/, 'file removal retires selected registered project roots from Settings' );
 like( $sys_files_php, qr/\$_SESSION as \$session_window => &\$session_state/, 'project deletion resets matching project selections in every session window' );
+like( $sys_files_php, qr/function ga_file_manager_relative_path.*?base64_decode\( \$encoded, true \).*?\.\{1,2\}/s, 'File Manager strictly decodes and rejects traversal-shaped browser paths' );
+like( $sys_files_php, qr/function ga_file_manager_resolve_path.*?realpath.*?ga_file_manager_path_is_within.*?is_link/s, 'File Manager resolves paths under the authenticated user root and rejects links' );
+like( $sys_files_php, qr/function ga_file_manager_move.*?ga_file_manager_copy_tree/s, 'File Manager has a command-free cross-device move fallback' );
+unlike( $sys_files_php, qr/rsync\s+-a|rm\s+-fr|`\$spec_cmd`/, 'File Manager does not interpolate selected paths into a shell command' );
+like( $sys_files_php, qr/job_saved_path_is_removed.*?restore_job_saved_paths/s, 'File Manager invalidates affected saved jobs and rolls them back with its deletion token' );
 like( $file_manager_js, qr/top-level directories that are active projects will also be removed from Settings/, 'legacy File Manager explains the project-root deletion consequence' );
 
 done_testing();

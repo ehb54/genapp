@@ -86,6 +86,19 @@ $results[ '_fs_refresh' ] = $GLOBALS[ "getmenumoduleproject" ];
 
 $dir    = $GLOBALS[ 'getmenumoduledir' ];
 $logdir = $GLOBALS[ 'getmenumodulelogdir' ];
+$detaildir = $GLOBALS[ 'getmenumoduledetaildir' ];
+
+if ( $GLOBALS[ 'getmenumodulesavedfilesremoved' ] )
+{
+   $message = "This run's saved files have been removed. Its saved inputs and results can no longer be restored.";
+   if ( $getinput ) {
+      $results[ "_getinputerror" ] = $message;
+   }
+   $results[ "error" ] = $message;
+   $results[ '_status' ] = 'failed';
+   echo (json_encode($results));
+   exit();
+}
 
 // if ( isprojectlocked( $dir ) )
 // {
@@ -176,14 +189,14 @@ __~debug:job{      $results[ "notice_lastmsg" ] = 'getlastmsg is on';}
 }
 
 ob_start();
-if ( !is_dir( $dir ) || !chdir( $dir ) )
+if ( !is_dir( $dir ) || ( strlen( $detaildir ) && !is_dir( $detaildir ) ) || !chdir( $dir ) )
 {
    $cont = ob_get_contents();
    ob_end_clean();
-   if ( !is_dir( $dir ) )
+   if ( !is_dir( $dir ) || ( strlen( $detaildir ) && !is_dir( $detaildir ) ) )
    {
       $message = "This run's saved files have been removed. Its saved inputs and results can no longer be restored.";
-      error_log( "get_results.php missing run directory for job $id: $dir\n" );
+      error_log( "get_results.php missing run directory for job $id: " . ( !is_dir( $dir ) ? $dir : $detaildir ) . "\n" );
       if ( $getinput )
       {
          $results[ "_getinputerror" ] = $message;

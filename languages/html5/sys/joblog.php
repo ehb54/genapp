@@ -290,6 +290,73 @@ function getprojectdir( $jobid,  $error_json_exit = false )
    return false;
 }
 
+function job_detail_directory( $directory, $details )
+{
+   // Module details normally record the relative directory containing a run's
+   // durable outputs (for example, "run_name/module/").  Older applications
+   // may use details as display text instead, so only accept an unambiguous
+   // relative directory and never use it to construct an arbitrary path.
+   if ( !is_string( $directory ) || !is_string( $details ) ||
+        !preg_match( '/^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*\/?$/', $details ) ) {
+      return '';
+   }
+   return rtrim( $directory, '/' ) . '/' . trim( $details, '/' );
+}
+
+function job_saved_path_is_removed( $user, $paths, $token, $error_json_exit = false )
+{
+   if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
+      return false;
+   }
+   $affected = array();
+   $cursor = ga_db_output( ga_db_find( 'jobs', '', [ 'user' => $user ], [], [], $error_json_exit ) );
+   foreach ( $cursor as $record ) {
+      $job = (array) $record;
+      $project = isset( $job[ 'project' ] ) ? $job[ 'project' ] : '';
+      $details = isset( $job[ 'details' ] ) ? $job[ 'details' ] : '';
+      if ( !preg_match( '/^[A-Za-z0-9_]+$/', $project ) ||
+           !preg_match( '/^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*\/?$/', $details ) ) {
+         continue;
+      }
+      $job_path = $project . '/' . trim( $details, '/' );
+      $matches = false;
+      foreach ( $paths as $path ) {
+         if ( $path == $project || $path == $job_path ||
+              strpos( $job_path, $path . '/' ) === 0 ||
+              strpos( $path, $job_path . '/' ) === 0 ) {
+            $matches = true;
+            break;
+         }
+      }
+      if ( !$matches || !isset( $job[ '_id' ] ) ) {
+         continue;
+      }
+      if ( !ga_db_status( ga_db_update(
+               'jobs', '', [ '_id' => $job[ '_id' ] ],
+               [ '$set' => [ 'saved_files_removed' => [ 'token' => $token, 'paths' => $paths ] ] ],
+               [], $error_json_exit ) ) ) {
+         return false;
+      }
+      $affected[] = $job[ '_id' ];
+   }
+   return $affected;
+}
+
+function restore_job_saved_paths( $jobids, $token, $error_json_exit = false )
+{
+   if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
+      return false;
+   }
+   foreach ( $jobids as $jobid ) {
+      if ( !ga_db_status( ga_db_update(
+               'jobs', '', [ '_id' => $jobid, 'saved_files_removed.token' => $token ],
+               [ '$unset' => [ 'saved_files_removed' => 1 ] ], [], $error_json_exit ) ) ) {
+         return false;
+      }
+   }
+   return true;
+}
+
 function getmenumodule( $jobid,  $error_json_exit = false )
 {
    if ( !ga_db_status( ga_db_open( $error_json_exit ) ) ) {
@@ -319,6 +386,10 @@ function getmenumodule( $jobid,  $error_json_exit = false )
          $GLOBALS[ "getmenumoduleproject" ] = ( isset( $doc[ 'project'      ] ) && strlen( $doc[ 'project'       ] ) ) ? $doc[ 'project' ] : 'no_project_specified';
          $GLOBALS[ "getmenumoduledir"     ] = ( isset( $doc[ 'directory'    ] ) && strlen( $doc[ 'directory'     ] ) ) ? $doc[ 'directory' ] : '_no_project_dir_';
          $GLOBALS[ "getmenumodulelogdir"  ] = ( isset( $doc[ 'directorylog' ] ) && strlen( $doc[ 'directorylog'  ] ) ) ? $doc[ 'directorylog' ] : $GLOBALS[ "getmenumoduledir" ];
+         $GLOBALS[ "getmenumoduledetaildir" ] = isset( $doc[ 'details' ] )
+             ? job_detail_directory( $GLOBALS[ "getmenumoduledir" ], $doc[ 'details' ] )
+             : '';
+         $GLOBALS[ "getmenumodulesavedfilesremoved" ] = isset( $doc[ 'saved_files_removed' ] ) && $doc[ 'saved_files_removed' ];
          $GLOBALS[ "getmenumodulestatus"  ] = ( isset( $doc[ 'status'       ] ) && count ( $doc[ 'status'        ] ) ) ? end($doc[ 'status' ] ) : '';
          $GLOBALS[ "wascancelled"         ] = $GLOBALS[ "getmenumodulestatus"  ] == "cancelled";
          $GLOBALS[ "cache"                ] =  isset( $doc[ 'cache' ] ) ? $doc[ 'cache' ] : "";
