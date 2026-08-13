@@ -2,11 +2,32 @@
     "renderer" : "react-workbench",
     "layout"   : "scientific-workbench",
     "inputs"   : {
+        "workflowChoices" : {
+            "data-scope" : {
+                "title" : "Choose data to prepare",
+                "fields" : ["include_primary_data", "include_secondary_data"],
+                "choices" : {
+                    "primary" : {
+                        "title" : "Primary data only",
+                        "description" : "Prepare the primary data set.",
+                        "matches" : {"include_primary_data" : true, "include_secondary_data" : false},
+                        "values" : {"include_primary_data" : true, "include_secondary_data" : false}
+                    },
+                    "both" : {
+                        "title" : "Primary and secondary data",
+                        "description" : "Prepare both data sets together.",
+                        "matches" : {"include_primary_data" : true, "include_secondary_data" : true},
+                        "values" : {"include_primary_data" : true, "include_secondary_data" : true}
+                    }
+                }
+            }
+        },
         "sections" : [
             {
                 "id"     : "inputs",
                 "title"  : "Inputs",
-                "fields" : ["input_value", "show_workflow_cards", "workflow_choice"]
+                "fields" : ["input_value", "show_workflow_cards", "workflow_choice"],
+                "workflowChoices" : ["data-scope"]
             }
         ],
         "fieldPresentations" : {

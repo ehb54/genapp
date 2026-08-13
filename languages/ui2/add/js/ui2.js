@@ -2109,6 +2109,25 @@
       stage.scrollTop = 0;
       stage.scrollLeft = 0;
     }
+    const setInputValues = (values) => {
+      Object.entries(values || {}).forEach(([fieldId, value]) => {
+        const row = nodes.root.querySelector(`.ui2-field[data-field-id="${cssEscape(fieldId)}"]`);
+        const control = row ? fieldControls(row)[0] : null;
+        if (!control) {
+          return;
+        }
+        if (control.type === "checkbox") {
+          control.checked = value === true || ["true", "1", "yes", "on"].includes(String(value || "").toLowerCase());
+        } else {
+          control.value = String(value ?? "");
+        }
+        control.dispatchEvent(new Event("input", { bubbles: true }));
+        control.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      syncValues();
+      scheduleReactWorkbenchSync();
+      return cloneUi2Value(state.values);
+    };
     const bridge = {
       createFieldGroup: (groupFields, role) => renderReactWorkbenchFieldGroup(groupFields, role),
       releaseField: releaseReactWorkbenchField,
@@ -2117,19 +2136,8 @@
         syncValues();
         return cloneUi2Value(state.values);
       },
-      setInputValue: (fieldId, value) => {
-        const row = nodes.root.querySelector(`.ui2-field[data-field-id="${cssEscape(fieldId)}"]`);
-        const control = row ? fieldControls(row)[0] : null;
-        if (!control) {
-          return cloneUi2Value(state.values);
-        }
-        control.value = String(value ?? "");
-        control.dispatchEvent(new Event("input", { bubbles: true }));
-        control.dispatchEvent(new Event("change", { bubbles: true }));
-        syncValues();
-        scheduleReactWorkbenchSync();
-        return cloneUi2Value(state.values);
-      },
+      setInputValues,
+      setInputValue: (fieldId, value) => setInputValues({ [fieldId]: value }),
       reset: (form) => resetModuleForm(form),
       returnToInputs: () => {
         setSubmittedRunContext(null);

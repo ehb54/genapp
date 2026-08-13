@@ -128,9 +128,13 @@ like( $ui2_react_css, qr/\.ui2-workbench-grid/, 'React stylesheet contains the s
 like( $ui2_react_css, qr/\.ui2-workbench-react-editing \.ui2-workbench-grid\{grid-template-columns:minmax\(28rem,1\.2fr\) minmax\(18rem,\.8fr\)\}/, 'editing state favors the input pane while submitted runs retain the standard split' );
 like( $ui2_react_source, qr/const wideInputLayout = view\.inputs\?\.layout === "wide"/, 'workbench accepts a presentation-only wide input layout opt-in' );
 like( $ui2_react_source, qr/function ChoiceCards\(.*?bridge\.setInputValue\(field\.id \|\| "", choice\.value\)/s, 'workbench choice cards update the existing UI2 field rather than owning a second value' );
+like( $ui2_react_source, qr/function WorkflowChoices\(.*?bridge\.setInputValues\(choice\.values\)/s, 'workflow choices update existing canonical fields rather than owning submitted state' );
+like( $ui2_react_source, qr/const selected = choices\.find\(\(\[, choice\]\) => Object\.entries\(choice\.matches \|\| \{\}\)\.every/, 'workflow choices derive their selected state from restored canonical values' );
 like( $ui2_react_source, qr/fieldPresentations = view\.inputs\?\.fieldPresentations \|\| \{\}/, 'workbench reads choice-card presentation metadata from the view' );
+like( $ui2_react_source, qr/workflowChoices = view\.inputs\?\.workflowChoices \|\| \{\}/, 'workbench reads opt-in workflow presentation metadata from the view' );
 like( $ui2_react_source, qr/fieldPresentations\[field\.id \|\| ""\] && repeatExpressionActive\(field\.repeat, liveValues\)/, 'choice cards honor the declared UI2 field visibility condition' );
-like( $ui2_js, qr/setInputValue: \(fieldId, value\).*?control\.dispatchEvent\(new Event\("change", \{ bubbles: true \}\)\)/s, 'UI2 bridge routes choice-card changes through the normal input lifecycle' );
+like( $ui2_js, qr/const setInputValues = \(values\) => \{.*?control\.type === "checkbox".*?control\.dispatchEvent\(new Event\("change", \{ bubbles: true \}\)\)/s, 'UI2 bridge routes multi-field workflow changes, including checkboxes, through the normal input lifecycle' );
+like( $ui2_js, qr/setInputValue: \(fieldId, value\) => setInputValues\(\{ \[fieldId\]: value \}\)/, 'single-field choice cards reuse the same UI2 bridge lifecycle' );
 like( $ui2_react_source, qr/wideInputLayout && \(!submitted \|\| inputEditOpen\).*?ui2-workbench-grid-inputs-wide/s, 'wide input layout applies only while the editor is visible' );
 like( $ui2_react_css, qr/\.ui2-workbench-react-editing \.ui2-workbench-grid\.ui2-workbench-grid-inputs-wide.*?grid-template-columns:minmax\(0,1fr\)/, 'wide input layout gives dense editors the full workbench width' );
 like( $ui2_react_css, qr/\@container \(width<=52rem\).*?grid-template-columns:1fr/s, 'workbench stacks from its available width rather than allowing sidebar-constrained tables to scroll' );

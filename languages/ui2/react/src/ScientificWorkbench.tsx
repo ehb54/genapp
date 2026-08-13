@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import type { ChoiceCardPresentation, JobRuntimeSnapshot, ScientificWorkbenchBridge, ScientificWorkbenchMountProps, Ui2Field, WorkbenchResultGroup, WorkbenchSection } from "@/types"
+import type { ChoiceCardPresentation, JobRuntimeSnapshot, ScientificWorkbenchBridge, ScientificWorkbenchMountProps, Ui2Field, WorkbenchResultGroup, WorkbenchSection, WorkflowChoicePresentation } from "@/types"
 
 function NativeHost({ create, release, mounted, className }: { create: () => HTMLElement; release?: (node: HTMLElement) => void; mounted?: () => void; className?: string }) {
   const hostRef = React.useRef<HTMLDivElement>(null)
@@ -90,6 +90,50 @@ function ChoiceCards({ field, presentation, bridge, values }: {
                 <span className="ui2-choice-card-title">{details.title || choice.label}</span>
                 {details.badge && <span className="ui2-choice-card-badge">{details.badge}</span>}
                 {details.description && <span className="ui2-choice-card-description">{details.description}</span>}
+              </span>
+            </label>
+          )
+        })}
+      </div>
+    </fieldset>
+  )
+}
+
+function sameValue(left: unknown, right: unknown) {
+  return String(left ?? "") === String(right ?? "")
+}
+
+function WorkflowChoices({ presentation, fields, bridge, values }: {
+  presentation: WorkflowChoicePresentation
+  fields: Ui2Field[]
+  bridge: ScientificWorkbenchBridge
+  values: Record<string, unknown>
+}) {
+  const choices = Object.entries(presentation.choices || {})
+  const selected = choices.find(([, choice]) => Object.entries(choice.matches || {}).every(([fieldId, value]) => sameValue(values[fieldId], value)))?.[0] || ""
+  const label = presentation.title || "Choose a workflow"
+
+  return (
+    <fieldset className="ui2-workflow-choices">
+      <legend>{label}</legend>
+      <FieldGroup bridge={bridge} fields={fields} />
+      <div className="ui2-choice-cards-grid">
+        {choices.map(([choiceId, choice]) => {
+          const id = `workflow-${choiceId}`
+          return (
+            <label className={`ui2-choice-card${selected === choiceId ? " ui2-choice-card-selected" : ""}`} htmlFor={id} key={choiceId}>
+              <input
+                checked={selected === choiceId}
+                id={id}
+                name="workflow-choices"
+                onChange={() => bridge.setInputValues(choice.values)}
+                type="radio"
+                value={choiceId}
+              />
+              <span className="ui2-choice-card-content">
+                <span className="ui2-choice-card-title">{choice.title}</span>
+                {choice.badge && <span className="ui2-choice-card-badge">{choice.badge}</span>}
+                {choice.description && <span className="ui2-choice-card-description">{choice.description}</span>}
               </span>
             </label>
           )
@@ -212,6 +256,13 @@ function sectionFieldIds(section: WorkbenchSection): string[] {
   return [
     ...(section.fields || []),
     ...((section.children || []).flatMap((child) => sectionFieldIds(child))),
+  ]
+}
+
+function sectionWorkflowChoiceIds(section: WorkbenchSection): string[] {
+  return [
+    ...(section.workflowChoices || []),
+    ...((section.children || []).flatMap((child) => sectionWorkflowChoiceIds(child))),
   ]
 }
 
@@ -350,6 +401,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
   const inputSections = view.inputs?.sections || []
   const advancedSection = view.inputs?.advanced
   const fieldPresentations = view.inputs?.fieldPresentations || {}
+  const workflowChoices = view.inputs?.workflowChoices || {}
   const wideInputLayout = view.inputs?.layout === "wide"
   const advancedFieldIds = advancedSection?.fields || []
   const summaryFieldIds = view.inputs?.submittedSummary?.fields || []
@@ -387,6 +439,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
   const progressFields = (progressSection?.fields || []).map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]
   const assigned = new Set([
     ...inputSections.flatMap((section) => sectionFieldIds(section)),
+    ...inputSections.flatMap((section) => sectionWorkflowChoiceIds(section).flatMap((id) => workflowChoices[id]?.fields || [])),
     ...advancedFieldIds,
   ])
   const extraInputs = fields.filter((field) => field.role !== "output" && field.id && field.type !== "label" && !assigned.has(field.id))
@@ -547,6 +600,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
   const renderInputSection = (section: WorkbenchSection, depth = 0): React.ReactNode => {
     if (!repeatExpressionActive(section.repeat, liveValues)) return null
     const sectionFields = (section.fields || []).map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]
+    const sectionWorkflowChoices = (section.workflowChoices || []).map((id) => [id, workflowChoices[id]] as const).filter(([, presentation]) => Boolean(presentation))
     return (
       <Card className={depth > 0 ? "ui2-workbench-input-subsection" : undefined} key={section.id}>
         <CardHeader>
@@ -559,6 +613,9 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
           {sectionFields.filter((field) => !fieldPresentations[field.id || ""]).length > 0 && <FieldGroup bridge={bridge} fields={sectionFields.filter((field) => !fieldPresentations[field.id || ""])} />}
           {sectionFields.filter((field) => fieldPresentations[field.id || ""] && repeatExpressionActive(field.repeat, liveValues)).map((field) => (
             <ChoiceCards bridge={bridge} field={field} key={field.id} presentation={fieldPresentations[field.id || ""]} values={liveValues} />
+          ))}
+          {sectionWorkflowChoices.map(([id, presentation]) => (
+            <WorkflowChoices bridge={bridge} fields={presentation.fields.map((fieldId) => fieldsById.get(fieldId)).filter(Boolean) as Ui2Field[]} key={id} presentation={presentation} values={liveValues} />
           ))}
           {(section.children || []).map((child) => renderInputSection(child, depth + 1))}
         </CardContent>

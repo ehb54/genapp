@@ -169,7 +169,15 @@
   padding: 0;
 }
 
-.ui2-choice-cards > legend {
+.ui2-workflow-choices {
+  border: 0;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}
+
+.ui2-choice-cards > legend,
+.ui2-workflow-choices > legend {
   color: var(--ui2-text);
   font-size: 1rem;
   font-weight: 700;
@@ -177,7 +185,8 @@
   padding: 0;
 }
 
-.ui2-choice-cards > .ui2-workbench-field-group {
+.ui2-choice-cards > .ui2-workbench-field-group,
+.ui2-workflow-choices > .ui2-workbench-field-group {
   display: none;
 }
 

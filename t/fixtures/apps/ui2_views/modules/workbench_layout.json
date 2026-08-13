@@ -21,6 +21,22 @@
         },
         {
             "role"    : "input",
+            "id"      : "include_primary_data",
+            "label"   : "Include primary data",
+            "type"    : "checkbox",
+            "checked" : "false",
+            "repeater" : "true"
+        },
+        {
+            "role"    : "input",
+            "id"      : "include_secondary_data",
+            "label"   : "Include secondary data",
+            "type"    : "checkbox",
+            "checked" : "false",
+            "repeater" : "true"
+        },
+        {
+            "role"    : "input",
             "id"      : "workflow_choice",
             "label"   : "Choose a workflow",
             "type"    : "listbox",
