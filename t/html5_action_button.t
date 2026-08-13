@@ -50,6 +50,15 @@ like( $ui2_js, qr/function runModuleAction\(field, button, statusNode\)/, 'ui2 r
 like( $ui2_js, qr/function moduleActionEndpointFor\(moduleId\)[\s\S]+ajax\/action/, 'ui2 action endpoint resolves through legacy ajax action root' );
 like( $ui2_js, qr/function applyActionPayload\(payload\)/, 'ui2 runtime declares action response handler' );
 like( $ui2_js, qr/createFieldGroup: \(groupFields, role\) => renderReactWorkbenchFieldGroup\(groupFields, role\)/, 'React bridge will receive action support through canonical UI2 field groups' );
+like( $ui2_js, qr/function renderActionControl\(field\).*?ui2-button ui2-button-action/s, 'declared actions receive the distinct secondary-action class' );
+like( $ui2_js, qr/status\.setAttribute\("aria-live", "polite"\).*?status\.setAttribute\("role", "status"\)/s, 'action status announces progress and completion accessibly' );
+like( $ui2_js, qr/return normalized === "warning" \? "warning" : "ok";/, 'action status preserves warning semantics' );
+
+my $ui2_css = read_file( File::Spec->catfile( $generated->{app_dir}, qw(output ui2 css ui2.css) ) );
+like( $ui2_css, qr/\.ui2-button-action\s*\{[^}]*background:\s*var\(--ui2-accent-soft\);/s, 'action buttons use the secondary accent treatment' );
+like( $ui2_css, qr/\.ui2-button-action:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--ui2-focus-ring\);/s, 'action buttons retain a visible keyboard focus indicator' );
+like( $ui2_css, qr/\.ui2-action-status\[data-status="ok"\]\s*\{[^}]*color:\s*var\(--ui2-success\);/s, 'successful action status uses the semantic success color' );
+like( $ui2_css, qr/\.ui2-action-status\[data-status="warning"\]\s*\{[^}]*color:\s*var\(--ui2-warn\);/s, 'warning action status uses the semantic warning color' );
 
 ok( -f File::Spec->catfile( $repo_root, qw(languages qt5 types action.input) ), 'qt5 has additive action input template stub' );
 ok( -f File::Spec->catfile( $repo_root, qw(languages qt5 types action.output) ), 'qt5 has additive action output template stub' );

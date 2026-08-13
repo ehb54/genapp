@@ -3128,12 +3128,14 @@
 
   function renderActionControl(field) {
     const wrap = el("div", "ui2-action-control");
-    const button = el("button", "ui2-button ui2-button-quiet", field.buttontext || field.label || "Action");
+    const button = el("button", "ui2-button ui2-button-action", field.buttontext || field.label || "Action");
     button.type = "button";
     button.id = fieldId(field);
     button.dataset.actionId = field.id || "";
     const status = el("div", "ui2-submit-status ui2-action-status", "");
     status.id = `${fieldId(field)}-action-status`;
+    status.setAttribute("aria-live", "polite");
+    status.setAttribute("role", "status");
     button.addEventListener("click", () => runModuleAction(field, button, status));
     wrap.append(button, status);
     return wrap;
@@ -7427,7 +7429,10 @@
 
   function statusKind(status) {
     const normalized = stringValue(status).toLowerCase();
-    return ["failed", "error", "cancelled", "canceled"].includes(normalized) ? "error" : "ok";
+    if (["failed", "error", "cancelled", "canceled"].includes(normalized)) {
+      return "error";
+    }
+    return normalized === "warning" ? "warning" : "ok";
   }
 
   function createJobEventStore() {

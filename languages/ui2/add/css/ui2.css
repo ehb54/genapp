@@ -626,6 +626,31 @@ code {
   background: var(--ui2-panel-soft);
 }
 
+/* A declared action performs a bounded pre-run operation; it is prominent
+ * without competing with the final submit button. */
+.ui2-button-action {
+  border-color: var(--ui2-accent);
+  background: var(--ui2-accent-soft);
+  color: var(--ui2-accent-strong);
+  font-weight: 700;
+}
+
+.ui2-button-action:hover {
+  border-color: var(--ui2-accent-strong);
+  background: var(--ui2-accent);
+  color: var(--ui2-on-accent);
+}
+
+.ui2-button-action:focus-visible {
+  outline: 2px solid var(--ui2-focus-ring);
+  outline-offset: 2px;
+}
+
+.ui2-button-action:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
 .ui2-workspace {
   display: grid;
   grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr);
@@ -1119,6 +1144,14 @@ code {
 
 .ui2-submit-status[data-status="error"] {
   color: var(--ui2-danger);
+}
+
+.ui2-action-status[data-status="ok"] {
+  color: var(--ui2-success);
+}
+
+.ui2-action-status[data-status="warning"] {
+  color: var(--ui2-warn);
 }
 
 .ui2-file-download-links {

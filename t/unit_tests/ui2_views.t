@@ -471,6 +471,9 @@ like( $ui2_css, qr/:root\[data-ui2-theme="cyborg"\]/, 'ui2 stylesheet declares l
 like( $ui2_css, qr/:root\[data-ui2-theme="flatly"\]/, 'ui2 stylesheet declares legacy-inspired light review palettes' );
 like( $ui2_css, qr/--ui2-on-accent:/, 'ui2 stylesheet exposes a semantic foreground token for accent buttons' );
 like( $ui2_css, qr/--ui2-focus-ring:/, 'ui2 stylesheet exposes a semantic focus-ring token' );
+like( $ui2_css, qr/\.ui2-button-action\s*\{[^}]*background:\s*var\(--ui2-accent-soft\);/s, 'ui2 stylesheet distinguishes declared actions from primary and quiet buttons' );
+like( $ui2_css, qr/\.ui2-button-action:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--ui2-focus-ring\);/s, 'ui2 action buttons expose an explicit keyboard focus treatment' );
+like( $ui2_css, qr/\.ui2-action-status\[data-status="ok"\]/, 'ui2 stylesheet scopes successful action status to the semantic success treatment' );
 like( $ui2_css, qr/\.ui2-dialog-overlay/, 'ui2 stylesheet includes login dialog shell styles' );
 like( $ui2_css, qr/\.ui2-legacy-message-dialog/, 'ui2 stylesheet includes legacy backend message dialog styles' );
 like( $ui2_css, qr/\.ui2-legacy-message-icon/, 'ui2 stylesheet includes legacy backend message icon styling' );
