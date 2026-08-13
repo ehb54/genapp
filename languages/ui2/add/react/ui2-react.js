@@ -10780,7 +10780,7 @@ function Hr({ field: e, presentation: t, bridge: n, values: r }) {
 			}),
 			/* @__PURE__ */ (0, R.jsx)("div", {
 				className: "ui2-choice-cards-grid",
-				children: i.map((r) => {
+				children: i.filter((e) => qr(t.choices?.[e.value]?.repeat, r)).map((r) => {
 					let i = t.choices?.[r.value] || {}, o = `${e.id}-${r.value}`;
 					return /* @__PURE__ */ (0, R.jsxs)("label", {
 						className: `ui2-choice-card${a === r.value ? " ui2-choice-card-selected" : ""}`,

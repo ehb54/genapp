@@ -73,7 +73,7 @@ function ChoiceCards({ field, presentation, bridge, values }: {
       <legend>{label}</legend>
       <FieldGroup bridge={bridge} fields={[field]} />
       <div className="ui2-choice-cards-grid">
-        {choices.map((choice) => {
+        {choices.filter((choice) => repeatExpressionActive(presentation.choices?.[choice.value]?.repeat, values)).map((choice) => {
           const details = presentation.choices?.[choice.value] || {}
           const id = `${field.id}-${choice.value}`
           return (

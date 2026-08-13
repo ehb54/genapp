@@ -36,6 +36,7 @@ export type ChoiceCardPresentation = {
     title?: string
     description?: string
     badge?: string
+    repeat?: string
   }>
 }
 
