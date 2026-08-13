@@ -21,7 +21,8 @@ Add optional `viewer` metadata to the NGL output field in a module JSON file:
     "camera": "orthographic",
     "background": "#050909",
     "axes": false,
-    "mouse_preset": "default"
+    "mouse_preset": "default",
+    "rollover_help": false
   }
 }
 ```
@@ -32,6 +33,14 @@ to be created.  It is the only source of viewer presentation policy. Drivers
 must not send runtime `viewer` overrides, camera choices, browser-control
 settings, or other renderer policy. When no camera is declared, the viewer
 defaults to orthographic projection.
+
+The molecular canvas owns ordinary mouse-wheel and trackpad scrolling, so it
+zooms immediately without requiring focus or opening **Viewer settings**. Page
+scrolling remains available outside the canvas, and browser zoom shortcuts are
+left alone. Rollover help is off by default inside a molecular viewer because
+large tooltips can obscure a structure during inspection. A user can enable it
+locally in **Viewer settings**; `display.rollover_help: true` only changes that
+initial local state. Neither setting is submitted or saved with the result.
 
 `additional_components` enables the optional multi-molecule contract.  When it
 is absent or false, the legacy single-structure payload remains unchanged.

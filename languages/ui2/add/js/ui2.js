@@ -2735,7 +2735,13 @@
     }
 
     const stack = el("div", "ui2-control-stack");
-    stack.appendChild(setHoverHelp(role === "output" ? renderOutput(field) : renderControl(field), field.help));
+    const control = role === "output" ? renderOutput(field) : renderControl(field);
+    // An NGL canvas is an active interaction surface.  Its optional help is
+    // managed locally by the viewer so a global hover tooltip never obscures
+    // a molecule while the user is rotating or zooming it.
+    stack.appendChild(role === "output" && String(field.type || "").toLowerCase() === "ngl"
+      ? control
+      : setHoverHelp(control, field.help));
     if (devMode && field.repeat) {
       stack.appendChild(el("p", "ui2-help", `Visible when ${field.repeat}`));
       stack.appendChild(el("p", "ui2-help ui2-repeat-debug"));
@@ -8220,6 +8226,8 @@
     output.dataset.outputType = type;
     // Viewer settings are presentation-only field metadata.
     output._ui2NglViewerConfig = cloneUi2Value(field.viewer || {});
+    output._ui2NglViewerHelp = stringValue(field.help).trim();
+    output._ui2NglRolloverHelp = output._ui2NglViewerConfig?.display?.rollover_help === true;
     const savedFrames = state.nglFrameHistories[field.id || ""];
     if (Array.isArray(savedFrames) && savedFrames.length) {
       output._ui2_ngl_frames = savedFrames;
@@ -8235,18 +8243,19 @@
     if (field.height) {
       plot.style.height = field.height;
     }
-
     const buttons = el("div", "ui2-ngl-buttons");
     buttons.id = `${field.id || "ngl_output"}_buttons`;
     buttons.hidden = true;
 
     const placeholder = el("div", "ui2-ngl-placeholder", outputPlaceholderForType(type));
     output.append(plot, buttons, placeholder);
+    syncNglRolloverHelp(output);
     return output;
   }
 
   function clearNglOutput(output, options = {}) {
     output._ui2NglRenderRevision = (output._ui2NglRenderRevision || 0) + 1;
+    detachNglWheelGuard(output);
     disconnectNglOutputObserver(output);
     stopNglFramePlayback(output);
     if (output._ui2NglStage?.dispose) {
@@ -8345,6 +8354,7 @@
     output._ui2NglRenderRevision = renderRevision;
     plot.hidden = false;
     buttons.hidden = false;
+    attachNglWheelGuard(output);
     output._ui2NglNeedsVisibleAutoView = true;
     observeNglOutput(output);
     if (placeholder) {
@@ -8356,6 +8366,10 @@
           return null;
         }
         const stage = new window.NGL.Stage(plot.id, nglViewerStageParams(output));
+        // NGL 0.10.4 accepts the preset in stage parameters inconsistently.
+        // Apply it directly so the canvas is usable before its settings panel
+        // has ever been opened.
+        stage.mouseControls?.preset?.(nglViewerMousePreset(output));
         output._ui2NglStage = stage;
         return stage.loadFile(topologyLoadName, structurePayload.loadparams || {}).then((component) => {
           if (output._ui2NglRenderRevision !== renderRevision) {
@@ -8543,6 +8557,44 @@
     }
     if (display.mouse_preset) params.mousePreset = display.mouse_preset;
     return params;
+  }
+
+  function nglViewerMousePreset(output) {
+    return stringValue(nglViewerConfig(output).display?.mouse_preset).trim() || "default";
+  }
+
+  function syncNglRolloverHelp(output) {
+    const plot = output?.querySelector?.(".ui2-ngl-plot");
+    if (!plot) return;
+    const enabled = output._ui2NglRolloverHelp === true;
+    const help = stringValue(output._ui2NglViewerHelp).trim();
+    if (enabled && help) {
+      setHoverHelp(plot, help);
+      return;
+    }
+    delete plot.dataset.ui2Help;
+    plot.removeAttribute("aria-describedby");
+  }
+
+  function attachNglWheelGuard(output) {
+    if (output?._ui2NglWheelGuard) return;
+    const plot = output?.querySelector?.(".ui2-ngl-plot");
+    if (!plot) return;
+    const guard = (event) => {
+      // Keep browser-level zoom shortcuts available, while ordinary wheel and
+      // trackpad scrolling over the molecular canvas belongs to NGL.
+      if (event.ctrlKey || event.metaKey) return;
+      event.preventDefault();
+    };
+    plot.addEventListener("wheel", guard, { passive: false });
+    output._ui2NglWheelGuard = { plot, guard };
+  }
+
+  function detachNglWheelGuard(output) {
+    const guard = output?._ui2NglWheelGuard;
+    if (!guard) return;
+    guard.plot?.removeEventListener?.("wheel", guard.guard);
+    output._ui2NglWheelGuard = null;
   }
 
   function renderNglViewerControls(output, component, specs, layered) {
@@ -8788,7 +8840,7 @@
     [["default", "Rotate / pan / zoom"], ["pymol", "PyMOL controls"], ["coot", "Coot controls"], ["astexviewer", "Astex controls"]].forEach(([value, label]) => {
       mouse.appendChild(new Option(label, value));
     });
-    mouse.value = display.mouse_preset || "default";
+    mouse.value = nglViewerMousePreset(output);
     mouse.addEventListener("change", () => {
       try {
         stage.mouseControls?.preset?.(mouse.value);
@@ -8798,6 +8850,16 @@
       }
     });
     grid.appendChild(nglViewerControl("Mouse", mouse));
+
+    const rolloverHelp = document.createElement("input");
+    rolloverHelp.type = "checkbox";
+    rolloverHelp.checked = output._ui2NglRolloverHelp === true;
+    rolloverHelp.setAttribute("aria-label", "Enable rollover help in the molecular viewer");
+    rolloverHelp.addEventListener("change", () => {
+      output._ui2NglRolloverHelp = rolloverHelp.checked;
+      syncNglRolloverHelp(output);
+    });
+    grid.appendChild(nglViewerControl("Rollover help", rolloverHelp));
 
     const axes = document.createElement("input");
     axes.type = "checkbox";

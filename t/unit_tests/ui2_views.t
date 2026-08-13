@@ -279,6 +279,14 @@ like( $ui2_js, qr/slider\.min = "0";\s+slider\.max = "1";\s+slider\.step = "0\.0
 like( $ui2_js, qr/output\._ui2NglTopologyLoadName === topologyLoadName.*?render_ngl_frame_controls\(output\)/s, 'a compatible final topology retains generic streamed-frame controls' );
 like( $ui2_js, qr/function renderNglOutputShell\(field, type\).*?_plot.*?_buttons/s, 'ui2 NGL outputs render the legacy plot and buttons shell' );
 like( $ui2_js, qr/function renderNglOutput\(output, value\).*?const topologyLoadName = normalizeNglLoadName\(structurePayload\.loadname\).*?new window\.NGL\.Stage\(plot\.id, nglViewerStageParams\(output\)\).*?stage\.loadFile\(topologyLoadName, structurePayload\.loadparams/s, 'ui2 NGL outputs load a normalized topology into a configured stage' );
+like( $ui2_js, qr/function attachNglWheelGuard\(output\).*?event\.preventDefault\(\).*?plot\.addEventListener\("wheel", guard, \{ passive: false \}\)/s, 'NGL canvas claims ordinary wheel interaction with a non-passive local listener' );
+like( $ui2_js, qr/function clearNglOutput\(output, options = \{\}\).*?detachNglWheelGuard\(output\)/s, 'NGL viewer cleanup removes its local wheel listener before disposal' );
+like( $ui2_js, qr/function detachNglWheelGuard\(output\).*?removeEventListener\?\.\("wheel", guard\.guard\)/s, 'NGL wheel-listener cleanup removes the exact registered handler' );
+like( $ui2_js, qr/function attachNglWheelGuard\(output\).*?event\.ctrlKey \|\| event\.metaKey.*?return/s, 'NGL wheel interaction preserves browser zoom shortcuts' );
+like( $ui2_js, qr/function renderNglOutput\(output, value\).*?new window\.NGL\.Stage\(plot\.id, nglViewerStageParams\(output\)\).*?stage\.mouseControls\?\.preset\?\.\(nglViewerMousePreset\(output\)\)/s, 'NGL applies the configured mouse preset before viewer settings are opened' );
+like( $ui2_js, qr/function syncNglRolloverHelp\(output\).*?output\._ui2NglRolloverHelp === true.*?delete plot\.dataset\.ui2Help/s, 'NGL rollover help is locally controlled and can be disabled without changing global help' );
+like( $ui2_js, qr/function renderNglSceneControls\(output, component\).*?nglViewerControl\("Rollover help", rolloverHelp\)/s, 'NGL Viewer settings exposes a local rollover-help switch' );
+unlike( $ui2_js, qr/role === "output" \? renderOutput\(field\) : renderControl\(field\), field\.help/, 'NGL output field help is not wrapped across the active molecular canvas' );
 like( $ui2_js, qr/function renderNglOutput\(output, value\).*?renderRevision.*?_ui2NglRenderRevision.*?stage\.dispose/s, 'ui2 NGL discards stale asynchronous viewer loads when a newer snapshot arrives' );
 like( $ui2_js, qr/function nglViewerConfig\(output\).*?capabilities: Object\.assign.*?display: Object\.assign/s, 'ui2 reads NGL viewer configuration from field metadata' );
 like( $ui2_js, qr/function nglViewerStageParams\(output\).*?const params = \{ cameraType: "orthographic" \};.*?params\.cameraType = display\.camera/s, 'ui2 NGL viewer defaults stage cameras to orthographic while preserving explicit camera configuration' );
@@ -500,6 +508,7 @@ like( $ui2_css, qr/\.ui2-ai-helper-usage/, 'ui2 stylesheet includes compact AI H
 like( $ui2_css, qr/\.ui2-ai-helper-math\[data-display="true"\]/, 'ui2 stylesheet includes AI Helper display-equation styling' );
 like( $ui2_css, qr/\.ui2-output-plotly/, 'ui2 stylesheet includes a stable Plotly output surface' );
 like( $ui2_css, qr/\.ui2-output-ngl\s*\{[^}]*white-space:\s*normal/s, 'ui2 stylesheet gives NGL outputs a non-text viewer container' );
+like( $ui2_css, qr/\.ui2-ngl-plot\s*\{[^}]*overscroll-behavior:\s*contain/s, 'NGL canvas contains scroll chaining at its visual boundary' );
 like( $ui2_css, qr/\.ui2-ngl-button\[aria-pressed="true"\]/, 'ui2 stylesheet makes active NGL layer buttons visible' );
 like( $ui2_css, qr/\.ui2-ngl-selection-inspector.*?\.ui2-ngl-residue-row.*?overflow-x:\s*auto/s, 'ui2 stylesheet provides a horizontally scrollable generic residue strip' );
 like( $ui2_css, qr/\.ui2-dynamic-output\s*\{[^}]*display:\s*grid/s, 'ui2 stylesheet stacks dynamic output instances' );

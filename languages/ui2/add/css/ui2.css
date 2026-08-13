@@ -2102,6 +2102,7 @@ code {
 .ui2-ngl-plot {
   width: 100%;
   min-height: 24rem;
+  overscroll-behavior: contain;
   border: 1px solid var(--ui2-border);
   border-radius: 4px;
   background: var(--ui2-bg);
