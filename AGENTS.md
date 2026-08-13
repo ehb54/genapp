@@ -39,15 +39,17 @@ Do not add it to `.gitignore` or mark it assume-unchanged.
 
 ## UI2 Test Account Access
 
-- Treat use of the Zazzie3/UI2 `codex` account as task-scoped privileged access,
-  even when Chrome already has an authenticated session or saved credential.
-  Before using an authenticated session, logging in, or submitting work as
-  `codex`, obtain explicit permission from the requesting user for the current
-  task. Permission may cover reauthentication after a logout during that task,
-  but it never carries to another task.
-- Keep `codex` non-admin by default. Permission to use the normal account does
-  not authorize administrator-only work or use while the account is temporarily
-  elevated.
+- The live Zazzie3/UI2 test accounts are `codex` and `codex2`. Apply the same
+  usage patterns and rules to both accounts.
+- Treat use of either test account as task-scoped privileged access, even when
+  Chrome already has an authenticated session or saved credential. Before
+  using an authenticated session, logging in, or submitting work as either
+  account, obtain explicit permission from the requesting user for the current
+  task and account. Permission may cover reauthentication after a logout during
+  that task, but it never carries to another task or the other account.
+- Keep both test accounts non-admin by default. Permission to use a normal
+  account does not authorize administrator-only work or use while that account
+  is temporarily elevated.
 - Keep the password in the user's browser password manager or another approved
   credential channel. Never ask the user to paste it into chat; never store it
   in a repository, environment file, note, command, or log. During authorized
@@ -55,11 +57,12 @@ Do not add it to `.gitignore` or mark it assume-unchanged.
   while an autofilled password field is present.
 - Before administrator testing, stop and obtain separate explicit permission
   that names the administrative purpose and scope, plus confirmation that the
-  user has temporarily elevated `codex`. Do not elevate the account yourself
-  unless separately directed. Perform only the approved administrator checks.
-  When finished, log out, ask the user to remove the elevation, and do not use
-  the account again until the user confirms it is non-admin; when practical,
-  verify that administrator controls are no longer exposed.
+  user has temporarily elevated the specific test account. Do not elevate
+  either account yourself unless separately directed. Perform only the approved
+  administrator checks. When finished, log out, ask the user to remove the
+  elevation, and do not use that account again until the user confirms it is
+  non-admin; when practical, verify that administrator controls are no longer
+  exposed.
 - At the end of authorized browser work, log out unless the user asks to keep
   the authenticated tab open. In either case, require fresh permission in a
   later task.
@@ -424,7 +427,7 @@ changing it, read `../genapp_zazzie/docs/plot_presentation.md` and rollout issue
 ### Zazzie3 operations
 
 - Follow the repository-wide UI2 test-account access rules above whenever using
-  the Zazzie3 `codex` account.
+  the Zazzie3 `codex` or `codex2` account.
 - gacpu for `ehb54/genapp` means the requested gacp followed by
   `tools/zazzie3_update_genapp_core.sh`. If the server core checkout is dirty,
   inspect it and use `--stash-dirty` only when preserving those server-side
