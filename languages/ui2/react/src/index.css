@@ -591,6 +591,14 @@
   margin-top: 1rem;
 }
 
+.ui2-workbench-action-review-confirmation {
+  margin: 1rem 0 0;
+  border-left: 3px solid var(--ui2-accent);
+  padding: 0.8rem 1rem;
+  color: var(--ui2-text);
+  background: color-mix(in srgb, var(--ui2-accent) 10%, transparent);
+}
+
 @media (max-width: 1100px) {
   .ui2-workbench-grid {
     grid-template-columns: 1fr;

@@ -74,6 +74,17 @@ export type WorkbenchResultGroup = {
 // alias while new module views use the output-neutral `groups` name.
 export type WorkbenchResultTab = WorkbenchResultGroup
 
+export type WorkbenchActionReview = {
+  result: string
+  fields?: string[]
+  expanded?: "all" | "active" | string
+  title?: string
+  description?: string
+  badge?: string
+  confirmation?: string
+  continueLabel?: string
+}
+
 export type WorkbenchView = {
   renderer?: string
   layout?: string
@@ -91,6 +102,7 @@ export type WorkbenchView = {
       fields?: string[]
       expanded?: "all" | "active" | string
     }
+    actionReviews?: Record<string, WorkbenchActionReview>
   }
   actions?: {
     placement?: string

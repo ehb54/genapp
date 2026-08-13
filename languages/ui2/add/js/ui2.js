@@ -6319,6 +6319,13 @@
       }
       return;
     }
+    if (action === "review_inputs") {
+      const id = stringValue(instruction.id || instruction.review);
+      if (id) {
+        window.dispatchEvent(new CustomEvent("ui2-review-inputs", { detail: { id } }));
+      }
+      return;
+    }
     if (action === "message" || action === "dialog") {
       showLegacyMessagePayload({
         _message: {

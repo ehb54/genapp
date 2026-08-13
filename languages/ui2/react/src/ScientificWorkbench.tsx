@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import type { ChoiceCardPresentation, JobRuntimeSnapshot, ScientificWorkbenchBridge, ScientificWorkbenchMountProps, Ui2Field, WorkbenchResultGroup, WorkbenchSection, WorkflowChoicePresentation } from "@/types"
+import type { ChoiceCardPresentation, JobRuntimeSnapshot, ScientificWorkbenchBridge, ScientificWorkbenchMountProps, Ui2Field, WorkbenchActionReview, WorkbenchResultGroup, WorkbenchSection, WorkflowChoicePresentation } from "@/types"
 
 function NativeHost({ create, release, mounted, className }: { create: () => HTMLElement; release?: (node: HTMLElement) => void; mounted?: () => void; className?: string }) {
   const hostRef = React.useRef<HTMLDivElement>(null)
@@ -288,6 +288,10 @@ function SubmittedInputs({
   restoreWarnings = [],
   onEdit,
   onHide,
+  title = "Submitted inputs",
+  description,
+  badge = "Submitted",
+  continueLabel,
 }: {
   values: Record<string, unknown>
   fields: Ui2Field[]
@@ -297,7 +301,11 @@ function SubmittedInputs({
   restoreError?: string
   restoreWarnings?: string[]
   onEdit: () => void
-  onHide: () => void
+  onHide?: () => void
+  title?: string
+  description?: string
+  badge?: string
+  continueLabel?: string
 }) {
   const [showAll, setShowAll] = React.useState(false)
   const fieldMap = React.useMemo(() => new Map(fields.map((field) => [field.id, field])), [fields])
@@ -314,10 +322,10 @@ function SubmittedInputs({
     <Card className="ui2-workbench-submitted">
       <CardHeader>
         <div>
-          <CardTitle>Submitted inputs</CardTitle>
-          <CardDescription>{uuid ? `Run ${uuid}` : "Values associated with this run"}</CardDescription>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description || (uuid ? `Run ${uuid}` : "Values associated with this run")}</CardDescription>
         </div>
-        <span className="ui2-workbench-status-badge">Submitted</span>
+        <span className="ui2-workbench-status-badge">{badge}</span>
       </CardHeader>
       <CardContent>
         {restoreError && <p className="ui2-workbench-restore-error" role="alert">{restoreError}</p>}
@@ -341,8 +349,8 @@ function SubmittedInputs({
           <Button disabled={Boolean(restoreError)} type="button" variant="outline" onClick={() => setShowAll((current) => !current)}>
             {showAll ? "Show key inputs" : expandedMode === "active" ? `Show active inputs (${allIds.length})` : "Show all inputs"}
           </Button>
-          <Button type="button" variant="outline" onClick={onHide}>Hide inputs</Button>
-          <Button disabled={Boolean(restoreError)} type="button" onClick={onEdit}>Edit inputs</Button>
+          {onHide && <Button type="button" variant="outline" onClick={onHide}>Hide inputs</Button>}
+          <Button disabled={Boolean(restoreError)} type="button" onClick={onEdit}>{continueLabel || "Edit inputs"}</Button>
         </div>
       </CardContent>
     </Card>
@@ -407,11 +415,13 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
   const wideInputLayout = view.inputs?.layout === "wide"
   const advancedFieldIds = advancedSection?.fields || []
   const summaryFieldIds = view.inputs?.submittedSummary?.fields || []
+  const actionReviews = view.inputs?.actionReviews || {}
   const progressSection = view.results?.progress
   // Existing MMC views use `tabs`; new views use generic result groups.
   const resultGroups = view.results?.groups || view.results?.tabs || []
   const initialResult = resultGroups.find((group) => group.primary)?.id || resultGroups[0]?.id || ""
   const [activeResult, setActiveResult] = React.useState(initialResult)
+  const [actionReview, setActionReview] = React.useState<{ definition: WorkbenchActionReview; values: Record<string, unknown> } | null>(null)
   const [submitting, setSubmitting] = React.useState(false)
   const [inputRailCollapsed, setInputRailCollapsed] = React.useState(false)
   const [inputEditOpen, setInputEditOpen] = React.useState(false)
@@ -474,6 +484,20 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
     return () => window.removeEventListener("ui2-focus-result", focusResult)
   }, [resultGroups])
 
+  React.useEffect(() => {
+    const reviewInputs = (event: Event) => {
+      const id = String((event as CustomEvent<{ id?: unknown }>).detail?.id || "")
+      const definition = actionReviews[id]
+      if (!definition || !resultGroups.some((group) => group.id === definition.result)) return
+      setActionReview({ definition, values: bridge.syncValues() })
+      setActiveResult(definition.result)
+      setInputRailCollapsed(false)
+      setWorkspaceExpanded(false)
+    }
+    window.addEventListener("ui2-review-inputs", reviewInputs)
+    return () => window.removeEventListener("ui2-review-inputs", reviewInputs)
+  }, [actionReviews, bridge, resultGroups])
+
   React.useLayoutEffect(() => {
     setLiveValues(bridge.syncValues())
   }, [bridge])
@@ -492,6 +516,10 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
 
   React.useEffect(() => {
     if (submitted?.values) setLiveValues(submitted.values)
+  }, [submitted])
+
+  React.useEffect(() => {
+    if (submitted) setActionReview(null)
   }, [submitted])
 
   React.useEffect(() => {
@@ -571,6 +599,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
     bridge.reset(event.currentTarget)
     setLiveValues(bridge.syncValues())
     setAdvancedOpen(false)
+    setActionReview(null)
     setInputEditOpen(true)
     setInputRailCollapsed(false)
     setWorkspaceExpanded(false)
@@ -658,7 +687,20 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
           {submitted && !inputEditOpen && (
             <SubmittedInputs expandedMode={view.inputs?.submittedSummary?.expanded} fields={fields} summaryFieldIds={summaryFieldIds} onEdit={editInputs} onHide={() => setInputRailCollapsed(true)} restoreError={submitted.restoreError} restoreWarnings={submitted.restoreWarnings} uuid={submitted.uuid} values={submitted.values} />
           )}
-          <div className="ui2-workbench-input-scroll" hidden={Boolean(submitted) && !inputEditOpen}>
+          {!submitted && actionReview && (
+            <SubmittedInputs
+              badge={actionReview.definition.badge || "Review"}
+              continueLabel={actionReview.definition.continueLabel || "Continue setup"}
+              description={actionReview.definition.description || "Values used to create the displayed result"}
+              expandedMode={actionReview.definition.expanded}
+              fields={fields}
+              onEdit={() => setActionReview(null)}
+              summaryFieldIds={actionReview.definition.fields || []}
+              title={actionReview.definition.title || "Inputs used for this review"}
+              values={actionReview.values}
+            />
+          )}
+          <div className="ui2-workbench-input-scroll" hidden={(Boolean(submitted) && !inputEditOpen) || Boolean(actionReview)}>
               {testScenarios.available && testScenarios.catalog?.scenarios && (
                 <Card className="ui2-workbench-test-scenarios">
                   <CardHeader>
@@ -847,6 +889,9 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
                           plotPresentation={group.plotPresentation}
                           role="output"
                         />
+                        {actionReview?.definition.result === group.id && actionReview.definition.confirmation && (
+                          <p className="ui2-workbench-action-review-confirmation" role="status">{actionReview.definition.confirmation}</p>
+                        )}
                       </TabsContent>
                     )
                   })}
