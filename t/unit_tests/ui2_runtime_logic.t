@@ -1505,6 +1505,53 @@ assert.strictEqual(
   JSON.stringify(["first line\\n", "second line\\n"]),
   "job event store keeps append payloads in sequence recovery order"
 );
+const boundedJournalStore = hooks.createJobEventStore();
+boundedJournalStore.reset("run-journal", "torsion_angle_monte_carlo");
+const boundedJournalEvents = [
+  {
+    version: 1,
+    run: "run-journal",
+    module: "torsion_angle_monte_carlo",
+    sequence: 401,
+    timestamp: "2026-08-13T18:30:00Z",
+    channel: "plot",
+    topic: "plotout4",
+    operation: "snapshot",
+    payload: { figure: { data: [] } }
+  },
+  {
+    version: 1,
+    run: "run-journal",
+    module: "torsion_angle_monte_carlo",
+    sequence: 402,
+    timestamp: "2026-08-13T18:30:01Z",
+    channel: "progress",
+    topic: "run",
+    operation: "replace",
+    payload: { fraction: 0.4 }
+  }
+];
+assert.strictEqual(
+  boundedJournalStore.applyMany(boundedJournalEvents, { allowJournalBaseline: true }).accepted,
+  true,
+  "a bounded journal can establish a live job baseline after its prefix expires"
+);
+assert.strictEqual(
+  boundedJournalStore.snapshot().lastSequence,
+  402,
+  "journal recovery continues from its current contiguous range"
+);
+const strictLiveStore = hooks.createJobEventStore();
+strictLiveStore.reset("run-live", "torsion_angle_monte_carlo");
+strictLiveStore.applyMany([Object.assign({}, boundedJournalEvents[0], {
+  run: "run-live",
+  sequence: 401
+})]);
+assert.strictEqual(
+  strictLiveStore.snapshot().lastSequence,
+  0,
+  "an individual late live event remains pending until its missing prefix arrives"
+);
 eventStore.appendLegacyLog("legacy line\\n", "run-1", "monomer_monte_carlo");
 assert.strictEqual(eventStore.snapshot().channels.log.run.value, "legacy line\\n", "legacy text adapter writes only to the run-log topic");
 unsubscribeEvents();

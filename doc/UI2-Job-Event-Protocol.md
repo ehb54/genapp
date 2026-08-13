@@ -98,6 +98,10 @@ Initial operations:
   journal or a later topic snapshot.
 - Live delivery may broadcast one `_job_event`.
 - Polling and reattachment may return a bounded `_job_events` array.
+- A newly submitted job retains strict ordering for individual live events. If
+  its first delivery is a bounded journal whose initial prefix has expired,
+  UI2 establishes its baseline at the first retained journal event and applies
+  the contiguous retained range.
 - The journal is a delivery and runtime-display cache, not authoritative
   scientific storage or a complete history.
 - An event with `replay: false` is delivered live; the journal retains only an

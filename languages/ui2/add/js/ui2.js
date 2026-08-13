@@ -7643,7 +7643,8 @@
       }
     }
 
-    function applyMany(rawEvents) {
+    function applyMany(rawEvents, options = {}) {
+      const allowJournalBaseline = Boolean(options.allowJournalBaseline);
       let accepted = false;
       const applied = [];
       (Array.isArray(rawEvents) ? rawEvents : [rawEvents])
@@ -7662,7 +7663,11 @@
           }
 
           const expected = lastSequence + 1;
-          if (!lastSequence && !expectFirstSequence || event.sequence === expected) {
+          const canBaselineFromJournal = (
+            allowJournalBaseline && !lastSequence && expectFirstSequence
+          );
+          if ((!lastSequence && !expectFirstSequence) ||
+              canBaselineFromJournal || event.sequence === expected) {
             accepted = true;
             commit(event, applied);
             drainPending(applied);
@@ -7783,14 +7788,19 @@
   }
 
   function applyJobEventPayload(payload) {
-    const events = [];
-    if (Array.isArray(payload?._job_events)) {
-      events.push(...payload._job_events);
-    }
+    const journalEvents = Array.isArray(payload?._job_events)
+      ? payload._job_events
+      : [];
+    const events = [...journalEvents];
     if (payload?._job_event) {
       events.push(payload._job_event);
     }
-    state.jobEvents.applyMany(events).applied.forEach(applyJobEventToOutput);
+    state.jobEvents.applyMany(events, {
+      // A bounded journal may have evicted the first live event before the
+      // browser's first poll.  It is a recovery snapshot, unlike an individual
+      // WebSocket event, so it can establish the current sequence baseline.
+      allowJournalBaseline: journalEvents.length > 0
+    }).applied.forEach(applyJobEventToOutput);
   }
 
   function applyJobEventToOutput(event) {
@@ -11352,7 +11362,7 @@
       fileEntryDetails,
       fileManagerSelectedIds,
       fileManagerSelectedParentIds,
-      fileManagerSelectionIncludesTopLevelDirectory,
+      fileManagerSelectionIncludesDirectory,
       fileManagerSelectedProjectRoots,
       fileManagerRemovalPrompt,
       fileManagerDeleteFormData,
