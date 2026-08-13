@@ -36,6 +36,34 @@ defaults to orthographic projection.
 `additional_components` enables the optional multi-molecule contract.  When it
 is absent or false, the legacy single-structure payload remains unchanged.
 
+`selection_inspector` enables an optional, local inspection panel when the
+structure payload contains a generic `selectionInspector` object.  It can list
+named selections, center the structure on one, and display corresponding
+coordinate residues.  `selection_visibility` is a separate opt-in capability:
+when both capabilities are enabled, the panel may offer **Whole structure**,
+**Flexible regions only**, and **Selected region only**.  The complete
+structure remains the default.  Existing viewers and selection inspectors are
+unchanged unless they opt in to this second capability.
+
+The generic payload uses NGL-resolved atom selections, not module-specific
+scientific terms:
+
+```json
+{
+  "selectionInspector": {
+    "all_selection": "@1-20,41-60",
+    "all_boundary_selection": "@1,20,41,60",
+    "groups": [
+      {"id": "region-1", "label": "Region 1", "selection": "@1-20", "boundary_selection": "@1,20", "residue_ids": ["residue-0"]}
+    ],
+    "segments": []
+  }
+}
+```
+
+Visibility and focusing are browser-local inspection state. They do not change
+the loaded coordinates, scientific selections, or saved result files.
+
 `stream_preview_coverage` is optional metadata for a bounded live-coordinate
 preview. It declares which generic frame value is the population counter and
 the producer-supplied label for that population:

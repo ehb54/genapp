@@ -8254,6 +8254,7 @@
     output._ui2NglSpecs = null;
     output._ui2NglTrajectory = null;
     output._ui2NglAxesRep = null;
+    output._ui2NglSelectionVisibilityReps = null;
     output._ui2NglTopologyLoadName = null;
     output._ui2NglNeedsVisibleAutoView = false;
     output._ui2_ngl_density_payload = null;
@@ -8567,11 +8568,61 @@
       controls.appendChild(el("p", "ui2-muted", inspector.description));
     }
     const picker = el("div", "ui2-ngl-selection-picker");
+    const visibility = el("div", "ui2-ngl-selection-visibility");
     const sequence = el("div", "ui2-ngl-residue-sequence");
     const groupButtons = new Map();
     const residueButtons = new Map();
+    const visibilityButtons = new Map();
+    let selectedGroup = null;
+    let visibilityMode = "whole";
+
+    const clearVisibilityRepresentations = () => {
+      (output._ui2NglSelectionVisibilityReps || []).forEach((representation) => {
+        component.removeRepresentation?.(representation);
+      });
+      output._ui2NglSelectionVisibilityReps = [];
+    };
+
+    const setBaseVisibility = (visible) => {
+      Object.values(output._ui2NglReps || {}).forEach((representation) => {
+        representation.setVisibility?.(visible);
+      });
+    };
+
+    const setVisibilityMode = (mode) => {
+      if (mode === "selected" && !selectedGroup) return;
+      visibilityMode = mode;
+      clearVisibilityRepresentations();
+      setBaseVisibility(mode === "whole");
+      const selection = mode === "selected"
+        ? selectedGroup?.selection
+        : inspector.all_selection;
+      if (mode !== "whole" && selection && selection !== "none") {
+        const source = output._ui2NglSpecs?.[0];
+        const params = Object.assign({}, source?.params || {}, { sele: selection });
+        output._ui2NglSelectionVisibilityReps.push(
+          component.addRepresentation(source?.type || "cartoon", params));
+        const boundarySelection = mode === "selected"
+          ? selectedGroup?.boundary_selection
+          : inspector.all_boundary_selection;
+        if (boundarySelection && boundarySelection !== "none") {
+          output._ui2NglSelectionVisibilityReps.push(
+            component.addRepresentation("ball+stick", {
+              sele: boundarySelection,
+              color: "yellow",
+              radiusScale: 1.35,
+            }));
+        }
+      }
+      visibilityButtons.forEach((button, id) => {
+        button.setAttribute("aria-pressed", String(id === mode));
+        if (id === "selected") button.disabled = !selectedGroup;
+      });
+      requestNglRender(output._ui2NglStage);
+    };
 
     const setFocus = (group) => {
+      selectedGroup = group;
       if (output._ui2NglSelectionFocus) {
         component.removeRepresentation?.(output._ui2NglSelectionFocus);
         output._ui2NglSelectionFocus = null;
@@ -8602,8 +8653,30 @@
         }
       });
       firstSelectedResidue?.scrollIntoView?.({ block: "nearest", inline: "center" });
+      if (visibilityMode === "selected") {
+        setVisibilityMode("selected");
+      } else {
+        const selectedVisibilityButton = visibilityButtons.get("selected");
+        if (selectedVisibilityButton) selectedVisibilityButton.disabled = false;
+      }
       requestNglRender(output._ui2NglStage);
     };
+
+    if (nglViewerConfig(output).capabilities?.selection_visibility === true) {
+      [
+        ["whole", "Whole structure"],
+        ["flexible", "Flexible regions only"],
+        ["selected", "Selected region only"],
+      ].forEach(([id, label]) => {
+        const button = el("button", "ui2-button ui2-button-quiet ui2-ngl-button", label);
+        button.type = "button";
+        button.setAttribute("aria-pressed", String(id === visibilityMode));
+        button.disabled = id === "selected";
+        button.addEventListener("click", () => setVisibilityMode(id));
+        visibility.appendChild(button);
+        visibilityButtons.set(id, button);
+      });
+    }
 
     const all = el("button", "ui2-button ui2-button-quiet ui2-ngl-button",
       inspector.all_label || "All selections");
@@ -8649,7 +8722,15 @@
       row.appendChild(residues);
       sequence.appendChild(row);
     });
-    controls.append(picker, sequence);
+    if (visibility.childElementCount) {
+      controls.append(
+        el("p", "ui2-ngl-selection-control-label", "Show"),
+        visibility);
+    }
+    controls.append(
+      el("p", "ui2-ngl-selection-control-label", "Center and inspect"),
+      picker,
+      sequence);
     buttons.appendChild(controls);
   }
 

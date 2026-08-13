@@ -2222,11 +2222,19 @@ code {
   font-size: 0.84rem;
 }
 
-.ui2-ngl-selection-picker {
+.ui2-ngl-selection-picker,
+.ui2-ngl-selection-visibility {
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
   margin-top: 0.55rem;
+}
+
+.ui2-ngl-selection-control-label {
+  color: var(--ui2-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin: 0.7rem 0 0;
 }
 
 .ui2-ngl-residue-sequence {
