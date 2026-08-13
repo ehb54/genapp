@@ -96,6 +96,9 @@ unlike( $ui2_js, qr/function replayJobEventsForOutput\(/, 'output mounting does 
 my $ui2_react_js = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.js) ) );
 my $ui2_react_css = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.css) ) );
 my $ui2_react_source = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 react src ScientificWorkbench.tsx) ) );
+my $ui2_react_run_cue_source = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 react src runCue.ts) ) );
+like( $ui2_react_source, qr/import\s+\{[^}]*runCueMessage[^}]*\}\s+from\s+"@\/runCue"/, 'React workbench uses the generic lifecycle cue helper' );
+like( $ui2_react_run_cue_source, qr/lifecycleState.*?\["failed", "error"\].*?Run failed.*?\["cancelled", "canceled"\].*?Run cancelled/s, 'React run cue gives terminal lifecycle states priority over empty runtime channels' );
 like( $ui2_react_source, qr/resultGroups\.some\(\(group\) => group\.id === id\).*?setActiveResult\(id\).*?window\.addEventListener\("ui2-focus-result", focusResult\)/s, 'React workbenches accept focus only for a declared result group' );
 like( $ui2_react_source, qr/const definition = actionReviews\[id\].*?resultGroups\.some\(\(group\) => group\.id === definition\.result\).*?setActionReview\(\{ definition, values: bridge\.syncValues\(\) \}\).*?setActiveResult\(definition\.result\)/s, 'React workbenches create a review only for a view-declared result group' );
 like( $ui2_react_source, qr/!submitted && actionReview.*?SubmittedInputs.*?actionReview\.definition\.fields.*?actionReview\.values/s, 'a declared action review reuses the compact input summary without creating submitted-run state' );
