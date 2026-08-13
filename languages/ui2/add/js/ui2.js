@@ -8624,7 +8624,6 @@
       }
       visibilityButtons.forEach((button, id) => {
         button.setAttribute("aria-pressed", String(id === mode));
-        if (id === "selected") button.disabled = !selectedGroup;
       });
       requestNglRender(output._ui2NglStage);
     };
@@ -8661,26 +8660,22 @@
         }
       });
       firstSelectedResidue?.scrollIntoView?.({ block: "nearest", inline: "center" });
-      if (visibilityMode === "selected") {
-        setVisibilityMode("selected");
-      } else {
-        const selectedVisibilityButton = visibilityButtons.get("selected");
-        if (selectedVisibilityButton) selectedVisibilityButton.disabled = false;
-      }
+      setVisibilityMode(group ? "selected" : "flexible");
       requestNglRender(output._ui2NglStage);
     };
 
     if (nglViewerConfig(output).capabilities?.selection_visibility === true) {
       [
         ["whole", "Whole structure"],
-        ["flexible", "Flexible regions only"],
-        ["selected", "Selected region only"],
+        ["flexible", inspector.visibility_label || "Declared selections only"],
       ].forEach(([id, label]) => {
         const button = el("button", "ui2-button ui2-button-quiet ui2-ngl-button", label);
         button.type = "button";
         button.setAttribute("aria-pressed", String(id === visibilityMode));
-        button.disabled = id === "selected";
-        button.addEventListener("click", () => setVisibilityMode(id));
+        button.addEventListener("click", () => {
+          if (id === "flexible") setFocus(null);
+          else setVisibilityMode(id);
+        });
         visibility.appendChild(button);
         visibilityButtons.set(id, button);
       });

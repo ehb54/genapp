@@ -41,10 +41,11 @@ structure payload contains a generic `selectionInspector` object.  It can list
 named selections, center the structure on one, and display corresponding
 coordinate residues.  `selection_visibility` is a separate opt-in capability:
 when both capabilities are enabled, the top viewer controls may offer **Whole
-structure**, **Flexible regions only**, and **Selected region only**.  The
-complete structure remains the default.  The lower inspector is reserved for
-centering and examining a selected region.  Existing viewers and selection
-inspectors are unchanged unless they opt in to this second capability.
+structure** and a producer-named selection-only view.  The complete structure
+remains the default. Choosing a group in the lower inspector centers and shows
+only that group; choosing its all-selections item restores the selection-only
+view. Existing viewers and selection inspectors are unchanged unless they opt
+in to this second capability.
 
 The generic payload uses NGL-resolved atom selections, not module-specific
 scientific terms:
