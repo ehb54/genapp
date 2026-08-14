@@ -98,10 +98,14 @@ Initial operations:
   journal or a later topic snapshot.
 - Live delivery may broadcast one `_job_event`.
 - Polling and reattachment may return a bounded `_job_events` array.
-- A newly submitted job retains strict ordering for individual live events. If
-  its first delivery is a bounded journal whose initial prefix has expired,
-  UI2 establishes its baseline at the first retained journal event and applies
-  the contiguous retained range.
+- A newly submitted job retains strict ordering for individual live events.
+  An authoritative bounded journal may establish the initial sequence baseline
+  or bridge a sequence range that its count or byte limit has already evicted.
+  Standalone live events never receive this recovery permission.
+- Within the existing count and byte limits, the journal preserves the latest
+  replayable `snapshot` for each run, module, channel, and topic as a recovery
+  anchor, then retains the newest event tail. A receiver applies an older
+  retained anchor before crossing an evicted gap to the retained tail.
 - The journal is a delivery and runtime-display cache, not authoritative
   scientific storage or a complete history.
 - An event with `replay: false` is delivered live; the journal retains only an
@@ -248,7 +252,9 @@ The UI2 job-event store is independent of mounted DOM. It:
 
 - stores events by run, channel, and topic;
 - applies sequence-based deduplication;
-- records sequence gaps and buffers later events until recovery;
+- records sequence gaps and buffers later standalone events until recovery;
+- applies retained journal anchors and bridges ranges already evicted from an
+  authoritative bounded journal;
 - batches subscription notifications;
 - retains state before a widget mounts;
 - exposes immutable snapshots to React;

@@ -1542,7 +1542,7 @@ const boundedJournalEvents = [
   }
 ];
 assert.strictEqual(
-  boundedJournalStore.applyMany(boundedJournalEvents, { allowJournalBaseline: true }).accepted,
+  boundedJournalStore.applyMany(boundedJournalEvents, { allowJournalRecovery: true }).accepted,
   true,
   "a bounded journal can establish a live job baseline after its prefix expires"
 );
@@ -1550,6 +1550,44 @@ assert.strictEqual(
   boundedJournalStore.snapshot().lastSequence,
   402,
   "journal recovery continues from its current contiguous range"
+);
+const laggedJournalStore = hooks.createJobEventStore();
+laggedJournalStore.reset("run-journal", "torsion_angle_monte_carlo");
+laggedJournalStore.apply(Object.assign({}, boundedJournalEvents[0], {
+  sequence: 1,
+  channel: "progress",
+  topic: "run",
+  payload: { fraction: 0.01 }
+}));
+const laggedRecovery = laggedJournalStore.applyMany(
+  boundedJournalEvents,
+  { allowJournalRecovery: true }
+);
+assert.strictEqual(
+  JSON.stringify(laggedRecovery.applied.map((event) => event.sequence)),
+  "[401,402]",
+  "an authoritative journal bridges a sequence range evicted after the browser connected"
+);
+assert.strictEqual(
+  JSON.stringify(laggedJournalStore.snapshot().missingSequences),
+  "[]",
+  "journal recovery clears sequence gaps that can no longer be delivered"
+);
+const anchorTailStore = hooks.createJobEventStore();
+anchorTailStore.reset("run-anchor", "torsion_angle_monte_carlo");
+const anchorTailRecovery = anchorTailStore.applyMany([
+  Object.assign({}, boundedJournalEvents[0], { run: "run-anchor", sequence: 3 }),
+  Object.assign({}, boundedJournalEvents[0], {
+    run: "run-anchor",
+    sequence: 401,
+    operation: "append",
+    payload: { traces: [{ index: 0, x: [10], y: [20] }] }
+  })
+], { allowJournalRecovery: true });
+assert.strictEqual(
+  JSON.stringify(anchorTailRecovery.applied.map((event) => event.sequence)),
+  "[3,401]",
+  "a retained plot snapshot is applied before the newest retained append tail"
 );
 const strictLiveStore = hooks.createJobEventStore();
 strictLiveStore.reset("run-live", "torsion_angle_monte_carlo");

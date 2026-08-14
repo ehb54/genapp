@@ -7650,7 +7650,7 @@
     }
 
     function applyMany(rawEvents, options = {}) {
-      const allowJournalBaseline = Boolean(options.allowJournalBaseline);
+      const allowJournalRecovery = Boolean(options.allowJournalRecovery);
       let accepted = false;
       const applied = [];
       (Array.isArray(rawEvents) ? rawEvents : [rawEvents])
@@ -7669,11 +7669,24 @@
           }
 
           const expected = lastSequence + 1;
-          const canBaselineFromJournal = (
-            allowJournalBaseline && !lastSequence && expectFirstSequence
+          const canRecoverFromJournal = (
+            allowJournalRecovery && event.sequence > expected
           );
           if ((!lastSequence && !expectFirstSequence) ||
-              canBaselineFromJournal || event.sequence === expected) {
+              (allowJournalRecovery && !lastSequence && expectFirstSequence) ||
+              canRecoverFromJournal || event.sequence === expected) {
+            if (canRecoverFromJournal) {
+              Array.from(pending.keys()).forEach((sequence) => {
+                if (sequence < event.sequence) {
+                  pending.delete(sequence);
+                }
+              });
+              Array.from(missing).forEach((sequence) => {
+                if (sequence < event.sequence) {
+                  missing.delete(sequence);
+                }
+              });
+            }
             accepted = true;
             commit(event, applied);
             drainPending(applied);
@@ -7802,10 +7815,10 @@
       events.push(payload._job_event);
     }
     state.jobEvents.applyMany(events, {
-      // A bounded journal may have evicted the first live event before the
-      // browser's first poll.  It is a recovery snapshot, unlike an individual
-      // WebSocket event, so it can establish the current sequence baseline.
-      allowJournalBaseline: journalEvents.length > 0
+      // The authoritative bounded journal may have evicted a sequence range.
+      // Its retained recovery anchors and tail can re-establish continuity;
+      // an individual WebSocket event must still wait for missing events.
+      allowJournalRecovery: journalEvents.length > 0
     }).applied.forEach(applyJobEventToOutput);
   }
 

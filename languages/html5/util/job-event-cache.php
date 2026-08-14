@@ -50,6 +50,87 @@ function ga_job_event_replay_record( $event ) {
     );
 }
 
+function ga_job_event_recovery_anchor_key( $event ) {
+    if ( !is_array( $event )
+         || !isset( $event[ 'operation' ] )
+         || strval( $event[ 'operation' ] ) !== 'snapshot' ) {
+        return '';
+    }
+    return intval( $event[ 'version' ] ) . "\n"
+        . strval( $event[ 'run' ] ) . "\n"
+        . strval( $event[ 'module' ] ) . "\n"
+        . strval( $event[ 'channel' ] ) . "\n"
+        . strval( $event[ 'topic' ] );
+}
+
+function ga_job_event_trim_count( $events, $max_count ) {
+    $max_count = max( 0, intval( $max_count ) );
+    if ( $max_count === 0 ) {
+        return array();
+    }
+    if ( count( $events ) <= $max_count ) {
+        return $events;
+    }
+
+    $latest_anchor_indexes = array();
+    foreach ( $events as $index => $event ) {
+        $anchor_key = ga_job_event_recovery_anchor_key( $event );
+        if ( strlen( $anchor_key ) ) {
+            $latest_anchor_indexes[ $anchor_key ] = $index;
+        }
+    }
+
+    $anchor_indexes = array_values( $latest_anchor_indexes );
+    sort( $anchor_indexes, SORT_NUMERIC );
+    if ( count( $anchor_indexes ) > $max_count ) {
+        $anchor_indexes = array_slice( $anchor_indexes, -$max_count );
+    }
+
+    $selected = array_fill_keys( $anchor_indexes, true );
+    for ( $index = count( $events ) - 1;
+          $index >= 0 && count( $selected ) < $max_count;
+          $index-- ) {
+        $selected[ $index ] = true;
+    }
+    ksort( $selected, SORT_NUMERIC );
+
+    $trimmed = array();
+    foreach ( array_keys( $selected ) as $index ) {
+        $trimmed[] = $events[ $index ];
+    }
+    return $trimmed;
+}
+
+function ga_job_event_trim_bytes( $events, $max_bytes ) {
+    $max_bytes = max( 0, intval( $max_bytes ) );
+    while ( count( $events )
+            && strlen( json_encode( $events ) ) > $max_bytes ) {
+        $latest_anchor_indexes = array();
+        foreach ( $events as $index => $event ) {
+            $anchor_key = ga_job_event_recovery_anchor_key( $event );
+            if ( strlen( $anchor_key ) ) {
+                $latest_anchor_indexes[ $anchor_key ] = $index;
+            }
+        }
+        $protected = array_fill_keys(
+            array_values( $latest_anchor_indexes ),
+            true
+        );
+        $remove_index = null;
+        foreach ( $events as $index => $event ) {
+            if ( !isset( $protected[ $index ] ) ) {
+                $remove_index = $index;
+                break;
+            }
+        }
+        if ( $remove_index === null ) {
+            $remove_index = 0;
+        }
+        array_splice( $events, $remove_index, 1 );
+    }
+    return $events;
+}
+
 function ga_job_event_journal(
     $cached_data,
     $incoming_data,
@@ -93,18 +174,8 @@ function ga_job_event_journal(
         return $left_sequence < $right_sequence ? -1 : 1;
     } );
 
-    $max_count = max( 0, intval( $max_count ) );
-    if ( $max_count === 0 ) {
-        $events = array();
-    } else if ( count( $events ) > $max_count ) {
-        $events = array_slice( $events, -$max_count );
-    }
-
-    $max_bytes = max( 0, intval( $max_bytes ) );
-    while ( count( $events )
-            && strlen( json_encode( $events ) ) > $max_bytes ) {
-        array_shift( $events );
-    }
+    $events = ga_job_event_trim_count( $events, $max_count );
+    $events = ga_job_event_trim_bytes( $events, $max_bytes );
 
     return $events;
 }

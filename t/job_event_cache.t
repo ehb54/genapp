@@ -79,6 +79,50 @@ $with_transient_marker = ga_job_event_journal(
     10,
     100000
 );
+$plot_snapshot = event_value(1, "plotout4", array(
+    "figure" => array("data" => array(array("x" => array(1), "y" => array(2))))
+));
+$plot_snapshot["operation"] = "snapshot";
+$anchor_bounded_count = ga_job_event_journal(
+    array(),
+    array("_job_events" => array(
+        $plot_snapshot,
+        event_value(2, "plotout4"),
+        event_value(3, "plotout4"),
+        event_value(4, "plotout4"),
+        event_value(5, "plotout4")
+    )),
+    3,
+    100000
+);
+$newer_plot_snapshot = event_value(3, "plotout4", array(
+    "figure" => array("data" => array(array("x" => array(3), "y" => array(4))))
+));
+$newer_plot_snapshot["operation"] = "snapshot";
+$latest_anchor_only = ga_job_event_journal(
+    array(),
+    array("_job_events" => array(
+        $plot_snapshot,
+        event_value(2, "plotout4"),
+        $newer_plot_snapshot,
+        event_value(4, "plotout4"),
+        event_value(5, "plotout4")
+    )),
+    3,
+    100000
+);
+$small_tail = event_value(3, "plotout4", array("x" => array(3), "y" => array(4)));
+$anchor_byte_budget = strlen(json_encode(array($plot_snapshot, $small_tail)));
+$anchor_bounded_bytes = ga_job_event_journal(
+    array(),
+    array("_job_events" => array(
+        $plot_snapshot,
+        event_value(2, "plotout4", array("text" => str_repeat("x", 1000))),
+        $small_tail
+    )),
+    10,
+    $anchor_byte_budget
+);
 
 echo json_encode(array(
     "merged" => $merged,
@@ -87,6 +131,9 @@ echo json_encode(array(
     "carried" => $carried,
     "invalid" => $invalid,
     "with_transient_marker" => $with_transient_marker,
+    "anchor_bounded_count" => $anchor_bounded_count,
+    "latest_anchor_only" => $latest_anchor_only,
+    "anchor_bounded_bytes" => $anchor_bounded_bytes,
 ));
 PHP_BODY
 close $fh;
@@ -135,6 +182,21 @@ if ($data) {
     ok(
         !exists $data->{with_transient_marker}[4]{payload}{coordinates},
         'the replay marker contains no coordinate payload'
+    );
+    is_deeply(
+        [ map { $_->{sequence} } @{ $data->{anchor_bounded_count} } ],
+        [ 1, 4, 5 ],
+        'count trimming retains the latest topic snapshot as a recovery anchor'
+    );
+    is_deeply(
+        [ map { $_->{sequence} } @{ $data->{latest_anchor_only} } ],
+        [ 3, 4, 5 ],
+        'a newer topic snapshot supersedes an older recovery anchor'
+    );
+    is_deeply(
+        [ map { $_->{sequence} } @{ $data->{anchor_bounded_bytes} } ],
+        [ 1, 3 ],
+        'byte trimming removes non-anchor history before the recovery snapshot'
     );
 }
 
