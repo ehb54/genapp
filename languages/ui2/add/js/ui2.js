@@ -8447,7 +8447,8 @@
       return Promise.resolve(null);
     }
     const loadParams = Object.assign({}, trajectoryPayload.loadparams || {});
-    const trajectoryParams = Object.assign({}, trajectoryPayload.trajectoryparams || {});
+    const trajectoryParams = nglTrajectoryParameters(
+      output, trajectoryPayload.trajectoryparams);
     const loadName = normalizeNglLoadName(trajectoryPayload.loadname);
     return Promise.resolve()
       .then(() => loader(loadName, loadParams))
@@ -8480,7 +8481,11 @@
     // NGL's PDB parser already owns these bounded, embedded frames. Passing
     // no source selects its StructureTrajectory path and avoids a second
     // parser or transport for the completed sampled preview.
-    output._ui2NglTrajectory = component.addTrajectory();
+    const trajectoryParams = nglTrajectoryParameters(
+      output, structurePayload.trajectoryparams);
+    output._ui2NglTrajectory = Object.keys(trajectoryParams).length
+      ? component.addTrajectory(undefined, trajectoryParams)
+      : component.addTrajectory();
     renderNglTrajectoryControls(output, output._ui2NglTrajectory);
     return output._ui2NglTrajectory;
   }
@@ -8557,8 +8562,18 @@
     const base = output?._ui2NglViewerConfig || {};
     return Object.assign({}, base, {
       capabilities: Object.assign({}, base.capabilities || {}),
-      display: Object.assign({}, base.display || {})
+      display: Object.assign({}, base.display || {}),
+      trajectory: Object.assign({}, base.trajectory || {})
     });
+  }
+
+  function nglTrajectoryParameters(output, payloadParameters) {
+    const parameters = Object.assign({}, payloadParameters || {});
+    const trajectory = nglViewerConfig(output).trajectory;
+    if (typeof trajectory.superpose === "boolean") {
+      parameters.superpose = trajectory.superpose;
+    }
+    return parameters;
   }
 
   function nglViewerStageParams(output) {

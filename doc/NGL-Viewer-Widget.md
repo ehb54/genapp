@@ -23,6 +23,9 @@ Add optional `viewer` metadata to the NGL output field in a module JSON file:
     "axes": false,
     "mouse_preset": "default",
     "rollover_help": false
+  },
+  "trajectory": {
+    "superpose": false
   }
 }
 ```
@@ -33,6 +36,12 @@ to be created.  It is the only source of viewer presentation policy. Drivers
 must not send runtime `viewer` overrides, camera choices, browser-control
 settings, or other renderer policy. When no camera is declared, the viewer
 defaults to orthographic projection.
+
+`trajectory.superpose` is an optional display-only boolean for completed
+file-backed and embedded multi-model trajectories. Omit it to retain the
+bundled NGL default. Set it to `false` when the producer's coordinate frame is
+scientifically meaningful and must be shown directly; it does not change loaded
+coordinates, the saved trajectory, or any SASSIE calculation.
 
 The molecular canvas owns ordinary mouse-wheel and trackpad scrolling, so it
 zooms immediately without requiring focus or opening **Viewer settings**. Page

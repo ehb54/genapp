@@ -1257,6 +1257,39 @@ assert.strictEqual(
   JSON.stringify([[]]),
   "UI2 activates a bounded multi-model PDB through NGL's embedded StructureTrajectory path"
 );
+const optedEmbeddedTrajectoryAttachCalls = [];
+const optedEmbeddedTrajectoryOutput = {
+  _ui2NglRenderRevision: 19,
+  _ui2NglViewerConfig: { trajectory: { superpose: false } }
+};
+const optedEmbeddedTrajectoryComponent = {
+  structure: { frames: [new Float32Array([0, 0, 0])] },
+  addTrajectory(...args) {
+    optedEmbeddedTrajectoryAttachCalls.push(args);
+    return { trajectory: {} };
+  }
+};
+hooks.attachNglEmbeddedTrajectory(
+  optedEmbeddedTrajectoryOutput,
+  optedEmbeddedTrajectoryComponent,
+  { loadparams: { ext: "pdb", asTrajectory: true } },
+  19
+);
+assert.strictEqual(
+  optedEmbeddedTrajectoryAttachCalls.length,
+  1,
+  "UI2 attaches an opted embedded trajectory once"
+);
+assert.strictEqual(
+  optedEmbeddedTrajectoryAttachCalls[0][0],
+  undefined,
+  "UI2 retains NGL's embedded StructureTrajectory source when configuring it"
+);
+assert.strictEqual(
+  JSON.stringify(optedEmbeddedTrajectoryAttachCalls[0][1]),
+  JSON.stringify({ superpose: false }),
+  "UI2 applies a module-declared trajectory superposition policy"
+);
 assert.strictEqual(
   hooks.nglTrajectoryFrameCount({ numframes: 100 }),
   100,
