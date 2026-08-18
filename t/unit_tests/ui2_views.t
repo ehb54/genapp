@@ -66,6 +66,7 @@ like( $index, qr/id="ui2-feedback"/, 'ui2 index exposes the legacy feedback util
 like( $index, qr/id="ui2-ai-helper"[^>]*hidden/, 'ui2 index exposes an AI Helper entry point hidden until appconfig allows it' );
 like( $index, qr/id="ui2-docs"/, 'ui2 index exposes the legacy docs entry point' );
 like( $index, qr/id="ui2-help-menu"/, 'ui2 index keeps documentation and AI help in a prominent Help menu' );
+like( $index, qr/id="ui2-docs-module"[\s\S]*?id="ui2-docs"/, 'ui2 Help presents current-module documentation before general documentation' );
 like( $index, qr/id="ui2-account-menu"/, 'ui2 index places account utilities in an avatar menu' );
 like( $app_map_js, qr/generatedOn:\s*"Generated on /, 'ui2 app map carries the legacy generated-on splash metadata' );
 like( $app_map_js, qr/genappRevision:\s*"GenApp /, 'ui2 app map carries the GenApp revision splash metadata' );
@@ -539,6 +540,7 @@ like( $ui2_css, qr/\.ui2-module-strip\[hidden\]\s*\{\s*display:\s*none;/s, 'ui2 
 like( $ui2_css, qr/\.ui2-strip-module-button/, 'ui2 stylesheet includes selected menu module strip buttons' );
 like( $ui2_css, qr/\.ui2-content-column\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\)/s, 'ui2 content column keeps module tabs above its independent stage' );
 like( $ui2_css, qr/height:\s*100dvh/, 'ui2 shell uses a dynamic viewport height for a pinned footer' );
+like( $ui2_css, qr/\.ui2-shell\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\) auto;/s, 'ui2 shell keeps the footer in a compact final grid row' );
 like( $ui2_css, qr/\.ui2-hover-help/, 'ui2 stylesheet includes hover help tooltip styling' );
 like( $ui2_css, qr/body:not\(\.ui2-help-enabled\) \.ui2-hover-help/, 'ui2 stylesheet hides hover help while help mode is off' );
 like( $ui2_css, qr/\.ui2-help-enabled \[data-ui2-help\]/, 'ui2 stylesheet marks generated hover help targets when help mode is on' );
