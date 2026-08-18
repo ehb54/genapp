@@ -55,18 +55,22 @@ like( $index, qr/<script type="module" src="react\/ui2-react\.js/, 'ui2 index lo
 like( $index, qr/id="ui2-session-status"/, 'ui2 index exposes a session/project status target' );
 like( $index, qr/data-app-id="ui2_views"/, 'ui2 index exposes the generated application id' );
 like( $index, qr/Choose a menu group from the options on the left/, 'ui2 index opens at a neutral menu-group-first shell' );
-like( $index, qr/module from the list that appears at the top of the page/, 'ui2 index describes the selected-menu module strip' );
+like( $index, qr/module from the list that appears above this workspace/, 'ui2 index describes the selected-menu module strip' );
 unlike( $index, qr/<p class="ui2-kicker">Ready<\/p>/, 'ui2 empty shell does not show a Ready kicker' );
 like( $index, qr/class="ui2-nav-icon-button" id="ui2-nav-toggle"/, 'ui2 menu toggle lives in the topbar instead of the collapsed sidebar column' );
 like( $index, qr/<a class="ui2-title-link" href="\?apprun=1" title="Open another [^"]+ instance">[\s\S]*?<h1>[^<]+<\/h1>[\s\S]*?<\/a>/, 'ui2 title exposes the generic authenticated new-window action' );
 like( $index, qr/id="ui2-module-strip"/, 'ui2 index exposes a legacy-style selected menu module strip' );
+like( $index, qr/class="ui2-content-column"[\s\S]*?id="ui2-module-strip"/, 'ui2 module strip belongs to the content column beside the sidebar' );
+like( $index, qr/id="ui2-session-status"[^>]*>Select project/, 'ui2 exposes a direct project selector before workflow utilities' );
 like( $index, qr/id="ui2-feedback"/, 'ui2 index exposes the legacy feedback utility entry point' );
 like( $index, qr/id="ui2-ai-helper"[^>]*hidden/, 'ui2 index exposes an AI Helper entry point hidden until appconfig allows it' );
 like( $index, qr/id="ui2-docs"/, 'ui2 index exposes the legacy docs entry point' );
-like( $index, qr/id="ui2-docs-menu"/, 'ui2 index exposes a docs menu for contextual module documentation' );
+like( $index, qr/id="ui2-help-menu"/, 'ui2 index keeps documentation and AI help in a prominent Help menu' );
+like( $index, qr/id="ui2-account-menu"/, 'ui2 index places account utilities in an avatar menu' );
 like( $app_map_js, qr/generatedOn:\s*"Generated on /, 'ui2 app map carries the legacy generated-on splash metadata' );
 like( $app_map_js, qr/genappRevision:\s*"GenApp /, 'ui2 app map carries the GenApp revision splash metadata' );
 like( $app_map_js, qr/directives\.docsbaseurl = "docs"/, 'ui2 app map records docsbaseurl for the docs entry point' );
+like( $app_map_js, qr/directives\.ui2_account_avatar = "pngs\/fixture-account-avatar\.png"/, 'ui2 app map records an optional application-owned account avatar' );
 like( $app_map_js, qr/directives\.nextjobenvironment = "true"/, 'ui2 app map exposes the opted-in one-job environment setting' );
 like( $app_map_js, qr/app\.help\.feedback = "Feedback help"/, 'ui2 app map records legacy feedback help text' );
 
@@ -179,8 +183,9 @@ like( $ui2_js, qr/tabButton\("Inputs", inputCount, true, "ui2-input-section"\)/,
 like( $ui2_js, qr/const button = el\("button", "ui2-tab", label\)/, 'ui2 jump tabs display labels without count text' );
 unlike( $ui2_js, qr/header\.appendChild\(el\("span", "ui2-pill", `\$\{fields\.length\}`\)\)/, 'ui2 section headers do not duplicate input/output count pills' );
 like( $ui2_js, qr/function initHoverHelp\(\)/, 'ui2 runtime initializes legacy hover help tooltips' );
-like( $ui2_js, qr/initHoverHelp\(\);\s+setHelpEnabled\(true\);/s, 'ui2 runtime enables legacy hover help by default' );
-like( $ui2_js, qr/function setHelpEnabled\(enabled\)/, 'ui2 runtime keeps hover help state explicit' );
+like( $ui2_js, qr/initHoverHelp\(\);\s+setHelpEnabled\(prefs\.hoverHelpEnabled === true, false\);/s, 'ui2 runtime keeps hover help off until a user preference enables it' );
+like( $ui2_js, qr/HOVER_HELP_DELAY_MS = 900/, 'ui2 waits briefly before showing pointer hover help' );
+like( $ui2_js, qr/function setHelpEnabled\(enabled, persist = false\)/, 'ui2 runtime keeps persisted hover help state explicit' );
 like( $ui2_js, qr/function setHoverHelp\(node, help\)/, 'ui2 runtime records generated help text on hover targets' );
 like( $ui2_js, qr/setHoverHelp\(button, menu\.help\)/, 'ui2 menu group buttons expose generated menu help' );
 like( $ui2_js, qr/setHoverHelp\(item, module\.help\)/, 'ui2 module strip buttons expose generated module help' );
@@ -193,7 +198,7 @@ like( $ui2_js, qr/function docsModuleUrl\(/, 'ui2 runtime builds legacy-style pe
 like( $ui2_js, qr/`\.\.\/\$\{base\}\/`/, 'ui2 runtime rebases relative docsbaseurl out of the ui2 directory' );
 like( $ui2_js, qr/`\$\{mainUrl\}\$\{menu\}\/\$\{id\}\/\$\{id\}\.html`/, 'ui2 runtime mirrors SASSIE menu-scoped module docs path convention' );
 like( $ui2_js, qr/nodes\.feedback\?\.addEventListener\("click", \(\) => openUtilityModule\("sys_feedback"\)\)/, 'ui2 feedback button opens the legacy feedback utility' );
-like( $ui2_js, qr/nodes\.aiHelper\?\.addEventListener\("click", openAiHelperPanel\)/, 'ui2 AI Helper button opens a read-only helper panel' );
+like( $ui2_js, qr/nodes\.aiHelper\?\.addEventListener\("click", \(\) => \{[\s\S]+openAiHelperPanel\(\);[\s\S]+\}\);/, 'ui2 AI Helper menu item opens a read-only helper panel' );
 like( $ui2_js, qr/Form context/, 'ui2 AI Helper summarizes form context without raw form-value JSON in the normal panel' );
 like( $ui2_js, qr/Output context/, 'ui2 AI Helper summarizes output context without raw output-analysis JSON in the normal panel' );
 like( $ui2_js, qr/AI context/, 'ui2 AI Helper summarizes backend AI context metadata in the normal panel' );
@@ -346,7 +351,7 @@ like( $ui2_js, qr/async function loadStartupModule\(\)[\s\S]*?showStartupShell\(
 unlike( $ui2_js, qr/function loadFirstAvailable\(\)/, 'ui2 no longer has a first-available-module startup path' );
 like( $ui2_js, qr/function collapseMenuGroups\(\)/, 'ui2 startup can leave all menu groups closed' );
 like( $ui2_js, qr/activeMenuId/, 'ui2 tracks the visible menu category separately from the loaded module' );
-like( $ui2_js, qr/function renderModuleStrip\(\)/, 'ui2 renders selected menu modules outside the sidebar group cards' );
+like( $ui2_js, qr/function renderModuleStrip\(\)/, 'ui2 renders selected menu modules in the content column beside the sidebar' );
 unlike( $ui2_js, qr/index === 0 \? "true" : "false"/, 'ui2 startup does not privilege the first menu group' );
 like( $ui2_js, qr/function chooseMenuModule\(moduleId\)/, 'ui2 menu module selection uses a dedicated transition path' );
 like( $ui2_js, qr/function selectMenuGroup\(menuId\)[\s\S]+clearLoadedModule\(\);[\s\S]+renderMenu\(\);/, 'ui2 menu group selection clears the loaded module while showing that group choices' );
@@ -410,9 +415,10 @@ like( $ui2_js, qr/function renderRegisterTool\(module, fields\)/, 'ui2 has a ded
 like( $ui2_js, qr/function legacyUtilityFieldName\(control\)/, 'ui2 Settings submits legacy repeat-prefixed field names' );
 like( $ui2_js, qr/function userConfigFields\(fields\)/, 'ui2 Settings filters fields through legacy directive visibility' );
 like( $ui2_js, qr/LEGACY_USER_CONFIG_THEME_FIELD_IDS = new Set\(\["changetheme", "themetype", "themedark", "themelight", "theme"\]\)/, 'ui2 Settings recognizes the legacy theme control cluster' );
-like( $ui2_js, qr/function ui2UserConfigFields\(fields\).*?ui2ThemeConfigField\(\)/s, 'ui2 Settings replaces legacy theme controls with a native UI2 theme preference' );
+like( $ui2_js, qr/function ui2UserConfigFields\(fields\).*?ui2ThemeConfigField\(\).*?ui2HoverHelpConfigField\(\)/s, 'ui2 Settings adds local theme and hover-help preferences' );
 like( $ui2_js, qr/\["superhero", "Superhero"\][\s\S]+\["flatly", "Flatly"\]/, 'ui2 Settings exposes legacy-inspired theme candidates for review' );
 like( $ui2_js, qr/dataset\.ui2LocalPreference = "theme"/, 'ui2 Settings marks the native theme selector as a local preference' );
+like( $ui2_js, qr/dataset\.ui2LocalPreference = "hoverHelp"/, 'ui2 Settings marks hover help as a local preference' );
 like( $ui2_js, qr/control\.dataset\.ui2LocalPreference[\s\S]+return;/, 'ui2 Settings keeps native UI2 preferences out of legacy settings submits' );
 like( $ui2_js, qr/function renderGroupField\(field\)/, 'ui2 Settings renders legacy group fields as configured checkboxes' );
 like( $ui2_js, qr/control\.type === "checkbox" && !control\.checked[\s\S]+return;/, 'ui2 utility submit skips unchecked checkboxes like native legacy forms' );
@@ -531,6 +537,8 @@ like( $ui2_css, qr/\.ui2-file-disclosure/, 'ui2 stylesheet includes File Manager
 like( $ui2_css, qr/\.ui2-file-download-links/, 'ui2 stylesheet makes File Manager download links visible beside actions' );
 like( $ui2_css, qr/\.ui2-module-strip\[hidden\]\s*\{\s*display:\s*none;/s, 'ui2 stylesheet honors hidden module choice strips' );
 like( $ui2_css, qr/\.ui2-strip-module-button/, 'ui2 stylesheet includes selected menu module strip buttons' );
+like( $ui2_css, qr/\.ui2-content-column\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\)/s, 'ui2 content column keeps module tabs above its independent stage' );
+like( $ui2_css, qr/height:\s*100dvh/, 'ui2 shell uses a dynamic viewport height for a pinned footer' );
 like( $ui2_css, qr/\.ui2-hover-help/, 'ui2 stylesheet includes hover help tooltip styling' );
 like( $ui2_css, qr/body:not\(\.ui2-help-enabled\) \.ui2-hover-help/, 'ui2 stylesheet hides hover help while help mode is off' );
 like( $ui2_css, qr/\.ui2-help-enabled \[data-ui2-help\]/, 'ui2 stylesheet marks generated hover help targets when help mode is on' );

@@ -19,6 +19,7 @@ __~usertheme{app.directives.usertheme = "__usertheme__";}
 __~usercolors{app.directives.usercolors = "__usercolors__";}
 __~nextjobenvironment{app.directives.nextjobenvironment = "__nextjobenvironment__";}
 __~docsbaseurl{app.directives.docsbaseurl = "__docsbaseurl__";}
+__~ui2_account_avatar{app.directives.ui2_account_avatar = "__ui2_account_avatar__";}
 __~help:user_config{app.help.user_config = "__help:user_config__";}
 __~help:register{app.help.register = "__help:register__";}
 __~help:jobs{app.help.jobs = "__help:jobs__";}

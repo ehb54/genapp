@@ -45,6 +45,7 @@
   const TEST_SCENARIO_CHECK_KINDS = new Set(["job_status", "output_present", "output_nonempty"]);
   const AI_HELPER_KATEX_CSS_URL = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css";
   const AI_HELPER_KATEX_SCRIPT_URL = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js";
+  const HOVER_HELP_DELAY_MS = 900;
   const requestedUi2Theme = params.get("ui2theme");
   let activeUi2Theme = normalizeUi2Theme(requestedUi2Theme || prefs.ui2Theme || UI2_DEFAULT_THEME);
   const devMode = params.get("ui2dev") === "1" || prefs.devMode === true;
@@ -75,6 +76,8 @@
   let katexLoadPromise = null;
   let reactWorkbenchRoot = null;
   let reactWorkbenchSyncFrame = null;
+  let hoverHelpTimer = null;
+  let hoverHelpTarget = null;
 
   const state = {
     moduleId: "",
@@ -139,19 +142,26 @@
     moduleStrip: document.getElementById("ui2-module-strip"),
     navToggle: document.getElementById("ui2-nav-toggle"),
     sessionStatus: document.getElementById("ui2-session-status"),
+    projectControl: document.getElementById("ui2-project-control"),
     jobs: document.getElementById("ui2-jobs"),
     files: document.getElementById("ui2-files"),
     settings: document.getElementById("ui2-settings"),
     feedback: document.getElementById("ui2-feedback"),
     aiHelper: document.getElementById("ui2-ai-helper"),
-    docsControl: document.getElementById("ui2-docs-control"),
+    helpControl: document.getElementById("ui2-help-control"),
+    helpMenuToggle: document.getElementById("ui2-help-menu-toggle"),
+    helpMenu: document.getElementById("ui2-help-menu"),
     docs: document.getElementById("ui2-docs"),
-    docsToggle: document.getElementById("ui2-docs-toggle"),
-    docsMenu: document.getElementById("ui2-docs-menu"),
     docsModule: document.getElementById("ui2-docs-module"),
-    docsMain: document.getElementById("ui2-docs-main"),
     help: document.getElementById("ui2-help"),
     logoff: document.getElementById("ui2-logoff"),
+    accountControl: document.getElementById("ui2-account-control"),
+    accountMenuToggle: document.getElementById("ui2-account-menu-toggle"),
+    accountMenu: document.getElementById("ui2-account-menu"),
+    accountAvatar: document.getElementById("ui2-account-avatar"),
+    accountInitials: document.getElementById("ui2-account-initials"),
+    accountName: document.getElementById("ui2-account-name"),
+    accountIdentity: document.getElementById("ui2-account-identity"),
     wsIndicator: document.querySelector(".ui2-ws-indicator")
   };
 
@@ -175,18 +185,25 @@
     });
     nodes.jobs?.addEventListener("click", () => openUtilityModule("sys_job_manager"));
     nodes.files?.addEventListener("click", () => openUtilityModule("sys_file_manager"));
+    nodes.sessionStatus?.addEventListener("click", openProjectDialog);
     nodes.settings?.addEventListener("click", () => openUtilityModule("sys_user_config"));
     nodes.feedback?.addEventListener("click", () => openUtilityModule("sys_feedback"));
-    nodes.aiHelper?.addEventListener("click", openAiHelperPanel);
-    nodes.docsToggle?.addEventListener("click", toggleDocsMenu);
-    nodes.docsMain?.addEventListener("click", closeDocsMenu);
+    nodes.aiHelper?.addEventListener("click", () => {
+      closeDocsMenu();
+      openAiHelperPanel();
+    });
+    nodes.helpMenuToggle?.addEventListener("click", toggleHelpMenu);
     nodes.docsModule?.addEventListener("click", closeDocsMenu);
+    nodes.docs?.addEventListener("click", closeDocsMenu);
+    nodes.accountMenuToggle?.addEventListener("click", toggleAccountMenu);
+    nodes.settings?.addEventListener("click", closeAccountMenu);
+    nodes.feedback?.addEventListener("click", closeAccountMenu);
+    nodes.help?.addEventListener("click", () => setHelpEnabled(!hoverHelpEnabled(), true));
     document.addEventListener("click", closeDocsMenuOnOutsideClick);
     document.addEventListener("keydown", closeDocsMenuOnEscape);
-    nodes.help?.addEventListener("click", toggleHelp);
     nodes.logoff?.addEventListener("click", handleLogonAction);
     initHoverHelp();
-    setHelpEnabled(true);
+    setHelpEnabled(prefs.hoverHelpEnabled === true, false);
     applyGlobalHelpBindings();
     syncDocsLink();
 
@@ -458,15 +475,53 @@
   function renderSessionState(error) {
     const project = sessionProjectName();
     if (nodes.sessionStatus) {
-      nodes.sessionStatus.textContent = `Project ${project}`;
+      nodes.sessionStatus.textContent = project === "no_project_specified" ? "Select project" : `Project: ${project}`;
       nodes.sessionStatus.title = state.session.logon
-        ? `Logged on as ${state.session.logon}`
+        ? `Logged on as ${state.session.logon}; select a project`
         : (error ? `Session status unavailable: ${error.message}` : "Not logged on");
     }
+    const logon = stringValue(state.session.logon).trim();
+    if (nodes.accountName) {
+      nodes.accountName.textContent = logon || "Account";
+    }
+    if (nodes.accountInitials) {
+      nodes.accountInitials.textContent = accountInitials(logon);
+    }
+    if (nodes.accountIdentity) {
+      nodes.accountIdentity.textContent = logon
+        ? `${logon} · ${project === "no_project_specified" ? "No project selected" : `Project: ${project}`}`
+        : "Not logged on";
+    }
+    renderAccountAvatar();
     if (nodes.logoff) {
       nodes.logoff.textContent = state.session.logon ? `Logoff ${state.session.logon}` : "Login";
       nodes.logoff.dataset.mode = state.session.logon ? "logoff" : "login";
     }
+  }
+
+  function accountInitials(logon) {
+    const words = stringValue(logon).trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return "?";
+    return words.slice(0, 2).map((word) => word[0]).join("").toUpperCase();
+  }
+
+  function renderAccountAvatar() {
+    const avatar = stringValue(appMap.directives?.ui2_account_avatar).trim();
+    if (!nodes.accountAvatar || !nodes.accountInitials) {
+      return;
+    }
+    if (!avatar) {
+      nodes.accountAvatar.hidden = true;
+      nodes.accountInitials.hidden = false;
+      return;
+    }
+    nodes.accountAvatar.onerror = () => {
+      nodes.accountAvatar.hidden = true;
+      nodes.accountInitials.hidden = false;
+    };
+    nodes.accountAvatar.src = avatar;
+    nodes.accountAvatar.hidden = false;
+    nodes.accountInitials.hidden = true;
   }
 
   function normalizeAiHelperStatus(value) {
@@ -500,6 +555,7 @@
       return;
     }
     nodes.aiHelper.hidden = !aiHelperEnabledForUser();
+    syncHelpMenuVisibility();
   }
 
   function aiHelperEnabledForUser() {
@@ -1202,6 +1258,63 @@
     } catch (error) {
       const message = el("div", "ui2-error", `Could not load ${moduleId}: ${error.message}`);
       showUtilityOverlay("Utility", message);
+    }
+  }
+
+  async function openProjectDialog() {
+    try {
+      await refreshSessionState();
+      if (!state.session.logon) {
+        openLoginDialog({ mandatory: true });
+        return;
+      }
+      const payload = await fetchModuleDefinition("sys_user_config");
+      const projectField = visibleFields(Array.isArray(payload.module?.fields) ? payload.module.fields : [])
+        .find((field) => field.id === "project");
+      if (!projectField) {
+        throw new Error("This application does not declare a selectable project field.");
+      }
+      const form = el("form", "ui2-utility-form ui2-project-form");
+      form.noValidate = true;
+      form.appendChild(renderField(normalizeUserConfigField(projectField), "input"));
+      const actions = el("div", "ui2-form-actions");
+      const select = el("button", "ui2-button ui2-button-primary", "Select project");
+      select.type = "submit";
+      const manage = el("button", "ui2-button ui2-button-quiet", "Manage projects");
+      manage.type = "button";
+      const status = el("div", "ui2-submit-status", "");
+      status.setAttribute("role", "status");
+      actions.append(select, manage, status);
+      form.appendChild(actions);
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const control = fieldControls(form).find((item) => item.dataset.fieldId === "project");
+        const project = stringValue(control?.value).trim();
+        if (!project) {
+          setSubmitStatus(status, "Choose a project first.", "error");
+          control?.focus();
+          return;
+        }
+        select.disabled = true;
+        setSubmitStatus(status, "Selecting project", "pending");
+        try {
+          await setLegacyProject(project);
+          closeUtilityOverlay();
+        } catch (error) {
+          setSubmitStatus(status, error.message, "error");
+        } finally {
+          select.disabled = false;
+        }
+      });
+      manage.addEventListener("click", () => {
+        closeUtilityOverlay();
+        openUtilityModule("sys_user_config");
+      });
+      showUtilityOverlay("Select project", form);
+      await pullUtilityFieldValues(form);
+      fieldControls(form).find((item) => item.dataset.fieldId === "project")?.focus();
+    } catch (error) {
+      showUtilityOverlay("Select project", el("div", "ui2-error", `Could not load projects: ${error.message}`));
     }
   }
 
@@ -2455,17 +2568,13 @@
       .replace(/\b\w/g, (char) => char.toUpperCase());
   }
 
-  function toggleHelp() {
-    const enabled = nodes.help?.getAttribute("aria-pressed") !== "true";
-    setHelpEnabled(enabled);
-  }
-
-  function setHelpEnabled(enabled) {
+  function setHelpEnabled(enabled, persist = false) {
     document.body.classList.toggle("ui2-help-enabled", enabled);
     if (nodes.help) {
       nodes.help.setAttribute("aria-pressed", enabled ? "true" : "false");
-      nodes.help.textContent = enabled ? "Help on" : "Help off";
+      nodes.help.textContent = enabled ? "Hover help on" : "Hover help off";
     }
+    if (persist) savePreference("hoverHelpEnabled", enabled);
     hideHoverHelp();
   }
 
@@ -2477,6 +2586,7 @@
     setHoverHelp(nodes.files, help.files || "Open the File Manager.");
     setHoverHelp(nodes.settings, help.user_config || help.register || "Open user settings.");
     setHoverHelp(nodes.feedback, help.feedback || "Send feedback about this application.");
+    setHoverHelp(nodes.helpMenuToggle, "Open documentation and AI help.");
     setHoverHelp(nodes.docs, help.docs || "Open the application documentation.");
     setHoverHelp(nodes.help, help.help || "Toggle hover help on and off.");
     setHoverHelp(nodes.logoff, help.logoff || help.login);
@@ -2488,38 +2598,22 @@
     }
     const docsbase = stringValue(appMap.directives?.docsbaseurl || "").trim();
     if (!docsbase) {
-      if (nodes.docsControl) {
-        nodes.docsControl.hidden = true;
-      } else {
-        nodes.docs.hidden = true;
-      }
+      nodes.docs.hidden = true;
+      if (nodes.docsModule) nodes.docsModule.hidden = true;
+      syncHelpMenuVisibility();
       return;
-    }
-    if (nodes.docsControl) {
-      nodes.docsControl.hidden = false;
     }
     nodes.docs.hidden = false;
 
     const mainUrl = docsMainUrl(docsbase);
     const moduleUrl = state.moduleId ? docsModuleUrl(docsbase, state.moduleId, state.menuId) : "";
-    nodes.docsControl?.classList.toggle("ui2-docs-context", Boolean(moduleUrl));
-    nodes.docs.href = moduleUrl || mainUrl;
-    nodes.docs.textContent = moduleUrl ? "Module docs" : "Docs";
-
-    if (nodes.docsMain) {
-      nodes.docsMain.href = mainUrl;
-    }
+    nodes.docs.href = mainUrl;
+    nodes.docs.textContent = "Documentation";
     if (nodes.docsModule) {
-      nodes.docsModule.href = moduleUrl || mainUrl;
+      nodes.docsModule.href = moduleUrl;
       nodes.docsModule.hidden = !moduleUrl;
     }
-    if (nodes.docsToggle) {
-      nodes.docsToggle.hidden = !moduleUrl;
-      nodes.docsToggle.setAttribute("aria-expanded", "false");
-    }
-    if (nodes.docsMenu) {
-      nodes.docsMenu.hidden = true;
-    }
+    syncHelpMenuVisibility();
   }
 
   function docsMainUrl(docsbase) {
@@ -2537,35 +2631,61 @@
     return mainUrl && id && menu ? `${mainUrl}${menu}/${id}/${id}.html` : "";
   }
 
-  function toggleDocsMenu(event) {
+  function toggleHelpMenu(event) {
     event.preventDefault();
     event.stopPropagation();
-    if (!nodes.docsMenu || !nodes.docsToggle || nodes.docsToggle.hidden) {
+    if (!nodes.helpMenu || !nodes.helpMenuToggle || nodes.helpControl?.hidden) {
       return;
     }
-    const expanded = nodes.docsToggle.getAttribute("aria-expanded") === "true";
-    nodes.docsMenu.hidden = expanded;
-    nodes.docsToggle.setAttribute("aria-expanded", expanded ? "false" : "true");
+    const expanded = nodes.helpMenuToggle.getAttribute("aria-expanded") === "true";
+    nodes.helpMenu.hidden = expanded;
+    nodes.helpMenuToggle.setAttribute("aria-expanded", expanded ? "false" : "true");
+    if (!expanded) closeAccountMenu();
   }
 
   function closeDocsMenu() {
-    if (nodes.docsMenu) {
-      nodes.docsMenu.hidden = true;
+    if (nodes.helpMenu) {
+      nodes.helpMenu.hidden = true;
     }
-    nodes.docsToggle?.setAttribute("aria-expanded", "false");
+    nodes.helpMenuToggle?.setAttribute("aria-expanded", "false");
   }
 
   function closeDocsMenuOnOutsideClick(event) {
-    if (nodes.docsControl?.contains(event.target)) {
+    if (nodes.helpControl?.contains(event.target) || nodes.accountControl?.contains(event.target)) {
       return;
     }
     closeDocsMenu();
+    closeAccountMenu();
   }
 
   function closeDocsMenuOnEscape(event) {
     if (event.key === "Escape") {
       closeDocsMenu();
+      closeAccountMenu();
+      hideHoverHelp();
     }
+  }
+
+  function syncHelpMenuVisibility() {
+    const hasDocs = Boolean(nodes.docs && !nodes.docs.hidden);
+    const hasAiHelper = Boolean(nodes.aiHelper && !nodes.aiHelper.hidden);
+    if (nodes.helpControl) nodes.helpControl.hidden = !hasDocs && !hasAiHelper;
+    if (!hasDocs && !hasAiHelper) closeDocsMenu();
+  }
+
+  function toggleAccountMenu(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!nodes.accountMenu || !nodes.accountMenuToggle) return;
+    const expanded = nodes.accountMenuToggle.getAttribute("aria-expanded") === "true";
+    nodes.accountMenu.hidden = expanded;
+    nodes.accountMenuToggle.setAttribute("aria-expanded", expanded ? "false" : "true");
+    if (!expanded) closeDocsMenu();
+  }
+
+  function closeAccountMenu() {
+    if (nodes.accountMenu) nodes.accountMenu.hidden = true;
+    nodes.accountMenuToggle?.setAttribute("aria-expanded", "false");
   }
 
   function setHoverHelp(node, help) {
@@ -2606,7 +2726,10 @@
     if (!target) {
       return;
     }
-    showHoverHelp(target.dataset.ui2Help || "", event);
+    if (hoverHelpTarget === target) return;
+    hideHoverHelp();
+    hoverHelpTarget = target;
+    showHoverHelp(target.dataset.ui2Help || "", event, event.type === "focusin" ? 0 : HOVER_HELP_DELAY_MS);
   }
 
   function handleHoverHelpMove(event) {
@@ -2632,17 +2755,31 @@
     hideHoverHelp();
   }
 
-  function showHoverHelp(help, event) {
+  function showHoverHelp(help, event, delay = 0) {
     const tooltip = document.getElementById("ui2-hover-help");
     if (!tooltip || !help) {
       return;
     }
-    tooltip.innerHTML = help;
-    tooltip.hidden = false;
-    positionHoverHelp(tooltip, event);
+    const render = () => {
+      hoverHelpTimer = null;
+      if (!hoverHelpEnabled() || !hoverHelpTarget) return;
+      tooltip.innerHTML = help;
+      tooltip.hidden = false;
+      positionHoverHelp(tooltip, event);
+    };
+    if (delay > 0) {
+      hoverHelpTimer = window.setTimeout(render, delay);
+      return;
+    }
+    render();
   }
 
   function hideHoverHelp() {
+    if (hoverHelpTimer != null) {
+      window.clearTimeout(hoverHelpTimer);
+      hoverHelpTimer = null;
+    }
+    hoverHelpTarget = null;
     const tooltip = document.getElementById("ui2-hover-help");
     if (!tooltip) {
       return;
@@ -3070,6 +3207,15 @@
       input.checked = String(field.checked || field.default || "").toLowerCase() === "true";
       input.defaultChecked = input.checked;
       wireControl(input, field);
+      if (field.ui2LocalPreference === true && field.id === "ui2hoverhelp") {
+        input.dataset.ui2LocalPreference = "hoverHelp";
+        input.checked = hoverHelpEnabled();
+        input.defaultChecked = input.checked;
+        input.addEventListener("change", () => {
+          setHelpEnabled(input.checked, true);
+          input.defaultChecked = input.checked;
+        });
+      }
       label.append(input);
       return label;
     }
@@ -4362,6 +4508,7 @@
     if (!insertedTheme) {
       nextFields.push(ui2ThemeConfigField());
     }
+    nextFields.push(ui2HoverHelpConfigField());
     return nextFields;
   }
 
@@ -4377,6 +4524,17 @@
       values: ui2ThemeOptionValues(),
       default: currentUi2Theme(),
       help: "Select a native UI2 color theme. System follows the browser or operating system setting.",
+      ui2LocalPreference: true
+    };
+  }
+
+  function ui2HoverHelpConfigField() {
+    return {
+      id: "ui2hoverhelp",
+      label: "Hover help",
+      type: "checkbox",
+      default: hoverHelpEnabled(),
+      help: "Show brief help after the pointer rests on a labeled control.",
       ui2LocalPreference: true
     };
   }

@@ -385,6 +385,8 @@ code {
 
 .ui2-shell {
   height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
   display: grid;
   grid-template-rows: auto auto 1fr auto;
   overflow: hidden;
@@ -393,7 +395,7 @@ code {
 .ui2-topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 1rem;
   border-bottom: 1px solid var(--ui2-border);
   background: color-mix(in srgb, var(--ui2-panel) 92%, transparent);
@@ -482,6 +484,7 @@ code {
 
 .ui2-topbar-utilities {
   justify-content: flex-end;
+  margin-left: auto;
 }
 
 .ui2-utility-button {
@@ -497,43 +500,29 @@ code {
   min-height: 2.2rem;
   display: inline-flex;
   align-items: center;
-  color: var(--ui2-muted);
-  padding: 0.36rem 0.2rem;
+  border: 1px solid var(--ui2-accent);
+  border-radius: 999px;
+  background: var(--ui2-accent-soft);
+  color: var(--ui2-accent-strong);
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0.36rem 0.75rem;
 }
 
 .ui2-utility-button {
   cursor: pointer;
 }
 
-.ui2-docs-control {
+.ui2-menu-control {
   position: relative;
   display: inline-flex;
-  align-items: stretch;
 }
 
-.ui2-docs-control[hidden] {
+.ui2-menu-control[hidden] {
   display: none;
 }
 
-.ui2-docs-control.ui2-docs-context .ui2-utility-link {
-  border-bottom-right-radius: 0;
-  border-top-right-radius: 0;
-}
-
-.ui2-docs-toggle {
-  min-width: 2.2rem;
-  border-bottom-left-radius: 0;
-  border-left: 0;
-  border-top-left-radius: 0;
-  padding-left: 0.45rem;
-  padding-right: 0.45rem;
-}
-
-.ui2-docs-toggle[hidden] {
-  display: none;
-}
-
-.ui2-docs-menu {
+.ui2-account-menu {
   position: absolute;
   right: 0;
   top: calc(100% + 0.35rem);
@@ -546,22 +535,84 @@ code {
   padding: 0.35rem;
 }
 
-.ui2-docs-menu[hidden] {
+.ui2-account-menu[hidden] {
   display: none;
 }
 
-.ui2-docs-menu a {
+.ui2-account-menu a,
+.ui2-account-menu button {
   display: block;
+  width: 100%;
+  border: 0;
   border-radius: 4px;
+  background: transparent;
   color: var(--ui2-text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
   padding: 0.45rem 0.55rem;
   text-decoration: none;
   white-space: nowrap;
 }
 
-.ui2-docs-menu a:hover {
+.ui2-account-menu a:hover,
+.ui2-account-menu a:focus-visible,
+.ui2-account-menu button:hover,
+.ui2-account-menu button:focus-visible {
   background: var(--ui2-accent-soft);
   color: var(--ui2-accent-strong);
+  outline: none;
+}
+
+.ui2-account-identity {
+  margin: 0;
+  border-bottom: 1px solid var(--ui2-border);
+  color: var(--ui2-muted);
+  font-size: 0.85rem;
+  padding: 0.35rem 0.55rem 0.55rem;
+  white-space: nowrap;
+}
+
+.ui2-account-button {
+  min-height: 2.2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--ui2-border);
+  border-radius: 999px;
+  background: var(--ui2-panel);
+  color: var(--ui2-text);
+  cursor: pointer;
+  padding: 0.18rem 0.55rem 0.18rem 0.22rem;
+}
+
+.ui2-account-button:hover,
+.ui2-account-button[aria-expanded="true"] {
+  border-color: var(--ui2-accent);
+  background: var(--ui2-accent-soft);
+  color: var(--ui2-accent-strong);
+}
+
+.ui2-account-avatar,
+#ui2-account-avatar,
+.ui2-account-initials {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+}
+
+#ui2-account-avatar {
+  object-fit: cover;
+}
+
+.ui2-account-initials {
+  display: inline-grid;
+  place-items: center;
+  background: var(--ui2-accent);
+  color: var(--ui2-on-accent);
+  font-size: 0.75rem;
+  font-weight: 800;
 }
 
 .ui2-utility-button:hover,
@@ -656,6 +707,13 @@ code {
   grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
+}
+
+.ui2-content-column {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .ui2-sidebar {
@@ -2442,6 +2500,10 @@ body:not(.ui2-help-enabled) .ui2-hover-help {
 
   .ui2-workspace {
     grid-template-columns: 1fr;
+    overflow: visible;
+  }
+
+  .ui2-content-column {
     overflow: visible;
   }
 

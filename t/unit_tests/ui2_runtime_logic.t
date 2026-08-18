@@ -459,8 +459,8 @@ const nativeThemeFields = hooks.ui2UserConfigFields([
 ]);
 assert.strictEqual(
   nativeThemeFields.map((field) => field.id).join(","),
-  "project,ui2theme,help",
-  "UI2 replaces the legacy theme cluster with one native Settings field"
+  "project,ui2theme,help,ui2hoverhelp",
+  "UI2 replaces the legacy theme cluster and adds a local hover-help preference"
 );
 assert.strictEqual(
   nativeThemeFields.find((field) => field.id === "ui2theme").ui2LocalPreference,
@@ -490,13 +490,13 @@ assert.strictEqual(
 
 hooks.state.session = { logon: "Joseph", project: "" };
 hooks.renderSessionState();
-assert.strictEqual(sessionStatus.textContent, "Project no_project_specified", "UI2 header uses the legacy default project for empty project state");
+assert.strictEqual(sessionStatus.textContent, "Select project", "UI2 header invites project selection for empty project state");
 hooks.state.session.project = "no_project_specified";
 hooks.renderSessionState();
-assert.strictEqual(sessionStatus.textContent, "Project no_project_specified", "UI2 header displays the legacy default project name");
+assert.strictEqual(sessionStatus.textContent, "Select project", "UI2 header does not expose the legacy default project name");
 hooks.state.session.project = "hello";
 hooks.renderSessionState();
-assert.strictEqual(sessionStatus.textContent, "Project hello", "UI2 header displays selected project names");
+assert.strictEqual(sessionStatus.textContent, "Project: hello", "UI2 header displays selected project names");
 hooks.state.session.project = "  ";
 assert.strictEqual(hooks.sessionProjectName(), "no_project_specified", "UI2 treats blank project strings as the legacy default project");
 

@@ -3,6 +3,7 @@
     "application" : "ui2_views",
     "version"     : "0.01",
     "docsbaseurl" : "docs",
+    "ui2_account_avatar" : "pngs/fixture-account-avatar.png",
     "usertheme"   : "true",
     "nextjobenvironment" : "true",
     "nextjobenvironmentid" : "fixture_diagnostics",

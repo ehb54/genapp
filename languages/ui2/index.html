@@ -21,40 +21,52 @@
           <h1>__title__</h1>
         </a>
       </div>
+      <div class="ui2-project-control" id="ui2-project-control">
+        <button class="ui2-project-chip" id="ui2-session-status" type="button" aria-haspopup="dialog">Select project</button>
+      </div>
       <div class="ui2-topbar-utilities" aria-label="Application utilities">
-        <span class="ui2-project-chip" id="ui2-session-status">Project</span>
         <button class="ui2-utility-button" id="ui2-jobs" type="button">Jobs</button>
         <button class="ui2-utility-button" id="ui2-files" type="button">Files</button>
-        <button class="ui2-utility-button" id="ui2-settings" type="button">Settings</button>
-        <button class="ui2-utility-button" id="ui2-feedback" type="button">Feedback</button>
-        <button class="ui2-utility-button" id="ui2-ai-helper" type="button" hidden>AI Helper</button>
-        <div class="ui2-docs-control" id="ui2-docs-control">
-          <a class="ui2-utility-button ui2-utility-link" id="ui2-docs" href="../docs/" target="_blank" rel="noopener">Docs</a>
-          <button class="ui2-utility-button ui2-docs-toggle" id="ui2-docs-toggle" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Docs options">v</button>
-          <div class="ui2-docs-menu" id="ui2-docs-menu" role="menu" hidden>
-            <a id="ui2-docs-module" role="menuitem" href="../docs/" target="_blank" rel="noopener">Current module docs</a>
-            <a id="ui2-docs-main" role="menuitem" href="../docs/" target="_blank" rel="noopener">Main docs</a>
+        <div class="ui2-menu-control" id="ui2-help-control">
+          <button class="ui2-utility-button" id="ui2-help-menu-toggle" type="button" aria-haspopup="true" aria-expanded="false">Help</button>
+          <div class="ui2-account-menu" id="ui2-help-menu" role="menu" hidden>
+            <a id="ui2-docs" role="menuitem" href="../docs/" target="_blank" rel="noopener">Documentation</a>
+            <a id="ui2-docs-module" role="menuitem" href="../docs/" target="_blank" rel="noopener" hidden>Current module documentation</a>
+            <button id="ui2-ai-helper" role="menuitem" type="button" hidden>AI Helper</button>
           </div>
         </div>
-        <button class="ui2-utility-button" id="ui2-help" type="button" aria-pressed="false">Help off</button>
-        <button class="ui2-utility-button" id="ui2-logoff" type="button">Logoff</button>
+        <div class="ui2-menu-control" id="ui2-account-control">
+          <button class="ui2-account-button" id="ui2-account-menu-toggle" type="button" aria-haspopup="true" aria-expanded="false">
+            <img id="ui2-account-avatar" alt="" hidden>
+            <span class="ui2-account-initials" id="ui2-account-initials" aria-hidden="true">?</span>
+            <span class="ui2-account-name" id="ui2-account-name">Account</span>
+          </button>
+          <div class="ui2-account-menu" id="ui2-account-menu" role="menu" hidden>
+            <p class="ui2-account-identity" id="ui2-account-identity">Not logged on</p>
+            <button id="ui2-settings" role="menuitem" type="button">Settings</button>
+            <button id="ui2-feedback" role="menuitem" type="button">Feedback</button>
+            <button id="ui2-help" role="menuitem" type="button" aria-pressed="false">Hover help off</button>
+            <button id="ui2-logoff" role="menuitem" type="button">Login</button>
+          </div>
+        </div>
       </div>
     </header>
-
-    <nav class="ui2-module-strip" id="ui2-module-strip" aria-label="Selected menu modules" hidden></nav>
 
     <main class="ui2-workspace">
       <aside class="ui2-sidebar" id="ui2-sidebar" aria-label="Modules">
         <nav class="ui2-menu-nav" id="ui2-menu-nav" aria-label="Application modules"></nav>
       </aside>
 
-      <section class="ui2-stage" aria-live="polite">
-        <div class="ui2-empty" id="ui2-empty">
-          <h2>Choose a menu group from the options on the left.</h2>
-          <p>Then choose a module from the list that appears at the top of the page.</p>
-        </div>
-        <div id="ui2-module-root" hidden></div>
-      </section>
+      <div class="ui2-content-column">
+        <nav class="ui2-module-strip" id="ui2-module-strip" aria-label="Selected menu modules" hidden></nav>
+        <section class="ui2-stage" aria-live="polite">
+          <div class="ui2-empty" id="ui2-empty">
+            <h2>Choose a menu group from the options on the left.</h2>
+            <p>Then choose a module from the list that appears above this workspace.</p>
+          </div>
+          <div id="ui2-module-root" hidden></div>
+        </section>
+      </div>
     </main>
     <footer class="ui2-footer">
       <span>Current funding provided by NSF grants (CHE-1265821, OAC-1912444 &amp; OAC-1739549) and NIST</span>
