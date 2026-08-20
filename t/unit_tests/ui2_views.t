@@ -165,6 +165,8 @@ like( $ui2_css, qr/\.ui2-repeat-table,\s*\.ui2-matrix-table\s*\{\s*width: 100%;\
 like( $ui2_css, qr/\.ui2-repeat-table td\s*\{\s*padding: 0 0\.35rem;\s*min-width: 0;/s, 'repeat table cells can shrink within the available input card' );
 like( $ui2_css, qr/\.ui2-repeat-table-has-file \.ui2-repeat-table-wrap\s*\{\s*overflow-x: auto;/s, 'file-bearing repeat tables alone restore horizontal access for file controls' );
 like( $ui2_css, qr/\.ui2-repeat-table-has-file \.ui2-repeat-table-file-cell\s*\{\s*min-width: 12rem;/s, 'file-bearing repeat table cells retain a usable minimum width' );
+like( $ui2_css, qr/\.ui2-repeat-table-has-file \.ui2-select\s*\{\s*min-width: 7\.5rem;/s, 'file-bearing repeat tables retain a readable minimum width for listboxes' );
+unlike( $ui2_css, qr/\.ui2-repeat-table \.ui2-select\s*\{\s*min-width: 7\.5rem;/s, 'ordinary repeat tables keep their existing shrinkable listbox behavior' );
 like( $ui2_css, qr/\.ui2-repeat-table-has-file \.ui2-repeat-table th\s*\{\s*overflow-wrap: normal;\s*word-break: normal;/s, 'file-bearing repeat tables preserve ordinary-language header words' );
 like( $ui2_css, qr/\.ui2-repeat-table-has-file \.ui2-repeat-table td:not\(\.ui2-repeat-table-file-cell\)\s*\{\s*min-width: 4\.75rem;/s, 'file-bearing repeat tables retain readable neighboring values' );
 like( $ui2_react_css, qr/\.ui2-workbench-result-card \.ui2-output-plotly:not\(\.ui2-dynamic-output\)\{[^}]*overflow:hidden/, 'workbench fitted Plotly leaves suppress internal scrollbars without constraining dynamic output groups' );

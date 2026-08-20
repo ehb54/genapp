@@ -2924,6 +2924,7 @@ assert.strictEqual(
 const plainFileTable = hooks.renderTableizedRepeater({
   controller: { id: "row_count", type: "integer", default: 2, repeater: "true", tableize: "true" },
   fields: [
+    { id: "source_kind", type: "listbox", values: "prepared data~prepared~raw data~raw", repeat: "row_count" },
     { id: "data_file_name", type: "lrfile", repeat: "row_count" },
     { id: "concentration", type: "float", repeat: "row_count" }
   ]
@@ -2937,6 +2938,11 @@ assert.strictEqual(
   plainFileTable.querySelector(".ui2-repeat-table-file-cell") !== null,
   true,
   "UI2 marks each repeated file cell without using a module-specific selector"
+);
+assert.strictEqual(
+  plainFileTable.querySelector(".ui2-select") !== null,
+  true,
+  "UI2 renders a generic repeated listbox alongside file inputs without module-specific markup"
 );
 
 hooks.state.values = {

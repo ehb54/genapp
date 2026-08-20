@@ -1125,6 +1125,10 @@ code {
   min-width: 12rem;
 }
 
+.ui2-repeat-table-has-file .ui2-select {
+  min-width: 7.5rem;
+}
+
 /* File-bearing repeat tables may need horizontal access for a selected path.
  * Keep their neighboring values and ordinary-language headers readable rather
  * than allowing the file control to collapse every other column. */
