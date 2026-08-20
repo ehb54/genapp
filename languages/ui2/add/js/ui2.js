@@ -3478,6 +3478,7 @@
     const type = String(field.type || "").toLowerCase();
     const compact = options?.compact === true;
     const wrap = el("div", compact ? "ui2-file-control ui2-file-control-compact" : "ui2-file-control");
+    const picker = el("div", "ui2-file-picker");
     const input = el("input", compact ? "ui2-input ui2-repeat-table-input" : "ui2-input");
     input.type = "text";
     input.placeholder = type === "rpath" ? "Server path" : "No file selected";
@@ -3525,21 +3526,68 @@
       if (event.isTrusted) {
         clearServerSelection(field, options?.repeatTableIndex);
       }
+      refreshPicker();
     });
 
     const actions = el("div", "ui2-file-actions");
-    if (fileModes(type).includes("local")) {
-      const local = el("button", "ui2-button ui2-button-quiet", compact ? "Local" : "Browse local files");
+    const source = el("span", "ui2-file-source", "");
+    source.hidden = true;
+    let actionsExpanded = false;
+
+    function clearActions() {
+      while (actions.children.length) {
+        actions.removeChild(actions.children[0]);
+      }
+    }
+
+    function addLocalAction() {
+      const local = el("button", "ui2-button ui2-button-quiet", "Local");
       local.type = "button";
-      local.addEventListener("click", () => localPicker.click());
+      local.addEventListener("click", () => {
+        actionsExpanded = false;
+        localPicker.click();
+      });
       actions.appendChild(local);
     }
-    if (fileModes(type).includes("server")) {
-      const server = el("button", "ui2-button ui2-button-quiet", compact ? "Server" : "Browse server");
+
+    function addServerAction() {
+      const server = el("button", "ui2-button ui2-button-quiet", "Server");
       server.type = "button";
-      server.addEventListener("click", () => openServerFileDialog(field, input, options));
+      server.addEventListener("click", () => {
+        actionsExpanded = false;
+        openServerFileDialog(field, input, options);
+      });
       actions.appendChild(server);
     }
+
+    function refreshPicker() {
+      const selected = Boolean(String(input.value || "").trim());
+      const serverSelected = Boolean(state.serverSelections[serverSelectionKey(field, options?.repeatTableIndex)])
+        || (!fileModes(type).includes("local") && fileModes(type).includes("server"));
+      source.textContent = serverSelected ? "Server" : "Local";
+      source.hidden = !selected;
+      clearActions();
+      if (selected && !actionsExpanded) {
+        const change = el("button", "ui2-button ui2-button-quiet", "Change…");
+        change.type = "button";
+        change.setAttribute("aria-expanded", "false");
+        change.addEventListener("click", () => {
+          actionsExpanded = true;
+          refreshPicker();
+        });
+        actions.appendChild(change);
+        return;
+      }
+      if (fileModes(type).includes("local")) {
+        addLocalAction();
+      }
+      if (fileModes(type).includes("server")) {
+        addServerAction();
+      }
+    }
+
+    picker.append(input, source, actions);
+    refreshPicker();
 
     const reselectWarning = el("p", "ui2-file-reselect-warning", "");
     reselectWarning.dataset.fieldId = field.id || "";
@@ -3547,7 +3595,7 @@
       reselectWarning.dataset.repeatTableIndex = String(options.repeatTableIndex);
     }
     reselectWarning.hidden = true;
-    wrap.append(input, localPicker, actions, reselectWarning);
+    wrap.append(picker, localPicker, reselectWarning);
     refreshFileReselectionWarning(reselectWarning);
     return wrap;
   }

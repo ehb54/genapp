@@ -270,6 +270,8 @@ like( $ui2_js, qr/function renderServerFileTree\(entries, container, options\)/,
 like( $ui2_js, qr/function renderServerFileTreeNode\(entry, options, depth\)/, 'ui2 server file chooser renders folder and file tree nodes' );
 like( $ui2_js, qr/function serverFileTreeSelectable\(entry, mode\)/, 'ui2 server file chooser centralizes rfile/lrfile/rpath selectability' );
 like( $ui2_js, qr/function renderFileControl\(field, options\).*?input\.readOnly = true;.*?input\.autocomplete = "off";/s, 'ui2 file selection display cannot accept stale browser-history values' );
+like( $ui2_js, qr/const picker = el\("div", "ui2-file-picker"\);.*?picker\.append\(input, source, actions\);/s, 'ui2 file selectors group their display, source state, and actions into one visual control' );
+like( $ui2_js, qr/const change = el\("button", "ui2-button ui2-button-quiet", "Change…"\);.*?actionsExpanded = true;/s, 'ui2 selected file selectors replace source buttons with an explicit change action' );
 like( $ui2_js, qr/function renderFileManagerNameCell\(row, entry, depth, isFolder\)/, 'ui2 File Manager shares legacy-style file and folder row labeling' );
 like( $ui2_js, qr/function isDynamicOutputField\(field\)/, 'ui2 runtime detects legacy dynamic output declarations' );
 like( $ui2_js, qr/role === "output" && isDynamicOutputField\(field\).*?row\.hidden = true/s, 'ui2 dynamic output rows are hidden until runtime data arrives' );

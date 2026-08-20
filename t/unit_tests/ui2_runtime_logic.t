@@ -602,14 +602,14 @@ assert.strictEqual(
 
 ["file", "lrfile", "rfile", "rpath"].forEach((type) => {
   const control = hooks.renderFileControl({ id: `\${type}_input`, type });
-  const display = control.children[0];
+  const display = control.querySelector(".ui2-file-picker input");
   assert.strictEqual(display.type, "text", `UI2 \${type} control keeps a readable selection display`);
   assert.strictEqual(display.readOnly, true, `UI2 \${type} control does not accept an unrecoverable typed file value`);
   assert.strictEqual(display.autocomplete, "off", `UI2 \${type} control suppresses browser history suggestions`);
   assert.strictEqual(display.spellcheck, false, `UI2 \${type} control does not spellcheck file names or paths`);
 });
 const requiredLrfile = hooks.renderFileControl({ id: "pdbfile", type: "lrfile", required: "true" });
-const requiredLrfileDisplay = requiredLrfile.children[0];
+const requiredLrfileDisplay = requiredLrfile.querySelector(".ui2-file-picker input");
 assert.strictEqual(requiredLrfileDisplay.required, true, "UI2 marks required top-level lrfile controls for shared submit validation");
 const requiredFileForm = createNode("form");
 requiredFileForm.appendChild(requiredLrfile);
@@ -625,8 +625,8 @@ assert.match(
   "UI2 shared validation reports the missing required file field"
 );
 const localFileControl = hooks.renderFileControl({ id: "input_pdbfile", type: "lrfile", required: "true" });
-const localFileDisplay = localFileControl.children[0];
-const localFilePicker = localFileControl.children[1];
+const localFileDisplay = localFileControl.querySelector(".ui2-file-picker input");
+const localFilePicker = localFileControl.querySelector(".ui2-native-file");
 localFileDisplay.value = "hiv1_gag_charmm27.pdb";
 localFilePicker.value = "";
 localFilePicker.files = ["hiv1_gag_charmm27.pdb"];
@@ -2385,9 +2385,9 @@ document.body.appendChild(staleForm);
 const selectedFileSubmitForm = createNode("form");
 selectedFileSubmitForm.id = "ui2-form";
 const selectedFileControl = hooks.renderFileControl({ id: "input_pdbfile", type: "lrfile", required: "true" });
-selectedFileControl.children[0].value = "hiv1_gag_charmm27.pdb";
-selectedFileControl.children[1].value = "";
-selectedFileControl.children[1].files = ["hiv1_gag_charmm27.pdb"];
+selectedFileControl.querySelector(".ui2-file-picker input").value = "hiv1_gag_charmm27.pdb";
+selectedFileControl.querySelector(".ui2-native-file").value = "";
+selectedFileControl.querySelector(".ui2-native-file").files = ["hiv1_gag_charmm27.pdb"];
 selectedFileSubmitForm.appendChild(selectedFileControl);
 document.body.appendChild(selectedFileSubmitForm);
 hooks.state.module = {

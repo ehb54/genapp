@@ -1188,19 +1188,68 @@ code {
 
 .ui2-file-control {
   display: grid;
-  grid-template-columns: minmax(14rem, 1fr) auto;
   gap: 0.5rem;
-  align-items: center;
 }
 
 .ui2-file-control-compact {
-  grid-template-columns: minmax(10rem, 1fr);
+  min-width: 10rem;
+}
+
+.ui2-file-picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  min-height: 2.4rem;
+  overflow: hidden;
+  align-items: stretch;
+  border: 1px solid var(--ui2-border);
+  border-radius: 6px;
+  background: var(--ui2-panel-soft);
+}
+
+.ui2-file-picker:focus-within {
+  border-color: var(--ui2-accent);
+  box-shadow: 0 0 0 2px var(--ui2-accent-soft);
+}
+
+.ui2-file-picker .ui2-input {
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ui2-file-source {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.55rem;
+  border-left: 1px solid var(--ui2-border);
+  color: var(--ui2-accent-strong);
+  background: var(--ui2-accent-soft);
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .ui2-file-actions {
   display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+  flex-wrap: nowrap;
+  gap: 0;
+}
+
+.ui2-file-picker .ui2-file-actions .ui2-button {
+  min-height: 2.4rem;
+  border: 0;
+  border-left: 1px solid var(--ui2-border);
+  border-radius: 0;
+  padding: 0.35rem 0.65rem;
+  white-space: nowrap;
+}
+
+.ui2-file-picker .ui2-file-actions .ui2-button:hover,
+.ui2-file-picker .ui2-file-actions .ui2-button:focus-visible {
+  background: var(--ui2-accent-soft);
+  color: var(--ui2-accent-strong);
+  outline: none;
 }
 
 .ui2-native-file {
