@@ -973,7 +973,10 @@
       state.activeMenuId = state.menuId;
       state.module = payload.module;
       state.view = payload.viewjson || {};
-      state.values = {};
+      // React workbenches compose conditional sections before their native
+      // controls exist. Seed the canonical module defaults first so initial
+      // composition uses the same values as the native UI2 renderer.
+      state.values = defaultInputPayload();
       state.serverSelections = {};
       clearFileReselectionWarnings();
       setSubmittedRunContext(null);

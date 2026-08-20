@@ -42,7 +42,16 @@
             "type"    : "listbox",
             "values"  : "Prepare data~prepare~Inspect data~inspect",
             "default" : "prepare",
-            "repeat"  : "show_workflow_cards"
+            "repeat"  : "show_workflow_cards",
+            "repeater" : "true"
+        },
+        {
+            "role"    : "input",
+            "id"      : "preparation_note",
+            "label"   : "Preparation note",
+            "type"    : "text",
+            "default" : "visible from the declared workflow default",
+            "repeat"  : "workflow_choice:prepare"
         },
         {
             "role"     : "input",

@@ -3612,6 +3612,19 @@ hooks.queue_ngl_coordinate_frame(frameOutput, { atom_count: 2, frame_id: "snapsh
 assert.strictEqual(frameOutput._ui2_ngl_frames.length, 1, "UI2 keeps only the latest NGL frame when the memory budget is tiny");
 assert.strictEqual(frameOutput._ui2_ngl_frames[0].frame_id, "snapshot-99", "UI2 does not preserve the old ten-frame experiment under memory pressure");
 
+hooks.state.module = {
+  fields: [
+    { role: "input", id: "workflow_choice", type: "listbox", default: "prepare" },
+    { role: "input", id: "preparation_note", type: "text", default: "declared default" },
+    { role: "output", id: "result", type: "textarea", default: "ignored" }
+  ]
+};
+assert.strictEqual(
+  JSON.stringify(hooks.defaultInputPayload()),
+  JSON.stringify({ workflow_choice: "prepare", preparation_note: "declared default" }),
+  "UI2 exposes declared input defaults before a React workbench mounts native controls"
+);
+
 const workbenchFrames = [];
 window.requestAnimationFrame = (callback) => { workbenchFrames.push(callback); return workbenchFrames.length; };
 window.cancelAnimationFrame = () => {};

@@ -349,7 +349,9 @@ function RunLog({
 
 export function ScientificWorkbench({ module, fields, view, bridge, submitted: initialSubmitted }: ScientificWorkbenchMountProps) {
   const [advancedOpen, setAdvancedOpen] = React.useState(false)
-  const [liveValues, setLiveValues] = React.useState<Record<string, unknown>>(initialSubmitted?.values || {})
+  const [liveValues, setLiveValues] = React.useState<Record<string, unknown>>(
+    () => initialSubmitted?.values || bridge.syncValues()
+  )
   const inputSections = view.inputs?.sections || []
   const advancedSection = view.inputs?.advanced
   const fieldPresentations = view.inputs?.fieldPresentations || {}

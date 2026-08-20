@@ -29,6 +29,12 @@
                 "title"  : "Inputs",
                 "fields" : ["input_value", "show_workflow_cards", "workflow_choice", "sample_count", "sample_fraction", "input_file", "sample_concentration"],
                 "workflowChoices" : ["data-scope"]
+            },
+            {
+                "id"     : "prepare-options",
+                "title"  : "Prepare options",
+                "repeat" : "workflow_choice:prepare",
+                "fields" : ["preparation_note"]
             }
         ],
         "fieldPresentations" : {

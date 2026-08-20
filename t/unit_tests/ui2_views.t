@@ -137,6 +137,8 @@ like( $ui2_react_source, qr/includeUnassignedOutputs.*?Additional results/s, 'op
 like( $ui2_react_source, qr/node\.setAttribute\("data-plot-fit", "pane"\).*?node\.matches\('\[data-output-type="plotly"\]'\).*?data-plot-fit/s, 'workbench applies fit-to-pane to the field root and a direct Plotly output' );
 like( $ui2_react_source, qr/function FieldGroup\(.*?fieldIds.*?plannedFields.*?bridge\.createFieldGroup\(plannedFields, role\).*?bridge\.fieldGroupMounted/s, 'workbench mounts whole native field groups without recreating unchanged declared fields' );
 like( $ui2_react_source, qr/function FieldGroup\(.*?onValuesReady.*?bridge\.fieldGroupMounted\(onValuesReady\)/s, 'input field groups publish native default values back to React after mounting' );
+like( $ui2_react_source, qr/React\.useState<Record<string, unknown>>\(\s*\(\) => initialSubmitted\?\.values \|\| bridge\.syncValues\(\)/s, 'React workbenches begin with canonical UI2 values before conditional sections are composed' );
+like( $ui2_js, qr/state\.module = payload\.module;.*?state\.values = defaultInputPayload\(\);/s, 'UI2 seeds canonical module defaults before mounting a React workbench' );
 unlike( $ui2_react_source, qr/\[activeResult, inputRailCollapsed, runtime\.lastSequence, scheduleOutputResize, workspaceExpanded\]/, 'runtime events do not schedule global output resizes' );
 like( $ui2_react_source, qr/pendingOutputResizeRef.*?requestAnimationFrame.*?bridge\.resizeOutputs/s, 'workbench coalesces geometry-driven output resizes into one animation frame' );
 like( $ui2_react_css, qr/\.ui2-workbench-grid/, 'React stylesheet contains the scientific workbench grid' );
@@ -576,6 +578,10 @@ is( $workbench_layout->{viewjson}{inputs}{fieldPresentations}{workflow_choice}{c
 my ($workflow_choice_field) = grep { $_->{id} eq 'workflow_choice' } @{ $workbench_layout->{modulejson}{fields} || [] };
 is( $workflow_choice_field->{type}, 'listbox', 'choice-card fixture retains the canonical choice field type' );
 is( $workflow_choice_field->{repeat}, 'show_workflow_cards', 'neutral choice-card fixture exercises a declared visibility condition' );
+is( $workflow_choice_field->{default}, 'prepare', 'neutral choice-card fixture declares the first-render canonical value' );
+my ($prepare_options) = grep { $_->{id} eq 'prepare-options' } @{ $workbench_layout->{viewjson}{inputs}{sections} || [] };
+is( $prepare_options->{repeat}, 'workflow_choice:prepare', 'neutral fixture includes a section activated by the declared first-render value' );
+is_deeply( $prepare_options->{fields}, ['preparation_note'], 'default-activated neutral section retains its declared field' );
 my ($sample_fraction_field) = grep { $_->{id} eq 'sample_fraction' } @{ $workbench_layout->{modulejson}{fields} || [] };
 my ($input_file_field) = grep { $_->{id} eq 'input_file' } @{ $workbench_layout->{modulejson}{fields} || [] };
 is_deeply( $sample_fraction_field->{default}, ['0.85', '1.00'], 'neutral fixture includes short decimal values beside a repeated file input' );
