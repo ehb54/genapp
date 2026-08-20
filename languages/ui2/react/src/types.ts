@@ -176,7 +176,7 @@ export type TestScenarioSnapshot = {
 export type ScientificWorkbenchBridge = {
   createFieldGroup: (fields: Ui2Field[], role: "input" | "output") => HTMLElement
   releaseField: (field: HTMLElement) => void
-  fieldGroupMounted: () => void
+  fieldGroupMounted: (onValuesReady?: (values: Record<string, unknown>) => void) => void
   syncValues: () => Record<string, unknown>
   setInputValue: (fieldId: string, value: unknown) => Record<string, unknown>
   setInputValues: (values: Record<string, unknown>) => Record<string, unknown>

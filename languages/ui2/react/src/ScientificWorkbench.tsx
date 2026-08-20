@@ -26,7 +26,7 @@ function NativeHost({ create, release, mounted, className }: { create: () => HTM
   return <div className={className} ref={hostRef} />
 }
 
-function FieldGroup({ fields, bridge, role = "input", fitPlot = false, outputLayout = "", plotPresentation }: { fields: Ui2Field[]; bridge: ScientificWorkbenchBridge; role?: "input" | "output"; fitPlot?: boolean; outputLayout?: string; plotPresentation?: WorkbenchResultGroup["plotPresentation"] }) {
+function FieldGroup({ fields, bridge, role = "input", fitPlot = false, outputLayout = "", plotPresentation, onValuesReady }: { fields: Ui2Field[]; bridge: ScientificWorkbenchBridge; role?: "input" | "output"; fitPlot?: boolean; outputLayout?: string; plotPresentation?: WorkbenchResultGroup["plotPresentation"]; onValuesReady?: (values: Record<string, unknown>) => void }) {
   // View JSON is decoded into new arrays on every parent render.  Keep the
   // native group mounted while its declared field membership is unchanged.
   const fieldIds = fields.map((field) => field.id || "").join("\u0000")
@@ -52,18 +52,19 @@ function FieldGroup({ fields, bridge, role = "input", fitPlot = false, outputLay
     return node
   }, [bridge, plannedFields, fitPlot, outputLayout, plotPresentationKey, role])
   const mounted = React.useCallback(() => {
-    if (role === "input") bridge.fieldGroupMounted()
-  }, [bridge, role])
+    if (role === "input") bridge.fieldGroupMounted(onValuesReady)
+  }, [bridge, onValuesReady, role])
   return (
     <NativeHost create={create} release={bridge.releaseField} mounted={mounted} className="ui2-workbench-field-group" />
   )
 }
 
-function ChoiceCards({ field, presentation, bridge, values }: {
+function ChoiceCards({ field, presentation, bridge, values, onValuesReady }: {
   field: Ui2Field
   presentation: ChoiceCardPresentation
   bridge: ScientificWorkbenchBridge
   values: Record<string, unknown>
+  onValuesReady?: (values: Record<string, unknown>) => void
 }) {
   const choices = fieldChoices(field)
   const selected = String(values[field.id || ""] ?? field.default ?? choices[0]?.value ?? "")
@@ -72,7 +73,7 @@ function ChoiceCards({ field, presentation, bridge, values }: {
   return (
     <fieldset className="ui2-choice-cards">
       <legend>{label}</legend>
-      <FieldGroup bridge={bridge} fields={[field]} />
+      <FieldGroup bridge={bridge} fields={[field]} onValuesReady={onValuesReady} />
       <div className="ui2-choice-cards-grid">
         {choices.filter((choice) => repeatExpressionActive(presentation.choices?.[choice.value]?.repeat, values)).map((choice) => {
           const details = presentation.choices?.[choice.value] || {}
@@ -104,11 +105,12 @@ function sameValue(left: unknown, right: unknown) {
   return String(left ?? "") === String(right ?? "")
 }
 
-function WorkflowChoices({ presentation, fields, bridge, values }: {
+function WorkflowChoices({ presentation, fields, bridge, values, onValuesReady }: {
   presentation: WorkflowChoicePresentation
   fields: Ui2Field[]
   bridge: ScientificWorkbenchBridge
   values: Record<string, unknown>
+  onValuesReady?: (values: Record<string, unknown>) => void
 }) {
   const choices = (presentation.order || Object.keys(presentation.choices || {}))
     .map((choiceId) => [choiceId, presentation.choices?.[choiceId]] as const)
@@ -119,7 +121,7 @@ function WorkflowChoices({ presentation, fields, bridge, values }: {
   return (
     <fieldset className="ui2-workflow-choices">
       <legend>{label}</legend>
-      <FieldGroup bridge={bridge} fields={fields} />
+      <FieldGroup bridge={bridge} fields={fields} onValuesReady={onValuesReady} />
       <div className="ui2-choice-cards-grid">
         {choices.map(([choiceId, choice]) => {
           const id = `workflow-${choiceId}`
@@ -592,12 +594,12 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
           </div>
         </CardHeader>
         <CardContent>
-          {sectionFields.filter((field) => !fieldPresentations[field.id || ""]).length > 0 && <FieldGroup bridge={bridge} fields={sectionFields.filter((field) => !fieldPresentations[field.id || ""])} />}
+          {sectionFields.filter((field) => !fieldPresentations[field.id || ""]).length > 0 && <FieldGroup bridge={bridge} fields={sectionFields.filter((field) => !fieldPresentations[field.id || ""])} onValuesReady={syncLiveValues} />}
           {sectionFields.filter((field) => fieldPresentations[field.id || ""] && repeatExpressionActive(field.repeat, liveValues)).map((field) => (
-            <ChoiceCards bridge={bridge} field={field} key={field.id} presentation={fieldPresentations[field.id || ""]} values={liveValues} />
+            <ChoiceCards bridge={bridge} field={field} key={field.id} onValuesReady={syncLiveValues} presentation={fieldPresentations[field.id || ""]} values={liveValues} />
           ))}
           {sectionWorkflowChoices.map(([id, presentation]) => (
-            <WorkflowChoices bridge={bridge} fields={presentation.fields.map((fieldId) => fieldsById.get(fieldId)).filter(Boolean) as Ui2Field[]} key={id} presentation={presentation} values={liveValues} />
+            <WorkflowChoices bridge={bridge} fields={presentation.fields.map((fieldId) => fieldsById.get(fieldId)).filter(Boolean) as Ui2Field[]} key={id} onValuesReady={syncLiveValues} presentation={presentation} values={liveValues} />
           ))}
           {(section.children || []).map((child) => renderInputSection(child, depth + 1))}
         </CardContent>
@@ -677,7 +679,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
               {extraInputs.length > 0 && (
                 <Card>
                   <CardHeader><CardTitle>Additional inputs</CardTitle></CardHeader>
-                  <CardContent><FieldGroup bridge={bridge} fields={extraInputs} /></CardContent>
+                  <CardContent><FieldGroup bridge={bridge} fields={extraInputs} onValuesReady={syncLiveValues} /></CardContent>
                 </Card>
               )}
 
@@ -693,7 +695,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
                     <CollapsibleContent forceMount className="data-[state=closed]:hidden">
                       <CardContent>
                         {advancedSection.description && <p className="ui2-workbench-section-description">{advancedSection.description}</p>}
-                        <FieldGroup bridge={bridge} fields={advancedFieldIds.map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]} />
+                        <FieldGroup bridge={bridge} fields={advancedFieldIds.map((id) => fieldsById.get(id)).filter(Boolean) as Ui2Field[]} onValuesReady={syncLiveValues} />
                       </CardContent>
                     </CollapsibleContent>
                   </Card>

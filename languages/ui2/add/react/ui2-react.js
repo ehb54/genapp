@@ -10811,47 +10811,52 @@ function Wr({ create: e, release: t, mounted: n, className: r }) {
 		ref: i
 	});
 }
-function Gr({ fields: e, bridge: t, role: n = "input", fitPlot: r = !1, outputLayout: i = "", plotPresentation: a }) {
-	let o = e.map((e) => e.id || "").join("\0"), s = C.useMemo(() => e, [o]), c = JSON.stringify(a || {}), l = C.useCallback(() => {
-		let e = t.createFieldGroup(s, n);
-		return n === "output" && i && (e.dataset.outputLayout = i), n === "output" && c !== "{}" && (e.dataset.plotPresentation = c), r && (e.setAttribute("data-plot-fit", "pane"), (e.matches("[data-output-type=\"plotly\"]") ? e : e.querySelector("[data-output-type=\"plotly\"]"))?.setAttribute("data-plot-fit", "pane")), e;
+function Gr({ fields: e, bridge: t, role: n = "input", fitPlot: r = !1, outputLayout: i = "", plotPresentation: a, onValuesReady: o }) {
+	let s = e.map((e) => e.id || "").join("\0"), c = C.useMemo(() => e, [s]), l = JSON.stringify(a || {}), u = C.useCallback(() => {
+		let e = t.createFieldGroup(c, n);
+		return n === "output" && i && (e.dataset.outputLayout = i), n === "output" && l !== "{}" && (e.dataset.plotPresentation = l), r && (e.setAttribute("data-plot-fit", "pane"), (e.matches("[data-output-type=\"plotly\"]") ? e : e.querySelector("[data-output-type=\"plotly\"]"))?.setAttribute("data-plot-fit", "pane")), e;
 	}, [
 		t,
-		s,
+		c,
 		r,
 		i,
-		c,
+		l,
 		n
-	]), u = C.useCallback(() => {
-		n === "input" && t.fieldGroupMounted();
-	}, [t, n]);
+	]), d = C.useCallback(() => {
+		n === "input" && t.fieldGroupMounted(o);
+	}, [
+		t,
+		o,
+		n
+	]);
 	return /* @__PURE__ */ (0, z.jsx)(Wr, {
-		create: l,
+		create: u,
 		release: t.releaseField,
-		mounted: u,
+		mounted: d,
 		className: "ui2-workbench-field-group"
 	});
 }
-function Kr({ field: e, presentation: t, bridge: n, values: r }) {
-	let i = Yr(e), a = String(r[e.id || ""] ?? e.default ?? i[0]?.value ?? "");
+function Kr({ field: e, presentation: t, bridge: n, values: r, onValuesReady: i }) {
+	let a = Yr(e), o = String(r[e.id || ""] ?? e.default ?? a[0]?.value ?? "");
 	return /* @__PURE__ */ (0, z.jsxs)("fieldset", {
 		className: "ui2-choice-cards",
 		children: [
 			/* @__PURE__ */ (0, z.jsx)("legend", { children: t.title || e.label || "Choose an option" }),
 			/* @__PURE__ */ (0, z.jsx)(Gr, {
 				bridge: n,
-				fields: [e]
+				fields: [e],
+				onValuesReady: i
 			}),
 			/* @__PURE__ */ (0, z.jsx)("div", {
 				className: "ui2-choice-cards-grid",
-				children: i.filter((e) => $r(t.choices?.[e.value]?.repeat, r)).map((r) => {
-					let i = t.choices?.[r.value] || {}, o = `${e.id}-${r.value}`;
+				children: a.filter((e) => $r(t.choices?.[e.value]?.repeat, r)).map((r) => {
+					let i = t.choices?.[r.value] || {}, a = `${e.id}-${r.value}`;
 					return /* @__PURE__ */ (0, z.jsxs)("label", {
-						className: `ui2-choice-card${a === r.value ? " ui2-choice-card-selected" : ""}`,
-						htmlFor: o,
+						className: `ui2-choice-card${o === r.value ? " ui2-choice-card-selected" : ""}`,
+						htmlFor: a,
 						children: [/* @__PURE__ */ (0, z.jsx)("input", {
-							checked: a === r.value,
-							id: o,
+							checked: o === r.value,
+							id: a,
 							name: `${e.id}-choice-cards`,
 							onChange: () => n.setInputValue(e.id || "", r.value),
 							type: "radio",
@@ -10882,25 +10887,26 @@ function Kr({ field: e, presentation: t, bridge: n, values: r }) {
 function qr(e, t) {
 	return String(e ?? "") === String(t ?? "");
 }
-function Jr({ presentation: e, fields: t, bridge: n, values: r }) {
-	let i = (e.order || Object.keys(e.choices || {})).map((t) => [t, e.choices?.[t]]).filter(([, e]) => !!e), a = i.find(([, e]) => Object.entries(e.matches || {}).every(([e, t]) => qr(r[e], t)))?.[0] || "";
+function Jr({ presentation: e, fields: t, bridge: n, values: r, onValuesReady: i }) {
+	let a = (e.order || Object.keys(e.choices || {})).map((t) => [t, e.choices?.[t]]).filter(([, e]) => !!e), o = a.find(([, e]) => Object.entries(e.matches || {}).every(([e, t]) => qr(r[e], t)))?.[0] || "";
 	return /* @__PURE__ */ (0, z.jsxs)("fieldset", {
 		className: "ui2-workflow-choices",
 		children: [
 			/* @__PURE__ */ (0, z.jsx)("legend", { children: e.title || "Choose a workflow" }),
 			/* @__PURE__ */ (0, z.jsx)(Gr, {
 				bridge: n,
-				fields: t
+				fields: t,
+				onValuesReady: i
 			}),
 			/* @__PURE__ */ (0, z.jsx)("div", {
 				className: "ui2-choice-cards-grid",
-				children: i.map(([e, t]) => {
+				children: a.map(([e, t]) => {
 					let r = `workflow-${e}`;
 					return /* @__PURE__ */ (0, z.jsxs)("label", {
-						className: `ui2-choice-card${a === e ? " ui2-choice-card-selected" : ""}`,
+						className: `ui2-choice-card${o === e ? " ui2-choice-card-selected" : ""}`,
 						htmlFor: r,
 						children: [/* @__PURE__ */ (0, z.jsx)("input", {
-							checked: a === e,
+							checked: o === e,
 							id: r,
 							name: "workflow-choices",
 							onChange: () => n.setInputValues(t.values),
@@ -11194,17 +11200,20 @@ function ai({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 			children: [/* @__PURE__ */ (0, z.jsx)(Zt, { children: /* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)(Qt, { children: e.title }), e.description && /* @__PURE__ */ (0, z.jsx)($t, { children: e.description })] }) }), /* @__PURE__ */ (0, z.jsxs)(en, { children: [
 				n.filter((e) => !d[e.id || ""]).length > 0 && /* @__PURE__ */ (0, z.jsx)(Gr, {
 					bridge: r,
-					fields: n.filter((e) => !d[e.id || ""])
+					fields: n.filter((e) => !d[e.id || ""]),
+					onValuesReady: Se
 				}),
 				n.filter((e) => d[e.id || ""] && $r(e.repeat, s)).map((e) => /* @__PURE__ */ (0, z.jsx)(Kr, {
 					bridge: r,
 					field: e,
+					onValuesReady: Se,
 					presentation: d[e.id || ""],
 					values: s
 				}, e.id)),
 				i.map(([e, t]) => /* @__PURE__ */ (0, z.jsx)(Jr, {
 					bridge: r,
 					fields: t.fields.map((e) => fe.get(e)).filter(Boolean),
+					onValuesReady: Se,
 					presentation: t,
 					values: s
 				}, e)),
@@ -11307,7 +11316,8 @@ function ai({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 							l.map((e) => Fe(e)),
 							ve.length > 0 && /* @__PURE__ */ (0, z.jsxs)(Xt, { children: [/* @__PURE__ */ (0, z.jsx)(Zt, { children: /* @__PURE__ */ (0, z.jsx)(Qt, { children: "Additional inputs" }) }), /* @__PURE__ */ (0, z.jsx)(en, { children: /* @__PURE__ */ (0, z.jsx)(Gr, {
 								bridge: r,
-								fields: ve
+								fields: ve,
+								onValuesReady: Se
 							}) })] }),
 							u && /* @__PURE__ */ (0, z.jsx)(In, {
 								open: a,
@@ -11338,7 +11348,8 @@ function ai({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 										children: u.description
 									}), /* @__PURE__ */ (0, z.jsx)(Gr, {
 										bridge: r,
-										fields: m.map((e) => fe.get(e)).filter(Boolean)
+										fields: m.map((e) => fe.get(e)).filter(Boolean),
+										onValuesReady: Se
 									})] })
 								})] })
 							})

@@ -3612,6 +3612,31 @@ hooks.queue_ngl_coordinate_frame(frameOutput, { atom_count: 2, frame_id: "snapsh
 assert.strictEqual(frameOutput._ui2_ngl_frames.length, 1, "UI2 keeps only the latest NGL frame when the memory budget is tiny");
 assert.strictEqual(frameOutput._ui2_ngl_frames[0].frame_id, "snapshot-99", "UI2 does not preserve the old ten-frame experiment under memory pressure");
 
+const workbenchFrames = [];
+window.requestAnimationFrame = (callback) => { workbenchFrames.push(callback); return workbenchFrames.length; };
+window.cancelAnimationFrame = () => {};
+hooks.state.values = { utility: "pdb", task: "renumber" };
+hooks.setReactWorkbenchRootForTest({});
+const mountedValueSnapshots = [];
+hooks.scheduleReactWorkbenchSync((values) => mountedValueSnapshots.push(values));
+hooks.scheduleReactWorkbenchSync((values) => mountedValueSnapshots.push(values));
+assert.strictEqual(workbenchFrames.length, 1, "React input groups coalesce first-mount value publication into one animation frame");
+workbenchFrames.shift()();
+assert.strictEqual(mountedValueSnapshots.length, 2, "each mounted React input group receives one canonical value callback");
+assert.deepStrictEqual(
+  mountedValueSnapshots[0],
+  mountedValueSnapshots[1],
+  "coalesced React input groups receive the same canonical native value snapshot after synchronization"
+);
+hooks.scheduleReactWorkbenchSync((values) => mountedValueSnapshots.push(values));
+hooks.unmountReactWorkbench();
+workbenchFrames.shift()();
+assert.strictEqual(
+  mountedValueSnapshots.length,
+  2,
+  "unmount discards pending React input-group callbacks instead of publishing stale values"
+);
+
 const scenario = {
   id: "basic_documented_example",
   verification: {

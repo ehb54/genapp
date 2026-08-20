@@ -76,6 +76,7 @@
   let katexLoadPromise = null;
   let reactWorkbenchRoot = null;
   let reactWorkbenchSyncFrame = null;
+  const reactWorkbenchSyncListeners = new Set();
   let hoverHelpTimer = null;
   let hoverHelpTarget = null;
 
@@ -2296,7 +2297,7 @@
     const bridge = {
       createFieldGroup: (groupFields, role) => renderReactWorkbenchFieldGroup(groupFields, role),
       releaseField: releaseReactWorkbenchField,
-      fieldGroupMounted: () => scheduleReactWorkbenchSync(),
+      fieldGroupMounted: (onValuesReady) => scheduleReactWorkbenchSync(onValuesReady),
       syncValues: () => {
         syncValues();
         return cloneUi2Value(state.values);
@@ -2335,7 +2336,10 @@
   // control changes.  Run the normal UI2 dependency/table synchronization
   // once the complete native group is in the DOM, rather than asking React to
   // reproduce repeat, hook, matrix, and conditional-field behavior.
-  function scheduleReactWorkbenchSync() {
+  function scheduleReactWorkbenchSync(onValuesReady = null) {
+    if (typeof onValuesReady === "function") {
+      reactWorkbenchSyncListeners.add(onValuesReady);
+    }
     if (reactWorkbenchSyncFrame != null) {
       return;
     }
@@ -2344,6 +2348,12 @@
       if (reactWorkbenchRoot) {
         applyPendingReactWorkbenchInputValues();
         syncValues();
+        const values = cloneUi2Value(state.values);
+        const listeners = Array.from(reactWorkbenchSyncListeners);
+        reactWorkbenchSyncListeners.clear();
+        listeners.forEach((listener) => listener(values));
+      } else {
+        reactWorkbenchSyncListeners.clear();
       }
     });
   }
@@ -2368,6 +2378,7 @@
       window.cancelAnimationFrame(reactWorkbenchSyncFrame);
       reactWorkbenchSyncFrame = null;
     }
+    reactWorkbenchSyncListeners.clear();
     if (!reactWorkbenchRoot) {
       return;
     }
@@ -11748,6 +11759,9 @@
       repeatCount,
       collectControlValues,
       syncValues,
+      scheduleReactWorkbenchSync,
+      unmountReactWorkbench,
+      setReactWorkbenchRootForTest: (root) => { reactWorkbenchRoot = root; },
       updateRepeatTables,
       defaultInputPayload,
       resetModuleForm,
