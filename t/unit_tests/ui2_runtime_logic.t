@@ -455,6 +455,12 @@ assert.strictEqual(
 );
 const nativeThemeFields = hooks.ui2UserConfigFields([
   { id: "project", type: "listbox" },
+  { id: "newproject", type: "checkbox" },
+  { id: "newprojectname", type: "text" },
+  { id: "newprojectdesc", type: "textarea" },
+  { id: "projectshare", type: "checkbox" },
+  { id: "projectshareproject", type: "listbox" },
+  { id: "projectsharewith", type: "listbox" },
   { id: "changetheme", type: "checkbox" },
   { id: "themetype", type: "listbox" },
   { id: "themedark", type: "listbox" },
@@ -464,41 +470,37 @@ const nativeThemeFields = hooks.ui2UserConfigFields([
 ]);
 assert.strictEqual(
   nativeThemeFields.map((field) => field.id).join(","),
-  "project,ui2theme,help,ui2hoverhelp",
-  "UI2 replaces the legacy theme cluster and adds a local hover-help preference"
+  "projectshare,projectshareproject,projectsharewith,ui2theme,help,ui2hoverhelp",
+  "UI2 moves project selection and creation out of Settings while retaining sharing and local preferences"
 );
 assert.strictEqual(
   nativeThemeFields.find((field) => field.id === "ui2theme").ui2LocalPreference,
   true,
   "UI2 marks the native theme Settings field as a local preference"
 );
-const settingsProjectControl = {
-  className: "",
-  dataset: { fieldId: "project", pullKey: "project" },
-  value: "test4"
-};
-const settingsProjectForm = {
-  querySelectorAll() {
-    return [settingsProjectControl];
-  }
-};
 assert.strictEqual(
-  hooks.settingsProjectFromResponse(settingsProjectForm, { _project: "blah2" }),
-  "blah2",
-  "UI2 Settings keeps the project selected by a successful project-creation response"
+  JSON.stringify(hooks.normalizeProjectNames(["beta", "no_project_specified", "alpha", "beta"])),
+  JSON.stringify(["alpha", "beta", "no_project_specified"]),
+  "UI2 normalizes named projects and keeps the legacy fallback last"
 );
-assert.strictEqual(
-  hooks.settingsProjectFromResponse(settingsProjectForm, {}),
-  "test4",
-  "UI2 Settings retains the selected-project fallback for legacy responses"
-);
+assert.strictEqual(JSON.stringify(hooks.namedProjectNames([])), "[]", "UI2 recognizes a new user with no named projects");
+assert.strictEqual(hooks.projectDisplayName("no_project_specified"), "No project", "UI2 hides the legacy fallback name");
+assert.strictEqual(hooks.projectDisplayName("analysis_1"), "analysis_1", "UI2 preserves named-project labels");
+
+hooks.state.session = { logon: "Joseph", project: "no_project_specified" };
+const projectCreationData = hooks.projectCreationFormData("  first_project  ", "Initial work");
+assert.strictEqual(projectCreationData.get("newproject"), "on", "project creation enables the legacy new-project action");
+assert.strictEqual(projectCreationData.get("newproject-newprojectname"), "first_project", "project creation trims and submits the legacy repeated name");
+assert.strictEqual(projectCreationData.get("newproject-newprojectdesc"), "Initial work", "project creation submits the optional description");
+assert.strictEqual(projectCreationData.get("_logon"), "Joseph", "project creation retains the authenticated user context");
+assert.strictEqual(projectCreationData.get("_project"), "no_project_specified", "project creation retains the current project context");
 
 hooks.state.session = { logon: "Joseph", project: "" };
 hooks.renderSessionState();
-assert.strictEqual(sessionStatus.textContent, "Select project", "UI2 header invites project selection for empty project state");
+assert.strictEqual(sessionStatus.textContent, "No project", "UI2 header gives the fallback project a user-facing name");
 hooks.state.session.project = "no_project_specified";
 hooks.renderSessionState();
-assert.strictEqual(sessionStatus.textContent, "Select project", "UI2 header does not expose the legacy default project name");
+assert.strictEqual(sessionStatus.textContent, "No project", "UI2 header does not expose the legacy default project name");
 hooks.state.session.project = "hello";
 hooks.renderSessionState();
 assert.strictEqual(sessionStatus.textContent, "Project: hello", "UI2 header displays selected project names");
@@ -2367,8 +2369,8 @@ hooks.state.session.project = "hello";
 hooks.replaceSelectOptions(selectControl, ["alpha", "hello", "no_project_specified"]);
 assert.deepStrictEqual(
   selectControl.children.map((option) => [option.value, option.text]),
-  [["alpha", "alpha"], ["hello", "hello"], ["no_project_specified", "no_project_specified"]],
-  "Settings rebuilds pulled project listbox options from the legacy array payload"
+  [["alpha", "alpha"], ["hello", "hello"], ["no_project_specified", "No project"]],
+  "Settings project-sharing choices hide the legacy fallback label"
 );
 assert.strictEqual(selectControl.value, "hello", "Settings selects the current session project after pulling projects");
 

@@ -421,7 +421,12 @@ like( $ui2_js, qr/legacyEndpoint\("filesBase", "ajax\/sys_config\/sys_files\.php
 like( $ui2_js, qr/function legacyInlineStatusText\(value\).*?stripHtml\(separated\).*?replace/s, 'ui2 File Manager converts legacy HTML separators to readable plain-text status' );
 like( $ui2_js, qr/row\.dataset\.parentId = entry\.parent \|\| parentId \|\| "#";/, 'ui2 File Manager preserves each child row parent instead of deriving it from a sibling' );
 like( $ui2_js, qr/function renderUserConfigTool\(module, fields\)/, 'ui2 has a dedicated Settings shell' );
-like( $ui2_js, qr/afterSuccess: \(payload\) => setSessionProjectFromSettings\(form, payload\)/, 'ui2 Settings reconciles the session project from the successful settings response' );
+like( $ui2_js, qr/UI2_PROJECT_SETTINGS_FIELD_IDS = new Set\(\["project", "newproject", "newprojectname", "newprojectdesc"\]\)/, 'ui2 keeps project selection and creation out of Settings' );
+like( $ui2_js, qr/projectContext\.type = "hidden".*?projectContext\.dataset\.fieldId = "project".*?projectContext\.value = sessionProjectName\(\)/s, 'ui2 Settings preserves the legacy current-project request context without displaying it' );
+like( $ui2_js, qr/function openProjectDialog\(\).*?loadProjectNames\(\).*?renderProjectChoices.*?renderProjectCreation/s, 'ui2 project control owns selection and first-project creation' );
+like( $ui2_js, qr/function selectProjectFromDialog\(project, content, button\).*?setLegacyProject\(project\).*?closeUtilityOverlay\(\)/s, 'ui2 changes a project with one choice and closes the dialog after success' );
+like( $ui2_js, qr/function createLegacyProject\(name, description\).*?sys_user_config\.php.*?updateSessionIdentity/s, 'ui2 creates and selects projects through the existing legacy endpoint' );
+like( $ui2_js, qr/Continue with no project/, 'ui2 gives first-time users an explicit no-project path' );
 like( $ui2_js, qr/function renderRegisterTool\(module, fields\)/, 'ui2 has a dedicated Register shell' );
 like( $ui2_js, qr/function legacyUtilityFieldName\(control\)/, 'ui2 Settings submits legacy repeat-prefixed field names' );
 like( $ui2_js, qr/function userConfigFields\(fields\)/, 'ui2 Settings filters fields through legacy directive visibility' );
@@ -435,10 +440,10 @@ like( $ui2_js, qr/function renderGroupField\(field\)/, 'ui2 Settings renders leg
 like( $ui2_js, qr/control\.type === "checkbox" && !control\.checked[\s\S]+return;/, 'ui2 utility submit skips unchecked checkboxes like native legacy forms' );
 like( $ui2_js, qr/dataset\.pullKey = field\.pull/, 'ui2 Settings records legacy pull keys separately from field ids' );
 like( $ui2_js, qr/function replaceSelectOptions\(select, values\)/, 'ui2 Settings rebuilds pulled listbox options from legacy array payloads' );
-like( $ui2_js, qr/function setLegacyProject\(project, options = \{\}\).*?sys_project\.php/s, 'ui2 Settings uses the legacy project session endpoint' );
+like( $ui2_js, qr/function setLegacyProject\(project, options = \{\}\).*?sys_project\.php/s, 'ui2 project dialog uses the legacy project session endpoint' );
 like( $ui2_js, qr/function clearReattachRouteForProjectChange\(\).*?routeParams\.delete\("_switch"\)/s, 'ui2 clears a stale reattach command after explicit project context changes' );
 like( $ui2_js, qr/setLegacyProject\(target\.project, \{ allowUnavailable: true, preserveReattachRoute: true \}\)/, 'ui2 reattachment can report deleted job files without restoring a retired project as current' );
-like( $ui2_js, qr/function settingsProjectFromResponse\(form, payload = \{\}\).*?payload\?\._project.*?return responseProject/s, 'ui2 Settings keeps a successful server-selected project ahead of the stale selector value' );
+unlike( $ui2_js, qr/function settingsProjectFromResponse/, 'ui2 Settings no longer owns current-project reconciliation' );
 like( $ui2_js, qr/fieldControls\(form\)[\s\S]+dataset\.pullKey[\s\S]+sys_pull\.php/s, 'ui2 Settings pulls only fields declared with legacy pull metadata' );
 like( $ui2_js, qr/function fieldControls\(scope\)/, 'ui2 runtime scans actual form controls instead of field wrapper rows' );
 like( $ui2_js, qr/function fieldControls\(scope\)[\s\S]+ui2-native-file/s, 'ui2 runtime excludes hidden native file inputs from normal value collection' );
@@ -449,9 +454,9 @@ like( $ui2_js, qr/missingRequiredFile[\s\S]+control\.closest\("\.ui2-file-contro
 like( $ui2_js, qr/function validateUtilityForm\(form\)[\s\S]+validateModuleForm\(form\)/, 'ui2 Settings keeps using the shared form validator' );
 like( $ui2_js, qr/function submitModule\(form\)[\s\S]+const invalid = validateModuleForm\(form\);[\s\S]+const uuid = createUuid\(\);/s, 'ui2 scientific submit validates required controls before creating runtime jobs' );
 like( $ui2_js, qr/function validateMatchedUtilityControls\(form\)/, 'ui2 utility validation checks repeated email and password fields that must match' );
-like( $ui2_js, qr/await refreshSessionState\(\);\s+await pullUtilityFieldValues\(form\);/s, 'ui2 Settings refreshes pulled project choices after a successful update' );
+like( $ui2_js, qr/await refreshSessionState\(\);\s+await pullUtilityFieldValues\(form\);/s, 'ui2 Settings refreshes its remaining pulled choices after a successful update' );
 like( $ui2_js, qr/function normalizeUserConfigField\(field\)/, 'ui2 Settings can apply legacy system-tool field exceptions' );
-like( $ui2_js, qr/id === "newprojectdesc"[\s\S]+required: "false"/, 'ui2 Settings keeps new project descriptions optional like legacy' );
+like( $ui2_js, qr/id === "newprojectdesc"[\s\S]+required: "false"/, 'ui2 project creation keeps descriptions optional like legacy' );
 like( $ui2_js, qr/control\.pattern = field\.pattern/, 'ui2 Settings carries module regex patterns onto generated controls' );
 unlike( $ui2_js, qr/document\.createTextNode\([^)]*Optional/, 'ui2 switches do not render generic Optional text' );
 like( $ui2_js, qr/formData\.append\("selectedfiles\[\]", id\)/, 'ui2 File Manager sends legacy encoded selected file ids' );

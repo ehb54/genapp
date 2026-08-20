@@ -1452,6 +1452,76 @@ code {
   overflow: auto;
 }
 
+.ui2-project-dialog {
+  width: min(32rem, calc(100vw - 2rem));
+}
+
+.ui2-project-dialog-content,
+.ui2-project-create-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.ui2-project-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.ui2-project-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  border: 1px solid var(--ui2-border);
+  border-radius: 7px;
+  background: var(--ui2-panel-soft);
+  color: var(--ui2-text);
+  cursor: pointer;
+  padding: 0.75rem 0.9rem;
+  text-align: left;
+}
+
+.ui2-project-option:hover,
+.ui2-project-option:focus-visible {
+  border-color: var(--ui2-accent);
+  background: var(--ui2-accent-soft);
+  outline: none;
+}
+
+.ui2-project-option-current {
+  border-color: var(--ui2-accent);
+}
+
+.ui2-project-option-name {
+  font-weight: 700;
+}
+
+.ui2-project-option-state {
+  color: var(--ui2-accent-strong);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.ui2-project-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.ui2-project-dialog-actions .ui2-submit-status {
+  flex-basis: 100%;
+}
+
+.ui2-project-empty-state h3 {
+  margin: 0 0 0.35rem;
+}
+
+.ui2-project-empty-state p {
+  margin: 0;
+}
+
 .ui2-feedback-dialog {
   width: min(78rem, calc(100vw - 2rem));
 }

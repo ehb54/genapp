@@ -36,6 +36,7 @@
   ];
   const UI2_THEME_VALUES = new Set(UI2_THEME_OPTIONS.map(([value]) => value));
   const LEGACY_USER_CONFIG_THEME_FIELD_IDS = new Set(["changetheme", "themetype", "themedark", "themelight", "theme"]);
+  const UI2_PROJECT_SETTINGS_FIELD_IDS = new Set(["project", "newproject", "newprojectname", "newprojectdesc"]);
   const AI_HELPER_PREFERENCE_VALUES = new Set(["default", "on", "off"]);
   const AI_HELPER_ENDPOINT_STATES = new Set(["unavailable", "unconfigured", "development_stub", "configured"]);
   const AI_HELPER_SENSITIVE_FIELD_RE = /(?:password|passwd|passphrase|secret|token|apikey|api_key|auth|credential)/i;
@@ -476,9 +477,9 @@
   function renderSessionState(error) {
     const project = sessionProjectName();
     if (nodes.sessionStatus) {
-      nodes.sessionStatus.textContent = project === "no_project_specified" ? "Select project" : `Project: ${project}`;
+      nodes.sessionStatus.textContent = project === "no_project_specified" ? "No project" : `Project: ${project}`;
       nodes.sessionStatus.title = state.session.logon
-        ? `Logged on as ${state.session.logon}; select a project`
+        ? `Logged on as ${state.session.logon}; change project`
         : (error ? `Session status unavailable: ${error.message}` : "Not logged on");
     }
     const logon = stringValue(state.session.logon).trim();
@@ -490,7 +491,7 @@
     }
     if (nodes.accountIdentity) {
       nodes.accountIdentity.textContent = logon
-        ? `${logon} · ${project === "no_project_specified" ? "No project selected" : `Project: ${project}`}`
+        ? `${logon} · ${project === "no_project_specified" ? "No project" : `Project: ${project}`}`
         : "Not logged on";
     }
     renderAccountAvatar();
@@ -1273,53 +1274,198 @@
         return;
       }
       const payload = await fetchModuleDefinition("sys_user_config");
-      const projectField = visibleFields(Array.isArray(payload.module?.fields) ? payload.module.fields : [])
-        .find((field) => field.id === "project");
+      const fields = visibleFields(Array.isArray(payload.module?.fields) ? payload.module.fields : []);
+      const projectField = fields.find((field) => field.id === "project");
       if (!projectField) {
         throw new Error("This application does not declare a selectable project field.");
       }
-      const form = el("form", "ui2-utility-form ui2-project-form");
-      form.noValidate = true;
-      form.appendChild(renderField(normalizeUserConfigField(projectField), "input"));
-      const actions = el("div", "ui2-form-actions");
-      const select = el("button", "ui2-button ui2-button-primary", "Select project");
-      select.type = "submit";
-      const manage = el("button", "ui2-button ui2-button-quiet", "Manage projects");
-      manage.type = "button";
-      const status = el("div", "ui2-submit-status", "");
-      status.setAttribute("role", "status");
-      actions.append(select, manage, status);
-      form.appendChild(actions);
-      form.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const control = fieldControls(form).find((item) => item.dataset.fieldId === "project");
-        const project = stringValue(control?.value).trim();
-        if (!project) {
-          setSubmitStatus(status, "Choose a project first.", "error");
-          control?.focus();
-          return;
-        }
-        select.disabled = true;
-        setSubmitStatus(status, "Selecting project", "pending");
-        try {
-          await setLegacyProject(project);
-          closeUtilityOverlay();
-        } catch (error) {
-          setSubmitStatus(status, error.message, "error");
-        } finally {
-          select.disabled = false;
-        }
-      });
-      manage.addEventListener("click", () => {
-        closeUtilityOverlay();
-        openUtilityModule("sys_user_config");
-      });
-      showUtilityOverlay("Select project", form);
-      await pullUtilityFieldValues(form);
-      fieldControls(form).find((item) => item.dataset.fieldId === "project")?.focus();
+      const projects = await loadProjectNames();
+      const content = el("section", "ui2-project-dialog-content");
+      showUtilityOverlay("Projects", content, { dialogClass: "ui2-project-dialog" });
+      if (namedProjectNames(projects).length) {
+        renderProjectChoices(content, projects, fields);
+      } else {
+        renderProjectCreation(content, projects, fields, { firstProject: true });
+      }
     } catch (error) {
-      showUtilityOverlay("Select project", el("div", "ui2-error", `Could not load projects: ${error.message}`));
+      showUtilityOverlay("Projects", el("div", "ui2-error", `Could not load projects: ${error.message}`), {
+        dialogClass: "ui2-project-dialog"
+      });
     }
+  }
+
+  async function loadProjectNames() {
+    const url = new URL(legacyEndpoint("pullBase", "ajax/sys_config/sys_pull.php"), window.location.href);
+    url.searchParams.set("_window", window.name);
+    url.searchParams.set("_logon", state.session.logon || "");
+    url.searchParams.set("project", "0");
+    const response = await fetch(url.toString(), { cache: "no-cache", credentials: "same-origin" });
+    const payload = await parseJsonResponse(response, "Projects");
+    if (!response.ok || payload.error) {
+      throw new Error(payload.error || `Projects returned HTTP ${response.status}`);
+    }
+    return normalizeProjectNames(payload.project);
+  }
+
+  function normalizeProjectNames(values) {
+    const names = Array.isArray(values) ? values.map((value) => stringValue(value).trim()).filter(Boolean) : [];
+    if (!names.includes("no_project_specified")) {
+      names.push("no_project_specified");
+    }
+    return Array.from(new Set(names)).sort((left, right) => {
+      if (left === "no_project_specified") return 1;
+      if (right === "no_project_specified") return -1;
+      return left.localeCompare(right, undefined, { numeric: true });
+    });
+  }
+
+  function namedProjectNames(projects) {
+    return normalizeProjectNames(projects).filter((project) => project !== "no_project_specified");
+  }
+
+  function projectDisplayName(project) {
+    const value = stringValue(project).trim();
+    return !value || value === "no_project_specified" ? "No project" : value;
+  }
+
+  function replaceProjectDialogContent(content, ...children) {
+    content.replaceChildren(...children);
+  }
+
+  function renderProjectChoices(content, projects, fields) {
+    const intro = el("p", "ui2-help", "Choose the workspace for new jobs and files.");
+    const list = el("div", "ui2-project-list");
+    const current = sessionProjectName();
+    normalizeProjectNames(projects).forEach((project) => {
+      const button = el("button", "ui2-project-option");
+      button.type = "button";
+      button.dataset.project = project;
+      button.appendChild(el("span", "ui2-project-option-name", projectDisplayName(project)));
+      if (project === current) {
+        button.classList.add("ui2-project-option-current");
+        button.setAttribute("aria-current", "true");
+        button.appendChild(el("span", "ui2-project-option-state", "Current"));
+      }
+      button.addEventListener("click", () => selectProjectFromDialog(project, content, button));
+      list.appendChild(button);
+    });
+    const create = el("button", "ui2-button ui2-button-primary", "Create new project");
+    create.type = "button";
+    create.addEventListener("click", () => renderProjectCreation(content, projects, fields));
+    const actions = el("div", "ui2-project-dialog-actions");
+    actions.appendChild(create);
+    replaceProjectDialogContent(content, intro, list, actions);
+    (list.querySelector('[aria-current="true"]') || list.querySelector("button"))?.focus();
+  }
+
+  async function selectProjectFromDialog(project, content, button) {
+    const status = content.querySelector(".ui2-submit-status") || el("div", "ui2-submit-status");
+    if (!status.parentNode) {
+      status.setAttribute("role", "status");
+      content.appendChild(status);
+    }
+    content.querySelectorAll("button").forEach((control) => { control.disabled = true; });
+    setSubmitStatus(status, `Selecting ${projectDisplayName(project)}`, "pending");
+    try {
+      await setLegacyProject(project);
+      closeUtilityOverlay();
+    } catch (error) {
+      setSubmitStatus(status, error.message, "error");
+      content.querySelectorAll("button").forEach((control) => { control.disabled = false; });
+      button?.focus();
+    }
+  }
+
+  function renderProjectCreation(content, projects, fields, options = {}) {
+    const projectNameField = fields.find((field) => field.id === "newprojectname");
+    const projectDescriptionField = fields.find((field) => field.id === "newprojectdesc");
+    if (!projectNameField || !projectDescriptionField) {
+      replaceProjectDialogContent(content, el("div", "ui2-error", "This application does not declare project-creation fields."));
+      return;
+    }
+    const form = el("form", "ui2-project-create-form");
+    form.noValidate = true;
+    form.appendChild(renderField({ ...projectNameField, repeat: "" }, "input"));
+    form.appendChild(renderField({ ...normalizeUserConfigField(projectDescriptionField), repeat: "" }, "input"));
+    const actions = el("div", "ui2-project-dialog-actions");
+    const submit = el("button", "ui2-button ui2-button-primary", options.firstProject ? "Create first project" : "Create project");
+    submit.type = "submit";
+    const alternate = el("button", "ui2-button ui2-button-quiet", options.firstProject ? "Continue with no project" : "Back to projects");
+    alternate.type = "button";
+    const status = el("div", "ui2-submit-status", "");
+    status.setAttribute("role", "status");
+    actions.append(submit, alternate, status);
+    form.appendChild(actions);
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const invalid = validateModuleForm(form);
+      if (invalid) {
+        setSubmitStatus(status, invalid.message, "error");
+        invalid.control?.focus();
+        return;
+      }
+      const name = fieldControls(form).find((control) => control.dataset.fieldId === "newprojectname")?.value || "";
+      const description = fieldControls(form).find((control) => control.dataset.fieldId === "newprojectdesc")?.value || "";
+      submit.disabled = true;
+      alternate.disabled = true;
+      setSubmitStatus(status, "Creating project", "pending");
+      try {
+        await createLegacyProject(name, description);
+        closeUtilityOverlay();
+      } catch (error) {
+        setSubmitStatus(status, error.message, "error");
+        submit.disabled = false;
+        alternate.disabled = false;
+      }
+    });
+    alternate.addEventListener("click", () => {
+      if (options.firstProject) {
+        selectProjectFromDialog("no_project_specified", content, alternate);
+      } else {
+        renderProjectChoices(content, projects, fields);
+      }
+    });
+    const heading = el("div", "ui2-project-empty-state");
+    heading.appendChild(el("h3", null, options.firstProject ? "Create your first project" : "Create a project"));
+    heading.appendChild(el("p", "ui2-help", "Projects keep related jobs, inputs, and results together."));
+    replaceProjectDialogContent(content, heading, form);
+    fieldControls(form).find((control) => control.dataset.fieldId === "newprojectname")?.focus();
+  }
+
+  function projectCreationFormData(name, description) {
+    const formData = new FormData();
+    formData.set("newproject", "on");
+    formData.set("newproject-newprojectname", stringValue(name).trim());
+    formData.set("newproject-newprojectdesc", stringValue(description));
+    formData.set("_uuid", createUuid());
+    formData.set("_window", window.name);
+    formData.set("_project", state.session.project || "");
+    formData.set("_logon", state.session.logon || "");
+    return formData;
+  }
+
+  async function createLegacyProject(name, description) {
+    await refreshSessionState();
+    if (!state.session.logon) {
+      throw new Error("You must be logged on to create a project");
+    }
+    const response = await fetch(legacyEndpoint("", "ajax/sys_config/sys_user_config.php"), {
+      method: "POST",
+      body: projectCreationFormData(name, description),
+      credentials: "same-origin"
+    });
+    const payload = await parseJsonResponse(response, "Project creation");
+    if (!response.ok || payload.error || payload._status === "failed") {
+      throw new Error(payload.error || `Project creation returned HTTP ${response.status}`);
+    }
+    const selected = stringValue(payload._project).trim() || stringValue(name).trim();
+    const changed = sessionProjectName() !== selected;
+    updateSessionIdentity({ _logon: state.session.logon, _project: selected });
+    renderSessionState();
+    if (changed) {
+      clearReattachRouteForProjectChange();
+    }
+    return payload;
   }
 
   function showUtilityOverlay(titleText, content, options = {}) {
@@ -4309,6 +4455,11 @@
     const section = el("section", "ui2-section ui2-system-tool ui2-user-config");
     const form = el("form", "ui2-utility-form");
     form.noValidate = true;
+    const projectContext = document.createElement("input");
+    projectContext.type = "hidden";
+    projectContext.dataset.fieldId = "project";
+    projectContext.value = sessionProjectName();
+    form.appendChild(projectContext);
     const inputFields = ui2UserConfigFields(userConfigFields(fields.filter((field) => field.role !== "output")))
       .map(normalizeUserConfigField);
     const outputFields = fields.filter((field) => field.role === "output");
@@ -4319,9 +4470,7 @@
     }
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
-      await submitUtilityModule(form, module, "ajax/sys_config/sys_user_config.php", {
-        afterSuccess: (payload) => setSessionProjectFromSettings(form, payload)
-      });
+      await submitUtilityModule(form, module, "ajax/sys_config/sys_user_config.php");
     });
     form.addEventListener("reset", () => window.setTimeout(() => syncFormValues(form), 0));
     form.addEventListener("input", () => syncFormValues(form));
@@ -4558,6 +4707,9 @@
     const nextFields = [];
     let insertedTheme = false;
     fields.forEach((field) => {
+      if (UI2_PROJECT_SETTINGS_FIELD_IDS.has(String(field?.id || ""))) {
+        return;
+      }
       if (isLegacyUserConfigThemeField(field)) {
         if (!insertedTheme) {
           nextFields.push(ui2ThemeConfigField());
@@ -4722,7 +4874,8 @@
     const current = select.value || (select.dataset.pullKey === "project" ? state.session.project : "");
     select.innerHTML = "";
     values.forEach((value) => {
-      select.appendChild(new Option(String(value), String(value)));
+      const label = select.dataset.pullKey === "project" ? projectDisplayName(value) : String(value);
+      select.appendChild(new Option(label, String(value)));
     });
     if (values.map(String).includes(current)) {
       select.value = current;
@@ -4777,34 +4930,6 @@
   function utilityAllowsAnonymous(module) {
     const moduleId = module?.moduleid || module?.id || "";
     return moduleId === "sys_register" || moduleId === "sys_feedback" || moduleId === "sys_feedback2";
-  }
-
-  function settingsProjectFromResponse(form, payload = {}) {
-    const responseProject = stringValue(payload?._project).trim();
-    if (responseProject) {
-      return responseProject;
-    }
-    const projectControl = fieldControls(form).find((control) => {
-      return control.dataset.fieldId === "project" && control.dataset.pullKey === "project";
-    });
-    return stringValue(projectControl?.value).trim();
-  }
-
-  async function setSessionProjectFromSettings(form, payload = {}) {
-    const project = settingsProjectFromResponse(form, payload);
-    if (!project) {
-      return null;
-    }
-    if (stringValue(payload?._project).trim()) {
-      const changed = sessionProjectName() !== project;
-      updateSessionIdentity({ _logon: state.session.logon, _project: project });
-      renderSessionState();
-      if (changed) {
-        clearReattachRouteForProjectChange();
-      }
-      return payload;
-    }
-    return setLegacyProject(project);
   }
 
   async function setLegacyProject(project, options = {}) {
@@ -11788,6 +11913,10 @@
       currentUi2Theme,
       ui2UserConfigFields,
       ui2ThemeOptionValues,
+      normalizeProjectNames,
+      namedProjectNames,
+      projectDisplayName,
+      projectCreationFormData,
       normalizeAiHelperStatus,
       normalizeAiHelperEndpointState,
       aiHelperEnabledForUser,
@@ -11799,7 +11928,6 @@
       aiHelperUsageSummary,
       normalizeAiHelperUsage,
       replaceSelectOptions,
-      settingsProjectFromResponse,
       userConfigGroupVisible,
       parseNglPayload,
       normalizeNglLoadName,
