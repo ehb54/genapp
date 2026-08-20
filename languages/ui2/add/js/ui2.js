@@ -7259,15 +7259,14 @@
       return [];
     }
     return (state.module?.fields || []).flatMap((field) => {
-      if (!fieldIsFileLike(field) || !fileModes(field.type).includes("local") || !Object.prototype.hasOwnProperty.call(inputs, field.id)) {
+      if (!fieldIsFileLike(field) || !fileModes(field.type).includes("local")) {
         return [];
       }
-      const savedValues = valueList(inputs[field.id]).filter((value) => stringValue(value));
+      const savedValues = savedLocalFileValues(inputs, field);
       if (!savedValues.length) {
         return [];
       }
-      return savedValues.flatMap((savedValue, index) => {
-        const repeatIndex = savedValues.length > 1 ? index : null;
+      return savedValues.flatMap(({ repeatIndex, savedValue }) => {
         const selection = state.serverSelections[`${field.id}:${repeatIndex == null ? "" : repeatIndex}`];
         return selection?.encodedPath ? [] : [{
           id: field.id,
@@ -7277,6 +7276,36 @@
         }];
       });
     });
+  }
+
+  function savedLocalFileValues(inputs, field) {
+    const savedValues = [];
+    const controller = repeatControllerId(field?.repeat || "");
+    const addValues = (value, repeatIndex = null) => {
+      const values = valueList(value).map(stringValue).filter(Boolean);
+      values.forEach((savedValue, index) => {
+        savedValues.push({
+          repeatIndex: repeatIndex == null
+            ? (controller || values.length > 1 ? index : null)
+            : repeatIndex,
+          savedValue
+        });
+      });
+    };
+    if (Object.prototype.hasOwnProperty.call(inputs, field.id)) {
+      addValues(inputs[field.id]);
+    }
+    if (!controller) {
+      return savedValues;
+    }
+    const prefix = `${controller}-${field.id}-`;
+    Object.entries(inputs).forEach(([id, value]) => {
+      const suffix = id.startsWith(prefix) ? id.slice(prefix.length) : "";
+      if (/^\d+$/.test(suffix)) {
+        addValues(value, Number(suffix));
+      }
+    });
+    return savedValues;
   }
 
   function savedInputRestoreWarnings(inputs) {
@@ -7430,6 +7459,7 @@
       }
       deferUnavailableReactWorkbenchInput(id, value, setInputControlValue(id, value));
     });
+    restoreSavedRepeatedLocalFileValues(inputs);
     if (options.clearMissing) {
       clearMissingInputValues(new Set(entries.map(([id]) => id)));
     }
@@ -7527,6 +7557,20 @@
     }
     return Object.assign({}, primary, {
       _getinput: Object.assign({}, primary._getinput, saved._getinput)
+    });
+  }
+
+  function restoreSavedRepeatedLocalFileValues(inputs) {
+    Object.entries(inputs || {}).forEach(([submittedId, value]) => {
+      const submittedField = submittedFileField(submittedId);
+      if (!submittedField?.field || submittedField.repeatIndex == null
+          || !fileModes(submittedField.field.type).includes("local")) {
+        return;
+      }
+      const savedValue = stringValue(firstValue(value));
+      if (savedValue) {
+        setInputControlValueAtRepeatIndex(submittedField.id, submittedField.repeatIndex, savedValue);
+      }
     });
   }
 
@@ -7630,7 +7674,7 @@
     const fields = Array.isArray(state.module?.fields) ? state.module.fields : [];
     for (const candidate of fields) {
       const controller = repeatControllerId(candidate?.repeat || "");
-      if (!candidate?.repeatcondition || !controller || !candidate?.id) {
+      if (!controller || !candidate?.id) {
         continue;
       }
       const prefix = `${controller}-${candidate.id}-`;

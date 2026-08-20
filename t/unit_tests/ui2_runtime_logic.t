@@ -3143,6 +3143,53 @@ assert.strictEqual(
   "UI2 reattach restores a row-conditioned server-file payload at its original row"
 );
 
+hooks.state.module = {
+  fields: [
+    { id: "row_count", type: "integer", repeater: "true", tableize: "true" },
+    { id: "data_file_name", label: "Data file", type: "lrfile", repeat: "row_count" }
+  ]
+};
+const rowSpecificReplayControls = [0, 1, 2].map((repeatIndex) => ({
+  type: "text",
+  value: "",
+  dataset: { fieldId: "data_file_name", repeatTableIndex: String(repeatIndex) },
+  closest(selector) {
+    return selector === "#ui2-form" ? {} : null;
+  },
+  dispatchEvent(event) {
+    this.lastEvent = event.type;
+  }
+}));
+document.querySelectorAll = (selector) => (
+  selector === "[data-field-id=\\\"data_file_name\\\"]" ? rowSpecificReplayControls : []
+);
+hooks.state.serverSelections = {};
+hooks.applyInputPayload({
+  "_selaltval_row_count-data_file_name-0": "row_count-data_file_name-0_altval",
+  "row_count-data_file_name-0_altval": [serverRepeatOne],
+  "_html_row_count-data_file_name-0_altval": "<i>Server</i>: server_one.dat",
+  "row_count-data_file_name-1": ["local_two.dat"],
+  "_selaltval_row_count-data_file_name-2": "row_count-data_file_name-2_altval",
+  "row_count-data_file_name-2_altval": [serverRepeatThree],
+  "_html_row_count-data_file_name-2_altval": "<i>Server</i>: server_three.dat"
+}, { reselectLocalFiles: true });
+assert.strictEqual(rowSpecificReplayControls[0].value, "server_one.dat", "UI2 reattach restores the first current-format server file row");
+assert.strictEqual(rowSpecificReplayControls[1].value, "local_two.dat", "UI2 reattach preserves the unavailable current-format local file label");
+assert.strictEqual(rowSpecificReplayControls[2].value, "server_three.dat", "UI2 reattach restores the last current-format server file row");
+assert.strictEqual(hooks.state.serverSelections["data_file_name:0"].encodedPath, serverRepeatOne, "UI2 restores the first current-format server token");
+assert.strictEqual(hooks.state.serverSelections["data_file_name:2"].encodedPath, serverRepeatThree, "UI2 restores the last current-format server token");
+assert.deepStrictEqual(
+  hooks.savedInputRestoreWarnings({
+    "_selaltval_row_count-data_file_name-0": "row_count-data_file_name-0_altval",
+    "row_count-data_file_name-0_altval": [serverRepeatOne],
+    "row_count-data_file_name-1": ["local_two.dat"],
+    "_selaltval_row_count-data_file_name-2": "row_count-data_file_name-2_altval",
+    "row_count-data_file_name-2_altval": [serverRepeatThree]
+  }),
+  ["Data file (local_two.dat) was selected from this browser and must be selected again before submitting a new run."],
+  "UI2 warns only for current-format repeated local files"
+);
+
 const singleRepeatedReplayControl = {
   type: "text",
   value: "",

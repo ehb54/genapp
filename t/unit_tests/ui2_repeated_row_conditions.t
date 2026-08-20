@@ -36,6 +36,8 @@ is( $condition_fields{raw_file}{repeat}, 'row_count', 'second conditioned file r
 is( $condition_fields{raw_file}{repeatcondition}, 'source_kind:raw', 'second conditioned file has the alternate row-local condition' );
 is( $condition_fields{scale}{repeatcondition}, 'source_kind:raw', 'ordinary conditioned table cells use the same contract' );
 ok( !exists $plain_fields{row_value}{repeatcondition}, 'non-opted-in repeater has no row-local condition metadata' );
+is( $plain_fields{row_file}{repeat}, 'row_count', 'plain repeated file retains the numeric table controller' );
+ok( !exists $plain_fields{row_file}{repeatcondition}, 'plain repeated file has no row-local condition metadata' );
 
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
 like( $ui2_js, qr/function updateRepeatTableCellConditions\(scope, rawValues\)/, 'generated UI2 runtime contains generic table-cell condition handling' );

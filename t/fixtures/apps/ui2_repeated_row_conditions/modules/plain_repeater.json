@@ -21,6 +21,13 @@
             "type"   : "text",
             "default": "value",
             "repeat" : "row_count"
+        },
+        {
+            "role"   : "input",
+            "id"     : "row_file",
+            "label"  : "Row file",
+            "type"   : "lrfile",
+            "repeat" : "row_count"
         }
     ]
 }
