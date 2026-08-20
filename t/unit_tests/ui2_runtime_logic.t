@@ -266,6 +266,7 @@ const window = {
   GenAppUi2ExposeTestHooks: true,
   __styleVars: {},
   __localStorage: {},
+  __openCalls: [],
   CSS: { escape(value) { return String(value); } },
   crypto: { randomUUID() { return "uuid-for-test"; } },
   localStorage: {
@@ -284,6 +285,10 @@ const window = {
       window.location.pathname = next.pathname;
       window.location.search = next.search;
     }
+  },
+  open(url, target, features) {
+    window.__openCalls.push({ url: String(url), target, features });
+    return {};
   },
   name: "ui2-test",
   getComputedStyle() {
@@ -1465,6 +1470,47 @@ assert.strictEqual(centralizedPlotConfig.displaylogo, false, "UI2 owns Plotly br
 assert.strictEqual(JSON.stringify(centralizedPlotConfig.modeBarButtonsToRemove), JSON.stringify(["select2d", "lasso2d"]), "UI2 owns the standard Plotly toolbar");
 assert.strictEqual(centralizedPlotConfig.modeBarButtonsToAdd, undefined, "UI2 ignores producer toolbar additions");
 assert.strictEqual(centralizedPlotConfig.genapp_chart_editor.enabled, true, "UI2 preserves explicit Chart Editor availability metadata");
+const nonOptedInPlotConfig = hooks.plotlyConfigForOutput({ data: [], layout: {} });
+assert.strictEqual(nonOptedInPlotConfig.genapp_chart_editor, undefined, "UI2 leaves non-opted-in application plots without the Chart Editor");
+window.GenAppUi2App.directives = {
+  ui2_plotly_chart_editor: "true",
+  ui2_plotly_chart_editor_url: "_cedit/_chart_edit.html",
+  ui2_plotly_chart_editor_target: "_blank"
+};
+const applicationEditorConfig = hooks.plotlyConfigForOutput({ data: [], layout: {} });
+assert.strictEqual(applicationEditorConfig.genapp_chart_editor.enabled, true, "UI2 applies the application Chart Editor default to an ordinary figure");
+assert.strictEqual(applicationEditorConfig.genapp_chart_editor.url, "_cedit/_chart_edit.html", "UI2 applies the application Chart Editor URL");
+const explicitlyDisabledEditorConfig = hooks.plotlyConfigForOutput({
+  config: { genapp_chart_editor: { enabled: false } }
+});
+assert.strictEqual(explicitlyDisabledEditorConfig.genapp_chart_editor, undefined, "an explicit figure declaration can disable the application Chart Editor default");
+const explicitEditorOverrideConfig = hooks.plotlyConfigForOutput({
+  config: { genapp_chart_editor: { enabled: true, url: "edit/override.html", target: "plot-editor" } }
+});
+assert.strictEqual(explicitEditorOverrideConfig.genapp_chart_editor.url, "edit/override.html", "an explicit figure declaration can override the application Chart Editor URL");
+window.Plotly = { Icons: { pencil: {} } };
+const handoffFigure = { data: [{ x: [1], y: [2] }], layout: { title: "Source" } };
+const handoffConfig = hooks.plotlyConfigForOutput(handoffFigure);
+hooks.applyPlotlyModebarHooks(handoffFigure, handoffConfig);
+hooks.applyPlotlyModebarHooks(handoffFigure, handoffConfig);
+assert.strictEqual(handoffConfig.modeBarButtonsToAdd.length, 1, "repeated UI2 rendering does not duplicate the Chart Editor button");
+const displayedFigure = {
+  data: [{ x: [3, 4], y: [5, 6], name: "displayed" }],
+  layout: { title: "Displayed", width: 900, height: 600 }
+};
+handoffConfig.modeBarButtonsToAdd[0].click(displayedFigure);
+const handoffKey = Object.keys(window.__localStorage).find((key) => key.startsWith("gace_"));
+const handoffSnapshot = JSON.parse(window.__localStorage[handoffKey]);
+assert.strictEqual(JSON.stringify(handoffSnapshot.data), JSON.stringify(displayedFigure.data), "Chart Editor handoff preserves the displayed trace data");
+assert.strictEqual(handoffSnapshot.layout.title, "Displayed", "Chart Editor handoff preserves the displayed layout");
+assert.strictEqual(handoffSnapshot.layout.width, undefined, "Chart Editor handoff removes responsive display width");
+assert.strictEqual(handoffSnapshot.layout.height, undefined, "Chart Editor handoff removes responsive display height");
+assert.strictEqual(handoffSnapshot.layout.autosize, true, "Chart Editor handoff restores editor autosizing");
+assert.strictEqual(window.__openCalls.length, 1, "Chart Editor handoff opens one editor window");
+assert.strictEqual(window.__openCalls[0].target, "_blank", "Chart Editor handoff uses the application target");
+assert.strictEqual(window.__openCalls[0].features, "noopener", "Chart Editor handoff isolates the new window opener");
+assert.strictEqual(new URL(window.__openCalls[0].url).pathname, "/sassie3/_cedit/_chart_edit.html", "Chart Editor handoff resolves the application-local editor URL");
+assert.strictEqual(new URL(window.__openCalls[0].url).searchParams.get("id"), handoffKey, "Chart Editor handoff supplies the one-shot snapshot id");
 const multiAxisLayout = { xaxis4: {}, yaxis4: {} };
 hooks.applyPlotlyTheme(multiAxisLayout);
 assert.strictEqual(multiAxisLayout.xaxis4.gridcolor, "rgba(238, 244, 241, 0.12)", "UI2 themes fourth-and-later x axes");

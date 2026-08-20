@@ -57,6 +57,15 @@ UI2 presentation token. UI2 styles tokens such as `primary`, `reference`,
 scientific role by name. The mapping is presentation-only and must not change
 the plot's scientific values or identity.
 
+An application that installs a local Plotly Chart Editor may opt all UI2 plots
+into that generic capability with `ui2_plotly_chart_editor`,
+`ui2_plotly_chart_editor_url`, and `ui2_plotly_chart_editor_target` directives.
+UI2 owns the standard modebar button and applies the capability to static,
+dynamic, live, completed, and reattached figures. A legacy figure-level
+`config.genapp_chart_editor` declaration remains a compatibility override and
+may explicitly disable the application default. Drivers must not duplicate the
+application default or supply standard toolbar layout.
+
 Statistics and explanatory text belong in a declared caption or summary output
 by default. An in-plot annotation requires a documented, view-declared generic
 placement policy keyed by a named annotation; the driver must not send an

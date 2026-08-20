@@ -10118,8 +10118,43 @@
     return layout;
   }
 
+  function enabledSetting(value) {
+    return value === true || ["true", "1", "yes", "on"].includes(
+      String(value || "").trim().toLowerCase());
+  }
+
+  function applicationPlotlyChartEditor() {
+    const directives = appMap.directives || {};
+    if (!enabledSetting(directives.ui2_plotly_chart_editor)) {
+      return null;
+    }
+    const url = stringValue(directives.ui2_plotly_chart_editor_url).trim();
+    if (!url) {
+      return null;
+    }
+    const target = stringValue(directives.ui2_plotly_chart_editor_target).trim();
+    return {
+      enabled: true,
+      url,
+      target: target || "_blank"
+    };
+  }
+
+  function plotlyChartEditorForFigure(figure) {
+    const applicationEditor = applicationPlotlyChartEditor();
+    const declared = figure?.config?.genapp_chart_editor;
+    if (declared == null) {
+      return applicationEditor;
+    }
+    if (!declared || typeof declared !== "object" || !enabledSetting(declared.enabled)) {
+      return null;
+    }
+    const editor = Object.assign({}, applicationEditor || {}, declared);
+    return stringValue(editor.url).trim() ? editor : null;
+  }
+
   function plotlyConfigForOutput(figure) {
-    const editor = figure?.config?.genapp_chart_editor;
+    const editor = plotlyChartEditorForFigure(figure);
     const config = {
       responsive: true,
       scrollZoom: true,
@@ -10499,8 +10534,14 @@
     if (!editor?.enabled || !editor.url || !window.Plotly?.Icons?.pencil) {
       return;
     }
+    const additions = Array.isArray(config.modeBarButtonsToAdd)
+      ? config.modeBarButtonsToAdd.slice()
+      : [];
+    if (additions.some((button) => button?.name === "editInChartEditor")) {
+      return;
+    }
     const originalConfig = JSON.stringify(figure.config || {});
-    config.modeBarButtonsToAdd = (config.modeBarButtonsToAdd || []).concat([{
+    config.modeBarButtonsToAdd = additions.concat([{
       name: "editInChartEditor",
       title: "Edit in Chart Editor",
       icon: window.Plotly.Icons.pencil,
@@ -11748,6 +11789,7 @@
       refreshPlotlyOutputIfNeeded,
       plotlyLayoutForOutput,
       plotlyConfigForOutput,
+      applyPlotlyModebarHooks,
       plotlyThemeColors,
       repeatIsCondition,
       repeatConditionTokens,

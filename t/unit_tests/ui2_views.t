@@ -72,6 +72,9 @@ like( $app_map_js, qr/generatedOn:\s*"Generated on /, 'ui2 app map carries the l
 like( $app_map_js, qr/genappRevision:\s*"GenApp /, 'ui2 app map carries the GenApp revision splash metadata' );
 like( $app_map_js, qr/directives\.docsbaseurl = "docs"/, 'ui2 app map records docsbaseurl for the docs entry point' );
 like( $app_map_js, qr/directives\.ui2_account_avatar = "pngs\/fixture-account-avatar\.png"/, 'ui2 app map records an optional application-owned account avatar' );
+like( $app_map_js, qr/directives\.ui2_plotly_chart_editor = "true"/, 'ui2 app map records application Chart Editor availability' );
+like( $app_map_js, qr/directives\.ui2_plotly_chart_editor_url = "_cedit\/_chart_edit\.html"/, 'ui2 app map records the application Chart Editor URL' );
+like( $app_map_js, qr/directives\.ui2_plotly_chart_editor_target = "_blank"/, 'ui2 app map records the application Chart Editor target' );
 like( $app_map_js, qr/directives\.nextjobenvironment = "true"/, 'ui2 app map exposes the opted-in one-job environment setting' );
 like( $app_map_js, qr/app\.help\.feedback = "Feedback help"/, 'ui2 app map records legacy feedback help text' );
 
@@ -480,6 +483,7 @@ like( $ui2_js, qr/function renderPlotlyOutput\(output, value\)/, 'ui2 runtime br
 like( $ui2_js, qr/Plotly\.react\(output, plotlyDataForOutput\(output, figure\.data\), layout, config\)/, 'ui2 authoritative plot snapshots update the existing Plotly graph through UI2 presentation policy' );
 like( $ui2_js, qr/Plotly\.extendTraces\(output, \{ x, y \}, indices/, 'ui2 plot append events extend existing traces incrementally' );
 like( $ui2_js, qr/function applyPlotlyModebarHooks\(figure, config\)/, 'ui2 runtime bridge honors legacy Plotly Chart Editor config' );
+like( $ui2_js, qr/function applicationPlotlyChartEditor\(\)/, 'ui2 runtime bridge supports an application-level Chart Editor capability' );
 like( $ui2_js, qr/Edit in Chart Editor/, 'ui2 Plotly modebar exposes the Chart Editor action when configured' );
 like( $ui2_js, qr/function chartEditorLayout\(layout\)/, 'ui2 Plotly Chart Editor receives an editor-friendly layout copy' );
 like( $ui2_js, qr/function chartEditorUrl\(editorUrl, id\)/, 'ui2 Plotly Chart Editor URLs resolve through the legacy app root' );

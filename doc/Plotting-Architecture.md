@@ -74,6 +74,10 @@ items look and where presentation-only elements are placed.
    margins, font sizes, theme/background colors, trace colors, line widths,
    marker sizes, fixed legend coordinates, modebar buttons, or general Plotly
    `config`. Do not hand-size a plot for either normal or expanded view.
+   Applications with a local Chart Editor declare that generic capability once
+   in their UI2 directives; UI2 applies it across normal rendering and saved-job
+   lifecycles. Figure-level editor configuration is a legacy compatibility
+   override, not the application-wide declaration path.
 6. **Use runtime events for live plots.** Events must be ordered, bounded,
    `snake_case`, GUI-neutral, and contain values rather than renderer objects.
    Consume them through the established `SASSIE_STREAM`/driver-runtime path.
