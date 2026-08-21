@@ -261,6 +261,9 @@ job limits, submit blocks, and MOTD.
   job reattachment.
 - Project locks and stale jobs may indicate executable failure. Do not clear
   locks without explicit user direction and an understood target project.
+- Password-reset credential lifecycle is governed by
+  `doc/Authentication-Password-Reset-Contract.md`; do not let a mail-delivery
+  failure invalidate a user's current password.
 
 Before adding or changing the optional administrator scenario catalog, read
 `doc/Test-Scenario-Architecture.md`. Test scenarios hydrate and verify an

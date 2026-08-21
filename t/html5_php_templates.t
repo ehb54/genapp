@@ -24,6 +24,7 @@ my $module_php = read_file( File::Spec->catfile( $app_dir, qw(output html5 ajax 
 my $results_php = read_file( File::Spec->catfile( $app_dir, qw(output html5 ajax get_results.php) ) );
 my $jobrun_php  = read_file( File::Spec->catfile( $app_dir, qw(output html5 util jobrun.php) ) );
 my $sys_user_config_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_user_config.php) ) );
+my $sys_login_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_login.php) ) );
 my $sys_project_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_project.php) ) );
 my $sys_files_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_files.php) ) );
 my $joblog_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys joblog.php) ) );
@@ -57,6 +58,7 @@ like(
     qr/\Q$project_name_message\E/,
     'sys_user_config server-side project-name validation uses explicit guidance'
 );
+like( $sys_login_php, qr/password_reset_hash/, 'sys_login keeps reset credentials separate from the permanent password until authentication' );
 
 like( $joblog_php, qr/function active_project_names\( \$user/, 'joblog exposes the active project registry helper' );
 like( $joblog_php, qr/function remove_active_projects\( \$user, \$projects/, 'joblog can retire active project identities without changing job records' );

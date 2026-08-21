@@ -87,6 +87,9 @@ if ( $current_user && !isset( $current_user[ 'globusid' ] ) && !isset( $current_
     }
 }
 
+$now = ga_db_output( ga_db_date() );
+$loginusingpendingreset = 0;
+
 $results[ 'status' ] = "User not found or incorrect password";
 if ( isset( $pw ) && $doc = ga_db_output( ga_db_findOne( 'users', '', [ 'name' => $userid ] ) ) ) 
 {
@@ -104,6 +107,17 @@ if ( isset( $pw ) && $doc = ga_db_output( ga_db_findOne( 'users', '', [ 'name' =
    }
 }
 
+if ( !$loginok &&
+     isset( $pw ) &&
+     isset( $doc[ 'password_reset_hash' ] ) &&
+     isset( $doc[ 'password_reset_expires' ] ) &&
+     $now <= $doc[ 'password_reset_expires' ] &&
+     password_verify( $pw, $doc[ 'password_reset_hash' ] ) )
+{
+   $loginok = 1;
+   $loginusingpendingreset = 1;
+}
+
 // FOR GLOBUS ////////////////////////////////////////////////////////////////////
 if ( isset( $email ) && $doc = ga_db_output( ga_db_findOne( 'users', '', [ 'name' => $userid ] ) ) ) 
 {
@@ -119,8 +133,6 @@ $addstat = "";
 $did_expiretime              = 0;
 $did_expiretimes             = 0;
 $did_lastfailedloginattempts = 0;
-$now = ga_db_output( ga_db_date() );
-
 if ( isset( $doc[ 'expiretime' ] ) )
 {
    if ( $now > $doc[ 'expiretime' ] )
@@ -159,7 +171,7 @@ if ( $loginok == 1 && $did_expiretimes )
     $loginok = 0;
 }
 
-if ( $did_lastfailedloginattempts )
+if ( $did_lastfailedloginattempts && !$loginusingpendingreset )
 {
     $addstat .= "Too many failed login attempts. ";
     $_REQUEST[ 'forgotpassword' ] = "on";
@@ -435,7 +447,7 @@ if ( $loginok ) {
 
 if ( $loginok == 1 )
 {
-   if ( isset( $doc[ 'expiretime' ] ) || isset( $doc[ 'expiretimes' ] ) )
+   if ( $loginusingpendingreset || isset( $doc[ 'expiretime' ] ) || isset( $doc[ 'expiretimes' ] ) )
    {
       $addstat = 'This password will expire.  Please change the password (click the top right configuration icon). ';
    } else {
@@ -447,8 +459,24 @@ if ( $loginok == 1 )
                               "lastloginip" => $_SERVER[ 'REMOTE_ADDR' ]
                              );
    $update[ '$unset' ] = array(
-                                "lastfailedloginattempts" => 0
-                              );
+                                 "lastfailedloginattempts" => 0
+                                 );
+
+   if ( $loginusingpendingreset )
+   {
+      $update[ '$set' ][ 'password' ] = $doc[ 'password_reset_hash' ];
+      $update[ '$set' ][ 'expiretime' ] = $doc[ 'password_reset_expires' ];
+      $update[ '$set' ][ 'expiretimes' ] = 0;
+      $update[ '$unset' ][ 'password_reset_hash' ] = 0;
+      $update[ '$unset' ][ 'password_reset_expires' ] = 0;
+      $update[ '$unset' ][ 'password_reset_requested_at' ] = 0;
+      $update[ '$unset' ][ 'password_reset_requested_ip' ] = 0;
+   } else if ( isset( $doc[ 'password_reset_hash' ] ) ) {
+      $update[ '$unset' ][ 'password_reset_hash' ] = 0;
+      $update[ '$unset' ][ 'password_reset_expires' ] = 0;
+      $update[ '$unset' ][ 'password_reset_requested_at' ] = 0;
+      $update[ '$unset' ][ 'password_reset_requested_ip' ] = 0;
+   }
    if ( isset( $doc[ 'expiretimes' ] ) )
    {
        $update[ '$inc' ] = array( "expiretimes" => -1 );
@@ -524,8 +552,14 @@ if ( $loginok == 1 )
       {
          $results[ 'status' ] = $addstat . 'Could not find valid email address associated with this user';
       } else {
-# // update password
-         $newpw = base_convert(rand(783641640, 28211099074), 10, 36) . base_convert(rand(78364164096, 2821109907455), 10, 36);
+         try {
+            $newpw = bin2hex( random_bytes( 16 ) );
+         } catch ( Exception $error ) {
+            $results[ 'error' ] = "Unable to prepare password reset";
+            $results[ 'status' ] = $addstat . "Unable to reset password";
+            echo (json_encode($results));
+            exit();
+         }
 
          if ( PHP_VERSION_ID < 50500 )
          {
@@ -537,11 +571,10 @@ if ( $loginok == 1 )
          $expires = ga_db_date_add_secs( ga_db_output( ga_db_date() ), 60 * 60 );
 
          $update[ '$set' ] = array(
-                                  "lastforgotlogin" => $now,
-                                  "lastforgotloginip" => isset( $_SERVER[ 'REMOTE_ADDR' ] ) ? $_SERVER[ 'REMOTE_ADDR' ] : "not from an ip",
-                                  "password" => $doc[ 'password' ], 
-                                  "expiretimes" => 1, 
-                                  "expiretime" => $expires
+                                  "password_reset_hash" => $doc[ 'password' ],
+                                  "password_reset_expires" => $expires,
+                                  "password_reset_requested_at" => $now,
+                                  "password_reset_requested_ip" => isset( $_SERVER[ 'REMOTE_ADDR' ] ) ? $_SERVER[ 'REMOTE_ADDR' ] : "not from an ip"
                                   );
 
          $update[ '$unset' ] = array(
@@ -560,6 +593,13 @@ if ( $loginok == 1 )
 
          if ( mymail( $email, 'reminder', $body ) )
          {
+            $rollback[ '$unset' ] = array(
+                                           "password_reset_hash" => 0,
+                                           "password_reset_expires" => 0,
+                                           "password_reset_requested_at" => 0,
+                                           "password_reset_requested_ip" => 0
+                                           );
+            ga_db_update( 'users', '', [ 'name' => $userid, 'password_reset_hash' => $doc[ 'password' ] ], $rollback );
             $results[ 'error' ]  = "Could not send email, mail server is down or not accepting requests";
             $results[ 'status' ] = $addstat . "Unable to login or send password email";
          } else {
