@@ -115,6 +115,9 @@ ids, defaults, or backend request shape.
 
 `confirmed` plus `inferred`
 
+The lifecycle and compatibility commitments for the modern and legacy web
+surfaces are defined in `doc/UI2-Support-Policy.md`.
+
 `ui2` is the GenApp target language. `ui2-react` is a React/shadcn workbench
 inside that target, not a separate target language. The target definition lives
 in `languages/ui2.json`; the plain JavaScript runtime in

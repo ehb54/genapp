@@ -930,6 +930,20 @@ assert.strictEqual(
   "0.2",
   "UI2 reset restores tableized repeater defaults instead of blanking saved values"
 );
+
+const resetPlot = createNode("div");
+resetPlot.dataset.outputFieldId = "lineplot";
+resetPlot.dataset.outputType = "plotly";
+resetPlot._ui2PlotlyLastFigure = { data: [{ x: [1], y: [2] }], layout: {} };
+multiRepeat.form.appendChild(resetPlot);
+hooks.state.activeJob = { uuid: "completed-run", timer: 1 };
+hooks.resetModuleForm(multiRepeat.form);
+assert.strictEqual(hooks.state.activeJob, null, "UI2 reset cancels a reattached job delivery loop");
+assert.strictEqual(
+  resetPlot._ui2PlotlyLastFigure,
+  undefined,
+  "UI2 reset drops a cached Plotly figure so a workbench resize cannot redraw old output"
+);
 document.body.children = [];
 
 function ui2FormControl(form, fieldId, value, repeatIndex) {

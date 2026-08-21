@@ -565,22 +565,18 @@ Proposed initial buckets:
 - branching workflow modules
 - results-first modules
 
-## Open Questions
+## Remaining Follow-up Questions
 
-- What is the smallest useful `views` schema that still gives us meaningful
-  layout control?
-- Should section grouping rely only on explicit metadata, or can the renderer
-  derive some structure from labels and existing field patterns?
-- How should fallback layout behave for long modules with no curated metadata?
-- Which output types deserve first-class grouped containers in the renderer?
-- How much layout behavior belongs in generator-produced data versus client-side
-  interpretation?
-- What is the best first vertical slice module for balancing complexity and
-  learnings?
-- Can the Zazzie3 deployment host stable and experimental UI2 clients against
-  the same user/project/job space without duplicating scientific definitions?
-- What preferences should be durable per user, module, and device?
-- What is the canonical source for the immutable submitted-input summary?
+The original exploration questions have been resolved or deliberately
+postponed. The remaining questions are implementation follow-up, not blockers
+for the architectural decision recorded in issue 41:
+
+- How should the first `views` schema draft evolve as more modules are curated?
+- Which additional output types deserve first-class grouped containers?
+- How much layout behavior should remain in generator-produced data versus
+  client-side interpretation?
+- What preferences, if any, should become durable per user, module, or device?
+- Which modules should receive the next curated workbench views?
 
 ## Decision Log
 
@@ -654,3 +650,9 @@ Use this section to append concise dated decisions as they become real.
   palettes. The selection applies through root `data-ui2-theme` and semantic
   `--ui2-*` variables, and the value stays out of legacy settings submits.
   Plain JS UI2 and the React MMC workbench consume the same tokens.
+- 2026-08-01: Adopted `doc/UI2-Support-Policy.md`. UI2 with React workbenches is
+  the primary modern web surface; native UI2 remains the fallback/reference
+  renderer; and HTML5 enters legacy maintenance without a requirement for new
+  UI2 widget, workflow, layout, or presentation parity. Existing HTML5 behavior
+  remains protected from unintended shared-contract regressions until a
+  separate retirement review completes.

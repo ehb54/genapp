@@ -6535,6 +6535,7 @@
     if (!form) {
       return;
     }
+    stopJobPolling();
     state.serverSelections = {};
     state.pendingInputValues = {};
     clearFileReselectionWarnings();
@@ -7261,6 +7262,7 @@
         return;
       }
       delete output.dataset.runtimeText;
+      delete output._ui2PlotlyLastFigure;
       output.classList.remove("ui2-output-rendered", "ui2-output-plotly-ready");
       output.dataset.status = "";
       if (window.Plotly?.purge && output.dataset.outputType === "plotly") {
