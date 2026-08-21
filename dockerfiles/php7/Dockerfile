@@ -245,6 +245,7 @@ RUN echo 'export PATH=$PATH:~/bin' >> ~/p
 RUN cd ~ && tar zxvf /src/genapp/tmp/extra/ee.gz
 
 CMD service mongodb start && \
+    /etc/init.d/postfix start && \
     /etc/init.d/rc.genapp start && \
     /etc/init.d/apache2 start && \
     while true; do sleep 600; done
