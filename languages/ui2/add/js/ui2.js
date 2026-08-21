@@ -49,6 +49,7 @@
   const HOVER_HELP_DELAY_MS = 900;
   const requestedUi2Theme = params.get("ui2theme");
   let activeUi2Theme = normalizeUi2Theme(requestedUi2Theme || prefs.ui2Theme || UI2_DEFAULT_THEME);
+  let activePlotBackgroundMode = normalizePlotBackgroundMode(prefs.plotBackgroundMode);
   const devMode = params.get("ui2dev") === "1" || prefs.devMode === true;
   const JOB_MANAGER_ENDPOINT = "ajax/sys_config/sys_jobs2.php";
   const FIELD_CONTROL_SELECTOR = "input[data-field-id], select[data-field-id], textarea[data-field-id]";
@@ -2181,6 +2182,7 @@
     } else if (root && typeof root.setAttribute === "function") {
       root.setAttribute("data-ui2-theme", activeUi2Theme);
     }
+    rerenderPlotlyOutputs();
     return activeUi2Theme;
   }
 
@@ -2194,6 +2196,31 @@
 
   function currentUi2Theme() {
     return activeUi2Theme;
+  }
+
+  function plotBackgroundPreferenceEnabled() {
+    return enabledSetting(appMap.directives?.ui2_plot_background_preference);
+  }
+
+  function normalizePlotBackgroundMode(value) {
+    return String(value || "").trim() === "contrast_canvas" ? "contrast_canvas" : "match_panel";
+  }
+
+  function setPlotBackgroundModePreference(value, persist) {
+    activePlotBackgroundMode = normalizePlotBackgroundMode(value);
+    if (persist) savePreference("plotBackgroundMode", activePlotBackgroundMode);
+    rerenderPlotlyOutputs();
+    return activePlotBackgroundMode;
+  }
+
+  function currentPlotBackgroundMode() {
+    return activePlotBackgroundMode;
+  }
+
+  function rerenderPlotlyOutputs() {
+    document.querySelectorAll?.(".ui2-output-plotly-ready").forEach((output) => {
+      if (output._ui2PlotlyLastFigure) renderPlotlyOutput(output, output._ui2PlotlyLastFigure);
+    });
   }
 
   function setSidebarCollapsed(collapsed, persist) {
@@ -3484,6 +3511,15 @@
         select.defaultValue = select.value;
         select.addEventListener("change", () => {
           select.value = setUi2ThemePreference(select.value, true);
+          select.defaultValue = select.value;
+        });
+      }
+      if (field.ui2LocalPreference === true && field.id === "ui2plotbackground") {
+        select.dataset.ui2LocalPreference = "plotBackground";
+        select.value = currentPlotBackgroundMode();
+        select.defaultValue = select.value;
+        select.addEventListener("change", () => {
+          select.value = setPlotBackgroundModePreference(select.value, true);
           select.defaultValue = select.value;
         });
       }
@@ -4810,6 +4846,9 @@
     if (!insertedTheme) {
       nextFields.push(ui2ThemeConfigField());
     }
+    if (plotBackgroundPreferenceEnabled()) {
+      nextFields.push(ui2PlotBackgroundConfigField());
+    }
     nextFields.push(ui2HoverHelpConfigField());
     return nextFields;
   }
@@ -4837,6 +4876,18 @@
       type: "checkbox",
       default: hoverHelpEnabled(),
       help: "Show brief help after the pointer rests on a labeled control.",
+      ui2LocalPreference: true
+    };
+  }
+
+  function ui2PlotBackgroundConfigField() {
+    return {
+      id: "ui2plotbackground",
+      label: "Plot background",
+      type: "listbox",
+      values: "Match application panel~match_panel~Contrasting plot canvas~contrast_canvas",
+      default: currentPlotBackgroundMode(),
+      help: "Choose whether plots follow the application panel or use a neutral opposite-lightness canvas.",
       ui2LocalPreference: true
     };
   }
@@ -10376,6 +10427,7 @@
     layout.plot_bgcolor = defaults.plot_bgcolor;
     layout.modebar = Object.assign({}, defaults.modebar);
     applyPlotPresentationLayout(layout, plotPresentationProfileForOutput(output));
+    applyPlotBackgroundMode(layout);
     return layout;
   }
 
@@ -10883,6 +10935,17 @@
         activecolor: colors.text
       }
     };
+  }
+
+  function applyPlotBackgroundMode(layout) {
+    if (!plotBackgroundPreferenceEnabled() || currentPlotBackgroundMode() !== "contrast_canvas") {
+      return layout;
+    }
+    const canvas = isDarkCssColor(plotlyThemeColors().panel) ? "#f7f8f6" : "#202725";
+    layout.paper_bgcolor = canvas;
+    layout.plot_bgcolor = canvas;
+    layout.font = Object.assign({}, layout.font || {}, { color: contrastTextColor(canvas) });
+    return layout;
   }
 
   function applyPlotlyTheme(layout) {
@@ -12038,6 +12101,9 @@
       applyUi2Theme,
       setUi2ThemePreference,
       currentUi2Theme,
+      setPlotBackgroundModePreference,
+      currentPlotBackgroundMode,
+      plotBackgroundPreferenceEnabled,
       ui2UserConfigFields,
       ui2ThemeOptionValues,
       normalizeProjectNames,

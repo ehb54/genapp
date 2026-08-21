@@ -469,6 +469,13 @@ assert.strictEqual(
   "flatly",
   "UI2 persists the native theme in UI2 preferences"
 );
+window.GenAppUi2App.directives = window.GenAppUi2App.directives || {};
+window.GenAppUi2App.directives.ui2_plot_background_preference = "true";
+assert.strictEqual(hooks.currentPlotBackgroundMode(), "match_panel", "UI2 defaults plot backgrounds to the application panel");
+hooks.setPlotBackgroundModePreference("contrast_canvas", true);
+assert.strictEqual(hooks.currentPlotBackgroundMode(), "contrast_canvas", "UI2 stores the contrasting canvas preference");
+assert.strictEqual(JSON.parse(window.__localStorage["genapp-ui2-preferences"]).plotBackgroundMode, "contrast_canvas", "UI2 persists the plot background preference");
+hooks.setPlotBackgroundModePreference("match_panel", true);
 assert.strictEqual(
   hooks.ui2ThemeOptionValues().includes("Superhero~superhero") && hooks.ui2ThemeOptionValues().includes("Flatly~flatly"),
   true,
@@ -491,7 +498,7 @@ const nativeThemeFields = hooks.ui2UserConfigFields([
 ]);
 assert.strictEqual(
   nativeThemeFields.map((field) => field.id).join(","),
-  "projectshare,projectshareproject,projectsharewith,ui2theme,help,ui2hoverhelp",
+  "projectshare,projectshareproject,projectsharewith,ui2theme,help,ui2plotbackground,ui2hoverhelp",
   "UI2 moves project selection and creation out of Settings while retaining sharing and local preferences"
 );
 assert.strictEqual(
@@ -1492,6 +1499,10 @@ const fixedPlotLayout = hooks.plotlyLayoutForOutput(
   { dataset: {} },
   producerPlotLayout
 );
+hooks.setPlotBackgroundModePreference("contrast_canvas", true);
+const contrastingPlotLayout = hooks.plotlyLayoutForOutput({ dataset: {} }, producerPlotLayout);
+assert.strictEqual(contrastingPlotLayout.paper_bgcolor, "#f7f8f6", "UI2 resolves a contrasting light canvas from a dark panel");
+hooks.setPlotBackgroundModePreference("match_panel", true);
 assert.strictEqual(fixedPlotLayout.width, undefined, "ordinary UI2 Plotly outputs remove producer width");
 assert.strictEqual(fixedPlotLayout.height, undefined, "ordinary UI2 Plotly outputs remove producer height");
 const centralizedPlotConfig = hooks.plotlyConfigForOutput({

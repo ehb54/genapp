@@ -76,6 +76,7 @@ like( $app_map_js, qr/directives\.ui2_module_navigation = "sidebar"/, 'ui2 app m
 like( $app_map_js, qr/directives\.ui2_plotly_chart_editor = "true"/, 'ui2 app map records application Chart Editor availability' );
 like( $app_map_js, qr/directives\.ui2_plotly_chart_editor_url = "_cedit\/_chart_edit\.html"/, 'ui2 app map records the application Chart Editor URL' );
 like( $app_map_js, qr/directives\.ui2_plotly_chart_editor_target = "_blank"/, 'ui2 app map records the application Chart Editor target' );
+like( $app_map_js, qr/directives\.ui2_plot_background_preference = "true"/, 'ui2 app map records opt-in plot-background preferences' );
 like( $app_map_js, qr/directives\.nextjobenvironment = "true"/, 'ui2 app map exposes the opted-in one-job environment setting' );
 like( $app_map_js, qr/app\.help\.feedback = "Feedback help"/, 'ui2 app map records legacy feedback help text' );
 

@@ -104,6 +104,12 @@ payloads provide scientific artifacts and availability, not camera, background,
 opacity, color, or browser-memory lifecycle policy. UI2 determines whether a
 completed snapshot retains compatible live frames from the same topology.
 
+An application may opt into `ui2_plot_background_preference`. UI2 stores the
+user's `match_panel` or `contrast_canvas` selection locally, resolves contrast
+from computed theme surfaces, and rerenders cached figures without changing
+producer data or saved output. The capability is generic and must not branch on
+application, module, output, or scientific-role identifiers.
+
 ## Required verification
 
 Every shared-core change requires:

@@ -24,6 +24,7 @@ __~ui2_module_navigation{app.directives.ui2_module_navigation = "__ui2_module_na
 __~ui2_plotly_chart_editor{app.directives.ui2_plotly_chart_editor = "__ui2_plotly_chart_editor__";}
 __~ui2_plotly_chart_editor_url{app.directives.ui2_plotly_chart_editor_url = "__ui2_plotly_chart_editor_url__";}
 __~ui2_plotly_chart_editor_target{app.directives.ui2_plotly_chart_editor_target = "__ui2_plotly_chart_editor_target__";}
+__~ui2_plot_background_preference{app.directives.ui2_plot_background_preference = "__ui2_plot_background_preference__";}
 __~help:user_config{app.help.user_config = "__help:user_config__";}
 __~help:register{app.help.register = "__help:register__";}
 __~help:jobs{app.help.jobs = "__help:jobs__";}

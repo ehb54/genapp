@@ -8,6 +8,7 @@
     "ui2_plotly_chart_editor" : "true",
     "ui2_plotly_chart_editor_url" : "_cedit/_chart_edit.html",
     "ui2_plotly_chart_editor_target" : "_blank",
+    "ui2_plot_background_preference" : "true",
     "usertheme"   : "true",
     "nextjobenvironment" : "true",
     "nextjobenvironmentid" : "fixture_diagnostics",
