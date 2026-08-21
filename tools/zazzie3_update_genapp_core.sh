@@ -170,7 +170,11 @@ if [[ -z "$container_id_before" || "$container_running" != "true" ]]; then
     exit 1
 fi
 
-ssh "$host" docker exec -i "$container" bash -s -- \
+lock_conflict_status=75
+set +e
+ssh "$host" docker exec -i "$container" \
+    flock -n -o -E "$lock_conflict_status" "$core_dir/.git/zazzie3-update.lock" \
+    bash -s -- \
     "$core_dir" "$gz_dir" "$branch" "$required_commit" "$generate_mode" "$stash_dirty" "$generate_language" "$allow_branch_switch" <<'REMOTE'
 set -euo pipefail
 
@@ -191,13 +195,6 @@ stamp "Preflight"
 test -d "$core_dir/.git"
 test -d "$gz_dir"
 cd "$core_dir"
-
-command -v flock >/dev/null
-exec 9>"$core_dir/.git/zazzie3-update.lock"
-if ! flock -n 9; then
-    echo "Another Zazzie3 core update is already running; refusing concurrent deployment." >&2
-    exit 1
-fi
 
 current_branch="$(git branch --show-current)"
 if [[ "$current_branch" != "$branch" && "$allow_branch_switch" != "1" ]]; then
@@ -362,6 +359,16 @@ EOF
 
 echo "Generated $gz_dir with GenApp core $required_commit"
 REMOTE
+remote_status=$?
+set -e
+
+if [[ "$remote_status" -eq "$lock_conflict_status" ]]; then
+    echo "Another Zazzie3 core update is already running; refusing concurrent deployment." >&2
+    exit 1
+fi
+if [[ "$remote_status" -ne 0 ]]; then
+    exit "$remote_status"
+fi
 
 container_id_after="$(ssh "$host" docker inspect --format '{{.Id}}' "$container")"
 if [[ "$container_id_after" != "$container_id_before" ]]; then
