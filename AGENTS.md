@@ -23,7 +23,7 @@ before planning, recommending architecture, or changing code.
 - ROAPTG/roaptg means read-only audit/adapt planning for Terra guardrails:
   inspect applicable repositories and instructions, identify adaptations, and
   report a concrete plan without changing files or remote state.
-- gacp means stage, commit, and push only intended changes.
+- gacp means scope-check, stage, commit, and push only intended changes.
 - Do not use the phrase "smoke test" in communications, chat, Markdown, or documentation.
 
 ### Generated HTML5 artifact policy
@@ -431,9 +431,15 @@ changing it, read `../genapp_zazzie/docs/plot_presentation.md` and rollout issue
 
 - Follow the repository-wide UI2 test-account access rules above whenever using
   the Zazzie3 `codex` or `codex2` account.
-- gacpu for `ehb54/genapp` means the requested gacp followed by
-  `tools/zazzie3_update_genapp_core.sh`. If the server core checkout is dirty,
-  inspect it and use `--stash-dirty` only when preserving those server-side
-  changes in a stash is acceptable.
+- gacpu for `ehb54/genapp` means a successful requested gacp followed only by
+  `tools/zazzie3_update_genapp_core.sh` with an explicit generation target.
+  A failure is a hard stop: report it and do not infer permission to repair
+  networking, change branches, stash files, or perform Docker lifecycle work.
+  `--stash-dirty`, `--allow-branch-switch`, `--generate-all`, and
+  `--allow-nonstandard-target` require explicit task-specific approval.
+- Routine gacpu never authorizes stopping, restarting, renaming, recreating,
+  committing, replacing, or deleting a container, changing volumes or mounts,
+  pruning Docker state, or rebooting the host. Container maintenance is a
+  separate named workflow with separate approval.
 - Do not deploy unreviewed core changes or use Zazzie3 regeneration as a
   substitute for local generic and application-specific validation.

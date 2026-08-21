@@ -2,16 +2,21 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
-host="${GENAPP_ZAZZIE_HOST:-zazzie}"
-container="${GENAPP_ZAZZIE_CONTAINER:-zazzie3}"
-core_dir="${GENAPP_ZAZZIE_CORE_DIR:-/src/genapp}"
-gz_dir="${GENAPP_ZAZZIE_GZ_DIR:-/opt/genapp/sassie3}"
+default_host="zazzie"
+default_container="zazzie3"
+default_core_dir="/src/genapp"
+default_gz_dir="/opt/genapp/sassie3"
+host="${GENAPP_ZAZZIE_HOST:-$default_host}"
+container="${GENAPP_ZAZZIE_CONTAINER:-$default_container}"
+core_dir="${GENAPP_ZAZZIE_CORE_DIR:-$default_core_dir}"
+gz_dir="${GENAPP_ZAZZIE_GZ_DIR:-$default_gz_dir}"
 branch="${GENAPP_ZAZZIE_CORE_BRANCH:-php7designer}"
 ref="${GENAPP_ZAZZIE_CORE_REF:-HEAD}"
 generate_mode=""
 generate_language=""
 stash_dirty=0
 allow_branch_switch=0
+allow_nonstandard_target=0
 
 usage() {
     cat <<EOF
@@ -42,6 +47,9 @@ Options:
   --stash-dirty        Stash dirty server core changes before updating
   --allow-branch-switch
                        Permit switching the container core checkout to --branch
+  --allow-nonstandard-target
+                       Permit a host, container, core dir, or app dir other than
+                       the established Zazzie3 target
   -h, --help           Show this help
 
 Environment:
@@ -101,6 +109,10 @@ while [[ $# -gt 0 ]]; do
             allow_branch_switch=1
             shift
             ;;
+        --allow-nonstandard-target)
+            allow_nonstandard_target=1
+            shift
+            ;;
         -h|--help)
             usage
             exit 0
@@ -129,9 +141,34 @@ if [[ "$generate_mode" = "language" && -z "$generate_language" ]]; then
     exit 2
 fi
 
+if [[ "$allow_nonstandard_target" != "1" ]] &&
+   [[ "$host" != "$default_host" || "$container" != "$default_container" ||
+      "$core_dir" != "$default_core_dir" || "$gz_dir" != "$default_gz_dir" ]]; then
+    cat >&2 <<EOF
+Refusing a nonstandard Zazzie3 deployment target.
+Rerun with --allow-nonstandard-target only after explicitly approving the exact target.
+EOF
+    exit 1
+fi
+
+deployment_failed() {
+    status=$?
+    if [[ "$status" -ne 0 ]]; then
+        echo "GACPU stopped. Do not repair, replace, or recreate the container; report the failed command and output." >&2
+    fi
+}
+trap deployment_failed EXIT
+
 required_commit="$(git -C "$repo_root" rev-parse --verify "${ref}^{commit}")"
 
 echo "Updating $host:$container:$core_dir to $branch @ $required_commit"
+
+container_id_before="$(ssh "$host" docker inspect --format '{{.Id}}' "$container")"
+container_running="$(ssh "$host" docker inspect --format '{{.State.Running}}' "$container")"
+if [[ -z "$container_id_before" || "$container_running" != "true" ]]; then
+    echo "Refusing to update an absent or stopped container: $host:$container" >&2
+    exit 1
+fi
 
 ssh "$host" docker exec -i "$container" bash -s -- \
     "$core_dir" "$gz_dir" "$branch" "$required_commit" "$generate_mode" "$stash_dirty" "$generate_language" "$allow_branch_switch" <<'REMOTE'
@@ -154,6 +191,13 @@ stamp "Preflight"
 test -d "$core_dir/.git"
 test -d "$gz_dir"
 cd "$core_dir"
+
+command -v flock >/dev/null
+exec 9>"$core_dir/.git/zazzie3-update.lock"
+if ! flock -n 9; then
+    echo "Another Zazzie3 core update is already running; refusing concurrent deployment." >&2
+    exit 1
+fi
 
 current_branch="$(git branch --show-current)"
 if [[ "$current_branch" != "$branch" && "$allow_branch_switch" != "1" ]]; then
@@ -318,3 +362,12 @@ EOF
 
 echo "Generated $gz_dir with GenApp core $required_commit"
 REMOTE
+
+container_id_after="$(ssh "$host" docker inspect --format '{{.Id}}' "$container")"
+if [[ "$container_id_after" != "$container_id_before" ]]; then
+    echo "Container identity changed during GACPU; before=$container_id_before after=$container_id_after" >&2
+    exit 1
+fi
+
+echo "Verified unchanged container identity: $container_id_after"
+trap - EXIT
