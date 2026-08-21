@@ -4,6 +4,7 @@
     "version"     : "0.01",
     "docsbaseurl" : "docs",
     "ui2_account_avatar" : "pngs/fixture-account-avatar.png",
+    "ui2_module_navigation" : "sidebar",
     "ui2_plotly_chart_editor" : "true",
     "ui2_plotly_chart_editor_url" : "_cedit/_chart_edit.html",
     "ui2_plotly_chart_editor_target" : "_blank",

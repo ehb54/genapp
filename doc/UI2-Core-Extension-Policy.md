@@ -24,6 +24,21 @@ The producer must not emit UI2-specific layout, color, legend, modebar, or
 viewer-lifecycle directives. UI2 does not inspect module ids, output ids, or
 application-specific scientific terms.
 
+## Application-shell navigation
+
+An application may opt into the generic accordion sidebar with
+`ui2_module_navigation: "sidebar"` in its directives. The default `strip`
+preserves the centered selected-menu module choices for existing applications.
+Sidebar navigation presents declared menu groups as disclosures and their
+declared modules as nested choices; it must not infer workflows from menu order
+or module identity. The current module context may be shown outside the
+sidebar, but it is not a second module-selection surface.
+
+This directive is presentation-only. It does not change module ids, submitted
+values, routes for loaded modules, execution, outputs, or reattachment. Any
+future sequential navigation requires an explicit application-neutral workflow
+contract and the shared-core extension gate below.
+
 ## Shared-core extension gate
 
 Before changing UI2 core, write a shared-gap report that states:

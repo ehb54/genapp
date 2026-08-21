@@ -20,6 +20,7 @@ __~usercolors{app.directives.usercolors = "__usercolors__";}
 __~nextjobenvironment{app.directives.nextjobenvironment = "__nextjobenvironment__";}
 __~docsbaseurl{app.directives.docsbaseurl = "__docsbaseurl__";}
 __~ui2_account_avatar{app.directives.ui2_account_avatar = "__ui2_account_avatar__";}
+__~ui2_module_navigation{app.directives.ui2_module_navigation = "__ui2_module_navigation__";}
 __~ui2_plotly_chart_editor{app.directives.ui2_plotly_chart_editor = "__ui2_plotly_chart_editor__";}
 __~ui2_plotly_chart_editor_url{app.directives.ui2_plotly_chart_editor_url = "__ui2_plotly_chart_editor_url__";}
 __~ui2_plotly_chart_editor_target{app.directives.ui2_plotly_chart_editor_target = "__ui2_plotly_chart_editor_target__";}

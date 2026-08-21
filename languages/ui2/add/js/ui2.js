@@ -2149,6 +2149,16 @@
     return value == null ? "" : String(value);
   }
 
+  function moduleNavigationMode() {
+    return stringValue(appMap.directives?.ui2_module_navigation).trim().toLowerCase() === "sidebar"
+      ? "sidebar"
+      : "strip";
+  }
+
+  function sidebarModuleNavigationEnabled() {
+    return moduleNavigationMode() === "sidebar";
+  }
+
   function savePreference(key, value) {
     prefs[key] = value;
     try {
@@ -2217,8 +2227,8 @@
     nodes.root.innerHTML = "";
     nodes.empty.hidden = false;
     nodes.empty.innerHTML = [
-      '<h2>Choose a menu group from the options on the left.</h2>',
-      '<p>Then choose a module from the list that appears at the top of the page.</p>'
+      '<h2>Choose a section and module from the navigation.</h2>',
+      '<p>The selected module opens in this workspace.</p>'
     ].join("");
     collapseMenuGroups();
     renderModuleStrip();
@@ -2336,6 +2346,7 @@
       return;
     }
 
+    const sidebarNavigation = sidebarModuleNavigationEnabled();
     appMap.menus.forEach((menu) => {
       if (!menuVisibleForSession(menu)) {
         return;
@@ -2351,15 +2362,39 @@
 
       const button = el("button", "ui2-menu-button");
       button.type = "button";
-      button.setAttribute("aria-pressed", state.activeMenuId === menu.id ? "true" : "false");
+      if (sidebarNavigation) {
+        button.setAttribute("aria-expanded", state.activeMenuId === menu.id ? "true" : "false");
+      } else {
+        button.setAttribute("aria-pressed", state.activeMenuId === menu.id ? "true" : "false");
+      }
       button.appendChild(menuTitle(menu));
       setHoverHelp(button, menu.help);
 
       button.addEventListener("click", () => {
-        selectMenuGroup(menu.id);
+        if (sidebarNavigation) {
+          toggleMenuGroup(menu.id);
+        } else {
+          selectMenuGroup(menu.id);
+        }
       });
 
       group.appendChild(button);
+      if (sidebarNavigation) {
+        const list = el("div", "ui2-module-list");
+        list.hidden = state.activeMenuId !== menu.id;
+        modules.forEach((module) => {
+          const item = el("button", "ui2-module-button", displayLabel(module.label || module.id));
+          item.type = "button";
+          item.dataset.moduleId = module.id || "";
+          setHoverHelp(item, module.help);
+          if (module.id === state.moduleId) {
+            item.setAttribute("aria-current", "page");
+          }
+          item.addEventListener("click", () => chooseMenuModule(module.id));
+          list.appendChild(item);
+        });
+        group.appendChild(list);
+      }
       nodes.menuNav.appendChild(group);
     });
 
@@ -2379,7 +2414,16 @@
       return;
     }
     nodes.menuNav.querySelectorAll(".ui2-menu-group").forEach((group) => {
-      group.querySelector(".ui2-menu-button")?.setAttribute("aria-pressed", "false");
+      const button = group.querySelector(".ui2-menu-button");
+      if (sidebarModuleNavigationEnabled()) {
+        button?.setAttribute("aria-expanded", "false");
+        const list = group.querySelector(".ui2-module-list");
+        if (list) {
+          list.hidden = true;
+        }
+      } else {
+        button?.setAttribute("aria-pressed", "false");
+      }
     });
   }
 
@@ -2387,6 +2431,11 @@
     state.activeMenuId = stringValue(menuId);
     clearLoadedModule();
     syncMenuRoute(state.activeMenuId);
+    renderMenu();
+  }
+
+  function toggleMenuGroup(menuId) {
+    state.activeMenuId = state.activeMenuId === stringValue(menuId) ? "" : stringValue(menuId);
     renderMenu();
   }
 
@@ -2628,6 +2677,22 @@
       return;
     }
     nodes.moduleStrip.innerHTML = "";
+    nodes.moduleStrip.classList.toggle("ui2-module-context-strip", sidebarModuleNavigationEnabled());
+    if (sidebarModuleNavigationEnabled()) {
+      const menu = (appMap.menus || []).find((entry) => entry.id === state.menuId && menuVisibleForSession(entry));
+      const module = (menu?.modules || []).find((entry) => entry.id === state.moduleId);
+      if (!menu || !module) {
+        nodes.moduleStrip.hidden = true;
+        return;
+      }
+      nodes.moduleStrip.appendChild(el(
+        "p",
+        "ui2-module-context",
+        `${displayLabel(menu.label || menu.id)} / ${displayLabel(module.label || module.id)}`
+      ));
+      nodes.moduleStrip.hidden = false;
+      return;
+    }
     const menu = (appMap.menus || []).find((entry) => entry.id === state.activeMenuId && menuVisibleForSession(entry));
     const modules = (menu?.modules || []).filter((module) => !isUtilityModule(module.id));
     if (!modules.length) {
@@ -2650,7 +2715,8 @@
 
   async function chooseMenuModule(moduleId) {
     await loadModule(moduleId);
-    if (state.moduleId === sanitizeModuleId(moduleId)) {
+    if (state.moduleId === sanitizeModuleId(moduleId) && (!sidebarModuleNavigationEnabled()
+      || window.matchMedia?.("(max-width: 700px)").matches)) {
       setSidebarCollapsed(true, false);
     }
   }
@@ -2674,7 +2740,16 @@
     }
     nodes.menuNav.querySelectorAll(".ui2-menu-group").forEach((group) => {
       const active = group.dataset.menuId === state.activeMenuId;
-      group.querySelector(".ui2-menu-button")?.setAttribute("aria-pressed", active ? "true" : "false");
+      const button = group.querySelector(".ui2-menu-button");
+      if (sidebarModuleNavigationEnabled()) {
+        button?.setAttribute("aria-expanded", active ? "true" : "false");
+        const list = group.querySelector(".ui2-module-list");
+        if (list) {
+          list.hidden = !active;
+        }
+      } else {
+        button?.setAttribute("aria-pressed", active ? "true" : "false");
+      }
     });
     renderModuleStrip();
   }

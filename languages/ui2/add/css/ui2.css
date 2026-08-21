@@ -636,6 +636,17 @@ code {
   display: none;
 }
 
+.ui2-module-context-strip {
+  justify-content: flex-start;
+}
+
+.ui2-module-context {
+  margin: 0;
+  color: var(--ui2-muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
 .ui2-strip-module-button {
   min-height: 2.15rem;
   border: 1px solid transparent;
@@ -769,7 +780,8 @@ code {
   cursor: pointer;
 }
 
-.ui2-menu-button[aria-pressed="true"] {
+.ui2-menu-button[aria-pressed="true"],
+.ui2-menu-button[aria-expanded="true"] {
   background: var(--ui2-panel-soft);
 }
 
@@ -785,6 +797,40 @@ code {
   width: 1.35rem;
   height: 1.35rem;
   object-fit: contain;
+}
+
+.ui2-module-list {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.35rem;
+}
+
+.ui2-module-list[hidden] {
+  display: none;
+}
+
+.ui2-module-button {
+  width: 100%;
+  min-height: 2.15rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ui2-muted);
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ui2-module-button:hover {
+  background: var(--ui2-panel-soft);
+  color: var(--ui2-text);
+}
+
+.ui2-module-button[aria-current="page"] {
+  border-color: var(--ui2-accent);
+  background: var(--ui2-accent-soft);
+  color: var(--ui2-accent-strong);
+  font-weight: 700;
 }
 
 .ui2-sidebar-section {
