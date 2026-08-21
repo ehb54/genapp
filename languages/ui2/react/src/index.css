@@ -66,6 +66,11 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+.ui2-workbench-grid.ui2-workbench-grid-configuration-only,
+.ui2-workbench-react-editing .ui2-workbench-grid.ui2-workbench-grid-configuration-only {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .ui2-workbench-react-workspace-expanded {
   min-height: calc(100dvh - 8rem);
 }

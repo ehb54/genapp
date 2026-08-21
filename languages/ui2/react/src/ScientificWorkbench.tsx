@@ -7,6 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { ChoiceCardPresentation, JobRuntimeSnapshot, ScientificWorkbenchBridge, ScientificWorkbenchMountProps, Ui2Field, WorkbenchActionReview, WorkbenchResultGroup, WorkbenchSection, WorkflowChoicePresentation } from "@/types"
 import { runCueMessage, runtimeLogText } from "@/runCue"
+import { resultsVisibility } from "@/resultsVisibility"
 
 function NativeHost({ create, release, mounted, className }: { create: () => HTMLElement; release?: (node: HTMLElement) => void; mounted?: () => void; className?: string }) {
   const hostRef = React.useRef<HTMLDivElement>(null)
@@ -582,6 +583,14 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
   const lifecycleState = String(runtime.lifecycle?.state || (submitting ? "submitting" : "editing"))
   const lifecycleMessage = String(runtime.lifecycle?.error || runtime.lifecycle?.message || lifecycleState)
   const hasRunContext = Boolean(submitted || runtime.run)
+  const hasAvailableOutput = Object.values(runtimeOutputs).some(Boolean)
+  const { showResultsPane, showRunStatus } = resultsVisibility({
+    submitting,
+    hasRunContext,
+    hasAvailableOutput,
+    hasActionReview: Boolean(actionReview),
+    hasScenarioReview: Boolean(testScenarios.selectedId),
+  })
   const runCue = hasRunContext ? runCueMessage(runtime) : undefined
   const renderInputSection = (section: WorkbenchSection, depth = 0): React.ReactNode => {
     if (!repeatExpressionActive(section.repeat, liveValues)) return null
@@ -626,7 +635,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
         </div>
       </header>
 
-      <div className={`ui2-workbench-grid${inputRailCollapsed || workspaceExpanded ? " ui2-workbench-grid-inputs-hidden" : ""}${wideInputLayout && (!submitted || inputEditOpen) ? " ui2-workbench-grid-inputs-wide" : ""}`}>
+      <div className={`ui2-workbench-grid${inputRailCollapsed || workspaceExpanded ? " ui2-workbench-grid-inputs-hidden" : ""}${!showResultsPane ? " ui2-workbench-grid-configuration-only" : ""}${wideInputLayout && (!submitted || inputEditOpen) ? " ui2-workbench-grid-inputs-wide" : ""}`}>
         <aside className="ui2-workbench-input-pane" hidden={inputRailCollapsed || workspaceExpanded}>
           {submitted && !inputEditOpen && (
             <SubmittedInputs expandedMode={view.inputs?.submittedSummary?.expanded} fields={fields} summaryFieldIds={summaryFieldIds} onEdit={editInputs} onHide={() => setInputRailCollapsed(true)} restoreError={submitted.restoreError} restoreWarnings={submitted.restoreWarnings} uuid={submitted.uuid} values={submitted.values} />
@@ -728,7 +737,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
           )}
         </aside>
 
-        <main className="ui2-workbench-results-pane">
+        {showResultsPane && <main className="ui2-workbench-results-pane">
           {submitted && inputRailCollapsed && (
             <div className="ui2-workbench-show-inputs-row">
               <Button type="button" variant="outline" onClick={showSubmittedInputs}>
@@ -756,7 +765,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
             </Card>
           )}
 
-          {progressSection && (
+          {showRunStatus && progressSection && (
             <Card className="ui2-workbench-progress-card">
               <CardHeader>
                 <div>
@@ -768,7 +777,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
             </Card>
           )}
 
-          {view.results?.runtimeLog && (
+          {showRunStatus && view.results?.runtimeLog && (
             <RunLog
               cue={runCue}
               defaultOpen={view.results.runtimeLog.defaultOpen}
@@ -843,7 +852,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
               </CardContent>
             </Card>
           )}
-        </main>
+        </main>}
       </div>
 
     </form>

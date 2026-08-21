@@ -10792,8 +10792,17 @@ function Ur(e) {
 	};
 }
 //#endregion
+//#region src/resultsVisibility.ts
+function Wr({ submitting: e = !1, hasRunContext: t = !1, hasAvailableOutput: n = !1, hasActionReview: r = !1, hasScenarioReview: i = !1 }) {
+	let a = e || t;
+	return {
+		showRunStatus: a,
+		showResultsPane: a || n || r || i
+	};
+}
+//#endregion
 //#region src/ScientificWorkbench.tsx
-function Wr({ create: e, release: t, mounted: n, className: r }) {
+function Gr({ create: e, release: t, mounted: n, className: r }) {
 	let i = C.useRef(null);
 	return C.useLayoutEffect(() => {
 		let r = i.current;
@@ -10811,7 +10820,7 @@ function Wr({ create: e, release: t, mounted: n, className: r }) {
 		ref: i
 	});
 }
-function Gr({ fields: e, bridge: t, role: n = "input", fitPlot: r = !1, outputLayout: i = "", plotPresentation: a, onValuesReady: o }) {
+function Kr({ fields: e, bridge: t, role: n = "input", fitPlot: r = !1, outputLayout: i = "", plotPresentation: a, onValuesReady: o }) {
 	let s = e.map((e) => e.id || "").join("\0"), c = C.useMemo(() => e, [s]), l = JSON.stringify(a || {}), u = C.useCallback(() => {
 		let e = t.createFieldGroup(c, n);
 		return n === "output" && i && (e.dataset.outputLayout = i), n === "output" && l !== "{}" && (e.dataset.plotPresentation = l), r && (e.setAttribute("data-plot-fit", "pane"), (e.matches("[data-output-type=\"plotly\"]") ? e : e.querySelector("[data-output-type=\"plotly\"]"))?.setAttribute("data-plot-fit", "pane")), e;
@@ -10829,27 +10838,27 @@ function Gr({ fields: e, bridge: t, role: n = "input", fitPlot: r = !1, outputLa
 		o,
 		n
 	]);
-	return /* @__PURE__ */ (0, z.jsx)(Wr, {
+	return /* @__PURE__ */ (0, z.jsx)(Gr, {
 		create: u,
 		release: t.releaseField,
 		mounted: d,
 		className: "ui2-workbench-field-group"
 	});
 }
-function Kr({ field: e, presentation: t, bridge: n, values: r, onValuesReady: i }) {
-	let a = Yr(e), o = String(r[e.id || ""] ?? e.default ?? a[0]?.value ?? "");
+function qr({ field: e, presentation: t, bridge: n, values: r, onValuesReady: i }) {
+	let a = Xr(e), o = String(r[e.id || ""] ?? e.default ?? a[0]?.value ?? "");
 	return /* @__PURE__ */ (0, z.jsxs)("fieldset", {
 		className: "ui2-choice-cards",
 		children: [
 			/* @__PURE__ */ (0, z.jsx)("legend", { children: t.title || e.label || "Choose an option" }),
-			/* @__PURE__ */ (0, z.jsx)(Gr, {
+			/* @__PURE__ */ (0, z.jsx)(Kr, {
 				bridge: n,
 				fields: [e],
 				onValuesReady: i
 			}),
 			/* @__PURE__ */ (0, z.jsx)("div", {
 				className: "ui2-choice-cards-grid",
-				children: a.filter((e) => $r(t.choices?.[e.value]?.repeat, r)).map((r) => {
+				children: a.filter((e) => ei(t.choices?.[e.value]?.repeat, r)).map((r) => {
 					let i = t.choices?.[r.value] || {}, a = `${e.id}-${r.value}`;
 					return /* @__PURE__ */ (0, z.jsxs)("label", {
 						className: `ui2-choice-card${o === r.value ? " ui2-choice-card-selected" : ""}`,
@@ -10884,16 +10893,16 @@ function Kr({ field: e, presentation: t, bridge: n, values: r, onValuesReady: i 
 		]
 	});
 }
-function qr(e, t) {
+function Jr(e, t) {
 	return String(e ?? "") === String(t ?? "");
 }
-function Jr({ presentation: e, fields: t, bridge: n, values: r, onValuesReady: i }) {
-	let a = (e.order || Object.keys(e.choices || {})).map((t) => [t, e.choices?.[t]]).filter(([, e]) => !!e), o = a.find(([, e]) => Object.entries(e.matches || {}).every(([e, t]) => qr(r[e], t)))?.[0] || "";
+function Yr({ presentation: e, fields: t, bridge: n, values: r, onValuesReady: i }) {
+	let a = (e.order || Object.keys(e.choices || {})).map((t) => [t, e.choices?.[t]]).filter(([, e]) => !!e), o = a.find(([, e]) => Object.entries(e.matches || {}).every(([e, t]) => Jr(r[e], t)))?.[0] || "";
 	return /* @__PURE__ */ (0, z.jsxs)("fieldset", {
 		className: "ui2-workflow-choices",
 		children: [
 			/* @__PURE__ */ (0, z.jsx)("legend", { children: e.title || "Choose a workflow" }),
-			/* @__PURE__ */ (0, z.jsx)(Gr, {
+			/* @__PURE__ */ (0, z.jsx)(Kr, {
 				bridge: n,
 				fields: t,
 				onValuesReady: i
@@ -10935,7 +10944,7 @@ function Jr({ presentation: e, fields: t, bridge: n, values: r, onValuesReady: i
 		]
 	});
 }
-function Yr(e) {
+function Xr(e) {
 	if (!e?.values) return [];
 	let t = String(e.values).split("~"), n = [];
 	for (let e = 0; e < t.length; e += 2) n.push({
@@ -10944,16 +10953,16 @@ function Yr(e) {
 	});
 	return n;
 }
-function Xr(e, t) {
+function Zr(e, t) {
 	if (e === !0) return "On";
 	if (e === !1) return "Off";
-	if (Array.isArray(e)) return e.map((e) => Xr(e, t)).join(", ");
+	if (Array.isArray(e)) return e.map((e) => Zr(e, t)).join(", ");
 	if (e == null || e === "") return "—";
-	let n = Yr(t).find((t) => t.value === String(e));
+	let n = Xr(t).find((t) => t.value === String(e));
 	return n ? n.label : String(e);
 }
-function Zr(e) {
-	if (Array.isArray(e)) return e.some((e) => Zr(e));
+function Qr(e) {
+	if (Array.isArray(e)) return e.some((e) => Qr(e));
 	if (typeof e == "boolean") return e;
 	let t = String(e ?? "").trim().toLowerCase();
 	return [
@@ -10964,24 +10973,24 @@ function Zr(e) {
 		"checked"
 	].includes(t);
 }
-function Qr(e, t) {
+function $r(e, t) {
 	let n = e.trim();
 	if (!n) return !0;
-	if (n.startsWith("!")) return !Qr(n.slice(1), t);
+	if (n.startsWith("!")) return !$r(n.slice(1), t);
 	let [r, i] = n.split(":"), a = t[r];
-	return i == null ? Zr(a) : String(a ?? "") === i;
+	return i == null ? Qr(a) : String(a ?? "") === i;
 }
-function $r(e, t) {
+function ei(e, t) {
 	let n = String(e || "").trim();
-	return !n || n.split("||").some((e) => e.split("&&").every((e) => Qr(e, t)));
-}
-function ei(e) {
-	return [...e.fields || [], ...(e.children || []).flatMap((e) => ei(e))];
+	return !n || n.split("||").some((e) => e.split("&&").every((e) => $r(e, t)));
 }
 function ti(e) {
-	return [...e.workflowChoices || [], ...(e.children || []).flatMap((e) => ti(e))];
+	return [...e.fields || [], ...(e.children || []).flatMap((e) => ti(e))];
 }
 function ni(e) {
+	return [...e.workflowChoices || [], ...(e.children || []).flatMap((e) => ni(e))];
+}
+function ri(e) {
 	if (e == null || e === "") return !1;
 	if (Array.isArray(e)) return e.length > 0;
 	if (typeof e == "object" && "items" in e) {
@@ -10990,8 +10999,8 @@ function ni(e) {
 	}
 	return !0;
 }
-function ri({ values: e, fields: t, summaryFieldIds: n, expandedMode: r, uuid: i, restoreError: a, restoreWarnings: o = [], onEdit: s, onHide: c, title: l = "Submitted inputs", description: u, badge: d = "Submitted", continueLabel: f }) {
-	let [p, m] = C.useState(!1), h = C.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), g = t.filter((t) => t.id && t.role !== "output" && t.type !== "label" && Object.prototype.hasOwnProperty.call(e, t.id)).filter((t) => r !== "active" || $r(t.repeat, e)).map((e) => e.id), _ = p ? g : n.filter((t) => Object.prototype.hasOwnProperty.call(e, t));
+function ii({ values: e, fields: t, summaryFieldIds: n, expandedMode: r, uuid: i, restoreError: a, restoreWarnings: o = [], onEdit: s, onHide: c, title: l = "Submitted inputs", description: u, badge: d = "Submitted", continueLabel: f }) {
+	let [p, m] = C.useState(!1), h = C.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), g = t.filter((t) => t.id && t.role !== "output" && t.type !== "label" && Object.prototype.hasOwnProperty.call(e, t.id)).filter((t) => r !== "active" || ei(t.repeat, e)).map((e) => e.id), _ = p ? g : n.filter((t) => Object.prototype.hasOwnProperty.call(e, t));
 	return /* @__PURE__ */ (0, z.jsxs)(Xt, {
 		className: "ui2-workbench-submitted",
 		children: [/* @__PURE__ */ (0, z.jsxs)(Zt, { children: [/* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)(Qt, { children: l }), /* @__PURE__ */ (0, z.jsx)($t, { children: u || (i ? `Run ${i}` : "Values associated with this run") })] }), /* @__PURE__ */ (0, z.jsx)("span", {
@@ -11010,7 +11019,7 @@ function ri({ values: e, fields: t, summaryFieldIds: n, expandedMode: r, uuid: i
 			}),
 			!a && /* @__PURE__ */ (0, z.jsx)("dl", {
 				className: "ui2-workbench-summary-list",
-				children: _.map((t) => /* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: h.get(t)?.label || t }), /* @__PURE__ */ (0, z.jsx)("dd", { children: Xr(e[t], h.get(t)) })] }, t))
+				children: _.map((t) => /* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)("dt", { children: h.get(t)?.label || t }), /* @__PURE__ */ (0, z.jsx)("dd", { children: Zr(e[t], h.get(t)) })] }, t))
 			}),
 			/* @__PURE__ */ (0, z.jsxs)("div", {
 				className: "ui2-workbench-summary-actions",
@@ -11039,7 +11048,7 @@ function ri({ values: e, fields: t, summaryFieldIds: n, expandedMode: r, uuid: i
 		] })]
 	});
 }
-function ii({ snapshot: e, title: t, description: n, defaultOpen: r = !1, open: i, onOpenChange: a, cue: o }) {
+function ai({ snapshot: e, title: t, description: n, defaultOpen: r = !1, open: i, onOpenChange: a, cue: o }) {
 	let [s, c] = C.useState(r), l = i ?? s, u = a ?? c, d = zr(e), f = d ? d.split(/\r?\n/).length : 0;
 	return /* @__PURE__ */ (0, z.jsx)(In, {
 		open: l,
@@ -11090,16 +11099,16 @@ function ii({ snapshot: e, title: t, description: n, defaultOpen: r = !1, open: 
 		})
 	});
 }
-function ai({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
-	let [a, o] = C.useState(!1), [s, c] = C.useState(() => i?.values || r.syncValues()), l = n.inputs?.sections || [], u = n.inputs?.advanced, d = n.inputs?.fieldPresentations || {}, f = n.inputs?.workflowChoices || {}, p = n.inputs?.layout === "wide", m = u?.fields || [], h = n.inputs?.submittedSummary?.fields || [], g = n.inputs?.actionReviews || {}, _ = n.results?.progress, v = n.results?.groups || n.results?.tabs || [], y = v.find((e) => e.primary)?.id || v[0]?.id || "", [b, x] = C.useState(y), [S, w] = C.useState(null), [T, ee] = C.useState(!1), [te, E] = C.useState(!1), [ce, D] = C.useState(!1), [O, le] = C.useState(!1), [ue, de] = C.useState(!!n.results?.runtimeLog?.defaultOpen), [k, A] = C.useState(""), j = C.useRef(null), fe = C.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), M = C.useSyncExternalStore(r.subscribeRuntime, r.runtimeSnapshot, r.runtimeSnapshot), pe = C.useSyncExternalStore(r.subscribeOutputs, r.outputSnapshot, r.outputSnapshot), N = C.useSyncExternalStore(r.subscribeRunContext, r.runContextSnapshot, r.runContextSnapshot), P = C.useSyncExternalStore(r.subscribeTestScenarios, r.testScenarioSnapshot, r.testScenarioSnapshot), me = N?.values || s, he = C.useMemo(() => v.filter((e) => $r(e.repeat, me) ? e.visibility !== "available" || e.outputs.some((e) => ni(pe[e])) : !1), [
+function oi({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
+	let [a, o] = C.useState(!1), [s, c] = C.useState(() => i?.values || r.syncValues()), l = n.inputs?.sections || [], u = n.inputs?.advanced, d = n.inputs?.fieldPresentations || {}, f = n.inputs?.workflowChoices || {}, p = n.inputs?.layout === "wide", m = u?.fields || [], h = n.inputs?.submittedSummary?.fields || [], g = n.inputs?.actionReviews || {}, _ = n.results?.progress, v = n.results?.groups || n.results?.tabs || [], y = v.find((e) => e.primary)?.id || v[0]?.id || "", [b, x] = C.useState(y), [S, w] = C.useState(null), [T, ee] = C.useState(!1), [te, E] = C.useState(!1), [ce, D] = C.useState(!1), [O, le] = C.useState(!1), [ue, de] = C.useState(!!n.results?.runtimeLog?.defaultOpen), [k, A] = C.useState(""), j = C.useRef(null), fe = C.useMemo(() => new Map(t.map((e) => [e.id, e])), [t]), M = C.useSyncExternalStore(r.subscribeRuntime, r.runtimeSnapshot, r.runtimeSnapshot), pe = C.useSyncExternalStore(r.subscribeOutputs, r.outputSnapshot, r.outputSnapshot), N = C.useSyncExternalStore(r.subscribeRunContext, r.runContextSnapshot, r.runContextSnapshot), P = C.useSyncExternalStore(r.subscribeTestScenarios, r.testScenarioSnapshot, r.testScenarioSnapshot), me = N?.values || s, he = C.useMemo(() => v.filter((e) => ei(e.repeat, me) ? e.visibility !== "available" || e.outputs.some((e) => ri(pe[e])) : !1), [
 		v,
 		me,
 		pe
 	]), ge = (_?.fields || []).map((e) => fe.get(e)).filter(Boolean), _e = /* @__PURE__ */ new Set([
-		...l.flatMap((e) => ei(e)),
-		...l.flatMap((e) => ti(e).flatMap((e) => f[e]?.fields || [])),
+		...l.flatMap((e) => ti(e)),
+		...l.flatMap((e) => ni(e).flatMap((e) => f[e]?.fields || [])),
 		...m
-	]), ve = t.filter((e) => e.role !== "output" && e.id && e.type !== "label" && !_e.has(e.id)), ye = /* @__PURE__ */ new Set([..._?.fields || [], ...v.flatMap((e) => e.outputs)]), be = n.results?.includeUnassignedOutputs ? t.filter((e) => e.role === "output" && e.id && !ye.has(e.id) && ni(pe[e.id])) : [], xe = be.length > 0 ? [...he, {
+	]), ve = t.filter((e) => e.role !== "output" && e.id && e.type !== "label" && !_e.has(e.id)), ye = /* @__PURE__ */ new Set([..._?.fields || [], ...v.flatMap((e) => e.outputs)]), be = n.results?.includeUnassignedOutputs ? t.filter((e) => e.role === "output" && e.id && !ye.has(e.id) && ri(pe[e.id])) : [], xe = be.length > 0 ? [...he, {
 		id: "additional-results",
 		label: "Additional results",
 		outputs: be.map((e) => e.id),
@@ -11192,32 +11201,38 @@ function ai({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 		D(!0), E(!1), le(!1);
 	}, []), je = C.useCallback(() => {
 		D(!1), E(!1), le(!1);
-	}, []), Me = String(M.lifecycle?.state || (T ? "submitting" : "editing")), Ne = String(M.lifecycle?.error || M.lifecycle?.message || Me), Pe = N || M.run ? Ur(M) : void 0, Fe = (e, t = 0) => {
-		if (!$r(e.repeat, s)) return null;
+	}, []), Me = String(M.lifecycle?.state || (T ? "submitting" : "editing")), Ne = String(M.lifecycle?.error || M.lifecycle?.message || Me), Pe = !!(N || M.run), { showResultsPane: Fe, showRunStatus: Ie } = Wr({
+		submitting: T,
+		hasRunContext: Pe,
+		hasAvailableOutput: Object.values(pe).some(Boolean),
+		hasActionReview: !!S,
+		hasScenarioReview: !!P.selectedId
+	}), Le = Pe ? Ur(M) : void 0, Re = (e, t = 0) => {
+		if (!ei(e.repeat, s)) return null;
 		let n = (e.fields || []).map((e) => fe.get(e)).filter(Boolean), i = (e.workflowChoices || []).map((e) => [e, f[e]]).filter(([, e]) => !!e);
 		return /* @__PURE__ */ (0, z.jsxs)(Xt, {
 			className: t > 0 ? "ui2-workbench-input-subsection" : void 0,
 			children: [/* @__PURE__ */ (0, z.jsx)(Zt, { children: /* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)(Qt, { children: e.title }), e.description && /* @__PURE__ */ (0, z.jsx)($t, { children: e.description })] }) }), /* @__PURE__ */ (0, z.jsxs)(en, { children: [
-				n.filter((e) => !d[e.id || ""]).length > 0 && /* @__PURE__ */ (0, z.jsx)(Gr, {
+				n.filter((e) => !d[e.id || ""]).length > 0 && /* @__PURE__ */ (0, z.jsx)(Kr, {
 					bridge: r,
 					fields: n.filter((e) => !d[e.id || ""]),
 					onValuesReady: Se
 				}),
-				n.filter((e) => d[e.id || ""] && $r(e.repeat, s)).map((e) => /* @__PURE__ */ (0, z.jsx)(Kr, {
+				n.filter((e) => d[e.id || ""] && ei(e.repeat, s)).map((e) => /* @__PURE__ */ (0, z.jsx)(qr, {
 					bridge: r,
 					field: e,
 					onValuesReady: Se,
 					presentation: d[e.id || ""],
 					values: s
 				}, e.id)),
-				i.map(([e, t]) => /* @__PURE__ */ (0, z.jsx)(Jr, {
+				i.map(([e, t]) => /* @__PURE__ */ (0, z.jsx)(Yr, {
 					bridge: r,
 					fields: t.fields.map((e) => fe.get(e)).filter(Boolean),
 					onValuesReady: Se,
 					presentation: t,
 					values: s
 				}, e)),
-				(e.children || []).map((e) => Fe(e, t + 1))
+				(e.children || []).map((e) => Re(e, t + 1))
 			] })]
 		}, e.id);
 	};
@@ -11246,12 +11261,12 @@ function ai({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 				n.heading?.description && /* @__PURE__ */ (0, z.jsx)("p", { children: n.heading.description })
 			] })
 		}), /* @__PURE__ */ (0, z.jsxs)("div", {
-			className: `ui2-workbench-grid${te || O ? " ui2-workbench-grid-inputs-hidden" : ""}${p && (!N || ce) ? " ui2-workbench-grid-inputs-wide" : ""}`,
+			className: `ui2-workbench-grid${te || O ? " ui2-workbench-grid-inputs-hidden" : ""}${Fe ? "" : " ui2-workbench-grid-configuration-only"}${p && (!N || ce) ? " ui2-workbench-grid-inputs-wide" : ""}`,
 			children: [/* @__PURE__ */ (0, z.jsxs)("aside", {
 				className: "ui2-workbench-input-pane",
 				hidden: te || O,
 				children: [
-					N && !ce && /* @__PURE__ */ (0, z.jsx)(ri, {
+					N && !ce && /* @__PURE__ */ (0, z.jsx)(ii, {
 						expandedMode: n.inputs?.submittedSummary?.expanded,
 						fields: t,
 						summaryFieldIds: h,
@@ -11262,7 +11277,7 @@ function ai({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						uuid: N.uuid,
 						values: N.values
 					}),
-					!N && S && /* @__PURE__ */ (0, z.jsx)(ri, {
+					!N && S && /* @__PURE__ */ (0, z.jsx)(ii, {
 						badge: S.definition.badge || "Review",
 						continueLabel: S.definition.continueLabel || "Continue setup",
 						description: S.definition.description || "Values used to create the displayed result",
@@ -11313,8 +11328,8 @@ function ai({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 									})
 								] })]
 							}),
-							l.map((e) => Fe(e)),
-							ve.length > 0 && /* @__PURE__ */ (0, z.jsxs)(Xt, { children: [/* @__PURE__ */ (0, z.jsx)(Zt, { children: /* @__PURE__ */ (0, z.jsx)(Qt, { children: "Additional inputs" }) }), /* @__PURE__ */ (0, z.jsx)(en, { children: /* @__PURE__ */ (0, z.jsx)(Gr, {
+							l.map((e) => Re(e)),
+							ve.length > 0 && /* @__PURE__ */ (0, z.jsxs)(Xt, { children: [/* @__PURE__ */ (0, z.jsx)(Zt, { children: /* @__PURE__ */ (0, z.jsx)(Qt, { children: "Additional inputs" }) }), /* @__PURE__ */ (0, z.jsx)(en, { children: /* @__PURE__ */ (0, z.jsx)(Kr, {
 								bridge: r,
 								fields: ve,
 								onValuesReady: Se
@@ -11346,7 +11361,7 @@ function ai({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 									children: /* @__PURE__ */ (0, z.jsxs)(en, { children: [u.description && /* @__PURE__ */ (0, z.jsx)("p", {
 										className: "ui2-workbench-section-description",
 										children: u.description
-									}), /* @__PURE__ */ (0, z.jsx)(Gr, {
+									}), /* @__PURE__ */ (0, z.jsx)(Kr, {
 										bridge: r,
 										fields: m.map((e) => fe.get(e)).filter(Boolean),
 										onValuesReady: Se
@@ -11395,7 +11410,7 @@ function ai({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						})]
 					})
 				]
-			}), /* @__PURE__ */ (0, z.jsxs)("main", {
+			}), Fe && /* @__PURE__ */ (0, z.jsxs)("main", {
 				className: "ui2-workbench-results-pane",
 				children: [
 					N && te && /* @__PURE__ */ (0, z.jsx)("div", {
@@ -11418,16 +11433,16 @@ function ai({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 							e.passed ? "passed" : e.unsupported ? "unsupported" : "failed"
 						] }, e.id)) : /* @__PURE__ */ (0, z.jsx)("p", { children: "Verification will run after the job reaches a terminal state." }) })]
 					}),
-					_ && /* @__PURE__ */ (0, z.jsxs)(Xt, {
+					Ie && _ && /* @__PURE__ */ (0, z.jsxs)(Xt, {
 						className: "ui2-workbench-progress-card",
-						children: [/* @__PURE__ */ (0, z.jsx)(Zt, { children: /* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)(Qt, { children: _.title }), _.description && /* @__PURE__ */ (0, z.jsx)($t, { children: _.description })] }) }), /* @__PURE__ */ (0, z.jsx)(en, { children: /* @__PURE__ */ (0, z.jsx)(Gr, {
+						children: [/* @__PURE__ */ (0, z.jsx)(Zt, { children: /* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)(Qt, { children: _.title }), _.description && /* @__PURE__ */ (0, z.jsx)($t, { children: _.description })] }) }), /* @__PURE__ */ (0, z.jsx)(en, { children: /* @__PURE__ */ (0, z.jsx)(Kr, {
 							bridge: r,
 							fields: ge,
 							role: "output"
 						}) })]
 					}),
-					n.results?.runtimeLog && /* @__PURE__ */ (0, z.jsx)(ii, {
-						cue: Pe,
+					Ie && n.results?.runtimeLog && /* @__PURE__ */ (0, z.jsx)(ai, {
+						cue: Le,
 						defaultOpen: n.results.runtimeLog.defaultOpen,
 						description: n.results.runtimeLog.description,
 						open: ue,
@@ -11477,7 +11492,7 @@ function ai({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 											className: "ui2-workbench-result-panel-title",
 											children: e.label
 										}),
-										/* @__PURE__ */ (0, z.jsx)(Gr, {
+										/* @__PURE__ */ (0, z.jsx)(Kr, {
 											bridge: r,
 											fields: t,
 											fitPlot: (e.fit === "pane" || e.fit === "wide") && t.some((e) => e.type === "plotly"),
@@ -11502,16 +11517,16 @@ function ai({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 }
 //#endregion
 //#region src/main.tsx
-var oi = /* @__PURE__ */ new WeakMap();
+var si = /* @__PURE__ */ new WeakMap();
 window.GenAppUi2Workbench = {
 	mount(e, t) {
 		window.GenAppUi2Workbench?.unmount(e);
 		let n = (0, ce.createRoot)(e);
-		oi.set(e, n), n.render(/* @__PURE__ */ (0, z.jsx)(ai, { ...t }));
+		si.set(e, n), n.render(/* @__PURE__ */ (0, z.jsx)(oi, { ...t }));
 	},
 	unmount(e) {
-		let t = oi.get(e);
-		t && (t.unmount(), oi.delete(e));
+		let t = si.get(e);
+		t && (t.unmount(), si.delete(e));
 	}
 }, window.dispatchEvent(new CustomEvent("ui2-react-ready"));
 //#endregion

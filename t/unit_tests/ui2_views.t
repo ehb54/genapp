@@ -109,6 +109,15 @@ my $ui2_react_js = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.js) 
 my $ui2_react_css = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.css) ) );
 my $ui2_react_source = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 react src ScientificWorkbench.tsx) ) );
 my $ui2_react_run_cue_source = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 react src runCue.ts) ) );
+my $ui2_react_results_visibility_source = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 react src resultsVisibility.ts) ) );
+like( $ui2_react_source, qr/import\s+\{\s*resultsVisibility\s*\}\s+from\s+"@\/resultsVisibility"/, 'React workbench imports the generic results-visibility helper' );
+like( $ui2_react_results_visibility_source, qr/showResultsPane:\s*showRunStatus\s*\|\|\s*hasAvailableOutput\s*\|\|\s*hasActionReview\s*\|\|\s*hasScenarioReview/s, 'generic visibility combines run context with explicit pre-submit review or available output state' );
+like( $ui2_react_source, qr/const \{ showResultsPane, showRunStatus \} = resultsVisibility\(\{.*?submitting,.*?hasRunContext,.*?hasAvailableOutput,/s, 'workbench derives results visibility from generic lifecycle and output availability signals' );
+like( $ui2_react_source, qr/\{showResultsPane && <main className="ui2-workbench-results-pane">/s, 'workbench omits the results pane before a run or explicit pre-submit result state exists' );
+like( $ui2_react_source, qr/\{showRunStatus && progressSection && \(/, 'progress appears only after submission begins or a run context exists' );
+like( $ui2_react_source, qr/\{showRunStatus && view\.results\?\.runtimeLog && \(/, 'runtime log appears only after submission begins or a run context exists' );
+like( $ui2_react_css, qr/ui2-workbench-grid-configuration-only.*?grid-template-columns:minmax\(0,1fr\)/s, 'configuration-only workbenches use one input column' );
+like( $ui2_react_js, qr/ui2-workbench-grid-configuration-only/, 'generated React bundle retains the configuration-only results-pane class' );
 like( $ui2_react_source, qr/import\s+\{[^}]*runCueMessage[^}]*\}\s+from\s+"@\/runCue"/, 'React workbench uses the generic lifecycle cue helper' );
 like( $ui2_react_run_cue_source, qr/lifecycleState.*?\["failed", "error"\].*?Run failed.*?\["cancelled", "canceled"\].*?Run cancelled/s, 'React run cue gives terminal lifecycle states priority over empty runtime channels' );
 like( $ui2_react_source, qr/resultGroups\.some\(\(group\) => group\.id === id\).*?setActiveResult\(id\).*?window\.addEventListener\("ui2-focus-result", focusResult\)/s, 'React workbenches accept focus only for a declared result group' );
