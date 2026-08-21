@@ -257,6 +257,9 @@ The UI2 job-event store is independent of mounted DOM. It:
   authoritative bounded journal;
 - batches subscription notifications;
 - retains state before a widget mounts;
+- retains a bounded initialization-and-append queue for Plotly and structure
+  outputs whose native host has not mounted, then replays it when React mounts
+  that host;
 - exposes immutable snapshots to React;
 - resets explicitly when a new run begins.
 

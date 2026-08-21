@@ -53,7 +53,11 @@ function FieldGroup({ fields, bridge, role = "input", fitPlot = false, outputLay
     return node
   }, [bridge, plannedFields, fitPlot, outputLayout, plotPresentationKey, role])
   const mounted = React.useCallback(() => {
-    if (role === "input") bridge.fieldGroupMounted(onValuesReady)
+    if (role === "input") {
+      bridge.fieldGroupMounted(onValuesReady)
+    } else {
+      bridge.outputGroupMounted()
+    }
   }, [bridge, onValuesReady, role])
   return (
     <NativeHost create={create} release={bridge.releaseField} mounted={mounted} className="ui2-workbench-field-group" />

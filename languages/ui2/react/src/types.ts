@@ -177,6 +177,7 @@ export type ScientificWorkbenchBridge = {
   createFieldGroup: (fields: Ui2Field[], role: "input" | "output") => HTMLElement
   releaseField: (field: HTMLElement) => void
   fieldGroupMounted: (onValuesReady?: (values: Record<string, unknown>) => void) => void
+  outputGroupMounted: () => void
   syncValues: () => Record<string, unknown>
   setInputValue: (fieldId: string, value: unknown) => Record<string, unknown>
   setInputValues: (values: Record<string, unknown>) => Record<string, unknown>

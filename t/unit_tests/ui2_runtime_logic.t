@@ -3392,6 +3392,58 @@ window.Plotly = {
   },
   Plots: { resize() {} }
 };
+
+hooks.beginRuntimeOutputContext("fixture_module", "run-late-output-hosts");
+hooks.applyJobEventToOutput({
+  channel: "plot",
+  topic: "late_plot",
+  operation: "snapshot",
+  payload: { data: [{ x: [0], y: [1] }], layout: { title: "Late plot" } }
+});
+hooks.applyJobEventToOutput({
+  channel: "plot",
+  topic: "late_plot",
+  operation: "append",
+  payload: { traces: [{ index: 0, x: [1], y: [2] }], max_points: 10 }
+});
+hooks.applyJobEventToOutput({
+  channel: "structure",
+  topic: "late_structure",
+  operation: "snapshot",
+  payload: { loadname: "results/run-late/reference.pdb" }
+});
+assert.strictEqual(
+  hooks.state.pendingRuntimeOutputEvents.late_plot.length,
+  2,
+  "UI2 retains a Plotly initialization snapshot and following append while its native host is absent"
+);
+assert.strictEqual(
+  hooks.state.pendingRuntimeOutputEvents.late_structure.length,
+  1,
+  "UI2 retains a structure initialization snapshot while its native host is absent"
+);
+const latePlot = createNode("div");
+latePlot.dataset.outputFieldId = "late_plot";
+latePlot.dataset.outputType = "plotly";
+document.body.appendChild(latePlot);
+const lateStructure = createNode("div");
+lateStructure.dataset.outputFieldId = "late_structure";
+lateStructure.dataset.outputType = "ngl";
+document.body.appendChild(lateStructure);
+hooks.replayPendingRuntimeOutputEvents();
+assert.strictEqual(
+  latePlot._ui2PlotlyLastFigure.layout.title,
+  "Late plot",
+  "mount replay initializes a Plotly host before applying retained append events"
+);
+assert.strictEqual(
+  Object.keys(hooks.state.pendingRuntimeOutputEvents).length,
+  0,
+  "mount replay drains retained Plotly and structure events after both native hosts exist"
+);
+latePlot.remove();
+lateStructure.remove();
+
 hooks.state.jobEvents.reset("run-dynamic-gallery", "fixture_module");
 hooks.applyRuntimePayload({
   _job_event: {

@@ -45,10 +45,13 @@ module, output, or scientific-role identifiers.
 ## Consumers, compatibility, and rollback
 
 React workbenches are the opted-in consumers. The native UI2 renderer is the
-non-opted-in control and remains unchanged; HTML5 remains unchanged. Existing
-output replay runs when the newly visible native output hosts mount, so live,
-completed, and reattached output rendering continues to use the established
-runtime path.
+non-opted-in control and remains unchanged; HTML5 remains unchanged. Plot and
+structure events that arrive while an availability-gated native host is absent
+are retained in a bounded per-output queue. React notifies the bridge after
+mounting an output group, and UI2 replays those retained events in order. This
+preserves the initialization snapshot required by later append events;
+completed and reattached output rendering still uses the established final
+output path.
 
 Rollback is a source and generated-asset revert of the React visibility helper
 and workbench composition. It leaves job execution, polling, output payloads,

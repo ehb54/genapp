@@ -99,11 +99,12 @@ like( $ui2_js, qr/function observeFitPlotlyOutput\(output\).*?fittedAncestor.*?o
 like( $ui2_js, qr/function releaseReactWorkbenchField\(fieldNode\).*?disconnectPlotlyOutputObserver.*?Plotly\.purge/s, 'workbench unmount cleans up Plotly resize observation and graph state' );
 like( $ui2_js, qr/function notifyWorkbenchReattached\(uuid, savedValues = null, restoreError = "", restoreWarnings = \[\]\).*?setSubmittedRunContext\(\{\s*uuid,\s*values,/s, 'workbench reattachment publishes the restored submitted-input snapshot and nonfatal warnings' );
 like( $ui2_js, qr/outputSnapshot: \(\) => state\.runtimeOutputAvailability.*?subscribeOutputs: \(listener\) => subscribeRuntimeOutputs\(listener\)/s, 'workbench bridge exposes runtime output availability without module-specific state' );
+like( $ui2_js, qr/outputGroupMounted: \(\) => replayPendingRuntimeOutputEvents\(\)/, 'workbench bridge replays retained output events after a native output group mounts' );
 like( $ui2_js, qr/action === "focus_result".*?new CustomEvent\("ui2-focus-result", \{ detail: \{ id \} \}\)/s, 'a generic action instruction can request focus for a declared result group' );
 like( $ui2_js, qr/action === "review_inputs".*?new CustomEvent\("ui2-review-inputs", \{ detail: \{ id \} \}\)/s, 'a generic action instruction can request a named input review' );
 like( $ui2_js, qr/function markRuntimeOutputAvailable\(id\).*?state\.runtimeOutputAvailability\[id\].*?\[id\]: true/s, 'runtime output availability publishes a new snapshot only for a newly available output' );
 unlike( $ui2_js, qr/function applyRuntimePayload\(payload, contextToken = null\).*?state\.runtimeOutputs = \{\s*\.\.\.state\.runtimeOutputs/s, 'repeated runtime payload values do not recreate the React workbench snapshot' );
-unlike( $ui2_js, qr/function replayJobEventsForOutput\(/, 'output mounting does not replay retained imperative Plotly or structure events' );
+like( $ui2_js, qr/function replayPendingRuntimeOutputEvents\(topic = "", mountedOutput = null\).*?renderJobEventToOutput\(event, output\)/s, 'output mounting replays retained imperative Plotly and structure events in order' );
 
 my $ui2_react_js = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.js) ) );
 my $ui2_react_css = read_file( File::Spec->catfile( $ui2, qw(react ui2-react.css) ) );
@@ -153,6 +154,7 @@ like( $ui2_react_source, qr/includeUnassignedOutputs.*?Additional results/s, 'op
 like( $ui2_react_source, qr/node\.setAttribute\("data-plot-fit", "pane"\).*?node\.matches\('\[data-output-type="plotly"\]'\).*?data-plot-fit/s, 'workbench applies fit-to-pane to the field root and a direct Plotly output' );
 like( $ui2_react_source, qr/function FieldGroup\(.*?fieldIds.*?plannedFields.*?bridge\.createFieldGroup\(plannedFields, role\).*?bridge\.fieldGroupMounted/s, 'workbench mounts whole native field groups without recreating unchanged declared fields' );
 like( $ui2_react_source, qr/function FieldGroup\(.*?onValuesReady.*?bridge\.fieldGroupMounted\(onValuesReady\)/s, 'input field groups publish native default values back to React after mounting' );
+like( $ui2_react_source, qr/role === "input".*?bridge\.fieldGroupMounted\(onValuesReady\).*?bridge\.outputGroupMounted\(\)/s, 'output field groups notify the bridge after their native hosts mount' );
 like( $ui2_react_source, qr/React\.useState<Record<string, unknown>>\(\s*\(\) => initialSubmitted\?\.values \|\| bridge\.syncValues\(\)/s, 'React workbenches begin with canonical UI2 values before conditional sections are composed' );
 like( $ui2_js, qr/state\.module = payload\.module;.*?state\.values = defaultInputPayload\(\);/s, 'UI2 seeds canonical module defaults before mounting a React workbench' );
 unlike( $ui2_react_source, qr/\[activeResult, inputRailCollapsed, runtime\.lastSequence, scheduleOutputResize, workspaceExpanded\]/, 'runtime events do not schedule global output resizes' );

@@ -10832,7 +10832,7 @@ function Kr({ fields: e, bridge: t, role: n = "input", fitPlot: r = !1, outputLa
 		l,
 		n
 	]), d = C.useCallback(() => {
-		n === "input" && t.fieldGroupMounted(o);
+		n === "input" ? t.fieldGroupMounted(o) : t.outputGroupMounted();
 	}, [
 		t,
 		o,

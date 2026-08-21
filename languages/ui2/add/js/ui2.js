@@ -73,6 +73,7 @@
     "tube"
   ];
   const NGL_FRAME_HISTORY_DEFAULT_MAX_BYTES = 64 * 1024 * 1024;
+  const PENDING_RUNTIME_OUTPUT_EVENT_LIMIT = 64;
   let plotlyLoadPromise = null;
   let nglLoadPromise = null;
   let katexLoadPromise = null;
@@ -102,6 +103,7 @@
     testScenarioListeners: new Set(),
     testScenarios: initialTestScenarioState(),
     runtimeOutputAvailability: {},
+    pendingRuntimeOutputEvents: {},
     pendingSwitch: "",
     viewReady: null,
     viewReadyGeneration: 0,
@@ -2523,6 +2525,7 @@
       createFieldGroup: (groupFields, role) => renderReactWorkbenchFieldGroup(groupFields, role),
       releaseField: releaseReactWorkbenchField,
       fieldGroupMounted: (onValuesReady) => scheduleReactWorkbenchSync(onValuesReady),
+      outputGroupMounted: () => replayPendingRuntimeOutputEvents(),
       syncValues: () => {
         syncValues();
         return cloneUi2Value(state.values);
@@ -7635,6 +7638,7 @@
 
   function clearRuntimeOutputAvailability() {
     state.runtimeOutputAvailability = {};
+    state.pendingRuntimeOutputEvents = {};
     notifyRuntimeOutputs();
   }
 
@@ -8359,8 +8363,45 @@
     markRuntimeOutputAvailable(event.topic);
     const output = document.querySelector(`[data-output-field-id="${cssEscape(event.topic)}"]`);
     if (!output) {
+      deferRuntimeOutputEvent(event);
       return;
     }
+    replayPendingRuntimeOutputEvents(event.topic, output);
+    renderJobEventToOutput(event, output);
+  }
+
+  function deferRuntimeOutputEvent(event) {
+    const topic = stringValue(event?.topic);
+    if (!topic) {
+      return;
+    }
+    const current = Array.isArray(state.pendingRuntimeOutputEvents[topic])
+      ? state.pendingRuntimeOutputEvents[topic]
+      : [];
+    const pending = ["snapshot", "replace", "clear"].includes(event.operation)
+      ? [event]
+      : [...current, event];
+    state.pendingRuntimeOutputEvents[topic] = pending.length > PENDING_RUNTIME_OUTPUT_EVENT_LIMIT
+      ? [pending[0], ...pending.slice(-(PENDING_RUNTIME_OUTPUT_EVENT_LIMIT - 1))]
+      : pending;
+  }
+
+  function replayPendingRuntimeOutputEvents(topic = "", mountedOutput = null) {
+    const topics = topic ? [topic] : Object.keys(state.pendingRuntimeOutputEvents);
+    topics.forEach((pendingTopic) => {
+      const output = mountedOutput && pendingTopic === topic
+        ? mountedOutput
+        : document.querySelector(`[data-output-field-id="${cssEscape(pendingTopic)}"]`);
+      const events = state.pendingRuntimeOutputEvents[pendingTopic];
+      if (!output || !Array.isArray(events) || !events.length) {
+        return;
+      }
+      delete state.pendingRuntimeOutputEvents[pendingTopic];
+      events.forEach((event) => renderJobEventToOutput(event, output));
+    });
+  }
+
+  function renderJobEventToOutput(event, output) {
     if (event.channel === "plot") {
       if (output.dataset.dynamicOutput === "true") {
         updateDynamicOutput(output, event.payload);
@@ -12178,6 +12219,8 @@
       resetModuleForm,
       createJobEventStore,
       normalizeJobEvent,
+      applyJobEventToOutput,
+      replayPendingRuntimeOutputEvents,
       beginRuntimeOutputContext,
       beginJobOutputContext,
       runtimeOutputToken,
