@@ -421,6 +421,27 @@ assert.strictEqual(
   "?ui2theme=dark&_switch=simulate%2Fmonomer_monte_carlo%2Fno_project_specified%2Fuuid-123",
   "same-window reattachment replaces ordinary navigation with the attached job route"
 );
+const sidebarModuleSelection = createNode("nav");
+const previousSidebarModule = createNode("button");
+previousSidebarModule.className = "ui2-module-button";
+previousSidebarModule.dataset.moduleId = "alpha";
+previousSidebarModule.setAttribute("aria-current", "page");
+const selectedSidebarModule = createNode("button");
+selectedSidebarModule.className = "ui2-module-button";
+selectedSidebarModule.dataset.moduleId = "beta";
+sidebarModuleSelection.appendChild(previousSidebarModule);
+sidebarModuleSelection.appendChild(selectedSidebarModule);
+hooks.syncSidebarModuleSelection(sidebarModuleSelection, "beta");
+assert.strictEqual(
+  previousSidebarModule.getAttribute("aria-current"),
+  null,
+  "sidebar navigation clears the previous module's selected marker after a module switch"
+);
+assert.strictEqual(
+  selectedSidebarModule.getAttribute("aria-current"),
+  "page",
+  "sidebar navigation marks the newly selected module during the same refresh"
+);
 hooks.state.moduleId = "monomer_monte_carlo";
 hooks.clearReattachRouteForProjectChange();
 assert.strictEqual(

@@ -2751,7 +2751,20 @@
         button?.setAttribute("aria-pressed", active ? "true" : "false");
       }
     });
+    if (sidebarModuleNavigationEnabled()) {
+      syncSidebarModuleSelection(nodes.menuNav, state.moduleId);
+    }
     renderModuleStrip();
+  }
+
+  function syncSidebarModuleSelection(container, moduleId) {
+    container?.querySelectorAll(".ui2-module-button").forEach((item) => {
+      if (item.dataset.moduleId === moduleId) {
+        item.setAttribute("aria-current", "page");
+      } else {
+        item.removeAttribute("aria-current");
+      }
+    });
   }
 
   function renderHeader(module, fields) {
@@ -12009,6 +12022,7 @@
       updateDynamicOutput,
       mergeSavedInputPayloads,
       menuVisibleForSession,
+      syncSidebarModuleSelection,
       moduleIdFromSwitchParts,
       switchTargetFromValue,
       replaceUi2Route,
