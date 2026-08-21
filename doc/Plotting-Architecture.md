@@ -46,7 +46,11 @@ scientific result.
 - fonts, theme colors, trace palette, line/marker styling, margins, and legend
   placement;
 - modebar, interaction, export, accessibility, empty-state presentation, and
-  final Plotly rendering.
+  final Plotly rendering. The standard UI2 toolbar keeps responsive rendering
+  and scroll-wheel zoom, uses PNG export at scale 2, removes box/lasso select
+  and retired Chart Studio controls, and enables compatible spike-line and
+  hover controls. A declared local Chart Editor remains an optional generic
+  addition.
 
 The producer supplies scientific titles, axis names, units, series names,
 axis scale, uncertainty, and subplot relationships. UI2 controls how those

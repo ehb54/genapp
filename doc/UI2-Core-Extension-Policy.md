@@ -81,6 +81,12 @@ dynamic, live, completed, and reattached figures. A legacy figure-level
 may explicitly disable the application default. Drivers must not duplicate the
 application default or supply standard toolbar layout.
 
+The standard toolbar is a neutral UI2 capability: it supplies responsive
+rendering, scroll-wheel zoom, scale-2 PNG export, ordinary navigation controls,
+and compatible hover/spike controls. It removes box/lasso selection and retired
+Chart Studio controls. UI2, rather than an application driver, also owns its
+contrast, keyboard access, and narrow-pane wrapping.
+
 Statistics and explanatory text belong in a declared caption or summary output
 by default. An in-plot annotation requires a documented, view-declared generic
 placement policy keyed by a named annotation; the driver must not send an

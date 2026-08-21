@@ -10292,6 +10292,7 @@
           : window.Plotly.newPlot(output, data, layout, config);
       })
       .then(() => {
+        improvePlotlyModebarAccessibility(output);
         observeFitPlotlyOutput(output);
         resizePlotlyOutputWhenVisible(output);
       })
@@ -10358,6 +10359,7 @@
     layout.font = Object.assign({}, defaults.font);
     layout.paper_bgcolor = defaults.paper_bgcolor;
     layout.plot_bgcolor = defaults.plot_bgcolor;
+    layout.modebar = Object.assign({}, defaults.modebar);
     applyPlotPresentationLayout(layout, plotPresentationProfileForOutput(output));
     return layout;
   }
@@ -10403,7 +10405,11 @@
       responsive: true,
       scrollZoom: true,
       displaylogo: false,
-      modeBarButtonsToRemove: ["select2d", "lasso2d"]
+      toImageButtonOptions: { format: "png", scale: 2 },
+      // Plotly 2.35.2 recognizes these compatibility aliases and only enables
+      // the matching controls for figure types that support them.
+      modeBarButtonsToAdd: ["togglespikelines", "v1hovermode", "hovercompare"],
+      modeBarButtonsToRemove: ["select2d", "lasso2d", "sendDataToCloud", "editInChartStudio"]
     };
     // Availability is module metadata; the shared renderer owns the button.
     if (editor?.enabled && editor.url) {
@@ -10805,6 +10811,29 @@
     }]);
   }
 
+  function improvePlotlyModebarAccessibility(output) {
+    const buttons = output?.querySelectorAll?.(".modebar-btn") || [];
+    buttons.forEach((button) => {
+      const title = button.getAttribute?.("data-title") || "Plot control";
+      button.setAttribute?.("role", "button");
+      button.setAttribute?.("tabindex", "0");
+      button.setAttribute?.("aria-label", title);
+      if (button.dataset?.ui2KeyboardReady === "true") {
+        return;
+      }
+      if (button.dataset) {
+        button.dataset.ui2KeyboardReady = "true";
+      }
+      button.addEventListener?.("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") {
+          return;
+        }
+        event.preventDefault?.();
+        button.click?.();
+      });
+    });
+  }
+
   function chartEditorLayout(layout) {
     const copy = JSON.parse(JSON.stringify(layout || {}));
     copy.autosize = true;
@@ -10827,10 +10856,17 @@
     return {
       autosize: true,
       height: 460,
-      margin: { l: 72, r: 32, t: 72, b: 72 },
+      // The extra top margin is a UI2-owned lane for a wrapped modebar.
+      // It keeps controls out of the scientific plotting area on narrow panes.
+      margin: { l: 72, r: 32, t: 96, b: 72 },
       paper_bgcolor: colors.panel,
       plot_bgcolor: colors.panel,
-      font: { color: colors.text }
+      font: { color: colors.text },
+      modebar: {
+        bgcolor: colors.panel,
+        color: colors.text,
+        activecolor: colors.text
+      }
     };
   }
 
@@ -12037,6 +12073,7 @@
       plotlyLayoutForOutput,
       plotlyConfigForOutput,
       applyPlotlyModebarHooks,
+      improvePlotlyModebarAccessibility,
       plotlyThemeColors,
       repeatIsCondition,
       repeatConditionTokens,

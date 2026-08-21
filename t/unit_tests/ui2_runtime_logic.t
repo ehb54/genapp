@@ -1438,7 +1438,7 @@ const fittedPlotLayout = hooks.plotlyLayoutForOutput(
 assert.strictEqual(fittedPlotLayout.width, undefined, "MMC fit-to-pane removes producer Plotly width from the client copy");
 assert.strictEqual(fittedPlotLayout.height, undefined, "MMC fit-to-pane removes producer Plotly height from the client copy");
 assert.strictEqual(fittedPlotLayout.autosize, true, "MMC fit-to-pane keeps Plotly autosizing enabled");
-assert.strictEqual(JSON.stringify(fittedPlotLayout.margin), JSON.stringify({ l: 72, r: 32, t: 72, b: 72 }), "UI2 owns fitted Plotly margins");
+assert.strictEqual(JSON.stringify(fittedPlotLayout.margin), JSON.stringify({ l: 72, r: 32, t: 96, b: 72 }), "UI2 reserves top margin for its fitted Plotly toolbar");
 assert.strictEqual(fittedPlotLayout.font.size, undefined, "UI2 does not inherit producer font sizing");
 assert.strictEqual(fittedPlotLayout.paper_bgcolor, "#1a201f", "UI2 owns fitted Plotly surface color");
 assert.strictEqual(fittedPlotLayout.plot_bgcolor, "#1a201f", "UI2 owns fitted Plotly plot color");
@@ -1468,9 +1468,11 @@ const centralizedPlotConfig = hooks.plotlyConfigForOutput({
   }
 });
 assert.strictEqual(centralizedPlotConfig.responsive, true, "UI2 owns Plotly responsive behavior");
+assert.strictEqual(centralizedPlotConfig.scrollZoom, true, "UI2 keeps Plotly scroll-wheel zoom");
 assert.strictEqual(centralizedPlotConfig.displaylogo, false, "UI2 owns Plotly branding behavior");
-assert.strictEqual(JSON.stringify(centralizedPlotConfig.modeBarButtonsToRemove), JSON.stringify(["select2d", "lasso2d"]), "UI2 owns the standard Plotly toolbar");
-assert.strictEqual(centralizedPlotConfig.modeBarButtonsToAdd, undefined, "UI2 ignores producer toolbar additions");
+assert.strictEqual(JSON.stringify(centralizedPlotConfig.toImageButtonOptions), JSON.stringify({ format: "png", scale: 2 }), "UI2 restores scale-2 PNG export");
+assert.strictEqual(JSON.stringify(centralizedPlotConfig.modeBarButtonsToRemove), JSON.stringify(["select2d", "lasso2d", "sendDataToCloud", "editInChartStudio"]), "UI2 removes selection and retired cloud controls");
+assert.strictEqual(JSON.stringify(centralizedPlotConfig.modeBarButtonsToAdd), JSON.stringify(["togglespikelines", "v1hovermode", "hovercompare"]), "UI2 restores compatible hover and spike controls without producer toolbar policy");
 assert.strictEqual(centralizedPlotConfig.genapp_chart_editor.enabled, true, "UI2 preserves explicit Chart Editor availability metadata");
 const nonOptedInPlotConfig = hooks.plotlyConfigForOutput({ data: [], layout: {} });
 assert.strictEqual(nonOptedInPlotConfig.genapp_chart_editor, undefined, "UI2 leaves non-opted-in application plots without the Chart Editor");
@@ -1495,12 +1497,21 @@ const handoffFigure = { data: [{ x: [1], y: [2] }], layout: { title: "Source" } 
 const handoffConfig = hooks.plotlyConfigForOutput(handoffFigure);
 hooks.applyPlotlyModebarHooks(handoffFigure, handoffConfig);
 hooks.applyPlotlyModebarHooks(handoffFigure, handoffConfig);
-assert.strictEqual(handoffConfig.modeBarButtonsToAdd.length, 1, "repeated UI2 rendering does not duplicate the Chart Editor button");
+assert.strictEqual(handoffConfig.modeBarButtonsToAdd.length, 4, "repeated UI2 rendering keeps the three standard additions and does not duplicate the Chart Editor button");
+const modebarOutput = createNode("div");
+const modebarButton = createNode("a");
+modebarButton.className = "modebar-btn";
+modebarButton.setAttribute("data-title", "Edit in Chart Editor");
+modebarOutput.appendChild(modebarButton);
+hooks.improvePlotlyModebarAccessibility(modebarOutput);
+assert.strictEqual(modebarButton.getAttribute("role"), "button", "UI2 gives Plotly modebar controls button semantics");
+assert.strictEqual(modebarButton.getAttribute("tabindex"), "0", "UI2 makes Plotly modebar controls keyboard reachable");
+assert.strictEqual(modebarButton.getAttribute("aria-label"), "Edit in Chart Editor", "UI2 exposes the Plotly modebar tooltip as an accessible name");
 const displayedFigure = {
   data: [{ x: [3, 4], y: [5, 6], name: "displayed" }],
   layout: { title: "Displayed", width: 900, height: 600 }
 };
-handoffConfig.modeBarButtonsToAdd[0].click(displayedFigure);
+handoffConfig.modeBarButtonsToAdd.find((button) => button?.name === "editInChartEditor").click(displayedFigure);
 const handoffKey = Object.keys(window.__localStorage).find((key) => key.startsWith("gace_"));
 const handoffSnapshot = JSON.parse(window.__localStorage[handoffKey]);
 assert.strictEqual(JSON.stringify(handoffSnapshot.data), JSON.stringify(displayedFigure.data), "Chart Editor handoff preserves the displayed trace data");
