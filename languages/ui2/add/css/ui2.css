@@ -1018,12 +1018,18 @@ code {
 .ui2-select,
 .ui2-textarea {
   width: 100%;
-  min-height: 2.4rem;
   border: 1px solid var(--ui2-border-strong);
   border-radius: 6px;
   background: var(--ui2-panel);
   color: var(--ui2-text);
   padding: 0.45rem 0.65rem;
+}
+
+.ui2-input,
+.ui2-select:not([multiple]):not([size]),
+.ui2-select[size="1"] {
+  min-height: 2.5rem;
+  height: 2.5rem;
 }
 
 .ui2-select {
@@ -1032,6 +1038,15 @@ code {
   padding-inline-end: 2rem;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.ui2-select:is([multiple], [size]:not([size="1"])) {
+  min-height: 6rem;
+  height: auto;
+  overflow: auto;
+  padding-inline-end: 0.65rem;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .ui2-textarea {
