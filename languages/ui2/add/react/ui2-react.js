@@ -11406,7 +11406,7 @@ function oi({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 							className: "ui2-submit-status",
 							id: "ui2-submit-status",
 							role: "status",
-							children: Me === "editing" ? "Not submitted" : Ne
+							children: Me === "editing" ? "" : Ne
 						})]
 					})
 				]

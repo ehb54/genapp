@@ -735,7 +735,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
                 )}
               </div>
               <div aria-live="polite" className="ui2-submit-status" id="ui2-submit-status" role="status">
-                {lifecycleState === "editing" ? "Not submitted" : lifecycleMessage}
+                {lifecycleState === "editing" ? "" : lifecycleMessage}
               </div>
             </div>
           )}

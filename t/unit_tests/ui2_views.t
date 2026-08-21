@@ -85,6 +85,8 @@ my $ui2_css = read_file( File::Spec->catfile( $ui2, qw(css ui2.css) ) );
 like( $session_handoff_php, qr/\$application\s*=\s*"ui2_views"/, 'generated handoff endpoint uses the fixture application session namespace' );
 unlike( $session_handoff_php, qr/dirname\(__DIR__, 2\)/, 'generated handoff endpoint does not mistake output for the application root' );
 like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declares a module submit endpoint helper' );
+like( $ui2_js, qr/function renderActionBar\(\).*?const status = el\("div", "ui2-submit-status"\);.*?status\.setAttribute\("role", "status"\)/s, 'native UI2 keeps an initially empty status live region for later lifecycle messages' );
+unlike( $ui2_js, qr/function renderActionBar\(\).*?Not submitted/s, 'native UI2 does not announce a redundant pristine submission state' );
 like( $ui2_js, qr/isReactWorkbenchView\(state\.view\) && renderReactWorkbench\(module, fields\)/, 'ui2 delegates modules to React only through explicit view metadata' );
 like( $ui2_js, qr/function renderReactWorkbench\(module, fields\).*?createFieldGroup:.*?renderReactWorkbenchFieldGroup\(groupFields, role\).*?fieldGroupMounted: \(onValuesReady\) => scheduleReactWorkbenchSync\(onValuesReady\).*?submit:.*?submitModule\(form\)/s, 'scientific workbench bridge mounts native field groups and republishes canonical defaults after synchronization' );
 like( $ui2_js, qr/function resetModuleForm\(form\).*?stopJobPolling\(\).*?clearRuntimeOutputs\(form\)/s, 'all UI2 reset paths cancel job delivery before clearing runtime output state' );
@@ -112,6 +114,9 @@ my $ui2_react_source = read_file( File::Spec->catfile( $repo_root, qw(languages 
 my $ui2_react_run_cue_source = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 react src runCue.ts) ) );
 my $ui2_react_results_visibility_source = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 react src resultsVisibility.ts) ) );
 like( $ui2_react_source, qr/import\s+\{\s*resultsVisibility\s*\}\s+from\s+"@\/resultsVisibility"/, 'React workbench imports the generic results-visibility helper' );
+like( $ui2_react_source, qr/lifecycleState === "editing" \? "" : lifecycleMessage/, 'React workbench leaves the pristine status live region empty while retaining lifecycle messages' );
+unlike( $ui2_react_source, qr/Not submitted/, 'React workbench does not render a redundant pristine submission state' );
+unlike( $ui2_react_js, qr/Not submitted/, 'generated React bundle omits the redundant pristine submission state' );
 like( $ui2_react_results_visibility_source, qr/showResultsPane:\s*showRunStatus\s*\|\|\s*hasAvailableOutput\s*\|\|\s*hasActionReview\s*\|\|\s*hasScenarioReview/s, 'generic visibility combines run context with explicit pre-submit review or available output state' );
 like( $ui2_react_source, qr/const \{ showResultsPane, showRunStatus \} = resultsVisibility\(\{.*?submitting,.*?hasRunContext,.*?hasAvailableOutput,/s, 'workbench derives results visibility from generic lifecycle and output availability signals' );
 like( $ui2_react_source, qr/\{showResultsPane && <main className="ui2-workbench-results-pane">/s, 'workbench omits the results pane before a run or explicit pre-submit result state exists' );

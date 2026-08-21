@@ -4291,7 +4291,7 @@
     submit.type = "submit";
     const reset = el("button", "ui2-button ui2-button-quiet", "Reset");
     reset.type = "reset";
-    const status = el("div", "ui2-submit-status", "Not submitted");
+    const status = el("div", "ui2-submit-status");
     status.id = "ui2-submit-status";
     status.setAttribute("role", "status");
     actions.append(submit, reset, status);
