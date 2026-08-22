@@ -359,6 +359,8 @@ like( $ui2_js, qr/function openLoginDialog\(options = \{\}\)/, 'ui2 runtime brid
 like( $ui2_js, qr/function openRegisterDialog\(\)/, 'ui2 runtime bridge keeps register on the ui2 page through the legacy sys_register module' );
 like( $ui2_js, qr/function applyLoginDialogMode\(overlay, mandatory\)/, 'ui2 login dialog can switch between mandatory and dismissible modes' );
 like( $ui2_js, qr/openLoginDialog\(\{ mandatory: true \}\)/, 'ui2 logged-out login action opens a mandatory login dialog' );
+like( $ui2_js, qr/const requestedPasswordReset = formData\.has\("forgotpassword"\);/, 'ui2 records whether a login submission requested a password reset' );
+like( $ui2_js, qr/if \(requestedPasswordReset && !state\.session\.logon\)[\s\S]*?forgotInput\.checked = false;[\s\S]*?passwordInput\.value = "";/, 'ui2 returns an accepted password-reset request to ordinary login mode' );
 like( $ui2_js, qr/await openRegisterDialog\(\);/, 'ui2 splash register action opens a dedicated register dialog' );
 like( $ui2_js, qr/await submitUtilityModule\(form, module, "ajax\/sys_config\/sys_register\.php"/, 'ui2 register dialog submits to the legacy register endpoint' );
 like( $ui2_js, qr/function runLegacyCaptchaGate\(\)/, 'ui2 register dialog has a legacy captcha gate helper' );

@@ -779,6 +779,7 @@
     const submit = form.querySelector('button[type="submit"]');
     const endpoint = legacyEndpoint("loginBase", "ajax/sys_config/sys_login.php");
     const formData = new FormData(form);
+    const requestedPasswordReset = formData.has("forgotpassword");
     formData.set("_window", window.name);
     if (state.pendingSwitch) {
       formData.set("_switch", state.pendingSwitch);
@@ -803,6 +804,17 @@
       state.session.loaded = true;
       renderSessionState();
       setSubmitStatus(status, payload.status || "Login successful", "ok");
+      if (requestedPasswordReset && !state.session.logon) {
+        const forgotInput = form.elements.forgotpassword;
+        const passwordInput = form.elements.password;
+        if (forgotInput) {
+          forgotInput.checked = false;
+        }
+        if (passwordInput) {
+          passwordInput.value = "";
+          passwordInput.focus();
+        }
+      }
       if (state.session.logon) {
         document.getElementById("ui2-login-dialog").hidden = true;
         hideSplashDialog();

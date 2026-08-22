@@ -2093,6 +2093,14 @@ assert(
   "logged-out login actions open a mandatory login dialog"
 );
 assert(
+  source.includes('const requestedPasswordReset = formData.has("forgotpassword");') &&
+    source.includes('if (requestedPasswordReset && !state.session.logon)') &&
+    source.includes('forgotInput.checked = false;') &&
+    source.includes('passwordInput.value = "";') &&
+    source.includes('passwordInput.focus();'),
+  "an accepted password-reset request returns UI2 to ordinary login mode before the next submission"
+);
+assert(
   source.includes('async function openRegisterDialog()'),
   "ui2 exposes a dedicated register dialog helper"
 );

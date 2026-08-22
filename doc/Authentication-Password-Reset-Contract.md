@@ -19,6 +19,9 @@ templates when the account uses a local password.
   its hash into the existing one-use password flow, removes the pending-reset
   fields, clears failed-login state, and requires the user to change password.
 - Expired pending credentials do not authenticate.
+- After UI2 receives an accepted reset response, it must return the login form
+  to ordinary-login mode before the next submission: clear the reset control
+  and password, preserve the user id, and focus the password field.
 
 ## Compatibility and testing
 
@@ -26,4 +29,5 @@ The existing login request shape, status keys, user-record password hash, and
 Settings password-change flow remain unchanged. Do not add application-specific
 reset paths or a second account store. Maintain executable coverage for failed
 mail, accepted mail, permanent-password cancellation, pending-credential
-promotion, expiry, and the three login-template variants.
+promotion, expiry, the three login-template variants, and the UI2 reset-to-login
+transition.
