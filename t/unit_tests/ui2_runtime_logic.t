@@ -355,8 +355,11 @@ const context = {
 };
 context.globalThis = context;
 
-const sessionStatus = createNode("span");
+const sessionStatus = createNode("button");
 sessionStatus.id = "ui2-session-status";
+const sessionProjectLabel = createNode("span");
+sessionProjectLabel.id = "ui2-session-project-label";
+sessionStatus.appendChild(sessionProjectLabel);
 document.body.appendChild(sessionStatus);
 
 vm.createContext(context);
@@ -525,13 +528,13 @@ assert.strictEqual(projectCreationData.get("_project"), "no_project_specified", 
 
 hooks.state.session = { logon: "Joseph", project: "" };
 hooks.renderSessionState();
-assert.strictEqual(sessionStatus.textContent, "No project", "UI2 header gives the fallback project a user-facing name");
+assert.strictEqual(sessionProjectLabel.textContent, "No project", "UI2 header gives the fallback project a user-facing name");
 hooks.state.session.project = "no_project_specified";
 hooks.renderSessionState();
-assert.strictEqual(sessionStatus.textContent, "No project", "UI2 header does not expose the legacy default project name");
+assert.strictEqual(sessionProjectLabel.textContent, "No project", "UI2 header does not expose the legacy default project name");
 hooks.state.session.project = "hello";
 hooks.renderSessionState();
-assert.strictEqual(sessionStatus.textContent, "Project: hello", "UI2 header displays selected project names");
+assert.strictEqual(sessionProjectLabel.textContent, "Project: hello", "UI2 header displays selected project names without replacing its selector cue");
 hooks.state.session.project = "  ";
 assert.strictEqual(hooks.sessionProjectName(), "no_project_specified", "UI2 treats blank project strings as the legacy default project");
 

@@ -22,7 +22,10 @@
         </a>
       </div>
       <div class="ui2-project-control" id="ui2-project-control">
-        <button class="ui2-project-chip" id="ui2-session-status" type="button" aria-haspopup="dialog">Select project</button>
+        <button class="ui2-project-chip" id="ui2-session-status" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="ui2-utility-overlay">
+          <span id="ui2-session-project-label">Select project</span>
+          <span class="ui2-project-chip-chevron" aria-hidden="true"></span>
+        </button>
       </div>
       <div class="ui2-topbar-utilities" aria-label="Application utilities">
         <button class="ui2-utility-button" id="ui2-jobs" type="button">Jobs</button>

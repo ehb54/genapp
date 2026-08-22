@@ -500,13 +500,33 @@ code {
   min-height: 2.2rem;
   display: inline-flex;
   align-items: center;
+  gap: 0.65rem;
   border: 1px solid var(--ui2-accent);
-  border-radius: 999px;
+  border-radius: 6px;
   background: var(--ui2-accent-soft);
   color: var(--ui2-accent-strong);
   cursor: pointer;
   font-weight: 700;
   padding: 0.36rem 0.75rem;
+}
+
+.ui2-project-chip-chevron {
+  width: 0.48rem;
+  height: 0.48rem;
+  flex: 0 0 auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-0.12rem) rotate(45deg);
+  transition: transform 120ms ease;
+}
+
+.ui2-project-chip[aria-expanded="true"] .ui2-project-chip-chevron {
+  transform: translateY(0.12rem) rotate(225deg);
+}
+
+.ui2-project-chip:focus-visible {
+  outline: 2px solid var(--ui2-focus-ring);
+  outline-offset: 2px;
 }
 
 .ui2-utility-button {

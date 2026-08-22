@@ -147,6 +147,7 @@
     moduleStrip: document.getElementById("ui2-module-strip"),
     navToggle: document.getElementById("ui2-nav-toggle"),
     sessionStatus: document.getElementById("ui2-session-status"),
+    sessionProjectLabel: document.getElementById("ui2-session-project-label"),
     projectControl: document.getElementById("ui2-project-control"),
     jobs: document.getElementById("ui2-jobs"),
     files: document.getElementById("ui2-files"),
@@ -479,8 +480,13 @@
 
   function renderSessionState(error) {
     const project = sessionProjectName();
+    const projectLabel = project === "no_project_specified" ? "No project" : `Project: ${project}`;
+    if (nodes.sessionProjectLabel) {
+      nodes.sessionProjectLabel.textContent = projectLabel;
+    } else if (nodes.sessionStatus) {
+      nodes.sessionStatus.textContent = projectLabel;
+    }
     if (nodes.sessionStatus) {
-      nodes.sessionStatus.textContent = project === "no_project_specified" ? "No project" : `Project: ${project}`;
       nodes.sessionStatus.title = state.session.logon
         ? `Logged on as ${state.session.logon}; change project`
         : (error ? `Session status unavailable: ${error.message}` : "Not logged on");
@@ -1296,7 +1302,10 @@
       }
       const projects = await loadProjectNames();
       const content = el("section", "ui2-project-dialog-content");
-      showUtilityOverlay("Projects", content, { dialogClass: "ui2-project-dialog" });
+      showUtilityOverlay("Projects", content, {
+        dialogClass: "ui2-project-dialog",
+        trigger: nodes.sessionStatus
+      });
       if (namedProjectNames(projects).length) {
         renderProjectChoices(content, projects, fields);
       } else {
@@ -1304,7 +1313,8 @@
       }
     } catch (error) {
       showUtilityOverlay("Projects", el("div", "ui2-error", `Could not load projects: ${error.message}`), {
-        dialogClass: "ui2-project-dialog"
+        dialogClass: "ui2-project-dialog",
+        trigger: nodes.sessionStatus
       });
     }
   }
@@ -1488,12 +1498,16 @@
     const overlay = el("div", "ui2-dialog-overlay ui2-utility-overlay");
     overlay.id = "ui2-utility-overlay";
     overlay._ui2OnClose = typeof options.onClose === "function" ? options.onClose : null;
+    overlay._ui2Trigger = options.trigger || null;
+    overlay._ui2ReturnFocus = options.returnFocus !== false;
+    overlay._ui2Trigger?.setAttribute("aria-expanded", "true");
     overlay.addEventListener("click", (event) => {
       if (event.target === overlay && options.allowBackdropClose !== false) {
         closeUtilityOverlay();
       }
     });
     const dialog = el("section", ["ui2-dialog", "ui2-utility-dialog", options.dialogClass || ""].filter(Boolean).join(" "));
+    dialog.tabIndex = -1;
     dialog.setAttribute("role", "dialog");
     dialog.setAttribute("aria-modal", "true");
     dialog.setAttribute("aria-labelledby", "ui2-utility-title");
@@ -1508,6 +1522,33 @@
     const body = el("div", "ui2-utility-body");
     body.appendChild(content);
     dialog.append(header, body);
+    overlay.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && options.allowEscapeClose !== false) {
+        event.preventDefault();
+        closeUtilityOverlay();
+        return;
+      }
+      if (event.key !== "Tab") {
+        return;
+      }
+      const focusable = Array.from(dialog.querySelectorAll(
+        'a[href], button:not([disabled]):not([hidden]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )).filter((control) => control.getAttribute("aria-hidden") !== "true");
+      if (!focusable.length) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    });
     overlay.appendChild(dialog);
     document.body.appendChild(overlay);
     close.focus();
@@ -1517,9 +1558,15 @@
     const overlay = document.getElementById("ui2-utility-overlay");
     if (overlay) {
       const onClose = overlay._ui2OnClose;
+      const trigger = overlay._ui2Trigger;
+      const returnFocus = overlay._ui2ReturnFocus;
+      trigger?.setAttribute("aria-expanded", "false");
       overlay.remove();
       if (typeof onClose === "function") {
         onClose();
+      }
+      if (returnFocus && trigger?.isConnected && !document.getElementById("ui2-utility-overlay")) {
+        trigger.focus();
       }
     }
   }

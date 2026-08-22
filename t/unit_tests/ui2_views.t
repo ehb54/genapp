@@ -61,7 +61,8 @@ like( $index, qr/class="ui2-nav-icon-button" id="ui2-nav-toggle"/, 'ui2 menu tog
 like( $index, qr/<a class="ui2-title-link" href="\?apprun=1" title="Open another [^"]+ instance">[\s\S]*?<h1>[^<]+<\/h1>[\s\S]*?<\/a>/, 'ui2 title exposes the generic authenticated new-window action' );
 like( $index, qr/id="ui2-module-strip"/, 'ui2 index exposes a generic module navigation context surface' );
 like( $index, qr/class="ui2-content-column"[\s\S]*?id="ui2-module-strip"/, 'ui2 module navigation context belongs beside the sidebar' );
-like( $index, qr/id="ui2-session-status"[^>]*>Select project/, 'ui2 exposes a direct project selector before workflow utilities' );
+like( $index, qr/id="ui2-session-status"[^>]*aria-haspopup="dialog"[^>]*aria-expanded="false"[^>]*aria-controls="ui2-utility-overlay"/, 'ui2 project selector exposes its dialog relationship and collapsed state' );
+like( $index, qr/id="ui2-session-project-label">Select project<\/span>[\s\S]*?class="ui2-project-chip-chevron" aria-hidden="true"/, 'ui2 project selector pairs its label with a decorative visible chevron' );
 like( $index, qr/id="ui2-feedback"/, 'ui2 index exposes the legacy feedback utility entry point' );
 like( $index, qr/id="ui2-ai-helper"[^>]*hidden/, 'ui2 index exposes an AI Helper entry point hidden until appconfig allows it' );
 like( $index, qr/id="ui2-docs"/, 'ui2 index exposes the legacy docs entry point' );
@@ -451,6 +452,9 @@ like( $ui2_js, qr/function renderUserConfigTool\(module, fields\)/, 'ui2 has a d
 like( $ui2_js, qr/UI2_PROJECT_SETTINGS_FIELD_IDS = new Set\(\["project", "newproject", "newprojectname", "newprojectdesc"\]\)/, 'ui2 keeps project selection and creation out of Settings' );
 like( $ui2_js, qr/projectContext\.type = "hidden".*?projectContext\.dataset\.fieldId = "project".*?projectContext\.value = sessionProjectName\(\)/s, 'ui2 Settings preserves the legacy current-project request context without displaying it' );
 like( $ui2_js, qr/function openProjectDialog\(\).*?loadProjectNames\(\).*?renderProjectChoices.*?renderProjectCreation/s, 'ui2 project control owns selection and first-project creation' );
+like( $ui2_js, qr/showUtilityOverlay\("Projects", content, \{[\s\S]*?trigger: nodes\.sessionStatus/, 'ui2 project dialog binds expanded state and focus return to its trigger' );
+like( $ui2_js, qr/overlay\.addEventListener\("keydown"[\s\S]*?event\.key === "Escape"[\s\S]*?event\.key !== "Tab"[\s\S]*?document\.activeElement === first[\s\S]*?document\.activeElement === last/, 'ui2 utility dialogs close with Escape and contain keyboard focus' );
+like( $ui2_js, qr/trigger\?\.setAttribute\("aria-expanded", "false"\)[\s\S]*?trigger\.focus\(\)/, 'ui2 utility dialogs restore trigger state and focus when closed' );
 like( $ui2_js, qr/function selectProjectFromDialog\(project, content, button\).*?setLegacyProject\(project\).*?closeUtilityOverlay\(\)/s, 'ui2 changes a project with one choice and closes the dialog after success' );
 like( $ui2_js, qr/function createLegacyProject\(name, description\).*?sys_user_config\.php.*?updateSessionIdentity/s, 'ui2 creates and selects projects through the existing legacy endpoint' );
 like( $ui2_js, qr/Continue with no project/, 'ui2 gives first-time users an explicit no-project path' );
@@ -554,6 +558,9 @@ like( $ui2_css, qr/--ui2-focus-ring:/, 'ui2 stylesheet exposes a semantic focus-
 like( $ui2_css, qr/\.ui2-button-action\s*\{[^}]*background:\s*var\(--ui2-accent-soft\);/s, 'ui2 stylesheet distinguishes declared actions from primary and quiet buttons' );
 like( $ui2_css, qr/\.ui2-button-action:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--ui2-focus-ring\);/s, 'ui2 action buttons expose an explicit keyboard focus treatment' );
 like( $ui2_css, qr/\.ui2-action-status\[data-status="ok"\]/, 'ui2 stylesheet scopes successful action status to the semantic success treatment' );
+like( $ui2_css, qr/\.ui2-project-chip-chevron\s*\{[^}]*border-right:\s*2px solid currentColor;[^}]*border-bottom:\s*2px solid currentColor;/s, 'ui2 project selector has a visible theme-compatible chevron' );
+like( $ui2_css, qr/\.ui2-project-chip:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--ui2-focus-ring\);/s, 'ui2 project selector has an explicit keyboard focus treatment' );
+like( $ui2_css, qr/\.ui2-project-chip\[aria-expanded="true"\] \.ui2-project-chip-chevron/, 'ui2 project selector changes its chevron when its dialog is open' );
 like( $ui2_css, qr/\.ui2-dialog-overlay/, 'ui2 stylesheet includes login dialog shell styles' );
 like( $ui2_css, qr/\.ui2-password-control.*?\.ui2-password-toggle.*?aria-pressed/s, 'ui2 stylesheet provides an accessible password visibility control' );
 like( $ui2_css, qr/\.ui2-legacy-message-dialog/, 'ui2 stylesheet includes legacy backend message dialog styles' );
