@@ -2335,18 +2335,23 @@ code {
   min-height: 30rem;
 }
 
-/* Plotly positions its modebar over the paper area. Let its groups wrap in
- * the UI2-owned top margin rather than run across a narrow plot or legend. */
+/* Plotly positions its modebar over the paper area. Keep it in a single
+ * UI2-owned top lane; narrow panes scroll that lane instead of adding rows. */
 .ui2-output-plotly .modebar {
   box-sizing: border-box;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  left: 0.25rem;
+  right: 0.25rem;
   justify-content: flex-end;
-  max-width: calc(100% - 0.5rem);
-  row-gap: 0.2rem;
+  max-width: none;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
 }
 
 .ui2-output-plotly .modebar-group {
+  flex: 0 0 auto;
   float: none;
 }
 

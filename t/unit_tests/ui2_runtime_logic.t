@@ -1480,7 +1480,7 @@ const fittedPlotLayout = hooks.plotlyLayoutForOutput(
 assert.strictEqual(fittedPlotLayout.width, undefined, "MMC fit-to-pane removes producer Plotly width from the client copy");
 assert.strictEqual(fittedPlotLayout.height, undefined, "MMC fit-to-pane removes producer Plotly height from the client copy");
 assert.strictEqual(fittedPlotLayout.autosize, true, "MMC fit-to-pane keeps Plotly autosizing enabled");
-assert.strictEqual(JSON.stringify(fittedPlotLayout.margin), JSON.stringify({ l: 72, r: 32, t: 96, b: 72 }), "UI2 reserves top margin for its fitted Plotly toolbar");
+assert.strictEqual(JSON.stringify(fittedPlotLayout.margin), JSON.stringify({ l: 72, r: 32, t: 96, b: 128 }), "UI2 reserves top and below-plot legend margins for its fitted Plotly layout");
 assert.strictEqual(fittedPlotLayout.font.size, undefined, "UI2 does not inherit producer font sizing");
 assert.strictEqual(fittedPlotLayout.paper_bgcolor, "#1a201f", "UI2 owns fitted Plotly surface color");
 assert.strictEqual(fittedPlotLayout.plot_bgcolor, "#1a201f", "UI2 owns fitted Plotly plot color");
@@ -1499,6 +1499,16 @@ const fixedPlotLayout = hooks.plotlyLayoutForOutput(
   { dataset: {} },
   producerPlotLayout
 );
+const producerLegendLayout = {
+  legend: { x: 0.98, y: 1, xanchor: "right", yanchor: "top" },
+  legend2: { x: 0.02, y: 0.35, xanchor: "left", yanchor: "top" }
+};
+const placedLegendLayout = hooks.plotlyLayoutForOutput({ dataset: {} }, producerLegendLayout);
+assert.strictEqual(placedLegendLayout.legend.orientation, "h", "UI2 places the primary Plotly legend below the plot as a horizontal row");
+assert.strictEqual(placedLegendLayout.legend.x, 0.5, "UI2 centers the primary Plotly legend below the plot");
+assert.strictEqual(placedLegendLayout.legend.y, -0.15, "UI2 replaces producer legend coordinates with a below-plot row");
+assert.strictEqual(placedLegendLayout.legend2.y, -0.3, "UI2 stacks later Plotly legend slots below the primary legend");
+assert.strictEqual(placedLegendLayout.margin.b, 184, "UI2 reserves bottom margin for every below-plot legend row");
 hooks.setPlotBackgroundModePreference("contrast_canvas", true);
 const contrastingPlotLayout = hooks.plotlyLayoutForOutput({ dataset: {} }, producerPlotLayout);
 assert.strictEqual(contrastingPlotLayout.paper_bgcolor, "#f7f8f6", "UI2 resolves a contrasting light canvas from a dark panel");

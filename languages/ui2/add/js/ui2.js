@@ -10469,6 +10469,7 @@
     layout.modebar = Object.assign({}, defaults.modebar);
     applyPlotPresentationLayout(layout, plotPresentationProfileForOutput(output));
     applyPlotBackgroundMode(layout);
+    applyPlotlyLegendPlacement(layout);
     return layout;
   }
 
@@ -10964,7 +10965,7 @@
     return {
       autosize: true,
       height: 460,
-      // The extra top margin is a UI2-owned lane for a wrapped modebar.
+      // The extra top margin is a UI2-owned lane for the single-row modebar.
       // It keeps controls out of the scientific plotting area on narrow panes.
       margin: { l: 72, r: 32, t: 96, b: 72 },
       paper_bgcolor: colors.panel,
@@ -11030,6 +11031,30 @@
   function plotlyLegendKeys(layout) {
     const keys = Object.keys(layout || {}).filter((key) => /^legend\d*$/.test(key));
     return keys.length ? keys : ["legend"];
+  }
+
+  function applyPlotlyLegendPlacement(layout) {
+    const legendKeys = plotlyLegendKeys(layout);
+    const defaultBottomMargin = 72;
+    const legendRowHeight = 56;
+    const legendRowOffset = 0.15;
+
+    layout.margin = Object.assign({}, layout.margin || {});
+    layout.margin.b = Math.max(
+      Number(layout.margin.b) || 0,
+      defaultBottomMargin + (legendKeys.length * legendRowHeight)
+    );
+
+    legendKeys.forEach((legendKey, index) => {
+      layout[legendKey] = Object.assign({}, layout[legendKey] || {}, {
+        orientation: "h",
+        x: 0.5,
+        xanchor: "center",
+        y: -legendRowOffset * (index + 1),
+        yanchor: "top"
+      });
+    });
+    return layout;
   }
 
   function plotlyThemeColors() {
@@ -12188,6 +12213,7 @@
       plotPresentationForOutput,
       plotPresentationProfileForOutput,
       applyPlotPresentationLayout,
+      applyPlotlyLegendPlacement,
       applyPlotPresentationStyle,
       plotlyDataForOutput,
       appendPlotlyOutput,

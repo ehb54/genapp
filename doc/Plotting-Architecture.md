@@ -49,8 +49,10 @@ scientific result.
   final Plotly rendering. The standard UI2 toolbar keeps responsive rendering
   and scroll-wheel zoom, uses PNG export at scale 2, removes box/lasso select
   and retired Chart Studio controls, and enables compatible spike-line and
-  hover controls. A declared local Chart Editor remains an optional generic
-  addition.
+  hover controls. It stays in a single horizontal lane and scrolls horizontally
+  in a narrow pane rather than wrapping. UI2 places every Plotly legend slot
+  below the plot in ordered horizontal rows and reserves the required bottom
+  margin. A declared local Chart Editor remains an optional generic addition.
 
 The producer supplies scientific titles, axis names, units, series names,
 axis scale, uncertainty, and subplot relationships. UI2 controls how those

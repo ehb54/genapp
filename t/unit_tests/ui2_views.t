@@ -96,6 +96,7 @@ like( $ui2_js, qr/function scheduleReactWorkbenchSync\(onValuesReady = null\).*?
 like( $ui2_js, qr/function resizeWorkbenchOutputs\(\).*?resizePlotlyOutputWhenVisible\(output\).*?resizeNglOutputWhenVisible\(output\).*?refreshNglOutputFrame\(output\)/s, 'workbench result groups resize existing Plotly and refresh active NGL frames' );
 like( $ui2_js, qr/function resizeNglStage\(stage\).*?stage\.handleResize\?\.\(\).*?requestNglRender\(stage\)/s, 'workbench result groups resize NGL stages through the shared helper' );
 like( $ui2_js, qr/function plotlyLayoutForOutput\(output, sourceLayout\).*?delete layout\.width;.*?delete layout\.height;.*?layout\.margin = Object\.assign\(\{\}, defaults\.margin\);/s, 'workbench Plotly layouts remove producer dimensions and use shared margins' );
+like( $ui2_js, qr/function applyPlotlyLegendPlacement\(layout\).*?orientation: "h".*?x: 0\.5.*?y: -legendRowOffset \* \(index \+ 1\)/s, 'ui2 runtime places every Plotly legend slot below the plot in ordered horizontal rows' );
 like( $ui2_js, qr/function plotlyFitMode\(output\).*?closest\?\.\("\[data-plot-fit\]"\)/s, 'dynamic Plotly children inherit their workbench pane-fit setting' );
 like( $ui2_js, qr/function observeFitPlotlyOutput\(output\).*?fittedAncestor.*?observer\.observe\(target\)/s, 'workbench fitted Plotly surfaces observe their stable pane container' );
 like( $ui2_js, qr/function releaseReactWorkbenchField\(fieldNode\).*?disconnectPlotlyOutputObserver.*?Plotly\.purge/s, 'workbench unmount cleans up Plotly resize observation and graph state' );
@@ -560,7 +561,7 @@ like( $ui2_css, qr/\.ui2-splash-footer/, 'ui2 stylesheet includes splash footer 
 like( $ui2_css, qr/\.ui2-ai-helper-usage/, 'ui2 stylesheet includes compact AI Helper token usage styles' );
 like( $ui2_css, qr/\.ui2-ai-helper-math\[data-display="true"\]/, 'ui2 stylesheet includes AI Helper display-equation styling' );
 like( $ui2_css, qr/\.ui2-output-plotly/, 'ui2 stylesheet includes a stable Plotly output surface' );
-like( $ui2_css, qr/\.ui2-output-plotly \.modebar\s*\{[^}]*flex-wrap:\s*wrap/s, 'ui2 stylesheet allows the Plotly modebar to wrap on narrow panes' );
+like( $ui2_css, qr/\.ui2-output-plotly \.modebar\s*\{[^}]*flex-wrap:\s*nowrap[^}]*overflow-x:\s*auto/s, 'ui2 stylesheet keeps the Plotly modebar in one scrollable row on narrow panes' );
 like( $ui2_css, qr/\.ui2-output-plotly \.modebar-btn:focus-visible/, 'ui2 stylesheet gives keyboard-focused Plotly controls a visible outline' );
 like( $ui2_css, qr/\.ui2-output-ngl\s*\{[^}]*white-space:\s*normal/s, 'ui2 stylesheet gives NGL outputs a non-text viewer container' );
 like( $ui2_css, qr/\.ui2-ngl-plot\s*\{[^}]*overscroll-behavior:\s*contain/s, 'NGL canvas contains scroll chaining at its visual boundary' );

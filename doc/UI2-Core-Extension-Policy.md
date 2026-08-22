@@ -85,7 +85,11 @@ The standard toolbar is a neutral UI2 capability: it supplies responsive
 rendering, scroll-wheel zoom, scale-2 PNG export, ordinary navigation controls,
 and compatible hover/spike controls. It removes box/lasso selection and retired
 Chart Studio controls. UI2, rather than an application driver, also owns its
-contrast, keyboard access, and narrow-pane wrapping.
+contrast and keyboard access. It remains a single horizontal row; when a narrow
+pane cannot show every control, that row scrolls horizontally instead of
+wrapping into the figure. UI2 places every Plotly legend slot below the plot in
+ordered horizontal rows and reserves the required bottom margin, so toolbar and
+legend geometry never overlap scientific data.
 
 Statistics and explanatory text belong in a declared caption or summary output
 by default. An in-plot annotation requires a documented, view-declared generic
