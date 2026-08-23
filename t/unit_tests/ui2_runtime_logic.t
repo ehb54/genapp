@@ -1483,7 +1483,7 @@ const fittedPlotLayout = hooks.plotlyLayoutForOutput(
 assert.strictEqual(fittedPlotLayout.width, undefined, "MMC fit-to-pane removes producer Plotly width from the client copy");
 assert.strictEqual(fittedPlotLayout.height, undefined, "MMC fit-to-pane removes producer Plotly height from the client copy");
 assert.strictEqual(fittedPlotLayout.autosize, true, "MMC fit-to-pane keeps Plotly autosizing enabled");
-assert.strictEqual(JSON.stringify(fittedPlotLayout.margin), JSON.stringify({ l: 72, r: 32, t: 96, b: 128 }), "UI2 reserves top and below-plot legend margins for its fitted Plotly layout");
+assert.strictEqual(JSON.stringify(fittedPlotLayout.margin), JSON.stringify({ l: 72, r: 32, t: 96, b: 128, autoexpand: true }), "UI2 reserves top and below-plot legend margins and permits Plotly to expand them");
 assert.strictEqual(fittedPlotLayout.font.size, undefined, "UI2 does not inherit producer font sizing");
 assert.strictEqual(fittedPlotLayout.paper_bgcolor, "#1a201f", "UI2 owns fitted Plotly surface color");
 assert.strictEqual(fittedPlotLayout.plot_bgcolor, "#1a201f", "UI2 owns fitted Plotly plot color");
@@ -1509,9 +1509,41 @@ const producerLegendLayout = {
 const placedLegendLayout = hooks.plotlyLayoutForOutput({ dataset: {} }, producerLegendLayout);
 assert.strictEqual(placedLegendLayout.legend.orientation, "h", "UI2 places the primary Plotly legend below the plot as a horizontal row");
 assert.strictEqual(placedLegendLayout.legend.x, 0.5, "UI2 centers the primary Plotly legend below the plot");
-assert.strictEqual(placedLegendLayout.legend.y, -0.15, "UI2 replaces producer legend coordinates with a below-plot row");
-assert.strictEqual(placedLegendLayout.legend2.y, -0.3, "UI2 stacks later Plotly legend slots below the primary legend");
+assert.strictEqual(placedLegendLayout.legend.xref, "container", "UI2 centers legends against the complete Plotly container");
+assert.strictEqual(placedLegendLayout.legend.yref, "container", "UI2 positions legends against the complete Plotly container");
+assert.strictEqual(placedLegendLayout.legend.y, 0, "UI2 initially anchors the primary Plotly legend at the container bottom");
+assert.strictEqual(placedLegendLayout.legend.yanchor, "bottom", "UI2 keeps wrapped legend rows above their container anchor");
 assert.strictEqual(placedLegendLayout.margin.b, 184, "UI2 reserves bottom margin for every below-plot legend row");
+const wrappedLegendOutput = {
+  _fullLayout: { margin: { b: 128 }, legend: {} },
+  clientHeight: 460,
+  getBoundingClientRect() { return { height: 460 }; },
+  querySelector(selector) {
+    return selector === ".legend"
+      ? { getBoundingClientRect() { return { height: 82 }; } }
+      : null;
+  }
+};
+const wrappedLegendUpdate = hooks.plotlyLegendFitUpdate(wrappedLegendOutput);
+assert.strictEqual(wrappedLegendUpdate["legend.yref"], "container", "wrapped legends remain positioned relative to the complete container");
+assert.strictEqual(wrappedLegendUpdate["legend.y"], 12 / 460, "wrapped legends retain bottom padding independent of their row count");
+assert.strictEqual(wrappedLegendUpdate["margin.b"], 178, "UI2 reserves the measured wrapped-legend height plus the x-axis band and gaps");
+const singleRowLegendUpdate = hooks.plotlyLegendFitUpdate({
+  _fullLayout: { margin: { b: 240 }, legend: {} },
+  clientHeight: 460,
+  querySelector(selector) {
+    return selector === ".legend"
+      ? { getBoundingClientRect() { return { height: 30 }; } }
+      : null;
+  }
+});
+assert.strictEqual(singleRowLegendUpdate["margin.b"], 128, "a wider single-row legend releases margin retained from an earlier wrapped layout");
+const noLegendUpdate = hooks.plotlyLegendFitUpdate({
+  _fullLayout: { margin: { b: 128 }, legend: {} },
+  clientHeight: 460,
+  querySelector() { return null; }
+});
+assert.strictEqual(noLegendUpdate, null, "plots without a rendered legend keep their existing layout");
 hooks.setPlotBackgroundModePreference("contrast_canvas", true);
 const contrastingPlotLayout = hooks.plotlyLayoutForOutput({ dataset: {} }, producerPlotLayout);
 assert.strictEqual(contrastingPlotLayout.paper_bgcolor, "#f7f8f6", "UI2 resolves a contrasting light canvas from a dark panel");

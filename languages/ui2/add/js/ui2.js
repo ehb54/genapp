@@ -10460,6 +10460,9 @@
       .then(() => {
         improvePlotlyModebarAccessibility(output);
         observeFitPlotlyOutput(output);
+        return fitPlotlyLegendsBelowPlot(output);
+      })
+      .then(() => {
         resizePlotlyOutputWhenVisible(output);
       })
       .catch((error) => {
@@ -10651,10 +10654,17 @@
     // participate in its own size calculation and can grow the pane.
     const refreshed = refreshPlotlyOutputIfNeeded(output);
     if (refreshed?.then) {
-      refreshed.then(() => window.Plotly?.Plots?.resize?.(output));
+      refreshed
+        .then(() => window.Plotly?.Plots?.resize?.(output))
+        .then(() => fitPlotlyLegendsBelowPlot(output));
       return;
     }
-    window.Plotly?.Plots?.resize?.(output);
+    const resized = window.Plotly?.Plots?.resize?.(output);
+    if (resized?.then) {
+      resized.then(() => fitPlotlyLegendsBelowPlot(output));
+      return;
+    }
+    fitPlotlyLegendsBelowPlot(output);
   }
 
   function rememberPlotlyAppend(output, indices, x_values, y_values, max_points) {
@@ -11096,24 +11106,73 @@
     const legendKeys = plotlyLegendKeys(layout);
     const defaultBottomMargin = 72;
     const legendRowHeight = 56;
-    const legendRowOffset = 0.15;
 
     layout.margin = Object.assign({}, layout.margin || {});
+    layout.margin.autoexpand = true;
     layout.margin.b = Math.max(
       Number(layout.margin.b) || 0,
       defaultBottomMargin + (legendKeys.length * legendRowHeight)
     );
 
-    legendKeys.forEach((legendKey, index) => {
+    legendKeys.forEach((legendKey) => {
       layout[legendKey] = Object.assign({}, layout[legendKey] || {}, {
         orientation: "h",
+        xref: "container",
         x: 0.5,
         xanchor: "center",
-        y: -legendRowOffset * (index + 1),
-        yanchor: "top"
+        yref: "container",
+        y: 0,
+        yanchor: "bottom"
       });
     });
     return layout;
+  }
+
+  function plotlyLegendFitUpdate(output) {
+    const layout = output?._fullLayout || output?.layout || {};
+    const outputHeight = Math.max(
+      1,
+      Math.round(output?.getBoundingClientRect?.().height || output?.clientHeight || 460)
+    );
+    const axisBandHeight = 72;
+    const axisLegendGap = 12;
+    const legendSlotMinimumHeight = 56;
+    const legendGap = 12;
+    const bottomPadding = 12;
+    const renderedLegends = plotlyLegendKeys(layout).map((legendKey) => {
+      const node = output?.querySelector?.(`.${cssEscape(legendKey)}`);
+      const height = Math.ceil(node?.getBoundingClientRect?.().height || 0);
+      return { legendKey, height };
+    }).filter(({ height }) => height > 0);
+    if (!renderedLegends.length) {
+      return null;
+    }
+
+    const update = {};
+    let bottomOffset = bottomPadding;
+    [...renderedLegends].reverse().forEach(({ legendKey, height }) => {
+      update[`${legendKey}.xref`] = "container";
+      update[`${legendKey}.x`] = 0.5;
+      update[`${legendKey}.xanchor`] = "center";
+      update[`${legendKey}.yref`] = "container";
+      update[`${legendKey}.y`] = bottomOffset / outputHeight;
+      update[`${legendKey}.yanchor`] = "bottom";
+      bottomOffset += height + legendGap;
+    });
+    update["margin.autoexpand"] = true;
+    update["margin.b"] = Math.max(
+      axisBandHeight + (renderedLegends.length * legendSlotMinimumHeight),
+      axisBandHeight + axisLegendGap + bottomOffset - legendGap
+    );
+    return update;
+  }
+
+  function fitPlotlyLegendsBelowPlot(output) {
+    const update = plotlyLegendFitUpdate(output);
+    if (!update || typeof window.Plotly?.relayout !== "function") {
+      return null;
+    }
+    return window.Plotly.relayout(output, update);
   }
 
   function plotlyThemeColors() {
@@ -12273,6 +12332,7 @@
       plotPresentationProfileForOutput,
       applyPlotPresentationLayout,
       applyPlotlyLegendPlacement,
+      plotlyLegendFitUpdate,
       applyPlotPresentationStyle,
       plotlyDataForOutput,
       appendPlotlyOutput,
