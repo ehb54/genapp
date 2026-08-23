@@ -125,6 +125,29 @@ between structures: its atom order and count must match its own topology.
 The current widget supports one primary structure component plus zero or more
 volume surfaces.
 
+### Direct component placement
+
+Direct placement is a separate, opt-in UI2 capability. Declare it on the NGL
+output field and name the ordinary input that will receive transforms:
+
+```json
+"viewer": {
+  "capabilities": { "component_placement": true },
+  "placement": { "transform_field": "component_transforms" }
+}
+```
+
+The output payload supplies at least two independent `components`. Each may
+provide `id`, `label`, `loadname`, `loadparams`, `representations`, `locked`,
+and `initial_transform`. The transform is a row-major homogeneous 4 by 4
+matrix. UI2 always treats the first component as locked.
+
+Users select a component and drag in the molecular canvas. Move mode translates
+in the screen plane; Shift-drag translates in depth. Rotate mode rotates the
+selected component. UI2 writes the complete matrix array as JSON to the
+declared field after every change. The receiving module owns validation and
+scientific interpretation. Non-opted NGL outputs keep their existing renderer.
+
 ## Structure payload
 
 The existing structure contract remains valid:

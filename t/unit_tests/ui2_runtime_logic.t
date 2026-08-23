@@ -1226,6 +1226,24 @@ assert.strictEqual(
   "../results/users/Joseph/model.pdb",
   "UI2 does not double-prefix already rebased NGL paths"
 );
+assert.deepStrictEqual(
+  hooks.nglPlacementComponents({ components: [
+    { id: "a", label: "Anchor", loadname: "a.pdb", locked: true },
+    { id: "b", label: "Moving", loadname: "b.pdb", initial_transform: [
+      1, 0, 0, 4, 0, 1, 0, 5, 0, 0, 1, 6, 0, 0, 0, 1
+    ] }
+  ] }).map((item) => [item.id, item.locked, item.initial_transform[3]]),
+  [["a", true, 0], ["b", false, 4]],
+  "UI2 normalizes opt-in placement components and locks the first part"
+);
+assert.strictEqual(
+  JSON.stringify(hooks.multiplyNglTransforms(
+    hooks.nglTranslationTransform(2, -3, 4),
+    hooks.nglRotationTransform("z", Math.PI / 2)
+  ).map((value) => (Math.round(value * 1e10) / 1e10) || 0)),
+  JSON.stringify([0, -1, 0, 2, 1, 0, 0, -3, 0, 0, 1, 4, 0, 0, 0, 1]),
+  "UI2 composes row-major rigid placement matrices without changing their interchange format"
+);
 assert.strictEqual(
   JSON.stringify(hooks.nglRepresentationSpecs(nglPayload)),
   JSON.stringify([{ name: "cartoon", type: "cartoon", params: { color: "blue" } }]),

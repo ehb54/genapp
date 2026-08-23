@@ -217,6 +217,18 @@
         },
         {
             "role"          : "output",
+            "id"            : "component_placement_ngl",
+            "label"         : "Component placement NGL",
+            "type"          : "ngl",
+            "viewer"        : {
+                "capabilities" : { "component_placement" : true },
+                "placement"    : { "transform_field" : "component_transforms" }
+            },
+            "width"         : "640px",
+            "height"        : "480px"
+        },
+        {
+            "role"          : "output",
             "id"            : "dynamic_structure",
             "label"         : "Dynamic Structure",
             "type"          : "atomicstructure",

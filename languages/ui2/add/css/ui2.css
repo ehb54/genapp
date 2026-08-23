@@ -2405,12 +2405,37 @@ code {
 .ui2-ngl-scene-controls,
 .ui2-ngl-layer-editor,
 .ui2-ngl-density-surface-list,
-.ui2-ngl-selection-inspector {
+.ui2-ngl-selection-inspector,
+.ui2-ngl-component-placement {
   flex-basis: 100%;
   border: 1px solid var(--ui2-border);
   border-radius: 4px;
   padding: 0.45rem 0.55rem;
   background: var(--ui2-panel-soft);
+}
+
+.ui2-ngl-component-placement {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1fr) minmax(8rem, 0.7fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.ui2-ngl-component-placement strong,
+.ui2-ngl-component-placement p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.ui2-ngl-component-placement select {
+  min-height: 2rem;
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .ui2-ngl-component-placement {
+    grid-template-columns: 1fr;
+  }
 }
 
 .ui2-ngl-file-trajectory {

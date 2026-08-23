@@ -8906,6 +8906,8 @@
     }
     output._ui2NglStage = null;
     output._ui2NglComponent = null;
+    output._ui2NglComponents = null;
+    output._ui2NglPlacement = null;
     output._ui2NglDensityComponent = null;
     output._ui2NglDensitySurface = null;
     output._ui2NglDensitySurfaces = null;
@@ -8947,8 +8949,203 @@
     }
   }
 
+  const NGL_IDENTITY_TRANSFORM = [
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1
+  ];
+
+  function normalizeNglComponentTransform(value) {
+    const numbers = Array.isArray(value) ? value.map(Number) : [];
+    if (numbers.length !== 16 || numbers.some((item) => !Number.isFinite(item))) {
+      return NGL_IDENTITY_TRANSFORM.slice();
+    }
+    return numbers;
+  }
+
+  function multiplyNglTransforms(first, second) {
+    const result = new Array(16).fill(0);
+    for (let row = 0; row < 4; row += 1) {
+      for (let column = 0; column < 4; column += 1) {
+        for (let inner = 0; inner < 4; inner += 1) {
+          result[row * 4 + column] += first[row * 4 + inner] * second[inner * 4 + column];
+        }
+      }
+    }
+    return result;
+  }
+
+  function nglTranslationTransform(x, y, z) {
+    const matrix = NGL_IDENTITY_TRANSFORM.slice();
+    matrix[3] = Number(x) || 0;
+    matrix[7] = Number(y) || 0;
+    matrix[11] = Number(z) || 0;
+    return matrix;
+  }
+
+  function nglRotationTransform(axis, radians) {
+    const matrix = NGL_IDENTITY_TRANSFORM.slice();
+    const cosine = Math.cos(radians);
+    const sine = Math.sin(radians);
+    if (axis === "x") {
+      matrix[5] = cosine; matrix[6] = -sine;
+      matrix[9] = sine; matrix[10] = cosine;
+    } else if (axis === "y") {
+      matrix[0] = cosine; matrix[2] = sine;
+      matrix[8] = -sine; matrix[10] = cosine;
+    } else {
+      matrix[0] = cosine; matrix[1] = -sine;
+      matrix[4] = sine; matrix[5] = cosine;
+    }
+    return matrix;
+  }
+
+  function nglPlacementComponents(payload) {
+    const values = Array.isArray(payload?.components) ? payload.components : [];
+    return values.filter((item) => item?.loadname).map((item, index) => ({
+      id: stringValue(item.id || `component_${index + 1}`),
+      label: stringValue(item.label || item.name || `Component ${index + 1}`),
+      loadname: item.loadname,
+      loadparams: Object.assign({}, item.loadparams || {}),
+      representations: Array.isArray(item.representations) ? item.representations : null,
+      locked: item.locked === true || index === 0,
+      initial_transform: normalizeNglComponentTransform(item.initial_transform)
+    }));
+  }
+
+  function applyNglPlacementTransform(record) {
+    if (!record?.component || !window.NGL?.Matrix4) return;
+    const matrix = new window.NGL.Matrix4();
+    matrix.set(...record.transform);
+    record.component.setTransform?.(matrix);
+  }
+
+  function syncNglPlacementInput(output) {
+    const fieldId = stringValue(
+      nglViewerConfig(output).placement?.transform_field).trim();
+    if (!fieldId || !Array.isArray(output._ui2NglPlacement)) return;
+    applyInputPayload({
+      [fieldId]: JSON.stringify(
+        output._ui2NglPlacement.map((record) => record.transform))
+    });
+  }
+
+  function renderNglPlacementControls(output, plot) {
+    const buttons = output.querySelector(".ui2-ngl-buttons");
+    const records = output._ui2NglPlacement || [];
+    if (!buttons || records.length < 2) return;
+    const panel = el("section", "ui2-ngl-component-placement");
+    const title = el("strong", null, "Place structure parts");
+    const guidance = el("p", "ui2-muted",
+      "Keep the first part fixed. Move each later part so its N terminus faces the preceding C terminus; the pre-submit review checks reach and clashes.");
+    const picker = document.createElement("select");
+    records.forEach((record, index) => picker.appendChild(
+      new Option(`${record.label}${record.locked ? " (fixed)" : ""}`, String(index))));
+    picker.value = records[0].locked && records[1] ? "1" : "0";
+    const mode = document.createElement("select");
+    mode.append(new Option("Move (drag)", "move"), new Option("Rotate (drag)", "rotate"),
+      new Option("Inspect view", "inspect"));
+    const status = el("span", "ui2-muted", "Drag in the molecule view. Shift-drag moves in depth.");
+    const reset = el("button", "ui2-button ui2-button-quiet", "Reset selected");
+    reset.type = "button";
+    reset.addEventListener("click", () => {
+      const record = records[Number(picker.value)];
+      if (!record || record.locked) return;
+      record.transform = record.initialTransform.slice();
+      applyNglPlacementTransform(record);
+      syncNglPlacementInput(output);
+      requestNglRender(output._ui2NglStage);
+    });
+    panel.append(title, guidance, picker, mode, reset, status);
+    buttons.prepend(panel);
+
+    let pointer = null;
+    const down = (event) => {
+      const record = records[Number(picker.value)];
+      if (mode.value === "inspect" || !record || record.locked) return;
+      pointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
+      plot.setPointerCapture?.(event.pointerId);
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    const move = (event) => {
+      if (!pointer || event.pointerId !== pointer.id) return;
+      const record = records[Number(picker.value)];
+      const dx = event.clientX - pointer.x;
+      const dy = event.clientY - pointer.y;
+      pointer.x = event.clientX;
+      pointer.y = event.clientY;
+      if (mode.value === "move") {
+        const step = event.shiftKey
+          ? nglTranslationTransform(0, 0, -dy * 0.08)
+          : nglTranslationTransform(dx * 0.08, -dy * 0.08, 0);
+        record.transform = multiplyNglTransforms(step, record.transform);
+      } else {
+        record.transform = multiplyNglTransforms(
+          nglRotationTransform("y", dx * 0.01), record.transform);
+        record.transform = multiplyNglTransforms(
+          nglRotationTransform("x", dy * 0.01), record.transform);
+      }
+      applyNglPlacementTransform(record);
+      syncNglPlacementInput(output);
+      requestNglRender(output._ui2NglStage);
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    const up = (event) => {
+      if (!pointer || event.pointerId !== pointer.id) return;
+      pointer = null;
+      plot.releasePointerCapture?.(event.pointerId);
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    plot.addEventListener("pointerdown", down, true);
+    plot.addEventListener("pointermove", move, true);
+    plot.addEventListener("pointerup", up, true);
+    plot.addEventListener("pointercancel", up, true);
+  }
+
+  function renderNglComponentPlacement(output, payload, plot, renderRevision) {
+    const specs = nglPlacementComponents(payload);
+    const stage = new window.NGL.Stage(plot.id, nglViewerStageParams(output));
+    stage.mouseControls?.preset?.(nglViewerMousePreset(output));
+    output._ui2NglStage = stage;
+    return Promise.all(specs.map((spec) => stage.loadFile(
+      normalizeNglLoadName(spec.loadname), spec.loadparams).then((component) => {
+        const representations = spec.representations || [{ type: "cartoon", params: {} }];
+        representations.forEach((representation) => component.addRepresentation(
+          representation.type || "cartoon", representation.params || {}));
+        const record = {
+          component,
+          id: spec.id,
+          label: spec.label,
+          locked: spec.locked,
+          initialTransform: spec.initial_transform.slice(),
+          transform: spec.initial_transform.slice()
+        };
+        applyNglPlacementTransform(record);
+        return record;
+      }))).then((records) => {
+        if (output._ui2NglRenderRevision !== renderRevision) {
+          stage.dispose?.();
+          return null;
+        }
+        output._ui2NglPlacement = records;
+        output._ui2NglComponents = records.map((record) => record.component);
+        output._ui2NglComponent = records[0]?.component || null;
+        stage.autoView?.();
+        renderNglPlacementControls(output, plot);
+        syncNglPlacementInput(output);
+        resizeNglOutputWhenVisible(output);
+        return records;
+      });
+  }
+
   function renderNglOutput(output, value) {
     const payload = parseNglPayload(value);
+    const placementEnabled = nglViewerConfig(output).capabilities?.component_placement === true;
+    const placementSpecs = placementEnabled ? nglPlacementComponents(payload) : [];
     const structurePayload = payload?.structure || payload;
     const densityPayload = payload?.density || null;
     // Density is deliberately transient: final output/reattachment does not
@@ -8956,7 +9153,7 @@
     const liveDensityPayload = densityPayload?.loadname
       ? densityPayload
       : output._ui2_ngl_density_payload;
-    if (!structurePayload?.loadname) {
+    if (!structurePayload?.loadname && placementSpecs.length < 2) {
       renderTextOutput(output, value);
       return;
     }
@@ -9007,6 +9204,9 @@
       .then(() => {
         if (output._ui2NglRenderRevision !== renderRevision) {
           return null;
+        }
+        if (placementSpecs.length >= 2) {
+          return renderNglComponentPlacement(output, payload, plot, renderRevision);
         }
         const stage = new window.NGL.Stage(plot.id, nglViewerStageParams(output));
         // NGL 0.10.4 accepts the preset in stage parameters inconsistently.
@@ -12313,6 +12513,11 @@
       nglRepresentationSpecs,
       nglRepresentationKey,
       nglRepresentationStoreKey,
+      normalizeNglComponentTransform,
+      multiplyNglTransforms,
+      nglTranslationTransform,
+      nglRotationTransform,
+      nglPlacementComponents,
       attachNglFileTrajectory,
       attachNglEmbeddedTrajectory,
       nglTrajectoryFrameCount,
