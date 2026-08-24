@@ -1298,6 +1298,102 @@ assert.strictEqual(
   "UI2 keeps layered selected NGL payloads on distinct layer keys"
 );
 
+const psfPdbPayload = {
+  loadname: "results/users/Joseph/component.psf",
+  loadparams: { ext: "psf" },
+  trajectory: {
+    loadname: "results/users/Joseph/component.pdb",
+    loadparams: { ext: "pdb", asTrajectory: true }
+  }
+};
+assert.strictEqual(
+  hooks.nglIsPsfPdbPair(psfPdbPayload),
+  true,
+  "UI2 recognizes an explicit PSF topology paired with a PDB structure"
+);
+assert.strictEqual(
+  hooks.nglIsPsfPdbPair({
+    loadname: "results/reference.pdb",
+    loadparams: { ext: "pdb" },
+    trajectory: { loadname: "results/accepted.dcd", loadparams: { ext: "dcd" } }
+  }),
+  false,
+  "ordinary structure and trajectory payloads retain the generic NGL path"
+);
+const inferredPdbBondStore = { count: 12 };
+const exactPsfBondStore = { count: 10 };
+const pdbBackboneBondStore = { count: 3 };
+const psfBondApplyCalls = [];
+const displayedPdbComponent = {
+  stage: {},
+  structure: {
+    atomCount: 4,
+    bondStore: inferredPdbBondStore,
+    backboneBondStore: pdbBackboneBondStore,
+    finalizeBonds() { psfBondApplyCalls.push("finalize"); }
+  },
+  rebuildRepresentations() { psfBondApplyCalls.push("rebuild"); }
+};
+hooks.applyNglPsfBondTopology(displayedPdbComponent, {
+  atomCount: 4,
+  bondStore: exactPsfBondStore
+});
+assert.strictEqual(
+  displayedPdbComponent.structure.bondStore,
+  exactPsfBondStore,
+  "PSF/PDB display replaces PDB-inferred chemical bonds with the exact PSF table"
+);
+assert.strictEqual(
+  displayedPdbComponent.structure.backboneBondStore,
+  pdbBackboneBondStore,
+  "PSF/PDB display preserves the PDB parser's backbone links and display metadata"
+);
+assert.deepStrictEqual(
+  psfBondApplyCalls,
+  ["finalize", "rebuild"],
+  "PSF/PDB display finalizes the substituted bonds before rebuilding representations"
+);
+assert.throws(
+  () => hooks.applyNglPsfBondTopology({
+    structure: { atomCount: 3, finalizeBonds() {} }
+  }, { atomCount: 4, bondStore: exactPsfBondStore }),
+  /PDB structure atom count \\(3\\) does not match PSF topology atom count \\(4\\)/,
+  "PSF/PDB display fails clearly when atom ordering cannot be reconciled by count"
+);
+
+const psfPdbLoadCalls = [];
+const loadedPdbComponent = {
+  structure: { atomCount: 1, bondStore: {}, finalizeBonds() {} }
+};
+const loadedPsfTopology = { atomCount: 1, bondStore: { exact: true } };
+window.NGL = {
+  autoLoad(loadname, options) {
+    psfPdbLoadCalls.push(["topology", loadname, options]);
+    return Promise.resolve(loadedPsfTopology);
+  }
+};
+hooks.loadNglPsfPdbComponent({
+  loadFile(loadname, options) {
+    psfPdbLoadCalls.push(["display", loadname, options]);
+    return Promise.resolve(loadedPdbComponent);
+  }
+}, psfPdbPayload).then((component) => {
+  assert.strictEqual(component, loadedPdbComponent, "PSF/PDB loading returns the displayed PDB component");
+  assert.strictEqual(
+    JSON.stringify(psfPdbLoadCalls),
+    JSON.stringify([
+      ["display", "../results/users/Joseph/component.pdb", { ext: "pdb" }],
+      ["topology", "../results/users/Joseph/component.psf", { ext: "psf" }]
+    ]),
+    "PSF/PDB loading parses the PDB as the displayed structure and the PSF only as topology"
+  );
+  assert.strictEqual(
+    component.structure.bondStore,
+    loadedPsfTopology.bondStore,
+    "PSF/PDB loading applies exact topology bonds to the displayed PDB"
+  );
+});
+
 const parsedTrajectoryFrames = { kind: "parsed-dcd-frames" };
 const trajectoryLoadCalls = [];
 const trajectoryAttachCalls = [];

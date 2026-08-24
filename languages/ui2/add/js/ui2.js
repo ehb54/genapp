@@ -9242,9 +9242,9 @@
     const stage = new window.NGL.Stage(plot.id, nglViewerStageParams(output));
     stage.mouseControls?.preset?.(nglViewerMousePreset(output));
     output._ui2NglStage = stage;
-    return Promise.all(specs.map((spec) => stage.loadFile(
-      normalizeNglLoadName(spec.loadname), spec.loadparams).then((component) => {
-        const coordinates = spec.trajectory?.loadname
+    return Promise.all(specs.map((spec) => loadNglPsfPdbComponent(stage, spec)
+      .then((component) => {
+        const coordinates = spec.trajectory?.loadname && !nglIsPsfPdbPair(spec)
           ? attachNglPlacementCoordinates(component, spec.trajectory)
           : Promise.resolve(null);
         return coordinates.then(() => {
@@ -9278,6 +9278,53 @@
         resizeNglOutputWhenVisible(output);
         return records;
       });
+  }
+
+  function nglIsPsfPdbPair(payload) {
+    return stringValue(payload?.loadparams?.ext).toLowerCase() === "psf"
+      && Boolean(payload?.trajectory?.loadname)
+      && stringValue(payload?.trajectory?.loadparams?.ext).toLowerCase() === "pdb";
+  }
+
+  function applyNglPsfBondTopology(component, topology) {
+    const structure = component?.structure;
+    const structureAtomCount = Number(structure?.atomCount ?? structure?.atomStore?.count);
+    const topologyAtomCount = Number(topology?.atomCount ?? topology?.atomStore?.count);
+    if (!Number.isInteger(structureAtomCount) || structureAtomCount < 1
+        || !Number.isInteger(topologyAtomCount) || topologyAtomCount < 1
+        || structureAtomCount !== topologyAtomCount) {
+      throw new Error(
+        `PDB structure atom count (${structureAtomCount}) does not match PSF topology atom count (${topologyAtomCount})`);
+    }
+    if (!topology?.bondStore || typeof structure?.finalizeBonds !== "function") {
+      throw new Error("PSF topology did not contain an applicable chemical bond table");
+    }
+    // Keep the PDB parser's coordinates, residue records, trace data, and
+    // virtual backbone links. Replace only its inferred chemical bonds with
+    // the exact table from the matching PSF.
+    structure.bondStore = topology.bondStore;
+    structure.finalizeBonds();
+    component.rebuildRepresentations?.();
+    requestNglRender(component.stage);
+    return component;
+  }
+
+  function loadNglPsfPdbComponent(stage, payload) {
+    if (!nglIsPsfPdbPair(payload)) {
+      return stage.loadFile(
+        normalizeNglLoadName(payload.loadname), payload.loadparams || {});
+    }
+    if (typeof window.NGL?.autoLoad !== "function") {
+      return Promise.reject(new Error("NGL topology loader is unavailable"));
+    }
+    const pdbLoadParams = Object.assign({}, payload.trajectory.loadparams || {});
+    delete pdbLoadParams.asTrajectory;
+    return Promise.all([
+      stage.loadFile(
+        normalizeNglLoadName(payload.trajectory.loadname), pdbLoadParams),
+      window.NGL.autoLoad(
+        normalizeNglLoadName(payload.loadname), payload.loadparams || {})
+    ]).then(([component, topology]) => applyNglPsfBondTopology(component, topology));
   }
 
   function attachNglPlacementCoordinates(component, trajectoryPayload) {
@@ -9402,7 +9449,7 @@
         // has ever been opened.
         stage.mouseControls?.preset?.(nglViewerMousePreset(output));
         output._ui2NglStage = stage;
-        return stage.loadFile(topologyLoadName, structurePayload.loadparams || {}).then((component) => {
+        return loadNglPsfPdbComponent(stage, structurePayload).then((component) => {
           if (output._ui2NglRenderRevision !== renderRevision) {
             stage.dispose?.();
             return null;
@@ -9423,10 +9470,13 @@
           renderNglSelectionInspector(output, component, structurePayload);
           const embeddedTrajectory = attachNglEmbeddedTrajectory(
             output, component, structurePayload, renderRevision);
+          const fileTrajectoryPayload = nglIsPsfPdbPair(structurePayload)
+            ? null
+            : structurePayload.trajectory || payload.trajectory;
           return Promise.resolve(embeddedTrajectory).then(() => attachNglFileTrajectory(
             output,
             component,
-            structurePayload.trajectory || payload.trajectory,
+            fileTrajectoryPayload,
             renderRevision
           )).then(() => {
             if (liveDensityPayload?.loadname) {
@@ -12714,6 +12764,9 @@
       nglPlacementGuides,
       nglTransformPoint,
       nglPlacementGuideStatus,
+      nglIsPsfPdbPair,
+      applyNglPsfBondTopology,
+      loadNglPsfPdbComponent,
       attachNglPlacementCoordinates,
       applyNglParsedPdbCoordinates,
       attachNglFileTrajectory,
