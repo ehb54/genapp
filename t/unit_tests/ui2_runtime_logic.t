@@ -1309,17 +1309,28 @@ window.NGL = {
 };
 const placementCoordinateApplyCalls = [];
 const placementCoordinateFrames = [new Float32Array([1, 2, 3])];
+const placementChemicalBondStore = { count: 22 };
+const placementBackboneBondStore = { count: 1 };
 window.NGL.autoLoad = (loadname, options) => {
   trajectoryLoadCalls.push([loadname, options]);
-  return Promise.resolve({ frames: placementCoordinateFrames });
+  return Promise.resolve({
+    frames: placementCoordinateFrames,
+    backboneBondStore: placementBackboneBondStore,
+    atomSetDict: { backbone: { clone() { return { source: "backbone-dict" }; } } },
+    atomSetCache: { __backbone: { clone() { return { source: "backbone-cache" }; } } }
+  });
 };
-hooks.attachNglPlacementCoordinates({
-  structure: {
+const placementTopologyStructure = {
     atomCount: 1,
+    bondStore: placementChemicalBondStore,
+    atomSetDict: {},
+    atomSetCache: {},
     updatePosition(coordinates) { placementCoordinateApplyCalls.push(["position", coordinates]); },
     refreshPosition() { placementCoordinateApplyCalls.push(["refresh"]); }
-  },
-  updateRepresentations(options) { placementCoordinateApplyCalls.push(["representations", options]); }
+};
+hooks.attachNglPlacementCoordinates({
+  structure: placementTopologyStructure,
+  rebuildRepresentations() { placementCoordinateApplyCalls.push(["rebuild"]); }
 }, {
   loadname: "results/users/Joseph/component.pdb",
   loadparams: { ext: "pdb", asTrajectory: true }
@@ -1334,9 +1345,21 @@ hooks.attachNglPlacementCoordinates({
     "placement applies the first parsed PDB frame to the independently loaded topology"
   );
   assert.strictEqual(
+    placementTopologyStructure.backboneBondStore, placementBackboneBondStore,
+    "placement retains PSF chemical bonds while adopting the PDB backbone display links"
+  );
+  assert.strictEqual(
+    placementTopologyStructure.bondStore, placementChemicalBondStore,
+    "placement does not replace the PSF chemical bond table"
+  );
+  assert.deepStrictEqual(
+    placementTopologyStructure.atomSetDict.backbone, { source: "backbone-dict" },
+    "placement adopts a cloned PDB backbone atom mask"
+  );
+  assert.strictEqual(
     JSON.stringify(placementCoordinateApplyCalls.slice(1)),
-    JSON.stringify([["refresh"], ["representations", { position: true }]]),
-    "placement refreshes topology bounds and representation positions"
+    JSON.stringify([["refresh"], ["rebuild"]]),
+    "placement refreshes topology bounds and rebuilds representations"
   );
 });
 assert.throws(

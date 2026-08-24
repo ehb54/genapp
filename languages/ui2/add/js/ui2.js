@@ -9309,8 +9309,23 @@
         `PDB coordinate atom count (${coordinateAtomCount}) does not match topology atom count (${topologyAtomCount})`);
     }
     structure.updatePosition(coordinates);
+    const backboneAtomSet = loaded?.atomSetDict?.backbone;
+    const cachedBackboneAtomSet = loaded?.atomSetCache?.__backbone;
+    if (loaded?.backboneBondStore && backboneAtomSet && cachedBackboneAtomSet) {
+      // PSF owns the exact chemical bondStore, while NGL's PDB parser owns the
+      // virtual backbone links and atom mask needed by cartoon representations.
+      // Atom-count validation above makes these index-based display records safe
+      // to transfer without replacing the PSF chemical topology.
+      structure.backboneBondStore = loaded.backboneBondStore;
+      structure.atomSetDict.backbone = backboneAtomSet.clone();
+      structure.atomSetCache.__backbone = cachedBackboneAtomSet.clone();
+    }
     structure.refreshPosition?.();
-    component.updateRepresentations?.({ position: true });
+    if (typeof component.rebuildRepresentations === "function") {
+      component.rebuildRepresentations();
+    } else {
+      component.updateRepresentations?.({ position: true });
+    }
     requestNglRender(component.stage);
     return component;
   }
