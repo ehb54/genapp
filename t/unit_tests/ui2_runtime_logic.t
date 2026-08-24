@@ -1229,12 +1229,15 @@ assert.strictEqual(
 assert.deepStrictEqual(
   hooks.nglPlacementComponents({ components: [
     { id: "a", label: "Anchor", loadname: "a.pdb", locked: true },
-    { id: "b", label: "Moving", loadname: "b.pdb", initial_transform: [
+    { id: "b", label: "Moving", loadname: "b.psf",
+      trajectory: { loadname: "b.pdb", loadparams: { ext: "pdb", asTrajectory: true } },
+      initial_transform: [
       1, 0, 0, 4, 0, 1, 0, 5, 0, 0, 1, 6, 0, 0, 0, 1
     ] }
-  ] }).map((item) => [item.id, item.locked, item.initial_transform[3]]),
-  [["a", true, 0], ["b", false, 4]],
-  "UI2 normalizes opt-in placement components and locks the first part"
+  ] }).map((item) => [item.id, item.locked, item.initial_transform[3],
+    item.trajectory?.loadparams?.asTrajectory || false]),
+  [["a", true, 0, false], ["b", false, 4, true]],
+  "UI2 normalizes placement components, including optional coordinate sources"
 );
 assert.strictEqual(
   JSON.stringify(hooks.multiplyNglTransforms(
@@ -1303,6 +1306,39 @@ window.NGL = {
     trajectoryLoadCalls.push([loadname, options]);
     return Promise.resolve(parsedTrajectoryFrames);
   }
+};
+const placementCoordinateAttachCalls = [];
+const placementCoordinateFrames = [new Float32Array([1, 2, 3])];
+window.NGL.autoLoad = (loadname, options) => {
+  trajectoryLoadCalls.push([loadname, options]);
+  return Promise.resolve({ frames: placementCoordinateFrames });
+};
+hooks.attachNglPlacementCoordinates({
+  addTrajectory(frames, options) {
+    placementCoordinateAttachCalls.push([frames, options]);
+    return { trajectory: { setFrame(frame) { placementCoordinateAttachCalls.push([frame]); } } };
+  }
+}, {
+  loadname: "results/users/Joseph/component.pdb",
+  loadparams: { ext: "pdb", asTrajectory: true }
+}).then(() => {
+  assert.strictEqual(
+    JSON.stringify(trajectoryLoadCalls.shift()),
+    JSON.stringify(["../results/users/Joseph/component.pdb", { ext: "pdb", asTrajectory: true }]),
+    "placement coordinate sources are parsed through NGL autoLoad"
+  );
+  assert.strictEqual(
+    placementCoordinateAttachCalls[0][0], placementCoordinateFrames,
+    "placement attaches PDB coordinate frames to the independently loaded topology"
+  );
+  assert.deepStrictEqual(
+    placementCoordinateAttachCalls[1], [0],
+    "placement applies the first attached coordinate frame before rendering"
+  );
+});
+window.NGL.autoLoad = (loadname, options) => {
+  trajectoryLoadCalls.push([loadname, options]);
+  return Promise.resolve(parsedTrajectoryFrames);
 };
 const trajectoryOutput = {
   dataset: {},

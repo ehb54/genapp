@@ -9011,6 +9011,11 @@
       label: stringValue(item.label || item.name || `Component ${index + 1}`),
       loadname: item.loadname,
       loadparams: Object.assign({}, item.loadparams || {}),
+      trajectory: item.trajectory?.loadname ? {
+        loadname: item.trajectory.loadname,
+        loadparams: Object.assign({}, item.trajectory.loadparams || {}),
+        trajectoryparams: Object.assign({}, item.trajectory.trajectoryparams || {})
+      } : null,
       representations: Array.isArray(item.representations) ? item.representations : null,
       locked: item.locked === true || index === 0,
       initial_transform: normalizeNglComponentTransform(item.initial_transform)
@@ -9239,19 +9244,24 @@
     output._ui2NglStage = stage;
     return Promise.all(specs.map((spec) => stage.loadFile(
       normalizeNglLoadName(spec.loadname), spec.loadparams).then((component) => {
-        const representations = spec.representations || [{ type: "cartoon", params: {} }];
-        representations.forEach((representation) => component.addRepresentation(
-          representation.type || "cartoon", representation.params || {}));
-        const record = {
-          component,
-          id: spec.id,
-          label: spec.label,
-          locked: spec.locked,
-          initialTransform: spec.initial_transform.slice(),
-          transform: spec.initial_transform.slice()
-        };
-        applyNglPlacementTransform(record);
-        return record;
+        const coordinates = spec.trajectory?.loadname
+          ? attachNglPlacementCoordinates(component, spec.trajectory)
+          : Promise.resolve(null);
+        return coordinates.then(() => {
+          const representations = spec.representations || [{ type: "cartoon", params: {} }];
+          representations.forEach((representation) => component.addRepresentation(
+            representation.type || "cartoon", representation.params || {}));
+          const record = {
+            component,
+            id: spec.id,
+            label: spec.label,
+            locked: spec.locked,
+            initialTransform: spec.initial_transform.slice(),
+            transform: spec.initial_transform.slice()
+          };
+          applyNglPlacementTransform(record);
+          return record;
+        });
       }))).then((records) => {
         if (output._ui2NglRenderRevision !== renderRevision) {
           stage.dispose?.();
@@ -9267,6 +9277,24 @@
         syncNglPlacementInput(output);
         resizeNglOutputWhenVisible(output);
         return records;
+      });
+  }
+
+  function attachNglPlacementCoordinates(component, trajectoryPayload) {
+    if (!trajectoryPayload?.loadname || typeof component?.addTrajectory !== "function") {
+      return Promise.resolve(null);
+    }
+    if (typeof window.NGL?.autoLoad !== "function") {
+      return Promise.reject(new Error("NGL coordinate loader is unavailable"));
+    }
+    const loadParams = Object.assign({}, trajectoryPayload.loadparams || {});
+    const trajectoryParams = Object.assign({}, trajectoryPayload.trajectoryparams || {});
+    return window.NGL.autoLoad(
+      normalizeNglLoadName(trajectoryPayload.loadname), loadParams).then((loaded) => {
+        const frames = Array.isArray(loaded?.frames) ? loaded.frames : loaded;
+        const trajectoryComponent = component.addTrajectory(frames, trajectoryParams);
+        const trajectory = trajectoryComponent?.trajectory || trajectoryComponent;
+        return Promise.resolve(trajectory?.setFrame?.(0)).then(() => trajectoryComponent);
       });
   }
 
@@ -9410,10 +9438,11 @@
     const loadName = normalizeNglLoadName(trajectoryPayload.loadname);
     return Promise.resolve()
       .then(() => loader(loadName, loadParams))
-      .then((frames) => {
+      .then((loaded) => {
         if (output._ui2NglRenderRevision !== renderRevision) {
           return null;
         }
+        const frames = Array.isArray(loaded?.frames) ? loaded.frames : loaded;
         // NGL's StructureComponent expects parsed trajectory frames here, not
         // a URL string.  autoLoad owns URL fetching and parser selection.
         output._ui2NglTrajectory = component.addTrajectory(frames, trajectoryParams);
@@ -12649,6 +12678,7 @@
       nglPlacementGuides,
       nglTransformPoint,
       nglPlacementGuideStatus,
+      attachNglPlacementCoordinates,
       attachNglFileTrajectory,
       attachNglEmbeddedTrajectory,
       nglTrajectoryFrameCount,

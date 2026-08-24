@@ -139,8 +139,12 @@ output field and name the ordinary input that will receive transforms:
 
 The output payload supplies at least two independent `components`. Each may
 provide `id`, `label`, `loadname`, `loadparams`, `representations`, `locked`,
-and `initial_transform`. The transform is a row-major homogeneous 4 by 4
-matrix. UI2 always treats the first component as locked.
+`initial_transform`, and an optional `trajectory` coordinate source. This lets
+an opted-in producer load an exact topology such as PSF and attach a matching
+PDB with `{"ext": "pdb", "asTrajectory": true}` for coordinates. Atom order
+and atom count must match. Components without `trajectory` retain the existing
+single-file behavior. The transform is a row-major homogeneous 4 by 4 matrix.
+UI2 always treats the first component as locked.
 
 The controls start in Inspect view, where dragging changes the camera and does
 not alter component transforms. Users must explicitly select Move or Rotate
