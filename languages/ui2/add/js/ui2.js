@@ -9156,7 +9156,16 @@
     const mode = document.createElement("select");
     mode.append(new Option("Move (drag)", "move"), new Option("Rotate (drag)", "rotate"),
       new Option("Inspect view", "inspect"));
-    const status = el("span", "ui2-muted", "Drag in the molecule view. Shift-drag moves in depth.");
+    mode.value = "inspect";
+    const status = el("span", "ui2-muted",
+      "Inspect mode controls the camera. Choose Move or Rotate to change the selected component.");
+    mode.addEventListener("change", () => {
+      status.textContent = mode.value === "inspect"
+        ? "Inspect mode controls the camera. Choose Move or Rotate to change the selected component."
+        : mode.value === "move"
+          ? "Drag to move the selected component. Shift-drag moves in depth."
+          : "Drag to rotate the selected component.";
+    });
     const guideReadout = el("div", "ui2-ngl-placement-guide-readout");
     output._ui2NglPlacementGuideReadout = guideReadout;
     const reset = el("button", "ui2-button ui2-button-quiet", "Reset selected");

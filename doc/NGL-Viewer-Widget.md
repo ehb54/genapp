@@ -142,11 +142,13 @@ provide `id`, `label`, `loadname`, `loadparams`, `representations`, `locked`,
 and `initial_transform`. The transform is a row-major homogeneous 4 by 4
 matrix. UI2 always treats the first component as locked.
 
-Users select a component and drag in the molecular canvas. Move mode translates
-in the screen plane; Shift-drag translates in depth. Rotate mode rotates the
-selected component. UI2 writes the complete matrix array as JSON to the
-declared field after every change. The receiving module owns validation and
-scientific interpretation. Non-opted NGL outputs keep their existing renderer.
+The controls start in Inspect view, where dragging changes the camera and does
+not alter component transforms. Users must explicitly select Move or Rotate
+before direct placement is enabled. Move mode translates in the screen plane;
+Shift-drag translates in depth. Rotate mode rotates the selected component.
+UI2 writes the complete matrix array as JSON to the declared field after every
+placement change. The receiving module owns validation and scientific
+interpretation. Non-opted NGL outputs keep their existing renderer.
 
 The fixed first component is identified separately and is not offered in the
 movable-component selector. A producer may also opt into generic live distance
