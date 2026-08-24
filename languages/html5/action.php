@@ -14,6 +14,78 @@ function action_error_exit( $msg ) {
     exit();
 }
 
+function action_file_requests( $field ) {
+    $id = $field[ 'id' ];
+    if ( !isset( $field[ 'repeat' ] ) ||
+         !preg_match( '/^[a-zA-Z0-9_]+$/', $field[ 'repeat' ] ) ||
+         !isset( $_REQUEST[ $field[ 'repeat' ] ] ) ) {
+        return array( array( 'submit_id' => $id, 'index' => null ) );
+    }
+    $controller = $field[ 'repeat' ];
+    $count_value = $_REQUEST[ $controller ];
+    $count_value = is_array( $count_value ) ? reset( $count_value ) : $count_value;
+    $count = intval( $count_value );
+    if ( $count < 0 || $count > 1000 ) {
+        action_error_exit( "Invalid repeat count for $controller" );
+    }
+    $requests = array();
+    for ( $index = 0; $index < $count; $index++ ) {
+        $requests[] = array(
+            'submit_id' => "$controller-$id-$index",
+            'index'     => $index
+        );
+    }
+    return $requests;
+}
+
+function action_file_label( $field, $request ) {
+    $label = isset( $field[ 'label' ] ) ? $field[ 'label' ] : $field[ 'id' ];
+    return $request[ 'index' ] === null
+        ? $label
+        : $label . " row " . ( $request[ 'index' ] + 1 );
+}
+
+function action_stage_file_request( $field, $request, $files_dir, $user_root ) {
+    $submit_id = $request[ 'submit_id' ];
+    $label = action_file_label( $field, $request );
+    if ( isset( $_FILES[ $submit_id ] ) &&
+         $_FILES[ $submit_id ][ 'error' ] != UPLOAD_ERR_NO_FILE ) {
+        if ( $_FILES[ $submit_id ][ 'error' ] != UPLOAD_ERR_OK ) {
+            action_error_exit( "Could not upload $label" );
+        }
+        $name = basename( $_FILES[ $submit_id ][ 'name' ] );
+        if ( !strlen( $name ) ) {
+            action_error_exit( "$label has no filename" );
+        }
+        $safe_id = preg_replace( '/[^a-zA-Z0-9_.-]+/', '_', $submit_id );
+        $target = "$files_dir/$safe_id-$name";
+        if ( !move_uploaded_file( $_FILES[ $submit_id ][ 'tmp_name' ], $target ) ) {
+            action_error_exit( "Could not stage uploaded $label ($name)" );
+        }
+        return $target;
+    }
+    $alt_key = "_selaltval_$submit_id";
+    if ( !isset( $_REQUEST[ $alt_key ] ) ||
+         !isset( $_REQUEST[ $_REQUEST[ $alt_key ] ] ) ) {
+        return null;
+    }
+    $value_key = $_REQUEST[ $alt_key ];
+    $encoded = $_REQUEST[ $value_key ];
+    $encoded = is_array( $encoded ) ? reset( $encoded ) : $encoded;
+    $decoded = base64_decode( $encoded, true );
+    if ( $decoded === false || substr( $decoded, 0, 2 ) != './' ) {
+        action_error_exit( "Invalid server selection for $label" );
+    }
+    $path = realpath( $user_root . DIRECTORY_SEPARATOR . substr( $decoded, 2 ) );
+    if ( $path === false || strpos( $path, $user_root . DIRECTORY_SEPARATOR ) !== 0 ||
+         !is_file( $path ) ) {
+        action_error_exit( "Selected server file for $label is missing: " . basename( $decoded ) );
+    }
+    unset( $_REQUEST[ $value_key ] );
+    unset( $_REQUEST[ $alt_key ] );
+    return $path;
+}
+
 function action_stage_declared_files( $modjson, $action_dir, $user_dir ) {
     if ( !isset( $modjson[ 'fields' ] ) || !is_array( $modjson[ 'fields' ] ) ) {
         return;
@@ -29,40 +101,27 @@ function action_stage_declared_files( $modjson, $action_dir, $user_dir ) {
             continue;
         }
         $id = $field[ 'id' ];
-        if ( isset( $_FILES[ $id ] ) && $_FILES[ $id ][ 'error' ] != UPLOAD_ERR_NO_FILE ) {
-            if ( $_FILES[ $id ][ 'error' ] != UPLOAD_ERR_OK ) {
-                action_error_exit( "Error uploading file for $id" );
+        $requests = action_file_requests( $field );
+        $repeated = count( $requests ) > 0 && $requests[0][ 'index' ] !== null;
+        $staged = array();
+        foreach ( $requests as $request ) {
+            $path = action_stage_file_request(
+                $field, $request, $files_dir, $user_root );
+            if ( $path === null ) {
+                if ( isset( $field[ 'required' ] ) &&
+                     ( $field[ 'required' ] === true || $field[ 'required' ] == 'true' ) ) {
+                    action_error_exit( "No file selected for " .
+                        action_file_label( $field, $request ) );
+                }
+                $path = '';
             }
-            $name = basename( $_FILES[ $id ][ 'name' ] );
-            if ( !strlen( $name ) ) {
-                action_error_exit( "Uploaded file for $id has no filename" );
-            }
-            $target = "$files_dir/$id-$name";
-            if ( !move_uploaded_file( $_FILES[ $id ][ 'tmp_name' ], $target ) ) {
-                action_error_exit( "Could not stage uploaded file for $id" );
-            }
-            $_REQUEST[ $id ] = $target;
-            continue;
+            $staged[] = $path;
         }
-        $alt_key = "_selaltval_$id";
-        if ( !isset( $_REQUEST[ $alt_key ] ) ||
-             !isset( $_REQUEST[ $_REQUEST[ $alt_key ] ] ) ) {
-            continue;
+        if ( $repeated ) {
+            $_REQUEST[ $id ] = $staged;
+        } elseif ( count( $staged ) && strlen( $staged[0] ) ) {
+            $_REQUEST[ $id ] = $staged[0];
         }
-        $encoded = $_REQUEST[ $_REQUEST[ $alt_key ] ];
-        $encoded = is_array( $encoded ) ? reset( $encoded ) : $encoded;
-        $decoded = base64_decode( $encoded, true );
-        if ( $decoded === false || substr( $decoded, 0, 2 ) != './' ) {
-            action_error_exit( "Invalid server file selection for $id" );
-        }
-        $path = realpath( $user_root . DIRECTORY_SEPARATOR . substr( $decoded, 2 ) );
-        if ( $path === false || strpos( $path, $user_root . DIRECTORY_SEPARATOR ) !== 0 ||
-             !is_file( $path ) ) {
-            action_error_exit( "Missing server file selection for $id" );
-        }
-        $_REQUEST[ $id ] = $path;
-        unset( $_REQUEST[ $_REQUEST[ $alt_key ] ] );
-        unset( $_REQUEST[ $alt_key ] );
     }
 }
 

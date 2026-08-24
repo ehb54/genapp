@@ -28,6 +28,10 @@ like( $endpoint, qr/type' \] == 'action'/, 'action endpoint recognizes action fi
 like( $endpoint, qr/action_execution_command/, 'action endpoint can use a declared application resource' );
 like( $endpoint, qr/proc_open\( \$action_command/, 'action endpoint runs the resolved action command' );
 like( $endpoint, qr/action_stage_declared_files/, 'action endpoint stages declared local or server file inputs for actions' );
+like( $endpoint, qr/function action_file_requests.*?"\$controller-\$id-\$index"/s, 'action endpoint resolves row-specific repeated file submit ids' );
+like( $endpoint, qr/function action_stage_file_request.*?\$_FILES\[ \$submit_id \].*?_selaltval_\$submit_id/s, 'action endpoint stages repeated local and server file selections through the same row id' );
+like( $endpoint, qr/\$repeated.*?\$_REQUEST\[ \$id \] = \$staged/s, 'action endpoint replaces repeated display values with ordered resolved paths' );
+like( $endpoint, qr/No file selected for.*?action_file_label/s, 'action endpoint reports the missing repeated row in plain language' );
 like( $endpoint, qr/\$action_dir = "\$rdir\/_actions\/action_demo\/\$action_id"/, 'action endpoint uses per-user project action directory' );
 unlike( $endpoint, qr/jobrun\.php|sys_joblocked|joblog/, 'action endpoint stays outside job manager submit path' );
 

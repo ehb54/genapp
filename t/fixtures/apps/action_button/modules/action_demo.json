@@ -12,6 +12,22 @@
             "default" : "alpha"
         },
         {
+            "role"     : "input",
+            "id"       : "part_count",
+            "label"    : "Part count",
+            "type"     : "integer",
+            "default"  : 2,
+            "repeater" : "true"
+        },
+        {
+            "role"     : "input",
+            "id"       : "part_file",
+            "label"    : "Part file",
+            "type"     : "lrfile",
+            "repeat"   : "part_count",
+            "required" : "true"
+        },
+        {
             "role"       : "input",
             "id"         : "precheck",
             "label"      : "Input check",
