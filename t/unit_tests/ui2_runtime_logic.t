@@ -1244,6 +1244,31 @@ assert.strictEqual(
   JSON.stringify([0, -1, 0, 2, 1, 0, 0, -3, 0, 0, 1, 4, 0, 0, 0, 1]),
   "UI2 composes row-major rigid placement matrices without changing their interchange format"
 );
+const placementGuides = hooks.nglPlacementGuides({ placement_guides: [{
+  id: "join-1", label: "Anchor C to Moving N",
+  from: { component_id: "a", atom_index: 4 },
+  to: { component_id: "b", atom_index: 7 },
+  target_distance_angstrom: 1.33,
+  warning_distance_angstrom: 8,
+  maximum_distance_angstrom: 10
+}] }, hooks.nglPlacementComponents({ components: [
+  { id: "a", loadname: "a.pdb" }, { id: "b", loadname: "b.pdb" }
+] }));
+assert.deepStrictEqual(
+  [placementGuides[0].from.atom_index, placementGuides[0].to.atom_index],
+  [4, 7],
+  "UI2 accepts capability-gated generic placement guide endpoints"
+);
+assert.strictEqual(
+  JSON.stringify(hooks.nglTransformPoint([
+    1, 0, 0, 4, 0, 1, 0, 5, 0, 0, 1, 6, 0, 0, 0, 1
+  ], [1, 2, 3])),
+  JSON.stringify([5, 7, 9]),
+  "UI2 applies component transforms to placement-guide atom positions"
+);
+assert.strictEqual(hooks.nglPlacementGuideStatus(7, placementGuides[0]), "plausible");
+assert.strictEqual(hooks.nglPlacementGuideStatus(9, placementGuides[0]), "stretched");
+assert.strictEqual(hooks.nglPlacementGuideStatus(11, placementGuides[0]), "out of reach");
 assert.strictEqual(
   JSON.stringify(hooks.nglRepresentationSpecs(nglPayload)),
   JSON.stringify([{ name: "cartoon", type: "cartoon", params: { color: "blue" } }]),

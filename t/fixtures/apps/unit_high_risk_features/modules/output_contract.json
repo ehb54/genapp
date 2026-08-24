@@ -221,7 +221,10 @@
             "label"         : "Component placement NGL",
             "type"          : "ngl",
             "viewer"        : {
-                "capabilities" : { "component_placement" : true },
+                "capabilities" : {
+                    "component_placement" : true,
+                    "placement_guides" : true
+                },
                 "placement"    : { "transform_field" : "component_transforms" }
             },
             "width"         : "640px",

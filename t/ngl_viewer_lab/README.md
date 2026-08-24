@@ -52,3 +52,6 @@ The generated UI2 widget also has an opt-in component-placement mode for
 builder modules. It uses the multi-structure `components` payload, locks the
 first component, and exports one row-major rigid 4 by 4 matrix per component
 to a declared ordinary input. See `doc/NGL-Viewer-Widget.md` for the contract.
+The optional `placement_guides` capability adds producer-declared atom-to-atom
+distance connectors that update with those transforms; it does not calculate
+linker or clash science in the browser.

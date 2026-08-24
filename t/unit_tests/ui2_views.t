@@ -327,6 +327,8 @@ like( $ui2_js, qr/function attachNglWheelGuard\(output\).*?event\.ctrlKey \|\| e
 like( $ui2_js, qr/function renderNglOutput\(output, value\).*?new window\.NGL\.Stage\(plot\.id, nglViewerStageParams\(output\)\).*?stage\.mouseControls\?\.preset\?\.\(nglViewerMousePreset\(output\)\)/s, 'NGL applies the configured mouse preset before viewer settings are opened' );
 like( $ui2_js, qr/function renderNglComponentPlacement\(output, payload, plot, renderRevision\).*?Promise\.all\(specs\.map.*?stage\.loadFile.*?applyNglPlacementTransform.*?renderNglPlacementControls/s, 'opt-in NGL component placement loads independent structures into one shared stage' );
 like( $ui2_js, qr/function renderNglPlacementControls\(output, plot\).*?Place structure parts.*?pointerdown.*?pointermove.*?syncNglPlacementInput/s, 'generic NGL placement provides direct move and rotate interaction and writes matrices to the declared input' );
+like( $ui2_js, qr/function renderNglPlacementControls\(output, plot\).*?records\.filter\(\(record\) => !record\.locked\).*?Fixed reference:.*?updateNglPlacementGuides/s, 'component placement identifies the fixed reference separately and offers movement only for unlocked parts' );
+like( $ui2_js, qr/function updateNglPlacementGuides\(output\).*?Shape\("placement distance guides"\).*?addCylinder.*?target.*?maximum/s, 'component placement redraws live endpoint distance guides with producer-supplied limits' );
 like( $ui2_js, qr/placementEnabled.*?capabilities\?\.component_placement === true.*?placementSpecs\.length >= 2/s, 'multi-component placement is capability-gated so ordinary NGL viewers retain their existing path' );
 like( $ui2_js, qr/function syncNglRolloverHelp\(output\).*?output\._ui2NglRolloverHelp === true.*?delete plot\.dataset\.ui2Help/s, 'NGL rollover help is locally controlled and can be disabled without changing global help' );
 like( $ui2_js, qr/function renderNglSceneControls\(output, component\).*?nglViewerControl\("Rollover help", rolloverHelp\)/s, 'NGL Viewer settings exposes a local rollover-help switch' );
@@ -580,6 +582,7 @@ like( $ui2_css, qr/\.ui2-output-ngl\s*\{[^}]*white-space:\s*normal/s, 'ui2 style
 like( $ui2_css, qr/\.ui2-ngl-plot\s*\{[^}]*overscroll-behavior:\s*contain/s, 'NGL canvas contains scroll chaining at its visual boundary' );
 like( $ui2_css, qr/\.ui2-ngl-button\[aria-pressed="true"\]/, 'ui2 stylesheet makes active NGL layer buttons visible' );
 like( $ui2_css, qr/\.ui2-ngl-component-placement\s*\{[^}]*grid-template-columns/s, 'ui2 stylesheet lays out the generic component placement controls' );
+like( $ui2_css, qr/\.ui2-ngl-fixed-reference\s*\{[^}]*#3b82f6/s, 'ui2 identifies the fixed placement reference with the shared blue reference color' );
 like( $ui2_css, qr/\.ui2-ngl-selection-inspector.*?\.ui2-ngl-residue-row.*?overflow-x:\s*auto/s, 'ui2 stylesheet provides a horizontally scrollable generic residue strip' );
 like( $ui2_css, qr/\.ui2-dynamic-output\s*\{[^}]*display:\s*grid/s, 'ui2 stylesheet stacks dynamic output instances' );
 like( $ui2_js, qr/function plotPresentationForOutput\(output\).*?data-plot-presentation.*?function plotlyDataForOutput\(output, data\).*?traceRoles/s, 'UI2 consumes generic view-declared plot presentation tokens without scientific role branches' );

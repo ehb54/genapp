@@ -148,6 +148,41 @@ selected component. UI2 writes the complete matrix array as JSON to the
 declared field after every change. The receiving module owns validation and
 scientific interpretation. Non-opted NGL outputs keep their existing renderer.
 
+The fixed first component is identified separately and is not offered in the
+movable-component selector. A producer may also opt into generic live distance
+guides:
+
+```json
+"viewer": {
+  "capabilities": {
+    "component_placement": true,
+    "placement_guides": true
+  },
+  "placement": {"transform_field": "component_transforms"}
+}
+```
+
+The runtime payload then supplies zero-based atom endpoints and producer-owned
+distance thresholds:
+
+```json
+"placement_guides": [{
+  "id": "junction_1",
+  "label": "Component 1 C to Component 2 N",
+  "from": {"component_id": "component_1", "atom_index": 24},
+  "to": {"component_id": "component_2", "atom_index": 0},
+  "target_distance_angstrom": 1.33,
+  "warning_distance_angstrom": 3.04,
+  "maximum_distance_angstrom": 3.8
+}]
+```
+
+UI2 transforms the endpoint coordinates, draws a live connector, and labels
+the distance as plausible, stretched, or out of reach using the supplied
+warning and maximum values. This is browser-local guidance. The producer must
+recalculate authoritative distances, clashes, bonding, and other scientific
+diagnostics from the submitted transforms.
+
 ## Structure payload
 
 The existing structure contract remains valid:

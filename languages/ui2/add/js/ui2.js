@@ -8908,6 +8908,9 @@
     output._ui2NglComponent = null;
     output._ui2NglComponents = null;
     output._ui2NglPlacement = null;
+    output._ui2NglPlacementGuides = null;
+    output._ui2NglPlacementGuideComponent = null;
+    output._ui2NglPlacementGuideReadout = null;
     output._ui2NglDensityComponent = null;
     output._ui2NglDensitySurface = null;
     output._ui2NglDensitySurfaces = null;
@@ -9014,6 +9017,110 @@
     }));
   }
 
+  function nglPlacementGuides(payload, componentSpecs) {
+    const componentIds = new Set((componentSpecs || []).map((item) => item.id));
+    const values = Array.isArray(payload?.placement_guides)
+      ? payload.placement_guides : [];
+    return values.map((item, index) => {
+      const from = item?.from || {};
+      const to = item?.to || {};
+      const normalized = {
+        id: stringValue(item?.id || `junction_${index + 1}`),
+        label: stringValue(item?.label || `Junction ${index + 1}`),
+        from: {
+          component_id: stringValue(from.component_id),
+          atom_index: Number(from.atom_index)
+        },
+        to: {
+          component_id: stringValue(to.component_id),
+          atom_index: Number(to.atom_index)
+        },
+        target_distance_angstrom: Number(item?.target_distance_angstrom),
+        warning_distance_angstrom: Number(item?.warning_distance_angstrom),
+        maximum_distance_angstrom: Number(item?.maximum_distance_angstrom)
+      };
+      const numbers = [normalized.from.atom_index, normalized.to.atom_index,
+        normalized.target_distance_angstrom,
+        normalized.warning_distance_angstrom,
+        normalized.maximum_distance_angstrom];
+      if (!componentIds.has(normalized.from.component_id)
+          || !componentIds.has(normalized.to.component_id)
+          || !Number.isInteger(normalized.from.atom_index)
+          || normalized.from.atom_index < 0
+          || !Number.isInteger(normalized.to.atom_index)
+          || normalized.to.atom_index < 0
+          || numbers.slice(2).some((number) => !Number.isFinite(number) || number <= 0)
+          || normalized.warning_distance_angstrom > normalized.maximum_distance_angstrom) {
+        return null;
+      }
+      return normalized;
+    }).filter(Boolean);
+  }
+
+  function nglTransformPoint(matrix, point) {
+    return [
+      matrix[0] * point[0] + matrix[1] * point[1] + matrix[2] * point[2] + matrix[3],
+      matrix[4] * point[0] + matrix[5] * point[1] + matrix[6] * point[2] + matrix[7],
+      matrix[8] * point[0] + matrix[9] * point[1] + matrix[10] * point[2] + matrix[11]
+    ];
+  }
+
+  function nglPlacementGuideStatus(distance, guide) {
+    if (distance > guide.maximum_distance_angstrom) return "out of reach";
+    if (distance > guide.warning_distance_angstrom) return "stretched";
+    return "plausible";
+  }
+
+  function nglPlacementAtomPosition(record, atomIndex) {
+    const structure = record?.component?.structure;
+    if (!structure?.getAtomProxy || atomIndex >= structure.atomCount) return null;
+    const atom = structure.getAtomProxy();
+    atom.index = atomIndex;
+    return nglTransformPoint(record.transform, [atom.x, atom.y, atom.z]);
+  }
+
+  function updateNglPlacementGuides(output) {
+    const stage = output?._ui2NglStage;
+    const records = output?._ui2NglPlacement || [];
+    const guides = output?._ui2NglPlacementGuides || [];
+    const readout = output?._ui2NglPlacementGuideReadout;
+    if (!stage || !window.NGL?.Shape) return;
+    if (output._ui2NglPlacementGuideComponent) {
+      stage.removeComponent?.(output._ui2NglPlacementGuideComponent);
+      output._ui2NglPlacementGuideComponent = null;
+    }
+    if (!guides.length) {
+      if (readout) readout.replaceChildren();
+      return;
+    }
+    const recordById = new Map(records.map((record) => [record.id, record]));
+    const shape = new window.NGL.Shape("placement distance guides");
+    const rows = [];
+    guides.forEach((guide) => {
+      const start = nglPlacementAtomPosition(
+        recordById.get(guide.from.component_id), guide.from.atom_index);
+      const end = nglPlacementAtomPosition(
+        recordById.get(guide.to.component_id), guide.to.atom_index);
+      if (!start || !end) return;
+      const distance = Math.sqrt(start.reduce(
+        (sum, value, index) => sum + ((end[index] - value) ** 2), 0));
+      const status = nglPlacementGuideStatus(distance, guide);
+      const color = status === "out of reach" ? [0.94, 0.27, 0.27]
+        : status === "stretched" ? [0.96, 0.62, 0.04]
+          : [0.13, 0.77, 0.37];
+      shape.addCylinder(start, end, color, 0.18, guide.label);
+      rows.push(`${guide.label}: ${distance.toFixed(2)} Å; target ${guide.target_distance_angstrom.toFixed(2)} Å; maximum ${guide.maximum_distance_angstrom.toFixed(2)} Å; ${status}`);
+    });
+    if (rows.length) {
+      const component = stage.addComponentFromObject(shape);
+      component.addRepresentation("buffer");
+      output._ui2NglPlacementGuideComponent = component;
+    }
+    if (readout) {
+      readout.replaceChildren(...rows.map((row) => el("div", null, row)));
+    }
+  }
+
   function applyNglPlacementTransform(record) {
     if (!record?.component || !window.NGL?.Matrix4) return;
     const matrix = new window.NGL.Matrix4();
@@ -9037,16 +9144,21 @@
     if (!buttons || records.length < 2) return;
     const panel = el("section", "ui2-ngl-component-placement");
     const title = el("strong", null, "Place structure parts");
+    const fixed = records.filter((record) => record.locked);
+    const movable = records.filter((record) => !record.locked);
     const guidance = el("p", "ui2-muted",
-      "Keep the first part fixed. Move each later part so its N terminus faces the preceding C terminus; the pre-submit review checks reach and clashes.");
+      "Move each later part so its yellow N terminus approaches the preceding yellow C terminus. Green, amber, and red guides indicate plausible, stretched, and out-of-reach distances; re-run the review for authoritative clash checks.");
+    const fixedLabel = el("p", "ui2-ngl-fixed-reference",
+      `Fixed reference: ${fixed.map((record) => record.label).join(", ") || records[0].label}`);
     const picker = document.createElement("select");
-    records.forEach((record, index) => picker.appendChild(
-      new Option(`${record.label}${record.locked ? " (fixed)" : ""}`, String(index))));
-    picker.value = records[0].locked && records[1] ? "1" : "0";
+    movable.forEach((record) => picker.appendChild(
+      new Option(record.label, String(records.indexOf(record)))));
     const mode = document.createElement("select");
     mode.append(new Option("Move (drag)", "move"), new Option("Rotate (drag)", "rotate"),
       new Option("Inspect view", "inspect"));
     const status = el("span", "ui2-muted", "Drag in the molecule view. Shift-drag moves in depth.");
+    const guideReadout = el("div", "ui2-ngl-placement-guide-readout");
+    output._ui2NglPlacementGuideReadout = guideReadout;
     const reset = el("button", "ui2-button ui2-button-quiet", "Reset selected");
     reset.type = "button";
     reset.addEventListener("click", () => {
@@ -9055,9 +9167,11 @@
       record.transform = record.initialTransform.slice();
       applyNglPlacementTransform(record);
       syncNglPlacementInput(output);
+      updateNglPlacementGuides(output);
       requestNglRender(output._ui2NglStage);
     });
-    panel.append(title, guidance, picker, mode, reset, status);
+    panel.append(title, fixedLabel, guidance, picker, mode, reset, status,
+      guideReadout);
     buttons.prepend(panel);
 
     let pointer = null;
@@ -9089,6 +9203,7 @@
       }
       applyNglPlacementTransform(record);
       syncNglPlacementInput(output);
+      updateNglPlacementGuides(output);
       requestNglRender(output._ui2NglStage);
       event.preventDefault();
       event.stopPropagation();
@@ -9108,6 +9223,8 @@
 
   function renderNglComponentPlacement(output, payload, plot, renderRevision) {
     const specs = nglPlacementComponents(payload);
+    const guidesEnabled = nglViewerConfig(output).capabilities?.placement_guides === true;
+    const guides = guidesEnabled ? nglPlacementGuides(payload, specs) : [];
     const stage = new window.NGL.Stage(plot.id, nglViewerStageParams(output));
     stage.mouseControls?.preset?.(nglViewerMousePreset(output));
     output._ui2NglStage = stage;
@@ -9134,8 +9251,10 @@
         output._ui2NglPlacement = records;
         output._ui2NglComponents = records.map((record) => record.component);
         output._ui2NglComponent = records[0]?.component || null;
+        output._ui2NglPlacementGuides = guides;
         stage.autoView?.();
         renderNglPlacementControls(output, plot);
+        updateNglPlacementGuides(output);
         syncNglPlacementInput(output);
         resizeNglOutputWhenVisible(output);
         return records;
@@ -12518,6 +12637,9 @@
       nglTranslationTransform,
       nglRotationTransform,
       nglPlacementComponents,
+      nglPlacementGuides,
+      nglTransformPoint,
+      nglPlacementGuideStatus,
       attachNglFileTrajectory,
       attachNglEmbeddedTrajectory,
       nglTrajectoryFrameCount,

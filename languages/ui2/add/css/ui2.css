@@ -2422,9 +2422,22 @@ code {
 }
 
 .ui2-ngl-component-placement strong,
-.ui2-ngl-component-placement p {
+.ui2-ngl-component-placement p,
+.ui2-ngl-placement-guide-readout {
   grid-column: 1 / -1;
   margin: 0;
+}
+
+.ui2-ngl-fixed-reference {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.ui2-ngl-placement-guide-readout {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.88rem;
+  color: var(--ui2-text-muted);
 }
 
 .ui2-ngl-component-placement select {
