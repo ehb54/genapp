@@ -641,10 +641,10 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
 
       <div className={`ui2-workbench-grid${inputRailCollapsed || workspaceExpanded ? " ui2-workbench-grid-inputs-hidden" : ""}${!showResultsPane ? " ui2-workbench-grid-configuration-only" : ""}${wideInputLayout && (!submitted || inputEditOpen) ? " ui2-workbench-grid-inputs-wide" : ""}`}>
         <aside className="ui2-workbench-input-pane" hidden={inputRailCollapsed || workspaceExpanded}>
-          {submitted && !inputEditOpen && (
+          {!actionReview && submitted && !inputEditOpen && (
             <SubmittedInputs expandedMode={view.inputs?.submittedSummary?.expanded} fields={fields} summaryFieldIds={summaryFieldIds} onEdit={editInputs} onHide={() => setInputRailCollapsed(true)} restoreError={submitted.restoreError} restoreWarnings={submitted.restoreWarnings} uuid={submitted.uuid} values={submitted.values} />
           )}
-          {!submitted && actionReview && (
+          {actionReview && (
             <SubmittedInputs
               badge={actionReview.definition.badge || "Review"}
               continueLabel={actionReview.definition.continueLabel || "Continue setup"}

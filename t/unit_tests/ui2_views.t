@@ -131,7 +131,7 @@ like( $ui2_react_source, qr/import\s+\{[^}]*runCueMessage[^}]*\}\s+from\s+"@\/ru
 like( $ui2_react_run_cue_source, qr/lifecycleState.*?\["failed", "error"\].*?Run failed.*?\["cancelled", "canceled"\].*?Run cancelled/s, 'React run cue gives terminal lifecycle states priority over empty runtime channels' );
 like( $ui2_react_source, qr/resultGroups\.some\(\(group\) => group\.id === id\).*?setActiveResult\(id\).*?window\.addEventListener\("ui2-focus-result", focusResult\)/s, 'React workbenches accept focus only for a declared result group' );
 like( $ui2_react_source, qr/const definition = actionReviews\[id\].*?resultGroups\.some\(\(group\) => group\.id === definition\.result\).*?setActionReview\(\{ definition, values: bridge\.syncValues\(\) \}\).*?setActiveResult\(definition\.result\)/s, 'React workbenches create a review only for a view-declared result group' );
-like( $ui2_react_source, qr/!submitted && actionReview.*?SubmittedInputs.*?actionReview\.definition\.fields.*?actionReview\.values/s, 'a declared action review reuses the compact input summary without creating submitted-run state' );
+like( $ui2_react_source, qr/!actionReview && submitted && !inputEditOpen.*?SubmittedInputs.*?\{actionReview && \(.*?actionReview\.definition\.fields.*?actionReview\.values/s, 'a current action review takes precedence over an older submitted-run summary and exposes its continuation control' );
 unlike( $ui2_react_source, qr/actionReview.*?module\.id|module\.id.*?actionReview/s, 'input review support does not branch on an application module id' );
 like( $ui2_react_js, qr/Submitted inputs/, 'React bundle contains the workbench submitted-input summary' );
 like( $ui2_react_js, qr/Edit inputs/, 'React bundle exposes the reversible submitted-input editor' );

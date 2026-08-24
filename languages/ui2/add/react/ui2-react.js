@@ -11266,7 +11266,7 @@ function oi({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 				className: "ui2-workbench-input-pane",
 				hidden: te || O,
 				children: [
-					N && !ce && /* @__PURE__ */ (0, z.jsx)(ii, {
+					!S && N && !ce && /* @__PURE__ */ (0, z.jsx)(ii, {
 						expandedMode: n.inputs?.submittedSummary?.expanded,
 						fields: t,
 						summaryFieldIds: h,
@@ -11277,7 +11277,7 @@ function oi({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 						uuid: N.uuid,
 						values: N.values
 					}),
-					!N && S && /* @__PURE__ */ (0, z.jsx)(ii, {
+					S && /* @__PURE__ */ (0, z.jsx)(ii, {
 						badge: S.definition.badge || "Review",
 						continueLabel: S.definition.continueLabel || "Continue setup",
 						description: S.definition.description || "Values used to create the displayed result",
