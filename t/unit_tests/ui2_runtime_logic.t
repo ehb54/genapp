@@ -1307,17 +1307,19 @@ window.NGL = {
     return Promise.resolve(parsedTrajectoryFrames);
   }
 };
-const placementCoordinateAttachCalls = [];
+const placementCoordinateApplyCalls = [];
 const placementCoordinateFrames = [new Float32Array([1, 2, 3])];
 window.NGL.autoLoad = (loadname, options) => {
   trajectoryLoadCalls.push([loadname, options]);
   return Promise.resolve({ frames: placementCoordinateFrames });
 };
 hooks.attachNglPlacementCoordinates({
-  addTrajectory(frames, options) {
-    placementCoordinateAttachCalls.push([frames, options]);
-    return { trajectory: { setFrame(frame) { placementCoordinateAttachCalls.push([frame]); } } };
-  }
+  structure: {
+    atomCount: 1,
+    updatePosition(coordinates) { placementCoordinateApplyCalls.push(["position", coordinates]); },
+    refreshPosition() { placementCoordinateApplyCalls.push(["refresh"]); }
+  },
+  updateRepresentations(options) { placementCoordinateApplyCalls.push(["representations", options]); }
 }, {
   loadname: "results/users/Joseph/component.pdb",
   loadparams: { ext: "pdb", asTrajectory: true }
@@ -1328,14 +1330,22 @@ hooks.attachNglPlacementCoordinates({
     "placement coordinate sources are parsed through NGL autoLoad"
   );
   assert.strictEqual(
-    placementCoordinateAttachCalls[0][0], placementCoordinateFrames,
-    "placement attaches PDB coordinate frames to the independently loaded topology"
+    placementCoordinateApplyCalls[0][1], placementCoordinateFrames[0],
+    "placement applies the first parsed PDB frame to the independently loaded topology"
   );
-  assert.deepStrictEqual(
-    placementCoordinateAttachCalls[1], [0],
-    "placement applies the first attached coordinate frame before rendering"
+  assert.strictEqual(
+    JSON.stringify(placementCoordinateApplyCalls.slice(1)),
+    JSON.stringify([["refresh"], ["representations", { position: true }]]),
+    "placement refreshes topology bounds and representation positions"
   );
 });
+assert.throws(
+  () => hooks.applyNglParsedPdbCoordinates({
+    structure: { atomCount: 2, updatePosition() {} }
+  }, { frames: [new Float32Array([1, 2, 3])] }),
+  /coordinate atom count \\(1\\) does not match topology atom count \\(2\\)/,
+  "separate PDB coordinates fail clearly when their atom count differs from the topology"
+);
 window.NGL.autoLoad = (loadname, options) => {
   trajectoryLoadCalls.push([loadname, options]);
   return Promise.resolve(parsedTrajectoryFrames);
@@ -1364,7 +1374,7 @@ hooks.attachNglFileTrajectory(
   assert.strictEqual(
     JSON.stringify(trajectoryAttachCalls),
     JSON.stringify([[parsedTrajectoryFrames, {}]]),
-    "UI2 attaches parsed trajectory frames rather than passing a URL to StructureComponent"
+    "UI2 leaves genuine parsed trajectory objects intact for StructureComponent"
   );
 });
 

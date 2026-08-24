@@ -142,9 +142,12 @@ provide `id`, `label`, `loadname`, `loadparams`, `representations`, `locked`,
 `initial_transform`, and an optional `trajectory` coordinate source. This lets
 an opted-in producer load an exact topology such as PSF and attach a matching
 PDB with `{"ext": "pdb", "asTrajectory": true}` for coordinates. Atom order
-and atom count must match. Components without `trajectory` retain the existing
-single-file behavior. The transform is a row-major homogeneous 4 by 4 matrix.
-UI2 always treats the first component as locked.
+and atom count must match. UI2 applies that single PDB frame directly to the
+loaded topology and refreshes its bounds and representation positions; it does
+not pass the raw coordinate array to NGL's file-trajectory constructor.
+Components without `trajectory` retain the existing single-file behavior. The
+transform is a row-major homogeneous 4 by 4 matrix. UI2 always treats the first
+component as locked.
 
 The controls start in Inspect view, where dragging changes the camera and does
 not alter component transforms. Users must explicitly select Move or Rotate
@@ -246,9 +249,11 @@ A structure payload may attach a coordinate trajectory to the same structure:
 ```
 
 The topology is loaded first. UI2 loads the trajectory URL through NGL's
-`autoLoad` parser and attaches the resulting frames with
-`StructureComponent.addTrajectory`. Supported trajectory formats depend on
-the bundled NGL parser and include DCD, TRR, XTC, and NCTRAJ/NetCDF.  The
+`autoLoad` parser. Genuine trajectory objects are attached with
+`StructureComponent.addTrajectory`. A PDB declared with `asTrajectory: true`
+as a separate coordinate source instead contributes its first coordinate frame
+directly to the loaded topology. Supported trajectory formats depend on the
+bundled NGL parser and include DCD, TRR, XTC, and NCTRAJ/NetCDF. The
 topology and trajectory must have matching atom order and atom count.  The
 widget exposes frame selection and playback once NGL reports the trajectory
 frame count.

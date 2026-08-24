@@ -9281,21 +9281,38 @@
   }
 
   function attachNglPlacementCoordinates(component, trajectoryPayload) {
-    if (!trajectoryPayload?.loadname || typeof component?.addTrajectory !== "function") {
+    if (!trajectoryPayload?.loadname) {
       return Promise.resolve(null);
     }
     if (typeof window.NGL?.autoLoad !== "function") {
       return Promise.reject(new Error("NGL coordinate loader is unavailable"));
     }
     const loadParams = Object.assign({}, trajectoryPayload.loadparams || {});
-    const trajectoryParams = Object.assign({}, trajectoryPayload.trajectoryparams || {});
     return window.NGL.autoLoad(
       normalizeNglLoadName(trajectoryPayload.loadname), loadParams).then((loaded) => {
-        const frames = Array.isArray(loaded?.frames) ? loaded.frames : loaded;
-        const trajectoryComponent = component.addTrajectory(frames, trajectoryParams);
-        const trajectory = trajectoryComponent?.trajectory || trajectoryComponent;
-        return Promise.resolve(trajectory?.setFrame?.(0)).then(() => trajectoryComponent);
+        return applyNglParsedPdbCoordinates(component, loaded);
       });
+  }
+
+  function applyNglParsedPdbCoordinates(component, loaded) {
+    const coordinates = Array.isArray(loaded?.frames) ? loaded.frames[0] : null;
+    const structure = component?.structure;
+    if (!coordinates || typeof structure?.updatePosition !== "function") {
+      throw new Error("PDB coordinate source did not contain an applicable coordinate frame");
+    }
+    const coordinateAtomCount = Number(coordinates.length) / 3;
+    const topologyAtomCount = Number(structure.atomCount ?? structure.atomStore?.count);
+    if (!Number.isInteger(coordinateAtomCount)
+        || (Number.isInteger(topologyAtomCount) && topologyAtomCount > 0
+          && topologyAtomCount !== coordinateAtomCount)) {
+      throw new Error(
+        `PDB coordinate atom count (${coordinateAtomCount}) does not match topology atom count (${topologyAtomCount})`);
+    }
+    structure.updatePosition(coordinates);
+    structure.refreshPosition?.();
+    component.updateRepresentations?.({ position: true });
+    requestNglRender(component.stage);
+    return component;
   }
 
   function renderNglOutput(output, value) {
@@ -9442,10 +9459,14 @@
         if (output._ui2NglRenderRevision !== renderRevision) {
           return null;
         }
-        const frames = Array.isArray(loaded?.frames) ? loaded.frames : loaded;
+        const isPdbCoordinateSource = loadParams.asTrajectory === true
+          && stringValue(loadParams.ext).toLowerCase() === "pdb";
+        if (isPdbCoordinateSource) {
+          return applyNglParsedPdbCoordinates(component, loaded);
+        }
         // NGL's StructureComponent expects parsed trajectory frames here, not
         // a URL string.  autoLoad owns URL fetching and parser selection.
-        output._ui2NglTrajectory = component.addTrajectory(frames, trajectoryParams);
+        output._ui2NglTrajectory = component.addTrajectory(loaded, trajectoryParams);
         renderNglTrajectoryControls(output, output._ui2NglTrajectory);
         return output._ui2NglTrajectory;
       })
@@ -12679,6 +12700,7 @@
       nglTransformPoint,
       nglPlacementGuideStatus,
       attachNglPlacementCoordinates,
+      applyNglParsedPdbCoordinates,
       attachNglFileTrajectory,
       attachNglEmbeddedTrajectory,
       nglTrajectoryFrameCount,
