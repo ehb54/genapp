@@ -805,6 +805,7 @@
       if (!response.ok || payload.error) {
         throw new Error(payload.error || `Login returned HTTP ${response.status}`);
       }
+      const requiresPasswordChange = loginRequiresPasswordChange(payload);
       updateSessionIdentity(payload);
       state.session.usergroups = Array.isArray(payload._usergroups) ? payload._usergroups : [];
       state.session.loaded = true;
@@ -822,24 +823,78 @@
         }
       }
       if (state.session.logon) {
+        const authenticatedPassword = stringValue(form.elements.password?.value);
+        if (form.elements.password) {
+          form.elements.password.value = "";
+        }
         document.getElementById("ui2-login-dialog").hidden = true;
         hideSplashDialog();
         await refreshSessionState();
-        const switchValue = stringValue(payload._switch || state.pendingSwitch);
-        if (switchValue) {
-          state.pendingSwitch = "";
-          await attachSwitchValue(switchValue);
+        if (requiresPasswordChange) {
+          await openRequiredPasswordChange(authenticatedPassword, payload);
           return;
         }
-        if (state.freshLoginAfterLogoff) {
-          state.freshLoginAfterLogoff = false;
-          await loadStartupModule();
-        }
+        await continueAfterLogin(payload);
       }
     } catch (error) {
       setSubmitStatus(status, error.message, "error");
     } finally {
       submit.disabled = false;
+    }
+  }
+
+  function loginRequiresPasswordChange(payload) {
+    return Boolean(stringValue(payload?._logon)) &&
+      !Object.prototype.hasOwnProperty.call(payload || {}, "-close");
+  }
+
+  async function continueAfterLogin(payload = {}) {
+    const switchValue = stringValue(payload._switch || state.pendingSwitch);
+    if (switchValue) {
+      state.pendingSwitch = "";
+      await attachSwitchValue(switchValue);
+      return;
+    }
+    if (state.freshLoginAfterLogoff) {
+      state.freshLoginAfterLogoff = false;
+      await loadStartupModule();
+    }
+  }
+
+  async function openRequiredPasswordChange(currentPassword, loginPayload = {}) {
+    const overlayOptions = {
+      allowBackdropClose: false,
+      allowEscapeClose: false,
+      hideClose: true,
+      returnFocus: false
+    };
+    try {
+      const payload = await fetchModuleDefinition("sys_user_config");
+      const module = payload.module || {};
+      const fields = visibleFields(Array.isArray(module.fields) ? module.fields : []);
+      const content = renderUserConfigTool(module, fields, {
+        requiredPasswordChange: true,
+        currentPassword,
+        afterPasswordChange: async () => {
+          closeUtilityOverlay();
+          await continueAfterLogin(loginPayload);
+        }
+      });
+      showUtilityOverlay("Password change required", content, overlayOptions);
+    } catch (error) {
+      const content = el("section", "ui2-system-tool");
+      content.appendChild(el("div", "ui2-error", `Could not load password settings: ${error.message}`));
+      const actions = el("div", "ui2-form-actions");
+      const logoff = el("button", "ui2-button ui2-button-quiet", "Log off");
+      logoff.type = "button";
+      logoff.addEventListener("click", async () => {
+        logoff.disabled = true;
+        await logoffSession();
+        logoff.disabled = false;
+      });
+      actions.appendChild(logoff);
+      content.appendChild(actions);
+      showUtilityOverlay("Password change required", content, overlayOptions);
     }
   }
 
@@ -4736,36 +4791,87 @@
     return section;
   }
 
-  function renderUserConfigTool(module, fields) {
+  function renderUserConfigTool(module, fields, options = {}) {
     const section = el("section", "ui2-section ui2-system-tool ui2-user-config");
     const form = el("form", "ui2-utility-form");
     form.noValidate = true;
+    form.dataset.requiredPasswordChange = options.requiredPasswordChange === true ? "true" : "false";
     const projectContext = document.createElement("input");
     projectContext.type = "hidden";
     projectContext.dataset.fieldId = "project";
     projectContext.value = sessionProjectName();
     form.appendChild(projectContext);
-    const inputFields = ui2UserConfigFields(userConfigFields(fields.filter((field) => field.role !== "output")))
+    let inputFields = ui2UserConfigFields(userConfigFields(fields.filter((field) => field.role !== "output")))
       .map(normalizeUserConfigField);
+    if (options.requiredPasswordChange === true) {
+      inputFields = requiredPasswordChangeFields(inputFields);
+    }
     const outputFields = fields.filter((field) => field.role === "output");
-    form.appendChild(renderUtilitySection("Settings", inputFields, "input"));
-    form.appendChild(renderUtilityActions("Update settings"));
+    form.appendChild(renderUtilitySection(
+      options.requiredPasswordChange === true ? "Choose a new password" : "Settings",
+      inputFields,
+      "input"
+    ));
+    const actions = renderUtilityActions(
+      options.requiredPasswordChange === true ? "Change password" : "Update settings",
+      { includeReset: options.requiredPasswordChange !== true }
+    );
+    if (options.requiredPasswordChange === true) {
+      const logoff = el("button", "ui2-button ui2-button-quiet", "Log off");
+      logoff.type = "button";
+      logoff.addEventListener("click", async () => {
+        logoff.disabled = true;
+        await logoffSession();
+        logoff.disabled = false;
+      });
+      actions.insertBefore(logoff, actions.querySelector(".ui2-submit-status"));
+    }
+    form.appendChild(actions);
     if (outputFields.length) {
       form.appendChild(renderUtilitySection("Status", outputFields, "output"));
     }
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
-      await submitUtilityModule(form, module, "ajax/sys_config/sys_user_config.php");
+      await submitUtilityModule(form, module, "ajax/sys_config/sys_user_config.php", {
+        afterSuccess: options.afterPasswordChange
+      });
     });
     form.addEventListener("reset", () => window.setTimeout(() => syncFormValues(form), 0));
     form.addEventListener("input", () => syncFormValues(form));
     form.addEventListener("change", () => syncFormValues(form));
     section.appendChild(form);
     window.setTimeout(() => {
+      if (options.requiredPasswordChange === true) {
+        prepareRequiredPasswordChangeForm(form, options.currentPassword);
+        options.currentPassword = "";
+      }
       syncFormValues(form);
       pullUtilityFieldValues(form);
     }, 0);
     return section;
+  }
+
+  function requiredPasswordChangeFields(fields) {
+    return fields.filter((field) =>
+      field?.id === "changepassword" || repeatControllerId(field?.repeat || "") === "changepassword"
+    );
+  }
+
+  function prepareRequiredPasswordChangeForm(form, currentPassword) {
+    const controller = form.querySelector('[data-field-id="changepassword"]');
+    if (controller) {
+      controller.checked = true;
+      const row = controller.closest(".ui2-field");
+      if (row) {
+        row.hidden = true;
+      }
+    }
+    const current = form.querySelector('[data-field-id="password"]');
+    if (current) {
+      current.value = stringValue(currentPassword);
+    }
+    syncFormValues(form);
+    form.querySelector('[data-field-id="password1"]')?.focus();
   }
 
   function renderRegisterTool(module, fields) {
@@ -12827,6 +12933,8 @@
       applyUi2Theme,
       setUi2ThemePreference,
       currentUi2Theme,
+      loginRequiresPasswordChange,
+      requiredPasswordChangeFields,
       setPlotBackgroundModePreference,
       currentPlotBackgroundMode,
       plotBackgroundPreferenceEnabled,

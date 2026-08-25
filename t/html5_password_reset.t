@@ -127,6 +127,7 @@ my ( $old_login_reply, $old_login_record ) = run_handler(
     { _window => 'old-login', userid => 'tester', password => $permanent_password }, 0,
 );
 like( $old_login_reply->{status}, qr/Login successful/, 'permanent password remains usable while reset is pending' );
+ok( exists $old_login_reply->{'-close'}, 'permanent-password login may close the ordinary login dialog' );
 ok( !exists $old_login_record->{password_reset_hash}, 'permanent-password login cancels the pending reset' );
 
 my ( undef, $promotion_reset_record, $promotion_mail ) = run_handler(
@@ -140,6 +141,7 @@ my ( $promotion_reply, $promotion_record ) = run_handler(
     { _window => 'promotion-login', userid => 'tester', password => $promotion_password }, 0,
 );
 like( $promotion_reply->{status}, qr/Login successful/, 'pending credential bypasses the failed-attempt reset path' );
+ok( !exists $promotion_reply->{'-close'}, 'pending credential keeps the password-change handoff active' );
 ok( php_password_verify( $php, $promotion_password, $promotion_record->{password} ), 'pending credential is promoted only after it authenticates' );
 is( $promotion_record->{expiretimes}, 0, 'promoted credential remains one-use until changed in Settings' );
 ok( !exists $promotion_record->{password_reset_hash}, 'promotion clears the pending reset' );

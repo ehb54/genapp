@@ -22,6 +22,12 @@ templates when the account uses a local password.
 - After UI2 receives an accepted reset response, it must return the login form
   to ordinary-login mode before the next submission: clear the reset control
   and password, preserve the user id, and focus the password field.
+- An authenticated login response includes `-close` only when the ordinary
+  login dialog may close. An authenticated response without `-close` requires
+  the user to change the password before continuing.
+- UI2 must route that response into the existing Settings password-change flow,
+  keep the required change visible until it succeeds or the user logs off, and
+  resume pending post-login navigation only after success.
 
 ## Compatibility and testing
 
@@ -29,5 +35,6 @@ The existing login request shape, status keys, user-record password hash, and
 Settings password-change flow remain unchanged. Do not add application-specific
 reset paths or a second account store. Maintain executable coverage for failed
 mail, accepted mail, permanent-password cancellation, pending-credential
-promotion, expiry, the three login-template variants, and the UI2 reset-to-login
-transition.
+promotion, expiry, the three login-template variants, the UI2 reset-to-login
+transition, ordinary-login close behavior, and the required password-change
+handoff.

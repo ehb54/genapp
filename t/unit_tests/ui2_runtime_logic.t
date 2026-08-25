@@ -2364,6 +2364,42 @@ assert(
     source.includes('passwordInput.focus();'),
   "an accepted password-reset request returns UI2 to ordinary login mode before the next submission"
 );
+assert.strictEqual(
+  hooks.loginRequiresPasswordChange({ _logon: "tester" }),
+  true,
+  "an authenticated response without -close requires a password change"
+);
+assert.strictEqual(
+  hooks.loginRequiresPasswordChange({ _logon: "tester", "-close": 1 }),
+  false,
+  "an ordinary authenticated response with -close continues normally"
+);
+assert.strictEqual(
+  hooks.loginRequiresPasswordChange({ status: "User not found" }),
+  false,
+  "a logged-out response never enters the password-change handoff"
+);
+assert.deepStrictEqual(
+  hooks.requiredPasswordChangeFields([
+    { id: "project" },
+    { id: "changepassword" },
+    { id: "password", repeat: "changepassword" },
+    { id: "password1", repeat: "changepassword" },
+    { id: "password2", repeat: "changepassword" },
+    { id: "changeemail" }
+  ]).map((field) => field.id),
+  ["changepassword", "password", "password1", "password2"],
+  "required password change uses only the existing Settings password fields"
+);
+assert(
+  source.includes('await openRequiredPasswordChange(authenticatedPassword, payload);') &&
+    source.includes('allowBackdropClose: false') &&
+    source.includes('allowEscapeClose: false') &&
+    source.includes('hideClose: true') &&
+    source.includes('requiredPasswordChange: true') &&
+    source.includes('await continueAfterLogin(loginPayload);'),
+  "temporary-password login requires Settings before pending navigation continues"
+);
 assert(
   source.includes('async function openRegisterDialog()'),
   "ui2 exposes a dedicated register dialog helper"
@@ -2432,7 +2468,8 @@ assert(
   "logoff marks the next login as a fresh session"
 );
 assert(
-  source.includes('state.freshLoginAfterLogoff = false;\\n          await loadStartupModule();'),
+  source.includes('function continueAfterLogin(payload = {})') &&
+    source.includes('state.freshLoginAfterLogoff = false;\\n      await loadStartupModule();'),
   "login after logoff returns to the startup module instead of the old attached job"
 );
 

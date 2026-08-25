@@ -461,7 +461,11 @@ like( $ui2_js, qr/removes it from Settings and deletes all of its saved files/, 
 like( $ui2_js, qr/legacyEndpoint\("filesBase", "ajax\/sys_config\/sys_files\.php"\)/, 'ui2 File Manager removal reuses the legacy file endpoint' );
 like( $ui2_js, qr/function legacyInlineStatusText\(value\).*?stripHtml\(separated\).*?replace/s, 'ui2 File Manager converts legacy HTML separators to readable plain-text status' );
 like( $ui2_js, qr/row\.dataset\.parentId = entry\.parent \|\| parentId \|\| "#";/, 'ui2 File Manager preserves each child row parent instead of deriving it from a sibling' );
-like( $ui2_js, qr/function renderUserConfigTool\(module, fields\)/, 'ui2 has a dedicated Settings shell' );
+like( $ui2_js, qr/function renderUserConfigTool\(module, fields, options = \{\}\)/, 'ui2 has a dedicated Settings shell with workflow options' );
+like( $ui2_js, qr/function loginRequiresPasswordChange\(payload\)[\s\S]*?!Object\.prototype\.hasOwnProperty\.call\(payload \|\| \{\}, "-close"\)/, 'ui2 honors the legacy login close contract when deciding whether a password change is required' );
+like( $ui2_js, qr/openRequiredPasswordChange\(authenticatedPassword, payload\)[\s\S]*?allowBackdropClose: false[\s\S]*?allowEscapeClose: false[\s\S]*?hideClose: true/, 'ui2 opens a nondismissible password-change handoff after temporary-password login' );
+like( $ui2_js, qr/function requiredPasswordChangeFields\(fields\)[\s\S]*?changepassword[\s\S]*?prepareRequiredPasswordChangeForm\(form, currentPassword\)/, 'ui2 reuses and activates the declared Settings password fields for the required handoff' );
+like( $ui2_js, qr/afterPasswordChange: async \(\) => \{[\s\S]*?closeUtilityOverlay\(\);[\s\S]*?continueAfterLogin\(loginPayload\)/, 'successful required password change resumes pending post-login navigation' );
 like( $ui2_js, qr/UI2_PROJECT_SETTINGS_FIELD_IDS = new Set\(\["project", "newproject", "newprojectname", "newprojectdesc"\]\)/, 'ui2 keeps project selection and creation out of Settings' );
 like( $ui2_js, qr/projectContext\.type = "hidden".*?projectContext\.dataset\.fieldId = "project".*?projectContext\.value = sessionProjectName\(\)/s, 'ui2 Settings preserves the legacy current-project request context without displaying it' );
 like( $ui2_js, qr/function openProjectDialog\(\).*?loadProjectNames\(\).*?renderProjectChoices.*?renderProjectCreation/s, 'ui2 project control owns selection and first-project creation' );
