@@ -105,11 +105,24 @@ my $base_record = {
 for my $index ( 1 .. $#templates ) {
     my $variant_handler = File::Spec->catfile( $sys_dir, "variant-$index.php" );
     render_handler( $templates[$index], $variant_handler, $root );
-    my ( undef, $variant_record ) = run_handler(
+    my ( undef, $variant_record, $variant_mail ) = run_handler(
         $php, $runner, $variant_handler, $root, $base_record,
         { _window => "variant-$index", userid => 'tester', forgotpassword => 'on' }, 0,
     );
     is( $variant_record->{password}, $permanent_hash, "$templates[$index] leaves the permanent password unchanged" );
+    my ($variant_password) = $variant_mail->{body} =~ /^Now: ([0-9a-f]+)$/m;
+    $variant_record->{lastfailedloginattempts} = 5;
+    $variant_record->{expiretime} = 999;
+    $variant_record->{expiretimes} = 0;
+    my ( $variant_reply, $variant_promoted_record ) = run_handler(
+        $php, $runner, $variant_handler, $root, $variant_record,
+        { _window => "variant-promotion-$index", userid => 'tester', password => $variant_password }, 0,
+    );
+    like( $variant_reply->{status}, qr/Login successful/, "$templates[$index] pending credential bypasses stale expiry and failed-attempt markers" );
+    ok( !exists $variant_reply->{'-close'}, "$templates[$index] keeps the password-change handoff active" );
+    ok( php_password_verify( $php, $variant_password, $variant_promoted_record->{password} ), "$templates[$index] promotes the pending credential" );
+    is( $variant_promoted_record->{expiretimes}, 0, "$templates[$index] replaces the stale use count without decrementing it" );
+    ok( !exists $variant_promoted_record->{password_reset_hash}, "$templates[$index] clears the pending reset" );
 }
 
 my ( $reset_reply, $reset_record, $reset_mail ) = run_handler(
@@ -136,14 +149,16 @@ my ( undef, $promotion_reset_record, $promotion_mail ) = run_handler(
 );
 my ($promotion_password) = $promotion_mail->{body} =~ /^Now: ([0-9a-f]+)$/m;
 $promotion_reset_record->{lastfailedloginattempts} = 5;
+$promotion_reset_record->{expiretime} = 999;
+$promotion_reset_record->{expiretimes} = 0;
 my ( $promotion_reply, $promotion_record ) = run_handler(
     $php, $runner, $handler, $root, $promotion_reset_record,
     { _window => 'promotion-login', userid => 'tester', password => $promotion_password }, 0,
 );
-like( $promotion_reply->{status}, qr/Login successful/, 'pending credential bypasses the failed-attempt reset path' );
+like( $promotion_reply->{status}, qr/Login successful/, 'pending credential bypasses stale expiry and failed-attempt markers' );
 ok( !exists $promotion_reply->{'-close'}, 'pending credential keeps the password-change handoff active' );
 ok( php_password_verify( $php, $promotion_password, $promotion_record->{password} ), 'pending credential is promoted only after it authenticates' );
-is( $promotion_record->{expiretimes}, 0, 'promoted credential remains one-use until changed in Settings' );
+is( $promotion_record->{expiretimes}, 0, 'promoted credential replaces the stale use count without decrementing it' );
 ok( !exists $promotion_record->{password_reset_hash}, 'promotion clears the pending reset' );
 
 my $expired_record = {

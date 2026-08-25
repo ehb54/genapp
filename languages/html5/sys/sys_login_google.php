@@ -157,14 +157,14 @@ if ( isset( $doc[ 'lastfailedloginattempts' ] ) )
    }
 }
 
-if ( $loginok == 1 && $did_expiretime )
+if ( $loginok == 1 && !$loginusingpendingreset && $did_expiretime )
 {
     $addstat .= "Password time expired, ";
     $_REQUEST[ 'forgotpassword' ] = "on";
     $loginok = 0;
 }
 
-if ( $loginok == 1 && $did_expiretimes )
+if ( $loginok == 1 && !$loginusingpendingreset && $did_expiretimes )
 {
     $addstat .= "Password times used expired, ";
     $_REQUEST[ 'forgotpassword' ] = "on";
@@ -477,7 +477,7 @@ if ( $loginok == 1 )
       $update[ '$unset' ][ 'password_reset_requested_at' ] = 0;
       $update[ '$unset' ][ 'password_reset_requested_ip' ] = 0;
    }
-   if ( isset( $doc[ 'expiretimes' ] ) )
+   if ( isset( $doc[ 'expiretimes' ] ) && !$loginusingpendingreset )
    {
        $update[ '$inc' ] = array( "expiretimes" => -1 );
    }
