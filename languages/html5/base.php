@@ -30,6 +30,23 @@ require_once "__docroot:html5__/__application__/ajax/details.php";
 $modjson = json_decode( '__modulejson__' );
 $inputs_req = $_REQUEST;
 
+function ga_submission_project_directory_group_writable( $dir ) {
+    clearstatcache( true, $dir );
+    $permissions = @fileperms( $dir );
+    if ( $permissions === false ) {
+        return false;
+    }
+    if ( ( $permissions & 0020 ) != 0 ) {
+        return true;
+    }
+    if ( !@chmod( $dir, 0775 ) ) {
+        return false;
+    }
+    clearstatcache( true, $dir );
+    $permissions = @fileperms( $dir );
+    return $permissions !== false && ( $permissions & 0020 ) != 0;
+}
+
 ### turn off validation until undefined variable bug fix
 # $validation_inputs = ga_sanitize_validate( $modjson, $inputs_req, '__menu:modules:id__' );
 
@@ -190,6 +207,28 @@ if ( !file_exists( $dir ) )
    chmod( $dir, 0775 );
    ob_end_clean();
    $results[ "_fs_clear" ] = "#";
+}
+
+if ( !ga_submission_project_directory_group_writable( $dir ) )
+{
+   if ( isset( $checkrunning ) )
+   {
+      if ( !ga_db_status(
+                ga_db_remove(
+                    'joblock',
+                    '',
+                    [ "name" => $checkrunning ],
+                    [ 'justOne' => true ]
+                )
+           )
+         ) {
+         $results[ 'error' ] = "Error removing running project record from database.  This project is now locked. " . $ga_db_errors;
+      }
+   }
+   $results[ "error" ] .= "Could not make project directory group-writable: " . $dir;
+   $results[ '_status' ] = 'failed';
+   echo (json_encode($results));
+   exit();
 }
 
 if ( !file_exists( $logdir ) )

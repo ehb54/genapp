@@ -5,7 +5,7 @@ use File::Spec;
 use FindBin;
 use lib File::Spec->catdir( $FindBin::Bin, 'lib' );
 use GenAppTest qw(generate_fixture_app read_file repo_root);
-use JSON::PP qw(decode_json);
+use JSON::PP qw(decode_json encode_json);
 use Test::More;
 
 my $repo_root = repo_root($FindBin::Bin);
@@ -33,7 +33,13 @@ like( $endpoint, qr/function action_stage_file_request.*?\$_FILES\[ \$submit_id 
 like( $endpoint, qr/\$repeated.*?\$_REQUEST\[ \$id \] = \$staged/s, 'action endpoint replaces repeated display values with ordered resolved paths' );
 like( $endpoint, qr/No file selected for.*?action_file_label/s, 'action endpoint reports the missing repeated row in plain language' );
 like( $endpoint, qr/\$action_dir = "\$rdir\/_actions\/action_demo\/\$action_id"/, 'action endpoint uses per-user project action directory' );
+like( $endpoint, qr/function action_project_directory_group_writable.*?chmod\( \$dir, 0775 \).*?fileperms/s, 'action endpoint repairs and verifies project group-write permission' );
+like( $endpoint, qr/action_project_directory_group_writable\( \$rdir \)/, 'action endpoint checks project permissions before creating action data' );
 unlike( $endpoint, qr/jobrun\.php|sys_joblocked|joblog/, 'action endpoint stays outside job manager submit path' );
+
+my $submit_endpoint = read_file( File::Spec->catfile( $generated->{app_dir}, qw(output html5 ajax demo action_demo.php) ) );
+like( $submit_endpoint, qr/function ga_submission_project_directory_group_writable.*?chmod\( \$dir, 0775 \).*?fileperms/s, 'submission endpoint repairs and verifies project group-write permission' );
+like( $submit_endpoint, qr/ga_submission_project_directory_group_writable\( \$dir \).*?ga_db_remove.*?Could not make project directory group-writable/s, 'submission permission failure clears the project lock and stops dispatch' );
 
 my $ga_js = read_file( File::Spec->catfile( $generated->{app_dir}, qw(output html5 js ga.js) ) );
 like( $ga_js, qr/ga\.action\.process = function/, 'shared html5 JavaScript includes action processor' );
@@ -66,5 +72,51 @@ like( $ui2_css, qr/\.ui2-action-status\[data-status="warning"\]\s*\{[^}]*color:\
 
 ok( -f File::Spec->catfile( $repo_root, qw(languages qt5 types action.input) ), 'qt5 has additive action input template stub' );
 ok( -f File::Spec->catfile( $repo_root, qw(languages qt5 types action.output) ), 'qt5 has additive action output template stub' );
+
+my $action_endpoint_path = File::Spec->catfile( $generated->{app_dir}, qw(output html5 ajax action action_demo.php) );
+my $submit_endpoint_path = File::Spec->catfile( $generated->{app_dir}, qw(output html5 ajax demo action_demo.php) );
+my $php = qx{command -v php 2>/dev/null};
+chomp $php;
+SKIP: {
+    skip 'php is not available on PATH; PHP endpoint checks are deferred', 6 if !$php;
+    for my $check (
+        [ action     => $action_endpoint_path ],
+        [ submission => $submit_endpoint_path ],
+    ) {
+        my ( $label, $path ) = @{$check};
+        my $lint = qx{'$php' -l '$path' 2>&1};
+        is( $? >> 8, 0, "generated $label endpoint passes PHP syntax validation" )
+            or diag($lint);
+    }
+    my $window = 'permission-window';
+    my $php_code = join "\n",
+        'umask(0022);',
+        '$_REQUEST = array(',
+        '  "_window" => ' . encode_json($window) . ',',
+        '  "_logon" => "permission_user",',
+        '  "_project" => "fresh_project",',
+        '  "_action" => "conditional_precheck",',
+        '  "sample" => "alpha"',
+        ');',
+        'session_name("GENAPP_ACTION_BUTTON");',
+        'session_id("genapppermissiontest");',
+        'session_start();',
+        '$_SESSION[' . encode_json($window) . '] = array("logon" => "permission_user", "project" => "fresh_project");',
+        'session_write_close();',
+        'include ' . encode_json($action_endpoint_path) . ';';
+    open my $runtime_output, '-|', $php, '-r', $php_code
+        or die "could not run generated action endpoint with php: $!";
+    my $runtime_json = do { local $/; <$runtime_output> };
+    close $runtime_output;
+    is( $? >> 8, 0, 'generated action endpoint runs with umask 0022' );
+    my $runtime_payload = eval { decode_json($runtime_json) };
+    ok( ref($runtime_payload) eq 'HASH' && !$runtime_payload->{error}, 'generated action endpoint returns a successful payload' )
+        or diag($runtime_json);
+    my $project_dir = File::Spec->catdir(
+        $generated->{app_dir}, qw(output html5 results users permission_user fresh_project) );
+    ok( -d $project_dir, 'action endpoint creates the fresh project directory' );
+    my $project_mode = ( stat($project_dir) )[2] & 07777;
+    ok( $project_mode & 0020, sprintf 'fresh action-created project is group-writable (mode %04o)', $project_mode );
+}
 
 done_testing();

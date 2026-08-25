@@ -14,6 +14,23 @@ function action_error_exit( $msg ) {
     exit();
 }
 
+function action_project_directory_group_writable( $dir ) {
+    clearstatcache( true, $dir );
+    $permissions = @fileperms( $dir );
+    if ( $permissions === false ) {
+        return false;
+    }
+    if ( ( $permissions & 0020 ) != 0 ) {
+        return true;
+    }
+    if ( !@chmod( $dir, 0775 ) ) {
+        return false;
+    }
+    clearstatcache( true, $dir );
+    $permissions = @fileperms( $dir );
+    return $permissions !== false && ( $permissions & 0020 ) != 0;
+}
+
 function action_file_requests( $field ) {
     $id = $field[ 'id' ];
     if ( !isset( $field[ 'repeat' ] ) ||
@@ -244,6 +261,9 @@ if ( !is_dir( $rdir ) ) {
 }
 if ( !is_dir( $rdir ) ) {
     action_error_exit( "Could not create project directory" );
+}
+if ( !action_project_directory_group_writable( $rdir ) ) {
+    action_error_exit( "Could not make project directory group-writable" );
 }
 
 $action_dir = "$rdir/_actions/__moduleid__/$action_id";
