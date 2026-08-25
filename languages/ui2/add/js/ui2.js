@@ -11106,6 +11106,7 @@
           : window.Plotly.newPlot(output, data, layout, config);
       })
       .then(() => {
+        normalizePlotlyModebar(output);
         improvePlotlyModebarAccessibility(output);
         observeFitPlotlyOutput(output);
         return fitPlotlyLegendsBelowPlot(output);
@@ -11657,7 +11658,23 @@
         event.preventDefault?.();
         button.click?.();
       });
+      button.addEventListener?.("focus", () => {
+        button.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+      });
     });
+  }
+
+  function normalizePlotlyModebar(output) {
+    const modebar = output?.querySelector?.(".modebar");
+    if (!modebar) {
+      return null;
+    }
+    modebar.classList?.remove("vertical");
+    modebar.classList?.add("ui2-modebar-horizontal");
+    modebar.setAttribute?.("role", "group");
+    modebar.setAttribute?.("aria-label", "Plot controls; scroll horizontally for additional controls");
+    modebar.setAttribute?.("tabindex", "0");
+    return modebar;
   }
 
   function chartEditorLayout(layout) {
@@ -11689,6 +11706,7 @@
       plot_bgcolor: colors.panel,
       font: { color: colors.text },
       modebar: {
+        orientation: "h",
         bgcolor: colors.panel,
         color: colors.text,
         activecolor: colors.text
@@ -13004,6 +13022,7 @@
       plotlyLayoutForOutput,
       plotlyConfigForOutput,
       applyPlotlyModebarHooks,
+      normalizePlotlyModebar,
       improvePlotlyModebarAccessibility,
       plotlyThemeColors,
       repeatIsCondition,

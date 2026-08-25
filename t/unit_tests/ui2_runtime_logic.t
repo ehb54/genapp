@@ -1712,6 +1712,7 @@ const fittedPlotLayout = hooks.plotlyLayoutForOutput(
 assert.strictEqual(fittedPlotLayout.width, undefined, "MMC fit-to-pane removes producer Plotly width from the client copy");
 assert.strictEqual(fittedPlotLayout.height, undefined, "MMC fit-to-pane removes producer Plotly height from the client copy");
 assert.strictEqual(fittedPlotLayout.autosize, true, "MMC fit-to-pane keeps Plotly autosizing enabled");
+assert.strictEqual(fittedPlotLayout.modebar.orientation, "h", "UI2 explicitly requires a horizontal Plotly modebar");
 assert.strictEqual(JSON.stringify(fittedPlotLayout.margin), JSON.stringify({ l: 72, r: 32, t: 96, b: 128, autoexpand: true }), "UI2 reserves top and below-plot legend margins and permits Plotly to expand them");
 assert.strictEqual(fittedPlotLayout.font.size, undefined, "UI2 does not inherit producer font sizing");
 assert.strictEqual(fittedPlotLayout.paper_bgcolor, "#1a201f", "UI2 owns fitted Plotly surface color");
@@ -1819,14 +1820,37 @@ hooks.applyPlotlyModebarHooks(handoffFigure, handoffConfig);
 hooks.applyPlotlyModebarHooks(handoffFigure, handoffConfig);
 assert.strictEqual(handoffConfig.modeBarButtonsToAdd.length, 4, "repeated UI2 rendering keeps the three standard additions and does not duplicate the Chart Editor button");
 const modebarOutput = createNode("div");
+const modebar = createNode("div");
+modebar.className = "modebar vertical";
+modebarOutput.appendChild(modebar);
 const modebarButton = createNode("a");
 modebarButton.className = "modebar-btn";
 modebarButton.setAttribute("data-title", "Edit in Chart Editor");
-modebarOutput.appendChild(modebarButton);
+const modebarListeners = {};
+modebarButton.addEventListener = (type, listener) => {
+  modebarListeners[type] = listener;
+};
+let modebarScrollOptions = null;
+modebarButton.scrollIntoView = (options) => {
+  modebarScrollOptions = options;
+};
+modebar.appendChild(modebarButton);
+assert.strictEqual(hooks.normalizePlotlyModebar(modebarOutput), modebar, "UI2 finds the rendered Plotly modebar");
+hooks.normalizePlotlyModebar(modebarOutput);
+assert.strictEqual(modebar.classList.contains("vertical"), false, "UI2 removes Plotly vertical modebar state on every render");
+assert.strictEqual(modebar.classList.contains("ui2-modebar-horizontal"), true, "UI2 marks the rendered modebar with its horizontal layout contract");
+assert.strictEqual(modebar.getAttribute("role"), "group", "UI2 identifies the scrollable modebar as one control group");
+assert.strictEqual(modebar.getAttribute("tabindex"), "0", "UI2 makes the horizontal modebar itself keyboard-scrollable");
 hooks.improvePlotlyModebarAccessibility(modebarOutput);
 assert.strictEqual(modebarButton.getAttribute("role"), "button", "UI2 gives Plotly modebar controls button semantics");
 assert.strictEqual(modebarButton.getAttribute("tabindex"), "0", "UI2 makes Plotly modebar controls keyboard reachable");
 assert.strictEqual(modebarButton.getAttribute("aria-label"), "Edit in Chart Editor", "UI2 exposes the Plotly modebar tooltip as an accessible name");
+modebarListeners.focus();
+assert.strictEqual(
+  JSON.stringify(modebarScrollOptions),
+  JSON.stringify({ block: "nearest", inline: "nearest" }),
+  "keyboard focus scrolls each Plotly control into the visible toolbar lane"
+);
 const displayedFigure = {
   data: [{ x: [3, 4], y: [5, 6], name: "displayed" }],
   layout: { title: "Displayed", width: 900, height: 600 }

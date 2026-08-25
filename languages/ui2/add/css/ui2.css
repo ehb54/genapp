@@ -2360,19 +2360,44 @@ code {
 .ui2-output-plotly .modebar {
   box-sizing: border-box;
   display: flex;
-  flex-wrap: nowrap;
   left: 0.25rem;
   right: 0.25rem;
-  justify-content: flex-end;
   max-width: none;
+}
+
+.ui2-output-plotly .modebar.ui2-modebar-horizontal {
+  align-content: normal;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  max-height: none;
+  min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
+  scrollbar-color: var(--ui2-border) transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
 }
 
-.ui2-output-plotly .modebar-group {
+.ui2-output-plotly .modebar.ui2-modebar-horizontal .modebar-group {
+  display: block;
   flex: 0 0 auto;
   float: none;
+  padding-bottom: 0;
+}
+
+.ui2-output-plotly .modebar.ui2-modebar-horizontal .modebar-group:first-child {
+  margin-inline-start: auto;
+}
+
+.ui2-output-plotly .modebar.ui2-modebar-horizontal::-webkit-scrollbar {
+  height: 0.45rem;
+}
+
+.ui2-output-plotly .modebar.ui2-modebar-horizontal::-webkit-scrollbar-thumb {
+  background: var(--ui2-border);
+  border-radius: 999px;
 }
 
 .ui2-output-plotly .modebar-btn:focus-visible {
