@@ -3,6 +3,9 @@
   "menu": [{
     "id": "data",
     "label": "Data",
-    "modules": [{ "id": "data_interpolation", "label": "Data Interpolation" }]
+    "modules": [
+      { "id": "data_interpolation", "label": "Data Interpolation" },
+      { "id": "scenario_file_workflow", "label": "Scenario File Workflow" }
+    ]
   }]
 }

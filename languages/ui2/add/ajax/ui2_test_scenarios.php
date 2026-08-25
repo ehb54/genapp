@@ -1,5 +1,4 @@
 <?php
-header('Content-type: application/json');
 
 $app_root = dirname(__DIR__, 2);
 $application = basename($app_root);
@@ -39,11 +38,52 @@ $error = ui2_test_scenarios_validate_catalog($catalog, $module_id, $app_root);
 if ($error) {
     ui2_test_scenarios_reply(array('error' => $error), 500);
 }
+if (isset($_REQUEST['asset'])) {
+    ui2_test_scenarios_serve_asset($catalog, $module_id, $app_root);
+}
 ui2_test_scenarios_reply(array('available' => true, 'catalog' => $catalog));
 
 function ui2_test_scenarios_reply($payload, $status = 200) {
     http_response_code($status);
+    header('Content-type: application/json');
     echo(json_encode($payload));
+    exit();
+}
+
+function ui2_test_scenarios_serve_asset($catalog, $module_id, $app_root) {
+    $scenario_id = isset($_REQUEST['scenario']) ? strval($_REQUEST['scenario']) : '';
+    $field_id = isset($_REQUEST['field']) ? strval($_REQUEST['field']) : '';
+    if (!preg_match('/^[A-Za-z0-9_-]+$/', $scenario_id) || !preg_match('/^[A-Za-z0-9_-]+$/', $field_id)) {
+        ui2_test_scenarios_reply(array('error' => 'Invalid scenario asset request.'), 400);
+    }
+    $declaration = null;
+    foreach ($catalog['scenarios'] as $scenario) {
+        if ($scenario['id'] === $scenario_id && isset($scenario['files'][$field_id])) {
+            $declaration = $scenario['files'][$field_id];
+            break;
+        }
+    }
+    if (!is_array($declaration)) {
+        ui2_test_scenarios_reply(array('error' => 'Scenario asset is unavailable.'), 404);
+    }
+    $assets_root = realpath($app_root . '/test_scenarios/assets');
+    $asset_root = $assets_root ? realpath($assets_root . '/' . $module_id . '/' . $declaration['asset_id']) : false;
+    $asset_path = $asset_root ? realpath($asset_root . '/' . $declaration['filename']) : false;
+    if (!$assets_root || !$asset_root || strpos($asset_root, $assets_root . DIRECTORY_SEPARATOR) !== 0 ||
+        !$asset_path || strpos($asset_path, $asset_root . DIRECTORY_SEPARATOR) !== 0 ||
+        !is_file($asset_path) || !is_readable($asset_path)) {
+        ui2_test_scenarios_reply(array('error' => 'Scenario asset is unavailable.'), 404);
+    }
+    $size = filesize($asset_path);
+    if ($size === false || $size !== intval($declaration['size']) || $size > 16 * 1024 * 1024 ||
+        !hash_equals($declaration['sha256'], hash_file('sha256', $asset_path))) {
+        ui2_test_scenarios_reply(array('error' => 'Scenario asset integrity check failed.'), 409);
+    }
+    header('Content-Type: application/octet-stream');
+    header('Content-Length: ' . $size);
+    header('Content-Disposition: attachment; filename="' . $declaration['filename'] . '"');
+    header('X-Content-Type-Options: nosniff');
+    readfile($asset_path);
     exit();
 }
 
@@ -83,8 +123,12 @@ function ui2_test_scenarios_validate_catalog($catalog, $module_id, $app_root) {
     $module_payload = is_readable($module_path) ? json_decode(file_get_contents($module_path), true) : null;
     $module = is_array($module_payload) && isset($module_payload['modulejson']) ? $module_payload['modulejson'] : $module_payload;
     $input_ids = array();
+    $input_types = array();
     foreach (is_array($module) && isset($module['fields']) && is_array($module['fields']) ? $module['fields'] : array() as $field) {
-        if (is_array($field) && isset($field['id']) && (!isset($field['role']) || $field['role'] !== 'output')) $input_ids[$field['id']] = true;
+        if (is_array($field) && isset($field['id']) && (!isset($field['role']) || $field['role'] !== 'output')) {
+            $input_ids[$field['id']] = true;
+            $input_types[$field['id']] = strtolower(isset($field['type']) ? strval($field['type']) : 'text');
+        }
     }
     if (!count($input_ids)) return 'Scenario catalog module definition is unavailable.';
     $seen = array();
@@ -94,6 +138,17 @@ function ui2_test_scenarios_validate_catalog($catalog, $module_id, $app_root) {
         $seen[$scenario['id']] = true;
         foreach ($scenario['inputs'] as $field_id => $value) {
             if (!preg_match('/^[A-Za-z0-9_-]+$/', strval($field_id)) || !isset($input_ids[$field_id])) return 'Scenario catalog references an unknown input field.';
+            if (in_array($input_types[$field_id], array('file', 'lrfile', 'rfile', 'ftree', 'rpath'), true)) return 'Scenario file inputs must use the files block.';
+        }
+        if (isset($scenario['files'])) {
+            if (!is_array($scenario['files']) || !count($scenario['files'])) return 'Scenario catalog has an invalid files block.';
+            foreach ($scenario['files'] as $field_id => $asset) {
+                if (!isset($input_ids[$field_id]) || !in_array($input_types[$field_id], array('file', 'lrfile'), true)) return 'Scenario file target is not a local-file input.';
+                if (!is_array($asset) || !isset($asset['asset_id']) || !preg_match('/^[A-Za-z0-9_-]+$/', strval($asset['asset_id'])) ||
+                    !isset($asset['filename']) || !preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*$/', strval($asset['filename'])) || $asset['filename'] === '..' ||
+                    !isset($asset['size']) || !is_int($asset['size']) || $asset['size'] < 0 || $asset['size'] > 16 * 1024 * 1024 ||
+                    !isset($asset['sha256']) || !preg_match('/^[a-f0-9]{64}$/', strval($asset['sha256']))) return 'Scenario catalog has invalid file asset metadata.';
+            }
         }
         foreach (isset($scenario['provenance']) && is_array($scenario['provenance']) ? $scenario['provenance'] : array() as $source) {
             if (!in_array($source, $allowed_provenance, true)) return 'Scenario catalog has an invalid provenance value.';

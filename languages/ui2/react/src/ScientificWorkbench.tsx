@@ -377,6 +377,8 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
   const [workspaceExpanded, setWorkspaceExpanded] = React.useState(false)
   const [runLogOpen, setRunLogOpen] = React.useState(Boolean(view.results?.runtimeLog?.defaultOpen))
   const [scenarioChoice, setScenarioChoice] = React.useState("")
+  const [scenarioLoading, setScenarioLoading] = React.useState(false)
+  const [scenarioMessage, setScenarioMessage] = React.useState("")
   const resultCardRef = React.useRef<HTMLElement>(null)
   const fieldsById = React.useMemo(() => new Map(fields.map((field) => [field.id, field])), [fields])
   const runtime = React.useSyncExternalStore(bridge.subscribeRuntime, bridge.runtimeSnapshot, bridge.runtimeSnapshot)
@@ -554,14 +556,23 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
     setWorkspaceExpanded(false)
   }
 
-  const loadTestScenario = (id: string) => {
+  const loadTestScenario = async (id: string) => {
     const form = document.getElementById("ui2-form") as HTMLFormElement | null
     if (!form || !id) return
-    const result = bridge.applyTestScenario(id, form)
-    if (result.ok) {
-      setLiveValues(result.values || bridge.syncValues())
-      setInputEditOpen(true)
-      setInputRailCollapsed(false)
+    setScenarioLoading(true)
+    setScenarioMessage("Loading scenario…")
+    try {
+      const result = await bridge.applyTestScenario(id, form)
+      if (result.ok) {
+        setLiveValues(result.values || bridge.syncValues())
+        setInputEditOpen(true)
+        setInputRailCollapsed(false)
+        setScenarioMessage("Scenario loaded. Review all inputs and files before running.")
+      } else {
+        setScenarioMessage(result.error || "Scenario could not be loaded.")
+      }
+    } finally {
+      setScenarioLoading(false)
     }
   }
 
@@ -662,7 +673,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
                 <Card className="ui2-workbench-test-scenarios">
                   <CardHeader>
                     <CardTitle>Test scenario</CardTitle>
-                    <CardDescription>Loads inputs only; review them before running.</CardDescription>
+                    <CardDescription>Loads declared inputs and files; review them before running.</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <select aria-label="Test scenario" value={scenarioChoice} onChange={(event) => setScenarioChoice(event.target.value)}>
@@ -671,9 +682,10 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
                         <option key={scenario.id} value={scenario.id}>{scenario.label}</option>
                       ))}
                     </select>
-                    <Button disabled={!scenarioChoice} onClick={() => loadTestScenario(scenarioChoice)} type="button" variant="outline">
-                      Load scenario
+                    <Button disabled={!scenarioChoice || scenarioLoading} onClick={() => loadTestScenario(scenarioChoice)} type="button" variant="outline">
+                      {scenarioLoading ? "Loading…" : "Load scenario"}
                     </Button>
+                    {scenarioMessage && <p className="ui2-help" role="status">{scenarioMessage}</p>}
                     {testScenarios.selectedId && (
                       <p className="ui2-help">
                         {testScenarios.catalog.scenarios.find((scenario) => scenario.id === testScenarios.selectedId)?.maturity || "draft"}

@@ -162,6 +162,7 @@ export type TestScenario = {
   provenance?: string[]
   maturity?: string
   inputs: Record<string, unknown>
+  files?: Record<string, { asset_id: string; filename: string; size: number; sha256: string }>
   verification?: { schema_version: number; checks: Array<Record<string, unknown>> }
 }
 
@@ -194,7 +195,7 @@ export type ScientificWorkbenchBridge = {
   subscribeRunContext: (listener: () => void) => () => void
   testScenarioSnapshot: () => TestScenarioSnapshot
   subscribeTestScenarios: (listener: () => void) => () => void
-  applyTestScenario: (id: string, form: HTMLFormElement) => SubmitResult
+  applyTestScenario: (id: string, form: HTMLFormElement) => Promise<SubmitResult>
 }
 
 export type SubmittedRunContext = {

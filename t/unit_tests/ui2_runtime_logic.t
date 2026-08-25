@@ -268,7 +268,15 @@ const window = {
   __localStorage: {},
   __openCalls: [],
   CSS: { escape(value) { return String(value); } },
-  crypto: { randomUUID() { return "uuid-for-test"; } },
+  crypto: {
+    randomUUID() { return "uuid-for-test"; },
+    subtle: {
+      async digest(_algorithm, bytes) {
+        const value = require("crypto").createHash("sha256").update(Buffer.from(bytes)).digest();
+        return value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength);
+      }
+    }
+  },
   localStorage: {
     getItem(key) {
       return window.__localStorage[key] || "{}";
@@ -343,6 +351,19 @@ const context = {
     }
     get(key) {
       return this.values.get(key);
+    }
+  },
+  File: class File {
+    constructor(parts, name, options) {
+      this.parts = parts;
+      this.name = name;
+      this.type = options?.type || "";
+    }
+  },
+  DataTransfer: class DataTransfer {
+    constructor() {
+      this.files = [];
+      this.items = { add: (file) => { this.files.push(file); } };
     }
   },
   HTMLProgressElement: class HTMLProgressElement {},
@@ -4142,6 +4163,29 @@ assert.strictEqual(
   false,
   "UI2 rejects unsafe scenario identifiers"
 );
+const fileScenario = {
+  ...scenario,
+  label: "File workflow",
+  inputs: { run_label: "scenario_loaded" },
+  files: {
+    sample_file: {
+      asset_id: "sample_text",
+      filename: "sample.txt",
+      size: 22,
+      sha256: "907729515e50a0bef905abcf2188f2fd9e0ae14734f2dd4eb8ae7b9656b686dc"
+    }
+  }
+};
+assert.strictEqual(
+  hooks.validTestScenarioCatalog({ schema_version: 1, module_id: "scenario_file_workflow", scenarios: [fileScenario] }, "scenario_file_workflow"),
+  true,
+  "UI2 accepts a generic scenario file declaration with bounded integrity metadata"
+);
+assert.strictEqual(
+  hooks.validTestScenarioCatalog({ schema_version: 1, module_id: "scenario_file_workflow", scenarios: [{ ...fileScenario, files: { sample_file: { ...fileScenario.files.sample_file, filename: "../sample.txt" } } }] }, "scenario_file_workflow"),
+  false,
+  "UI2 rejects a scenario filename that could address outside its logical asset directory"
+);
 assert.strictEqual(
   hooks.evaluateTestScenarioVerification(scenario, "running", { interpolated_file: "result" }).state,
   "running",
@@ -4179,6 +4223,84 @@ assert.notStrictEqual(
   "test-scenario snapshot identity changes after a real state transition"
 );
 unsubscribeTestScenarios();
+
+async function verifyScenarioFileHydration() {
+  document.body.children = [];
+  document.querySelectorAll = function(selector) {
+    return [...querySelectorAllFrom(this.body, selector), ...querySelectorAllFrom(this.head, selector)];
+  };
+  const form = createNode("form");
+  form.id = "ui2-form";
+  const runLabel = createNode("input");
+  runLabel.type = "text";
+  runLabel.dataset.fieldId = "run_label";
+  runLabel.value = "keep_until_verified";
+  const fileDisplay = createNode("input");
+  fileDisplay.type = "text";
+  fileDisplay.dataset.fieldId = "sample_file";
+  fileDisplay.value = "old.txt";
+  const filePicker = createNode("input");
+  filePicker.type = "file";
+  filePicker.className = "ui2-native-file";
+  filePicker.dataset.fieldId = "sample_file";
+  filePicker.files = [{ name: "old.txt" }];
+  filePicker.dispatchEvent = () => {
+    fileDisplay.value = filePicker.files[0]?.name || "";
+  };
+  form.append(runLabel, fileDisplay, filePicker);
+  document.body.appendChild(form);
+  assert.strictEqual(document.querySelectorAll('[data-field-id="run_label"]').length, 1, "scenario test form exposes its ordinary input to UI2 selectors");
+  hooks.state.moduleId = "scenario_file_workflow";
+  hooks.state.view = {};
+  hooks.state.module = {
+    fields: [
+      { id: "run_label", type: "text", default: "ordinary_default" },
+      { id: "sample_file", type: "file", default: "" }
+    ]
+  };
+  hooks.state.values = { run_label: "keep_until_verified", sample_file: "old.txt" };
+  const scenarioWithFile = {
+    ...fileScenario,
+    id: "local_text_asset",
+    verification: undefined
+  };
+  hooks.state.testScenarios = {
+    available: true,
+    loading: false,
+    catalog: { schema_version: 1, module_id: "scenario_file_workflow", scenarios: [scenarioWithFile] },
+    selectedId: "",
+    verification: { state: "not_run", checks: [] }
+  };
+
+  scenarioWithFile.files.sample_file.sha256 = "0".repeat(64);
+  const rejected = await hooks.applyTestScenario("local_text_asset", form);
+  assert.strictEqual(rejected.ok, false, "scenario hydration rejects bytes that fail browser integrity verification");
+  assert.strictEqual(runLabel.value, "keep_until_verified", "failed file verification leaves ordinary inputs unchanged");
+  assert.strictEqual(filePicker.files[0].name, "old.txt", "failed file verification leaves the prior file selection unchanged");
+
+  scenarioWithFile.files.sample_file.sha256 = "907729515e50a0bef905abcf2188f2fd9e0ae14734f2dd4eb8ae7b9656b686dc";
+  const loaded = await hooks.applyTestScenario("local_text_asset", form);
+  assert.strictEqual(loaded.ok, true, "scenario hydration accepts bytes with matching size and sha256");
+  assert.strictEqual(runLabel.value, "scenario_loaded", "verified scenario values replace prior ordinary inputs");
+  assert.strictEqual(filePicker.files[0].name, "sample.txt", "verified scenario asset attaches to the normal native file control");
+  assert.strictEqual(fileDisplay.value, "sample.txt", "normal file-change handling publishes the attached filename");
+  form.remove();
+}
+
+setImmediate(() => {
+  context.fetch = async () => ({
+    ok: true,
+    status: 200,
+    async arrayBuffer() {
+      const bytes = Uint8Array.from(Buffer.from("neutral scenario file\\n", "utf8"));
+      return bytes.buffer;
+    }
+  });
+  verifyScenarioFileHydration().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+});
 JS
 close $fh;
 

@@ -1151,6 +1151,15 @@
         return false;
       }
       ids.add(scenario.id);
+      const files = scenario.files;
+      if (files && (typeof files !== "object" || Array.isArray(files) || !Object.keys(files).length ||
+          !Object.entries(files).every(([fieldId, asset]) => /^[A-Za-z0-9_-]+$/.test(fieldId) && asset &&
+            typeof asset === "object" && !Array.isArray(asset) && /^[A-Za-z0-9_-]+$/.test(String(asset.asset_id || "")) &&
+            /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(String(asset.filename || "")) && asset.filename !== ".." &&
+            Number.isInteger(asset.size) && asset.size >= 0 && asset.size <= 16 * 1024 * 1024 &&
+            /^[a-f0-9]{64}$/.test(String(asset.sha256 || ""))))) {
+        return false;
+      }
       const verification = scenario.verification;
       return !verification || (Number(verification.schema_version) === 1 && Array.isArray(verification.checks) &&
         verification.checks.every((check) => check && /^[A-Za-z0-9_-]+$/.test(String(check.id || "")) &&
@@ -1192,7 +1201,70 @@
     });
   }
 
-  function applyTestScenario(id, form = document.getElementById("ui2-form")) {
+  function testScenarioAssetUrl(scenarioId, fieldId) {
+    const url = new URL(legacyEndpoint("", TEST_SCENARIO_ENDPOINT), window.location.href);
+    url.searchParams.set("module", state.moduleId);
+    url.searchParams.set("scenario", scenarioId);
+    url.searchParams.set("field", fieldId);
+    url.searchParams.set("asset", "1");
+    url.searchParams.set("_window", window.name);
+    url.searchParams.set("_logon", state.session.logon || "");
+    return url.toString();
+  }
+
+  async function testScenarioAssetFile(scenarioId, fieldId, declaration) {
+    const response = await fetch(testScenarioAssetUrl(scenarioId, fieldId), {
+      cache: "no-cache",
+      credentials: "same-origin"
+    });
+    if (!response.ok) {
+      throw new Error(`Scenario file ${declaration.filename} returned HTTP ${response.status}.`);
+    }
+    const bytes = await response.arrayBuffer();
+    if (bytes.byteLength !== declaration.size) {
+      throw new Error(`Scenario file ${declaration.filename} has an unexpected size.`);
+    }
+    if (!window.crypto?.subtle) {
+      throw new Error("This browser cannot verify scenario file integrity.");
+    }
+    const digest = await window.crypto.subtle.digest("SHA-256", bytes);
+    const sha256 = Array.from(new Uint8Array(digest)).map((value) => value.toString(16).padStart(2, "0")).join("");
+    if (sha256 !== declaration.sha256) {
+      throw new Error(`Scenario file ${declaration.filename} failed its integrity check.`);
+    }
+    return new File([bytes], declaration.filename, { type: "application/octet-stream" });
+  }
+
+  async function fetchTestScenarioFiles(scenario) {
+    const entries = Object.entries(scenario.files || {});
+    const files = await Promise.all(entries.map(async ([fieldId, declaration]) => [
+      fieldId,
+      await testScenarioAssetFile(scenario.id, fieldId, declaration)
+    ]));
+    return new Map(files);
+  }
+
+  function clearTestScenarioFileSelections(form) {
+    form.querySelectorAll(".ui2-native-file").forEach((picker) => {
+      picker.value = "";
+    });
+    state.serverSelections = {};
+    clearFileReselectionWarnings();
+  }
+
+  function attachTestScenarioFile(form, fieldId, file) {
+    const pickers = Array.from(form.querySelectorAll(".ui2-native-file"))
+      .filter((picker) => picker.dataset.fieldId === fieldId);
+    if (pickers.length !== 1) {
+      throw new Error(`Scenario file target ${fieldId} is unavailable or repeated.`);
+    }
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    pickers[0].files = transfer.files;
+    pickers[0].dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  async function applyTestScenario(id, form = document.getElementById("ui2-form")) {
     const scenario = state.testScenarios.catalog?.scenarios?.find((item) => item.id === id);
     if (!scenario || !form) return { ok: false, error: "Scenario is unavailable." };
     syncValues(form);
@@ -1201,7 +1273,28 @@
     if (dirty && typeof window.confirm === "function" && !window.confirm("Replace the current module inputs with this test scenario?")) {
       return { ok: false, error: "Scenario load cancelled." };
     }
+    const moduleId = state.moduleId;
+    let files;
+    try {
+      files = await fetchTestScenarioFiles(scenario);
+    } catch (error) {
+      return { ok: false, error: error.message || "Scenario files could not be loaded." };
+    }
+    if (!form.isConnected || state.moduleId !== moduleId) {
+      return { ok: false, error: "The module changed while the scenario was loading." };
+    }
+    state.pendingInputValues = {};
+    clearTestScenarioFileSelections(form);
+    applyInputPayload(defaultInputPayload(), { clearMissing: true });
     applyInputPayload(scenario.inputs, { clearMissing: false });
+    try {
+      files.forEach((file, fieldId) => attachTestScenarioFile(form, fieldId, file));
+    } catch (error) {
+      clearTestScenarioFileSelections(form);
+      applyInputPayload(defaultInputPayload(), { clearMissing: true });
+      syncValues(form);
+      return { ok: false, error: error.message || "Scenario files could not be attached." };
+    }
     syncValues(form);
     updateTestScenarioState({
       selectedId: scenario.id,
@@ -1229,8 +1322,14 @@
     });
     const load = el("button", "ui2-button", "Load scenario");
     load.type = "button";
-    load.addEventListener("click", () => applyTestScenario(select.value));
-    const detail = el("p", "ui2-help", "Loads inputs only; review them before running.");
+    const detail = el("p", "ui2-help", "Loads declared inputs and files; review them before running.");
+    load.addEventListener("click", async () => {
+      load.disabled = true;
+      detail.textContent = "Loading scenario…";
+      const result = await applyTestScenario(select.value);
+      detail.textContent = result.ok ? "Scenario loaded. Review all inputs and files before running." : (result.error || "Scenario could not be loaded.");
+      load.disabled = false;
+    });
     panel.append(select, load, detail);
     return panel;
   }
@@ -12831,6 +12930,11 @@
       deferUnavailableReactWorkbenchInput,
       applyPendingReactWorkbenchInputValues,
       validTestScenarioCatalog,
+      testScenarioAssetUrl,
+      testScenarioAssetFile,
+      fetchTestScenarioFiles,
+      clearTestScenarioFileSelections,
+      attachTestScenarioFile,
       evaluateTestScenarioVerification,
       testScenarioOutputNonempty,
       applyTestScenario,

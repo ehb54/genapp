@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "module_id": "scenario_file_workflow",
+  "scenarios": [{
+    "id": "local_text_asset",
+    "label": "Local text asset",
+    "provenance": ["developer"],
+    "maturity": "candidate",
+    "inputs": { "run_label": "scenario_loaded" },
+    "files": {
+      "sample_file": {
+        "asset_id": "sample_text",
+        "filename": "sample.txt",
+        "size": 22,
+        "sha256": "907729515e50a0bef905abcf2188f2fd9e0ae14734f2dd4eb8ae7b9656b686dc"
+      }
+    },
+    "verification": {
+      "schema_version": 1,
+      "checks": [
+        { "id": "completed", "kind": "job_status", "equals": "complete" },
+        { "id": "received", "kind": "output_nonempty", "output_id": "received_file" }
+      ]
+    }
+  }]
+}

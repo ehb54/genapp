@@ -1,0 +1,10 @@
+{
+  "moduleid": "scenario_file_workflow",
+  "label": "Scenario File Workflow",
+  "executable": "bin/scenario_file_workflow",
+  "fields": [
+    { "id": "run_label", "label": "Run label", "type": "text", "default": "ordinary_default" },
+    { "id": "sample_file", "label": "Sample file", "type": "file", "required": true },
+    { "id": "received_file", "label": "Received file", "type": "text", "role": "output" }
+  ]
+}

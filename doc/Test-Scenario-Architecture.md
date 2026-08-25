@@ -1,4 +1,4 @@
-# Admin Test Scenarios (Phase 1)
+# Admin Test Scenarios
 
 ## Purpose
 
@@ -36,7 +36,7 @@ Deploy `test_scenarios/` beside that application configuration, outside the
 public UI2 asset directory.  It is read by the protected endpoint, not fetched
 as a public static file.
 
-## Initial catalog shape
+## Catalog shape
 
 ```json
 {
@@ -49,6 +49,14 @@ as a public static file.
       "provenance": ["legacy_docs"],
       "maturity": "draft",
       "inputs": { "run_name": "interpolation_example" },
+      "files": {
+        "experimental_data": {
+          "asset_id": "documented_input",
+          "filename": "example.dat",
+          "size": 1234,
+          "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        }
+      },
       "verification": {
         "schema_version": 1,
         "checks": [
@@ -67,9 +75,31 @@ Phase 1 accepts the provenance values `current_docs`, `legacy_docs`,
 `draft`, `candidate`, `verified_cli`, `verified_ui`, `release_ready`, and
 `deferred`.
 
-Scenario file staging is deliberately deferred.  A Phase 1 catalog may only
-load normal, already-supported field values.  It may not contain executable
-code, arbitrary paths, shell commands, or a browser-side file bypass.
+`inputs` contains ordinary declared field values. File inputs use the optional
+`files` map instead; an `inputs` entry must not encode a local or server path.
+Each file declaration targets a module field of type `file` or `lrfile` and
+contains only a logical asset id, safe display filename, byte size, and SHA-256.
+
+Assets use this private application-owned layout:
+
+```text
+test_scenarios/assets/<module-id>/<asset-id>/<filename>
+```
+
+They are never copied into the public UI2 asset map. The same administrator-
+protected endpoint that returns the catalog resolves a declaration under this
+fixed root, checks real-path containment, enforces a 16 MiB per-file limit, and
+checks size and SHA-256 before returning bytes. The browser fetches and verifies
+every declared file before changing the form, attaches it to the normal native
+file input, and uses the ordinary UI2 submission path. Catalogs cannot contain
+executable code, arbitrary paths, shell commands, or server-file selections.
+
+Loading a scenario never submits it. After any dirty-input confirmation, UI2
+first obtains all declared files. It then resets ordinary inputs to the module's
+declared defaults, applies the scenario values, and attaches the verified files.
+This prevents omitted fields or a prior local/server file selection from leaking
+into a later scenario. Native UI2 and the React workbench call the same runtime
+operation and report file failures without submitting a job.
 
 ## Verification stub
 
