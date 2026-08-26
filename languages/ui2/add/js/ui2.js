@@ -214,7 +214,6 @@
     syncDocsLink();
 
     renderMenu();
-    refreshSessionState();
     initWebSocket();
     if (nodes.candidates) {
       candidateModules.forEach((id) => {
@@ -241,10 +240,12 @@
   }
 
   async function loadStartupModule() {
+    if (!state.session.loaded) {
+      await refreshSessionState();
+    }
     const routeParams = new URLSearchParams(window.location.search);
     const switchValue = routeParams.get("_switch");
     if (switchValue) {
-      await refreshSessionState();
       if (!state.session.logon) {
         state.pendingSwitch = switchValue;
         openLoginDialog({ mandatory: true });
@@ -1244,10 +1245,32 @@
     return state.testScenarios.catalog?.scenarios?.find((scenario) => scenario.id === state.testScenarios.selectedId) || null;
   }
 
+  function normalizedTestScenarioInputValue(field, value) {
+    if (Array.isArray(value)) {
+      return value.map((item) => normalizedTestScenarioInputValue(field, item));
+    }
+    if (value && typeof value === "object") {
+      return value;
+    }
+    if (String(field?.type || "").toLowerCase() === "checkbox") {
+      const normalized = String(value).toLowerCase();
+      return value === true || normalized === "true" || normalized === "1" || normalized === "on" || normalized === "yes";
+    }
+    return value == null ? "" : String(value);
+  }
+
+  function testScenarioInputValueMatches(id, actual, expected) {
+    const field = moduleFieldById(id);
+    if (!field) return false;
+    return JSON.stringify(normalizedTestScenarioInputValue(field, actual)) ===
+      JSON.stringify(normalizedTestScenarioInputValue(field, expected));
+  }
+
   function selectTestScenarioForInputs(inputs) {
     if (!inputs || typeof inputs !== "object" || !state.testScenarios.catalog?.scenarios?.length) return;
+    const restoredInputs = Object.assign({}, defaultInputPayload(), inputs);
     const scenario = state.testScenarios.catalog.scenarios.find((candidate) => Object.entries(candidate.inputs || {}).every(
-      ([id, value]) => Object.prototype.hasOwnProperty.call(inputs, id) && JSON.stringify(inputs[id]) === JSON.stringify(value)
+      ([id, value]) => Object.prototype.hasOwnProperty.call(restoredInputs, id) && testScenarioInputValueMatches(id, restoredInputs[id], value)
     ));
     if (!scenario) return;
     updateTestScenarioState({
@@ -13103,6 +13126,8 @@
       testScenarioSnapshot,
       clearTestScenarios,
       subscribeTestScenarios,
+      selectTestScenarioForInputs,
+      testScenarioInputValueMatches,
       applySavedJobInput,
       savedInputRestoreError,
       savedInputRestoreWarnings,

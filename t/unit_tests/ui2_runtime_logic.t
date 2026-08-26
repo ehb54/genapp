@@ -2534,6 +2534,11 @@ assert(
     source.includes('state.freshLoginAfterLogoff = false;\\n      await loadStartupModule();'),
   "login after logoff returns to the startup module instead of the old attached job"
 );
+assert(
+  !source.includes('renderMenu();\\n    refreshSessionState();\\n    initWebSocket();') &&
+    source.includes('async function loadStartupModule() {\\n    if (!state.session.loaded) {\\n      await refreshSessionState();'),
+  "startup waits for one session refresh before routing directly to a requested module"
+);
 
 function job(id, moduleName, project, endSeconds, endText, duration) {
   return {
@@ -4384,6 +4389,56 @@ assert.strictEqual(
   hooks.validTestScenarioCatalog({ schema_version: 1, module_id: "scenario_file_workflow", scenarios: [{ ...fileScenario, files: { sample_file: { ...fileScenario.files.sample_file, filename: "../sample.txt" } } }] }, "scenario_file_workflow"),
   false,
   "UI2 rejects a scenario filename that could address outside its logical asset directory"
+);
+hooks.state.module = {
+  fields: [
+    { id: "run_name", type: "text", default: "ordinary_default" },
+    { id: "izero", type: "float", default: 0.019 },
+    { id: "advanced", type: "checkbox", checked: false },
+    { id: "q_values", type: "integer", default: [21, 31] }
+  ]
+};
+hooks.state.testScenarios = {
+  available: true,
+  loading: false,
+  catalog: {
+    schema_version: 1,
+    module_id: "neutral_scenario_module",
+    scenarios: [{
+      id: "restored_documented_example",
+      label: "Restored documented example",
+      inputs: {
+        run_name: "documented_example",
+        izero: 0.04,
+        advanced: false,
+        q_values: [21, 31]
+      }
+    }]
+  },
+  selectedId: "",
+  verification: { state: "not_run", checks: [] }
+};
+hooks.selectTestScenarioForInputs({
+  run_name: "documented_example",
+  izero: "0.04",
+  q_values: ["21", "31"]
+});
+assert.strictEqual(
+  hooks.state.testScenarios.selectedId,
+  "restored_documented_example",
+  "reattachment recovers scenario identity across canonical text, numeric, omitted default checkbox, and repeated values"
+);
+hooks.state.testScenarios.selectedId = "";
+hooks.selectTestScenarioForInputs({
+  run_name: "different_example",
+  izero: "0.04",
+  advanced: false,
+  q_values: ["21", "31"]
+});
+assert.strictEqual(
+  hooks.state.testScenarios.selectedId,
+  "",
+  "reattachment does not select a scenario when an ordinary input differs"
 );
 assert.strictEqual(
   hooks.evaluateTestScenarioVerification(scenario, "running", { interpolated_file: "result" }).state,
