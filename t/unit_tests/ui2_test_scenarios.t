@@ -41,6 +41,8 @@ like( $runtime, qr/new DataTransfer\(\)/, 'UI2 attaches verified assets through 
 like( $runtime, qr/applyInputPayload\(defaultInputPayload\(\), \{ clearMissing: true \}\)/, 'scenario hydration resets omitted ordinary inputs to module defaults' );
 like( $runtime, qr/function evaluateTestScenarioVerification\(/, 'UI2 core owns final-output verification state' );
 like( $runtime, qr/TEST_SCENARIO_ENDPOINT/, 'scenario service is UI2-local' );
+like( $runtime, qr/function testScenarioEndpointUrl\(\).*?new URL\(TEST_SCENARIO_ENDPOINT, window\.location\.href\)/s, 'scenario requests resolve inside the generated UI2 target' );
+unlike( $runtime, qr/legacyEndpoint\("", TEST_SCENARIO_ENDPOINT\)/, 'scenario requests do not use the legacy application-root AJAX route' );
 unlike( $runtime, qr/html5.*test scenario/i, 'UI2 scenario runtime does not create an HTML5 workflow' );
 like( $catalog, qr/"basic_documented_example"/, 'fixture includes a documented-example scenario' );
 like( $catalog, qr/"manual_mode"/, 'fixture includes a manual branch' );

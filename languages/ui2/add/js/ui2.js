@@ -1150,7 +1150,7 @@
     }
     updateTestScenarioState({ loading: true });
     try {
-      const url = new URL(legacyEndpoint("", TEST_SCENARIO_ENDPOINT), window.location.href);
+      const url = testScenarioEndpointUrl();
       url.searchParams.set("module", moduleId);
       url.searchParams.set("_window", window.name);
       url.searchParams.set("_logon", state.session.logon);
@@ -1256,8 +1256,14 @@
     });
   }
 
+  function testScenarioEndpointUrl() {
+    // The protected endpoint is generated inside the UI2 target.  Unlike
+    // legacy application AJAX handlers, it must remain relative to this page.
+    return new URL(TEST_SCENARIO_ENDPOINT, window.location.href);
+  }
+
   function testScenarioAssetUrl(scenarioId, fieldId) {
-    const url = new URL(legacyEndpoint("", TEST_SCENARIO_ENDPOINT), window.location.href);
+    const url = testScenarioEndpointUrl();
     url.searchParams.set("module", state.moduleId);
     url.searchParams.set("scenario", scenarioId);
     url.searchParams.set("field", fieldId);

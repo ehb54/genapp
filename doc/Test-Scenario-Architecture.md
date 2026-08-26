@@ -36,8 +36,11 @@ untracked according to that application's deployment policy):
 Deploy `test_scenarios/` beside that application configuration, outside the
 generated `output/` tree and public UI2 asset directory. It is read by the
 protected endpoint, not fetched as a public static file. The generated endpoint
-uses `output/ui2/modules/` only to validate declared field identities and types;
-it never looks for private catalogs or assets under `output/`.
+is installed at `output/ui2/ajax/ui2_test_scenarios.php`, and the browser resolves
+catalog and asset requests relative to the UI2 target rather than through the
+legacy application-root AJAX route. The endpoint uses `output/ui2/modules/` only
+to validate declared field identities and types; it never looks for private
+catalogs or assets under `output/`.
 
 ## Catalog shape
 
