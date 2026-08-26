@@ -11112,6 +11112,8 @@
         return fitPlotlyLegendsBelowPlot(output);
       })
       .then(() => {
+        normalizePlotlyModebar(output);
+        improvePlotlyModebarAccessibility(output);
         resizePlotlyOutputWhenVisible(output);
       })
       .catch((error) => {
@@ -11158,6 +11160,8 @@
         return extended;
       })
       .then(() => {
+        normalizePlotlyModebar(output);
+        improvePlotlyModebarAccessibility(output);
         resizePlotlyOutputWhenVisible(output);
       })
       .catch((error) => {

@@ -543,6 +543,8 @@ like( $ui2_js, qr/modeBarButtonsToAdd:\s*\["togglespikelines", "v1hovermode", "h
 like( $ui2_js, qr/modeBarButtonsToRemove:\s*\["select2d", "lasso2d", "sendDataToCloud", "editInChartStudio"\]/, 'ui2 runtime removes selection and retired cloud controls' );
 like( $ui2_js, qr/modebar:\s*\{\s*orientation:\s*"h"/, 'ui2 runtime explicitly requires a horizontal Plotly modebar' );
 like( $ui2_js, qr/function normalizePlotlyModebar\(output\).*?classList\?\.remove\("vertical"\).*?classList\?\.add\("ui2-modebar-horizontal"\)/s, 'ui2 runtime removes Plotly vertical state after every render' );
+like( $ui2_js, qr/return fitPlotlyLegendsBelowPlot\(output\);\s*\}\)\s*\.then\(\(\) => \{\s*normalizePlotlyModebar\(output\);\s*improvePlotlyModebarAccessibility\(output\);/s, 'ui2 renormalizes the modebar after title and legend relayout' );
+like( $ui2_js, qr/function appendPlotlyOutput\(output, payload\).*?extendTraces\(output,.*?\.then\(\(\) => \{\s*normalizePlotlyModebar\(output\);\s*improvePlotlyModebarAccessibility\(output\);/s, 'ui2 renormalizes the modebar after a streamed Plotly append' );
 like( $ui2_js, qr/function improvePlotlyModebarAccessibility\(output\)/, 'ui2 runtime makes Plotly modebar controls keyboard reachable' );
 like( $ui2_js, qr/function applicationPlotlyChartEditor\(\)/, 'ui2 runtime bridge supports an application-level Chart Editor capability' );
 like( $ui2_js, qr/Edit in Chart Editor/, 'ui2 Plotly modebar exposes the Chart Editor action when configured' );
@@ -589,8 +591,9 @@ like( $ui2_css, qr/\.ui2-splash-footer/, 'ui2 stylesheet includes splash footer 
 like( $ui2_css, qr/\.ui2-ai-helper-usage/, 'ui2 stylesheet includes compact AI Helper token usage styles' );
 like( $ui2_css, qr/\.ui2-ai-helper-math\[data-display="true"\]/, 'ui2 stylesheet includes AI Helper display-equation styling' );
 like( $ui2_css, qr/\.ui2-output-plotly/, 'ui2 stylesheet includes a stable Plotly output surface' );
-like( $ui2_css, qr/\.ui2-output-plotly \.modebar\.ui2-modebar-horizontal\s*\{[^}]*flex-direction:\s*row[^}]*flex-wrap:\s*nowrap[^}]*justify-content:\s*flex-start[^}]*overflow-x:\s*auto/s, 'ui2 stylesheet keeps the Plotly modebar in one reachable scrollable row on narrow panes' );
+like( $ui2_css, qr/\.ui2-output-plotly\.js-plotly-plot \.plotly \.modebar\.ui2-modebar-horizontal\s*\{[^}]*flex-direction:\s*row[^}]*flex-wrap:\s*nowrap[^}]*justify-content:\s*flex-start[^}]*overflow-x:\s*auto/s, 'ui2 stylesheet outranks Plotly vertical modebar rules with one reachable scrollable row' );
 like( $ui2_css, qr/\.modebar\.ui2-modebar-horizontal \.modebar-group:first-child\s*\{[^}]*margin-inline-start:\s*auto/s, 'ui2 right-aligns controls only when the horizontal lane has free space' );
+like( $ui2_css, qr/\.modebar\.ui2-modebar-horizontal \.modebar-group \.modebar-btn\s*\{[^}]*display:\s*inline-block/s, 'ui2 stylesheet outranks Plotly vertical button stacking' );
 like( $ui2_css, qr/\.ui2-output-plotly \.modebar-btn:focus-visible/, 'ui2 stylesheet gives keyboard-focused Plotly controls a visible outline' );
 like( $ui2_css, qr/\.ui2-output-ngl\s*\{[^}]*white-space:\s*normal/s, 'ui2 stylesheet gives NGL outputs a non-text viewer container' );
 like( $ui2_css, qr/\.ui2-ngl-plot\s*\{[^}]*overscroll-behavior:\s*contain/s, 'NGL canvas contains scroll chaining at its visual boundary' );

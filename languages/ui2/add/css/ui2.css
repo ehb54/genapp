@@ -2365,7 +2365,7 @@ code {
   max-width: none;
 }
 
-.ui2-output-plotly .modebar.ui2-modebar-horizontal {
+.ui2-output-plotly.js-plotly-plot .plotly .modebar.ui2-modebar-horizontal {
   align-content: normal;
   flex-direction: row;
   flex-wrap: nowrap;
@@ -2380,22 +2380,27 @@ code {
   scrollbar-width: thin;
 }
 
-.ui2-output-plotly .modebar.ui2-modebar-horizontal .modebar-group {
+.ui2-output-plotly.js-plotly-plot .plotly .modebar.ui2-modebar-horizontal .modebar-group {
   display: block;
   flex: 0 0 auto;
   float: none;
   padding-bottom: 0;
 }
 
-.ui2-output-plotly .modebar.ui2-modebar-horizontal .modebar-group:first-child {
+.ui2-output-plotly.js-plotly-plot .plotly .modebar.ui2-modebar-horizontal .modebar-group:first-child {
   margin-inline-start: auto;
 }
 
-.ui2-output-plotly .modebar.ui2-modebar-horizontal::-webkit-scrollbar {
+.ui2-output-plotly.js-plotly-plot .plotly .modebar.ui2-modebar-horizontal .modebar-group .modebar-btn {
+  display: inline-block;
+  text-align: center;
+}
+
+.ui2-output-plotly.js-plotly-plot .plotly .modebar.ui2-modebar-horizontal::-webkit-scrollbar {
   height: 0.45rem;
 }
 
-.ui2-output-plotly .modebar.ui2-modebar-horizontal::-webkit-scrollbar-thumb {
+.ui2-output-plotly.js-plotly-plot .plotly .modebar.ui2-modebar-horizontal::-webkit-scrollbar-thumb {
   background: var(--ui2-border);
   border-radius: 999px;
 }
