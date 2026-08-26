@@ -4556,6 +4556,9 @@
     output.dataset.dynamicIdPrefix = field.idprefix || "";
     output.dataset.dynamicMax = field.max || "";
     output.dataset.dynamicLabel = field.label || field.id || "Dynamic output";
+    output.dataset.dynamicItemLabels = (
+      type === "plotly" && String(field.dynamic_item_labels || "").toLowerCase() === "hidden"
+    ) ? "hidden" : "shown";
     output.dataset.dynamicWidth = field.width || "";
     output.dataset.dynamicHeight = field.height || "";
     return output;
@@ -8972,7 +8975,6 @@
       let child = existing.get(item.id);
       if (!child) {
         const instance = el("div", "ui2-dynamic-output-instance");
-        const label = el("h3", "ui2-dynamic-output-label", item.label);
         const output = renderOutput({
           id: item.id,
           type: group.dataset.outputType || "html",
@@ -8980,7 +8982,10 @@
           height: group.dataset.dynamicHeight || ""
         });
         output.dataset.dynamicChild = "true";
-        instance.append(label, output);
+        if (group.dataset.dynamicItemLabels !== "hidden") {
+          instance.append(el("h3", "ui2-dynamic-output-label", item.label));
+        }
+        instance.append(output);
         group.appendChild(instance);
         child = { instance, output };
       } else {
@@ -12946,6 +12951,7 @@
       renderHookButtonControl,
       renderImageOutputShell,
       renderImageOutput,
+      renderDynamicOutputGroup,
       dynamicOutputItems,
       updateDynamicOutput,
       mergeSavedInputPayloads,

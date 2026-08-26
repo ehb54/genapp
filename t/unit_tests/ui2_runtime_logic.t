@@ -3780,6 +3780,62 @@ window.Plotly = {
   Plots: { resize() {} }
 };
 
+const defaultDynamicPlotGroup = hooks.renderDynamicOutputGroup({
+  id: "default_dynamic_plot",
+  label: "Default dynamic plot",
+  dynamicoutput: "true",
+  idprefix: "default_plot",
+  max: "1"
+}, "plotly");
+hooks.updateDynamicOutput(defaultDynamicPlotGroup, {
+  items: [{ label: "Visible item label", value: { data: [] } }]
+});
+assert.strictEqual(
+  defaultDynamicPlotGroup.querySelectorAll(".ui2-dynamic-output-label").length,
+  1,
+  "dynamic Plotly item labels remain visible by default"
+);
+
+const hiddenDynamicPlotGroup = hooks.renderDynamicOutputGroup({
+  id: "hidden_dynamic_plot",
+  label: "Hidden dynamic plot labels",
+  dynamicoutput: "true",
+  dynamic_item_labels: "hidden",
+  idprefix: "hidden_plot",
+  max: "1"
+}, "plotly");
+hooks.updateDynamicOutput(hiddenDynamicPlotGroup, {
+  items: [{ label: "Retained payload label", value: { data: [], layout: { title: "Canonical figure title" } } }]
+});
+assert.strictEqual(
+  hiddenDynamicPlotGroup.querySelectorAll(".ui2-dynamic-output-label").length,
+  0,
+  "opted-in dynamic Plotly outputs omit the redundant HTML item heading"
+);
+assert.strictEqual(
+  hiddenDynamicPlotGroup.querySelector('[data-output-field-id="hidden_plot_1"]')
+    ._ui2PlotlyLastFigure.layout.title,
+  "Canonical figure title",
+  "hiding the HTML item heading preserves the Plotly figure title"
+);
+
+const hiddenDynamicTextGroup = hooks.renderDynamicOutputGroup({
+  id: "dynamic_text",
+  label: "Dynamic text",
+  dynamicoutput: "true",
+  dynamic_item_labels: "hidden",
+  idprefix: "dynamic_text",
+  max: "1"
+}, "text");
+hooks.updateDynamicOutput(hiddenDynamicTextGroup, {
+  items: [{ label: "Text item label", value: "Result" }]
+});
+assert.strictEqual(
+  hiddenDynamicTextGroup.querySelectorAll(".ui2-dynamic-output-label").length,
+  1,
+  "the Plotly-only setting does not hide labels for non-plot dynamic outputs"
+);
+
 hooks.beginRuntimeOutputContext("fixture_module", "run-late-output-hosts");
 hooks.applyJobEventToOutput({
   channel: "plot",
