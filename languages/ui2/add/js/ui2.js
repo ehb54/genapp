@@ -102,6 +102,7 @@
     runtimeOutputListeners: new Set(),
     testScenarioListeners: new Set(),
     testScenarios: initialTestScenarioState(),
+    testScenarioFiles: new Map(),
     runtimeOutputAvailability: {},
     pendingRuntimeOutputEvents: {},
     pendingSwitch: "",
@@ -1191,6 +1192,7 @@
 
   function clearTestScenarios(notify = true) {
     state.testScenarios = initialTestScenarioState();
+    state.testScenarioFiles = new Map();
     if (notify) {
       notifyTestScenarios();
     }
@@ -1348,6 +1350,19 @@
     pickers[0].dispatchEvent(new Event("change", { bubbles: true }));
   }
 
+  function restoreTestScenarioFileSelections(form = document.getElementById("ui2-form")) {
+    if (!form || !state.testScenarios.selectedId || !state.testScenarioFiles.size) {
+      return;
+    }
+    state.testScenarioFiles.forEach((file, fieldId) => {
+      const pickers = Array.from(form.querySelectorAll(".ui2-native-file"))
+        .filter((picker) => picker.dataset.fieldId === fieldId);
+      if (pickers.length === 1 && pickers[0].files?.[0] !== file) {
+        attachTestScenarioFile(form, fieldId, file);
+      }
+    });
+  }
+
   function waitForTestScenarioViewUpdate() {
     return new Promise((resolve) => {
       const schedule = window.requestAnimationFrame || ((callback) => window.setTimeout(callback, 0));
@@ -1376,6 +1391,7 @@
     }
     state.pendingInputValues = {};
     clearTestScenarioFileSelections(form);
+    state.testScenarioFiles = new Map(files);
     applyInputPayload(defaultInputPayload(), { clearMissing: true });
     applyInputPayload(scenario.inputs, { clearMissing: false });
     updateTestScenarioState({
@@ -1394,6 +1410,7 @@
     try {
       files.forEach((file, fieldId) => attachTestScenarioFile(currentForm, fieldId, file));
     } catch (error) {
+      state.testScenarioFiles = new Map();
       clearTestScenarioFileSelections(currentForm);
       applyInputPayload(defaultInputPayload(), { clearMissing: true });
       syncValues(currentForm);
@@ -2837,6 +2854,7 @@
       reactWorkbenchSyncFrame = null;
       if (reactWorkbenchRoot) {
         applyPendingReactWorkbenchInputValues();
+        restoreTestScenarioFileSelections();
         syncValues();
         const values = cloneUi2Value(state.values);
         const listeners = Array.from(reactWorkbenchSyncListeners);
@@ -4070,7 +4088,10 @@
     if (options?.repeatTableIndex != null) {
       localPicker.dataset.repeatTableIndex = String(options.repeatTableIndex);
     }
-    localPicker.addEventListener("change", () => {
+    localPicker.addEventListener("change", (event) => {
+      if (event.isTrusted) {
+        state.testScenarioFiles.delete(field.id || "");
+      }
       clearServerSelection(field, options?.repeatTableIndex);
       clearFileReselectionWarning(field.id, options?.repeatTableIndex);
       input.value = localPicker.files && localPicker.files[0] ? localPicker.files[0].name : "";
@@ -4457,6 +4478,7 @@
       encodedPath: entry.id,
       path: decodeServerFileId(entry.id).replace(/^\.\//, "")
     };
+    state.testScenarioFiles.delete(field.id);
     clearFileReselectionWarning(field.id, repeatIndex);
   }
 
@@ -6926,6 +6948,7 @@
     stopJobPolling();
     state.serverSelections = {};
     state.pendingInputValues = {};
+    state.testScenarioFiles = new Map();
     clearFileReselectionWarnings();
     state.jobSelections = {};
     setSubmittedRunContext(null);

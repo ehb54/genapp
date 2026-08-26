@@ -4533,32 +4533,26 @@ async function verifyScenarioFileHydration() {
   assert.strictEqual(filePicker.files[0].name, "old.txt", "failed file verification leaves the prior file selection unchanged");
 
   scenarioWithFile.files.sample_file.sha256 = "907729515e50a0bef905abcf2188f2fd9e0ae14734f2dd4eb8ae7b9656b686dc";
-  let activeFilePicker = filePicker;
-  let pickerReplaced = false;
-  const unsubscribeScenarioReplacement = hooks.subscribeTestScenarios(() => {
-    if (pickerReplaced || hooks.state.testScenarios.selectedId !== "local_text_asset") {
-      return;
-    }
-    pickerReplaced = true;
-    activeFilePicker.remove();
-    activeFilePicker = createNode("input");
-    activeFilePicker.type = "file";
-    activeFilePicker.className = "ui2-native-file";
-    activeFilePicker.dataset.fieldId = "sample_file";
-    activeFilePicker.files = [];
-    activeFilePicker.dispatchEvent = () => {
-      fileDisplay.value = activeFilePicker.files[0]?.name || "";
-    };
-    form.appendChild(activeFilePicker);
-  });
   window.requestAnimationFrame = (callback) => { callback(); return 1; };
   const loaded = await hooks.applyTestScenario("local_text_asset", form);
   assert.strictEqual(loaded.ok, true, "scenario hydration accepts bytes with matching size and sha256");
   assert.strictEqual(runLabel.value, "scenario_loaded", "verified scenario values replace prior ordinary inputs");
-  assert.strictEqual(pickerReplaced, true, "scenario hydration crosses the renderer update that replaces a native file control");
+  assert.strictEqual(filePicker.files[0].name, "sample.txt", "verified scenario asset initially attaches to the normal native file control");
+  filePicker.remove();
+  const activeFilePicker = createNode("input");
+  activeFilePicker.type = "file";
+  activeFilePicker.className = "ui2-native-file";
+  activeFilePicker.dataset.fieldId = "sample_file";
+  activeFilePicker.files = [];
+  activeFilePicker.dispatchEvent = () => {
+    fileDisplay.value = activeFilePicker.files[0]?.name || "";
+  };
+  form.appendChild(activeFilePicker);
+  hooks.setReactWorkbenchRootForTest({});
+  hooks.scheduleReactWorkbenchSync();
   assert.strictEqual(activeFilePicker.files[0].name, "sample.txt", "verified scenario asset attaches to the live native file control after renderer reconciliation");
   assert.strictEqual(fileDisplay.value, "sample.txt", "normal file-change handling publishes the attached filename");
-  unsubscribeScenarioReplacement();
+  hooks.unmountReactWorkbench();
   form.remove();
 }
 
