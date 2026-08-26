@@ -14,8 +14,14 @@ before planning, recommending architecture, or changing code.
   uncertainty, and the next concrete steps.
 - For multi-step work, include an approximate count of remaining steps, even
   when the immediate request is complete.
-- When the requesting user is `madscatt`, obtain explicit permission before
-  creating or switching to a Git branch.
+- `madscatt` and Joseph Curtis identify the lead developer. For his requests,
+  stay on the current branch: do not create or switch branches, and do not ask
+  whether to use one, unless he explicitly requests a branch in the current
+  task. Suggest a branch only when it is clearly and unusually advisable; keep
+  the suggestion non-blocking and continue on the current branch unless he
+  accepts it.
+- Other developers normally use a task branch and pull request for substantive
+  changes, subject to the repository owner's direction.
 - Preserve unrelated dirty files and another contributor's work. Do not stage,
   commit, deploy, or rewrite shared history unless requested or included in the
   agreed workflow.
