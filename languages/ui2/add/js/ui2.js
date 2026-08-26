@@ -11854,11 +11854,22 @@
   }
 
   function fitPlotlyLegendsBelowPlot(output) {
+    if (!plotlyOutputReadyForRelayout(output)) {
+      return null;
+    }
     const update = plotlyLegendFitUpdate(output);
     if (!update || typeof window.Plotly?.relayout !== "function") {
       return null;
     }
     return window.Plotly.relayout(output, update);
+  }
+
+  function plotlyOutputReadyForRelayout(output) {
+    return Boolean(
+      output?.isConnected
+      && Array.isArray(output.data)
+      && output._fullLayout
+    );
   }
 
   function plotlyThemeColors() {
@@ -13035,6 +13046,9 @@
       applyPlotPresentationLayout,
       applyPlotlyLegendPlacement,
       plotlyLegendFitUpdate,
+      plotlyOutputReadyForRelayout,
+      fitPlotlyLegendsBelowPlot,
+      resizePlotlyOutputToVisibleBox,
       applyPlotPresentationStyle,
       plotlyDataForOutput,
       appendPlotlyOutput,

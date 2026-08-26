@@ -1774,6 +1774,44 @@ const noLegendUpdate = hooks.plotlyLegendFitUpdate({
   querySelector() { return null; }
 });
 assert.strictEqual(noLegendUpdate, null, "plots without a rendered legend keep their existing layout");
+let legendRelayoutCalls = 0;
+const readyLegendOutput = {
+  isConnected: true,
+  data: [{ x: [1], y: [2] }],
+  _fullLayout: { margin: { b: 128 }, legend: {} },
+  clientHeight: 460,
+  getBoundingClientRect() { return { height: 460 }; },
+  querySelector(selector) {
+    return selector === ".legend"
+      ? { getBoundingClientRect() { return { height: 30 }; } }
+      : null;
+  }
+};
+window.Plotly = {
+  relayout(output, update) {
+    legendRelayoutCalls += 1;
+    return { output, update };
+  },
+  Plots: { resize() {} }
+};
+assert.strictEqual(hooks.plotlyOutputReadyForRelayout(readyLegendOutput), true, "a connected rendered Plotly output is ready for legend relayout");
+hooks.fitPlotlyLegendsBelowPlot(readyLegendOutput);
+assert.strictEqual(legendRelayoutCalls, 1, "an active rendered Plotly output still receives legend relayout");
+assert.strictEqual(hooks.fitPlotlyLegendsBelowPlot({ ...readyLegendOutput, isConnected: false }), null, "a detached Plotly output skips stale legend relayout");
+assert.strictEqual(hooks.fitPlotlyLegendsBelowPlot({ ...readyLegendOutput, _fullLayout: undefined }), null, "a purged Plotly output skips stale legend relayout");
+assert.strictEqual(legendRelayoutCalls, 1, "stale Plotly outputs never call Plotly.relayout");
+window.Plotly.relayout = () => { throw new Error("active relayout failure"); };
+assert.throws(() => hooks.fitPlotlyLegendsBelowPlot(readyLegendOutput), /active relayout failure/, "unexpected active Plotly relayout errors remain visible");
+window.Plotly.relayout = () => { legendRelayoutCalls += 1; };
+const purgedDuringResize = { ...readyLegendOutput };
+window.Plotly.Plots.resize = () => ({
+  then(callback) {
+    purgedDuringResize._fullLayout = undefined;
+    callback();
+  }
+});
+hooks.resizePlotlyOutputToVisibleBox(purgedDuringResize, { width: 640, height: 460 });
+assert.strictEqual(legendRelayoutCalls, 1, "a plot purged while resize resolves skips the delayed legend relayout");
 hooks.setPlotBackgroundModePreference("contrast_canvas", true);
 const contrastingPlotLayout = hooks.plotlyLayoutForOutput({ dataset: {} }, producerPlotLayout);
 assert.strictEqual(contrastingPlotLayout.paper_bgcolor, "#f7f8f6", "UI2 resolves a contrasting light canvas from a dark panel");
