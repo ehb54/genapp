@@ -39,33 +39,27 @@ Do not add it to `.gitignore` or mark it assume-unchanged.
 
 ## UI2 Test Account Access
 
-- The live Zazzie3/UI2 test accounts are `codex` and `codex2`. Apply the same
-  usage patterns and rules to both accounts.
-- Treat use of either test account as task-scoped privileged access, even when
-  Chrome already has an authenticated session or saved credential. Before
-  using an authenticated session, logging in, or submitting work as either
-  account, obtain explicit permission from the requesting user for the current
-  task and account. Permission may cover reauthentication after a logout during
-  that task, but it never carries to another task or the other account.
-- Keep both test accounts non-admin by default. Permission to use a normal
-  account does not authorize administrator-only work or use while that account
-  is temporarily elevated.
+- The live Zazzie3/UI2 test accounts are `codex`, `codex2`, and `codex3`. They
+  are maintained as administrator accounts and follow the same usage rules.
+- Permanent administrator status is not standing permission for Codex to use an
+  account. Before using an authenticated session, logging in, or submitting
+  work, obtain explicit permission from the requesting user for the current
+  task. The permission must name the account and the administrator purpose and
+  scope.
+- An existing authenticated session, saved credential, or open administrator
+  page does not grant permission. Authorization applies only to the named task,
+  account, purpose, and operations; it does not carry to later tasks, another
+  account, or unrelated administrator actions.
+- Perform only the approved administrator operations. Do not change an
+  account's administrator status unless separately directed. Normal authorized
+  use does not require de-elevating the account afterward.
 - Keep the password in the user's browser password manager or another approved
   credential channel. Never ask the user to paste it into chat; never store it
   in a repository, environment file, note, command, or log. During authorized
   browser use, do not read password-field values or take broad DOM snapshots
   while an autofilled password field is present.
-- Before administrator testing, stop and obtain separate explicit permission
-  that names the administrative purpose and scope, plus confirmation that the
-  user has temporarily elevated the specific test account. Do not elevate
-  either account yourself unless separately directed. Perform only the approved
-  administrator checks. When finished, log out, ask the user to remove the
-  elevation, and do not use that account again until the user confirms it is
-  non-admin; when practical, verify that administrator controls are no longer
-  exposed.
-- At the end of authorized browser work, log out unless the user asks to keep
-  the authenticated tab open. In either case, require fresh permission in a
-  later task.
+- At the end of authorized browser work, log out. Future use requires fresh,
+  explicit permission even though the account remains an administrator.
 
 ## Documentation Source Of Truth
 
@@ -430,7 +424,7 @@ changing it, read `../genapp_zazzie/docs/plot_presentation.md` and rollout issue
 ### Zazzie3 operations
 
 - Follow the repository-wide UI2 test-account access rules above whenever using
-  the Zazzie3 `codex` or `codex2` account.
+  the Zazzie3 `codex`, `codex2`, or `codex3` account.
 - gacpu for `ehb54/genapp` means a successful requested gacp followed only by
   `tools/zazzie3_update_genapp_core.sh` with an explicit generation target.
   A failure is a hard stop: report it and do not infer permission to repair
