@@ -591,9 +591,9 @@ like( $ui2_css, qr/\.ui2-splash-footer/, 'ui2 stylesheet includes splash footer 
 like( $ui2_css, qr/\.ui2-ai-helper-usage/, 'ui2 stylesheet includes compact AI Helper token usage styles' );
 like( $ui2_css, qr/\.ui2-ai-helper-math\[data-display="true"\]/, 'ui2 stylesheet includes AI Helper display-equation styling' );
 like( $ui2_css, qr/\.ui2-output-plotly/, 'ui2 stylesheet includes a stable Plotly output surface' );
-like( $ui2_css, qr/\.ui2-output-plotly\.js-plotly-plot \.plotly \.modebar\.ui2-modebar-horizontal\s*\{[^}]*flex-direction:\s*row[^}]*flex-wrap:\s*nowrap[^}]*justify-content:\s*flex-start[^}]*overflow-x:\s*auto/s, 'ui2 stylesheet outranks Plotly vertical modebar rules with one reachable scrollable row' );
-like( $ui2_css, qr/\.modebar\.ui2-modebar-horizontal \.modebar-group:first-child\s*\{[^}]*margin-inline-start:\s*auto/s, 'ui2 right-aligns controls only when the horizontal lane has free space' );
-like( $ui2_css, qr/\.modebar\.ui2-modebar-horizontal \.modebar-group \.modebar-btn\s*\{[^}]*display:\s*inline-block/s, 'ui2 stylesheet outranks Plotly vertical button stacking' );
+like( $ui2_css, qr/\.ui2-output-plotly\.js-plotly-plot \.plotly \.modebar\s*\{[^}]*flex-direction:\s*row[^}]*flex-wrap:\s*nowrap[^}]*justify-content:\s*flex-start[^}]*overflow-x:\s*auto/s, 'ui2 stable plot root outranks Plotly vertical modebar rules with one reachable scrollable row' );
+like( $ui2_css, qr/\.ui2-output-plotly\.js-plotly-plot \.plotly \.modebar \.modebar-group:first-child\s*\{[^}]*margin-inline-start:\s*auto/s, 'ui2 right-aligns controls only when the horizontal lane has free space' );
+like( $ui2_css, qr/\.ui2-output-plotly\.js-plotly-plot \.plotly \.modebar \.modebar-group \.modebar-btn\s*\{[^}]*display:\s*inline-block/s, 'ui2 stable plot root outranks button stacking after Plotly replaces the modebar' );
 like( $ui2_css, qr/\.ui2-output-plotly \.modebar-btn:focus-visible/, 'ui2 stylesheet gives keyboard-focused Plotly controls a visible outline' );
 like( $ui2_css, qr/\.ui2-output-ngl\s*\{[^}]*white-space:\s*normal/s, 'ui2 stylesheet gives NGL outputs a non-text viewer container' );
 like( $ui2_css, qr/\.ui2-ngl-plot\s*\{[^}]*overscroll-behavior:\s*contain/s, 'NGL canvas contains scroll chaining at its visual boundary' );
