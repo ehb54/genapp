@@ -190,6 +190,7 @@ like( $ui2_css, qr/\.ui2-repeat-table-has-file \.ui2-repeat-table-wrap\s*\{\s*ov
 like( $ui2_css, qr/\.ui2-repeat-table-has-file \.ui2-repeat-table-file-cell\s*\{\s*min-width: 12rem;/s, 'file-bearing repeat table cells retain a usable minimum width' );
 like( $ui2_css, qr/\.ui2-repeat-table-has-file \.ui2-select\s*\{\s*min-width: 7\.5rem;/s, 'file-bearing repeat tables retain a readable minimum width for listboxes' );
 unlike( $ui2_css, qr/\.ui2-repeat-table \.ui2-select\s*\{\s*min-width: 7\.5rem;/s, 'ordinary repeat tables keep their existing shrinkable listbox behavior' );
+like( $ui2_css, qr/\.ui2-file-control-compact \.ui2-file-picker\s*\{\s*grid-template-columns: minmax\(10rem, 1fr\) auto auto;/s, 'restored compact file pickers retain readable filename space beside source and change controls' );
 like( $ui2_css, qr/\.ui2-input,\s*\.ui2-select:not\(\[multiple\]\):not\(\[size\]\),\s*\.ui2-select\[size="1"\]\s*\{\s*min-height: 2\.5rem;\s*height: 2\.5rem;/s, 'scalar inputs and listboxes share one explicit control height' );
 like( $ui2_css, qr/\.ui2-select:is\(\[multiple\], \[size\]:not\(\[size="1"\]\)\)\s*\{\s*min-height: 6rem;\s*height: auto;\s*overflow: auto;/s, 'multi-row listboxes retain a scrollable usable height instead of inheriting the scalar control height' );
 like( $ui2_css, qr/\.ui2-repeat-table-has-file \.ui2-repeat-table th\s*\{\s*overflow-wrap: normal;\s*word-break: normal;/s, 'file-bearing repeat tables preserve ordinary-language header words' );

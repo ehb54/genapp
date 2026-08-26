@@ -1291,6 +1291,13 @@ code {
   background: var(--ui2-panel-soft);
 }
 
+/* A restored compact picker also shows its source and Change action. Reserve
+ * enough room for the filename instead of letting those fixed-width elements
+ * reduce it to a few characters inside a submitted workbench split. */
+.ui2-file-control-compact .ui2-file-picker {
+  grid-template-columns: minmax(10rem, 1fr) auto auto;
+}
+
 .ui2-file-picker:focus-within {
   border-color: var(--ui2-accent);
   box-shadow: 0 0 0 2px var(--ui2-accent-soft);
