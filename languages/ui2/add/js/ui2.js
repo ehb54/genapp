@@ -1348,6 +1348,13 @@
     pickers[0].dispatchEvent(new Event("change", { bubbles: true }));
   }
 
+  function waitForTestScenarioViewUpdate() {
+    return new Promise((resolve) => {
+      const schedule = window.requestAnimationFrame || ((callback) => window.setTimeout(callback, 0));
+      schedule(resolve);
+    });
+  }
+
   async function applyTestScenario(id, form = document.getElementById("ui2-form")) {
     const scenario = state.testScenarios.catalog?.scenarios?.find((item) => item.id === id);
     if (!scenario || !form) return { ok: false, error: "Scenario is unavailable." };
@@ -1371,19 +1378,32 @@
     clearTestScenarioFileSelections(form);
     applyInputPayload(defaultInputPayload(), { clearMissing: true });
     applyInputPayload(scenario.inputs, { clearMissing: false });
-    try {
-      files.forEach((file, fieldId) => attachTestScenarioFile(form, fieldId, file));
-    } catch (error) {
-      clearTestScenarioFileSelections(form);
-      applyInputPayload(defaultInputPayload(), { clearMissing: true });
-      syncValues(form);
-      return { ok: false, error: error.message || "Scenario files could not be attached." };
-    }
-    syncValues(form);
     updateTestScenarioState({
       selectedId: scenario.id,
       verification: { state: "not_run", checks: [] }
     });
+    // Scenario identity and ordinary values can make a React workbench
+    // reconcile its native field hosts.  Attach verified files only after
+    // that render boundary so the live picker, rather than a retired picker,
+    // owns the selection used for submission.
+    await waitForTestScenarioViewUpdate();
+    const currentForm = document.getElementById("ui2-form");
+    if (!currentForm?.isConnected || state.moduleId !== moduleId) {
+      return { ok: false, error: "The module changed while the scenario was loading." };
+    }
+    try {
+      files.forEach((file, fieldId) => attachTestScenarioFile(currentForm, fieldId, file));
+    } catch (error) {
+      clearTestScenarioFileSelections(currentForm);
+      applyInputPayload(defaultInputPayload(), { clearMissing: true });
+      syncValues(currentForm);
+      updateTestScenarioState({
+        selectedId: "",
+        verification: { state: "not_run", checks: [] }
+      });
+      return { ok: false, error: error.message || "Scenario files could not be attached." };
+    }
+    syncValues(currentForm);
     return { ok: true, values: cloneUi2Value(state.values) };
   }
 
