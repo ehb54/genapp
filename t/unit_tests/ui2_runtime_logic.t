@@ -3592,6 +3592,50 @@ assert.deepStrictEqual(
   "UI2 warns only for current-format repeated local files"
 );
 
+hooks.state.module = {
+  fields: [
+    { id: "late_row_count", type: "integer", repeater: "true", tableize: "true" },
+    { id: "late_data_file", label: "Late data file", type: "lrfile", repeat: "late_row_count" }
+  ]
+};
+hooks.state.view = { renderer: "react-workbench" };
+hooks.state.serverSelections = {};
+document.querySelectorAll = () => [];
+hooks.applyInputPayload({
+  "_selaltval_late_row_count-late_data_file-0": "late_row_count-late_data_file-0_altval",
+  "late_row_count-late_data_file-0_altval": [serverRepeatOne],
+  "_html_late_row_count-late_data_file-0_altval": "<i>Server</i>: late_server.dat",
+  "late_row_count-late_data_file-1": ["late_local.dat"]
+}, { reselectLocalFiles: true });
+assert.strictEqual(
+  hooks.state.serverSelections["late_data_file:0"].encodedPath,
+  serverRepeatOne,
+  "UI2 retains a repeated server selection while its React input section is unmounted"
+);
+const delayedServerRow = hooks.renderRepeatTableRow([hooks.state.module.fields[1]], 0);
+const delayedServerDisplay = delayedServerRow.querySelector('[data-field-id="late_data_file"]');
+const delayedServerSource = delayedServerRow.querySelector(".ui2-file-source");
+assert.strictEqual(
+  delayedServerDisplay.value,
+  "late_server.dat",
+  "a repeated file control mounted after reattach displays its retained server selection"
+);
+assert.strictEqual(delayedServerSource.textContent, "Server", "the delayed file control retains server identity");
+assert.strictEqual(delayedServerSource.hidden, false, "the delayed file control exposes its restored server source");
+const delayedLocalRow = hooks.renderRepeatTableRow([hooks.state.module.fields[1]], 1);
+const delayedLocalWarning = delayedLocalRow.querySelector(".ui2-file-reselect-warning");
+assert.strictEqual(delayedLocalWarning.hidden, false, "a delayed local-file row retains its reselection warning");
+assert.match(delayedLocalWarning.textContent, /late_local\.dat/, "the delayed local-file warning identifies the unavailable file");
+const delayedFileForm = createNode("form");
+delayedFileForm.id = "ui2-form";
+delayedFileForm.append(delayedServerRow, delayedLocalRow);
+const delayedFileFormData = hooks.buildSubmitFormData(delayedFileForm, "delayed-file-test-uuid");
+assert.deepStrictEqual(
+  delayedFileFormData.get("late_row_count-late_data_file-0_altval[]"),
+  [serverRepeatOne],
+  "a delayed repeated server selection resubmits through its row-specific transport"
+);
+
 const singleRepeatedReplayControl = {
   type: "text",
   value: "",

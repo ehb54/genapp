@@ -4005,7 +4005,12 @@
     if (field.sync) {
       input.dataset.sync = field.sync;
     }
-    input.value = arrayDefaultValue(field.default, options?.repeatTableIndex || 0);
+    const restoredServerSelection = state.serverSelections[
+      serverSelectionKey(field, options?.repeatTableIndex)
+    ];
+    input.value = restoredServerSelection?.encodedPath
+      ? stringValue(restoredServerSelection.path)
+      : arrayDefaultValue(field.default, options?.repeatTableIndex || 0);
     input.defaultValue = input.value;
 
     const localPicker = document.createElement("input");
