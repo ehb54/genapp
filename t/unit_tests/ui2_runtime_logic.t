@@ -359,6 +359,9 @@ const context = {
       this.name = name;
       this.type = options?.type || "";
     }
+    toString() {
+      return this.name;
+    }
   },
   DataTransfer: class DataTransfer {
     constructor() {
@@ -4562,6 +4565,13 @@ async function verifyScenarioFileHydration() {
   assert.strictEqual(activeFilePicker.files[0].name, "sample.txt", "verified scenario asset attaches to the live native file control after renderer reconciliation");
   assert.strictEqual(pickerChangeEvents, 0, "post-render restoration also avoids the React file-change loop");
   assert.strictEqual(fileDisplay.value, "sample.txt", "normal file-change handling publishes the attached filename");
+  activeFilePicker.files = [];
+  const scenarioSubmitData = hooks.buildSubmitFormData(form, "scenario-file-test-uuid");
+  assert.deepStrictEqual(
+    scenarioSubmitData.get("sample_file"),
+    ["sample.txt"],
+    "UI2 multipart submission includes the verified scenario file even when the renderer-owned picker is empty"
+  );
   form.remove();
 }
 

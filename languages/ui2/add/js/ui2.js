@@ -7442,6 +7442,22 @@
         submitId: repeatFileSubmitId(field, selection.repeatIndex)
       }));
     });
+    state.testScenarioFiles.forEach((file, id) => {
+      const field = moduleFieldById(id);
+      if (!file || !fieldIsFileLike(field)) {
+        return;
+      }
+      const group = fileSelectionGroup(groups, id);
+      if (group.local.length || group.server.length) {
+        return;
+      }
+      group.local.push({
+        id,
+        repeatIndex: null,
+        submitId: repeatFileSubmitId(field, null),
+        files: [file]
+      });
+    });
     groups.forEach((group, id) => {
       clearFormDataFileField(formData, id);
       group.server
