@@ -26,15 +26,18 @@ The generated UI2 endpoint returns a catalog only when both conditions hold:
 The browser's claimed user name is checked against the PHP session; it does not
 grant access.  Catalogs are never bundled into the public UI2 app map.
 
-Enable the feature only in a deployment's untracked `appconfig.json`:
+Enable the feature only in the deployment-specific `appconfig.json` (tracked or
+untracked according to that application's deployment policy):
 
 ```json
 { "test_scenarios": { "enabled": true } }
 ```
 
 Deploy `test_scenarios/` beside that application configuration, outside the
-public UI2 asset directory.  It is read by the protected endpoint, not fetched
-as a public static file.
+generated `output/` tree and public UI2 asset directory. It is read by the
+protected endpoint, not fetched as a public static file. The generated endpoint
+uses `output/ui2/modules/` only to validate declared field identities and types;
+it never looks for private catalogs or assets under `output/`.
 
 ## Catalog shape
 

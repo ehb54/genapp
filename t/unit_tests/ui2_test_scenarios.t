@@ -32,6 +32,8 @@ my $asset_path = File::Spec->catfile(
 ok( -f File::Spec->catfile( $ui2, qw(ajax ui2_test_scenarios.php) ), 'UI2-only scenario endpoint is generated' );
 like( $endpoint, qr/restricted->admin/, 'scenario endpoint checks configured server administrators' );
 like( $endpoint, qr/hash_equals\(\$session_logon, \$requested_logon\)/, 'scenario endpoint verifies the requested browser identity against the server session' );
+like( $endpoint, qr/basename\(\$generated_root\) === 'output' \? dirname\(\$generated_root\) : \$generated_root/, 'scenario endpoint resolves private catalogs beside the application configuration rather than under public output' );
+like( $endpoint, qr/\$generated_root \. '\/ui2\/modules\/'/, 'scenario endpoint still validates catalogs against generated UI2 module definitions' );
 like( $endpoint, qr/unknown input field/, 'scenario endpoint rejects catalog inputs outside declared module fields' );
 like( $runtime, qr/async function applyTestScenario\(id, form/, 'UI2 core owns asynchronous scenario hydration' );
 like( $runtime, qr/window\.crypto\?\.subtle/, 'UI2 verifies fetched scenario files in the browser' );
@@ -48,6 +50,7 @@ like( $file_catalog, qr/"sample_file"/, 'neutral opted-in fixture declares a fil
 like( $file_catalog, qr/"907729515e50a0bef905abcf2188f2fd9e0ae14734f2dd4eb8ae7b9656b686dc"/, 'neutral fixture pins the asset digest' );
 is( -s $asset_path, 22, 'neutral scenario asset remains private application-owned test data' );
 like( $endpoint, qr/realpath\(\$app_root \. '\/test_scenarios\/assets'\)/, 'protected endpoint anchors asset resolution under the private assets root' );
+unlike( $endpoint, qr/\$generated_root \. '\/test_scenarios\//, 'scenario endpoint never resolves private catalogs from generated public output' );
 like( $endpoint, qr/hash_file\('sha256'/, 'protected endpoint verifies asset integrity before serving bytes' );
 
 my $bad_file_catalog = $file_catalog;

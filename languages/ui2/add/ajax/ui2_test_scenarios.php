@@ -1,6 +1,7 @@
 <?php
 
-$app_root = dirname(__DIR__, 2);
+$generated_root = dirname(__DIR__, 2);
+$app_root = basename($generated_root) === 'output' ? dirname($generated_root) : $generated_root;
 $application = basename($app_root);
 session_name(strtoupper(preg_replace('/[^a-zA-Z0-9_]+/', '_', "GENAPP_" . $application)));
 session_start();
@@ -34,7 +35,7 @@ $catalog = json_decode(file_get_contents($catalog_path), true);
 if (!is_array($catalog)) {
     ui2_test_scenarios_reply(array('error' => 'Scenario catalog is invalid JSON.'), 500);
 }
-$error = ui2_test_scenarios_validate_catalog($catalog, $module_id, $app_root);
+$error = ui2_test_scenarios_validate_catalog($catalog, $module_id, $app_root, $generated_root);
 if ($error) {
     ui2_test_scenarios_reply(array('error' => $error), 500);
 }
@@ -111,14 +112,14 @@ function ui2_test_scenarios_is_admin($appconfig, $logon) {
         in_array($logon, $appconfig->restricted->admin, true);
 }
 
-function ui2_test_scenarios_validate_catalog($catalog, $module_id, $app_root) {
+function ui2_test_scenarios_validate_catalog($catalog, $module_id, $app_root, $generated_root) {
     $allowed_provenance = array('current_docs', 'legacy_docs', 'gui_mimic', 'test_sassie', 'developer', 'scientist');
     $allowed_maturity = array('draft', 'candidate', 'verified_cli', 'verified_ui', 'release_ready', 'deferred');
     $allowed_checks = array('job_status', 'output_present', 'output_nonempty');
     if (!isset($catalog['schema_version']) || intval($catalog['schema_version']) !== 1 ||
         !isset($catalog['module_id']) || $catalog['module_id'] !== $module_id ||
         !isset($catalog['scenarios']) || !is_array($catalog['scenarios'])) return 'Scenario catalog has an invalid root shape.';
-    $module_path = $app_root . '/ui2/modules/' . $module_id . '.json';
+    $module_path = $generated_root . '/ui2/modules/' . $module_id . '.json';
     if (!is_readable($module_path)) $module_path = $app_root . '/modules/' . $module_id . '.json';
     $module_payload = is_readable($module_path) ? json_decode(file_get_contents($module_path), true) : null;
     $module = is_array($module_payload) && isset($module_payload['modulejson']) ? $module_payload['modulejson'] : $module_payload;
