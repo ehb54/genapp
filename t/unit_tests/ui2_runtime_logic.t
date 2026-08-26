@@ -4533,11 +4533,17 @@ async function verifyScenarioFileHydration() {
   assert.strictEqual(filePicker.files[0].name, "old.txt", "failed file verification leaves the prior file selection unchanged");
 
   scenarioWithFile.files.sample_file.sha256 = "907729515e50a0bef905abcf2188f2fd9e0ae14734f2dd4eb8ae7b9656b686dc";
-  window.requestAnimationFrame = (callback) => { callback(); return 1; };
-  const loaded = await hooks.applyTestScenario("local_text_asset", form);
+  const scenarioFrames = [];
+  window.requestAnimationFrame = (callback) => { scenarioFrames.push(callback); return scenarioFrames.length; };
+  const scenarioLoad = hooks.applyTestScenario("local_text_asset", form);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.strictEqual(scenarioFrames.length, 1, "scenario hydration waits for the renderer state-update boundary before attaching files");
+  scenarioFrames.shift()();
+  const loaded = await scenarioLoad;
   assert.strictEqual(loaded.ok, true, "scenario hydration accepts bytes with matching size and sha256");
   assert.strictEqual(runLabel.value, "scenario_loaded", "verified scenario values replace prior ordinary inputs");
   assert.strictEqual(filePicker.files[0].name, "sample.txt", "verified scenario asset initially attaches to the normal native file control");
+  assert.strictEqual(scenarioFrames.length, 1, "successful scenario hydration schedules a post-return file-ownership check");
   filePicker.remove();
   const activeFilePicker = createNode("input");
   activeFilePicker.type = "file";
@@ -4548,11 +4554,9 @@ async function verifyScenarioFileHydration() {
     fileDisplay.value = activeFilePicker.files[0]?.name || "";
   };
   form.appendChild(activeFilePicker);
-  hooks.setReactWorkbenchRootForTest({});
-  hooks.scheduleReactWorkbenchSync();
+  scenarioFrames.shift()();
   assert.strictEqual(activeFilePicker.files[0].name, "sample.txt", "verified scenario asset attaches to the live native file control after renderer reconciliation");
   assert.strictEqual(fileDisplay.value, "sample.txt", "normal file-change handling publishes the attached filename");
-  hooks.unmountReactWorkbench();
   form.remove();
 }
 

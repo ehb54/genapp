@@ -1370,6 +1370,11 @@
     });
   }
 
+  function scheduleTestScenarioFileRestore() {
+    const schedule = window.requestAnimationFrame || ((callback) => window.setTimeout(callback, 0));
+    schedule(() => restoreTestScenarioFileSelections());
+  }
+
   async function applyTestScenario(id, form = document.getElementById("ui2-form")) {
     const scenario = state.testScenarios.catalog?.scenarios?.find((item) => item.id === id);
     if (!scenario || !form) return { ok: false, error: "Scenario is unavailable." };
@@ -1421,6 +1426,11 @@
       return { ok: false, error: error.message || "Scenario files could not be attached." };
     }
     syncValues(currentForm);
+    // React publishes the returned values after this promise resolves.  Its
+    // resulting render may replace a native file picker, so verify ownership
+    // once more on the following frame without moving file semantics into the
+    // renderer.
+    scheduleTestScenarioFileRestore();
     return { ok: true, values: cloneUi2Value(state.values) };
   }
 
