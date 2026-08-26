@@ -1347,7 +1347,16 @@
     const transfer = new DataTransfer();
     transfer.items.add(file);
     pickers[0].files = transfer.files;
-    pickers[0].dispatchEvent(new Event("change", { bubbles: true }));
+    // A bubbling file-change event reaches React's form handler and can make
+    // the renderer replace this native picker immediately.  Scenario inputs
+    // already own the canonical value; refresh only the local display widget
+    // and let the caller's syncValues() publish it.
+    fieldControls(form)
+      .filter((control) => control.dataset.fieldId === fieldId && control.type !== "file")
+      .forEach((control) => {
+        control.value = file.name;
+        control.dispatchEvent(new Event("input"));
+      });
   }
 
   function restoreTestScenarioFileSelections(form = document.getElementById("ui2-form")) {

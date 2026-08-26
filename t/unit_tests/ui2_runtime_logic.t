@@ -4498,7 +4498,9 @@ async function verifyScenarioFileHydration() {
   filePicker.className = "ui2-native-file";
   filePicker.dataset.fieldId = "sample_file";
   filePicker.files = [{ name: "old.txt" }];
+  let pickerChangeEvents = 0;
   filePicker.dispatchEvent = () => {
+    pickerChangeEvents += 1;
     fileDisplay.value = filePicker.files[0]?.name || "";
   };
   form.append(runLabel, fileDisplay, filePicker);
@@ -4543,6 +4545,7 @@ async function verifyScenarioFileHydration() {
   assert.strictEqual(loaded.ok, true, "scenario hydration accepts bytes with matching size and sha256");
   assert.strictEqual(runLabel.value, "scenario_loaded", "verified scenario values replace prior ordinary inputs");
   assert.strictEqual(filePicker.files[0].name, "sample.txt", "verified scenario asset initially attaches to the normal native file control");
+  assert.strictEqual(pickerChangeEvents, 0, "scenario attachment does not bubble a file-change event into the React form");
   assert.strictEqual(scenarioFrames.length, 1, "successful scenario hydration schedules a post-return file-ownership check");
   filePicker.remove();
   const activeFilePicker = createNode("input");
@@ -4551,11 +4554,13 @@ async function verifyScenarioFileHydration() {
   activeFilePicker.dataset.fieldId = "sample_file";
   activeFilePicker.files = [];
   activeFilePicker.dispatchEvent = () => {
+    pickerChangeEvents += 1;
     fileDisplay.value = activeFilePicker.files[0]?.name || "";
   };
   form.appendChild(activeFilePicker);
   scenarioFrames.shift()();
   assert.strictEqual(activeFilePicker.files[0].name, "sample.txt", "verified scenario asset attaches to the live native file control after renderer reconciliation");
+  assert.strictEqual(pickerChangeEvents, 0, "post-render restoration also avoids the React file-change loop");
   assert.strictEqual(fileDisplay.value, "sample.txt", "normal file-change handling publishes the attached filename");
   form.remove();
 }
