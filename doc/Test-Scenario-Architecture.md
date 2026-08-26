@@ -96,9 +96,11 @@ They are never copied into the public UI2 asset map. The same administrator-
 protected endpoint that returns the catalog resolves a declaration under this
 fixed root, checks real-path containment, enforces a 16 MiB per-file limit, and
 checks size and SHA-256 before returning bytes. The browser fetches and verifies
-every declared file before changing the form, attaches it to the normal native
-file input, and uses the ordinary UI2 submission path. Catalogs cannot contain
-executable code, arbitrary paths, shell commands, or server-file selections.
+every declared file before changing the form, retains it as a core-owned file
+selection, and mirrors it into the native file input when the browser permits.
+Ordinary multipart submission appends that verified selection when no manual
+local or server file choice replaces it. Catalogs cannot contain executable
+code, arbitrary paths, shell commands, or server-file selections.
 
 Loading a scenario never submits it. After any dirty-input confirmation, UI2
 first obtains all declared files. It then resets ordinary inputs to the module's
