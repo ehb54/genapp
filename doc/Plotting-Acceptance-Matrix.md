@@ -32,7 +32,7 @@ Status values are `not_recorded`, `passed`, `failed`, or `not_applicable`.
 | Contrast | contrast_variation_analysis | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
 | Contrast | rg_center_of_mass_distance_calculator | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
 | Simulate | torsion_angle_monte_carlo | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
-| Simulate | monomer_monte_carlo | Plotly | passed | passed | passed | passed | Reference plot module; cleared 2026-08-03 for plot-presentation rollout under `ehb54/zazzie#203` |
+| Simulate | monomer_monte_carlo | Plotly | failed | failed | failed | failed | Responsive subplot-label regression reported in `ehb54/zazzie#249`; MMC-only normalized-gutter correction deployed 2026-08-29, external browser acceptance pending |
 | Simulate | monomer_monte_carlo | NGL | not_recorded | not_recorded | not_recorded | not_recorded | Separate molecular-viewer contract; plot-presentation clearance does not assert NGL acceptance |
 | Simulate | tamd | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | Native live stream integrated; deployed check pending |
 | Simulate | sas_assembly | Plotly and images | not_recorded | not_recorded | not_recorded | not_recorded | Density images remain ordinary outputs |
@@ -49,9 +49,11 @@ Status values are `not_recorded`, `passed`, `failed`, or `not_applicable`.
 
 ## Tracking boundaries
 
-- The MMC Plotly reference has passed the required deployed normal,
-  expanded/restore, completion, and fresh-window reattachment checks. Its NGL
-  viewer remains a separately recorded concern.
+- The earlier MMC Plotly clearance was superseded by the responsive subplot-label
+  regression in `ehb54/zazzie#249`. Keep its browser statuses failed until the
+  deployed normal, expanded/restore, completion, fresh-window reattachment, and
+  Plot Presentation Lab checks are repeated. Its NGL viewer remains a separately
+  recorded concern.
 - The shared driver/runtime migration is complete when the module has the
   normal driver final-output and reattachment path.  Detailed browser results
   are recorded above as they are obtained.
