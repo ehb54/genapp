@@ -89,7 +89,10 @@ contrast and keyboard access. It remains a single horizontal row; when a narrow
 pane cannot show every control, that row scrolls horizontally instead of
 wrapping into the figure. UI2 places every Plotly legend slot below the plot in
 ordered horizontal rows and reserves the required bottom margin, so toolbar and
-legend geometry never overlap scientific data.
+legend geometry never overlap scientific data. Every control has a mouse-hover
+tooltip and accessible name. Keyboard focus reveals the toolbar, visibly marks
+the focused control, and Enter or Space performs the same action as a mouse
+click after initial rendering, relayout, resizing, and streamed updates.
 
 Statistics and explanatory text belong in a declared caption or summary output
 by default. An in-plot annotation requires a documented, view-declared generic

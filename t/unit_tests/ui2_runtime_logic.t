@@ -1871,6 +1871,11 @@ const modebarListeners = {};
 modebarButton.addEventListener = (type, listener) => {
   modebarListeners[type] = listener;
 };
+const modebarDispatchedEvents = [];
+modebarButton.dispatchEvent = (event) => {
+  modebarDispatchedEvents.push(event);
+  return true;
+};
 let modebarScrollOptions = null;
 modebarButton.scrollIntoView = (options) => {
   modebarScrollOptions = options;
@@ -1886,6 +1891,21 @@ hooks.improvePlotlyModebarAccessibility(modebarOutput);
 assert.strictEqual(modebarButton.getAttribute("role"), "button", "UI2 gives Plotly modebar controls button semantics");
 assert.strictEqual(modebarButton.getAttribute("tabindex"), "0", "UI2 makes Plotly modebar controls keyboard reachable");
 assert.strictEqual(modebarButton.getAttribute("aria-label"), "Edit in Chart Editor", "UI2 exposes the Plotly modebar tooltip as an accessible name");
+assert.strictEqual(modebarButton.getAttribute("title"), "Edit in Chart Editor", "UI2 supplies an unclipped native mouse-hover tooltip");
+let modebarKeyboardPrevented = 0;
+let modebarKeyboardStopped = 0;
+const modebarKeyboardEvent = (key) => ({
+  key,
+  preventDefault() { modebarKeyboardPrevented += 1; },
+  stopPropagation() { modebarKeyboardStopped += 1; }
+});
+modebarListeners.keydown(modebarKeyboardEvent("Enter"));
+modebarListeners.keydown(modebarKeyboardEvent(" "));
+modebarListeners.keydown(modebarKeyboardEvent("ArrowRight"));
+assert.strictEqual(modebarKeyboardPrevented, 2, "UI2 reserves Enter and Space for the focused Plotly control");
+assert.strictEqual(modebarKeyboardStopped, 2, "UI2 keeps Plotly control activation from leaking into plot keyboard handling");
+assert.strictEqual(modebarDispatchedEvents.length, 2, "Enter and Space each dispatch one real click event to the Plotly control");
+assert.strictEqual(modebarDispatchedEvents.every((event) => event.type === "click" && event.bubbles), true, "UI2 sends bubbling click events through Plotly's installed listeners");
 modebarListeners.focus();
 assert.strictEqual(
   JSON.stringify(modebarScrollOptions),

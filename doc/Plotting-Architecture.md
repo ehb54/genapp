@@ -52,7 +52,10 @@ scientific result.
   hover controls. It stays in a single horizontal lane and scrolls horizontally
   in a narrow pane rather than wrapping. UI2 places every Plotly legend slot
   below the plot in ordered horizontal rows and reserves the required bottom
-  margin. A declared local Chart Editor remains an optional generic addition.
+  margin. Each control has a mouse-hover tooltip and accessible name; keyboard
+  focus reveals the toolbar, remains visible on the selected control, and lets
+  Enter or Space perform its action. A declared local Chart Editor remains an
+  optional generic addition.
 
 The producer supplies scientific titles, axis names, units, series names,
 axis scale, uncertainty, and subplot relationships. UI2 controls how those

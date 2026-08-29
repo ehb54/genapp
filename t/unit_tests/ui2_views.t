@@ -551,6 +551,7 @@ like( $ui2_js, qr/function normalizePlotlyModebar\(output\).*?classList\?\.remov
 like( $ui2_js, qr/return fitPlotlyLegendsBelowPlot\(output\);\s*\}\)\s*\.then\(\(\) => \{\s*normalizePlotlyModebar\(output\);\s*improvePlotlyModebarAccessibility\(output\);/s, 'ui2 renormalizes the modebar after title and legend relayout' );
 like( $ui2_js, qr/function appendPlotlyOutput\(output, payload\).*?extendTraces\(output,.*?\.then\(\(\) => \{\s*normalizePlotlyModebar\(output\);\s*improvePlotlyModebarAccessibility\(output\);/s, 'ui2 renormalizes the modebar after a streamed Plotly append' );
 like( $ui2_js, qr/function improvePlotlyModebarAccessibility\(output\)/, 'ui2 runtime makes Plotly modebar controls keyboard reachable' );
+like( $ui2_js, qr/setAttribute\?\.\("title", title\).*?dispatchEvent\(new Event\("click", \{ bubbles: true, cancelable: true \}\)\)/s, 'ui2 modebar supplies unclipped tooltips and routes Enter or Space through Plotly click listeners' );
 like( $ui2_js, qr/function applicationPlotlyChartEditor\(\)/, 'ui2 runtime bridge supports an application-level Chart Editor capability' );
 like( $ui2_js, qr/Edit in Chart Editor/, 'ui2 Plotly modebar exposes the Chart Editor action when configured' );
 like( $ui2_js, qr/function chartEditorLayout\(layout\)/, 'ui2 Plotly Chart Editor receives an editor-friendly layout copy' );
@@ -599,6 +600,7 @@ like( $ui2_css, qr/\.ui2-output-plotly/, 'ui2 stylesheet includes a stable Plotl
 like( $ui2_css, qr/\.ui2-output-plotly\.js-plotly-plot \.plotly \.modebar\s*\{[^}]*flex-direction:\s*row[^}]*flex-wrap:\s*nowrap[^}]*justify-content:\s*flex-start[^}]*overflow-x:\s*auto/s, 'ui2 stable plot root outranks Plotly vertical modebar rules with one reachable scrollable row' );
 like( $ui2_css, qr/\.ui2-output-plotly\.js-plotly-plot \.plotly \.modebar \.modebar-group:first-child\s*\{[^}]*margin-inline-start:\s*auto/s, 'ui2 right-aligns controls only when the horizontal lane has free space' );
 like( $ui2_css, qr/\.ui2-output-plotly\.js-plotly-plot \.plotly \.modebar \.modebar-group \.modebar-btn\s*\{[^}]*display:\s*inline-block/s, 'ui2 stable plot root outranks button stacking after Plotly replaces the modebar' );
+like( $ui2_css, qr/\.modebar\.modebar--hover:focus-within > :not\(\.watermark\)\s*\{[^}]*opacity:\s*1/s, 'ui2 keyboard focus reveals Plotly controls hidden by hover-only mode' );
 like( $ui2_css, qr/\.ui2-output-plotly \.modebar-btn:focus-visible/, 'ui2 stylesheet gives keyboard-focused Plotly controls a visible outline' );
 like( $ui2_css, qr/\.ui2-output-ngl\s*\{[^}]*white-space:\s*normal/s, 'ui2 stylesheet gives NGL outputs a non-text viewer container' );
 like( $ui2_css, qr/\.ui2-ngl-plot\s*\{[^}]*overscroll-behavior:\s*contain/s, 'NGL canvas contains scroll chaining at its visual boundary' );

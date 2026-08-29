@@ -11884,6 +11884,7 @@
       button.setAttribute?.("role", "button");
       button.setAttribute?.("tabindex", "0");
       button.setAttribute?.("aria-label", title);
+      button.setAttribute?.("title", title);
       if (button.dataset?.ui2KeyboardReady === "true") {
         return;
       }
@@ -11895,7 +11896,12 @@
           return;
         }
         event.preventDefault?.();
-        button.click?.();
+        event.stopPropagation?.();
+        if (typeof button.dispatchEvent === "function") {
+          button.dispatchEvent(new Event("click", { bubbles: true, cancelable: true }));
+        } else {
+          button.click?.();
+        }
       });
       button.addEventListener?.("focus", () => {
         button.scrollIntoView?.({ block: "nearest", inline: "nearest" });
