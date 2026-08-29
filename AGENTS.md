@@ -266,9 +266,10 @@ job limits, submit blocks, and MOTD.
   failure invalidate a user's current password.
 
 Before adding or changing the optional administrator scenario catalog, read
-`doc/Test-Scenario-Architecture.md`. Test scenarios hydrate and verify an
-application-owned workflow; they do not replace scientific tests, bypass PHP
-session authorization, or become public UI2 assets.
+`doc/Test-Scenario-Architecture.md`. For SASSIE-web catalogs, also read
+`../zazzie/docs/source/test_scenario_harness.rst`. Test scenarios hydrate and
+verify an application-owned workflow; they do not replace scientific tests,
+bypass PHP session authorization, or become public UI2 assets.
 
 ## Wiki Updates
 
