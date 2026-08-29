@@ -590,7 +590,8 @@ function fileerr_msg($code)
 
 __~debug:basemylog{error_log( "request\n" . print_r( $_REQUEST, true ) . "\n", 3, "/tmp/mylog" );}
 
-// special fake _FILES creation for strange bug
+// BEGIN GENAPP SERVER FILE NORMALIZATION
+// Represent server-selected files in the same per-field loop as local uploads.
 if ( !sizeof( $_FILES ) ) {
    $selalt = "_selaltval_";
    $lenselalt = strlen( $selalt );
@@ -607,7 +608,21 @@ if ( !sizeof( $_FILES ) ) {
        error_log( "__executable__ request\n" . print_r( $_REQUEST, true ) . "\n", 3, "/tmp/mylog_selalt" );
        error_log( "files\n" . print_r( $_FILES, true ) . "\n", 3, "/tmp/mylog_selalt" );
    }
+} else {
+   $selalt = "_selaltval_";
+   $lenselalt = strlen( $selalt );
+   foreach ( $_REQUEST as $k=>$v ) {
+      if ( !strncmp( $k, $selalt, $lenselalt ) ) {
+          $tmp_key = substr( $k, $lenselalt );
+          if ( !array_key_exists( $tmp_key, $_FILES ) &&
+               isset( $_REQUEST[ $v ] ) && is_array( $_REQUEST[ $v ] ) &&
+               count( $_REQUEST[ $v ] ) == 1 ) {
+              $_FILES[ $tmp_key ] = json_decode( '{"name":"","type":"","tmp_name":"","error":4,"size":0}', true );
+          }
+       }
+   }
 }
+// END GENAPP SERVER FILE NORMALIZATION
 
 if ( sizeof( $_FILES ) ) {
 
