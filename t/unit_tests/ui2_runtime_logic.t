@@ -19,6 +19,7 @@ const path = require("path");
 const vm = require("vm");
 
 const repoRoot = "$repo_root";
+const surfaceSource = fs.readFileSync(path.join(repoRoot, "languages/ui2/add/js/plotly-surface.js"), "utf8");
 let source = fs.readFileSync(path.join(repoRoot, "languages/ui2/add/js/ui2.js"), "utf8");
 source = source.replace(/\\n  init\\(\\);\\n\\}\\(\\)\\);\\s*\$/, "\\n}());\\n");
 
@@ -387,10 +388,17 @@ sessionStatus.appendChild(sessionProjectLabel);
 document.body.appendChild(sessionStatus);
 
 vm.createContext(context);
+vm.runInContext(surfaceSource, context, { filename: "plotly-surface.js" });
 vm.runInContext(source, context, { filename: "ui2.js" });
 
 const hooks = context.window.GenAppUi2TestHooks;
 assert(hooks, "test hooks were exposed");
+const surface = context.window.GenAppPlotlySurface;
+assert(surface, "shared Plotly surface policy was exposed");
+assert.strictEqual(surface.isDark("rgb(32 39 37)"), true, "surface policy recognizes a dark CSS rgb surface");
+assert.strictEqual(surface.isDark("rgba(255, 255, 255, 0.8)", "#202725"), false, "surface policy composites alpha before evaluating luminance");
+assert.strictEqual(surface.tokensFor("#202725").text, "#eef4f1", "dark surfaces receive light neutral text");
+assert.strictEqual(surface.tokensFor("#f7f8f6").text, "#17201d", "light surfaces receive dark neutral text");
 
 const imageOutput = hooks.renderImageOutputShell({ id: "density_slice_xy", type: "image", label: "density XY center slice" }, "image");
 hooks.renderImageOutput(imageOutput, "results/run_0/density_slice_xy.png");
@@ -1818,6 +1826,27 @@ assert.strictEqual(legendRelayoutCalls, 1, "a plot purged while resize resolves 
 hooks.setPlotBackgroundModePreference("contrast_canvas", true);
 const contrastingPlotLayout = hooks.plotlyLayoutForOutput({ dataset: {} }, producerPlotLayout);
 assert.strictEqual(contrastingPlotLayout.paper_bgcolor, "#f7f8f6", "UI2 resolves a contrasting light canvas from a dark panel");
+const contrastSourceSnapshot = JSON.stringify(producerPlotLayout);
+contrastingPlotLayout.xaxis = { title: "Distance", tickfont: { size: 11 } };
+contrastingPlotLayout.legend = { font: { size: 12 } };
+contrastingPlotLayout.hoverlabel = { font: { size: 10 } };
+contrastingPlotLayout.annotations = [{ text: "Summary" }];
+hooks.applyPlotlyTheme(contrastingPlotLayout);
+assert.strictEqual(contrastingPlotLayout.font.color, "#17201d", "light final paper uses dark figure text even under a dark UI theme");
+assert.strictEqual(contrastingPlotLayout.xaxis.color, "#17201d", "light final plot uses dark axis text");
+assert.strictEqual(contrastingPlotLayout.xaxis.title.font.color, "#17201d", "axis titles follow final plot luminance");
+assert.strictEqual(contrastingPlotLayout.xaxis.tickfont.color, "#17201d", "axis ticks follow final plot luminance without losing their size");
+assert.strictEqual(contrastingPlotLayout.xaxis.tickfont.size, 11, "surface contrast preserves authored axis font sizing");
+assert.strictEqual(contrastingPlotLayout.legend.font.color, "#17201d", "legend text follows its final translucent light surface");
+assert.strictEqual(contrastingPlotLayout.hoverlabel.font.color, "#17201d", "hover text follows its final light surface");
+assert.strictEqual(contrastingPlotLayout.annotations[0].font.color, "#17201d", "annotation text follows the final paper surface");
+assert.strictEqual(contrastingPlotLayout.modebar.color, "#17201d", "modebar controls follow final paper luminance");
+assert.strictEqual(JSON.stringify(producerPlotLayout), contrastSourceSnapshot, "surface contrast never mutates producer layout data");
+const darkCanvasLayout = { paper_bgcolor: "#202725", plot_bgcolor: "#202725", title: "Dark", xaxis: {}, yaxis: {}, legend: {} };
+hooks.applyPlotlyTheme(darkCanvasLayout);
+assert.strictEqual(darkCanvasLayout.font.color, "#eef4f1", "dark final paper uses light figure text even under a light surrounding theme");
+assert.strictEqual(darkCanvasLayout.xaxis.gridcolor, "rgba(238, 244, 241, 0.16)", "dark final plot uses a visible light grid");
+assert.strictEqual(darkCanvasLayout.legend.font.color, "#eef4f1", "dark final legend uses light text");
 hooks.setPlotBackgroundModePreference("match_panel", true);
 assert.strictEqual(fixedPlotLayout.width, undefined, "ordinary UI2 Plotly outputs remove producer width");
 assert.strictEqual(fixedPlotLayout.height, undefined, "ordinary UI2 Plotly outputs remove producer height");
@@ -1931,8 +1960,8 @@ assert.strictEqual(new URL(window.__openCalls[0].url).pathname, "/sassie3/_cedit
 assert.strictEqual(new URL(window.__openCalls[0].url).searchParams.get("id"), handoffKey, "Chart Editor handoff supplies the one-shot snapshot id");
 const multiAxisLayout = { xaxis4: {}, yaxis4: {} };
 hooks.applyPlotlyTheme(multiAxisLayout);
-assert.strictEqual(multiAxisLayout.xaxis4.gridcolor, "rgba(238, 244, 241, 0.12)", "UI2 themes fourth-and-later x axes");
-assert.strictEqual(multiAxisLayout.yaxis4.gridcolor, "rgba(238, 244, 241, 0.12)", "UI2 themes fourth-and-later y axes");
+assert.strictEqual(multiAxisLayout.xaxis4.gridcolor, "rgba(238, 244, 241, 0.16)", "UI2 themes fourth-and-later x axes from the final plot surface");
+assert.strictEqual(multiAxisLayout.yaxis4.gridcolor, "rgba(238, 244, 241, 0.16)", "UI2 themes fourth-and-later y axes from the final plot surface");
 const neutralSeries = [
   { name: "sample 00001", meta: { series_role: "replicate" }, x: [0.01], y: [1.0] },
   { name: "reference", meta: { series_role: "reference" }, x: [0.01], y: [1.1] }

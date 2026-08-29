@@ -117,6 +117,13 @@ from computed theme surfaces, and rerenders cached figures without changing
 producer data or saved output. The capability is generic and must not branch on
 application, module, output, or scientific-role identifiers.
 
+After the final paper and plot backgrounds are selected, the shared UI2 surface
+resolver derives neutral readable colors from those actual surfaces. It owns
+figure and annotation text, axes and ticks, grids and zero lines, legend
+surface/text, hover labels, and modebar presentation. Normal UI2 and preview
+tools must use the same resolver; a surrounding theme name or separate
+light/dark shortcut must not override the final-surface result.
+
 ## Required verification
 
 Every shared-core change requires:

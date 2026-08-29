@@ -57,6 +57,12 @@ scientific result.
   Enter or Space perform its action. A declared local Chart Editor remains an
   optional generic addition.
 
+UI2 selects paper and plot backgrounds before applying non-data contrast. One
+shared surface resolver evaluates the actual final CSS colors, including alpha,
+then supplies readable figure text, axes, grids, legends, hover labels,
+annotations, and modebar controls. This presentation pass does not alter trace
+data or scientific identity and is reused by application preview tools.
+
 The producer supplies scientific titles, axis names, units, series names,
 axis scale, uncertainty, and subplot relationships. UI2 controls how those
 items look and where presentation-only elements are placed.

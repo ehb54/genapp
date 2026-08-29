@@ -11966,7 +11966,6 @@
     const canvas = isDarkCssColor(plotlyThemeColors().panel) ? "#f7f8f6" : "#202725";
     layout.paper_bgcolor = canvas;
     layout.plot_bgcolor = canvas;
-    layout.font = Object.assign({}, layout.font || {}, { color: contrastTextColor(canvas) });
     return layout;
   }
 
@@ -11974,38 +11973,7 @@
     const colors = plotlyThemeColors();
     layout.paper_bgcolor = layout.paper_bgcolor || colors.panel;
     layout.plot_bgcolor = layout.plot_bgcolor || colors.panel;
-    layout.font = Object.assign({ color: colors.text }, layout.font || {});
-    plotlyLegendKeys(layout).forEach((legendKey) => {
-      const currentLegend = layout[legendKey] || {};
-      const legendBackground = currentLegend.bgcolor || colors.legendBackground;
-      layout[legendKey] = Object.assign({}, currentLegend, {
-        bgcolor: legendBackground,
-        bordercolor: colors.border,
-        font: Object.assign({}, currentLegend.font || {}, { color: contrastTextColor(legendBackground) })
-      });
-    });
-    if (Array.isArray(layout.annotations)) {
-      layout.annotations = layout.annotations.map((annotation) => {
-        if (!annotation?.bgcolor) {
-          return annotation;
-        }
-        return Object.assign({}, annotation, {
-          font: Object.assign({}, annotation.font || {}, { color: contrastTextColor(annotation.bgcolor) })
-        });
-      });
-    }
-    Object.keys(layout || {}).filter((axisName) => /^(xaxis|yaxis)\d*$/.test(axisName)).forEach((axisName) => {
-      if (!layout[axisName]) {
-        return;
-      }
-      layout[axisName] = Object.assign({
-        color: colors.text,
-        gridcolor: colors.grid,
-        linecolor: colors.border,
-        zerolinecolor: colors.border
-      }, layout[axisName]);
-    });
-    return layout;
+    return window.GenAppPlotlySurface.apply(layout, { fallbackSurface: colors.panel });
   }
 
   function plotlyLegendKeys(layout) {
@@ -12114,48 +12082,15 @@
   }
 
   function isDarkCssColor(value) {
-    const rgb = parseCssColor(value);
-    if (!rgb) {
-      return false;
-    }
-    const channel = (v) => {
-      const c = v / 255;
-      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-    };
-    const luminance = 0.2126 * channel(rgb.r) + 0.7152 * channel(rgb.g) + 0.0722 * channel(rgb.b);
-    return luminance < 0.45;
+    return window.GenAppPlotlySurface.isDark(value);
   }
 
   function contrastTextColor(background) {
-    return isDarkCssColor(background) ? "#eef4f1" : "#17201d";
+    return window.GenAppPlotlySurface.tokensFor(background).text;
   }
 
   function parseCssColor(value) {
-    const raw = String(value || "").trim();
-    const hex = raw.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
-    if (hex) {
-      const token = hex[1].length === 3
-        ? hex[1].split("").map((char) => char + char).join("")
-        : hex[1];
-      return {
-        r: parseInt(token.slice(0, 2), 16),
-        g: parseInt(token.slice(2, 4), 16),
-        b: parseInt(token.slice(4, 6), 16)
-      };
-    }
-    const rgb = raw.match(/^rgba?\(([^)]+)\)$/i);
-    if (!rgb) {
-      return null;
-    }
-    const parts = rgb[1].split(",").map((part) => Number.parseFloat(part.trim()));
-    if (parts.length < 3 || parts.slice(0, 3).some((part) => !Number.isFinite(part))) {
-      return null;
-    }
-    return {
-      r: Math.max(0, Math.min(255, parts[0])),
-      g: Math.max(0, Math.min(255, parts[1])),
-      b: Math.max(0, Math.min(255, parts[2]))
-    };
+    return window.GenAppPlotlySurface.parseColor(value);
   }
 
   function parsePlotlyFigure(value) {
