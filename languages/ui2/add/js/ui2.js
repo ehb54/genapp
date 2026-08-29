@@ -43,7 +43,10 @@
   const AI_HELPER_OUTPUT_MAX_FIELDS = 6;
   const AI_HELPER_OUTPUT_MAX_CHARS = 400;
   const TEST_SCENARIO_ENDPOINT = "ajax/ui2_test_scenarios.php";
+  const TEST_SCENARIO_ID_FIELD = "_ui2_test_scenario_id";
+  const TEST_SCENARIO_REVISION_FIELD = "_ui2_test_scenario_catalog_revision";
   const TEST_SCENARIO_CHECK_KINDS = new Set(["job_status", "output_present", "output_nonempty"]);
+  const TEST_SCENARIO_EXPECTED_OUTCOMES = new Set(["load_only", "validation_rejected", "job_completed", "job_failed"]);
   const AI_HELPER_KATEX_CSS_URL = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css";
   const AI_HELPER_KATEX_SCRIPT_URL = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js";
   const HOVER_HELP_DELAY_MS = 900;
@@ -1199,9 +1202,16 @@
   }
 
   function validTestScenarioCatalog(catalog, moduleId) {
-    if (!catalog || Number(catalog.schema_version) !== 1 || catalog.module_id !== moduleId || !Array.isArray(catalog.scenarios)) {
+    const schemaVersion = Number(catalog?.schema_version);
+    if (!catalog || ![1, 2].includes(schemaVersion) || catalog.module_id !== moduleId || !Array.isArray(catalog.scenarios) ||
+        (schemaVersion === 2 && !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(String(catalog.catalog_revision || "")))) {
       return false;
     }
+    const validAsset = (asset) => asset && typeof asset === "object" && !Array.isArray(asset) &&
+      /^[A-Za-z0-9_-]+$/.test(String(asset.asset_id || "")) &&
+      /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(String(asset.filename || "")) && asset.filename !== ".." &&
+      Number.isInteger(asset.size) && asset.size >= 0 && asset.size <= 16 * 1024 * 1024 &&
+      /^[a-f0-9]{64}$/.test(String(asset.sha256 || ""));
     const ids = new Set();
     return catalog.scenarios.every((scenario) => {
       if (!scenario || !/^[A-Za-z0-9_-]+$/.test(String(scenario.id || "")) || ids.has(scenario.id) ||
@@ -1211,11 +1221,12 @@
       ids.add(scenario.id);
       const files = scenario.files;
       if (files && (typeof files !== "object" || Array.isArray(files) || !Object.keys(files).length ||
-          !Object.entries(files).every(([fieldId, asset]) => /^[A-Za-z0-9_-]+$/.test(fieldId) && asset &&
-            typeof asset === "object" && !Array.isArray(asset) && /^[A-Za-z0-9_-]+$/.test(String(asset.asset_id || "")) &&
-            /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(String(asset.filename || "")) && asset.filename !== ".." &&
-            Number.isInteger(asset.size) && asset.size >= 0 && asset.size <= 16 * 1024 * 1024 &&
-            /^[a-f0-9]{64}$/.test(String(asset.sha256 || ""))))) {
+          !Object.entries(files).every(([fieldId, declared]) => /^[A-Za-z0-9_-]+$/.test(fieldId) &&
+            (Array.isArray(declared) ? schemaVersion === 2 && declared.length > 0 && declared.every(validAsset) : validAsset(declared))))) {
+        return false;
+      }
+      if ((schemaVersion === 2 && !TEST_SCENARIO_EXPECTED_OUTCOMES.has(scenario.expected_outcome)) ||
+          (scenario.expected_outcome != null && !TEST_SCENARIO_EXPECTED_OUTCOMES.has(scenario.expected_outcome))) {
         return false;
       }
       const verification = scenario.verification;
@@ -1247,6 +1258,25 @@
     return state.testScenarios.catalog?.scenarios?.find((scenario) => scenario.id === state.testScenarios.selectedId) || null;
   }
 
+  function clearSelectedTestScenario() {
+    if (!state.testScenarios.selectedId) return;
+    updateTestScenarioState({
+      selectedId: "",
+      verification: { state: "not_run", checks: [] }
+    });
+  }
+
+  function selectedTestScenarioOrdinaryInputsMatch(values) {
+    const scenario = selectedTestScenario();
+    if (!scenario) return true;
+    const expected = Object.assign({}, defaultInputPayload(), scenario.inputs || {});
+    return Object.entries(expected).every(([id, value]) => {
+      const field = moduleFieldById(id);
+      if (!field || fieldIsFileLike(field) || !Object.prototype.hasOwnProperty.call(values || {}, id)) return true;
+      return testScenarioInputValueMatches(id, values[id], value);
+    });
+  }
+
   function normalizedTestScenarioInputValue(field, value) {
     if (Array.isArray(value)) {
       return value.map((item) => normalizedTestScenarioInputValue(field, item));
@@ -1270,6 +1300,26 @@
 
   function selectTestScenarioForInputs(inputs) {
     if (!inputs || typeof inputs !== "object" || !state.testScenarios.catalog?.scenarios?.length) return;
+    const persistedId = String(inputs[TEST_SCENARIO_ID_FIELD] || "");
+    if (persistedId) {
+      const persistedRevision = String(inputs[TEST_SCENARIO_REVISION_FIELD] || "");
+      const catalogRevision = String(state.testScenarios.catalog.catalog_revision || "");
+      const scenario = state.testScenarios.catalog.scenarios.find((candidate) => candidate.id === persistedId);
+      if (scenario && (!persistedRevision || persistedRevision === catalogRevision)) {
+        updateTestScenarioState({
+          selectedId: scenario.id,
+          verification: scenario.expected_outcome === "load_only"
+            ? { state: "passed", checks: [{ id: "expected_outcome", passed: true, actual: "load_only" }] }
+            : { state: "not_run", checks: [] }
+        });
+      } else {
+        updateTestScenarioState({
+          selectedId: "",
+          verification: { state: "not_run", checks: [] }
+        });
+      }
+      return;
+    }
     const restoredInputs = Object.assign({}, defaultInputPayload(), inputs);
     const scenario = state.testScenarios.catalog.scenarios.find((candidate) => Object.entries(candidate.inputs || {}).every(
       ([id, value]) => Object.prototype.hasOwnProperty.call(restoredInputs, id) && testScenarioInputValueMatches(id, restoredInputs[id], value)
@@ -1277,7 +1327,9 @@
     if (!scenario) return;
     updateTestScenarioState({
       selectedId: scenario.id,
-      verification: { state: "not_run", checks: [] }
+      verification: scenario.expected_outcome === "load_only"
+        ? { state: "passed", checks: [{ id: "expected_outcome", passed: true, actual: "load_only" }] }
+        : { state: "not_run", checks: [] }
     });
   }
 
@@ -1287,19 +1339,20 @@
     return new URL(TEST_SCENARIO_ENDPOINT, window.location.href);
   }
 
-  function testScenarioAssetUrl(scenarioId, fieldId) {
+  function testScenarioAssetUrl(scenarioId, fieldId, repeatIndex = null) {
     const url = testScenarioEndpointUrl();
     url.searchParams.set("module", state.moduleId);
     url.searchParams.set("scenario", scenarioId);
     url.searchParams.set("field", fieldId);
+    if (repeatIndex != null) url.searchParams.set("row", String(repeatIndex));
     url.searchParams.set("asset", "1");
     url.searchParams.set("_window", window.name);
     url.searchParams.set("_logon", state.session.logon || "");
     return url.toString();
   }
 
-  async function testScenarioAssetFile(scenarioId, fieldId, declaration) {
-    const response = await fetch(testScenarioAssetUrl(scenarioId, fieldId), {
+  async function testScenarioAssetFile(scenarioId, fieldId, declaration, repeatIndex = null) {
+    const response = await fetch(testScenarioAssetUrl(scenarioId, fieldId, repeatIndex), {
       cache: "no-cache",
       credentials: "same-origin"
     });
@@ -1323,11 +1376,26 @@
 
   async function fetchTestScenarioFiles(scenario) {
     const entries = Object.entries(scenario.files || {});
-    const files = await Promise.all(entries.map(async ([fieldId, declaration]) => [
-      fieldId,
-      await testScenarioAssetFile(scenario.id, fieldId, declaration)
-    ]));
+    const declarations = entries.flatMap(([fieldId, declared]) =>
+      (Array.isArray(declared) ? declared : [declared]).map((declaration, repeatIndex) => ({
+        fieldId,
+        repeatIndex: Array.isArray(declared) ? repeatIndex : null,
+        declaration
+      }))
+    );
+    const files = await Promise.all(declarations.map(async (entry) => {
+      const file = await testScenarioAssetFile(scenario.id, entry.fieldId, entry.declaration, entry.repeatIndex);
+      return [testScenarioFileKey(entry.fieldId, entry.repeatIndex), Object.assign({}, entry, { file })];
+    }));
     return new Map(files);
+  }
+
+  function testScenarioFileKey(fieldId, repeatIndex) {
+    return `${fieldId}:${repeatIndex == null ? "" : repeatIndex}`;
+  }
+
+  function clearTestScenarioFile(fieldId, repeatIndex) {
+    state.testScenarioFiles.delete(testScenarioFileKey(fieldId, repeatIndex));
   }
 
   function clearTestScenarioFileSelections(form) {
@@ -1338,11 +1406,13 @@
     clearFileReselectionWarnings();
   }
 
-  function attachTestScenarioFile(form, fieldId, file) {
+  function attachTestScenarioFile(form, fieldId, file, repeatIndex = null) {
     const pickers = Array.from(form.querySelectorAll(".ui2-native-file"))
-      .filter((picker) => picker.dataset.fieldId === fieldId);
+      .filter((picker) => picker.dataset.fieldId === fieldId &&
+        String(picker.dataset.repeatTableIndex ?? "") === String(repeatIndex ?? ""));
     if (pickers.length !== 1) {
-      throw new Error(`Scenario file target ${fieldId} is unavailable or repeated.`);
+      const row = repeatIndex == null ? "" : ` row ${repeatIndex + 1}`;
+      throw new Error(`Scenario file target ${fieldId}${row} is unavailable.`);
     }
     const transfer = new DataTransfer();
     transfer.items.add(file);
@@ -1352,7 +1422,8 @@
     // already own the canonical value; refresh only the local display widget
     // and let the caller's syncValues() publish it.
     fieldControls(form)
-      .filter((control) => control.dataset.fieldId === fieldId && control.type !== "file")
+      .filter((control) => control.dataset.fieldId === fieldId && control.type !== "file" &&
+        String(control.dataset.repeatTableIndex ?? "") === String(repeatIndex ?? ""))
       .forEach((control) => {
         control.value = file.name;
         control.dispatchEvent(new Event("input"));
@@ -1363,11 +1434,12 @@
     if (!form || !state.testScenarios.selectedId || !state.testScenarioFiles.size) {
       return;
     }
-    state.testScenarioFiles.forEach((file, fieldId) => {
+    state.testScenarioFiles.forEach(({ fieldId, repeatIndex, file }) => {
       const pickers = Array.from(form.querySelectorAll(".ui2-native-file"))
-        .filter((picker) => picker.dataset.fieldId === fieldId);
+        .filter((picker) => picker.dataset.fieldId === fieldId &&
+          String(picker.dataset.repeatTableIndex ?? "") === String(repeatIndex ?? ""));
       if (pickers.length === 1 && pickers[0].files?.[0] !== file) {
-        attachTestScenarioFile(form, fieldId, file);
+        attachTestScenarioFile(form, fieldId, file, repeatIndex);
       }
     });
   }
@@ -1410,7 +1482,9 @@
     applyInputPayload(scenario.inputs, { clearMissing: false });
     updateTestScenarioState({
       selectedId: scenario.id,
-      verification: { state: "not_run", checks: [] }
+      verification: scenario.expected_outcome === "load_only"
+        ? { state: "passed", checks: [{ id: "expected_outcome", passed: true, actual: "load_only" }] }
+        : { state: "not_run", checks: [] }
     });
     // Scenario identity and ordinary values can make a React workbench
     // reconcile its native field hosts.  Attach verified files only after
@@ -1422,7 +1496,7 @@
       return { ok: false, error: "The module changed while the scenario was loading." };
     }
     try {
-      files.forEach((file, fieldId) => attachTestScenarioFile(currentForm, fieldId, file));
+      files.forEach(({ fieldId, repeatIndex, file }) => attachTestScenarioFile(currentForm, fieldId, file, repeatIndex));
     } catch (error) {
       state.testScenarioFiles = new Map();
       clearTestScenarioFileSelections(currentForm);
@@ -1483,16 +1557,46 @@
 
   function evaluateTestScenarioVerification(scenario, jobStatus, outputs) {
     const checks = scenario?.verification?.checks;
-    if (!scenario?.verification) return { state: "not_run", checks: [] };
-    if (!Array.isArray(checks) || Number(scenario.verification.schema_version) !== 1) return { state: "unsupported", checks: [] };
+    const expectedOutcome = scenario?.expected_outcome;
+    if (expectedOutcome === "load_only") {
+      return { state: "passed", checks: [{ id: "expected_outcome", passed: true, actual: "load_only" }] };
+    }
+    if (!scenario?.verification && !expectedOutcome) return { state: "not_run", checks: [] };
+    if (scenario?.verification && (!Array.isArray(checks) || Number(scenario.verification.schema_version) !== 1)) return { state: "unsupported", checks: [] };
     if (!isTerminalStatus(jobStatus)) return { state: "running", checks: [] };
-    const results = checks.map((check) => {
-      if (!TEST_SCENARIO_CHECK_KINDS.has(check.kind)) return { id: check.id, passed: false, unsupported: true };
-      if (check.kind === "job_status") return { id: check.id, passed: String(jobStatus) === String(check.equals) };
+    const normalizedStatus = String(jobStatus || "").toLowerCase();
+    const actualOutcome = ["complete", "completed", "finished"].includes(normalizedStatus) ? "job_completed" : "job_failed";
+    const results = expectedOutcome ? [{
+      id: "expected_outcome",
+      passed: expectedOutcome === actualOutcome,
+      expected: expectedOutcome,
+      actual: actualOutcome
+    }] : [];
+    (checks || []).forEach((check) => {
+      if (!TEST_SCENARIO_CHECK_KINDS.has(check.kind)) {
+        results.push({ id: check.id, passed: false, unsupported: true });
+        return;
+      }
+      if (check.kind === "job_status") {
+        results.push({ id: check.id, passed: String(jobStatus) === String(check.equals) });
+        return;
+      }
       const present = Object.prototype.hasOwnProperty.call(outputs || {}, check.output_id);
-      return { id: check.id, passed: check.kind === "output_present" ? present : present && testScenarioOutputNonempty(outputs[check.output_id]) };
+      results.push({ id: check.id, passed: check.kind === "output_present" ? present : present && testScenarioOutputNonempty(outputs[check.output_id]) });
     });
     return { state: results.every((result) => result.passed) ? "passed" : "failed", checks: results };
+  }
+
+  function recordTestScenarioValidationOutcome(rejected) {
+    const scenario = selectedTestScenario();
+    if (!scenario?.expected_outcome) return;
+    const actual = rejected ? "validation_rejected" : "validation_accepted";
+    updateTestScenarioState({
+      verification: {
+        state: scenario.expected_outcome === actual ? "passed" : "failed",
+        checks: [{ id: "expected_outcome", passed: scenario.expected_outcome === actual, expected: scenario.expected_outcome, actual }]
+      }
+    });
   }
 
   function refreshTestScenarioVerification(jobStatus) {
@@ -4109,7 +4213,8 @@
     }
     localPicker.addEventListener("change", (event) => {
       if (event.isTrusted) {
-        state.testScenarioFiles.delete(field.id || "");
+        clearTestScenarioFile(field.id || "", options?.repeatTableIndex);
+        clearSelectedTestScenario();
       }
       clearServerSelection(field, options?.repeatTableIndex);
       clearFileReselectionWarning(field.id, options?.repeatTableIndex);
@@ -4497,7 +4602,8 @@
       encodedPath: entry.id,
       path: decodeServerFileId(entry.id).replace(/^\.\//, "")
     };
-    state.testScenarioFiles.delete(field.id);
+    clearTestScenarioFile(field.id, repeatIndex);
+    clearSelectedTestScenario();
     clearFileReselectionWarning(field.id, repeatIndex);
   }
 
@@ -6958,6 +7064,9 @@
     if (preview) {
       preview.textContent = JSON.stringify(state.values, null, 2);
     }
+    if (!selectedTestScenarioOrdinaryInputsMatch(state.values)) {
+      clearSelectedTestScenario();
+    }
   }
 
   function resetModuleForm(form) {
@@ -6990,6 +7099,7 @@
 
     const invalid = validateModuleForm(form);
     if (invalid) {
+      recordTestScenarioValidationOutcome(true);
       setSubmitStatus(status, invalid.message, "error");
       showLegacyMessagePayload({ error: invalid.message }, { force: true });
       invalid.control?.focus();
@@ -7402,6 +7512,11 @@
       "plot-append",
       "structure-frames"
     ]));
+    const scenario = selectedTestScenario();
+    if (scenario) {
+      formData.set(TEST_SCENARIO_ID_FIELD, scenario.id);
+      formData.set(TEST_SCENARIO_REVISION_FIELD, String(state.testScenarios.catalog?.catalog_revision || ""));
+    }
     if (state.module?.docrootexecutable) {
       formData.set("_docrootexecutable", state.module.docrootexecutable);
     }
@@ -7442,19 +7557,22 @@
         submitId: repeatFileSubmitId(field, selection.repeatIndex)
       }));
     });
-    state.testScenarioFiles.forEach((file, id) => {
+    state.testScenarioFiles.forEach(({ fieldId: id, repeatIndex, file }) => {
       const field = moduleFieldById(id);
       if (!file || !fieldIsFileLike(field)) {
         return;
       }
       const group = fileSelectionGroup(groups, id);
-      if (group.local.length || group.server.length) {
+      const rowOccupied = group.local.concat(group.server).some((selection) =>
+        String(selection.repeatIndex ?? "") === String(repeatIndex ?? "")
+      );
+      if (rowOccupied) {
         return;
       }
       group.local.push({
         id,
-        repeatIndex: null,
-        submitId: repeatFileSubmitId(field, null),
+        repeatIndex,
+        submitId: repeatFileSubmitId(field, repeatIndex),
         files: [file]
       });
     });

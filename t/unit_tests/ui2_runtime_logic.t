@@ -4393,6 +4393,37 @@ assert.strictEqual(
   false,
   "UI2 rejects a scenario filename that could address outside its logical asset directory"
 );
+const repeatedFileDeclarations = [
+  fileScenario.files.sample_file,
+  {
+    asset_id: "sample_text",
+    filename: "sample_second.txt",
+    size: 21,
+    sha256: "28cc2e2a48256622f3b62b5588500ee9f9b710b60c2600a0c357942e2f844924"
+  }
+];
+const schemaTwoScenario = {
+  ...fileScenario,
+  id: "repeated_text_assets",
+  expected_outcome: "job_completed",
+  inputs: { run_label: "repeated_scenario_loaded", sample_count: 2 },
+  files: { sample_files: repeatedFileDeclarations }
+};
+assert.strictEqual(
+  hooks.validTestScenarioCatalog({ schema_version: 2, catalog_revision: "fixture-2", module_id: "scenario_file_workflow", scenarios: [schemaTwoScenario] }, "scenario_file_workflow"),
+  true,
+  "UI2 accepts schema 2 ordered repeated file declarations"
+);
+assert.strictEqual(
+  hooks.validTestScenarioCatalog({ schema_version: 2, module_id: "scenario_file_workflow", scenarios: [schemaTwoScenario] }, "scenario_file_workflow"),
+  false,
+  "UI2 requires a stable catalog revision for schema 2"
+);
+assert.strictEqual(
+  hooks.validTestScenarioCatalog({ schema_version: 1, module_id: "scenario_file_workflow", scenarios: [schemaTwoScenario] }, "scenario_file_workflow"),
+  false,
+  "schema 1 remains limited to its original single-file declaration"
+);
 hooks.state.module = {
   fields: [
     { id: "run_name", type: "text", default: "ordinary_default" },
@@ -4443,6 +4474,27 @@ assert.strictEqual(
   "",
   "reattachment does not select a scenario when an ordinary input differs"
 );
+hooks.state.testScenarios.catalog.catalog_revision = "fixture-2";
+hooks.selectTestScenarioForInputs({
+  _ui2_test_scenario_id: "restored_documented_example",
+  _ui2_test_scenario_catalog_revision: "fixture-2",
+  run_name: "values_no_longer_need_to_infer_identity"
+});
+assert.strictEqual(
+  hooks.state.testScenarios.selectedId,
+  "restored_documented_example",
+  "reattachment prefers persisted scenario identity over ambiguous ordinary values"
+);
+hooks.state.testScenarios.selectedId = "";
+hooks.selectTestScenarioForInputs({
+  _ui2_test_scenario_id: "restored_documented_example",
+  _ui2_test_scenario_catalog_revision: "older-revision"
+});
+assert.strictEqual(
+  hooks.state.testScenarios.selectedId,
+  "",
+  "reattachment does not apply persisted identity from a different catalog revision"
+);
 assert.strictEqual(
   hooks.evaluateTestScenarioVerification(scenario, "running", { interpolated_file: "result" }).state,
   "running",
@@ -4457,6 +4509,21 @@ assert.strictEqual(
   hooks.evaluateTestScenarioVerification(scenario, "complete", { interpolated_file: "result", lineplot: { items: [] } }).state,
   "failed",
   "verification reports an absent required final output without fabricating data"
+);
+assert.strictEqual(
+  hooks.evaluateTestScenarioVerification({ ...scenario, expected_outcome: "job_completed" }, "complete", { interpolated_file: "result", lineplot: { items: [{ value: 1 }] } }).state,
+  "passed",
+  "schema 2 expected completion is checked alongside durable outputs"
+);
+assert.strictEqual(
+  hooks.evaluateTestScenarioVerification({ expected_outcome: "job_failed" }, "failed", {}).state,
+  "passed",
+  "an expected terminal job failure can pass without executable catalog logic"
+);
+assert.strictEqual(
+  hooks.evaluateTestScenarioVerification({ expected_outcome: "load_only" }, "", {}).state,
+  "passed",
+  "a successful load-only scenario does not require job submission"
 );
 const scenarioSnapshotBefore = hooks.testScenarioSnapshot();
 const scenarioSnapshotRepeated = hooks.testScenarioSnapshot();
@@ -4572,15 +4639,80 @@ async function verifyScenarioFileHydration() {
     ["sample.txt"],
     "UI2 multipart submission includes the verified scenario file even when the renderer-owned picker is empty"
   );
+  assert.strictEqual(scenarioSubmitData.get("_ui2_test_scenario_id"), "local_text_asset", "scenario submission persists the selected scenario id");
+  assert.strictEqual(scenarioSubmitData.get("_ui2_test_scenario_catalog_revision"), "", "legacy schema 1 submission persists an explicit empty revision");
+  runLabel.value = "manual_edit";
+  hooks.syncValues(form);
+  assert.strictEqual(hooks.state.testScenarios.selectedId, "", "editing an ordinary scenario input clears scenario identity before another submission");
+  assert.strictEqual(hooks.buildSubmitFormData(form, "edited-scenario-test-uuid").get("_ui2_test_scenario_id"), undefined, "an edited run does not retain scenario verification metadata");
   form.remove();
+
+  const repeatedForm = createNode("form");
+  repeatedForm.id = "ui2-form";
+  const repeatedRunLabel = createNode("input");
+  repeatedRunLabel.type = "text";
+  repeatedRunLabel.dataset.fieldId = "run_label";
+  repeatedRunLabel.value = "ordinary_default";
+  const sampleCount = createNode("input");
+  sampleCount.type = "number";
+  sampleCount.dataset.fieldId = "sample_count";
+  sampleCount.value = "2";
+  repeatedForm.append(repeatedRunLabel, sampleCount);
+  const repeatedPickers = [];
+  for (let row = 0; row < 2; row += 1) {
+    const display = createNode("input");
+    display.type = "text";
+    display.dataset.fieldId = "sample_files";
+    display.dataset.repeatTableField = "sample_files";
+    display.dataset.repeatTableIndex = String(row);
+    const picker = createNode("input");
+    picker.type = "file";
+    picker.className = "ui2-native-file";
+    picker.dataset.fieldId = "sample_files";
+    picker.dataset.repeatTableIndex = String(row);
+    picker.files = [];
+    repeatedPickers.push(picker);
+    repeatedForm.append(display, picker);
+  }
+  document.body.appendChild(repeatedForm);
+  hooks.state.module = {
+    fields: [
+      { id: "run_label", type: "text", default: "ordinary_default" },
+      { id: "sample_count", type: "integer", default: 2, repeater: true },
+      { id: "sample_files", type: "lrfile", repeat: "sample_count" }
+    ]
+  };
+  hooks.state.values = { run_label: "ordinary_default", sample_count: "2", sample_files: ["", ""] };
+  hooks.state.testScenarios = {
+    available: true,
+    loading: false,
+    catalog: { schema_version: 2, catalog_revision: "fixture-2", module_id: "scenario_file_workflow", scenarios: [schemaTwoScenario] },
+    selectedId: "",
+    verification: { state: "not_run", checks: [] }
+  };
+  const repeatedLoad = hooks.applyTestScenario("repeated_text_assets", repeatedForm);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.strictEqual(scenarioFrames.length, 1, "repeated scenario hydration waits for the renderer boundary once");
+  scenarioFrames.shift()();
+  const repeatedLoaded = await repeatedLoad;
+  assert.strictEqual(repeatedLoaded.ok, true, "repeated scenario files hydrate successfully");
+  assert.strictEqual(repeatedPickers[0].files[0].name, "sample.txt", "first scenario file attaches to repeated row one");
+  assert.strictEqual(repeatedPickers[1].files[0].name, "sample_second.txt", "second scenario file attaches to repeated row two");
+  repeatedPickers[1].files = [];
+  const repeatedSubmitData = hooks.buildSubmitFormData(repeatedForm, "repeated-scenario-test-uuid");
+  assert.deepStrictEqual(repeatedSubmitData.get("sample_count-sample_files-0"), ["sample.txt"], "repeated row one uses the normal row-specific submit id");
+  assert.deepStrictEqual(repeatedSubmitData.get("sample_count-sample_files-1"), ["sample_second.txt"], "core-owned fallback preserves an emptied repeated row independently");
+  assert.strictEqual(repeatedSubmitData.get("_ui2_test_scenario_catalog_revision"), "fixture-2", "schema 2 submission persists the catalog revision");
+  repeatedForm.remove();
 }
 
 setImmediate(() => {
-  context.fetch = async () => ({
+  context.fetch = async (url) => ({
     ok: true,
     status: 200,
     async arrayBuffer() {
-      const bytes = Uint8Array.from(Buffer.from("neutral scenario file\\n", "utf8"));
+      const content = String(url).includes("row=1") ? "second scenario file\\n" : "neutral scenario file\\n";
+      const bytes = Uint8Array.from(Buffer.from(content, "utf8"));
       return bytes.buffer;
     }
   });

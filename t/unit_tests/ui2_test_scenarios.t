@@ -28,6 +28,9 @@ my $file_catalog = read_file( $file_catalog_path );
 my $asset_path = File::Spec->catfile(
     $app_dir, qw(test_scenarios assets scenario_file_workflow sample_text sample.txt)
 );
+my $second_asset_path = File::Spec->catfile(
+    $app_dir, qw(test_scenarios assets scenario_file_workflow sample_text sample_second.txt)
+);
 
 ok( -f File::Spec->catfile( $ui2, qw(ajax ui2_test_scenarios.php) ), 'UI2-only scenario endpoint is generated' );
 like( $endpoint, qr/restricted->admin/, 'scenario endpoint checks configured server administrators' );
@@ -38,6 +41,9 @@ like( $endpoint, qr/unknown input field/, 'scenario endpoint rejects catalog inp
 like( $runtime, qr/async function applyTestScenario\(id, form/, 'UI2 core owns asynchronous scenario hydration' );
 like( $runtime, qr/window\.crypto\?\.subtle/, 'UI2 verifies fetched scenario files in the browser' );
 like( $runtime, qr/new DataTransfer\(\)/, 'UI2 attaches verified assets through native file controls' );
+like( $runtime, qr/repeatIndex.*?testScenarioAssetFile/s, 'UI2 addresses protected scenario assets by repeated row' );
+like( $runtime, qr/TEST_SCENARIO_ID_FIELD.*?formData\.set/s, 'UI2 persists selected scenario identity with submitted job input' );
+like( $runtime, qr/TEST_SCENARIO_REVISION_FIELD.*?catalog_revision/s, 'UI2 persists the selected catalog revision for safe reattachment' );
 like( $runtime, qr/applyInputPayload\(defaultInputPayload\(\), \{ clearMissing: true \}\)/, 'scenario hydration resets omitted ordinary inputs to module defaults' );
 like( $runtime, qr/function evaluateTestScenarioVerification\(/, 'UI2 core owns final-output verification state' );
 like( $runtime, qr/TEST_SCENARIO_ENDPOINT/, 'scenario service is UI2-local' );
@@ -45,12 +51,19 @@ like( $runtime, qr/function testScenarioEndpointUrl\(\).*?new URL\(TEST_SCENARIO
 unlike( $runtime, qr/legacyEndpoint\("", TEST_SCENARIO_ENDPOINT\)/, 'scenario requests do not use the legacy application-root AJAX route' );
 unlike( $runtime, qr/html5.*test scenario/i, 'UI2 scenario runtime does not create an HTML5 workflow' );
 like( $catalog, qr/"basic_documented_example"/, 'fixture includes a documented-example scenario' );
+like( $catalog, qr/"schema_version": 1/, 'existing schema 1 catalogs remain supported beside opted-in schema 2 catalogs' );
 like( $catalog, qr/"manual_mode"/, 'fixture includes a manual branch' );
 like( $catalog, qr/"advanced_branch"/, 'fixture includes an advanced branch' );
 like( $catalog, qr/"output_nonempty"/, 'fixture reserves final-output verification expectations' );
 like( $file_catalog, qr/"sample_file"/, 'neutral opted-in fixture declares a file target' );
+like( $file_catalog, qr/"schema_version": 2/, 'neutral opted-in fixture exercises the additive schema 2 contract' );
+like( $file_catalog, qr/"catalog_revision": "fixture-2"/, 'schema 2 fixture declares a stable catalog revision' );
+like( $file_catalog, qr/"expected_outcome": "job_completed"/, 'schema 2 fixture declares a safe expected outcome' );
+like( $file_catalog, qr/"sample_files": \[/, 'schema 2 fixture declares ordered repeated files' );
 like( $file_catalog, qr/"907729515e50a0bef905abcf2188f2fd9e0ae14734f2dd4eb8ae7b9656b686dc"/, 'neutral fixture pins the asset digest' );
 is( -s $asset_path, 22, 'neutral scenario asset remains private application-owned test data' );
+is( -s $second_asset_path, 21, 'second repeated scenario asset remains private application-owned test data' );
+like( $endpoint, qr/\$_REQUEST\['row'\]/, 'protected endpoint accepts only an explicit repeated row selector' );
 like( $endpoint, qr/realpath\(\$app_root \. '\/test_scenarios\/assets'\)/, 'protected endpoint anchors asset resolution under the private assets root' );
 unlike( $endpoint, qr/\$generated_root \. '\/test_scenarios\//, 'scenario endpoint never resolves private catalogs from generated public output' );
 like( $endpoint, qr/hash_file\('sha256'/, 'protected endpoint verifies asset integrity before serving bytes' );
@@ -92,5 +105,4 @@ my ( $invalid_status, $invalid_output ) = run_command(
 );
 isnt( $invalid_status, 0, 'GenApp rejects a catalog with an unknown module input' );
 like( $invalid_output, qr/not_a_module_input|unknown input/i, 'catalog validation names the invalid field' );
-
 done_testing();

@@ -827,15 +827,24 @@ sub check_test_scenario_catalogs {
     my %allowed_check_kind = map { $_ => 1 } qw(
         job_status output_present output_nonempty
     );
+    my %allowed_expected_outcome = map { $_ => 1 } qw(
+        load_only validation_rejected job_completed job_failed
+    );
 
     foreach my $catalog_file ( glob 'test_scenarios/*.json' ) {
         my $catalog = get_plain_json( $catalog_file, 'test scenario catalog' );
         my $module_id = $$catalog{ 'module_id' } || '';
-        if ( $$catalog{ 'schema_version' } != 1 ||
+        my $schema_version = $$catalog{ 'schema_version' } || 0;
+        if ( ( $schema_version != 1 && $schema_version != 2 ) ||
              $module_id !~ /^[A-Za-z0-9_-]+$/ ||
              ref( $$catalog{ 'scenarios' } ) ne 'ARRAY' ) {
             $error .= "$catalog_file has an invalid root shape\n";
             next;
+        }
+        if ( $schema_version == 2 &&
+             ( !defined $$catalog{ 'catalog_revision' } ||
+               $$catalog{ 'catalog_revision' } !~ /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/ ) ) {
+            $error .= "$catalog_file has an invalid catalog_revision\n";
         }
         my $expected_name = $catalog_file;
         $expected_name =~ s{^test_scenarios/}{};
@@ -850,7 +859,7 @@ sub check_test_scenario_catalogs {
             next;
         }
         my $module = get_file_json( $module_file );
-        my ( %input_ids, %input_types, %output_ids );
+        my ( %input_ids, %input_types, %input_repeats, %output_ids );
         foreach my $field ( @{ $$module{ 'fields' } || [] } ) {
             next if !$$field{ 'id' };
             if ( ( $$field{ 'role' } || '' ) eq 'output' ) {
@@ -858,6 +867,7 @@ sub check_test_scenario_catalogs {
             } else {
                 $input_ids{ $$field{ 'id' } } = 1;
                 $input_types{ $$field{ 'id' } } = lc( $$field{ 'type' } || 'text' );
+                $input_repeats{ $$field{ 'id' } } = $$field{ 'repeat' } ? 1 : 0;
             }
         }
 
@@ -883,43 +893,54 @@ sub check_test_scenario_catalogs {
                     $error .= "$catalog_file scenario '$$scenario{id}' has an invalid files block\n";
                 } else {
                     foreach my $field_id ( keys %{ $$scenario{ 'files' } } ) {
-                        my $asset = $$scenario{ 'files' }{ $field_id };
-                        my $asset_id = ref( $asset ) eq 'HASH' ? ( $$asset{ 'asset_id' } || '' ) : '';
-                        my $filename = ref( $asset ) eq 'HASH' ? ( $$asset{ 'filename' } || '' ) : '';
-                        my $size = ref( $asset ) eq 'HASH' ? $$asset{ 'size' } : undef;
-                        my $sha256 = ref( $asset ) eq 'HASH' ? ( $$asset{ 'sha256' } || '' ) : '';
                         if ( !$input_ids{ $field_id } || ( $input_types{ $field_id } || '' ) !~ /^(file|lrfile)$/ ) {
                             $error .= "$catalog_file scenario '$$scenario{id}' file '$field_id' is not a local-file input\n";
                             next;
                         }
-                        if ( ref( $asset ) ne 'HASH' || $asset_id !~ /^[A-Za-z0-9_-]+$/ ||
-                             $filename !~ /^[A-Za-z0-9][A-Za-z0-9._-]*$/ || $filename eq '..' ||
-                             !defined $size || $size !~ /^\d+$/ || $size > 16 * 1024 * 1024 ||
-                             $sha256 !~ /^[a-f0-9]{64}$/ ) {
-                            $error .= "$catalog_file scenario '$$scenario{id}' file '$field_id' has invalid asset metadata\n";
+                        my $declared = $$scenario{ 'files' }{ $field_id };
+                        my @assets;
+                        if ( ref( $declared ) eq 'HASH' ) {
+                            @assets = ( $declared );
+                        } elsif ( $schema_version == 2 && ref( $declared ) eq 'ARRAY' && @$declared && $input_repeats{ $field_id } ) {
+                            @assets = @$declared;
+                        } else {
+                            $error .= "$catalog_file scenario '$$scenario{id}' file '$field_id' has an invalid declaration\n";
                             next;
                         }
-                        my $assets_root = 'test_scenarios/assets';
-                        my $asset_root = "$assets_root/$module_id/$asset_id";
-                        my $asset_path = "$asset_root/$filename";
-                        my $real_assets = -d $assets_root ? abs_path( $assets_root ) : undef;
-                        my $real_root = -d $asset_root ? abs_path( $asset_root ) : undef;
-                        my $real_path = -f $asset_path ? abs_path( $asset_path ) : undef;
-                        if ( !$real_assets || !$real_root || index( $real_root, "$real_assets/" ) != 0 ||
-                             !$real_path || index( $real_path, "$real_root/" ) != 0 || !-r $real_path ) {
-                            $error .= "$catalog_file scenario '$$scenario{id}' file '$field_id' asset is unavailable\n";
-                            next;
+                        foreach my $asset ( @assets ) {
+                            my $asset_id = ref( $asset ) eq 'HASH' ? ( $$asset{ 'asset_id' } || '' ) : '';
+                            my $filename = ref( $asset ) eq 'HASH' ? ( $$asset{ 'filename' } || '' ) : '';
+                            my $size = ref( $asset ) eq 'HASH' ? $$asset{ 'size' } : undef;
+                            my $sha256 = ref( $asset ) eq 'HASH' ? ( $$asset{ 'sha256' } || '' ) : '';
+                            if ( ref( $asset ) ne 'HASH' || $asset_id !~ /^[A-Za-z0-9_-]+$/ ||
+                                 $filename !~ /^[A-Za-z0-9][A-Za-z0-9._-]*$/ || $filename eq '..' ||
+                                 !defined $size || $size !~ /^\d+$/ || $size > 16 * 1024 * 1024 ||
+                                 $sha256 !~ /^[a-f0-9]{64}$/ ) {
+                                $error .= "$catalog_file scenario '$$scenario{id}' file '$field_id' has invalid asset metadata\n";
+                                next;
+                            }
+                            my $assets_root = 'test_scenarios/assets';
+                            my $asset_root = "$assets_root/$module_id/$asset_id";
+                            my $asset_path = "$asset_root/$filename";
+                            my $real_assets = -d $assets_root ? abs_path( $assets_root ) : undef;
+                            my $real_root = -d $asset_root ? abs_path( $asset_root ) : undef;
+                            my $real_path = -f $asset_path ? abs_path( $asset_path ) : undef;
+                            if ( !$real_assets || !$real_root || index( $real_root, "$real_assets/" ) != 0 ||
+                                 !$real_path || index( $real_path, "$real_root/" ) != 0 || !-r $real_path ) {
+                                $error .= "$catalog_file scenario '$$scenario{id}' file '$field_id' asset is unavailable\n";
+                                next;
+                            }
+                            my $actual_size = -s $real_path;
+                            open my $asset_fh, '<:raw', $real_path or do {
+                                $error .= "$catalog_file scenario '$$scenario{id}' file '$field_id' asset is unreadable\n";
+                                next;
+                            };
+                            local $/;
+                            my $asset_bytes = <$asset_fh>;
+                            close $asset_fh;
+                            $error .= "$catalog_file scenario '$$scenario{id}' file '$field_id' asset size or sha256 does not match\n"
+                                if $actual_size != $size || sha256_hex( $asset_bytes ) ne $sha256;
                         }
-                        my $actual_size = -s $real_path;
-                        open my $asset_fh, '<:raw', $real_path or do {
-                            $error .= "$catalog_file scenario '$$scenario{id}' file '$field_id' asset is unreadable\n";
-                            next;
-                        };
-                        local $/;
-                        my $asset_bytes = <$asset_fh>;
-                        close $asset_fh;
-                        $error .= "$catalog_file scenario '$$scenario{id}' file '$field_id' asset size or sha256 does not match\n"
-                            if $actual_size != $size || sha256_hex( $asset_bytes ) ne $sha256;
                     }
                 }
             }
@@ -929,6 +950,12 @@ sub check_test_scenario_catalogs {
             }
             $error .= "$catalog_file scenario '$$scenario{id}' has invalid maturity '$$scenario{maturity}'\n"
                 if defined $$scenario{ 'maturity' } && !$allowed_maturity{ $$scenario{ 'maturity' } };
+            if ( defined $$scenario{ 'expected_outcome' } ) {
+                $error .= "$catalog_file scenario '$$scenario{id}' has invalid expected_outcome '$$scenario{expected_outcome}'\n"
+                    if !$allowed_expected_outcome{ $$scenario{ 'expected_outcome' } };
+            } elsif ( $schema_version == 2 ) {
+                $error .= "$catalog_file scenario '$$scenario{id}' must declare expected_outcome\n";
+            }
 
             next if !$$scenario{ 'verification' };
             my $verification = $$scenario{ 'verification' };

@@ -1,26 +1,61 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "catalog_revision": "fixture-2",
   "module_id": "scenario_file_workflow",
-  "scenarios": [{
-    "id": "local_text_asset",
-    "label": "Local text asset",
-    "provenance": ["developer"],
-    "maturity": "candidate",
-    "inputs": { "run_label": "scenario_loaded" },
-    "files": {
-      "sample_file": {
-        "asset_id": "sample_text",
-        "filename": "sample.txt",
-        "size": 22,
-        "sha256": "907729515e50a0bef905abcf2188f2fd9e0ae14734f2dd4eb8ae7b9656b686dc"
+  "scenarios": [
+    {
+      "id": "local_text_asset",
+      "label": "Local text asset",
+      "provenance": ["developer"],
+      "maturity": "candidate",
+      "expected_outcome": "job_completed",
+      "inputs": { "run_label": "scenario_loaded" },
+      "files": {
+        "sample_file": {
+          "asset_id": "sample_text",
+          "filename": "sample.txt",
+          "size": 22,
+          "sha256": "907729515e50a0bef905abcf2188f2fd9e0ae14734f2dd4eb8ae7b9656b686dc"
+        }
+      },
+      "verification": {
+        "schema_version": 1,
+        "checks": [
+          { "id": "completed", "kind": "job_status", "equals": "complete" },
+          { "id": "received", "kind": "output_nonempty", "output_id": "received_file" }
+        ]
       }
     },
-    "verification": {
-      "schema_version": 1,
-      "checks": [
-        { "id": "completed", "kind": "job_status", "equals": "complete" },
-        { "id": "received", "kind": "output_nonempty", "output_id": "received_file" }
-      ]
+    {
+      "id": "repeated_text_assets",
+      "label": "Repeated text assets",
+      "provenance": ["developer"],
+      "maturity": "candidate",
+      "expected_outcome": "job_completed",
+      "inputs": { "run_label": "repeated_scenario_loaded", "sample_count": 2 },
+      "files": {
+        "sample_files": [
+          {
+            "asset_id": "sample_text",
+            "filename": "sample.txt",
+            "size": 22,
+            "sha256": "907729515e50a0bef905abcf2188f2fd9e0ae14734f2dd4eb8ae7b9656b686dc"
+          },
+          {
+            "asset_id": "sample_text",
+            "filename": "sample_second.txt",
+            "size": 21,
+            "sha256": "28cc2e2a48256622f3b62b5588500ee9f9b710b60c2600a0c357942e2f844924"
+          }
+        ]
+      },
+      "verification": {
+        "schema_version": 1,
+        "checks": [
+          { "id": "completed", "kind": "job_status", "equals": "complete" },
+          { "id": "received", "kind": "output_nonempty", "output_id": "received_file" }
+        ]
+      }
     }
-  }]
+  ]
 }

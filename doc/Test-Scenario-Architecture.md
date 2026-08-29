@@ -46,7 +46,8 @@ catalogs or assets under `output/`.
 
 ```json
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "catalog_revision": "2026-08-28.1",
   "module_id": "data_interpolation",
   "scenarios": [
     {
@@ -54,6 +55,7 @@ catalogs or assets under `output/`.
       "label": "Basic documented example",
       "provenance": ["legacy_docs"],
       "maturity": "draft",
+      "expected_outcome": "job_completed",
       "inputs": { "run_name": "interpolation_example" },
       "files": {
         "experimental_data": {
@@ -75,6 +77,12 @@ catalogs or assets under `output/`.
 }
 ```
 
+Schema 2 adds `catalog_revision`, ordered repeated files, and
+`expected_outcome`. Schema 1 catalogs and their single-file declarations remain
+supported. A schema 2 revision is a stable application-owned token using
+letters, digits, `.`, `_`, and `-`; change it whenever scenario identity or
+assets change.
+
 `id` values use letters, digits, `_`, and `-`; `inputs` is a JSON object.
 Phase 1 accepts the provenance values `current_docs`, `legacy_docs`,
 `gui_mimic`, `test_sassie`, `developer`, and `scientist`, and maturity values
@@ -85,6 +93,21 @@ Phase 1 accepts the provenance values `current_docs`, `legacy_docs`,
 `files` map instead; an `inputs` entry must not encode a local or server path.
 Each file declaration targets a module field of type `file` or `lrfile` and
 contains only a logical asset id, safe display filename, byte size, and SHA-256.
+For a repeated `file` or `lrfile` field, schema 2 uses an array in row order:
+
+```json
+"files": {
+  "trajectory_file": [
+    { "asset_id": "pair", "filename": "first.dcd", "size": 123, "sha256": "...64 lowercase hex..." },
+    { "asset_id": "pair", "filename": "second.dcd", "size": 456, "sha256": "...64 lowercase hex..." }
+  ]
+}
+```
+
+Array position is the zero-based repeated row identity used internally; the
+first declaration is attached to the first live picker, the second to the
+second, and so on. Arrays are rejected for non-repeated fields. This keeps file
+selection ordered without exposing paths or selector code.
 
 Assets use this private application-owned layout:
 
@@ -102,6 +125,12 @@ Ordinary multipart submission appends that verified selection when no manual
 local or server file choice replaces it. Catalogs cannot contain executable
 code, arbitrary paths, shell commands, or server-file selections.
 
+When a scenario is selected, UI2 stores its id and catalog revision as reserved
+job-input metadata. Reattachment uses that metadata before the legacy
+ordinary-value inference path. A persisted revision that differs from the
+current catalog is not silently matched to another scenario. These reserved
+values do not alter module inputs or scientific execution.
+
 Loading a scenario never submits it. After any dirty-input confirmation, UI2
 first obtains all declared files. It then resets ordinary inputs to the module's
 declared defaults, applies the scenario values, and attaches the verified files.
@@ -110,6 +139,13 @@ into a later scenario. Native UI2 and the React workbench call the same runtime
 operation and report file failures without submitting a job.
 
 ## Verification stub
+
+Schema 2 scenarios declare one safe `expected_outcome`: `load_only`,
+`validation_rejected`, `job_completed`, or `job_failed`. UI2 can report a
+successful load-only case, a browser validation rejection, and completed versus
+failed terminal job status without running catalog-provided code. Application
+or browser-lane work may supply the event that proves an expected rejection;
+the catalog remains declarative.
 
 The verifier reads final durable output after completion and again when a job
 is reattached.  Its initial allowlist is intentionally small:

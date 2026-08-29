@@ -79,6 +79,7 @@ like( $app_map_js, qr/directives\.ui2_plotly_chart_editor_url = "_cedit\/_chart_
 like( $app_map_js, qr/directives\.ui2_plotly_chart_editor_target = "_blank"/, 'ui2 app map records the application Chart Editor target' );
 like( $app_map_js, qr/directives\.ui2_plot_background_preference = "true"/, 'ui2 app map records opt-in plot-background preferences' );
 like( $app_map_js, qr/directives\.nextjobenvironment = "true"/, 'ui2 app map exposes the opted-in one-job environment setting' );
+unlike( $app_map_js, qr/test_scenarios|catalog_revision/, 'an application without catalogs does not expose test-scenario data in its public app map' );
 like( $app_map_js, qr/app\.help\.feedback = "Feedback help"/, 'ui2 app map records legacy feedback help text' );
 
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
@@ -119,6 +120,7 @@ my $ui2_react_source = read_file( File::Spec->catfile( $repo_root, qw(languages 
 my $ui2_react_run_cue_source = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 react src runCue.ts) ) );
 my $ui2_react_results_visibility_source = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 react src resultsVisibility.ts) ) );
 like( $ui2_react_source, qr/import\s+\{\s*resultsVisibility\s*\}\s+from\s+"@\/resultsVisibility"/, 'React workbench imports the generic results-visibility helper' );
+like( $ui2_react_source, qr/testScenarios\.available && testScenarios\.catalog\?\.scenarios/, 'React renders the administrator scenario control only when core reports an available protected catalog' );
 like( $ui2_react_source, qr/lifecycleState === "editing" \? "" : lifecycleMessage/, 'React workbench leaves the pristine status live region empty while retaining lifecycle messages' );
 unlike( $ui2_react_source, qr/Not submitted/, 'React workbench does not render a redundant pristine submission state' );
 unlike( $ui2_react_js, qr/Not submitted/, 'generated React bundle omits the redundant pristine submission state' );

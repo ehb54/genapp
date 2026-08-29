@@ -54,13 +54,21 @@ function ui2_test_scenarios_reply($payload, $status = 200) {
 function ui2_test_scenarios_serve_asset($catalog, $module_id, $app_root) {
     $scenario_id = isset($_REQUEST['scenario']) ? strval($_REQUEST['scenario']) : '';
     $field_id = isset($_REQUEST['field']) ? strval($_REQUEST['field']) : '';
-    if (!preg_match('/^[A-Za-z0-9_-]+$/', $scenario_id) || !preg_match('/^[A-Za-z0-9_-]+$/', $field_id)) {
+    $row = isset($_REQUEST['row']) ? strval($_REQUEST['row']) : '';
+    if (!preg_match('/^[A-Za-z0-9_-]+$/', $scenario_id) || !preg_match('/^[A-Za-z0-9_-]+$/', $field_id) ||
+        ($row !== '' && !preg_match('/^\d+$/', $row))) {
         ui2_test_scenarios_reply(array('error' => 'Invalid scenario asset request.'), 400);
     }
     $declaration = null;
     foreach ($catalog['scenarios'] as $scenario) {
         if ($scenario['id'] === $scenario_id && isset($scenario['files'][$field_id])) {
             $declaration = $scenario['files'][$field_id];
+            if (is_array($declaration) && !isset($declaration['asset_id'])) {
+                $row_index = $row === '' ? -1 : intval($row);
+                $declaration = isset($declaration[$row_index]) ? $declaration[$row_index] : null;
+            } elseif ($row !== '') {
+                $declaration = null;
+            }
             break;
         }
     }
@@ -116,19 +124,25 @@ function ui2_test_scenarios_validate_catalog($catalog, $module_id, $app_root, $g
     $allowed_provenance = array('current_docs', 'legacy_docs', 'gui_mimic', 'test_sassie', 'developer', 'scientist');
     $allowed_maturity = array('draft', 'candidate', 'verified_cli', 'verified_ui', 'release_ready', 'deferred');
     $allowed_checks = array('job_status', 'output_present', 'output_nonempty');
-    if (!isset($catalog['schema_version']) || intval($catalog['schema_version']) !== 1 ||
+    $allowed_outcomes = array('load_only', 'validation_rejected', 'job_completed', 'job_failed');
+    $schema_version = isset($catalog['schema_version']) ? intval($catalog['schema_version']) : 0;
+    if (($schema_version !== 1 && $schema_version !== 2) ||
         !isset($catalog['module_id']) || $catalog['module_id'] !== $module_id ||
         !isset($catalog['scenarios']) || !is_array($catalog['scenarios'])) return 'Scenario catalog has an invalid root shape.';
+    if ($schema_version === 2 && (!isset($catalog['catalog_revision']) ||
+        !preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/', strval($catalog['catalog_revision'])))) return 'Scenario catalog has an invalid catalog_revision.';
     $module_path = $generated_root . '/ui2/modules/' . $module_id . '.json';
     if (!is_readable($module_path)) $module_path = $app_root . '/modules/' . $module_id . '.json';
     $module_payload = is_readable($module_path) ? json_decode(file_get_contents($module_path), true) : null;
     $module = is_array($module_payload) && isset($module_payload['modulejson']) ? $module_payload['modulejson'] : $module_payload;
     $input_ids = array();
     $input_types = array();
+    $input_repeats = array();
     foreach (is_array($module) && isset($module['fields']) && is_array($module['fields']) ? $module['fields'] : array() as $field) {
         if (is_array($field) && isset($field['id']) && (!isset($field['role']) || $field['role'] !== 'output')) {
             $input_ids[$field['id']] = true;
             $input_types[$field['id']] = strtolower(isset($field['type']) ? strval($field['type']) : 'text');
+            $input_repeats[$field['id']] = isset($field['repeat']) && strval($field['repeat']) !== '';
         }
     }
     if (!count($input_ids)) return 'Scenario catalog module definition is unavailable.';
@@ -143,18 +157,32 @@ function ui2_test_scenarios_validate_catalog($catalog, $module_id, $app_root, $g
         }
         if (isset($scenario['files'])) {
             if (!is_array($scenario['files']) || !count($scenario['files'])) return 'Scenario catalog has an invalid files block.';
-            foreach ($scenario['files'] as $field_id => $asset) {
+            foreach ($scenario['files'] as $field_id => $declared) {
                 if (!isset($input_ids[$field_id]) || !in_array($input_types[$field_id], array('file', 'lrfile'), true)) return 'Scenario file target is not a local-file input.';
-                if (!is_array($asset) || !isset($asset['asset_id']) || !preg_match('/^[A-Za-z0-9_-]+$/', strval($asset['asset_id'])) ||
-                    !isset($asset['filename']) || !preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*$/', strval($asset['filename'])) || $asset['filename'] === '..' ||
-                    !isset($asset['size']) || !is_int($asset['size']) || $asset['size'] < 0 || $asset['size'] > 16 * 1024 * 1024 ||
-                    !isset($asset['sha256']) || !preg_match('/^[a-f0-9]{64}$/', strval($asset['sha256']))) return 'Scenario catalog has invalid file asset metadata.';
+                if (is_array($declared) && isset($declared['asset_id'])) {
+                    $assets = array($declared);
+                } elseif ($schema_version === 2 && is_array($declared) && count($declared) && !empty($input_repeats[$field_id])) {
+                    $assets = $declared;
+                } else {
+                    return 'Scenario catalog has an invalid file declaration.';
+                }
+                foreach ($assets as $asset) {
+                    if (!is_array($asset) || !isset($asset['asset_id']) || !preg_match('/^[A-Za-z0-9_-]+$/', strval($asset['asset_id'])) ||
+                        !isset($asset['filename']) || !preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*$/', strval($asset['filename'])) || $asset['filename'] === '..' ||
+                        !isset($asset['size']) || !is_int($asset['size']) || $asset['size'] < 0 || $asset['size'] > 16 * 1024 * 1024 ||
+                        !isset($asset['sha256']) || !preg_match('/^[a-f0-9]{64}$/', strval($asset['sha256']))) return 'Scenario catalog has invalid file asset metadata.';
+                }
             }
         }
         foreach (isset($scenario['provenance']) && is_array($scenario['provenance']) ? $scenario['provenance'] : array() as $source) {
             if (!in_array($source, $allowed_provenance, true)) return 'Scenario catalog has an invalid provenance value.';
         }
         if (isset($scenario['maturity']) && !in_array($scenario['maturity'], $allowed_maturity, true)) return 'Scenario catalog has an invalid maturity value.';
+        if (isset($scenario['expected_outcome'])) {
+            if (!in_array($scenario['expected_outcome'], $allowed_outcomes, true)) return 'Scenario catalog has an invalid expected_outcome.';
+        } elseif ($schema_version === 2) {
+            return 'Scenario catalog must declare expected_outcome.';
+        }
         if (!isset($scenario['verification'])) continue;
         $verification = $scenario['verification'];
         if (!is_array($verification) || intval(isset($verification['schema_version']) ? $verification['schema_version'] : 0) !== 1 ||
