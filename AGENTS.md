@@ -67,6 +67,19 @@ Do not add it to `.gitignore` or mark it assume-unchanged.
 - At the end of authorized browser work, log out. Future use requires fresh,
   explicit permission even though the account remains an administrator.
 
+## Live Zazzie3 HTML5 Testing
+
+- Use `https://zazzie3.genapp.rocks/sassie3/ui2/` for all live browser
+  validation. Do not open, log into, or submit jobs through the legacy HTML5
+  interface at `/sassie3/` unless the user explicitly requests HTML5
+  validation for the current task.
+- If Codex identifies a concrete need for live HTML5 validation, stop, explain
+  why build checks and UI2 are insufficient, name the account and exact
+  operations, and obtain task-specific permission before access.
+- HTML5 may continue to be generated and checked through noninteractive build
+  and artifact tests. UI2 requests to shared root-level AJAX, PHP, results,
+  documentation, and static-resource paths are not legacy-interface testing.
+
 ## Documentation Source Of Truth
 
 The GitHub wiki is the current source of truth for GenApp documentation. Prefer
