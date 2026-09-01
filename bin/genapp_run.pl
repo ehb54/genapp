@@ -1257,8 +1257,9 @@ foreach my $l ( keys %langs )
             if ( $k !~ /^\./ && $k !~ /\/\./ )
             {
                 my $fo = "output/$l/$k";
-                $warn .= "duplicate output for $fo\n" if $created{ $fo }++;
-                # Language-specific add files are the final application overlay.
+                # Language-specific add files are the final application overlay,
+                # so replacing a core or application-wide asset is intentional.
+                $created{ $fo }++;
                 mkdir_for_file( $fo );
                 my $cmd = "cp $l/add/$k $fo\n";
                 $created .= "$fo\n";

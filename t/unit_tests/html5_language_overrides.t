@@ -20,6 +20,11 @@ is( $generated->{status}, 0, 'html5_language_overrides fixture generates html5 o
     or diag("command failed ($generated->{status}): $generated->{quoted}\n$generated->{output}");
 unlike( $generated->{output}, qr/JSON Error in file html5\//, 'html5 override generation does not parse the language directory as JSON' );
 unlike( $generated->{output}, qr/\bmod_f =\s*(?:\n|$)/, 'html5 override generation resolves system/config module files' );
+unlike(
+    $generated->{output},
+    qr/duplicate output for output\/html5\/override_marker\.txt/,
+    'intentional language-specific add override is not reported as a duplicate output'
+);
 
 my $app_dir = $generated->{app_dir};
 my $html5   = File::Spec->catdir( $app_dir, qw(output html5) );
