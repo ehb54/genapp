@@ -416,6 +416,19 @@ changing it, read `../genapp_zazzie/docs/plot_presentation.md` and rollout issue
 - GenApp core must remain application-neutral; do not add SASSIE profiles,
   palette names, or scientific roles to core.
 
+#### Plot Presentation Lab approval gate
+
+Codex must stop and obtain explicit, task-specific user permission immediately
+before pressing **Publish YAML**, and must stop and obtain explicit permission
+again before pressing **Recompile UI2**. Permission to access the Lab, use an
+administrator account, edit or save drafts, validate presentation work, or
+perform a broader deployment task does not authorize either action. The Lab's
+browser confirmation dialog does not replace the user's approval. Codex must
+not bypass this gate in text mode by calling the Lab API or worker directly,
+running the underlying build or publication commands, or using any other route
+with equivalent effects. Approval applies only to the named action in the
+current task and does not carry forward.
+
 ### Other SASSIE policy routing
 
 - One-job diagnostic logging and optional selected-job feedback artifacts are governed by `doc/Next-Job-Environment-Settings.md`,
