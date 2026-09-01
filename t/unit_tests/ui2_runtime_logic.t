@@ -20,6 +20,7 @@ const vm = require("vm");
 
 const repoRoot = "$repo_root";
 const surfaceSource = fs.readFileSync(path.join(repoRoot, "languages/ui2/add/js/plotly-surface.js"), "utf8");
+const layoutSource = fs.readFileSync(path.join(repoRoot, "languages/ui2/add/js/plotly-layout.js"), "utf8");
 let source = fs.readFileSync(path.join(repoRoot, "languages/ui2/add/js/ui2.js"), "utf8");
 source = source.replace(/\\n  init\\(\\);\\n\\}\\(\\)\\);\\s*\$/, "\\n}());\\n");
 
@@ -389,6 +390,7 @@ document.body.appendChild(sessionStatus);
 
 vm.createContext(context);
 vm.runInContext(surfaceSource, context, { filename: "plotly-surface.js" });
+vm.runInContext(layoutSource, context, { filename: "plotly-layout.js" });
 vm.runInContext(source, context, { filename: "ui2.js" });
 
 const hooks = context.window.GenAppUi2TestHooks;
@@ -2088,6 +2090,64 @@ assert.strictEqual(catalogLayout.xaxis.gridwidth, 2, "a presentation profile con
 assert.strictEqual(catalogLayout.xaxis.title.font.size, 13, "a presentation profile controls axis label size");
 const unoptedLayout = hooks.plotlyLayoutForOutput({ dataset: {}, closest: () => null }, { xaxis: {} });
 assert.strictEqual(unoptedLayout.paper_bgcolor, "#1a201f", "a non-opted-in plot retains the UI2 theme surface");
+const layoutPolicy = window.GenAppPlotlyLayout;
+const measureAxisTitle = (text) => String(text).length * 10;
+assert.strictEqual(
+  layoutPolicy.wrapPlainText("New cells / accepted structure", 400, measureAxisTitle),
+  "New cells / accepted structure",
+  "a wide axis retains its plain semantic title"
+);
+assert.strictEqual(
+  layoutPolicy.wrapPlainText("New cells / accepted structure", 190, measureAxisTitle),
+  "New cells /<br>accepted structure",
+  "a narrower axis wraps at the approved separator and a word boundary"
+);
+assert.strictEqual(
+  layoutPolicy.wrapPlainText("New cells / accepted structure", 120, measureAxisTitle),
+  "New cells /<br>accepted<br>structure",
+  "an axis title uses as many complete-word lines as its rendered span requires"
+);
+assert.strictEqual(
+  layoutPolicy.wrapPlainText("Energy <sup>2</sup>", 80, measureAxisTitle),
+  "Energy <sup>2</sup>",
+  "automatic wrapping leaves explicitly marked-up titles unchanged"
+);
+const neutralWrapPlot = {
+  _fullLayout: { yaxis2: { _length: 128, title: { font: { size: 13 } } } },
+  layout: { yaxis2: { title: { text: "Observed samples / retained observation" } } }
+};
+const neutralSourceLayout = {
+  yaxis2: { title: "Observed samples / retained observation" }
+};
+const neutralWrapUpdate = layoutPolicy.axisTitleWrapUpdate(
+  neutralWrapPlot,
+  neutralSourceLayout,
+  { axisTitleOverflow: "wrap" },
+  { measureText: measureAxisTitle }
+);
+assert.ok(neutralWrapUpdate["yaxis2.title.text"].includes("<br>"), "a neutral opted-in subplot receives a responsive title update");
+assert.strictEqual(
+  layoutPolicy.axisTitleWrapUpdate(neutralWrapPlot, neutralSourceLayout, {}, { measureText: measureAxisTitle }),
+  null,
+  "a non-opted-in subplot remains unchanged"
+);
+neutralWrapPlot._fullLayout.yaxis2._length = 520;
+neutralWrapPlot.layout.yaxis2.title.text = neutralWrapUpdate["yaxis2.title.text"];
+assert.strictEqual(
+  layoutPolicy.axisTitleWrapUpdate(
+    neutralWrapPlot,
+    neutralSourceLayout,
+    { axisTitleOverflow: "wrap" },
+    { measureText: measureAxisTitle }
+  )["yaxis2.title.text"],
+  "Observed samples / retained observation",
+  "expanding a subplot restores the original unwrapped title"
+);
+assert.strictEqual(
+  neutralSourceLayout.yaxis2.title,
+  "Observed samples / retained observation",
+  "responsive title fitting never mutates the saved source layout"
+);
 assert.strictEqual(
   hooks.normalizeJobEvent({ version: 2, run: "run-1", module: "mmc", sequence: 1, channel: "log", topic: "run" }),
   null,

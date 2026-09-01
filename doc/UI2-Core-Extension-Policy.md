@@ -99,6 +99,14 @@ by default. An in-plot annotation requires a documented, view-declared generic
 placement policy keyed by a named annotation; the driver must not send an
 ad-hoc UI2 placement flag.
 
+An application view may opt a Plotly result group into
+`plotPresentation.axisTitleOverflow: "wrap"`. UI2 measures plain axis titles
+against their rendered axis span and font, wraps only at word boundaries and
+approved separators, and recomputes after responsive resize. The producer
+continues to supply the unmodified semantic title; it must not insert responsive
+`<br>` markup. Rich titles with explicit markup and non-opted-in figures retain
+their declared behavior.
+
 ## NGL contract
 
 A coordinate-frame event may contain `coordinates`, `atom_count`, `frame_id`,

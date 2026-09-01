@@ -11350,7 +11350,7 @@
         normalizePlotlyModebar(output);
         improvePlotlyModebarAccessibility(output);
         observeFitPlotlyOutput(output);
-        return fitPlotlyLegendsBelowPlot(output);
+        return fitPlotlyPresentationGeometry(output);
       })
       .then(() => {
         normalizePlotlyModebar(output);
@@ -11550,15 +11550,15 @@
     if (refreshed?.then) {
       refreshed
         .then(() => window.Plotly?.Plots?.resize?.(output))
-        .then(() => fitPlotlyLegendsBelowPlot(output));
+        .then(() => fitPlotlyPresentationGeometry(output));
       return;
     }
     const resized = window.Plotly?.Plots?.resize?.(output);
     if (resized?.then) {
-      resized.then(() => fitPlotlyLegendsBelowPlot(output));
+      resized.then(() => fitPlotlyPresentationGeometry(output));
       return;
     }
-    fitPlotlyLegendsBelowPlot(output);
+    fitPlotlyPresentationGeometry(output);
   }
 
   function rememberPlotlyAppend(output, indices, x_values, y_values, max_points) {
@@ -12061,6 +12061,23 @@
       return null;
     }
     return window.Plotly.relayout(output, update);
+  }
+
+  function fitPlotlyAxisTitles(output) {
+    if (!plotlyOutputReadyForRelayout(output)) {
+      return null;
+    }
+    const sourceLayout = output?._ui2PlotlyLastFigure?.layout || {};
+    return window.GenAppPlotlyLayout?.applyAxisTitleOverflow?.(
+      output,
+      sourceLayout,
+      plotPresentationForOutput(output)
+    ) || null;
+  }
+
+  function fitPlotlyPresentationGeometry(output) {
+    return Promise.resolve(fitPlotlyLegendsBelowPlot(output))
+      .then(() => fitPlotlyAxisTitles(output));
   }
 
   function plotlyOutputReadyForRelayout(output) {
@@ -13214,6 +13231,8 @@
       plotlyLegendFitUpdate,
       plotlyOutputReadyForRelayout,
       fitPlotlyLegendsBelowPlot,
+      fitPlotlyAxisTitles,
+      fitPlotlyPresentationGeometry,
       resizePlotlyOutputToVisibleBox,
       applyPlotPresentationStyle,
       plotlyDataForOutput,

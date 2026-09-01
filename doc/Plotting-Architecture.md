@@ -45,6 +45,8 @@ scientific result.
 - responsive sizing and resize behavior;
 - fonts, theme colors, trace palette, line/marker styling, margins, and legend
   placement;
+- responsive axis-title overflow and client-only word-boundary wrapping when
+  an application view opts into that generic presentation capability;
 - modebar, interaction, export, accessibility, empty-state presentation, and
   final Plotly rendering. The standard UI2 toolbar keeps responsive rendering
   and scroll-wheel zoom, uses PNG export at scale 2, removes box/lasso select
@@ -88,7 +90,8 @@ items look and where presentation-only elements are placed.
 5. **Leave presentation to UI2.** Do not emit fixed width or height, pixel
    margins, font sizes, theme/background colors, trace colors, line widths,
    marker sizes, fixed legend coordinates, modebar buttons, or general Plotly
-   `config`. Do not hand-size a plot for either normal or expanded view.
+   `config`. Do not hand-size a plot for either normal or expanded view, and do
+   not insert responsive `<br>` markup into scientific titles.
    Applications with a local Chart Editor declare that generic capability once
    in their UI2 directives; UI2 applies it across normal rendering and saved-job
    lifecycles. Figure-level editor configuration is a legacy compatibility

@@ -27,6 +27,7 @@ ok( -f File::Spec->catfile( $ui2, qw(js app-map.js) ), 'ui2 app map was generate
 ok( -f File::Spec->catfile( $ui2, qw(css ui2.css) ), 'ui2 stylesheet was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(js ui2.js) ), 'ui2 script was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(js plotly-surface.js) ), 'shared Plotly final-surface policy was copied' );
+ok( -f File::Spec->catfile( $ui2, qw(js plotly-layout.js) ), 'shared responsive Plotly layout policy was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(ajax ui2_ai_helper.php) ), 'ui2 AI Helper bridge was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(ajax ui2_session_handoff.php) ), 'UI2-only new-window session handoff endpoint was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(react ui2-react.css) ), 'ui2 React stylesheet was copied' );
@@ -49,6 +50,7 @@ like( $index, qr/\.\.\/js\/autobahn\.min\.js/, 'ui2 index preloads the existing 
 like( $index, qr/\.\.\/js\/plotly-2\.35\.2\.min\.js/, 'ui2 index preloads the existing generated Plotly bundle' );
 like( $index, qr/js\/plot-presentations\.js/, 'ui2 index loads the optional application plot presentation catalog before the UI2 renderer' );
 like( $index, qr/js\/plotly-surface\.js[\s\S]+js\/ui2\.js/, 'ui2 index loads final-surface contrast policy before the UI2 renderer' );
+like( $index, qr/js\/plotly-layout\.js[\s\S]+js\/ui2\.js/, 'ui2 index loads responsive Plotly layout policy before the UI2 renderer' );
 like( $index, qr/js\/ui2\.js/, 'ui2 index loads the plain JavaScript playground' );
 like( $index, qr/css\/ui2\.css/, 'ui2 index loads the ui2 stylesheet' );
 like( $index, qr/react\/ui2-react\.css/, 'ui2 index loads the React workbench stylesheet' );
@@ -86,9 +88,12 @@ like( $app_map_js, qr/app\.help\.feedback = "Feedback help"/, 'ui2 app map recor
 
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
 my $plotly_surface_js = read_file( File::Spec->catfile( $ui2, qw(js plotly-surface.js) ) );
+my $plotly_layout_js = read_file( File::Spec->catfile( $ui2, qw(js plotly-layout.js) ) );
 my $ui2_css = read_file( File::Spec->catfile( $ui2, qw(css ui2.css) ) );
 like( $plotly_surface_js, qr/window\.GenAppPlotlySurface/, 'generated UI2 exposes one shared final-surface resolver' );
 like( $plotly_surface_js, qr/function apply\(layout, options\).*?paper_bgcolor.*?plot_bgcolor.*?hoverlabel.*?modebar/s, 'surface resolver covers final paper, plot, hover, and toolbar presentation' );
+like( $plotly_layout_js, qr/window\.GenAppPlotlyLayout/, 'generated UI2 exposes one shared responsive Plotly layout helper' );
+like( $plotly_layout_js, qr/function wrapPlainText.*?function axisTitleWrapUpdate.*?axisTitleOverflow/s, 'responsive layout helper wraps opted-in axis titles without application vocabulary' );
 like( $session_handoff_php, qr/\$application\s*=\s*"ui2_views"/, 'generated handoff endpoint uses the fixture application session namespace' );
 unlike( $session_handoff_php, qr/dirname\(__DIR__, 2\)/, 'generated handoff endpoint does not mistake output for the application root' );
 like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declares a module submit endpoint helper' );
@@ -109,6 +114,7 @@ like( $ui2_js, qr/function fitPlotlyLegendsBelowPlot\(output\)\s*\{\s*if \(!plot
 like( $ui2_js, qr/function plotlyOutputReadyForRelayout\(output\).*?output\?\.isConnected.*?Array\.isArray\(output\.data\).*?output\._fullLayout/s, 'ui2 runtime requires a connected rendered Plotly graph before legend relayout' );
 like( $ui2_js, qr/function plotlyFitMode\(output\).*?closest\?\.\("\[data-plot-fit\]"\)/s, 'dynamic Plotly children inherit their workbench pane-fit setting' );
 like( $ui2_js, qr/function observeFitPlotlyOutput\(output\).*?fittedAncestor.*?observer\.observe\(target\)/s, 'workbench fitted Plotly surfaces observe their stable pane container' );
+like( $ui2_js, qr/function fitPlotlyAxisTitles\(output\).*?GenAppPlotlyLayout.*?applyAxisTitleOverflow/s, 'UI2 applies the shared axis-title policy through the generic presentation selection' );
 like( $ui2_js, qr/function releaseReactWorkbenchField\(fieldNode\).*?disconnectPlotlyOutputObserver.*?Plotly\.purge/s, 'workbench unmount cleans up Plotly resize observation and graph state' );
 like( $ui2_js, qr/function notifyWorkbenchReattached\(uuid, savedValues = null, restoreError = "", restoreWarnings = \[\]\).*?setSubmittedRunContext\(\{\s*uuid,\s*values,/s, 'workbench reattachment publishes the restored submitted-input snapshot and nonfatal warnings' );
 like( $ui2_js, qr/outputSnapshot: \(\) => state\.runtimeOutputAvailability.*?subscribeOutputs: \(listener\) => subscribeRuntimeOutputs\(listener\)/s, 'workbench bridge exposes runtime output availability without module-specific state' );
@@ -553,7 +559,7 @@ like( $ui2_js, qr/modeBarButtonsToAdd:\s*\["togglespikelines", "v1hovermode", "h
 like( $ui2_js, qr/modeBarButtonsToRemove:\s*\["select2d", "lasso2d", "sendDataToCloud", "editInChartStudio"\]/, 'ui2 runtime removes selection and retired cloud controls' );
 like( $ui2_js, qr/modebar:\s*\{\s*orientation:\s*"h"/, 'ui2 runtime explicitly requires a horizontal Plotly modebar' );
 like( $ui2_js, qr/function normalizePlotlyModebar\(output\).*?classList\?\.remove\("vertical"\).*?classList\?\.add\("ui2-modebar-horizontal"\)/s, 'ui2 runtime removes Plotly vertical state after every render' );
-like( $ui2_js, qr/return fitPlotlyLegendsBelowPlot\(output\);\s*\}\)\s*\.then\(\(\) => \{\s*normalizePlotlyModebar\(output\);\s*improvePlotlyModebarAccessibility\(output\);/s, 'ui2 renormalizes the modebar after title and legend relayout' );
+like( $ui2_js, qr/return fitPlotlyPresentationGeometry\(output\);\s*\}\)\s*\.then\(\(\) => \{\s*normalizePlotlyModebar\(output\);\s*improvePlotlyModebarAccessibility\(output\);/s, 'ui2 renormalizes the modebar after title and legend relayout' );
 like( $ui2_js, qr/function appendPlotlyOutput\(output, payload\).*?extendTraces\(output,.*?\.then\(\(\) => \{\s*normalizePlotlyModebar\(output\);\s*improvePlotlyModebarAccessibility\(output\);/s, 'ui2 renormalizes the modebar after a streamed Plotly append' );
 like( $ui2_js, qr/function improvePlotlyModebarAccessibility\(output\)/, 'ui2 runtime makes Plotly modebar controls keyboard reachable' );
 like( $ui2_js, qr/setAttribute\?\.\("title", title\).*?dispatchEvent\(new Event\("click", \{ bubbles: true, cancelable: true \}\)\)/s, 'ui2 modebar supplies unclipped tooltips and routes Enter or Space through Plotly click listeners' );
@@ -686,6 +692,8 @@ is( $dynamic_gallery_field->{max}, '2', 'neutral fixture allows two generated Pl
 my ($dynamic_gallery_group) = grep { $_->{id} eq 'dynamic-gallery' } @{ $workbench_layout->{viewjson}{results}{groups} || [] };
 is( $dynamic_gallery_group->{layout}, 'gallery', 'neutral fixture opts into generic gallery layout' );
 is( $dynamic_gallery_group->{visibility}, 'available', 'neutral fixture keeps the optional gallery hidden until dynamic output is present' );
+my ($primary_plot_group) = grep { $_->{id} eq 'primary' } @{ $workbench_layout->{viewjson}{results}{groups} || [] };
+is( $primary_plot_group->{plotPresentation}{axisTitleOverflow}, 'wrap', 'neutral fixture opts into generic responsive axis-title wrapping' );
 
 my $plain = decode_json( read_file( File::Spec->catfile( $ui2, qw(modules plain.json) ) ) );
 is( $plain->{module}, 'plain', 'plain summary records module id' );

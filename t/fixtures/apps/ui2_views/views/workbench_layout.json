@@ -55,7 +55,10 @@
                 "label"   : "Primary plot",
                 "outputs" : ["primary_plot"],
                 "primary" : true,
-                "fit"     : "pane"
+                "fit"     : "pane",
+                "plotPresentation" : {
+                    "axisTitleOverflow" : "wrap"
+                }
             },
             {
                 "id"      : "structure",

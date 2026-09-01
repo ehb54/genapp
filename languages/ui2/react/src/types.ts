@@ -65,6 +65,7 @@ export type WorkbenchResultGroup = {
   layout?: "auto" | "tabs" | "grid" | "comparison" | "gallery" | string
   plotPresentation?: {
     profile?: string
+    axisTitleOverflow?: "wrap" | string
     traceRoles?: Record<string, { token?: "primary" | "reference" | "context" | "experimental" | "uncertainty" | "residual" | string; legend?: "show" | "hide" | string }>
   }
   visibility?: "declared" | "available"
