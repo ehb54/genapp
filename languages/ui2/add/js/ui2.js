@@ -8210,18 +8210,24 @@
       ...repeaterControllerIds()
     ]);
     const restored = new Set();
+    const handledDependencies = new Set();
     entries.forEach(([id, value]) => {
       if (!dependencyIds.has(id)) {
         return;
       }
-      setInputControlValue(id, value);
-      restored.add(id);
+      const appliedControls = setInputControlValue(id, value);
+      if (appliedControls > 0) {
+        restored.add(id);
+      } else {
+        deferUnavailableReactWorkbenchInput(id, value, appliedControls);
+      }
+      handledDependencies.add(id);
     });
     if (restored.size) {
       syncValues();
     }
     entries.forEach(([id, value]) => {
-      if (restored.has(id)) {
+      if (handledDependencies.has(id)) {
         return;
       }
       deferUnavailableReactWorkbenchInput(id, value, setInputControlValue(id, value));

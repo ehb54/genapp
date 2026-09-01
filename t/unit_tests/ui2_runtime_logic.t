@@ -1065,6 +1065,92 @@ assert.ok(
   "UI2 clears a deferred action value after its repeater control mounts"
 );
 
+const delayedDependencyForm = createNode("form");
+delayedDependencyForm.id = "ui2-form";
+const mountedMode = ui2FormControl(delayedDependencyForm, "analysis_mode", "basic");
+const moduleBeforeDelayedDependency = hooks.state.module;
+const viewBeforeDelayedDependency = hooks.state.view;
+const getElementByIdBeforeDelayedDependency = document.getElementById;
+const querySelectorAllBeforeDelayedDependency = document.querySelectorAll;
+hooks.state.module = {
+  fields: [
+    { id: "analysis_mode", type: "listbox", repeater: "true" },
+    { id: "advanced_options", type: "checkbox", repeater: "true", repeat: "analysis_mode:advanced" },
+    { id: "advanced_value", type: "text", repeat: "advanced_options" }
+  ]
+};
+hooks.state.view = { renderer: "react-workbench" };
+hooks.state.pendingInputValues = {};
+document.getElementById = (id) => id === "ui2-form"
+  ? delayedDependencyForm
+  : null;
+document.querySelectorAll = (selector) => {
+  if (selector === '[data-field-id="analysis_mode"]') return [mountedMode];
+  return [];
+};
+hooks.applyInputPayload({
+  analysis_mode: "advanced",
+  advanced_options: true,
+  advanced_value: "saved advanced value"
+});
+assert.strictEqual(
+  mountedMode.value,
+  "advanced",
+  "UI2 immediately restores an available dependency controller"
+);
+assert.strictEqual(
+  hooks.state.pendingInputValues.advanced_options,
+  true,
+  "UI2 defers an unavailable dependency controller in a conditional React section"
+);
+assert.strictEqual(
+  hooks.state.pendingInputValues.advanced_value,
+  "saved advanced value",
+  "UI2 keeps the unavailable child value with its deferred controller"
+);
+
+const delayedAdvancedToggle = ui2FormControl(delayedDependencyForm, "advanced_options", "");
+delayedAdvancedToggle.type = "checkbox";
+delayedAdvancedToggle.checked = false;
+const delayedAdvancedValue = ui2FormControl(delayedDependencyForm, "advanced_value", "default value");
+document.querySelectorAll = (selector) => {
+  if (selector === '[data-field-id="analysis_mode"]') return [mountedMode];
+  if (selector === '[data-field-id="advanced_options"]') return [delayedAdvancedToggle];
+  if (selector === '[data-field-id="advanced_value"]') return [delayedAdvancedValue];
+  return [];
+};
+hooks.applyPendingReactWorkbenchInputValues();
+assert.strictEqual(
+  delayedAdvancedToggle.checked,
+  true,
+  "UI2 hydrates a saved true value after the delayed dependency controller mounts"
+);
+assert.strictEqual(
+  delayedAdvancedValue.value,
+  "saved advanced value",
+  "UI2 hydrates the delayed child value after its conditional section mounts"
+);
+assert.deepStrictEqual(
+  hooks.state.pendingInputValues,
+  {},
+  "UI2 clears delayed controller and child values only after successful hydration"
+);
+hooks.applyInputPayload({ advanced_options: false });
+assert.strictEqual(
+  delayedAdvancedToggle.checked,
+  false,
+  "UI2 preserves a saved false value for an already mounted dependency controller"
+);
+assert.deepStrictEqual(
+  hooks.state.pendingInputValues,
+  {},
+  "UI2 does not defer a dependency controller that was restored immediately"
+);
+document.getElementById = getElementByIdBeforeDelayedDependency;
+document.querySelectorAll = querySelectorAllBeforeDelayedDependency;
+hooks.state.module = moduleBeforeDelayedDependency;
+hooks.state.view = viewBeforeDelayedDependency;
+
 function ui2IntegerpairMatrixRow() {
   const matrixField = {
     id: "matrix_value",
