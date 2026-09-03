@@ -2590,6 +2590,32 @@ assert(
   source.includes('function openSplashDialog()'),
   "ui2 provides a splash/login dialog helper"
 );
+assert.strictEqual(
+  hooks.sameOriginApplicationUrl("auth/providers.php"),
+  "https://example.test/sassie3/ui2/auth/providers.php",
+  "external-auth manifests may use application-relative URLs"
+);
+assert.strictEqual(
+  hooks.sameOriginApplicationUrl("https://identity.example/auth/providers.php"),
+  "",
+  "external-auth manifests reject cross-origin URLs"
+);
+assert.strictEqual(
+  hooks.normalizeExternalAuthProviders({ providers: [
+    { id: "login-gov", label: "Sign in with Login.gov", start_url: "auth/login-gov/start.php" },
+    { id: "unsafe", label: "Unsafe", start_url: "https://identity.example/start" },
+    { id: "Bad Id", label: "Invalid", start_url: "auth/invalid" }
+  ] }).map((provider) => provider.id).join(","),
+  "login-gov",
+  "external-auth manifests retain only bounded, same-origin provider declarations"
+);
+assert(
+  source.includes('appMap.directives?.ui2_auth_providers_url') &&
+    source.includes('cache: "no-store"') &&
+    source.includes('credentials: "same-origin"') &&
+    source.includes('renderExternalAuthProviders(overlay);'),
+  "UI2 loads external providers only through the optional application manifest contract"
+);
 assert(
   source.includes('function renderPasswordControl(input)') &&
     source.includes('toggle.type = "button"') &&

@@ -80,6 +80,7 @@
   let plotlyLoadPromise = null;
   let nglLoadPromise = null;
   let katexLoadPromise = null;
+  let externalAuthProvidersPromise = null;
   let reactWorkbenchRoot = null;
   let reactWorkbenchSyncFrame = null;
   const reactWorkbenchSyncListeners = new Set();
@@ -662,6 +663,7 @@
       applyLoginDialogMode(overlay, mandatory);
       resetPasswordControls(overlay);
       overlay.hidden = false;
+      renderExternalAuthProviders(overlay);
       overlay.querySelector("input[name='userid']")?.focus();
       return;
     }
@@ -694,6 +696,10 @@
     forgot.append(forgotInput, document.createTextNode("Forgot password"));
     form.appendChild(forgot);
 
+    const providers = el("div", "ui2-login-providers");
+    providers.hidden = true;
+    form.appendChild(providers);
+
     const actions = el("div", "ui2-dialog-actions");
     const submit = el("button", "ui2-button", "Login");
     submit.type = "submit";
@@ -714,7 +720,78 @@
     overlay.appendChild(panel);
     document.body.appendChild(overlay);
     applyLoginDialogMode(overlay, mandatory);
+    renderExternalAuthProviders(overlay);
     form.elements.userid?.focus();
+  }
+
+  function sameOriginApplicationUrl(value) {
+    const candidate = stringValue(value).trim();
+    if (!candidate) {
+      return "";
+    }
+    try {
+      const base = new URL(window.location.href);
+      const url = new URL(candidate, base);
+      return url.origin === base.origin ? url.toString() : "";
+    } catch (_error) {
+      return "";
+    }
+  }
+
+  function normalizeExternalAuthProviders(payload) {
+    const providers = Array.isArray(payload?.providers) ? payload.providers : [];
+    return providers.slice(0, 5).map((provider) => {
+      const id = stringValue(provider?.id).trim();
+      const label = stringValue(provider?.label).trim();
+      const startUrl = sameOriginApplicationUrl(provider?.start_url);
+      if (!/^[a-z0-9][a-z0-9_-]{0,63}$/.test(id) || !label || label.length > 80 || !startUrl) {
+        return null;
+      }
+      return { id, label, startUrl };
+    }).filter(Boolean);
+  }
+
+  function loadExternalAuthProviders() {
+    const manifestUrl = sameOriginApplicationUrl(appMap.directives?.ui2_auth_providers_url);
+    if (!manifestUrl) {
+      return Promise.resolve([]);
+    }
+    if (!externalAuthProvidersPromise) {
+      externalAuthProvidersPromise = fetch(manifestUrl, {
+        cache: "no-store",
+        credentials: "same-origin",
+        headers: { Accept: "application/json" }
+      }).then(async (response) => {
+        if (!response.ok) {
+          return [];
+        }
+        return normalizeExternalAuthProviders(await response.json());
+      }).catch(() => []);
+    }
+    return externalAuthProvidersPromise;
+  }
+
+  async function renderExternalAuthProviders(overlay) {
+    const container = overlay?.querySelector(".ui2-login-providers");
+    if (!container || container.dataset.loaded === "true") {
+      return;
+    }
+    const providers = await loadExternalAuthProviders();
+    if (!providers.length || !container.isConnected) {
+      return;
+    }
+    container.innerHTML = "";
+    container.appendChild(el("div", "ui2-login-provider-separator", "or"));
+    providers.forEach((provider) => {
+      const link = el("a", "ui2-button ui2-login-provider", provider.label);
+      const start = new URL(provider.startUrl);
+      start.searchParams.set("window", window.name || "");
+      link.href = start.toString();
+      link.dataset.providerId = provider.id;
+      container.appendChild(link);
+    });
+    container.dataset.loaded = "true";
+    container.hidden = false;
   }
 
   function applyLoginDialogMode(overlay, mandatory) {
@@ -13167,6 +13244,10 @@
       applyUi2Theme,
       setUi2ThemePreference,
       currentUi2Theme,
+      sameOriginApplicationUrl,
+      normalizeExternalAuthProviders,
+      loadExternalAuthProviders,
+      renderExternalAuthProviders,
       loginRequiresPasswordChange,
       requiredPasswordChangeFields,
       setPlotBackgroundModePreference,

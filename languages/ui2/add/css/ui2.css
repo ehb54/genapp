@@ -1967,6 +1967,37 @@ code {
   justify-content: flex-start;
 }
 
+.ui2-login-providers {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.ui2-login-providers[hidden] {
+  display: none;
+}
+
+.ui2-login-provider-separator {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--ui2-muted);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.ui2-login-provider-separator::before,
+.ui2-login-provider-separator::after {
+  content: "";
+  height: 1px;
+  flex: 1 1 auto;
+  background: var(--ui2-border);
+}
+
+.ui2-login-provider {
+  justify-content: center;
+  text-decoration: none;
+}
+
 .ui2-server-path {
   margin-bottom: 0.65rem;
   color: var(--ui2-muted);

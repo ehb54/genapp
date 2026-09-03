@@ -82,6 +82,7 @@ like( $app_map_js, qr/directives\.ui2_plotly_chart_editor = "true"/, 'ui2 app ma
 like( $app_map_js, qr/directives\.ui2_plotly_chart_editor_url = "_cedit\/_chart_edit\.html"/, 'ui2 app map records the application Chart Editor URL' );
 like( $app_map_js, qr/directives\.ui2_plotly_chart_editor_target = "_blank"/, 'ui2 app map records the application Chart Editor target' );
 like( $app_map_js, qr/directives\.ui2_plot_background_preference = "true"/, 'ui2 app map records opt-in plot-background preferences' );
+like( $app_map_js, qr/directives\.ui2_auth_providers_url = "auth\/providers\.php"/, 'ui2 app map records an optional external-auth provider manifest URL' );
 like( $app_map_js, qr/directives\.nextjobenvironment = "true"/, 'ui2 app map exposes the opted-in one-job environment setting' );
 unlike( $app_map_js, qr/test_scenarios|catalog_revision/, 'an application without catalogs does not expose test-scenario data in its public app map' );
 like( $app_map_js, qr/app\.help\.feedback = "Feedback help"/, 'ui2 app map records legacy feedback help text' );
@@ -603,6 +604,7 @@ like( $ui2_css, qr/\.ui2-project-chip-chevron\s*\{[^}]*border-right:\s*2px solid
 like( $ui2_css, qr/\.ui2-project-chip:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--ui2-focus-ring\);/s, 'ui2 project selector has an explicit keyboard focus treatment' );
 like( $ui2_css, qr/\.ui2-project-chip\[aria-expanded="true"\] \.ui2-project-chip-chevron/, 'ui2 project selector changes its chevron when its dialog is open' );
 like( $ui2_css, qr/\.ui2-dialog-overlay/, 'ui2 stylesheet includes login dialog shell styles' );
+like( $ui2_css, qr/\.ui2-login-providers\[hidden\]/, 'ui2 stylesheet keeps unavailable external providers out of the login dialog' );
 like( $ui2_css, qr/\.ui2-password-control.*?\.ui2-password-toggle.*?aria-pressed/s, 'ui2 stylesheet provides an accessible password visibility control' );
 like( $ui2_css, qr/\.ui2-legacy-message-dialog/, 'ui2 stylesheet includes legacy backend message dialog styles' );
 like( $ui2_css, qr/\.ui2-legacy-message-icon/, 'ui2 stylesheet includes legacy backend message icon styling' );
