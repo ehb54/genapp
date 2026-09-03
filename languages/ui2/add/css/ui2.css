@@ -1743,6 +1743,10 @@ code {
   justify-content: center;
 }
 
+.ui2-splash-auth-status:empty {
+  display: none;
+}
+
 .ui2-splash-action,
 .ui2-splash-docs {
   border: 1px solid var(--ui2-border);

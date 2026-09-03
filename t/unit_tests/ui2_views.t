@@ -616,6 +616,7 @@ like( $ui2_css, qr/\.ui2-legacy-message-dialog/, 'ui2 stylesheet includes legacy
 like( $ui2_css, qr/\.ui2-legacy-message-icon/, 'ui2 stylesheet includes legacy backend message icon styling' );
 like( $ui2_css, qr/\.ui2-captcha-dialog/, 'ui2 stylesheet includes a dedicated captcha dialog shell' );
 like( $ui2_css, qr/\.ui2-splash-footer/, 'ui2 stylesheet includes splash footer metadata styles' );
+like( $ui2_css, qr/\.ui2-splash-auth-status:empty\s*\{[^}]*display:\s*none/s, 'ui2 stylesheet does not let an empty splash authentication status offset provider buttons' );
 like( $ui2_css, qr/\.ui2-ai-helper-usage/, 'ui2 stylesheet includes compact AI Helper token usage styles' );
 like( $ui2_css, qr/\.ui2-ai-helper-math\[data-display="true"\]/, 'ui2 stylesheet includes AI Helper display-equation styling' );
 like( $ui2_css, qr/\.ui2-output-plotly/, 'ui2 stylesheet includes a stable Plotly output surface' );
