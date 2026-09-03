@@ -2276,6 +2276,69 @@ eventStore.appendLegacyLog("legacy line\\n", "run-1", "monomer_monte_carlo");
 assert.strictEqual(eventStore.snapshot().channels.log.run.value, "legacy line\\n", "legacy text adapter writes only to the run-log topic");
 unsubscribeEvents();
 assert(eventNotifications >= 4, "job event subscribers receive immutable state updates");
+const terminalFailureStore = hooks.createJobEventStore();
+terminalFailureStore.reset("run-failed", "neutral_module");
+terminalFailureStore.apply({
+  version: 1,
+  run: "run-failed",
+  module: "neutral_module",
+  sequence: 1,
+  timestamp: "2026-09-03T19:00:00Z",
+  channel: "lifecycle",
+  topic: "run",
+  operation: "complete",
+  payload: { state: "failed", message: "Expected analysis refusal" }
+});
+assert.strictEqual(
+  terminalFailureStore.setLifecycle({ state: "complete" }, { source: "legacy" }),
+  false,
+  "legacy command completion does not replace a structured terminal failure"
+);
+assert.strictEqual(
+  terminalFailureStore.snapshot().lifecycle.state,
+  "failed",
+  "structured failed lifecycle remains authoritative after command completion"
+);
+const terminalCancelledStore = hooks.createJobEventStore();
+terminalCancelledStore.reset("run-cancelled", "neutral_module");
+terminalCancelledStore.apply({
+  version: 1,
+  run: "run-cancelled",
+  module: "neutral_module",
+  sequence: 1,
+  timestamp: "2026-09-03T19:01:00Z",
+  channel: "lifecycle",
+  topic: "run",
+  operation: "complete",
+  payload: { state: "cancelled" }
+});
+terminalCancelledStore.setLifecycle(
+  { state: "complete" }, { source: "legacy" });
+assert.strictEqual(
+  terminalCancelledStore.snapshot().lifecycle.state,
+  "cancelled",
+  "structured cancellation remains authoritative after command completion"
+);
+const legacyLifecycleStore = hooks.createJobEventStore();
+legacyLifecycleStore.reset("run-legacy", "neutral_module");
+assert.strictEqual(
+  legacyLifecycleStore.setLifecycle({ state: "complete" }, { source: "legacy" }),
+  true,
+  "legacy-only jobs continue to accept command completion status"
+);
+assert.strictEqual(
+  legacyLifecycleStore.snapshot().lifecycle.state,
+  "complete",
+  "legacy-only completion remains visible without structured lifecycle events"
+);
+assert.strictEqual(
+  terminalFailureStore.setLifecycle(
+    { state: "failed", error: "Saved outputs are unavailable" },
+    { source: "legacy" }
+  ),
+  true,
+  "a later legacy result-access failure remains authoritative"
+);
 const transientEventStore = hooks.createJobEventStore();
 transientEventStore.reset("run-transient", "monomer_monte_carlo");
 const transientStructureEvent = {

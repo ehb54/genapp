@@ -8835,6 +8835,7 @@
     let lastSequence = 0;
     let legacySequence = 0;
     let lifecycle = null;
+    let lifecycleSource = "";
     let channels = {};
     let expectFirstSequence = false;
     let cachedSnapshot = null;
@@ -8864,6 +8865,7 @@
       lastSequence = 0;
       legacySequence = 0;
       lifecycle = null;
+      lifecycleSource = "";
       channels = {};
       expectFirstSequence = Boolean(run);
       seen.clear();
@@ -8904,6 +8906,7 @@
       });
       if (event.channel === "lifecycle") {
         lifecycle = cloneUi2Value(event.payload);
+        lifecycleSource = "event";
       }
       seen.add(event.sequence);
       pending.delete(event.sequence);
@@ -9012,9 +9015,21 @@
       return true;
     }
 
-    function setLifecycle(value) {
-      lifecycle = cloneUi2Value(value);
+    function setLifecycle(value, options = {}) {
+      const nextLifecycle = cloneUi2Value(value);
+      const nextState = stringValue(nextLifecycle?.state || nextLifecycle?.status).toLowerCase();
+      const currentState = stringValue(lifecycle?.state || lifecycle?.status).toLowerCase();
+      const legacyCompletion = options.source === "legacy"
+        && ["complete", "completed", "finished"].includes(nextState);
+      const structuredFailure = lifecycleSource === "event"
+        && ["failed", "error", "cancelled", "canceled"].includes(currentState);
+      if (legacyCompletion && structuredFailure) {
+        return false;
+      }
+      lifecycle = nextLifecycle;
+      lifecycleSource = stringValue(options.source || "local");
       notify();
+      return true;
     }
 
     function snapshot() {
@@ -9199,7 +9214,8 @@
         return;
       }
       if (id === "_status") {
-        state.jobEvents.setLifecycle({ state: stringValue(value) });
+        state.jobEvents.setLifecycle(
+          { state: stringValue(value) }, { source: "legacy" });
         return;
       }
       if (id.startsWith("_")) {

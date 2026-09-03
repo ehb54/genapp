@@ -262,6 +262,10 @@ bounded journals, replay behavior, or runtime delivery, read
 scientific topics, but a bounded event journal is delivery/display state, not
 authoritative completed output.
 
+A structured terminal `failed` or `cancelled` lifecycle event remains
+authoritative when the outer application command later reports legacy
+`_status: complete`. Legacy-only drivers continue to use `_status` unchanged.
+
 For HTML/PHP-style generated applications, `appconfig.json` controls mail, host
 identity, messaging ports, compute resources, restricted groups, submit policy,
 job limits, submit blocks, and MOTD.

@@ -112,6 +112,13 @@ Initial operations:
   omitted marker carrying its sequence identity.
 - Terminal lifecycle, errors, summaries, and artifact availability may remain
   in the bounded journal, but ordinary final outputs own completed-job state.
+- For a capability-aware run, a structured terminal `failed` or `cancelled`
+  lifecycle event is authoritative over a later legacy `_status: complete`
+  that only indicates that the outer application command reached terminal
+  processing. UI2 preserves the structured failure or cancellation. A driver
+  without job events continues to use legacy `_status` unchanged, and a
+  legacy failure may still replace an earlier completed state when result
+  retrieval or saved-output access itself fails.
 - Intermediate progress and structure previews may be coalesced when an
   authoritative later snapshot exists.
 - Live-display sampling never changes the calculation or the complete stored
