@@ -179,6 +179,7 @@
   applyUi2Theme(activeUi2Theme);
 
   function init() {
+    restoreExternalAuthWindowName();
     ensureWindowName();
     window.addEventListener?.("ui2-react-ready", () => {
       if (isReactWorkbenchView(state.view)) {
@@ -277,6 +278,24 @@
       return;
     }
     window.name = createUuid();
+  }
+
+  function validExternalAuthWindowName(value) {
+    const candidate = stringValue(value).trim();
+    return /^[A-Za-z0-9_-]{1,128}$/.test(candidate) ? candidate : "";
+  }
+
+  function restoreExternalAuthWindowName() {
+    const url = new URL(window.location.href);
+    const returnedWindow = validExternalAuthWindowName(url.searchParams.get("ui2_auth_window"));
+    if (!returnedWindow) {
+      return false;
+    }
+    window.name = returnedWindow;
+    url.searchParams.delete("ui2_auth_window");
+    url.searchParams.delete("login_gov");
+    window.history?.replaceState?.({}, "", url.toString());
+    return true;
   }
 
   async function initWebSocket() {
@@ -13244,6 +13263,8 @@
       applyUi2Theme,
       setUi2ThemePreference,
       currentUi2Theme,
+      validExternalAuthWindowName,
+      restoreExternalAuthWindowName,
       sameOriginApplicationUrl,
       normalizeExternalAuthProviders,
       loadExternalAuthProviders,

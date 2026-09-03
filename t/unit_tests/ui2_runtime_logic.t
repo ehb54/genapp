@@ -2601,6 +2601,29 @@ assert.strictEqual(
   "external-auth manifests reject cross-origin URLs"
 );
 assert.strictEqual(
+  hooks.validExternalAuthWindowName("ui2-1788458967037-3b8937ce858c78"),
+  "ui2-1788458967037-3b8937ce858c78",
+  "external-auth callbacks may return the original bounded UI2 window name"
+);
+assert.strictEqual(
+  hooks.validExternalAuthWindowName("unsafe/window?name"),
+  "",
+  "external-auth callback window names reject unsafe characters"
+);
+window.location.href = "https://example.test/sassie3/ui2/?login_gov=success&ui2_auth_window=ui2-returned-window";
+window.location.pathname = "/sassie3/ui2/";
+window.location.search = "?login_gov=success&ui2_auth_window=ui2-returned-window";
+window.name = "";
+assert.strictEqual(hooks.restoreExternalAuthWindowName(), true, "external-auth callback restores a valid returned window");
+assert.strictEqual(window.name, "ui2-returned-window", "external-auth callback restores the original UI2 tab namespace");
+assert.strictEqual(window.location.search, "", "external-auth callback removes handoff metadata from the visible URL");
+window.name = "ui2-test";
+assert(
+  source.includes('restoreExternalAuthWindowName();\\n    ensureWindowName();') &&
+    source.includes('url.searchParams.delete("ui2_auth_window");'),
+  "UI2 restores and removes a validated external-auth window handoff before session refresh"
+);
+assert.strictEqual(
   hooks.normalizeExternalAuthProviders({ providers: [
     { id: "login-gov", label: "Sign in with Login.gov", start_url: "auth/login-gov/start.php" },
     { id: "unsafe", label: "Unsafe", start_url: "https://identity.example/start" },

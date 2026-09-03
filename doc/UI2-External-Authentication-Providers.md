@@ -28,8 +28,12 @@ manifest leaves password login available and does not display an error.
 UI2 adds the current GenApp window id as the `window` query parameter when a
 provider link is followed. The application owns the sign-in endpoint,
 protocol validation, account linking, callback, and session creation. After a
-successful callback redirects to UI2, the ordinary startup session refresh
-loads the authenticated user and groups.
+successful callback, the application must return that value in the
+`ui2_auth_window` query parameter. UI2 validates and restores the per-tab
+window name before the ordinary startup session refresh, then removes the
+handoff parameter from the visible URL. This explicit handoff is required
+because browsers may clear `window.name` during a cross-origin identity-provider
+round trip.
 
 GenApp core deliberately does not know provider names, identity claims,
 secrets, database fields, or deployment policy. Applications must keep secret
