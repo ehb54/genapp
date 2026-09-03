@@ -39,6 +39,28 @@ values, routes for loaded modules, execution, outputs, or reattachment. Any
 future sequential navigation requires an explicit application-neutral workflow
 contract and the shared-core extension gate below.
 
+## External authentication policy
+
+An application may advertise same-origin external identity providers through
+`ui2_auth_providers_url`. A providers-only manifest remains additive: UI2 keeps
+the legacy Login and Register paths and displays valid external providers as
+alternatives.
+
+An application may explicitly return `authentication_mode: "external_only"`
+with `registration: "jit"` and at least one valid same-origin provider. UI2 then
+replaces public Login and Register controls with the external provider action
+and omits password-change controls. HTTP 404 means the runtime option is
+disabled and preserves legacy behavior. A malformed explicit policy or a
+non-404 manifest failure fails closed and must not expose password controls.
+
+UI presentation is not an authorization boundary. Applications using
+external-only mode must opt generated password login, password registration,
+and password-change handlers into `external_auth_policy` and provide the
+application-owned `ui2/auth/policy.php` enforcement hook. Applications without
+that directive generate the existing handlers unchanged. Identity-provider
+protocols, account linking, account creation, privileges, and deployment
+configuration remain application-owned.
+
 ## Shared-core extension gate
 
 Before changing UI2 core, write a shared-gap report that states:

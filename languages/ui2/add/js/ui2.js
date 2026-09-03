@@ -80,7 +80,8 @@
   let plotlyLoadPromise = null;
   let nglLoadPromise = null;
   let katexLoadPromise = null;
-  let externalAuthProvidersPromise = null;
+  let externalAuthPolicyPromise = null;
+  let activeExternalAuthPolicy = { mode: "legacy", registration: "legacy", providers: [] };
   let reactWorkbenchRoot = null;
   let reactWorkbenchSyncFrame = null;
   const reactWorkbenchSyncListeners = new Set();
@@ -181,6 +182,9 @@
   function init() {
     restoreExternalAuthWindowName();
     ensureWindowName();
+    if (sameOriginApplicationUrl(appMap.directives?.ui2_auth_providers_url)) {
+      loadExternalAuthPolicy();
+    }
     window.addEventListener?.("ui2-react-ready", () => {
       if (isReactWorkbenchView(state.view)) {
         renderModule();
@@ -682,8 +686,12 @@
       applyLoginDialogMode(overlay, mandatory);
       resetPasswordControls(overlay);
       overlay.hidden = false;
-      renderExternalAuthProviders(overlay);
-      overlay.querySelector("input[name='userid']")?.focus();
+      if (sameOriginApplicationUrl(appMap.directives?.ui2_auth_providers_url)) {
+        prepareExternalAuthLoading(overlay);
+        renderExternalAuthProviders(overlay);
+      } else {
+        overlay.querySelector("input[name='userid']")?.focus();
+      }
       return;
     }
 
@@ -705,13 +713,17 @@
     header.append(title, close);
 
     const form = el("form", "ui2-login-form");
-    form.appendChild(renderLoginInput("userid", "User id", "text", "Enter user id"));
-    form.appendChild(renderLoginInput("password", "Password", "password", "Enter password"));
+    const userid = renderLoginInput("userid", "User id", "text", "Enter user id");
+    userid.classList.add("ui2-login-legacy");
+    const password = renderLoginInput("password", "Password", "password", "Enter password");
+    password.classList.add("ui2-login-legacy");
+    form.append(userid, password);
 
     const forgot = el("label", "ui2-switch ui2-login-forgot");
     const forgotInput = document.createElement("input");
     forgotInput.type = "checkbox";
     forgotInput.name = "forgotpassword";
+    forgot.classList.add("ui2-login-legacy");
     forgot.append(forgotInput, document.createTextNode("Forgot password"));
     form.appendChild(forgot);
 
@@ -722,6 +734,7 @@
     const actions = el("div", "ui2-dialog-actions");
     const submit = el("button", "ui2-button", "Login");
     submit.type = "submit";
+    submit.classList.add("ui2-login-legacy");
     const cancel = el("button", "ui2-button ui2-button-quiet", "Cancel");
     cancel.type = "button";
     cancel.addEventListener("click", () => {
@@ -739,8 +752,12 @@
     overlay.appendChild(panel);
     document.body.appendChild(overlay);
     applyLoginDialogMode(overlay, mandatory);
-    renderExternalAuthProviders(overlay);
-    form.elements.userid?.focus();
+    if (sameOriginApplicationUrl(appMap.directives?.ui2_auth_providers_url)) {
+      prepareExternalAuthLoading(overlay);
+      renderExternalAuthProviders(overlay);
+    } else {
+      form.elements.userid?.focus();
+    }
   }
 
   function sameOriginApplicationUrl(value) {
@@ -770,38 +787,100 @@
     }).filter(Boolean);
   }
 
-  function loadExternalAuthProviders() {
+  function normalizeExternalAuthPolicy(payload) {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return { mode: "unavailable", registration: "unavailable", providers: [] };
+    }
+    const providers = normalizeExternalAuthProviders(payload);
+    const declaredMode = stringValue(payload.authentication_mode).trim();
+    const declaredRegistration = stringValue(payload.registration).trim();
+    if (!declaredMode && !declaredRegistration) {
+      return { mode: "legacy", registration: "legacy", providers };
+    }
+    const externalOnly = declaredMode === "external_only" &&
+      declaredRegistration === "jit" && providers.length > 0;
+    return {
+      mode: externalOnly ? "external_only" : "unavailable",
+      registration: externalOnly ? "jit" : "unavailable",
+      providers: externalOnly ? providers : []
+    };
+  }
+
+  function loadExternalAuthPolicy() {
     const manifestUrl = sameOriginApplicationUrl(appMap.directives?.ui2_auth_providers_url);
     if (!manifestUrl) {
-      return Promise.resolve([]);
+      return Promise.resolve(activeExternalAuthPolicy);
     }
-    if (!externalAuthProvidersPromise) {
-      externalAuthProvidersPromise = fetch(manifestUrl, {
+    if (!externalAuthPolicyPromise) {
+      externalAuthPolicyPromise = fetch(manifestUrl, {
         cache: "no-store",
         credentials: "same-origin",
         headers: { Accept: "application/json" }
       }).then(async (response) => {
-        if (!response.ok) {
-          return [];
+        if (response.status === 404) {
+          return { mode: "legacy", registration: "legacy", providers: [] };
         }
-        return normalizeExternalAuthProviders(await response.json());
-      }).catch(() => []);
+        if (!response.ok) {
+          throw new Error("Authentication policy is unavailable.");
+        }
+        return normalizeExternalAuthPolicy(await response.json());
+      }).catch(() => ({ mode: "unavailable", registration: "unavailable", providers: [] }))
+        .then((policy) => {
+          activeExternalAuthPolicy = policy;
+          return policy;
+        });
     }
-    return externalAuthProvidersPromise;
+    return externalAuthPolicyPromise;
+  }
+
+  function loadExternalAuthProviders() {
+    return loadExternalAuthPolicy().then((policy) => policy.providers);
+  }
+
+  function prepareExternalAuthLoading(overlay) {
+    if (!sameOriginApplicationUrl(appMap.directives?.ui2_auth_providers_url)) {
+      return;
+    }
+    overlay.querySelectorAll(".ui2-login-legacy").forEach((node) => {
+      node.hidden = true;
+    });
+    const status = overlay.querySelector("#ui2-login-status");
+    if (status) {
+      status.textContent = "Loading sign-in options…";
+    }
   }
 
   async function renderExternalAuthProviders(overlay) {
     const container = overlay?.querySelector(".ui2-login-providers");
-    if (!container || container.dataset.loaded === "true") {
+    if (!container) {
       return;
     }
-    const providers = await loadExternalAuthProviders();
-    if (!providers.length || !container.isConnected) {
+    const policy = await loadExternalAuthPolicy();
+    if (!container.isConnected) {
+      return;
+    }
+    const legacy = policy.mode === "legacy";
+    overlay.querySelectorAll(".ui2-login-legacy").forEach((node) => {
+      node.hidden = !legacy;
+    });
+    const status = overlay.querySelector("#ui2-login-status");
+    if (status) {
+      status.textContent = policy.mode === "unavailable"
+        ? "Sign-in options are temporarily unavailable. Please try again later."
+        : "";
+    }
+    if (!policy.providers.length) {
+      container.hidden = true;
+      if (legacy) {
+        overlay.querySelector("input[name='userid']")?.focus();
+      }
       return;
     }
     container.innerHTML = "";
-    container.appendChild(el("div", "ui2-login-provider-separator", "or"));
-    providers.forEach((provider) => {
+    if (legacy) {
+      container.appendChild(el("div", "ui2-login-provider-separator", "or"));
+    }
+    policy.providers.forEach((provider) => {
       const link = el("a", "ui2-button ui2-login-provider", provider.label);
       const start = new URL(provider.startUrl);
       start.searchParams.set("window", window.name || "");
@@ -811,6 +890,7 @@
     });
     container.dataset.loaded = "true";
     container.hidden = false;
+    container.querySelector(".ui2-login-provider")?.focus();
   }
 
   function applyLoginDialogMode(overlay, mandatory) {
@@ -1033,6 +1113,7 @@
     let overlay = document.getElementById("ui2-splash-dialog");
     if (overlay) {
       overlay.hidden = false;
+      renderSplashAuthentication(overlay);
       return;
     }
 
@@ -1061,6 +1142,9 @@
       await openRegisterDialog();
     });
     actions.append(login, register);
+    if (sameOriginApplicationUrl(appMap.directives?.ui2_auth_providers_url)) {
+      actions.appendChild(el("p", "ui2-submit-status ui2-splash-auth-status", ""));
+    }
 
     const docs = el("a", "ui2-splash-docs", "View the documentation");
     docs.href = "../docs/";
@@ -1075,6 +1159,45 @@
     panel.append(title, actions, docs, footer);
     overlay.appendChild(panel);
     document.body.appendChild(overlay);
+    renderSplashAuthentication(overlay);
+  }
+
+  async function renderSplashAuthentication(overlay) {
+    const actions = overlay?.querySelector(".ui2-splash-actions");
+    const login = actions?.querySelector("button:nth-of-type(1)");
+    const register = actions?.querySelector("button:nth-of-type(2)");
+    const status = actions?.querySelector(".ui2-splash-auth-status");
+    if (!actions || !login || !register) {
+      return;
+    }
+    const hasManifest = Boolean(sameOriginApplicationUrl(appMap.directives?.ui2_auth_providers_url));
+    if (!hasManifest) {
+      return;
+    }
+    if (hasManifest) {
+      login.hidden = true;
+      register.hidden = true;
+      status.textContent = "Loading sign-in options…";
+    }
+    actions.querySelectorAll(".ui2-splash-external-auth").forEach((node) => node.remove());
+    const policy = await loadExternalAuthPolicy();
+    login.hidden = policy.mode !== "legacy";
+    register.hidden = policy.mode !== "legacy";
+    status.textContent = policy.mode === "unavailable"
+      ? "Sign-in options are temporarily unavailable. Please try again later."
+      : "";
+    if (policy.mode !== "external_only") {
+      return;
+    }
+    policy.providers.forEach((provider) => {
+      const link = el("a", "ui2-splash-action ui2-splash-external-auth", provider.label);
+      const start = new URL(provider.startUrl);
+      start.searchParams.set("window", window.name || "");
+      link.href = start.toString();
+      link.dataset.providerId = provider.id;
+      actions.insertBefore(link, status);
+    });
+    actions.querySelector(".ui2-splash-external-auth")?.focus();
   }
 
   function splashFooterLines() {
@@ -1111,6 +1234,11 @@
   }
 
   async function openRegisterDialog() {
+    const policy = await loadExternalAuthPolicy();
+    if (policy.mode !== "legacy") {
+      openLoginDialog({ mandatory: true });
+      return;
+    }
     try {
       const payload = await fetchModuleDefinition("sys_register");
       const module = payload.module || {};
@@ -1709,6 +1837,9 @@
       return;
     }
     try {
+      if (moduleId === "sys_user_config" && sameOriginApplicationUrl(appMap.directives?.ui2_auth_providers_url)) {
+        await loadExternalAuthPolicy();
+      }
       await refreshSessionState();
       const payload = await fetchModuleDefinition(moduleId);
       const module = payload.module || {};
@@ -5104,6 +5235,11 @@
     form.appendChild(projectContext);
     let inputFields = ui2UserConfigFields(userConfigFields(fields.filter((field) => field.role !== "output")))
       .map(normalizeUserConfigField);
+    if (activeExternalAuthPolicy.mode === "external_only") {
+      inputFields = inputFields.filter((field) =>
+        field?.id !== "changepassword" && repeatControllerId(field?.repeat || "") !== "changepassword"
+      );
+    }
     if (options.requiredPasswordChange === true) {
       inputFields = requiredPasswordChangeFields(inputFields);
     }
@@ -13267,6 +13403,8 @@
       restoreExternalAuthWindowName,
       sameOriginApplicationUrl,
       normalizeExternalAuthProviders,
+      normalizeExternalAuthPolicy,
+      loadExternalAuthPolicy,
       loadExternalAuthProviders,
       renderExternalAuthProviders,
       loginRequiresPasswordChange,

@@ -431,6 +431,9 @@ current task and does not carry forward.
 
 ### Other SASSIE policy routing
 
+- External-authentication presentation and generated-handler opt-in are governed
+  by `doc/UI2-Core-Extension-Policy.md`; provider protocol, identity linking,
+  account creation, and deployment settings remain application-owned.
 - One-job diagnostic logging and optional selected-job feedback artifacts are governed by `doc/Next-Job-Environment-Settings.md`,
   `doc/Feedback-Job-Attachments.md`,
   `../genapp_zazzie/docs/next_job_diagnostic_logging.md`, and

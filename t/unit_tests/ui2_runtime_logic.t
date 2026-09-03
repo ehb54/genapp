@@ -2632,12 +2632,45 @@ assert.strictEqual(
   "login-gov",
   "external-auth manifests retain only bounded, same-origin provider declarations"
 );
+assert.strictEqual(
+  hooks.normalizeExternalAuthPolicy({
+    authentication_mode: "external_only",
+    registration: "jit",
+    providers: [{ id: "login-gov", label: "Sign in or create an account with Login.gov", start_url: "auth/login-gov/start.php" }]
+  }).mode,
+  "external_only",
+  "an explicit complete policy enables external-only authentication"
+);
+assert.strictEqual(
+  hooks.normalizeExternalAuthPolicy({
+    providers: [{ id: "login-gov", label: "Sign in with Login.gov", start_url: "auth/login-gov/start.php" }]
+  }).mode,
+  "legacy",
+  "an existing providers-only manifest preserves legacy authentication"
+);
+assert.strictEqual(
+  hooks.normalizeExternalAuthPolicy({ authentication_mode: "external_only", registration: "jit", providers: [] }).mode,
+  "unavailable",
+  "an invalid explicit external-only policy fails closed instead of exposing passwords"
+);
 assert(
   source.includes('appMap.directives?.ui2_auth_providers_url') &&
     source.includes('cache: "no-store"') &&
     source.includes('credentials: "same-origin"') &&
+    source.includes('response.status === 404') &&
+    source.includes('mode: "unavailable"') &&
     source.includes('renderExternalAuthProviders(overlay);'),
   "UI2 loads external providers only through the optional application manifest contract"
+);
+assert(
+  source.includes('function renderSplashAuthentication(overlay)') &&
+    source.includes('policy.mode !== "legacy"') &&
+    source.includes('ui2-splash-external-auth'),
+  "UI2 replaces Login and Register only for an explicit external-only policy"
+);
+assert(
+  !source.includes('container.dataset.loaded === "true"'),
+  "reopening the Login dialog reapplies the resolved policy instead of leaving legacy controls hidden"
 );
 assert(
   source.includes('function renderPasswordControl(input)') &&
