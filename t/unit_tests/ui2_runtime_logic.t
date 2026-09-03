@@ -3587,6 +3587,11 @@ assert.strictEqual(
   true,
   "UI2 renders a generic repeated listbox alongside file inputs without module-specific markup"
 );
+assert.strictEqual(
+  plainFileTable.querySelector('[data-repeat-table-field="data_file_name"]').dataset.repeatTableLabel,
+  "data_file_name",
+  "UI2 gives narrow repeated rows a generic field label without application-specific markup"
+);
 
 hooks.state.values = {
   row_count: "3",

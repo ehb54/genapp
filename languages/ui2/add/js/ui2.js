@@ -3733,6 +3733,7 @@
     fields.forEach((field) => {
       const td = document.createElement("td");
       td.dataset.repeatTableField = field.id || "";
+      td.dataset.repeatTableLabel = field.label || field.id || field.type || "field";
       td.dataset.repeatTableIndex = String(rowIndex);
       if (isFileLikeType(String(field?.type || "").toLowerCase())) {
         td.classList.add("ui2-repeat-table-file-cell");

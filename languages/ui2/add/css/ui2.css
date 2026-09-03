@@ -1167,6 +1167,10 @@ code {
   overflow-x: hidden;
 }
 
+.ui2-tableized-repeater {
+  container-type: inline-size;
+}
+
 .ui2-repeat-table,
 .ui2-matrix-table {
   width: 100%;
@@ -1220,6 +1224,79 @@ code {
 
 .ui2-repeat-table-has-file .ui2-repeat-table td:not(.ui2-repeat-table-file-cell) {
   min-width: 4.75rem;
+}
+
+/* A narrow file-bearing repeater becomes labelled rows instead of hiding
+ * controls beyond a horizontally scrolling table.  The table markup and
+ * controls remain unchanged, preserving repeat, file, and submit behavior. */
+@container (max-width: 40rem) {
+  .ui2-repeat-table-has-file .ui2-repeat-table-wrap {
+    overflow-x: visible;
+  }
+
+  .ui2-repeat-table-has-file .ui2-repeat-table,
+  .ui2-repeat-table-has-file .ui2-repeat-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .ui2-repeat-table-has-file .ui2-repeat-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .ui2-repeat-table-has-file .ui2-repeat-table tbody {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .ui2-repeat-table-has-file .ui2-repeat-table tr {
+    display: grid;
+    gap: 0.55rem;
+    border: 1px solid var(--ui2-border);
+    border-radius: 6px;
+    background: var(--ui2-panel-soft);
+    padding: 0.75rem;
+  }
+
+  .ui2-repeat-table-has-file .ui2-repeat-table td,
+  .ui2-repeat-table-has-file .ui2-repeat-table td:not(.ui2-repeat-table-file-cell) {
+    display: grid;
+    grid-template-columns: minmax(7rem, 0.35fr) minmax(0, 1fr);
+    gap: 0.65rem;
+    align-items: center;
+    min-width: 0;
+    padding: 0;
+  }
+
+  .ui2-repeat-table-has-file .ui2-repeat-table td::before {
+    content: attr(data-repeat-table-label);
+    color: var(--ui2-muted);
+    font-size: 0.82rem;
+    font-weight: 650;
+  }
+
+  .ui2-repeat-table-has-file .ui2-file-control-compact,
+  .ui2-repeat-table-has-file .ui2-repeat-table-file-cell {
+    min-width: 0;
+  }
+
+  .ui2-repeat-table-has-file .ui2-file-control-compact .ui2-file-picker {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+}
+
+@container (max-width: 28rem) {
+  .ui2-repeat-table-has-file .ui2-repeat-table td,
+  .ui2-repeat-table-has-file .ui2-repeat-table td:not(.ui2-repeat-table-file-cell) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.3rem;
+  }
 }
 
 .ui2-matrix-table th {

@@ -64,6 +64,15 @@
         },
         {
             "role"    : "input",
+            "id"      : "sample_source",
+            "label"   : "Sample source",
+            "type"    : "listbox",
+            "values"  : "Prepared data~prepared~Raw data~raw",
+            "default" : ["prepared", "raw"],
+            "repeat"  : "sample_count"
+        },
+        {
+            "role"    : "input",
             "id"      : "sample_fraction",
             "label"   : "Sample fraction",
             "type"    : "text",
@@ -77,6 +86,14 @@
             "type"     : "lrfile",
             "required" : "true",
             "repeat"   : "sample_count"
+        },
+        {
+            "role"    : "input",
+            "id"      : "sample_weight",
+            "label"   : "Sample weight",
+            "type"    : "text",
+            "default" : ["1.0", "1.0"],
+            "repeat"  : "sample_count"
         },
         {
             "role"    : "input",
