@@ -38,6 +38,17 @@ like( $module_php, qr/file_put_contents\( "\$logdir\/_input_"/, 'module php writ
 like( $module_php, qr/\$_REQUEST\[ '_module' \]\s+=\s+"echo"/, 'module php annotates request with module id' );
 like( $module_php, qr/\$cmd \.= \$cmdprefix == "oscluster" \? " echo" : " echo"/, 'module php command path includes executable/module id' );
 unlike( $module_php, qr/__modulejson__|__resource__|__executable__|__menu:id__/, 'module php has important template tokens replaced' );
+like( $module_php, qr/\Q(hello|sample) world\E/, 'module php preserves regex alternation from module JSON' );
+like( $module_php, qr/\Qroute:left || route:right\E/, 'module php preserves logical OR from module JSON' );
+
+my $php = qx{command -v php 2>/dev/null};
+chomp $php;
+SKIP: {
+    skip 'php is not available on PATH; generated module syntax check is deferred', 1 if !$php;
+    my $lint = qx{'$php' -l '$app_dir/output/html5/ajax/demo/echo.php' 2>&1};
+    is( $? >> 8, 0, 'pipe-bearing ordinary module handler passes PHP syntax validation' )
+        or diag($lint);
+}
 
 like( $results_php, qr/ga_sanitize_validate/, 'get_results php validates request input' );
 like( $results_php, qr/_getinput/, 'get_results php can return replayed input' );

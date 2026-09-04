@@ -31,6 +31,15 @@ like(
 unlike( $source, qr/exec 9>.*?zazzie3-update\.lock/, 'core update helper does not expose the lock descriptor to generated services' );
 like( $source, qr/remote_status=.*?Another Zazzie3 core update is already running/s, 'core update helper reports lock conflicts after the close-on-exec wrapper returns' );
 like( $source, qr/GACPU stopped\. Do not repair, replace, or recreate the container/, 'core update helper makes failures terminal instead of authorizing repairs' );
+like(
+    $source,
+    qr/find "\$module_handler_root" -mindepth 2 -maxdepth 2 -type f -name '\*\.php' -print0/,
+    'core update helper limits PHP syntax checks to generated module-handler paths'
+);
+like( $source, qr/"\$php_bin" -l "\$module_handler"/, 'core update helper syntax-checks every generated module handler' );
+like( $source, qr/Generated module handler has invalid PHP syntax:.*?exit 1/s, 'invalid generated PHP is a terminal deployment failure' );
+like( $source, qr/module_handler_count == 0.*?exit 1/s, 'deployment fails when no generated module handlers are available to check' );
+unlike( $source, qr/find\s+output(?:\/|"\s).*?-name '\*\.php'/, 'core update helper does not lint unrelated generated PHP trees' );
 unlike( $source, qr/\bdocker\s+(?:stop|rm|run|rename|commit|restart|kill|pause|unpause|system\s+prune|container\s+prune)\b/, 'core update helper contains no Docker lifecycle or prune command' );
 
 done_testing();

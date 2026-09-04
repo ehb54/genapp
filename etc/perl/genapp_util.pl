@@ -533,6 +533,7 @@ sub fix_up_sub_tok {
     $tok =~ s/\[/\\[/g;
     $tok =~ s/\]/\\]/g;
     $tok =~ s/\?/\\?/g;
+    $tok =~ s/\|/\\|/g;
     $tok;
 }
 

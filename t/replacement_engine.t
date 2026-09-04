@@ -39,6 +39,30 @@ is( $cond->{'fields:help'}, '<span>__fields:help__</span>', 'positive conditiona
 is( $cond->{'!debug:job'},  'quiet path',                    'negative conditional replacement body is captured' );
 is( $cond->{nested},        '{"a":{"b":1}}',                 'nested brace conditional body is captured' );
 
+my $literal_body = 'before (alpha|beta) choice:left || choice:right after.json \\ tail';
+my $literal_template = "__~literal_feature{$literal_body}remainder";
+my $literal_cond = get_cond_replacements( [$literal_template] );
+is(
+    $literal_cond->{literal_feature},
+    $literal_body,
+    'conditional replacement captures pipe-bearing content exactly'
+);
+
+my $literal_pattern = fix_up_sub_tok($literal_body);
+my $included = $literal_template;
+$included =~ s/__~literal_feature\s*\{$literal_pattern\}/$literal_body/;
+is(
+    $included,
+    $literal_body . 'remainder',
+    'literal conditional replacement retains single pipes, double pipes, periods, and backslashes'
+);
+
+my $excluded = $literal_template;
+$excluded =~ s/__~literal_feature\s*\{$literal_pattern\}//;
+is( $excluded, 'remainder', 'literal conditional removal leaves no pipe-bearing fragment behind' );
+
+is( fix_up_sub_tok('left|right'), 'left\|right', 'replacement quoting treats a pipe as literal text' );
+
 my $json_file = File::Spec->catfile( $repo_root, 't', 'fixtures', 'json_flatten', 'menu_modules.json' );
 my $json      = decode_json( read_file($json_file) );
 my %iter;

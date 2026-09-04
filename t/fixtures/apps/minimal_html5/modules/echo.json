@@ -9,7 +9,24 @@
             "id"      : "message",
             "label"   : "Message",
             "type"    : "text",
-            "default" : "hello world"
+            "default" : "hello world",
+            "pattern" : "^(hello|sample) world$"
+        },
+        {
+            "role"    : "input",
+            "id"      : "route",
+            "label"   : "Route",
+            "type"    : "listbox",
+            "values"  : "Left~left~Right~right",
+            "default" : "left"
+        },
+        {
+            "role"    : "input",
+            "id"      : "route_note",
+            "label"   : "Route note",
+            "type"    : "text",
+            "repeat"  : "route:left || route:right",
+            "default" : "either route"
         },
         {
             "role"  : "output",

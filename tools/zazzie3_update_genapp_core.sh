@@ -306,6 +306,34 @@ if [[ -n "$ui2_index_before" ]]; then
     fi
 fi
 
+stamp "Generated module handler syntax"
+module_handler_root="output/html5/ajax"
+php_bin="$(command -v php || true)"
+if [[ ! -d "$module_handler_root" ]]; then
+    echo "Generated module handler directory is missing: $gz_dir/$module_handler_root" >&2
+    exit 1
+fi
+if [[ -z "$php_bin" ]]; then
+    echo "PHP is unavailable; generated module handlers cannot be syntax-checked." >&2
+    exit 1
+fi
+
+module_handler_count=0
+while IFS= read -r -d '' module_handler; do
+    ((module_handler_count += 1))
+    if ! lint_output="$("$php_bin" -l "$module_handler" 2>&1)"; then
+        echo "Generated module handler has invalid PHP syntax: $gz_dir/$module_handler" >&2
+        echo "$lint_output" >&2
+        exit 1
+    fi
+done < <(find "$module_handler_root" -mindepth 2 -maxdepth 2 -type f -name '*.php' -print0)
+
+if (( module_handler_count == 0 )); then
+    echo "No generated module handlers were found under $gz_dir/$module_handler_root" >&2
+    exit 1
+fi
+echo "Validated PHP syntax for $module_handler_count generated module handlers"
+
 if [[ -d "$core_dir/tools/ai_helper_service" ]]; then
     stamp "AI Helper service deployment"
     service_source="$core_dir/tools/ai_helper_service"
