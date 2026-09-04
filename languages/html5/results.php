@@ -1,5 +1,19 @@
 <?php
 header('Content-type: application/json');
+
+function ga_terminal_error_payload( $raw_output )
+{
+   if ( !is_string( $raw_output ) || !strlen( $raw_output ) ) {
+      return false;
+   }
+   $payload = json_decode( $raw_output, true );
+   if ( !is_array( $payload ) || !isset( $payload[ 'error' ] ) ||
+        !is_string( $payload[ 'error' ] ) || !strlen( trim( $payload[ 'error' ] ) ) ) {
+      return false;
+   }
+   return $payload;
+}
+
 # setup php session
 session_name( strtoupper( preg_replace('/[^a-zA-Z0-9_]+/', '_', "GENAPP___application__" ) ) ); session_start();
 if (!isset($_SESSION['count'])) {
@@ -188,12 +202,20 @@ __~debug:job{      $results[ "notice_lastmsg" ] = 'getlastmsg is on';}
    }
 }
 
+$missing_detaildir = strlen( $detaildir ) && !is_dir( $detaildir );
+$terminal_error_without_detail = false;
+if ( $missing_detaildir && !$wascancelled && is_file( "$logdir/_stdout_$id" ) ) {
+   $terminal_error_output = file_get_contents( "$logdir/_stdout_$id" );
+   $terminal_error_without_detail =
+      $terminal_error_output !== false && ga_terminal_error_payload( $terminal_error_output ) !== false;
+}
+
 ob_start();
-if ( !is_dir( $dir ) || ( strlen( $detaildir ) && !is_dir( $detaildir ) ) || !chdir( $dir ) )
+if ( !is_dir( $dir ) || ( $missing_detaildir && !$terminal_error_without_detail ) || !chdir( $dir ) )
 {
    $cont = ob_get_contents();
    ob_end_clean();
-   if ( !is_dir( $dir ) || ( strlen( $detaildir ) && !is_dir( $detaildir ) ) )
+   if ( !is_dir( $dir ) || ( $missing_detaildir && !$terminal_error_without_detail ) )
    {
       $message = "This run's saved files have been removed. Its saved inputs and results can no longer be restored.";
       error_log( "get_results.php missing run directory for job $id: " . ( !is_dir( $dir ) ? $dir : $detaildir ) . "\n" );

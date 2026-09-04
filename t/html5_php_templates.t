@@ -70,6 +70,8 @@ like( $results_php, qr/ga_sanitize_validate/, 'get_results php validates request
 like( $results_php, qr/_getinput/, 'get_results php can return replayed input' );
 like( $results_php, qr/_stdout_/, 'get_results php reads job stdout payload' );
 like( $results_php, qr/json_decode/, 'get_results php decodes JSON output' );
+like( $results_php, qr/function ga_terminal_error_payload/, 'get_results defines a generic terminal-error payload check' );
+like( $results_php, qr/\$missing_detaildir.*?ga_terminal_error_payload.*?\$terminal_error_without_detail/s, 'get_results preserves a terminal error when no run detail directory was created' );
 like( $results_php, qr/This run's saved files have been removed/, 'get_results reports a friendly deleted-run message without its filesystem path' );
 like( $results_php, qr/_getinputerror/, 'get_results carries deleted-run restoration failures to the UI2 input replay path' );
 unlike( $results_php, qr/__application__/, 'get_results php has application substitution applied' );
