@@ -8,9 +8,10 @@
             "role"    : "input",
             "id"      : "message",
             "label"   : "Message",
+            "help"    : "Author's message",
             "type"    : "text",
-            "default" : "hello world",
-            "pattern" : "^(hello|sample) world$"
+            "default" : "hello.world",
+            "pattern" : "^(hello|sample)\\.world$"
         },
         {
             "role"    : "input",

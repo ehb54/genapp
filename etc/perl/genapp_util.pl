@@ -1001,9 +1001,10 @@ sub encode_json_for_single_quoted_template {
     $js->canonical(1);
     my $encoded = $js->encode( $json );
 
-    # Match __modulejson__ escaping for JSON embedded in single-quoted JS/PHP.
-    $encoded =~ s/\\\\'/\\'/g;
-    $encoded =~ s/\\"/\\\\"/g;
+    # Preserve JSON escapes while the surrounding single-quoted PHP/JavaScript
+    # string is parsed, and keep apostrophes from ending that host string.
+    $encoded =~ s/\\/\\\\/g;
+    $encoded =~ s/'/\\'/g;
     return $encoded;
 }
 

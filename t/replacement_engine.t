@@ -63,6 +63,15 @@ is( $excluded, 'remainder', 'literal conditional removal leaves no pipe-bearing 
 
 is( fix_up_sub_tok('left|right'), 'left\|right', 'replacement quoting treats a pipe as literal text' );
 
+my $embedded_json = encode_json_for_single_quoted_template(
+    {
+        pattern => '^(hello|sample)\.world$',
+        note    => q{author's "quoted" value},
+    }
+);
+like( $embedded_json, qr/\\\\\\\\\.world/, 'embedded JSON doubles backslashes for its single-quoted host string' );
+like( $embedded_json, qr/author\\'s/, 'embedded JSON escapes apostrophes for its single-quoted host string' );
+
 my $json_file = File::Spec->catfile( $repo_root, 't', 'fixtures', 'json_flatten', 'menu_modules.json' );
 my $json      = decode_json( read_file($json_file) );
 my %iter;

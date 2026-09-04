@@ -39,6 +39,14 @@ like(
 like( $source, qr/"\$php_bin" -l "\$module_handler"/, 'core update helper syntax-checks every generated module handler' );
 like( $source, qr/Generated module handler has invalid PHP syntax:.*?exit 1/s, 'invalid generated PHP is a terminal deployment failure' );
 like( $source, qr/module_handler_count == 0.*?exit 1/s, 'deployment fails when no generated module handlers are available to check' );
+like(
+    $source,
+    qr/find "\$module_info_root" -mindepth 1 -maxdepth 1 -type f -name 'module_\*\.php' -print0/,
+    'core update helper limits runtime JSON checks to generated module metadata files'
+);
+like( $source, qr/!is_object\(\$module_json\).*?json_last_error_msg/s, 'core update helper rejects module metadata that PHP cannot decode as an object' );
+like( $source, qr/Generated module metadata does not decode at runtime:.*?exit 1/s, 'invalid runtime module JSON is a terminal deployment failure' );
+like( $source, qr/module_info_count == 0.*?exit 1/s, 'deployment fails when no generated module metadata files are available to check' );
 unlike( $source, qr/find\s+output(?:\/|"\s).*?-name '\*\.php'/, 'core update helper does not lint unrelated generated PHP trees' );
 unlike( $source, qr/\bdocker\s+(?:stop|rm|run|rename|commit|restart|kill|pause|unpause|system\s+prune|container\s+prune)\b/, 'core update helper contains no Docker lifecycle or prune command' );
 

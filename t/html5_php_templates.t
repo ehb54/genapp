@@ -6,7 +6,7 @@ use FindBin;
 use Test::More;
 
 use lib File::Spec->catdir( $FindBin::Bin, 'lib' );
-use GenAppTest qw(generate_fixture_app read_file repo_root);
+use GenAppTest qw(generate_fixture_app read_file repo_root run_command);
 
 my $repo_root = repo_root($FindBin::Bin);
 my $generated = generate_fixture_app(
@@ -21,6 +21,7 @@ is( $generated->{status}, 0, 'minimal_html5 fixture generates before PHP templat
 
 my $app_dir    = $generated->{app_dir};
 my $module_php = read_file( File::Spec->catfile( $app_dir, qw(output html5 ajax demo echo.php) ) );
+my $module_info_php = File::Spec->catfile( $app_dir, qw(output html5 etc module_echo.php) );
 my $results_php = read_file( File::Spec->catfile( $app_dir, qw(output html5 ajax get_results.php) ) );
 my $jobrun_php  = read_file( File::Spec->catfile( $app_dir, qw(output html5 util jobrun.php) ) );
 my $sys_user_config_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_user_config.php) ) );
@@ -38,16 +39,31 @@ like( $module_php, qr/file_put_contents\( "\$logdir\/_input_"/, 'module php writ
 like( $module_php, qr/\$_REQUEST\[ '_module' \]\s+=\s+"echo"/, 'module php annotates request with module id' );
 like( $module_php, qr/\$cmd \.= \$cmdprefix == "oscluster" \? " echo" : " echo"/, 'module php command path includes executable/module id' );
 unlike( $module_php, qr/__modulejson__|__resource__|__executable__|__menu:id__/, 'module php has important template tokens replaced' );
-like( $module_php, qr/\Q(hello|sample) world\E/, 'module php preserves regex alternation from module JSON' );
+like( $module_php, qr/\Q(hello|sample)\\\\.world\E/, 'module php preserves regex alternation and host-escaped backslash from module JSON' );
 like( $module_php, qr/\Qroute:left || route:right\E/, 'module php preserves logical OR from module JSON' );
 
 my $php = qx{command -v php 2>/dev/null};
 chomp $php;
 SKIP: {
-    skip 'php is not available on PATH; generated module syntax check is deferred', 1 if !$php;
-    my $lint = qx{'$php' -l '$app_dir/output/html5/ajax/demo/echo.php' 2>&1};
-    is( $? >> 8, 0, 'pipe-bearing ordinary module handler passes PHP syntax validation' )
-        or diag($lint);
+    skip 'php is not available on PATH; generated module runtime checks are deferred', 2 if !$php;
+    my ( $lint_status, $lint_output ) = run_command(
+        cwd => $app_dir,
+        cmd => [ $php, '-l', File::Spec->catfile( $app_dir, qw(output html5 ajax demo echo.php) ) ],
+    );
+    is( $lint_status, 0, 'pipe- and backslash-bearing ordinary module handler passes PHP syntax validation' )
+        or diag($lint_output);
+
+    my ( $decode_status, $decode_output ) = run_command(
+        cwd => $app_dir,
+        cmd => [
+            $php,
+            '-r',
+            q~require $argv[1]; $module = $GLOBALS["modulejson"]["echo"] ?? null; if (!is_object($module) || ($module->fields[0]->pattern ?? "") !== '^(hello|sample)\.world$' || ($module->fields[0]->help ?? "") !== "Author's message") { fwrite(STDERR, json_last_error_msg()); exit(1); }~,
+            $module_info_php,
+        ],
+    );
+    is( $decode_status, 0, 'PHP evaluates embedded module JSON without losing regex backslashes or apostrophes' )
+        or diag($decode_output);
 }
 
 like( $results_php, qr/ga_sanitize_validate/, 'get_results php validates request input' );

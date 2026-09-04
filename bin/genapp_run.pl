@@ -492,12 +492,9 @@ foreach my $l ( keys %langs )
                         grep s/__modulejson_raw__/$enc_mod_json/g, @l;
                     }
                     if ( $freq =~ /^(menu|config|configbase):modules:id$/ && grep /__modulejson__/, @l ) {
-                        my $js = JSON->new;
-                        $js->canonical(1);
-                        my $enc_mod_json = $js->encode( get_file_json_lang_specific( $current_module_file, $l, 1 ) );
-                        # fix for embedded html with quotes
-                        $enc_mod_json =~ s/\\\\'/\\'/g;
-                        $enc_mod_json =~ s/\\"/\\\\"/g;
+                        my $enc_mod_json = encode_json_for_single_quoted_template(
+                            get_file_json_lang_specific( $current_module_file, $l, 1 )
+                        );
                         if ( $debug_modulejson ) {
                             open my $fh, ">>/tmp/modulejsons";
                             print $fh "__modulejson__\n" . $enc_mod_json . "\n";
@@ -738,12 +735,9 @@ foreach my $l ( keys %langs )
                                     grep s/__modulejson_raw__/$enc_mod_json/g, @l;
                                 }
                                 if ( grep /__modulejson__/, @l ) {
-                                    my $js = JSON->new;
-                                    $js->canonical(1);
-                                    my $enc_mod_json = $js->encode( get_file_json_lang_specific( $module_to_file{ $l }{ $$rplc_menu2{ 'menu:modules:id' } }, $l, 1 ) );
-                                    # fix for embedded html with quotes
-                                    $enc_mod_json =~ s/\\\\'/\\'/g;
-                                    $enc_mod_json =~ s/\\"/\\\\"/g;
+                                    my $enc_mod_json = encode_json_for_single_quoted_template(
+                                        get_file_json_lang_specific( $module_to_file{ $l }{ $$rplc_menu2{ 'menu:modules:id' } }, $l, 1 )
+                                    );
                                     if ( $debug_modulejson ) {
                                         open my $fh, ">>/tmp/modulejsons";
                                         print $fh "__modulejson__\n" . $enc_mod_json . "\n";

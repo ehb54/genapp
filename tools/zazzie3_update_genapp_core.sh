@@ -334,6 +334,29 @@ if (( module_handler_count == 0 )); then
 fi
 echo "Validated PHP syntax for $module_handler_count generated module handlers"
 
+stamp "Generated module metadata decode"
+module_info_root="output/html5/etc"
+if [[ ! -d "$module_info_root" ]]; then
+    echo "Generated module metadata directory is missing: $gz_dir/$module_info_root" >&2
+    exit 1
+fi
+
+module_info_count=0
+while IFS= read -r -d '' module_info; do
+    ((module_info_count += 1))
+    if ! decode_output="$("$php_bin" -r 'require $argv[1]; if (!isset($GLOBALS["modulejson"]) || !is_array($GLOBALS["modulejson"]) || count($GLOBALS["modulejson"]) !== 1) { fwrite(STDERR, "missing module metadata" . PHP_EOL); exit(1); } foreach ($GLOBALS["modulejson"] as $module_id => $module_json) { if (!is_object($module_json)) { fwrite(STDERR, "module " . $module_id . " JSON decode failed: " . json_last_error_msg() . PHP_EOL); exit(1); } }' "$module_info" 2>&1)"; then
+        echo "Generated module metadata does not decode at runtime: $gz_dir/$module_info" >&2
+        echo "$decode_output" >&2
+        exit 1
+    fi
+done < <(find "$module_info_root" -mindepth 1 -maxdepth 1 -type f -name 'module_*.php' -print0)
+
+if (( module_info_count == 0 )); then
+    echo "No generated module metadata files were found under $gz_dir/$module_info_root" >&2
+    exit 1
+fi
+echo "Validated runtime JSON decoding for $module_info_count generated module metadata files"
+
 if [[ -d "$core_dir/tools/ai_helper_service" ]]; then
     stamp "AI Helper service deployment"
     service_source="$core_dir/tools/ai_helper_service"
