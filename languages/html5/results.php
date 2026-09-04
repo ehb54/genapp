@@ -14,6 +14,14 @@ function ga_terminal_error_payload( $raw_output )
    return $payload;
 }
 
+function ga_terminal_output_status( $raw_output, $was_cancelled )
+{
+   if ( $was_cancelled ) {
+      return 'cancelled';
+   }
+   return ga_terminal_error_payload( $raw_output ) !== false ? 'failed' : 'complete';
+}
+
 # setup php session
 session_name( strtoupper( preg_replace('/[^a-zA-Z0-9_]+/', '_', "GENAPP___application__" ) ) ); session_start();
 if (!isset($_SESSION['count'])) {
@@ -336,7 +344,10 @@ if ( !$wascancelled && $test_json == NULL ) {
            $test_json[ "_getinput" ] = json_decode( $getinputdata );
        }
    }
-   $test_json[ '_status' ] = $wascancelled ? 'cancelled' : 'complete';
+   $test_json[ '_status' ] = ga_terminal_output_status(
+      $wascancelled ? "{}" : $strresults,
+      $wascancelled
+   );
    $test_json[ '_fs_refresh' ] = $results[ "_fs_refresh" ];
    __~debug:job{$test_json[ 'hidude' ] = $test_json[ '_status' ];}
    
