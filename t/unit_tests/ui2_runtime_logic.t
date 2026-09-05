@@ -696,6 +696,28 @@ assert.match(
   /pdbfile.*Please select a file/,
   "UI2 shared validation reports the missing required file field"
 );
+hooks.state.testScenarios = {
+  available: true,
+  loading: false,
+  catalog: { schema_version: 2, module_id: "neutral_file_module", scenarios: [] },
+  selectedId: "verified_file_scenario",
+  verification: { state: "not_run", checks: [] }
+};
+hooks.state.testScenarioFiles = new Map([
+  ["pdbfile:", { fieldId: "pdbfile", repeatIndex: null, file: { name: "verified.pdb" } }]
+]);
+assert.strictEqual(
+  hooks.validateModuleForm(requiredFileForm),
+  null,
+  "UI2 required-file validation accepts a verified file retained by the selected scenario"
+);
+hooks.state.testScenarios.selectedId = "";
+assert.strictEqual(
+  hooks.validateModuleForm(requiredFileForm).control,
+  requiredLrfileDisplay,
+  "UI2 required-file validation does not exempt a non-scenario form"
+);
+hooks.state.testScenarioFiles = new Map();
 const localFileControl = hooks.renderFileControl({ id: "input_pdbfile", type: "lrfile", required: "true" });
 const localFileDisplay = localFileControl.querySelector(".ui2-file-picker input");
 const localFilePicker = localFileControl.querySelector(".ui2-native-file");
@@ -4975,9 +4997,23 @@ async function verifyScenarioFileHydration() {
   form.appendChild(activeFilePicker);
   scenarioFrames.shift()();
   assert.strictEqual(activeFilePicker.files[0].name, "sample.txt", "verified scenario asset attaches to the live native file control after renderer reconciliation");
+  assert.strictEqual(scenarioFrames.length, 1, "scenario hydration retains one bounded ownership check for a late conditional React render");
+  activeFilePicker.remove();
+  const lateFilePicker = createNode("input");
+  lateFilePicker.type = "file";
+  lateFilePicker.className = "ui2-native-file";
+  lateFilePicker.dataset.fieldId = "sample_file";
+  lateFilePicker.files = [];
+  lateFilePicker.dispatchEvent = () => {
+    pickerChangeEvents += 1;
+    fileDisplay.value = lateFilePicker.files[0]?.name || "";
+  };
+  form.appendChild(lateFilePicker);
+  scenarioFrames.shift()();
+  assert.strictEqual(lateFilePicker.files[0].name, "sample.txt", "verified scenario asset survives a file-field remount after the first ownership check");
   assert.strictEqual(pickerChangeEvents, 0, "post-render restoration also avoids the React file-change loop");
   assert.strictEqual(fileDisplay.value, "sample.txt", "normal file-change handling publishes the attached filename");
-  activeFilePicker.files = [];
+  lateFilePicker.files = [];
   const scenarioSubmitData = hooks.buildSubmitFormData(form, "scenario-file-test-uuid");
   assert.deepStrictEqual(
     scenarioSubmitData.get("sample_file"),

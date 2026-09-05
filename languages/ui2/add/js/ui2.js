@@ -1622,6 +1622,13 @@
     state.testScenarioFiles.delete(testScenarioFileKey(fieldId, repeatIndex));
   }
 
+  function hasTestScenarioFile(fieldId, repeatIndex = null) {
+    if (!state.testScenarios.selectedId) {
+      return false;
+    }
+    return Boolean(state.testScenarioFiles.get(testScenarioFileKey(fieldId, repeatIndex))?.file);
+  }
+
   function clearTestScenarioFileSelections(form) {
     form.querySelectorAll(".ui2-native-file").forEach((picker) => {
       picker.value = "";
@@ -1677,7 +1684,15 @@
 
   function scheduleTestScenarioFileRestore() {
     const schedule = window.requestAnimationFrame || ((callback) => window.setTimeout(callback, 0));
-    schedule(() => restoreTestScenarioFileSelections());
+    // React publishes the values returned by applyTestScenario after its
+    // promise resolves.  A conditional field group can therefore remount one
+    // render later than the first ownership check.  Keep this bounded to two
+    // frames: one for the immediate reconciliation and one for that published
+    // values render.
+    schedule(() => {
+      restoreTestScenarioFileSelections();
+      schedule(() => restoreTestScenarioFileSelections());
+    });
   }
 
   async function applyTestScenario(id, form = document.getElementById("ui2-form")) {
@@ -5827,6 +5842,7 @@
         && control.closest(".ui2-file-control")
         && !control.closest(".ui2-output-field")
         && !control.closest(".ui2-hidden")
+        && !hasTestScenarioFile(control.dataset.fieldId, repeatIndexValue(control.dataset.repeatTableIndex))
         && !String(control.value || "").trim()
     ));
     if (missingRequiredFile) {
