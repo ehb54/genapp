@@ -5064,10 +5064,10 @@ async function verifyScenarioFileHydration() {
   const sampleCount = createNode("input");
   sampleCount.type = "number";
   sampleCount.dataset.fieldId = "sample_count";
-  sampleCount.value = "2";
+  sampleCount.value = "1";
   repeatedForm.append(repeatedRunLabel, sampleCount);
   const repeatedPickers = [];
-  for (let row = 0; row < 2; row += 1) {
+  const appendRepeatedRow = (row) => {
     const display = createNode("input");
     display.type = "text";
     display.dataset.fieldId = "sample_files";
@@ -5079,9 +5079,26 @@ async function verifyScenarioFileHydration() {
     picker.dataset.fieldId = "sample_files";
     picker.dataset.repeatTableIndex = String(row);
     picker.files = [];
-    repeatedPickers.push(picker);
+    repeatedPickers[row] = picker;
     repeatedForm.append(display, picker);
-  }
+  };
+  appendRepeatedRow(0);
+  assert.strictEqual(
+    hooks.attachTestScenarioFile(
+      repeatedForm, "sample_files", { name: "deferred.txt" }, 1,
+      { deferMissingRepeated: true }
+    ),
+    false,
+    "an opted-in missing repeated row can be deferred until renderer expansion"
+  );
+  assert.throws(
+    () => hooks.attachTestScenarioFile(
+      repeatedForm, "sample_file", { name: "missing.txt" }, null,
+      { deferMissingRepeated: true }
+    ),
+    /Scenario file target sample_file is unavailable/,
+    "a missing non-repeated file target remains an immediate error"
+  );
   document.body.appendChild(repeatedForm);
   hooks.state.module = {
     fields: [
@@ -5090,7 +5107,7 @@ async function verifyScenarioFileHydration() {
       { id: "sample_files", type: "lrfile", repeat: "sample_count" }
     ]
   };
-  hooks.state.values = { run_label: "ordinary_default", sample_count: "2", sample_files: ["", ""] };
+  hooks.state.values = { run_label: "ordinary_default", sample_count: "1", sample_files: [""] };
   hooks.state.testScenarios = {
     available: true,
     loading: false,
@@ -5104,8 +5121,15 @@ async function verifyScenarioFileHydration() {
   assert.strictEqual(scenarioFrames.length, 1, "repeated scenario hydration waits for the renderer boundary once");
   scenarioFrames.shift()();
   const repeatedLoaded = await repeatedLoad;
-  assert.strictEqual(repeatedLoaded.ok, true, "repeated scenario files hydrate successfully");
+  assert.strictEqual(repeatedLoaded.ok, true, "repeated scenario hydration can defer a row that the renderer has not created yet");
   assert.strictEqual(repeatedPickers[0].files[0].name, "sample.txt", "first scenario file attaches to repeated row one");
+  assert.strictEqual(scenarioFrames.length, 1, "expanding repeated-file hydration schedules a bounded post-return ownership check");
+  appendRepeatedRow(1);
+  scenarioFrames.shift()();
+  assert.strictEqual(repeatedPickers[1].files[0].name, "sample_second.txt", "verified scenario file attaches after the renderer creates repeated row two");
+  assert.strictEqual(scenarioFrames.length, 1, "expanding repeated-file hydration retains one final bounded ownership check");
+  scenarioFrames.shift()();
+  assert.strictEqual(scenarioFrames.length, 0, "expanding repeated-file hydration completes without continuous polling");
   assert.strictEqual(repeatedPickers[1].files[0].name, "sample_second.txt", "second scenario file attaches to repeated row two");
   repeatedPickers[1].files = [];
   const repeatedSubmitData = hooks.buildSubmitFormData(repeatedForm, "repeated-scenario-test-uuid");

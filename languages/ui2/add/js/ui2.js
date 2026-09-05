@@ -1661,11 +1661,14 @@
     clearFileReselectionWarnings();
   }
 
-  function attachTestScenarioFile(form, fieldId, file, repeatIndex = null) {
+  function attachTestScenarioFile(form, fieldId, file, repeatIndex = null, options = {}) {
     const pickers = Array.from(form.querySelectorAll(".ui2-native-file"))
       .filter((picker) => picker.dataset.fieldId === fieldId &&
         String(picker.dataset.repeatTableIndex ?? "") === String(repeatIndex ?? ""));
     if (pickers.length !== 1) {
+      if (pickers.length === 0 && repeatIndex != null && options.deferMissingRepeated === true) {
+        return false;
+      }
       const row = repeatIndex == null ? "" : ` row ${repeatIndex + 1}`;
       throw new Error(`Scenario file target ${fieldId}${row} is unavailable.`);
     }
@@ -1681,6 +1684,7 @@
         control.value = file.name;
         control.dispatchEvent(new Event("input"));
       });
+    return true;
   }
 
   function restoreTestScenarioFileSelections(form = document.getElementById("ui2-form")) {
@@ -1756,7 +1760,10 @@
       return { ok: false, error: "The module changed while the scenario was loading." };
     }
     try {
-      files.forEach(({ fieldId, repeatIndex, file }) => attachTestScenarioFile(currentForm, fieldId, file, repeatIndex));
+      files.forEach(({ fieldId, repeatIndex, file }) => attachTestScenarioFile(
+        currentForm, fieldId, file, repeatIndex,
+        { deferMissingRepeated: true }
+      ));
     } catch (error) {
       state.testScenarioFiles = new Map();
       clearTestScenarioFileSelections(currentForm);

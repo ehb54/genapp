@@ -138,6 +138,15 @@ This prevents omitted fields or a prior local/server file selection from leaking
 into a later scenario. Native UI2 and the React workbench call the same runtime
 operation and report file failures without submitting a job.
 
+When a scenario increases a repeat controller, the renderer may create the new
+file rows only after core returns the hydrated ordinary values. UI2 therefore
+retains already verified repeated files in core, attaches rows that already
+exist, and uses its bounded post-render reconciliation to attach newly rendered
+rows. A missing non-repeated file target and duplicate repeated-row targets
+remain immediate errors. This lifecycle is active only for applications with an
+authorized scenario catalog; ordinary forms and applications without catalogs
+do not enter it.
+
 ## Verification stub
 
 Schema 2 scenarios declare one safe `expected_outcome`: `load_only`,

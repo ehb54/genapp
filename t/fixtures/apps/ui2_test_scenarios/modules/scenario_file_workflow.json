@@ -5,7 +5,7 @@
   "fields": [
     { "id": "run_label", "label": "Run label", "type": "text", "default": "ordinary_default" },
     { "id": "sample_file", "label": "Sample file", "type": "file", "required": true },
-    { "id": "sample_count", "label": "Number of samples", "type": "integer", "default": 2, "repeater": "true", "tableize": "true" },
+    { "id": "sample_count", "label": "Number of samples", "type": "integer", "default": 1, "repeater": "true", "tableize": "true" },
     { "id": "sample_files", "label": "Sample files", "type": "lrfile", "required": true, "repeat": "sample_count" },
     { "id": "received_file", "label": "Received file", "type": "text", "role": "output" }
   ]

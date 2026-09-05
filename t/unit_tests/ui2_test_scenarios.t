@@ -25,6 +25,9 @@ my $runtime = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
 my $catalog = read_file( File::Spec->catfile( $app_dir, qw(test_scenarios data_interpolation.json) ) );
 my $file_catalog_path = File::Spec->catfile( $app_dir, qw(test_scenarios scenario_file_workflow.json) );
 my $file_catalog = read_file( $file_catalog_path );
+my $file_module = read_file( File::Spec->catfile(
+    $app_dir, qw(modules scenario_file_workflow.json)
+) );
 my $asset_path = File::Spec->catfile(
     $app_dir, qw(test_scenarios assets scenario_file_workflow sample_text sample.txt)
 );
@@ -60,6 +63,8 @@ like( $file_catalog, qr/"schema_version": 2/, 'neutral opted-in fixture exercise
 like( $file_catalog, qr/"catalog_revision": "fixture-2"/, 'schema 2 fixture declares a stable catalog revision' );
 like( $file_catalog, qr/"expected_outcome": "job_completed"/, 'schema 2 fixture declares a safe expected outcome' );
 like( $file_catalog, qr/"sample_files": \[/, 'schema 2 fixture declares ordered repeated files' );
+like( $file_module, qr/"id": "sample_count".*?"default": 1/s, 'neutral repeated-file fixture starts with one rendered row' );
+like( $file_catalog, qr/"sample_count": 2/, 'neutral repeated-file scenario expands the opted-in fixture to two rows' );
 like( $file_catalog, qr/"907729515e50a0bef905abcf2188f2fd9e0ae14734f2dd4eb8ae7b9656b686dc"/, 'neutral fixture pins the asset digest' );
 is( -s $asset_path, 22, 'neutral scenario asset remains private application-owned test data' );
 is( -s $second_asset_path, 21, 'second repeated scenario asset remains private application-owned test data' );
