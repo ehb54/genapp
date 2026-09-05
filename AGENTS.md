@@ -67,6 +67,40 @@ Do not add it to `.gitignore` or mark it assume-unchanged.
 - At the end of authorized browser work, log out. Future use requires fresh,
   explicit permission even though the account remains an administrator.
 
+### Dedicated UI2 acceptance browser (madscatt Mac mini)
+
+- A machine-local, isolated Chrome profile for command-line UI2 acceptance runs
+  is available at
+  `/Users/curtisj/Library/Application Support/Codex/Zazzie UI2 CDP Profile`.
+  This path is present only on madscatt's Mac mini; do not treat it as a
+  portable repository dependency.
+- Launch it as a separate Chrome instance with its debugging endpoint bound to
+  loopback only:
+
+  ```bash
+  open -na 'Google Chrome' --args \
+    --user-data-dir='/Users/curtisj/Library/Application Support/Codex/Zazzie UI2 CDP Profile' \
+    --remote-debugging-address=127.0.0.1 \
+    --remote-debugging-port=9222 \
+    --no-first-run --no-default-browser-check \
+    'https://zazzie3.genapp.rocks/sassie3/ui2/'
+  ```
+
+- The standalone browser-acceptance runner connects to
+  `http://127.0.0.1:9222`. Verify that the listener remains bound to
+  `127.0.0.1`; never expose the debugging port on a network interface. If port
+  9222 is occupied, identify its owner and do not kill an unrelated browser.
+- The profile keeps the `codex3` credential in Chrome's password manager and
+  is normally logged out. The saved credential and an open profile do not grant
+  permission: obtain fresh, task-specific authorization naming `codex3` and
+  the administrator operations before logging in or attaching to an
+  authenticated session.
+- Use the saved login only through the visible UI2 login flow. Never read the
+  password field, copy the profile, export cookies or storage state, or pass
+  credentials to the repository runner. Complete only the authorized UI2
+  operations, automate documented browser dialogs through the normal browser
+  controls, and log out when the authorized browser-testing block ends.
+
 ## Live Zazzie3 HTML5 Testing
 
 - Use `https://zazzie3.genapp.rocks/sassie3/ui2/` for all live browser
