@@ -85,7 +85,6 @@
   let reactWorkbenchRoot = null;
   let reactWorkbenchSyncFrame = null;
   const reactWorkbenchSyncListeners = new Set();
-  let testScenarioFileObserver = null;
   let hoverHelpTimer = null;
   let hoverHelpTarget = null;
 
@@ -1419,7 +1418,6 @@
   }
 
   function clearTestScenarios(notify = true) {
-    disconnectTestScenarioFileObserver();
     state.testScenarios = initialTestScenarioState();
     state.testScenarioFiles = new Map();
     if (notify) {
@@ -1622,9 +1620,6 @@
 
   function clearTestScenarioFile(fieldId, repeatIndex) {
     state.testScenarioFiles.delete(testScenarioFileKey(fieldId, repeatIndex));
-    if (!state.testScenarioFiles.size) {
-      disconnectTestScenarioFileObserver();
-    }
   }
 
   function hasTestScenarioFile(fieldId, repeatIndex = null) {
@@ -1650,9 +1645,7 @@
       const row = repeatIndex == null ? "" : ` row ${repeatIndex + 1}`;
       throw new Error(`Scenario file target ${fieldId}${row} is unavailable.`);
     }
-    const transfer = new DataTransfer();
-    transfer.items.add(file);
-    pickers[0].files = transfer.files;
+    assignTestScenarioFile(pickers[0], file);
     // A bubbling file-change event reaches React's form handler and can make
     // the renderer replace this native picker immediately.  Scenario inputs
     // already own the canonical value; refresh only the local display widget
@@ -1680,25 +1673,10 @@
     });
   }
 
-  function disconnectTestScenarioFileObserver() {
-    testScenarioFileObserver?.disconnect();
-    testScenarioFileObserver = null;
-  }
-
-  function observeTestScenarioFileSelections(form) {
-    disconnectTestScenarioFileObserver();
-    if (!form || typeof window.MutationObserver !== "function") {
-      return;
-    }
-    testScenarioFileObserver = new window.MutationObserver((records) => {
-      const addedControls = records.some((record) =>
-        record.type === "childList" && Array.from(record.addedNodes || []).length > 0
-      );
-      if (addedControls) {
-        restoreTestScenarioFileSelections(form);
-      }
-    });
-    testScenarioFileObserver.observe(form, { childList: true, subtree: true });
+  function assignTestScenarioFile(picker, file) {
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    picker.files = transfer.files;
   }
 
   function waitForTestScenarioViewUpdate() {
@@ -1760,11 +1738,9 @@
     if (!currentForm?.isConnected || state.moduleId !== moduleId) {
       return { ok: false, error: "The module changed while the scenario was loading." };
     }
-    observeTestScenarioFileSelections(currentForm);
     try {
       files.forEach(({ fieldId, repeatIndex, file }) => attachTestScenarioFile(currentForm, fieldId, file, repeatIndex));
     } catch (error) {
-      disconnectTestScenarioFileObserver();
       state.testScenarioFiles = new Map();
       clearTestScenarioFileSelections(currentForm);
       applyInputPayload(defaultInputPayload(), { clearMissing: true });
@@ -4481,6 +4457,13 @@
     localPicker.dataset.fieldId = field.id || "";
     if (options?.repeatTableIndex != null) {
       localPicker.dataset.repeatTableIndex = String(options.repeatTableIndex);
+    }
+    const retainedScenarioFile = state.testScenarioFiles.get(testScenarioFileKey(
+      field.id || "", options?.repeatTableIndex
+    ))?.file;
+    if (retainedScenarioFile) {
+      assignTestScenarioFile(localPicker, retainedScenarioFile);
+      input.value = retainedScenarioFile.name;
     }
     localPicker.addEventListener("change", (event) => {
       if (event.isTrusted) {
@@ -7353,7 +7336,6 @@
     stopJobPolling();
     state.serverSelections = {};
     state.pendingInputValues = {};
-    disconnectTestScenarioFileObserver();
     state.testScenarioFiles = new Map();
     clearFileReselectionWarnings();
     state.jobSelections = {};
