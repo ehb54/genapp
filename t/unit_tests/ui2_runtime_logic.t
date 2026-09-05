@@ -5018,6 +5018,7 @@ async function verifyScenarioFileHydration() {
   const remountedFilePicker = remountedFileControl.querySelector(".ui2-native-file");
   form.appendChild(remountedFileControl);
   assert.strictEqual(remountedFilePicker.files[0].name, "sample.txt", "a renderer-created native control initializes from its retained verified scenario file");
+  assert.strictEqual(remountedFilePicker.dataset.testScenarioFilename, "sample.txt", "a retained scenario assignment is distinguished from the next real user file choice");
   assert.strictEqual(remountedFileDisplay.value, "sample.txt", "a renderer-created file display initializes from the retained scenario filename");
   assert.strictEqual(pickerChangeEvents, 0, "post-render restoration also avoids the React file-change loop");
   assert.strictEqual(fileDisplay.value, "sample.txt", "normal file-change handling publishes the attached filename");

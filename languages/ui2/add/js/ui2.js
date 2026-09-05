@@ -1676,6 +1676,7 @@
   function assignTestScenarioFile(picker, file) {
     const transfer = new DataTransfer();
     transfer.items.add(file);
+    picker.dataset.testScenarioFilename = file.name;
     picker.files = transfer.files;
   }
 
@@ -4470,13 +4471,16 @@
       input.value = retainedScenarioFile.name;
     }
     localPicker.addEventListener("change", (event) => {
-      if (event.isTrusted) {
+      const selectedFilename = localPicker.files?.[0]?.name || "";
+      const verifiedScenarioAssignment = localPicker.dataset.testScenarioFilename === selectedFilename;
+      if (event.isTrusted && !verifiedScenarioAssignment) {
         clearTestScenarioFile(field.id || "", options?.repeatTableIndex);
         clearSelectedTestScenario();
       }
+      delete localPicker.dataset.testScenarioFilename;
       clearServerSelection(field, options?.repeatTableIndex);
       clearFileReselectionWarning(field.id, options?.repeatTableIndex);
-      input.value = localPicker.files && localPicker.files[0] ? localPicker.files[0].name : "";
+      input.value = selectedFilename;
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
     input.addEventListener("input", (event) => {
@@ -4502,6 +4506,7 @@
       local.type = "button";
       local.addEventListener("click", () => {
         actionsExpanded = false;
+        delete localPicker.dataset.testScenarioFilename;
         localPicker.click();
       });
       actions.appendChild(local);
