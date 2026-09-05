@@ -108,6 +108,7 @@
     testScenarioListeners: new Set(),
     testScenarios: initialTestScenarioState(),
     testScenarioFiles: new Map(),
+    testScenarioUserEdited: false,
     runtimeOutputAvailability: {},
     pendingRuntimeOutputEvents: {},
     pendingSwitch: "",
@@ -1420,6 +1421,7 @@
   function clearTestScenarios(notify = true) {
     state.testScenarios = initialTestScenarioState();
     state.testScenarioFiles = new Map();
+    state.testScenarioUserEdited = false;
     if (notify) {
       notifyTestScenarios();
     }
@@ -1508,11 +1510,16 @@
     }
   }
 
+  function recordTestScenarioUserEdit(form = document.getElementById("ui2-form")) {
+    state.testScenarioUserEdited = true;
+    reconcileSelectedTestScenarioUserEdit(form);
+  }
+
   function trackTestScenarioUserEdits(form) {
     if (!form || form.dataset.testScenarioEditTracking === "true") return;
     form.dataset.testScenarioEditTracking = "true";
     const reconcile = (event) => {
-      if (event.isTrusted) reconcileSelectedTestScenarioUserEdit(form);
+      if (event.isTrusted) recordTestScenarioUserEdit(form);
     };
     form.addEventListener("input", reconcile);
     form.addEventListener("change", reconcile);
@@ -1721,9 +1728,7 @@
     const scenario = state.testScenarios.catalog?.scenarios?.find((item) => item.id === id);
     if (!scenario || !form) return { ok: false, error: "Scenario is unavailable." };
     syncValues(form);
-    const defaults = defaultInputPayload();
-    const dirty = Object.keys(state.values).some((key) => JSON.stringify(state.values[key]) !== JSON.stringify(defaults[key]));
-    if (dirty && typeof window.confirm === "function" && !window.confirm("Replace the current module inputs with this test scenario?")) {
+    if (state.testScenarioUserEdited && typeof window.confirm === "function" && !window.confirm("Replace the current module inputs with this test scenario?")) {
       return { ok: false, error: "Scenario load cancelled." };
     }
     const moduleId = state.moduleId;
@@ -1774,6 +1779,7 @@
         ? { state: "passed", checks: [{ id: "expected_outcome", passed: true, actual: "load_only" }] }
         : { state: "not_run", checks: [] }
     });
+    state.testScenarioUserEdited = false;
     // React publishes the returned values after this promise resolves.  Its
     // resulting render may replace a native file picker, so verify ownership
     // once more on the following frame without moving file semantics into the
@@ -3189,7 +3195,7 @@
         control.dispatchEvent(new Event("change", { bubbles: true }));
       });
       syncValues();
-      reconcileSelectedTestScenarioUserEdit();
+      recordTestScenarioUserEdit();
       scheduleReactWorkbenchSync();
       return cloneUi2Value(state.values);
     };
@@ -7365,6 +7371,8 @@
     state.serverSelections = {};
     state.pendingInputValues = {};
     state.testScenarioFiles = new Map();
+    state.testScenarioUserEdited = false;
+    clearSelectedTestScenario();
     clearFileReselectionWarnings();
     state.jobSelections = {};
     setSubmittedRunContext(null);
@@ -13571,6 +13579,7 @@
       collectControlValues,
       syncValues,
       reconcileSelectedTestScenarioUserEdit,
+      recordTestScenarioUserEdit,
       scheduleReactWorkbenchSync,
       unmountReactWorkbench,
       setReactWorkbenchRootForTest: (root) => { reactWorkbenchRoot = root; },

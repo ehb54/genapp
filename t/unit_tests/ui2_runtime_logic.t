@@ -4965,9 +4965,19 @@ async function verifyScenarioFileHydration() {
     verification: { state: "not_run", checks: [] }
   };
 
+  let replacementPrompts = 0;
+  window.confirm = () => { replacementPrompts += 1; return false; };
+  hooks.state.testScenarioUserEdited = true;
+  const cancelled = await hooks.applyTestScenario("local_text_asset", form);
+  assert.strictEqual(cancelled.ok, false, "a real user edit keeps the scenario replacement confirmation");
+  assert.strictEqual(cancelled.error, "Scenario load cancelled.", "declining replacement preserves the edited form");
+  assert.strictEqual(replacementPrompts, 1, "an edited form receives exactly one replacement confirmation");
+  hooks.state.testScenarioUserEdited = false;
+
   scenarioWithFile.files.sample_file.sha256 = "0".repeat(64);
   const rejected = await hooks.applyTestScenario("local_text_asset", form);
   assert.strictEqual(rejected.ok, false, "scenario hydration rejects bytes that fail browser integrity verification");
+  assert.strictEqual(replacementPrompts, 1, "renderer-normalized values do not prompt on a pristine form");
   assert.strictEqual(runLabel.value, "keep_until_verified", "failed file verification leaves ordinary inputs unchanged");
   assert.strictEqual(filePicker.files[0].name, "old.txt", "failed file verification leaves the prior file selection unchanged");
 
@@ -4980,6 +4990,7 @@ async function verifyScenarioFileHydration() {
   scenarioFrames.shift()();
   const loaded = await scenarioLoad;
   assert.strictEqual(loaded.ok, true, "scenario hydration accepts bytes with matching size and sha256");
+  assert.strictEqual(hooks.state.testScenarioUserEdited, false, "successful scenario hydration resets the user-edit boundary");
   assert.strictEqual(runLabel.value, "scenario_loaded", "verified scenario values replace prior ordinary inputs");
   assert.strictEqual(filePicker.files[0].name, "sample.txt", "verified scenario asset initially attaches to the normal native file control");
   assert.strictEqual(pickerChangeEvents, 0, "scenario attachment does not bubble a file-change event into the React form");
@@ -5034,9 +5045,14 @@ async function verifyScenarioFileHydration() {
   runLabel.value = "manual_edit";
   hooks.syncValues(form);
   assert.strictEqual(hooks.state.testScenarios.selectedId, "local_text_asset", "internal synchronization does not misclassify renderer activity as a user edit");
-  hooks.reconcileSelectedTestScenarioUserEdit(form);
+  hooks.recordTestScenarioUserEdit(form);
+  assert.strictEqual(hooks.state.testScenarioUserEdited, true, "a real edit is remembered for later scenario replacement protection");
   assert.strictEqual(hooks.state.testScenarios.selectedId, "", "editing an ordinary scenario input clears scenario identity before another submission");
   assert.strictEqual(hooks.buildSubmitFormData(form, "edited-scenario-test-uuid").get("_ui2_test_scenario_id"), undefined, "an edited run does not retain scenario verification metadata");
+  hooks.state.testScenarios.selectedId = "local_text_asset";
+  hooks.resetModuleForm(form);
+  assert.strictEqual(hooks.state.testScenarios.selectedId, "", "resetting inputs clears the selected scenario identity");
+  assert.strictEqual(hooks.state.testScenarioUserEdited, false, "resetting inputs clears the user-edit boundary");
   form.remove();
 
   const repeatedForm = createNode("form");
@@ -5082,6 +5098,7 @@ async function verifyScenarioFileHydration() {
     selectedId: "",
     verification: { state: "not_run", checks: [] }
   };
+  hooks.state.testScenarioUserEdited = false;
   const repeatedLoad = hooks.applyTestScenario("repeated_text_assets", repeatedForm);
   await new Promise((resolve) => setImmediate(resolve));
   assert.strictEqual(scenarioFrames.length, 1, "repeated scenario hydration waits for the renderer boundary once");
