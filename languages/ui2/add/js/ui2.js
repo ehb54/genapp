@@ -1501,6 +1501,23 @@
     });
   }
 
+  function reconcileSelectedTestScenarioUserEdit(form = document.getElementById("ui2-form")) {
+    syncValues(form);
+    if (!selectedTestScenarioOrdinaryInputsMatch(state.values)) {
+      clearSelectedTestScenario();
+    }
+  }
+
+  function trackTestScenarioUserEdits(form) {
+    if (!form || form.dataset.testScenarioEditTracking === "true") return;
+    form.dataset.testScenarioEditTracking = "true";
+    const reconcile = (event) => {
+      if (event.isTrusted) reconcileSelectedTestScenarioUserEdit(form);
+    };
+    form.addEventListener("input", reconcile);
+    form.addEventListener("change", reconcile);
+  }
+
   function normalizedTestScenarioInputValue(field, value) {
     if (Array.isArray(value)) {
       return value.map((item) => normalizedTestScenarioInputValue(field, item));
@@ -2967,8 +2984,9 @@
       stopJobPolling();
       resetModuleForm(form);
     });
-    form.addEventListener("input", syncValues);
-    form.addEventListener("change", syncValues);
+    form.addEventListener("input", () => syncValues(form));
+    form.addEventListener("change", () => syncValues(form));
+    trackTestScenarioUserEdits(form);
 
     container.appendChild(form);
     nodes.root.appendChild(container);
@@ -3171,6 +3189,7 @@
         control.dispatchEvent(new Event("change", { bubbles: true }));
       });
       syncValues();
+      reconcileSelectedTestScenarioUserEdit();
       scheduleReactWorkbenchSync();
       return cloneUi2Value(state.values);
     };
@@ -3191,7 +3210,10 @@
       },
       submit: (form) => submitModule(form),
       resizeOutputs: resizeWorkbenchOutputs,
-      viewReady: () => markViewReady(),
+      viewReady: () => {
+        trackTestScenarioUserEdits(document.getElementById("ui2-form"));
+        markViewReady();
+      },
       runtimeSnapshot: () => state.jobEvents.snapshot(),
       subscribeRuntime: (listener) => state.jobEvents.subscribe(listener),
       outputSnapshot: () => state.runtimeOutputAvailability,
@@ -7332,9 +7354,6 @@
     const preview = document.getElementById("ui2-preview");
     if (preview) {
       preview.textContent = JSON.stringify(state.values, null, 2);
-    }
-    if (!selectedTestScenarioOrdinaryInputsMatch(state.values)) {
-      clearSelectedTestScenario();
     }
   }
 
@@ -13551,6 +13570,7 @@
       repeatCount,
       collectControlValues,
       syncValues,
+      reconcileSelectedTestScenarioUserEdit,
       scheduleReactWorkbenchSync,
       unmountReactWorkbench,
       setReactWorkbenchRootForTest: (root) => { reactWorkbenchRoot = root; },

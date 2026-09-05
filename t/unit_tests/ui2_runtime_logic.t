@@ -5033,6 +5033,8 @@ async function verifyScenarioFileHydration() {
   assert.strictEqual(scenarioSubmitData.get("_ui2_test_scenario_catalog_revision"), "", "legacy schema 1 submission persists an explicit empty revision");
   runLabel.value = "manual_edit";
   hooks.syncValues(form);
+  assert.strictEqual(hooks.state.testScenarios.selectedId, "local_text_asset", "internal synchronization does not misclassify renderer activity as a user edit");
+  hooks.reconcileSelectedTestScenarioUserEdit(form);
   assert.strictEqual(hooks.state.testScenarios.selectedId, "", "editing an ordinary scenario input clears scenario identity before another submission");
   assert.strictEqual(hooks.buildSubmitFormData(form, "edited-scenario-test-uuid").get("_ui2_test_scenario_id"), undefined, "an edited run does not retain scenario verification metadata");
   form.remove();
