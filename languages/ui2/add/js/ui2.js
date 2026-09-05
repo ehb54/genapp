@@ -85,6 +85,7 @@
   let reactWorkbenchRoot = null;
   let reactWorkbenchSyncFrame = null;
   const reactWorkbenchSyncListeners = new Set();
+  let testScenarioFileObserver = null;
   let hoverHelpTimer = null;
   let hoverHelpTarget = null;
 
@@ -1418,6 +1419,7 @@
   }
 
   function clearTestScenarios(notify = true) {
+    disconnectTestScenarioFileObserver();
     state.testScenarios = initialTestScenarioState();
     state.testScenarioFiles = new Map();
     if (notify) {
@@ -1620,6 +1622,9 @@
 
   function clearTestScenarioFile(fieldId, repeatIndex) {
     state.testScenarioFiles.delete(testScenarioFileKey(fieldId, repeatIndex));
+    if (!state.testScenarioFiles.size) {
+      disconnectTestScenarioFileObserver();
+    }
   }
 
   function hasTestScenarioFile(fieldId, repeatIndex = null) {
@@ -1673,6 +1678,27 @@
         attachTestScenarioFile(form, fieldId, file, repeatIndex);
       }
     });
+  }
+
+  function disconnectTestScenarioFileObserver() {
+    testScenarioFileObserver?.disconnect();
+    testScenarioFileObserver = null;
+  }
+
+  function observeTestScenarioFileSelections(form) {
+    disconnectTestScenarioFileObserver();
+    if (!form || typeof window.MutationObserver !== "function") {
+      return;
+    }
+    testScenarioFileObserver = new window.MutationObserver((records) => {
+      const addedControls = records.some((record) =>
+        record.type === "childList" && Array.from(record.addedNodes || []).length > 0
+      );
+      if (addedControls) {
+        restoreTestScenarioFileSelections(form);
+      }
+    });
+    testScenarioFileObserver.observe(form, { childList: true, subtree: true });
   }
 
   function waitForTestScenarioViewUpdate() {
@@ -1734,9 +1760,11 @@
     if (!currentForm?.isConnected || state.moduleId !== moduleId) {
       return { ok: false, error: "The module changed while the scenario was loading." };
     }
+    observeTestScenarioFileSelections(currentForm);
     try {
       files.forEach(({ fieldId, repeatIndex, file }) => attachTestScenarioFile(currentForm, fieldId, file, repeatIndex));
     } catch (error) {
+      disconnectTestScenarioFileObserver();
       state.testScenarioFiles = new Map();
       clearTestScenarioFileSelections(currentForm);
       applyInputPayload(defaultInputPayload(), { clearMissing: true });
@@ -7325,6 +7353,7 @@
     stopJobPolling();
     state.serverSelections = {};
     state.pendingInputValues = {};
+    disconnectTestScenarioFileObserver();
     state.testScenarioFiles = new Map();
     clearFileReselectionWarnings();
     state.jobSelections = {};

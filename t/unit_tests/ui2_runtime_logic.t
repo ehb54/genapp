@@ -269,6 +269,24 @@ const window = {
   __styleVars: {},
   __localStorage: {},
   __openCalls: [],
+  __mutationObservers: [],
+  MutationObserver: class MutationObserver {
+    constructor(callback) {
+      this.callback = callback;
+      this.disconnected = false;
+      window.__mutationObservers.push(this);
+    }
+    observe(target, options) {
+      this.target = target;
+      this.options = options;
+    }
+    disconnect() {
+      this.disconnected = true;
+    }
+    emit(records) {
+      if (!this.disconnected) this.callback(records);
+    }
+  },
   CSS: { escape(value) { return String(value); } },
   crypto: {
     randomUUID() { return "uuid-for-test"; },
@@ -5011,9 +5029,23 @@ async function verifyScenarioFileHydration() {
   form.appendChild(lateFilePicker);
   scenarioFrames.shift()();
   assert.strictEqual(lateFilePicker.files[0].name, "sample.txt", "verified scenario asset survives a file-field remount after the first ownership check");
+  assert.strictEqual(scenarioFrames.length, 0, "bounded frame restoration completes without continuous polling");
+  lateFilePicker.remove();
+  const observedFilePicker = createNode("input");
+  observedFilePicker.type = "file";
+  observedFilePicker.className = "ui2-native-file";
+  observedFilePicker.dataset.fieldId = "sample_file";
+  observedFilePicker.files = [];
+  form.appendChild(observedFilePicker);
+  const fileObserver = window.__mutationObservers[window.__mutationObservers.length - 1];
+  assert.strictEqual(fileObserver.target, form, "scenario hydration observes only its active form for later renderer mounts");
+  assert.strictEqual(fileObserver.options.childList, true, "scenario file observation watches added form controls");
+  assert.strictEqual(fileObserver.options.subtree, true, "scenario file observation covers nested renderer field groups");
+  fileObserver.emit([{ type: "childList", addedNodes: [observedFilePicker] }]);
+  assert.strictEqual(observedFilePicker.files[0].name, "sample.txt", "verified scenario asset attaches when the renderer mounts a file control after bounded frame checks");
   assert.strictEqual(pickerChangeEvents, 0, "post-render restoration also avoids the React file-change loop");
   assert.strictEqual(fileDisplay.value, "sample.txt", "normal file-change handling publishes the attached filename");
-  lateFilePicker.files = [];
+  observedFilePicker.files = [];
   const scenarioSubmitData = hooks.buildSubmitFormData(form, "scenario-file-test-uuid");
   assert.deepStrictEqual(
     scenarioSubmitData.get("sample_file"),
