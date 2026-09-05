@@ -1723,14 +1723,8 @@
     state.testScenarioFiles = new Map(files);
     applyInputPayload(defaultInputPayload(), { clearMissing: true });
     applyInputPayload(scenario.inputs, { clearMissing: false });
-    updateTestScenarioState({
-      selectedId: scenario.id,
-      verification: scenario.expected_outcome === "load_only"
-        ? { state: "passed", checks: [{ id: "expected_outcome", passed: true, actual: "load_only" }] }
-        : { state: "not_run", checks: [] }
-    });
-    // Scenario identity and ordinary values can make a React workbench
-    // reconcile its native field hosts.  Attach verified files only after
+    // Scenario ordinary values can make a React workbench reconcile its
+    // native field hosts.  Attach verified files only after
     // that render boundary so the live picker, rather than a retired picker,
     // owns the selection used for submission.
     await waitForTestScenarioViewUpdate();
@@ -1752,6 +1746,16 @@
       return { ok: false, error: error.message || "Scenario files could not be attached." };
     }
     syncValues(currentForm);
+    // Publish scenario identity only after the renderer's ordinary controls
+    // have reached their hydrated values.  Publishing it earlier lets the
+    // synchronization above mistake a transient conditional layout for a
+    // user edit and immediately clear the selected scenario and its files.
+    updateTestScenarioState({
+      selectedId: scenario.id,
+      verification: scenario.expected_outcome === "load_only"
+        ? { state: "passed", checks: [{ id: "expected_outcome", passed: true, actual: "load_only" }] }
+        : { state: "not_run", checks: [] }
+    });
     // React publishes the returned values after this promise resolves.  Its
     // resulting render may replace a native file picker, so verify ownership
     // once more on the following frame without moving file semantics into the
