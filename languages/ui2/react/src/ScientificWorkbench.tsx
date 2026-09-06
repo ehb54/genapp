@@ -375,6 +375,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
   const resultGroups = view.results?.groups || view.results?.tabs || []
   const initialResult = resultGroups.find((group) => group.primary)?.id || resultGroups[0]?.id || ""
   const [activeResult, setActiveResult] = React.useState(initialResult)
+  const [pendingResultFocus, setPendingResultFocus] = React.useState("")
   const [actionReview, setActionReview] = React.useState<{ definition: WorkbenchActionReview; values: Record<string, unknown> } | null>(null)
   const [submitting, setSubmitting] = React.useState(false)
   const [inputRailCollapsed, setInputRailCollapsed] = React.useState(false)
@@ -423,6 +424,13 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
     ? [...visibleResultGroups, { id: "additional-results", label: "Additional results", outputs: unassignedOutputs.map((field) => field.id as string), visibility: "available" as const }]
     : visibleResultGroups
 
+  const requestResultFocus = React.useCallback((id: string) => {
+    if (!resultGroups.some((group) => group.id === id)) return false
+    setActiveResult(id)
+    setPendingResultFocus(id)
+    return true
+  }, [resultGroups])
+
   React.useEffect(() => {
     if (!visibleOutputGroups.some((group) => group.id === activeResult)) {
       setActiveResult(visibleOutputGroups.find((group) => group.primary)?.id || visibleOutputGroups[0]?.id || "")
@@ -434,25 +442,36 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
     // supplies the group’s output.  The view declares the allowed targets.
     const focusResult = (event: Event) => {
       const id = String((event as CustomEvent<{ id?: unknown }>).detail?.id || "")
-      if (resultGroups.some((group) => group.id === id)) setActiveResult(id)
+      requestResultFocus(id)
     }
     window.addEventListener("ui2-focus-result", focusResult)
     return () => window.removeEventListener("ui2-focus-result", focusResult)
-  }, [resultGroups])
+  }, [requestResultFocus])
 
   React.useEffect(() => {
     const reviewInputs = (event: Event) => {
       const id = String((event as CustomEvent<{ id?: unknown }>).detail?.id || "")
       const definition = actionReviews[id]
-      if (!definition || !resultGroups.some((group) => group.id === definition.result)) return
+      if (!definition || !requestResultFocus(definition.result)) return
       setActionReview({ definition, values: bridge.syncValues() })
-      setActiveResult(definition.result)
       setInputRailCollapsed(false)
       setWorkspaceExpanded(false)
     }
     window.addEventListener("ui2-review-inputs", reviewInputs)
     return () => window.removeEventListener("ui2-review-inputs", reviewInputs)
-  }, [actionReviews, bridge, resultGroups])
+  }, [actionReviews, bridge, requestResultFocus])
+
+  React.useLayoutEffect(() => {
+    if (!pendingResultFocus || pendingResultFocus !== activeResult
+      || !visibleOutputGroups.some((group) => group.id === pendingResultFocus)) return
+    const target = resultCardRef.current
+    if (!target) return
+    const frame = window.requestAnimationFrame(() => {
+      target.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" })
+      setPendingResultFocus((current) => current === pendingResultFocus ? "" : current)
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [activeResult, pendingResultFocus, visibleOutputGroups])
 
   React.useLayoutEffect(() => {
     setLiveValues(bridge.syncValues())
