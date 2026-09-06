@@ -345,6 +345,14 @@ const context = {
     constructor(type, options) {
       this.type = type;
       this.bubbles = !!options?.bubbles;
+      this.cancelBubble = false;
+      this.defaultPrevented = false;
+    }
+    stopPropagation() {
+      this.cancelBubble = true;
+    }
+    preventDefault() {
+      this.defaultPrevented = true;
     }
   },
   FormData: class FormData {
@@ -415,8 +423,8 @@ const hooks = context.window.GenAppUi2TestHooks;
 assert(hooks, "test hooks were exposed");
 
 const coupledFields = [
-  { id: "sample_source", type: "listbox", default: ["prepared", "raw"], repeat: "sample_count" },
-  { id: "sample_handling", type: "listbox", default: ["keep", "reprocess"], repeat: "sample_count" }
+  { id: "sample_source", type: "listbox", default: "prepared", repeat: "sample_count", required: true },
+  { id: "sample_handling", type: "listbox", default: "keep", repeat: "sample_count", required: true }
 ];
 const coupledPresentation = {
   layout: "repeated-cards",
@@ -438,7 +446,11 @@ coupledForm.appendChild(hooks.renderTableizedRepeater({
   fields: coupledFields
 }, "input", coupledPresentation));
 document.body.appendChild(coupledForm);
-coupledForm.addEventListener("input", () => hooks.syncValues(coupledForm));
+const coupledInputTargets = [];
+coupledForm.addEventListener("input", (event) => {
+  coupledInputTargets.push(event.target);
+  hooks.syncValues(coupledForm);
+});
 coupledForm.addEventListener("change", () => hooks.syncValues(coupledForm));
 const firstCoupledGroup = coupledForm.querySelector(".ui2-repeated-coupled-choice-cards");
 const firstCoupledRadios = firstCoupledGroup.querySelectorAll('input[type="radio"]');
@@ -453,6 +465,11 @@ const firstHandling = coupledForm.querySelectorAll('[data-field-id="sample_handl
   .find((control) => control.dataset.repeatTableIndex === "0");
 assert.strictEqual(firstSource.value, "prepared", "coupled repeated owner starts from its declared row default");
 assert.strictEqual(firstHandling.value, "keep", "coupled repeated companion starts from its declared row default");
+firstSource.value = "";
+firstHandling.value = "";
+hooks.syncValues(coupledForm);
+assert.strictEqual(firstSource.value, "prepared", "an entirely blank coupled row is restored from its declared guided default");
+assert.strictEqual(firstHandling.value, "keep", "blank coupled companion state is restored with the same guided default");
 firstCoupledRadios[0].checked = false;
 firstCoupledRadios[1].checked = true;
 firstCoupledRadios[1].dispatchEvent(new context.Event("input", { bubbles: true }));
@@ -460,6 +477,8 @@ firstCoupledRadios[1].dispatchEvent(new context.Event("change", { bubbles: true 
 assert.strictEqual(firstSource.value, "raw", "a coupled radio input updates the submitted owner value before form synchronization");
 assert.strictEqual(firstHandling.value, "reprocess", "a coupled radio input updates its submitted companion before form synchronization");
 assert.strictEqual(firstCoupledRadios[1].checked, true, "the newly selected coupled radio remains selected after synchronization");
+assert.strictEqual(coupledInputTargets.includes(firstCoupledRadios[1]), false, "visual coupled-radio input does not reach the form synchronizer");
+assert.strictEqual(coupledInputTargets.includes(firstSource), true, "coupled selection publishes its update through the canonical owner control");
 coupledForm.remove();
 
 const surface = context.window.GenAppPlotlySurface;

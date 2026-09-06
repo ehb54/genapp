@@ -4230,15 +4230,20 @@
 
   function renderRepeatedCoupledChoiceCards(field, rowIndex, presentation) {
     const group = el("div", "ui2-repeated-coupled-choice-cards");
-    group._ui2CoupledChoices = presentation.choices || {};
+    const choices = presentation.choices || {};
+    group._ui2CoupledChoices = choices;
     group._ui2CoupledRowIndex = rowIndex;
+    const defaultValue = arrayDefaultValue(field.default, rowIndex);
+    group._ui2CoupledDefaultChoiceId = Object.entries(choices).find(([, choice]) => {
+      return String(choice.values?.[field.id] ?? "") === String(defaultValue);
+    })?.[0] || Object.keys(choices)[0] || null;
     const canonical = document.createElement("input");
     canonical.type = "hidden";
     wireRepeatTableControl(canonical, field, rowIndex);
     canonical.value = arrayDefaultValue(field.default, rowIndex);
     canonical.defaultValue = canonical.value;
     group.appendChild(canonical);
-    Object.entries(presentation.choices || {}).forEach(([choiceId, choice], choiceIndex) => {
+    Object.entries(choices).forEach(([choiceId, choice], choiceIndex) => {
       const item = el("label", "ui2-repeated-choice-card");
       const input = document.createElement("input");
       input.type = "radio";
@@ -4248,14 +4253,13 @@
       // Radios emit `input` before `change`.  Commit the coupled values at the
       // first event so a React workbench's form-level input synchronization
       // cannot restore the old row values and uncheck the user's new choice.
-      input.addEventListener("input", () => {
+      input.addEventListener("input", (event) => {
         if (!input.checked) return;
-        const row = group.closest("tr");
-        Object.entries(choice.values || {}).forEach(([targetId, value]) => {
-          row?.querySelectorAll(`[data-field-id="${cssEscape(targetId)}"]`).forEach((control) => {
-            if (control.type !== "radio") control.value = value == null ? "" : String(value);
-          });
-        });
+        // The visual radio is not a submitted field.  Keep its event away from
+        // the form-level synchronizer and publish one canonical update only
+        // after every coupled value has been assigned.
+        event.stopPropagation();
+        applyRepeatedCoupledChoice(group, choice);
         canonical.dispatchEvent(new Event("input", { bubbles: true }));
         canonical.dispatchEvent(new Event("change", { bubbles: true }));
         updateRepeatedCoupledChoiceGroup(group);
@@ -4279,11 +4283,21 @@
     return group;
   }
 
+  function applyRepeatedCoupledChoice(group, choice) {
+    const row = group.closest("tr");
+    Object.entries(choice?.values || {}).forEach(([targetId, value]) => {
+      row?.querySelectorAll(`[data-field-id="${cssEscape(targetId)}"]`).forEach((control) => {
+        if (control.type !== "radio") control.value = value == null ? "" : String(value);
+      });
+    });
+  }
+
   function updateRepeatedCoupledChoiceGroup(group) {
     const row = group.closest("tr");
     if (!row) return;
     let selectedId = null;
-    Object.entries(group._ui2CoupledChoices || {}).some(([choiceId, choice]) => {
+    const choices = group._ui2CoupledChoices || {};
+    Object.entries(choices).some(([choiceId, choice]) => {
       const matches = Object.entries(choice.values || {}).every(([targetId, value]) => {
         const control = row.querySelector(`[data-field-id="${cssEscape(targetId)}"]`);
         return control && String(control.value) === String(value ?? "");
@@ -4291,6 +4305,18 @@
       if (matches) selectedId = choiceId;
       return matches;
     });
+    if (selectedId === null) {
+      const targetIds = Array.from(new Set(Object.values(choices).flatMap((choice) => Object.keys(choice.values || {}))));
+      const allBlank = targetIds.length > 0 && targetIds.every((targetId) => {
+        const control = row.querySelector(`[data-field-id="${cssEscape(targetId)}"]`);
+        return control && String(control.value) === "";
+      });
+      const defaultChoiceId = group._ui2CoupledDefaultChoiceId;
+      if (allBlank && defaultChoiceId && choices[defaultChoiceId]) {
+        applyRepeatedCoupledChoice(group, choices[defaultChoiceId]);
+        selectedId = defaultChoiceId;
+      }
+    }
     group.querySelectorAll('input[type="radio"]').forEach((input) => {
       input.checked = input.value === selectedId;
     });
