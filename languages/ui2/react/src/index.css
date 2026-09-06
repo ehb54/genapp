@@ -412,9 +412,9 @@
 
 .ui2-repeat-compact .ui2-repeated-coupled-choice-cards {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   min-width: 0;
-  gap: 0.15rem;
+  gap: 0.25rem;
 }
 
 .ui2-repeat-compact .ui2-repeated-coupled-choice-cards .ui2-repeated-choice-card {
