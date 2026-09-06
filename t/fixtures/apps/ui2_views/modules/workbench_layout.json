@@ -104,6 +104,23 @@
             "repeat"  : "sample_count"
         },
         {
+            "role"     : "input",
+            "id"       : "control_count",
+            "label"    : "Number of controls",
+            "type"     : "integer",
+            "default"  : 2,
+            "tableize" : "true",
+            "repeater" : "true"
+        },
+        {
+            "role"    : "input",
+            "id"      : "control_value",
+            "label"   : "Control value",
+            "type"    : "text",
+            "default" : ["ordinary one", "ordinary two"],
+            "repeat"  : "control_count"
+        },
+        {
             "role"  : "output",
             "id"    : "primary_plot",
             "label" : "Primary plot",

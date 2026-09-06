@@ -28,6 +28,7 @@ export type WorkbenchSection = {
   repeat?: string
   children?: WorkbenchSection[]
   layout?: "form" | "table" | "wide" | string
+  itemLabel?: string
 }
 
 export type ChoiceCardPresentation = {
@@ -39,6 +40,22 @@ export type ChoiceCardPresentation = {
     badge?: string
     repeat?: string
   }>
+}
+
+export type RepeatedChoiceCardPresentation = {
+  control: "repeated-choice-cards"
+  choices?: Record<string, {
+    title?: string
+    description?: string
+  }>
+}
+
+export type FieldPresentation = ChoiceCardPresentation | RepeatedChoiceCardPresentation
+
+export type FieldGroupPresentation = {
+  layout?: string
+  itemLabel?: string
+  fieldPresentations?: Record<string, FieldPresentation>
 }
 
 export type WorkflowChoicePresentation = {
@@ -96,7 +113,7 @@ export type WorkbenchView = {
   inputs?: {
     sections?: WorkbenchSection[]
     advanced?: WorkbenchSection
-    fieldPresentations?: Record<string, ChoiceCardPresentation>
+    fieldPresentations?: Record<string, FieldPresentation>
     workflowChoices?: Record<string, WorkflowChoicePresentation>
     layout?: "standard" | "wide" | string
     submittedSummary?: {
@@ -176,7 +193,7 @@ export type TestScenarioSnapshot = {
 }
 
 export type ScientificWorkbenchBridge = {
-  createFieldGroup: (fields: Ui2Field[], role: "input" | "output") => HTMLElement
+  createFieldGroup: (fields: Ui2Field[], role: "input" | "output", presentation?: FieldGroupPresentation) => HTMLElement
   releaseField: (field: HTMLElement) => void
   fieldGroupMounted: (onValuesReady?: (values: Record<string, unknown>) => void) => void
   outputGroupMounted: () => void

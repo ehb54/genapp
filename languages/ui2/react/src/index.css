@@ -258,6 +258,120 @@
   text-transform: uppercase;
 }
 
+/* Opted-in repeated cards retain native UI2 controls and repeat indexing.
+   React supplies only the presentation metadata used by the native renderer. */
+.ui2-workbench-native-field-group .ui2-repeat-cards .ui2-repeat-table,
+.ui2-workbench-native-field-group .ui2-repeat-cards .ui2-repeat-table tbody {
+  display: block;
+  width: 100%;
+}
+
+.ui2-workbench-native-field-group .ui2-repeat-cards .ui2-repeat-table thead {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.ui2-workbench-native-field-group .ui2-repeat-cards .ui2-repeat-table tbody {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.ui2-workbench-native-field-group .ui2-repeat-cards .ui2-repeat-table tr {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1rem;
+  border: 1px solid var(--ui2-border);
+  border-radius: 0.7rem;
+  background: var(--ui2-panel);
+  padding: 0.9rem;
+}
+
+.ui2-workbench-native-field-group .ui2-repeat-cards .ui2-repeat-table tr::before {
+  content: attr(data-repeat-card-label);
+  grid-column: 1 / -1;
+  color: var(--ui2-text);
+  font-size: 1rem;
+  font-weight: 750;
+}
+
+.ui2-workbench-native-field-group .ui2-repeat-cards .ui2-repeat-table td {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0;
+}
+
+.ui2-workbench-native-field-group .ui2-repeat-cards .ui2-repeat-table td::before {
+  content: attr(data-repeat-table-label);
+  color: var(--ui2-muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.ui2-workbench-native-field-group .ui2-repeat-cards .ui2-repeat-table td:has(.ui2-repeated-choice-cards) {
+  grid-column: 1 / -1;
+}
+
+.ui2-repeated-choice-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.ui2-repeated-choice-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  min-width: 0;
+  cursor: pointer;
+  border: 1px solid var(--ui2-border);
+  border-radius: 0.55rem;
+  background: var(--ui2-panel-strong);
+  padding: 0.7rem;
+}
+
+.ui2-repeated-choice-card:has(input:checked) {
+  border-color: var(--ui2-accent);
+  box-shadow: inset 0 0 0 1px var(--ui2-accent);
+}
+
+.ui2-repeated-choice-card:has(input:focus-visible) {
+  box-shadow: 0 0 0 2px var(--ui2-accent);
+}
+
+.ui2-repeated-choice-card input {
+  margin-top: 0.18rem;
+}
+
+.ui2-repeated-choice-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.ui2-repeated-choice-card-title {
+  color: var(--ui2-text);
+  font-weight: 700;
+}
+
+.ui2-repeated-choice-card-description {
+  color: var(--ui2-muted);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+@container (width <= 34rem) {
+  .ui2-workbench-native-field-group .ui2-repeat-cards .ui2-repeat-table tr,
+  .ui2-repeated-choice-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .ui2-workbench-native-field-group > .ui2-field {
   grid-template-columns: minmax(9rem, 0.45fr) minmax(0, 1fr);
   padding-inline: 0;

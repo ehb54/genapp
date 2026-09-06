@@ -10820,28 +10820,35 @@ function Gr({ create: e, release: t, mounted: n, className: r }) {
 		ref: i
 	});
 }
-function Kr({ fields: e, bridge: t, role: n = "input", fitPlot: r = !1, outputLayout: i = "", plotPresentation: a, onValuesReady: o }) {
-	let s = e.map((e) => e.id || "").join("\0"), c = C.useMemo(() => e, [s]), l = JSON.stringify(a || {}), u = C.useCallback(() => {
-		let e = t.createFieldGroup(c, n);
-		return n === "output" && i && (e.dataset.outputLayout = i), n === "output" && l !== "{}" && (e.dataset.plotPresentation = l), r && (e.setAttribute("data-plot-fit", "pane"), (e.matches("[data-output-type=\"plotly\"]") ? e : e.querySelector("[data-output-type=\"plotly\"]"))?.setAttribute("data-plot-fit", "pane")), e;
+function Kr({ fields: e, bridge: t, role: n = "input", fitPlot: r = !1, outputLayout: i = "", inputLayout: a = "", itemLabel: o = "", fieldPresentations: s = {}, plotPresentation: c, onValuesReady: l }) {
+	let u = e.map((e) => e.id || "").join("\0"), d = C.useMemo(() => e, [u]), f = JSON.stringify(c || {}), p = JSON.stringify(s), m = C.useCallback(() => {
+		let e = t.createFieldGroup(d, n, {
+			layout: a,
+			itemLabel: o,
+			fieldPresentations: s
+		});
+		return n === "output" && i && (e.dataset.outputLayout = i), n === "output" && f !== "{}" && (e.dataset.plotPresentation = f), r && (e.setAttribute("data-plot-fit", "pane"), (e.matches("[data-output-type=\"plotly\"]") ? e : e.querySelector("[data-output-type=\"plotly\"]"))?.setAttribute("data-plot-fit", "pane")), e;
 	}, [
 		t,
-		c,
+		d,
 		r,
+		p,
+		a,
+		o,
 		i,
-		l,
+		f,
 		n
-	]), d = C.useCallback(() => {
-		n === "input" ? t.fieldGroupMounted(o) : t.outputGroupMounted();
+	]), h = C.useCallback(() => {
+		n === "input" ? t.fieldGroupMounted(l) : t.outputGroupMounted();
 	}, [
 		t,
-		o,
+		l,
 		n
 	]);
 	return /* @__PURE__ */ (0, z.jsx)(Gr, {
-		create: u,
+		create: m,
 		release: t.releaseField,
-		mounted: d,
+		mounted: h,
 		className: "ui2-workbench-field-group"
 	});
 }
@@ -11219,12 +11226,15 @@ function oi({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 		return /* @__PURE__ */ (0, z.jsxs)(Xt, {
 			className: t > 0 ? "ui2-workbench-input-subsection" : void 0,
 			children: [/* @__PURE__ */ (0, z.jsx)(Zt, { children: /* @__PURE__ */ (0, z.jsxs)("div", { children: [/* @__PURE__ */ (0, z.jsx)(Qt, { children: e.title }), e.description && /* @__PURE__ */ (0, z.jsx)($t, { children: e.description })] }) }), /* @__PURE__ */ (0, z.jsxs)(en, { children: [
-				n.filter((e) => !d[e.id || ""]).length > 0 && /* @__PURE__ */ (0, z.jsx)(Kr, {
+				n.filter((e) => d[e.id || ""]?.control !== "choice-cards").length > 0 && /* @__PURE__ */ (0, z.jsx)(Kr, {
 					bridge: r,
-					fields: n.filter((e) => !d[e.id || ""]),
+					fields: n.filter((e) => d[e.id || ""]?.control !== "choice-cards"),
+					fieldPresentations: d,
+					inputLayout: e.layout,
+					itemLabel: e.itemLabel,
 					onValuesReady: Ee
 				}),
-				n.filter((e) => d[e.id || ""] && ei(e.repeat, s)).map((e) => /* @__PURE__ */ (0, z.jsx)(qr, {
+				n.filter((e) => d[e.id || ""]?.control === "choice-cards" && ei(e.repeat, s)).map((e) => /* @__PURE__ */ (0, z.jsx)(qr, {
 					bridge: r,
 					field: e,
 					onValuesReady: Ee,

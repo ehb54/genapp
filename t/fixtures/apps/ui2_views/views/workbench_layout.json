@@ -27,8 +27,20 @@
             {
                 "id"     : "inputs",
                 "title"  : "Inputs",
-                "fields" : ["input_value", "show_workflow_cards", "workflow_choice", "sample_count", "sample_source", "sample_fraction", "input_file", "sample_weight", "sample_concentration"],
+                "fields" : ["input_value", "show_workflow_cards", "workflow_choice"],
                 "workflowChoices" : ["data-scope"]
+            },
+            {
+                "id"        : "repeated-samples",
+                "title"     : "Repeated samples",
+                "layout"    : "repeated-cards",
+                "itemLabel" : "Sample",
+                "fields"    : ["sample_count", "sample_source", "sample_fraction", "input_file", "sample_weight", "sample_concentration"]
+            },
+            {
+                "id"     : "ordinary-repeat",
+                "title"  : "Ordinary repeat",
+                "fields" : ["control_count", "control_value"]
             },
             {
                 "id"     : "prepare-options",
@@ -44,6 +56,13 @@
                 "choices" : {
                     "prepare" : {"title" : "Prepare data", "description" : "Create data ready for later work."},
                     "inspect" : {"title" : "Inspect data", "description" : "Review existing data without changing it."}
+                }
+            },
+            "sample_source" : {
+                "control" : "repeated-choice-cards",
+                "choices" : {
+                    "prepared" : {"title" : "Prepared data", "description" : "Use data that has already been prepared."},
+                    "raw" : {"title" : "Raw data", "description" : "Use the original data."}
                 }
             }
         }

@@ -3207,7 +3207,7 @@
       return cloneUi2Value(state.values);
     };
     const bridge = {
-      createFieldGroup: (groupFields, role) => renderReactWorkbenchFieldGroup(groupFields, role),
+      createFieldGroup: (groupFields, role, presentation) => renderReactWorkbenchFieldGroup(groupFields, role, presentation),
       releaseField: releaseReactWorkbenchField,
       fieldGroupMounted: (onValuesReady) => scheduleReactWorkbenchSync(onValuesReady),
       outputGroupMounted: () => replayPendingRuntimeOutputEvents(),
@@ -3275,12 +3275,12 @@
     });
   }
 
-  function renderReactWorkbenchFieldGroup(groupFields, role) {
+  function renderReactWorkbenchFieldGroup(groupFields, role, presentation = {}) {
     const group = el("div", "ui2-workbench-native-field-group");
     const renderPlan = planFields(Array.isArray(groupFields) ? groupFields : []);
     renderPlan.forEach((item) => {
       group.appendChild(item.kind === "table"
-        ? renderTableizedRepeater(item, role)
+        ? renderTableizedRepeater(item, role, presentation)
         : renderField(item.field, role));
     });
     return group;
@@ -3912,13 +3912,17 @@
     return row;
   }
 
-  function renderTableizedRepeater(item, role) {
+  function renderTableizedRepeater(item, role, presentation = {}) {
     const controller = item.controller;
     const row = isHiddenField(controller) ? renderHiddenTableRepeater(controller, item.fields || []) : renderField(controller, role);
     // A table needs the full field width.  Keeping it in the usual right-hand
     // control column makes ordinary five-column scientific tables scroll even
     // when the input card itself has sufficient room.
     row.classList.add("ui2-tableized-repeater", "ui2-field-wide");
+    const repeatedCards = role !== "output" && presentation.layout === "repeated-cards";
+    if (repeatedCards) {
+      row.classList.add("ui2-repeat-cards");
+    }
 
     const stack = row.querySelector(".ui2-control-stack");
     const fields = repeatTableFields(item.fields || []);
@@ -3930,6 +3934,7 @@
     }
     row._ui2RepeatTableController = controller;
     row._ui2RepeatTableFields = fields;
+    row._ui2RepeatTablePresentation = repeatedCards ? presentation : {};
 
     if (isIntegerPairMatrix(controller, fields)) {
       const matrix = renderRepeatMatrix(controller, fields[0]);
@@ -3955,7 +3960,7 @@
     });
     thead.appendChild(headRow);
     table.appendChild(thead);
-    table.appendChild(renderRepeatTableBody(controller, fields));
+    table.appendChild(renderRepeatTableBody(controller, fields, row._ui2RepeatTablePresentation));
     tableWrap.appendChild(table);
 
     if (devMode) {
@@ -4005,17 +4010,20 @@
     return row;
   }
 
-  function renderRepeatTableBody(controller, fields) {
+  function renderRepeatTableBody(controller, fields, presentation = {}) {
     const tbody = document.createElement("tbody");
     const rows = repeatCount(controller, controller.default);
     for (let rowIndex = 0; rowIndex < rows; rowIndex += 1) {
-      tbody.appendChild(renderRepeatTableRow(fields, rowIndex));
+      tbody.appendChild(renderRepeatTableRow(fields, rowIndex, presentation));
     }
     return tbody;
   }
 
-  function renderRepeatTableRow(fields, rowIndex) {
+  function renderRepeatTableRow(fields, rowIndex, presentation = {}) {
     const tr = document.createElement("tr");
+    if (presentation.layout === "repeated-cards") {
+      tr.dataset.repeatCardLabel = `${presentation.itemLabel || "Item"} ${rowIndex + 1}`;
+    }
     fields.forEach((field) => {
       const td = document.createElement("td");
       td.dataset.repeatTableField = field.id || "";
@@ -4027,7 +4035,8 @@
       if (field.repeatcondition) {
         td.dataset.repeatcondition = field.repeatcondition;
       }
-      td.appendChild(renderRepeatTableControl(field, rowIndex));
+      const fieldPresentation = presentation.fieldPresentations?.[field.id || ""];
+      td.appendChild(renderRepeatTableControl(field, rowIndex, fieldPresentation));
       tr.appendChild(td);
     });
     return tr;
@@ -4104,9 +4113,12 @@
     return type === "password" ? renderPasswordControl(input) : input;
   }
 
-  function renderRepeatTableControl(field, rowIndex) {
+  function renderRepeatTableControl(field, rowIndex, presentation = {}) {
     const type = String(field.type || "text").toLowerCase();
     if (type === "listbox" || type === "select") {
+      if (presentation.control === "repeated-choice-cards") {
+        return renderRepeatedChoiceCards(field, rowIndex, presentation);
+      }
       const select = el("select", "ui2-select ui2-repeat-table-input");
       parseValues(field.values).forEach((choice) => {
         const option = document.createElement("option");
@@ -4149,6 +4161,33 @@
     input.defaultValue = input.value;
     setHoverHelp(input, field.help);
     return type === "password" ? renderPasswordControl(input) : input;
+  }
+
+  function renderRepeatedChoiceCards(field, rowIndex, presentation) {
+    const group = el("div", "ui2-repeated-choice-cards");
+    const selected = arrayDefaultValue(field.default, rowIndex);
+    parseValues(field.values).forEach((choice, choiceIndex) => {
+      const details = presentation.choices?.[choice.value] || {};
+      const item = el("label", "ui2-repeated-choice-card");
+      const input = document.createElement("input");
+      input.type = "radio";
+      input.name = `${fieldId(field)}-${rowIndex}-choices`;
+      input.value = choice.value;
+      input.checked = selected ? selected === choice.value : choiceIndex === 0;
+      input.defaultChecked = input.checked;
+      wireRepeatTableControl(input, field, rowIndex);
+      input.id = `${fieldId(field)}-${rowIndex}-${choiceIndex}`;
+      const content = el("span", "ui2-repeated-choice-card-content");
+      content.appendChild(el("span", "ui2-repeated-choice-card-title", details.title || choice.label));
+      if (details.description) {
+        content.appendChild(el("span", "ui2-repeated-choice-card-description", details.description));
+      }
+      item.htmlFor = input.id;
+      item.append(input, content);
+      setHoverHelp(item, field.help);
+      group.appendChild(item);
+    });
+    return group;
   }
 
   function renderControl(field) {
@@ -8833,7 +8872,11 @@
       .filter((control) => String(control.dataset.repeatTableIndex ?? "") === String(repeatIndex))
       .forEach((control) => {
         if (control.type !== "file") {
-          control.value = value == null ? "" : String(value);
+          if (control.type === "radio") {
+            control.checked = String(control.value) === String(value ?? "");
+          } else {
+            control.value = value == null ? "" : String(value);
+          }
           control.dispatchEvent(new Event("input", { bubbles: true }));
           control.dispatchEvent(new Event("change", { bubbles: true }));
         }
@@ -12668,7 +12711,7 @@
         return;
       }
       while (tbody.rows.length < wanted) {
-        tbody.appendChild(renderRepeatTableRow(fields, tbody.rows.length));
+        tbody.appendChild(renderRepeatTableRow(fields, tbody.rows.length, row._ui2RepeatTablePresentation || {}));
       }
       while (tbody.rows.length > wanted) {
         tbody.deleteRow(tbody.rows.length - 1);
@@ -12723,6 +12766,8 @@
         }
         if (control.type === "checkbox") {
           control.checked = value === true || String(value).toLowerCase() === "true" || String(value) === "1";
+        } else if (control.type === "radio") {
+          control.checked = String(control.value) === String(value ?? "");
         } else {
           control.value = value == null ? "" : String(value);
         }

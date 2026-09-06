@@ -11,6 +11,14 @@ GenApp field semantics, local/server file selection, repeat visibility,
 submission, polling, Plotly, NGL, and reattachment behavior authoritative in
 the established runtime while React owns workspace composition.
 
+A view section may opt a tableized repeater into `layout: "repeated-cards"`
+and provide a neutral singular `itemLabel`. Repeated listbox fields in that
+section may use `control: "repeated-choice-cards"` under
+`inputs.fieldPresentations` so every choice is visible without opening a
+listbox. These are presentation-only options: UI2 retains the canonical field
+ids, native controls, repeat indices, submitted arrays, and restoration path.
+Sections without the opt-in retain the ordinary repeat table.
+
 Theme styling is owned by the UI2 shell. React components consume the shared
 semantic `--ui2-*` CSS variables and should not introduce Bootstrap,
 Bootswatch, or per-workbench theme overrides. Native themes are selected at the
