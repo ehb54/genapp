@@ -26,6 +26,7 @@ source = source.replace(/\\n  init\\(\\);\\n\\}\\(\\)\\);\\s*\$/, "\\n}());\\n")
 
 function createNode(tag) {
   const classes = new Set();
+  const listeners = new Map();
   const normalizedTag = String(tag || "div").toLowerCase();
   function syncClassesFromName() {
     String(node.className || "").split(/\\s+/).filter(Boolean).forEach((name) => classes.add(name));
@@ -90,9 +91,22 @@ function createNode(tag) {
       this.parentNode.children = this.parentNode.children.filter((child) => child !== this);
       this.parentNode = null;
     },
-    addEventListener() {},
-    removeEventListener() {},
-    dispatchEvent() {},
+    addEventListener(type, listener) {
+      if (!listeners.has(type)) listeners.set(type, new Set());
+      listeners.get(type).add(listener);
+    },
+    removeEventListener(type, listener) {
+      listeners.get(type)?.delete(listener);
+    },
+    dispatchEvent(event) {
+      if (!event.target) event.target = this;
+      event.currentTarget = this;
+      (listeners.get(event.type) || []).forEach((listener) => listener.call(this, event));
+      if (event.bubbles && !event.cancelBubble && this.parentNode) {
+        this.parentNode.dispatchEvent(event);
+      }
+      return !event.defaultPrevented;
+    },
     focus() {
       this.focused = true;
       document.activeElement = this;
@@ -210,6 +224,10 @@ function matchesSelector(node, selector) {
   }
   if (selector.startsWith("#")) {
     return node.id === selector.slice(1);
+  }
+  const typedInput = /^input\\[type="([^"]+)"\\]\$/.exec(selector);
+  if (typedInput) {
+    return node.tagName === "INPUT" && String(node.type || "").toLowerCase() === typedInput[1].toLowerCase();
   }
   const compound = new RegExp('^([A-Za-z][A-Za-z0-9_-]*)?(\\\\.[A-Za-z0-9_-]+)?\\\\[data-([A-Za-z0-9_-]+)(?:="([^"]*)")?\\\\]\$').exec(selector);
   if (compound) {
@@ -395,6 +413,50 @@ vm.runInContext(source, context, { filename: "ui2.js" });
 
 const hooks = context.window.GenAppUi2TestHooks;
 assert(hooks, "test hooks were exposed");
+
+const coupledFields = [
+  { id: "sample_source", type: "listbox", default: ["prepared", "raw"], repeat: "sample_count" },
+  { id: "sample_handling", type: "listbox", default: ["keep", "reprocess"], repeat: "sample_count" }
+];
+const coupledPresentation = {
+  layout: "repeated-cards",
+  fieldPresentations: {
+    sample_source: {
+      control: "repeated-coupled-choice-cards",
+      choices: {
+        prepared: { title: "Prepared data", values: { sample_source: "prepared", sample_handling: "keep" } },
+        raw: { title: "Raw data", values: { sample_source: "raw", sample_handling: "reprocess" } }
+      }
+    },
+    sample_handling: { control: "repeated-coupled-value", owner: "sample_source" }
+  }
+};
+const coupledForm = createNode("form");
+coupledForm.id = "ui2-form";
+coupledForm.appendChild(hooks.renderTableizedRepeater({
+  controller: { id: "sample_count", type: "integer", default: 2, repeater: true, tableize: true },
+  fields: coupledFields
+}, "input", coupledPresentation));
+document.body.appendChild(coupledForm);
+coupledForm.addEventListener("input", () => hooks.syncValues(coupledForm));
+coupledForm.addEventListener("change", () => hooks.syncValues(coupledForm));
+const firstCoupledGroup = coupledForm.querySelector(".ui2-repeated-coupled-choice-cards");
+const firstCoupledRadios = firstCoupledGroup.querySelectorAll('input[type="radio"]');
+const firstSource = coupledForm.querySelectorAll('[data-field-id="sample_source"]')
+  .find((control) => control.dataset.repeatTableIndex === "0");
+const firstHandling = coupledForm.querySelectorAll('[data-field-id="sample_handling"]')
+  .find((control) => control.dataset.repeatTableIndex === "0");
+assert.strictEqual(firstSource.value, "prepared", "coupled repeated owner starts from its declared row default");
+assert.strictEqual(firstHandling.value, "keep", "coupled repeated companion starts from its declared row default");
+firstCoupledRadios[0].checked = false;
+firstCoupledRadios[1].checked = true;
+firstCoupledRadios[1].dispatchEvent(new context.Event("input", { bubbles: true }));
+firstCoupledRadios[1].dispatchEvent(new context.Event("change", { bubbles: true }));
+assert.strictEqual(firstSource.value, "raw", "a coupled radio input updates the submitted owner value before form synchronization");
+assert.strictEqual(firstHandling.value, "reprocess", "a coupled radio input updates its submitted companion before form synchronization");
+assert.strictEqual(firstCoupledRadios[1].checked, true, "the newly selected coupled radio remains selected after synchronization");
+coupledForm.remove();
+
 const surface = context.window.GenAppPlotlySurface;
 assert(surface, "shared Plotly surface policy was exposed");
 assert.strictEqual(surface.isDark("rgb(32 39 37)"), true, "surface policy recognizes a dark CSS rgb surface");

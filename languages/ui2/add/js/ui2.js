@@ -4245,7 +4245,10 @@
       input.name = `${fieldId(field)}-${rowIndex}-coupled-choices`;
       input.value = choiceId;
       input.id = `${fieldId(field)}-${rowIndex}-coupled-${choiceIndex}`;
-      input.addEventListener("change", () => {
+      // Radios emit `input` before `change`.  Commit the coupled values at the
+      // first event so a React workbench's form-level input synchronization
+      // cannot restore the old row values and uncheck the user's new choice.
+      input.addEventListener("input", () => {
         if (!input.checked) return;
         const row = group.closest("tr");
         Object.entries(choice.values || {}).forEach(([targetId, value]) => {
