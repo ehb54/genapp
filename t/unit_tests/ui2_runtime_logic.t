@@ -442,6 +442,11 @@ coupledForm.addEventListener("input", () => hooks.syncValues(coupledForm));
 coupledForm.addEventListener("change", () => hooks.syncValues(coupledForm));
 const firstCoupledGroup = coupledForm.querySelector(".ui2-repeated-coupled-choice-cards");
 const firstCoupledRadios = firstCoupledGroup.querySelectorAll('input[type="radio"]');
+assert.strictEqual(
+  firstCoupledGroup.querySelectorAll("label").every((card) => !card.htmlFor),
+  true,
+  "nested coupled radio cards do not also target the same input through a for attribute"
+);
 const firstSource = coupledForm.querySelectorAll('[data-field-id="sample_source"]')
   .find((control) => control.dataset.repeatTableIndex === "0");
 const firstHandling = coupledForm.querySelectorAll('[data-field-id="sample_handling"]')

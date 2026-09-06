@@ -4265,7 +4265,9 @@
       if (choice.description) {
         content.appendChild(el("span", "ui2-repeated-choice-card-description", choice.description));
       }
-      item.htmlFor = input.id;
+      // The card already contains its radio, so the label is associated by
+      // nesting.  Adding `for` as well makes a click on the card background
+      // activate the same radio twice in some browsers.
       item.append(input, content);
       group.appendChild(item);
     });
