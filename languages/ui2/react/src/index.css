@@ -367,20 +367,6 @@
   font-weight: 650;
 }
 
-.ui2-repeat-compact .ui2-repeated-coupled-choice-cards {
-  display: flex;
-  min-width: 16rem;
-}
-
-.ui2-repeat-compact .ui2-repeated-coupled-choice-cards .ui2-repeated-choice-card {
-  flex: 1 1 0;
-  padding: 0.45rem;
-}
-
-.ui2-repeat-compact .ui2-repeated-coupled-choice-cards .ui2-repeated-choice-card-description {
-  display: none;
-}
-
 .ui2-repeated-choice-card {
   display: flex;
   align-items: flex-start;
@@ -422,6 +408,35 @@
   color: var(--ui2-muted);
   font-size: 0.84rem;
   line-height: 1.35;
+}
+
+.ui2-repeat-compact .ui2-repeated-coupled-choice-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  gap: 0.15rem;
+}
+
+.ui2-repeat-compact .ui2-repeated-coupled-choice-cards .ui2-repeated-choice-card {
+  align-items: center;
+  border: 0;
+  border-radius: 0.3rem;
+  background: transparent;
+  padding: 0.25rem 0.35rem;
+}
+
+.ui2-repeat-compact .ui2-repeated-coupled-choice-cards .ui2-repeated-choice-card:has(input:checked) {
+  border-color: transparent;
+  background: var(--ui2-accent-soft);
+  box-shadow: none;
+}
+
+.ui2-repeat-compact .ui2-repeated-coupled-choice-cards .ui2-repeated-choice-card:has(input:focus-visible) {
+  box-shadow: 0 0 0 2px var(--ui2-accent);
+}
+
+.ui2-repeat-compact .ui2-repeated-coupled-choice-cards .ui2-repeated-choice-card-description {
+  display: none;
 }
 
 @container (width <= 34rem) {
