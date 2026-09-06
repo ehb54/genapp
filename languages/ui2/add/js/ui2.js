@@ -3934,7 +3934,7 @@
     }
     row._ui2RepeatTableController = controller;
     row._ui2RepeatTableFields = fields;
-    row._ui2RepeatTablePresentation = repeatedCards ? presentation : {};
+    row._ui2RepeatTablePresentation = presentation;
 
     if (isIntegerPairMatrix(controller, fields)) {
       const matrix = renderRepeatMatrix(controller, fields[0]);
@@ -3950,12 +3950,35 @@
     }
 
     const tableWrap = el("div", "ui2-repeat-table-wrap");
+    if (repeatedCards && presentation.layoutToggle?.label) {
+      const toggle = el("label", "ui2-repeat-layout-toggle");
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.addEventListener("change", () => {
+        row.classList.toggle("ui2-repeat-compact", input.checked);
+        row.classList.toggle("ui2-repeat-cards", !input.checked);
+      });
+      const copy = el("span", "ui2-repeat-layout-toggle-copy");
+      copy.appendChild(el("span", "ui2-repeat-layout-toggle-label", presentation.layoutToggle.label));
+      if (presentation.layoutToggle.description) {
+        copy.appendChild(el("span", "ui2-repeat-layout-toggle-description", presentation.layoutToggle.description));
+      }
+      const suggestion = el("span", "ui2-repeat-layout-suggestion", "");
+      suggestion.hidden = true;
+      row._ui2RepeatLayoutSuggestion = suggestion;
+      toggle.append(input, copy, suggestion);
+      stack.appendChild(toggle);
+    }
     const table = el("table", "ui2-repeat-table");
     const thead = document.createElement("thead");
     const headRow = document.createElement("tr");
     fields.forEach((field) => {
-      const header = el("th", null, field.label || field.id || field.type || "field");
+      const fieldPresentation = presentation.fieldPresentations?.[field.id || ""];
+      const header = el("th", null, fieldPresentation?.label || field.label || field.id || field.type || "field");
       header.dataset.repeatTableHeader = field.id || "";
+      if (fieldPresentation?.control === "repeated-coupled-value") {
+        header.hidden = true;
+      }
       headRow.appendChild(header);
     });
     thead.appendChild(headRow);
@@ -4027,7 +4050,8 @@
     fields.forEach((field) => {
       const td = document.createElement("td");
       td.dataset.repeatTableField = field.id || "";
-      td.dataset.repeatTableLabel = field.label || field.id || field.type || "field";
+      const fieldPresentation = presentation.fieldPresentations?.[field.id || ""];
+      td.dataset.repeatTableLabel = fieldPresentation?.label || field.label || field.id || field.type || "field";
       td.dataset.repeatTableIndex = String(rowIndex);
       if (isFileLikeType(String(field?.type || "").toLowerCase())) {
         td.classList.add("ui2-repeat-table-file-cell");
@@ -4035,10 +4059,13 @@
       if (field.repeatcondition) {
         td.dataset.repeatcondition = field.repeatcondition;
       }
-      const fieldPresentation = presentation.fieldPresentations?.[field.id || ""];
+      if (fieldPresentation?.control === "repeated-coupled-value") {
+        td.hidden = true;
+      }
       td.appendChild(renderRepeatTableControl(field, rowIndex, fieldPresentation));
       tr.appendChild(td);
     });
+    tr.querySelectorAll(".ui2-repeated-coupled-choice-cards").forEach(updateRepeatedCoupledChoiceGroup);
     return tr;
   }
 
@@ -4116,6 +4143,17 @@
   function renderRepeatTableControl(field, rowIndex, presentation = {}) {
     const type = String(field.type || "text").toLowerCase();
     if (type === "listbox" || type === "select") {
+      if (presentation.control === "repeated-coupled-choice-cards") {
+        return renderRepeatedCoupledChoiceCards(field, rowIndex, presentation);
+      }
+      if (presentation.control === "repeated-coupled-value") {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        wireRepeatTableControl(input, field, rowIndex);
+        input.value = arrayDefaultValue(field.default, rowIndex);
+        input.defaultValue = input.value;
+        return input;
+      }
       if (presentation.control === "repeated-choice-cards") {
         return renderRepeatedChoiceCards(field, rowIndex, presentation);
       }
@@ -4188,6 +4226,72 @@
       group.appendChild(item);
     });
     return group;
+  }
+
+  function renderRepeatedCoupledChoiceCards(field, rowIndex, presentation) {
+    const group = el("div", "ui2-repeated-coupled-choice-cards");
+    group._ui2CoupledChoices = presentation.choices || {};
+    group._ui2CoupledRowIndex = rowIndex;
+    const canonical = document.createElement("input");
+    canonical.type = "hidden";
+    wireRepeatTableControl(canonical, field, rowIndex);
+    canonical.value = arrayDefaultValue(field.default, rowIndex);
+    canonical.defaultValue = canonical.value;
+    group.appendChild(canonical);
+    Object.entries(presentation.choices || {}).forEach(([choiceId, choice], choiceIndex) => {
+      const item = el("label", "ui2-repeated-choice-card");
+      const input = document.createElement("input");
+      input.type = "radio";
+      input.name = `${fieldId(field)}-${rowIndex}-coupled-choices`;
+      input.value = choiceId;
+      input.id = `${fieldId(field)}-${rowIndex}-coupled-${choiceIndex}`;
+      input.addEventListener("change", () => {
+        if (!input.checked) return;
+        const row = group.closest("tr");
+        Object.entries(choice.values || {}).forEach(([targetId, value]) => {
+          row?.querySelectorAll(`[data-field-id="${cssEscape(targetId)}"]`).forEach((control) => {
+            if (control.type !== "radio") control.value = value == null ? "" : String(value);
+          });
+        });
+        canonical.dispatchEvent(new Event("input", { bubbles: true }));
+        canonical.dispatchEvent(new Event("change", { bubbles: true }));
+        updateRepeatedCoupledChoiceGroup(group);
+      });
+      const content = el("span", "ui2-repeated-choice-card-content");
+      content.appendChild(el("span", "ui2-repeated-choice-card-title", choice.title || choiceId));
+      if (choice.description) {
+        content.appendChild(el("span", "ui2-repeated-choice-card-description", choice.description));
+      }
+      item.htmlFor = input.id;
+      item.append(input, content);
+      group.appendChild(item);
+    });
+    const warning = el("span", "ui2-repeated-coupled-warning", "The restored values do not match a standard guided choice. Use the expert input mode to preserve this pairing.");
+    warning.hidden = true;
+    group._ui2CoupledWarning = warning;
+    group.appendChild(warning);
+    setHoverHelp(group, field.help);
+    return group;
+  }
+
+  function updateRepeatedCoupledChoiceGroup(group) {
+    const row = group.closest("tr");
+    if (!row) return;
+    let selectedId = null;
+    Object.entries(group._ui2CoupledChoices || {}).some(([choiceId, choice]) => {
+      const matches = Object.entries(choice.values || {}).every(([targetId, value]) => {
+        const control = row.querySelector(`[data-field-id="${cssEscape(targetId)}"]`);
+        return control && String(control.value) === String(value ?? "");
+      });
+      if (matches) selectedId = choiceId;
+      return matches;
+    });
+    group.querySelectorAll('input[type="radio"]').forEach((input) => {
+      input.checked = input.value === selectedId;
+    });
+    if (group._ui2CoupledWarning) {
+      group._ui2CoupledWarning.hidden = selectedId !== null;
+    }
   }
 
   function renderControl(field) {
@@ -8881,6 +8985,7 @@
           control.dispatchEvent(new Event("change", { bubbles: true }));
         }
       });
+    document.querySelectorAll(".ui2-repeated-coupled-choice-cards").forEach(updateRepeatedCoupledChoiceGroup);
   }
 
   function inputControlValue(value, control, index) {
@@ -12717,6 +12822,14 @@
         tbody.deleteRow(tbody.rows.length - 1);
       }
       applyRepeatTableValues(tbody, fields, rawValues);
+      tbody.querySelectorAll(".ui2-repeated-coupled-choice-cards").forEach(updateRepeatedCoupledChoiceGroup);
+      const threshold = Number(row._ui2RepeatTablePresentation?.layoutToggle?.suggestAfter || 0);
+      if (row._ui2RepeatLayoutSuggestion) {
+        row._ui2RepeatLayoutSuggestion.textContent = threshold && wanted > threshold
+          ? `Compact view is recommended for ${wanted} items.`
+          : "";
+        row._ui2RepeatLayoutSuggestion.hidden = !(threshold && wanted > threshold);
+      }
     });
   }
 

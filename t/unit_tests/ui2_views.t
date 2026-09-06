@@ -198,12 +198,15 @@ like( $ui2_react_source, qr/function WorkflowChoices\(.*?bridge\.setInputValues\
 like( $ui2_react_source, qr/presentation\.order \|\| Object\.keys\(presentation\.choices \|\| \{\}\)/, 'workflow choices may declare a presentation order independent of generated JSON key ordering' );
 like( $ui2_react_source, qr/const selected = choices\.find\(\(\[, choice\]\) => Object\.entries\(choice\.matches \|\| \{\}\)\.every/, 'workflow choices derive their selected state from restored canonical values' );
 like( $ui2_react_source, qr/fieldPresentations = view\.inputs\?\.fieldPresentations \|\| \{\}/, 'workbench reads choice-card presentation metadata from the view' );
-like( $ui2_react_source, qr/bridge\.createFieldGroup\(plannedFields, role, \{\s*layout: inputLayout,\s*itemLabel,\s*fieldPresentations,/s, 'workbench passes neutral section presentation to the native field renderer' );
+like( $ui2_react_source, qr/bridge\.createFieldGroup\(plannedFields, role, \{\s*layout: inputLayout,\s*itemLabel,\s*layoutToggle,\s*fieldPresentations,/s, 'workbench passes neutral section presentation to the native field renderer' );
 like( $ui2_js, qr/function renderRepeatedChoiceCards\(field, rowIndex, presentation\).*?wireRepeatTableControl\(input, field, rowIndex\)/s, 'repeated choice cards retain native repeated-field identity and indexing' );
 like( $ui2_js, qr/function renderRepeatTableControl\(field, rowIndex, presentation = \{\}\).*?presentation\.control === "repeated-choice-cards".*?renderRepeatedChoiceCards.*?const select = el\("select"/s, 'only opted-in repeated listboxes replace the ordinary select presentation' );
 like( $ui2_js, qr/while \(tbody\.rows\.length < wanted\).*?renderRepeatTableRow\(fields, tbody\.rows\.length, row\._ui2RepeatTablePresentation \|\| \{\}\)/s, 'new repeated rows retain the opted-in card and visible-choice presentation' );
 like( $ui2_js, qr/tr\.dataset\.repeatCardLabel = `\$\{presentation\.itemLabel \|\| "Item"\} \$\{rowIndex \+ 1\}`/, 'repeated cards receive stable one-based generic row headings' );
 unlike( $ui2_js, qr/tamc_protein|Protein region|backbone rotation/i, 'shared UI2 runtime contains no TAMC-specific field or scientific language' );
+like( $ui2_js, qr/function renderRepeatedCoupledChoiceCards\(field, rowIndex, presentation\).*?choice\.values.*?updateRepeatedCoupledChoiceGroup/s, 'coupled repeated choices update existing canonical repeated controls' );
+like( $ui2_js, qr/layoutToggle\?\.label.*?ui2-repeat-compact.*?ui2-repeat-cards/s, 'repeated cards can switch presentation without replacing their controls' );
+like( $ui2_js, qr/Compact view is recommended for \$\{wanted\} items/, 'large repeated groups receive a non-forcing compact-view suggestion' );
 like( $ui2_js, qr/control\.type === "radio".*?control\.checked = String\(control\.value\) === String\(value \?\? ""\)/s, 'restored repeated radio choices select the saved value without changing option values' );
 like( $ui2_js, qr/function setInputControlValueAtRepeatIndex\(id, repeatIndex, value\).*?control\.type === "radio".*?control\.checked = String\(control\.value\) === String\(value \?\? ""\)/s, 'scenario hydration selects repeated radio choices without rewriting their canonical values' );
 like( $ui2_react_css, qr/\.ui2-repeat-cards \.ui2-repeat-table tr\{(?=[^}]*display:grid)(?=[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\))[^}]*\}/, 'opted-in repeated rows render as readable cards' );
@@ -227,7 +230,7 @@ like( $ui2_css, qr/\.ui2-input,\s*\.ui2-select:not\(\[multiple\]\):not\(\[size\]
 like( $ui2_css, qr/\.ui2-select:is\(\[multiple\], \[size\]:not\(\[size="1"\]\)\)\s*\{\s*min-height: 6rem;\s*height: auto;\s*overflow: auto;/s, 'multi-row listboxes retain a scrollable usable height instead of inheriting the scalar control height' );
 like( $ui2_css, qr/\.ui2-repeat-table-has-file \.ui2-repeat-table th\s*\{\s*overflow-wrap: normal;\s*word-break: normal;/s, 'file-bearing repeat tables preserve ordinary-language header words' );
 like( $ui2_css, qr/\.ui2-repeat-table-has-file \.ui2-repeat-table td:not\(\.ui2-repeat-table-file-cell\)\s*\{\s*min-width: 4\.75rem;/s, 'file-bearing repeat tables retain readable neighboring values' );
-like( $ui2_js, qr/td\.dataset\.repeatTableLabel = field\.label \|\| field\.id \|\| field\.type \|\| "field";/, 'repeated table cells carry generic labels for narrow responsive rows' );
+like( $ui2_js, qr/td\.dataset\.repeatTableLabel = fieldPresentation\?\.label \|\| field\.label \|\| field\.id \|\| field\.type \|\| "field";/, 'repeated table cells carry presentation-aware generic labels for narrow responsive rows' );
 like( $ui2_css, qr/\.ui2-tableized-repeater\s*\{\s*container-type: inline-size;/s, 'tableized repeaters expose their actual width for responsive field layout' );
 like( $ui2_css, qr/\@container \(max-width: 40rem\).*?\.ui2-repeat-table-has-file \.ui2-repeat-table tr\s*\{\s*display: grid;.*?\.ui2-repeat-table-has-file \.ui2-repeat-table td::before\s*\{\s*content: attr\(data-repeat-table-label\);/s, 'narrow file-bearing repeaters become labelled rows without application-specific selectors' );
 like( $ui2_css, qr/\@container \(max-width: 40rem\).*?\.ui2-file-control-compact \.ui2-file-picker\s*\{\s*grid-template-columns: minmax\(0, 1fr\) auto auto;/s, 'narrow repeated file controls preserve visible actions while the filename display shrinks' );
@@ -704,7 +707,9 @@ my ($sample_fraction_field) = grep { $_->{id} eq 'sample_fraction' } @{ $workben
 my ($repeated_samples) = grep { $_->{id} eq 'repeated-samples' } @{ $workbench_layout->{viewjson}{inputs}{sections} || [] };
 is( $repeated_samples->{layout}, 'repeated-cards', 'neutral fixture opts one repeated section into cards' );
 is( $repeated_samples->{itemLabel}, 'Sample', 'neutral repeated cards declare a generic singular row label' );
-is( $workbench_layout->{viewjson}{inputs}{fieldPresentations}{sample_source}{control}, 'repeated-choice-cards', 'neutral repeated listbox exposes its choices as cards' );
+is( $workbench_layout->{viewjson}{inputs}{fieldPresentations}{sample_source}{control}, 'repeated-coupled-choice-cards', 'neutral repeated fields may expose one coupled guided choice' );
+is( $workbench_layout->{viewjson}{inputs}{fieldPresentations}{sample_handling}{control}, 'repeated-coupled-value', 'neutral coupled companion remains a canonical hidden control' );
+is( $repeated_samples->{layoutToggle}{suggestAfter}, 8, 'neutral repeated cards suggest compact mode only after the declared count' );
 my ($ordinary_repeat) = grep { $_->{id} eq 'ordinary-repeat' } @{ $workbench_layout->{viewjson}{inputs}{sections} || [] };
 ok( !exists $ordinary_repeat->{layout}, 'non-opted repeated section retains the ordinary table presentation' );
 my ($input_file_field) = grep { $_->{id} eq 'input_file' } @{ $workbench_layout->{modulejson}{fields} || [] };

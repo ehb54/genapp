@@ -29,6 +29,11 @@ export type WorkbenchSection = {
   children?: WorkbenchSection[]
   layout?: "form" | "table" | "wide" | string
   itemLabel?: string
+  layoutToggle?: {
+    label: string
+    description?: string
+    suggestAfter?: number
+  }
 }
 
 export type ChoiceCardPresentation = {
@@ -50,11 +55,28 @@ export type RepeatedChoiceCardPresentation = {
   }>
 }
 
-export type FieldPresentation = ChoiceCardPresentation | RepeatedChoiceCardPresentation
+export type RepeatedCoupledChoiceCardPresentation = {
+  control: "repeated-coupled-choice-cards"
+  label?: string
+  fields: string[]
+  choices: Record<string, {
+    title: string
+    description?: string
+    values: Record<string, unknown>
+  }>
+}
+
+export type RepeatedCoupledValuePresentation = {
+  control: "repeated-coupled-value"
+  owner: string
+}
+
+export type FieldPresentation = ChoiceCardPresentation | RepeatedChoiceCardPresentation | RepeatedCoupledChoiceCardPresentation | RepeatedCoupledValuePresentation
 
 export type FieldGroupPresentation = {
   layout?: string
   itemLabel?: string
+  layoutToggle?: WorkbenchSection["layoutToggle"]
   fieldPresentations?: Record<string, FieldPresentation>
 }
 

@@ -19,6 +19,15 @@ listbox. These are presentation-only options: UI2 retains the canonical field
 ids, native controls, repeat indices, submitted arrays, and restoration path.
 Sections without the opt-in retain the ordinary repeat table.
 
+A repeated-card section may also provide a presentation-only `layoutToggle`.
+The switch changes the existing controls between detailed cards and a compact
+table; it never creates a second set of submitted values. A
+`repeated-coupled-choice-cards` presentation can expose one guided choice that
+atomically updates two or more existing repeated fields. Companion fields use
+`repeated-coupled-value`, remain canonical submitted controls, and stay hidden
+from the guided presentation. Restored combinations that match no declared
+choice are reported rather than silently rewritten.
+
 Theme styling is owned by the UI2 shell. React components consume the shared
 semantic `--ui2-*` CSS variables and should not introduce Bootstrap,
 Bootswatch, or per-workbench theme overrides. Native themes are selected at the

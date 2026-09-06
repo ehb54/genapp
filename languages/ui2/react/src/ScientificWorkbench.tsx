@@ -27,17 +27,19 @@ function NativeHost({ create, release, mounted, className }: { create: () => HTM
   return <div className={className} ref={hostRef} />
 }
 
-function FieldGroup({ fields, bridge, role = "input", fitPlot = false, outputLayout = "", inputLayout = "", itemLabel = "", fieldPresentations = {}, plotPresentation, onValuesReady }: { fields: Ui2Field[]; bridge: ScientificWorkbenchBridge; role?: "input" | "output"; fitPlot?: boolean; outputLayout?: string; inputLayout?: string; itemLabel?: string; fieldPresentations?: Record<string, FieldPresentation>; plotPresentation?: WorkbenchResultGroup["plotPresentation"]; onValuesReady?: (values: Record<string, unknown>) => void }) {
+function FieldGroup({ fields, bridge, role = "input", fitPlot = false, outputLayout = "", inputLayout = "", itemLabel = "", layoutToggle, fieldPresentations = {}, plotPresentation, onValuesReady }: { fields: Ui2Field[]; bridge: ScientificWorkbenchBridge; role?: "input" | "output"; fitPlot?: boolean; outputLayout?: string; inputLayout?: string; itemLabel?: string; layoutToggle?: WorkbenchSection["layoutToggle"]; fieldPresentations?: Record<string, FieldPresentation>; plotPresentation?: WorkbenchResultGroup["plotPresentation"]; onValuesReady?: (values: Record<string, unknown>) => void }) {
   // View JSON is decoded into new arrays on every parent render.  Keep the
   // native group mounted while its declared field membership is unchanged.
   const fieldIds = fields.map((field) => field.id || "").join("\u0000")
   const plannedFields = React.useMemo(() => fields, [fieldIds])
   const plotPresentationKey = JSON.stringify(plotPresentation || {})
   const fieldPresentationKey = JSON.stringify(fieldPresentations)
+  const layoutToggleKey = JSON.stringify(layoutToggle || {})
   const create = React.useCallback(() => {
     const node = bridge.createFieldGroup(plannedFields, role, {
       layout: inputLayout,
       itemLabel,
+      layoutToggle,
       fieldPresentations,
     })
     if (role === "output" && outputLayout) {
@@ -56,7 +58,7 @@ function FieldGroup({ fields, bridge, role = "input", fitPlot = false, outputLay
       plot?.setAttribute("data-plot-fit", "pane")
     }
     return node
-  }, [bridge, plannedFields, fitPlot, fieldPresentationKey, inputLayout, itemLabel, outputLayout, plotPresentationKey, role])
+  }, [bridge, plannedFields, fitPlot, fieldPresentationKey, inputLayout, itemLabel, layoutToggleKey, outputLayout, plotPresentationKey, role])
   const mounted = React.useCallback(() => {
     if (role === "input") {
       bridge.fieldGroupMounted(onValuesReady)
@@ -644,7 +646,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
           </div>
         </CardHeader>
         <CardContent>
-          {sectionFields.filter((field) => fieldPresentations[field.id || ""]?.control !== "choice-cards").length > 0 && <FieldGroup bridge={bridge} fields={sectionFields.filter((field) => fieldPresentations[field.id || ""]?.control !== "choice-cards")} fieldPresentations={fieldPresentations} inputLayout={section.layout} itemLabel={section.itemLabel} onValuesReady={syncLiveValues} />}
+          {sectionFields.filter((field) => fieldPresentations[field.id || ""]?.control !== "choice-cards").length > 0 && <FieldGroup bridge={bridge} fields={sectionFields.filter((field) => fieldPresentations[field.id || ""]?.control !== "choice-cards")} fieldPresentations={fieldPresentations} inputLayout={section.layout} itemLabel={section.itemLabel} layoutToggle={section.layoutToggle} onValuesReady={syncLiveValues} />}
           {sectionFields.filter((field) => fieldPresentations[field.id || ""]?.control === "choice-cards" && repeatExpressionActive(field.repeat, liveValues)).map((field) => (
             <ChoiceCards bridge={bridge} field={field} key={field.id} onValuesReady={syncLiveValues} presentation={fieldPresentations[field.id || ""] as ChoiceCardPresentation} values={liveValues} />
           ))}

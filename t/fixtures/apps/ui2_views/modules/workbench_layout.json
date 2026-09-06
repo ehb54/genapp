@@ -80,6 +80,15 @@
             "repeat"  : "sample_count"
         },
         {
+            "role"    : "input",
+            "id"      : "sample_handling",
+            "label"   : "Sample handling",
+            "type"    : "listbox",
+            "values"  : "Keep prepared~keep~Reprocess raw~reprocess",
+            "default" : ["keep", "reprocess"],
+            "repeat"  : "sample_count"
+        },
+        {
             "role"     : "input",
             "id"       : "input_file",
             "label"    : "Input file",

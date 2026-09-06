@@ -10820,35 +10820,37 @@ function Gr({ create: e, release: t, mounted: n, className: r }) {
 		ref: i
 	});
 }
-function Kr({ fields: e, bridge: t, role: n = "input", fitPlot: r = !1, outputLayout: i = "", inputLayout: a = "", itemLabel: o = "", fieldPresentations: s = {}, plotPresentation: c, onValuesReady: l }) {
-	let u = e.map((e) => e.id || "").join("\0"), d = S.useMemo(() => e, [u]), f = JSON.stringify(c || {}), p = JSON.stringify(s), m = S.useCallback(() => {
-		let e = t.createFieldGroup(d, n, {
+function Kr({ fields: e, bridge: t, role: n = "input", fitPlot: r = !1, outputLayout: i = "", inputLayout: a = "", itemLabel: o = "", layoutToggle: s, fieldPresentations: c = {}, plotPresentation: l, onValuesReady: u }) {
+	let d = e.map((e) => e.id || "").join("\0"), f = S.useMemo(() => e, [d]), p = JSON.stringify(l || {}), m = JSON.stringify(c), h = JSON.stringify(s || {}), g = S.useCallback(() => {
+		let e = t.createFieldGroup(f, n, {
 			layout: a,
 			itemLabel: o,
-			fieldPresentations: s
+			layoutToggle: s,
+			fieldPresentations: c
 		});
-		return n === "output" && i && (e.dataset.outputLayout = i), n === "output" && f !== "{}" && (e.dataset.plotPresentation = f), r && (e.setAttribute("data-plot-fit", "pane"), (e.matches("[data-output-type=\"plotly\"]") ? e : e.querySelector("[data-output-type=\"plotly\"]"))?.setAttribute("data-plot-fit", "pane")), e;
+		return n === "output" && i && (e.dataset.outputLayout = i), n === "output" && p !== "{}" && (e.dataset.plotPresentation = p), r && (e.setAttribute("data-plot-fit", "pane"), (e.matches("[data-output-type=\"plotly\"]") ? e : e.querySelector("[data-output-type=\"plotly\"]"))?.setAttribute("data-plot-fit", "pane")), e;
 	}, [
 		t,
-		d,
+		f,
 		r,
-		p,
+		m,
 		a,
 		o,
+		h,
 		i,
-		f,
+		p,
 		n
-	]), h = S.useCallback(() => {
-		n === "input" ? t.fieldGroupMounted(l) : t.outputGroupMounted();
+	]), _ = S.useCallback(() => {
+		n === "input" ? t.fieldGroupMounted(u) : t.outputGroupMounted();
 	}, [
 		t,
-		l,
+		u,
 		n
 	]);
 	return /* @__PURE__ */ (0, z.jsx)(Gr, {
-		create: m,
+		create: g,
 		release: t.releaseField,
-		mounted: h,
+		mounted: _,
 		className: "ui2-workbench-field-group"
 	});
 }
@@ -11248,6 +11250,7 @@ function oi({ module: e, fields: t, view: n, bridge: r, submitted: i }) {
 					fieldPresentations: d,
 					inputLayout: e.layout,
 					itemLabel: e.itemLabel,
+					layoutToggle: e.layoutToggle,
 					onValuesReady: P
 				}),
 				n.filter((e) => d[e.id || ""]?.control === "choice-cards" && ei(e.repeat, s)).map((e) => /* @__PURE__ */ (0, z.jsx)(qr, {

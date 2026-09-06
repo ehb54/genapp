@@ -35,7 +35,12 @@
                 "title"     : "Repeated samples",
                 "layout"    : "repeated-cards",
                 "itemLabel" : "Sample",
-                "fields"    : ["sample_count", "sample_source", "sample_fraction", "input_file", "sample_weight", "sample_concentration"]
+                "layoutToggle" : {
+                    "label" : "Use compact table",
+                    "description" : "Show many samples in less vertical space.",
+                    "suggestAfter" : 8
+                },
+                "fields"    : ["sample_count", "sample_source", "sample_handling", "sample_fraction", "input_file", "sample_weight", "sample_concentration"]
             },
             {
                 "id"     : "ordinary-repeat",
@@ -59,11 +64,17 @@
                 }
             },
             "sample_source" : {
-                "control" : "repeated-choice-cards",
+                "control" : "repeated-coupled-choice-cards",
+                "label" : "Sample workflow",
+                "fields" : ["sample_source", "sample_handling"],
                 "choices" : {
-                    "prepared" : {"title" : "Prepared data", "description" : "Use data that has already been prepared."},
-                    "raw" : {"title" : "Raw data", "description" : "Use the original data."}
+                    "prepared" : {"title" : "Prepared data", "description" : "Use data that has already been prepared.", "values" : {"sample_source" : "prepared", "sample_handling" : "keep"}},
+                    "raw" : {"title" : "Raw data", "description" : "Use and reprocess the original data.", "values" : {"sample_source" : "raw", "sample_handling" : "reprocess"}}
                 }
+            },
+            "sample_handling" : {
+                "control" : "repeated-coupled-value",
+                "owner" : "sample_source"
             }
         }
     },
