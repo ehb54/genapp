@@ -176,7 +176,20 @@
     if (!update || typeof window.Plotly?.relayout !== "function") {
       return null;
     }
-    return Promise.resolve(window.Plotly.relayout(plot, update));
+    return Promise.resolve(window.Plotly.relayout(plot, update)).then(() => {
+      // The first margin change can narrow and wrap annotation text. Measure
+      // once more after Plotly has rendered that layout so the reserved lane
+      // reflects the settled text height without creating an open-ended loop.
+      const settledUpdate = annotationPlacementUpdate(
+        plot,
+        sourceLayout,
+        selection,
+        options
+      );
+      return settledUpdate
+        ? window.Plotly.relayout(plot, settledUpdate)
+        : null;
+    });
   }
 
   window.GenAppPlotlyLayout = {

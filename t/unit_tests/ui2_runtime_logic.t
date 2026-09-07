@@ -2290,6 +2290,31 @@ assert.strictEqual(neutralAnnotationUpdate["annotations[1].yshift"], 60, "additi
 assert.strictEqual(neutralAnnotationUpdate["margin.t"], 198, "the renderer reserves measured space above the plot");
 assert.strictEqual(neutralAnnotationUpdate["annotations[2].y"], undefined, "an unselected in-plot annotation is unchanged");
 assert.strictEqual(neutralAnnotationLayout.annotations[0].y, 1.18, "annotation fitting never mutates the saved source layout");
+let settlingAnnotationHeight = 24;
+const settlingAnnotationPlot = {
+  _fullLayout: { margin: { t: 132 } },
+  querySelectorAll(selector) {
+    return selector === ".annotation"
+      ? [{ getBoundingClientRect() { return { height: settlingAnnotationHeight }; } }]
+      : [];
+  },
+  querySelector() { return null; }
+};
+const preWrapAnnotationUpdate = layoutPolicy.annotationPlacementUpdate(
+  settlingAnnotationPlot,
+  neutralAnnotationLayout,
+  { annotationPlacement: { summary_note: "above_plot" } },
+  { baseTopMargin: 96 }
+);
+assert.strictEqual(preWrapAnnotationUpdate["margin.t"], 132, "the first annotation pass uses its initial rendered height");
+settlingAnnotationHeight = 96;
+const settledAnnotationUpdate = layoutPolicy.annotationPlacementUpdate(
+  settlingAnnotationPlot,
+  neutralAnnotationLayout,
+  { annotationPlacement: { summary_note: "above_plot" } },
+  { baseTopMargin: 96 }
+);
+assert.strictEqual(settledAnnotationUpdate["margin.t"], 204, "the settled annotation pass reserves the post-wrap rendered height");
 assert.strictEqual(
   layoutPolicy.annotationPlacementUpdate(neutralAnnotationPlot, neutralAnnotationLayout, {}, { baseTopMargin: 96 }),
   null,
