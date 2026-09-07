@@ -126,6 +126,17 @@
     return Number.isFinite(height) && height > 0 ? Math.ceil(height) : 0;
   }
 
+  function afterRenderFrames(plot) {
+    const requestFrame = plot?.ownerDocument?.defaultView?.requestAnimationFrame
+      || window.requestAnimationFrame;
+    if (typeof requestFrame !== "function") {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      requestFrame(() => requestFrame(resolve));
+    });
+  }
+
   function annotationPlacementUpdate(plot, sourceLayout, selection, options) {
     const placements = selection?.annotationPlacement;
     const annotations = Array.isArray(sourceLayout?.annotations) ? sourceLayout.annotations : [];
@@ -176,20 +187,22 @@
     if (!update || typeof window.Plotly?.relayout !== "function") {
       return null;
     }
-    return Promise.resolve(window.Plotly.relayout(plot, update)).then(() => {
-      // The first margin change can narrow and wrap annotation text. Measure
-      // once more after Plotly has rendered that layout so the reserved lane
-      // reflects the settled text height without creating an open-ended loop.
-      const settledUpdate = annotationPlacementUpdate(
-        plot,
-        sourceLayout,
-        selection,
-        options
-      );
-      return settledUpdate
-        ? window.Plotly.relayout(plot, settledUpdate)
-        : null;
-    });
+    return Promise.resolve(window.Plotly.relayout(plot, update))
+      .then(() => afterRenderFrames(plot))
+      .then(() => {
+        // The first margin change can narrow and wrap annotation text. Measure
+        // once more after Plotly has rendered that layout so the reserved lane
+        // reflects the settled text height without creating an open-ended loop.
+        const settledUpdate = annotationPlacementUpdate(
+          plot,
+          sourceLayout,
+          selection,
+          options
+        );
+        return settledUpdate
+          ? window.Plotly.relayout(plot, settledUpdate)
+          : null;
+      });
   }
 
   window.GenAppPlotlyLayout = {
