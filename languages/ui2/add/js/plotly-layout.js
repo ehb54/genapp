@@ -3,6 +3,7 @@
 
   const AXIS_KEY = /^(xaxis|yaxis)\d*$/;
   const PLAIN_TITLE = /^[^<>]*$/;
+  const ABOVE_PLOT = "above_plot";
 
   function titleText(axis) {
     if (axis?.title == null) {
@@ -119,7 +120,68 @@
     return Promise.resolve(window.Plotly.relayout(plot, update));
   }
 
+  function nodeHeight(node) {
+    const rect = node?.getBoundingClientRect?.();
+    const height = Number(rect?.height);
+    return Number.isFinite(height) && height > 0 ? Math.ceil(height) : 0;
+  }
+
+  function annotationPlacementUpdate(plot, sourceLayout, selection, options) {
+    const placements = selection?.annotationPlacement;
+    const annotations = Array.isArray(sourceLayout?.annotations) ? sourceLayout.annotations : [];
+    if (!placements || typeof placements !== "object" || !annotations.length) {
+      return null;
+    }
+    const selected = annotations.map((annotation, index) => ({ annotation, index }))
+      .filter(({ annotation }) => (
+        annotation?.name
+        && placements[annotation.name] === ABOVE_PLOT
+      ));
+    if (!selected.length) {
+      return null;
+    }
+
+    const gap = Math.max(0, Number(options?.gap) || 12);
+    const fallbackAnnotationHeight = Math.max(
+      1,
+      Number(options?.fallbackAnnotationHeight) || 24
+    );
+    const renderedAnnotations = Array.from(plot?.querySelectorAll?.(".annotation") || []);
+    const update = {};
+    let laneHeight = 0;
+    selected.forEach(({ index }) => {
+      const height = nodeHeight(renderedAnnotations[index]) || fallbackAnnotationHeight;
+      update[`annotations[${index}].yref`] = "paper";
+      update[`annotations[${index}].y`] = 1;
+      update[`annotations[${index}].yanchor`] = "bottom";
+      update[`annotations[${index}].yshift`] = laneHeight;
+      laneHeight += height + gap;
+    });
+
+    const currentTopMargin = Number(plot?._fullLayout?.margin?.t) || 0;
+    const configuredBase = Number(options?.baseTopMargin);
+    const baseTopMargin = Number.isFinite(configuredBase) && configuredBase > 0
+      ? configuredBase
+      : Math.max(96, currentTopMargin - laneHeight);
+    const titleHeight = nodeHeight(plot?.querySelector?.(".gtitle"));
+    const modebarHeight = nodeHeight(plot?.querySelector?.(".modebar"));
+    const chromeHeight = Math.max(baseTopMargin, titleHeight + modebarHeight + (3 * gap));
+    update["margin.autoexpand"] = true;
+    update["margin.t"] = Math.ceil(chromeHeight + laneHeight);
+    return update;
+  }
+
+  function applyAnnotationPlacement(plot, sourceLayout, selection, options) {
+    const update = annotationPlacementUpdate(plot, sourceLayout, selection, options);
+    if (!update || typeof window.Plotly?.relayout !== "function") {
+      return null;
+    }
+    return Promise.resolve(window.Plotly.relayout(plot, update));
+  }
+
   window.GenAppPlotlyLayout = {
+    annotationPlacementUpdate,
+    applyAnnotationPlacement,
     applyAxisTitleOverflow,
     axisTitleWrapUpdate,
     titleText,

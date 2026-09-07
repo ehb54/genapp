@@ -117,9 +117,13 @@ the focused control, and Enter or Space performs the same action as a mouse
 click after initial rendering, relayout, resizing, and streamed updates.
 
 Statistics and explanatory text belong in a declared caption or summary output
-by default. An in-plot annotation requires a documented, view-declared generic
-placement policy keyed by a named annotation; the driver must not send an
-ad-hoc UI2 placement flag.
+by default. An in-plot annotation requires a stable producer-supplied `name`
+and a view-declared generic placement policy. A view may map that opaque name
+through `plotPresentation.annotationPlacement` to `above_plot`; UI2 then stacks
+the selected annotations in a measured lane above the plotting area and
+recomputes its top margin after responsive resizing. The driver supplies the
+annotation identity and text, never UI2 geometry or an ad-hoc placement flag.
+Unselected and unnamed annotations retain their declared Plotly behavior.
 
 An application view may opt a Plotly result group into
 `plotPresentation.axisTitleOverflow: "wrap"`. UI2 measures plain axis titles

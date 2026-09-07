@@ -2256,6 +2256,45 @@ assert.strictEqual(
   "Observed samples / retained observation",
   "responsive title fitting never mutates the saved source layout"
 );
+const neutralAnnotationNodes = [48, 30].map((height) => ({
+  getBoundingClientRect() { return { height }; }
+}));
+const neutralAnnotationPlot = {
+  _fullLayout: { margin: { t: 96 } },
+  layout: { margin: { t: 96 } },
+  querySelectorAll(selector) {
+    return selector === ".annotation" ? neutralAnnotationNodes : [];
+  },
+  querySelector(selector) {
+    if (selector === ".gtitle") return { getBoundingClientRect() { return { height: 20 }; } };
+    if (selector === ".modebar") return { getBoundingClientRect() { return { height: 24 }; } };
+    return null;
+  }
+};
+const neutralAnnotationLayout = {
+  annotations: [
+    { name: "summary_note", text: "Summary", xref: "paper", yref: "paper", y: 1.18 },
+    { name: "method_note", text: "Method", xref: "paper", yref: "paper", y: 1.12 },
+    { name: "inside_note", text: "Inside", xref: "paper", yref: "paper", y: 0.5 }
+  ]
+};
+const neutralAnnotationUpdate = layoutPolicy.annotationPlacementUpdate(
+  neutralAnnotationPlot,
+  neutralAnnotationLayout,
+  { annotationPlacement: { summary_note: "above_plot", method_note: "above_plot" } },
+  { baseTopMargin: 96 }
+);
+assert.strictEqual(neutralAnnotationUpdate["annotations[0].y"], 1, "the first opted-in annotation is anchored directly above the plotting area");
+assert.strictEqual(neutralAnnotationUpdate["annotations[0].yshift"], 0, "the first annotation starts the responsive top lane");
+assert.strictEqual(neutralAnnotationUpdate["annotations[1].yshift"], 60, "additional annotations stack by measured height and the shared gap");
+assert.strictEqual(neutralAnnotationUpdate["margin.t"], 198, "the renderer reserves measured space above the plot");
+assert.strictEqual(neutralAnnotationUpdate["annotations[2].y"], undefined, "an unselected in-plot annotation is unchanged");
+assert.strictEqual(neutralAnnotationLayout.annotations[0].y, 1.18, "annotation fitting never mutates the saved source layout");
+assert.strictEqual(
+  layoutPolicy.annotationPlacementUpdate(neutralAnnotationPlot, neutralAnnotationLayout, {}, { baseTopMargin: 96 }),
+  null,
+  "a non-opted-in figure retains its declared annotation geometry"
+);
 assert.strictEqual(
   hooks.normalizeJobEvent({ version: 2, run: "run-1", module: "mmc", sequence: 1, channel: "log", topic: "run" }),
   null,

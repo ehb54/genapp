@@ -69,6 +69,12 @@ The producer supplies scientific titles, axis names, units, series names,
 axis scale, uncertainty, and subplot relationships. UI2 controls how those
 items look and where presentation-only elements are placed.
 
+When explanatory text must remain inside a Plotly figure, the producer may
+give the annotation a stable `name` and the application view may map that name
+to the generic `plotPresentation.annotationPlacement` value `above_plot`.
+UI2 measures and stacks those opted-in annotations in a responsive top lane;
+the source figure remains unchanged for completion and reattachment.
+
 ## Required Implementation
 
 1. **Confirm the data source.** Use existing SASSIE outputs or existing stream

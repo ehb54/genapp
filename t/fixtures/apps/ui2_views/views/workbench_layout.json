@@ -87,7 +87,10 @@
                 "primary" : true,
                 "fit"     : "pane",
                 "plotPresentation" : {
-                    "axisTitleOverflow" : "wrap"
+                    "axisTitleOverflow" : "wrap",
+                    "annotationPlacement" : {
+                        "summary_note" : "above_plot"
+                    }
                 }
             },
             {

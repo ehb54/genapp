@@ -98,6 +98,7 @@ like( $plotly_surface_js, qr/window\.GenAppPlotlySurface/, 'generated UI2 expose
 like( $plotly_surface_js, qr/function apply\(layout, options\).*?paper_bgcolor.*?plot_bgcolor.*?hoverlabel.*?modebar/s, 'surface resolver covers final paper, plot, hover, and toolbar presentation' );
 like( $plotly_layout_js, qr/window\.GenAppPlotlyLayout/, 'generated UI2 exposes one shared responsive Plotly layout helper' );
 like( $plotly_layout_js, qr/function wrapPlainText.*?function axisTitleWrapUpdate.*?axisTitleOverflow/s, 'responsive layout helper wraps opted-in axis titles without application vocabulary' );
+like( $plotly_layout_js, qr/const ABOVE_PLOT = "above_plot".*?function annotationPlacementUpdate.*?annotationPlacement/s, 'responsive layout helper reserves an opted-in lane for named above-plot annotations' );
 like( $session_handoff_php, qr/\$application\s*=\s*"ui2_views"/, 'generated handoff endpoint uses the fixture application session namespace' );
 unlike( $session_handoff_php, qr/dirname\(__DIR__, 2\)/, 'generated handoff endpoint does not mistake output for the application root' );
 like( $sys_login_template, qr/__~external_auth_policy\{[^{}]*ga_external_auth_enforce\('password_login'\)/, 'password login exposes an optional application-owned server policy hook' );
@@ -730,6 +731,7 @@ is( $dynamic_gallery_group->{layout}, 'gallery', 'neutral fixture opts into gene
 is( $dynamic_gallery_group->{visibility}, 'available', 'neutral fixture keeps the optional gallery hidden until dynamic output is present' );
 my ($primary_plot_group) = grep { $_->{id} eq 'primary' } @{ $workbench_layout->{viewjson}{results}{groups} || [] };
 is( $primary_plot_group->{plotPresentation}{axisTitleOverflow}, 'wrap', 'neutral fixture opts into generic responsive axis-title wrapping' );
+is( $primary_plot_group->{plotPresentation}{annotationPlacement}{summary_note}, 'above_plot', 'neutral fixture opts a named annotation into the generic above-plot lane' );
 
 my $plain = decode_json( read_file( File::Spec->catfile( $ui2, qw(modules plain.json) ) ) );
 is( $plain->{module}, 'plain', 'plain summary records module id' );

@@ -11924,6 +11924,9 @@
     applyPlotPresentationLayout(layout, plotPresentationProfileForOutput(output));
     applyPlotBackgroundMode(layout);
     applyPlotlyLegendPlacement(layout);
+    if (output) {
+      output._ui2PlotlyBaseTopMargin = Number(layout.margin?.t) || 96;
+    }
     return layout;
   }
 
@@ -12573,8 +12576,22 @@
     ) || null;
   }
 
+  function fitPlotlyAnnotations(output) {
+    if (!plotlyOutputReadyForRelayout(output)) {
+      return null;
+    }
+    const sourceLayout = output?._ui2PlotlyLastFigure?.layout || {};
+    return window.GenAppPlotlyLayout?.applyAnnotationPlacement?.(
+      output,
+      sourceLayout,
+      plotPresentationForOutput(output),
+      { baseTopMargin: output._ui2PlotlyBaseTopMargin || 96 }
+    ) || null;
+  }
+
   function fitPlotlyPresentationGeometry(output) {
     return Promise.resolve(fitPlotlyLegendsBelowPlot(output))
+      .then(() => fitPlotlyAnnotations(output))
       .then(() => fitPlotlyAxisTitles(output));
   }
 
@@ -13747,6 +13764,7 @@
       plotlyLegendFitUpdate,
       plotlyOutputReadyForRelayout,
       fitPlotlyLegendsBelowPlot,
+      fitPlotlyAnnotations,
       fitPlotlyAxisTitles,
       fitPlotlyPresentationGeometry,
       resizePlotlyOutputToVisibleBox,

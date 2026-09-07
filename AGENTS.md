@@ -415,6 +415,10 @@ current wiki page `Reference-Plotly`.
 - Producers provide scientific identity and relationships, not fixed geometry,
   colors, fonts, line/marker styling, legend policy, modebar, or browser
   lifecycle state.
+- A producer may give an annotation an opaque stable `name`; an application
+  view may map that name through `plotPresentation.annotationPlacement` to
+  `above_plot`. UI2 owns the measured top lane and responsive margin and must
+  not infer scientific meaning from the annotation name or text.
 - Stop when required scientific values are absent; do not reconstruct missing
   science in GenApp core or teach the renderer module-specific meaning.
 - Do not migrate another SASSIE module group until the current reference work
