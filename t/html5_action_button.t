@@ -1,11 +1,13 @@
 use strict;
 use warnings;
 
+use File::Path qw(make_path);
 use File::Spec;
 use FindBin;
 use lib File::Spec->catdir( $FindBin::Bin, 'lib' );
 use GenAppTest qw(generate_fixture_app read_file repo_root);
 use JSON::PP qw(decode_json encode_json);
+use MIME::Base64 qw(encode_base64);
 use Test::More;
 
 my $repo_root = repo_root($FindBin::Bin);
@@ -28,6 +30,9 @@ like( $endpoint, qr/type' \] == 'action'/, 'action endpoint recognizes action fi
 like( $endpoint, qr/action_execution_command/, 'action endpoint can use a declared application resource' );
 like( $endpoint, qr/proc_open\( \$action_command/, 'action endpoint runs the resolved action command' );
 like( $endpoint, qr/action_stage_declared_files/, 'action endpoint stages declared local or server file inputs for actions' );
+like( $endpoint, qr/function action_file_scope.*?actionfiledata.*?unknown file field/s, 'action endpoint validates an optional action-specific file scope' );
+like( $endpoint, qr/is_array\( \$scope \).*?!isset\( \$scope\[ \$id \] \).*?continue/s, 'scoped actions skip unrelated declared file fields' );
+like( $endpoint, qr/action_stage_declared_files\( \$modjson, \$action, \$action_dir, \$dir \)/, 'action metadata controls server-side file staging' );
 like( $endpoint, qr/function action_file_requests.*?"\$controller-\$id-\$index"/s, 'action endpoint resolves row-specific repeated file submit ids' );
 like( $endpoint, qr/function action_stage_file_request.*?\$_FILES\[ \$submit_id \].*?_selaltval_\$submit_id/s, 'action endpoint stages repeated local and server file selections through the same row id' );
 like( $endpoint, qr/\$repeated.*?\$_REQUEST\[ \$id \] = \$staged/s, 'action endpoint replaces repeated display values with ordered resolved paths' );
@@ -49,17 +54,20 @@ like( $ga_js, qr/case "dialog":/, 'action processor supports message and dialog 
 
 my $ui2_module = decode_json( read_file( File::Spec->catfile( $generated->{app_dir}, qw(output ui2 modules action_demo.json) ) ) );
 my ($ui2_action) = grep { $_->{id} eq 'precheck' } @{ $ui2_module->{modulejson}{fields} };
+my ($ui2_scoped_action) = grep { $_->{id} eq 'conditional_precheck' } @{ $ui2_module->{modulejson}{fields} };
 is( $ui2_action->{type}, 'action', 'ui2 module summary carries action field type' );
 is( $ui2_action->{executable}, 'precheck_action', 'ui2 module summary carries action executable metadata' );
 is( $ui2_action->{resource}, 'host', 'ui2 module summary carries action resource metadata' );
 is( $ui2_action->{actiondata}, '_allformdata', 'ui2 module summary carries action data selection' );
+is( $ui2_scoped_action->{actionfiledata}, 'primary_file', 'ui2 module summary carries the optional action file scope' );
 
 my $ui2_js = read_file( File::Spec->catfile( $generated->{app_dir}, qw(output ui2 js ui2.js) ) );
+my $ui2_source = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 add js ui2.js) ) );
 like( $ui2_js, qr/type === "action"[\s\S]+renderActionControl\(field\)/, 'ui2 core renderer owns action controls' );
 like( $ui2_js, qr/function runModuleAction\(field, button, statusNode\)/, 'ui2 runtime declares action execution helper' );
 like( $ui2_js, qr/function moduleActionEndpointFor\(moduleId\)[\s\S]+ajax\/action/, 'ui2 action endpoint resolves through legacy ajax action root' );
 like( $ui2_js, qr/function applyActionPayload\(payload\)/, 'ui2 runtime declares action response handler' );
-like( $ui2_js, qr/createFieldGroup: \(groupFields, role\) => renderReactWorkbenchFieldGroup\(groupFields, role\)/, 'React bridge will receive action support through canonical UI2 field groups' );
+like( $ui2_source, qr/createFieldGroup: \(groupFields, role, presentation\) => renderReactWorkbenchFieldGroup\(groupFields, role, presentation\)/, 'React bridge receives action support through canonical UI2 field groups' );
 like( $ui2_js, qr/function renderActionControl\(field\).*?ui2-button ui2-button-action/s, 'declared actions receive the distinct secondary-action class' );
 like( $ui2_js, qr/status\.setAttribute\("aria-live", "polite"\).*?status\.setAttribute\("role", "status"\)/s, 'action status announces progress and completion accessibly' );
 like( $ui2_js, qr/return normalized === "warning" \? "warning" : "ok";/, 'action status preserves warning semantics' );
@@ -78,7 +86,7 @@ my $submit_endpoint_path = File::Spec->catfile( $generated->{app_dir}, qw(output
 my $php = qx{command -v php 2>/dev/null};
 chomp $php;
 SKIP: {
-    skip 'php is not available on PATH; PHP endpoint checks are deferred', 6 if !$php;
+    skip 'php is not available on PATH; PHP endpoint checks are deferred', 8 if !$php;
     for my $check (
         [ action     => $action_endpoint_path ],
         [ submission => $submit_endpoint_path ],
@@ -88,18 +96,31 @@ SKIP: {
         is( $? >> 8, 0, "generated $label endpoint passes PHP syntax validation" )
             or diag($lint);
     }
-    my $window = 'permission-window';
+    my $user_root = File::Spec->catdir(
+        $generated->{app_dir}, qw(output html5 results users permission_user) );
+    my $input_dir = File::Spec->catdir( $user_root, 'selected' );
+    make_path($input_dir);
+    my $primary_path = File::Spec->catfile( $input_dir, 'primary.txt' );
+    open my $primary_fh, '>', $primary_path or die "write '$primary_path' failed: $!";
+    print {$primary_fh} "primary\n";
+    close $primary_fh;
+    my $encoded_primary = encode_base64('./selected/primary.txt', '');
+
+    my $window = 'permission-window-scoped';
+    my $scoped_request = encode_json({
+        '_window' => $window,
+        '_logon' => 'permission_user',
+        '_project' => 'fresh_project',
+        '_action' => 'conditional_precheck',
+        'sample' => 'alpha',
+        '_selaltval_primary_file' => 'primary_file_altval',
+        'primary_file_altval' => [$encoded_primary],
+    });
     my $php_code = join "\n",
         'umask(0022);',
-        '$_REQUEST = array(',
-        '  "_window" => ' . encode_json($window) . ',',
-        '  "_logon" => "permission_user",',
-        '  "_project" => "fresh_project",',
-        '  "_action" => "conditional_precheck",',
-        '  "sample" => "alpha"',
-        ');',
+        '$_REQUEST = json_decode(' . encode_json($scoped_request) . ', true);',
         'session_name("GENAPP_ACTION_BUTTON");',
-        'session_id("genapppermissiontest");',
+        'session_id("genappfilescopetest");',
         'session_start();',
         '$_SESSION[' . encode_json($window) . '] = array("logon" => "permission_user", "project" => "fresh_project");',
         'session_write_close();',
@@ -110,13 +131,43 @@ SKIP: {
     close $runtime_output;
     is( $? >> 8, 0, 'generated action endpoint runs with umask 0022' );
     my $runtime_payload = eval { decode_json($runtime_json) };
-    ok( ref($runtime_payload) eq 'HASH' && !$runtime_payload->{error}, 'generated action endpoint returns a successful payload' )
+    ok( ref($runtime_payload) eq 'HASH' && !$runtime_payload->{error}, 'opted-in action ignores an unrelated required file and returns a successful payload' )
         or diag($runtime_json);
+    like( $runtime_json, qr/Checked sample/, 'opted-in action reaches its helper executable' );
     my $project_dir = File::Spec->catdir(
         $generated->{app_dir}, qw(output html5 results users permission_user fresh_project) );
     ok( -d $project_dir, 'action endpoint creates the fresh project directory' );
     my $project_mode = ( stat($project_dir) )[2] & 07777;
     ok( $project_mode & 0020, sprintf 'fresh action-created project is group-writable (mode %04o)', $project_mode );
+
+    my $legacy_window = 'permission-window-legacy';
+    my $legacy_request = encode_json({
+        '_window' => $legacy_window,
+        '_logon' => 'permission_user',
+        '_project' => 'legacy_project',
+        '_action' => 'precheck',
+        'sample' => 'alpha',
+        '_selaltval_primary_file' => 'primary_file_altval',
+        'primary_file_altval' => [$encoded_primary],
+    });
+    my $legacy_php_code = join "\n",
+        '$_REQUEST = json_decode(' . encode_json($legacy_request) . ', true);',
+        'session_name("GENAPP_ACTION_BUTTON");',
+        'session_id("genappfilescopelegacytest");',
+        'session_start();',
+        '$_SESSION[' . encode_json($legacy_window) . '] = array("logon" => "permission_user", "project" => "legacy_project");',
+        'session_write_close();',
+        'include ' . encode_json($action_endpoint_path) . ';';
+    open my $legacy_output, '-|', $php, '-r', $legacy_php_code
+        or die "could not run generated legacy action endpoint with php: $!";
+    my $legacy_json = do { local $/; <$legacy_output> };
+    close $legacy_output;
+    my $legacy_payload = eval { decode_json($legacy_json) };
+    like(
+        $legacy_payload->{error} || '',
+        qr/No file selected for Secondary file/,
+        'non-opted-in action still requires every declared file'
+    );
 }
 
 done_testing();

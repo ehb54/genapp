@@ -103,10 +103,40 @@ function action_stage_file_request( $field, $request, $files_dir, $user_root ) {
     return $path;
 }
 
-function action_stage_declared_files( $modjson, $action_dir, $user_dir ) {
+function action_file_scope( $modjson, $action ) {
+    if ( !isset( $action[ 'actionfiledata' ] ) ) {
+        return null;
+    }
+    if ( !is_string( $action[ 'actionfiledata' ] ) ) {
+        action_error_exit( "Internal error: actionfiledata must be a comma-separated string" );
+    }
+    $requested = array_values( array_filter( array_map(
+        'trim', explode( ',', $action[ 'actionfiledata' ] ) ), 'strlen' ) );
+    if ( !count( $requested ) ) {
+        action_error_exit( "Internal error: actionfiledata must name at least one file field" );
+    }
+    $declared = array();
+    foreach ( $modjson[ 'fields' ] as $field ) {
+        if ( isset( $field[ 'id' ] ) && isset( $field[ 'type' ] ) &&
+             substr( $field[ 'type' ], -4 ) == 'file' ) {
+            $declared[ $field[ 'id' ] ] = true;
+        }
+    }
+    $scope = array();
+    foreach ( $requested as $id ) {
+        if ( !preg_match( '/^[a-zA-Z0-9_]+$/', $id ) || !isset( $declared[ $id ] ) ) {
+            action_error_exit( "Internal error: actionfiledata names an unknown file field '$id'" );
+        }
+        $scope[ $id ] = true;
+    }
+    return $scope;
+}
+
+function action_stage_declared_files( $modjson, $action, $action_dir, $user_dir ) {
     if ( !isset( $modjson[ 'fields' ] ) || !is_array( $modjson[ 'fields' ] ) ) {
         return;
     }
+    $scope = action_file_scope( $modjson, $action );
     $files_dir = "$action_dir/files";
     if ( !is_dir( $files_dir ) ) {
         mkdir( $files_dir, 0775, true );
@@ -118,6 +148,9 @@ function action_stage_declared_files( $modjson, $action_dir, $user_dir ) {
             continue;
         }
         $id = $field[ 'id' ];
+        if ( is_array( $scope ) && !isset( $scope[ $id ] ) ) {
+            continue;
+        }
         $requests = action_file_requests( $field );
         $repeated = count( $requests ) > 0 && $requests[0][ 'index' ] !== null;
         $staged = array();
@@ -278,7 +311,7 @@ if ( !is_dir( $action_dir ) ) {
 
 $_REQUEST[ '_action_workdir' ] = $action_dir;
 $_REQUEST[ '_module' ] = "__moduleid__";
-action_stage_declared_files( $modjson, $action_dir, $dir );
+action_stage_declared_files( $modjson, $action, $action_dir, $dir );
 $payload = json_encode( $_REQUEST );
 $action_command = action_execution_command( $action, $actionexe );
 

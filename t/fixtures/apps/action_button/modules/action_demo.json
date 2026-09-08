@@ -13,6 +13,20 @@
         },
         {
             "role"     : "input",
+            "id"       : "primary_file",
+            "label"    : "Primary file",
+            "type"     : "lrfile",
+            "required" : "true"
+        },
+        {
+            "role"     : "input",
+            "id"       : "secondary_file",
+            "label"    : "Secondary file",
+            "type"     : "lrfile",
+            "required" : "true"
+        },
+        {
+            "role"     : "input",
             "id"       : "part_count",
             "label"    : "Part count",
             "type"     : "integer",
@@ -52,7 +66,8 @@
             "type"     : "action",
             "buttontext" : "Conditional precheck",
             "executable" : "precheck_action",
-            "actiondata" : "sample",
+            "actiondata" : "_allformdata",
+            "actionfiledata" : "primary_file",
             "repeat"   : "show_conditional"
         },
         {
