@@ -83,12 +83,36 @@ ok( -f File::Spec->catfile( $repo_root, qw(languages qt5 types action.output) ),
 
 my $action_endpoint_path = File::Spec->catfile( $generated->{app_dir}, qw(output html5 ajax action action_demo.php) );
 my $submit_endpoint_path = File::Spec->catfile( $generated->{app_dir}, qw(output html5 ajax demo action_demo.php) );
+my $runtime_appconfig_path = File::Spec->catfile( $generated->{temp_root}, 'appconfig.json' );
+open my $appconfig_fh, '>', $runtime_appconfig_path
+    or die "write '$runtime_appconfig_path' failed: $!";
+print {$appconfig_fh} encode_json({ resources => { host => { run => '' } } });
+close $appconfig_fh;
+
+my $runtime_endpoint = $endpoint;
+my %runtime_replacements = (
+    '__docroot:html5__'       => File::Spec->catdir( $generated->{app_dir}, qw(output) ),
+    '__application__'         => 'html5',
+    '__appconfig__'           => $runtime_appconfig_path,
+    '__executable_path:html5__' => File::Spec->catdir( $generated->{app_dir}, 'bin' ),
+);
+for my $placeholder ( keys %runtime_replacements ) {
+    my $replacement = $runtime_replacements{$placeholder};
+    $runtime_endpoint =~ s/\Q$placeholder\E/$replacement/g;
+}
+my $runtime_endpoint_path = File::Spec->catfile(
+    $generated->{temp_root}, 'action_demo_runtime.php' );
+open my $runtime_endpoint_fh, '>', $runtime_endpoint_path
+    or die "write '$runtime_endpoint_path' failed: $!";
+print {$runtime_endpoint_fh} $runtime_endpoint;
+close $runtime_endpoint_fh;
+
 my $php = qx{command -v php 2>/dev/null};
 chomp $php;
 SKIP: {
     skip 'php is not available on PATH; PHP endpoint checks are deferred', 8 if !$php;
     for my $check (
-        [ action     => $action_endpoint_path ],
+        [ action     => $runtime_endpoint_path ],
         [ submission => $submit_endpoint_path ],
     ) {
         my ( $label, $path ) = @{$check};
@@ -124,7 +148,7 @@ SKIP: {
         'session_start();',
         '$_SESSION[' . encode_json($window) . '] = array("logon" => "permission_user", "project" => "fresh_project");',
         'session_write_close();',
-        'include ' . encode_json($action_endpoint_path) . ';';
+        'include ' . encode_json($runtime_endpoint_path) . ';';
     open my $runtime_output, '-|', $php, '-r', $php_code
         or die "could not run generated action endpoint with php: $!";
     my $runtime_json = do { local $/; <$runtime_output> };
@@ -157,7 +181,7 @@ SKIP: {
         'session_start();',
         '$_SESSION[' . encode_json($legacy_window) . '] = array("logon" => "permission_user", "project" => "legacy_project");',
         'session_write_close();',
-        'include ' . encode_json($action_endpoint_path) . ';';
+        'include ' . encode_json($runtime_endpoint_path) . ';';
     open my $legacy_output, '-|', $php, '-r', $legacy_php_code
         or die "could not run generated legacy action endpoint with php: $!";
     my $legacy_json = do { local $/; <$legacy_output> };
