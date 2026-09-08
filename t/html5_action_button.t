@@ -192,7 +192,7 @@ SKIP: {
     my $inactive_payload = eval { decode_json($inactive_json) };
     ok( ref($inactive_payload) eq 'HASH' && !$inactive_payload->{error}, 'opted-in action does not require a scoped file from an inactive branch' )
         or diag($inactive_json);
-    like( $inactive_json, qr/Checked pasted/, 'inactive scoped file branch still reaches its helper executable' );
+    like( $inactive_json, qr/Checked sample 'pasted'/, 'inactive scoped file branch still reaches its helper executable' );
 
     my $legacy_window = 'permission-window-legacy';
     my $legacy_request = encode_json({
