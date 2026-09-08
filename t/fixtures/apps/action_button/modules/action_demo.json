@@ -12,11 +12,21 @@
             "default" : "alpha"
         },
         {
+            "role"    : "input",
+            "id"      : "input_mode",
+            "label"   : "Input mode",
+            "type"    : "listbox",
+            "values"  : "Paste text~c1~Upload file~c2",
+            "default" : "c1",
+            "repeater": "true"
+        },
+        {
             "role"     : "input",
             "id"       : "primary_file",
             "label"    : "Primary file",
             "type"     : "lrfile",
-            "required" : "true"
+            "required" : "true",
+            "repeat"   : "input_mode:c2"
         },
         {
             "role"     : "input",

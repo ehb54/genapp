@@ -32,6 +32,8 @@ like( $endpoint, qr/proc_open\( \$action_command/, 'action endpoint runs the res
 like( $endpoint, qr/action_stage_declared_files/, 'action endpoint stages declared local or server file inputs for actions' );
 like( $endpoint, qr/function action_file_scope.*?actionfiledata.*?unknown file field/s, 'action endpoint validates an optional action-specific file scope' );
 like( $endpoint, qr/is_array\( \$scope \).*?!isset\( \$scope\[ \$id \] \).*?continue/s, 'scoped actions skip unrelated declared file fields' );
+like( $endpoint, qr/function action_scoped_file_is_active.*?\$controller.*?\$expected.*?\$_REQUEST/s, 'scoped actions evaluate simple file-field visibility conditions from submitted controls' );
+like( $endpoint, qr/is_array\( \$scope \).*?!action_scoped_file_is_active\( \$field \).*?continue/s, 'scoped actions skip required files from inactive conditional branches' );
 like( $endpoint, qr/action_stage_declared_files\( \$modjson, \$action, \$action_dir, \$dir \)/, 'action metadata controls server-side file staging' );
 like( $endpoint, qr/function action_file_requests.*?"\$controller-\$id-\$index"/s, 'action endpoint resolves row-specific repeated file submit ids' );
 like( $endpoint, qr/function action_stage_file_request.*?\$_FILES\[ \$submit_id \].*?_selaltval_\$submit_id/s, 'action endpoint stages repeated local and server file selections through the same row id' );
@@ -110,7 +112,7 @@ close $runtime_endpoint_fh;
 my $php = qx{command -v php 2>/dev/null};
 chomp $php;
 SKIP: {
-    skip 'php is not available on PATH; PHP endpoint checks are deferred', 8 if !$php;
+    skip 'php is not available on PATH; PHP endpoint checks are deferred', 11 if !$php;
     for my $check (
         [ action     => $runtime_endpoint_path ],
         [ submission => $submit_endpoint_path ],
@@ -137,6 +139,7 @@ SKIP: {
         '_project' => 'fresh_project',
         '_action' => 'conditional_precheck',
         'sample' => 'alpha',
+        'input_mode' => 'c2',
         '_selaltval_primary_file' => 'primary_file_altval',
         'primary_file_altval' => [$encoded_primary],
     });
@@ -163,6 +166,33 @@ SKIP: {
     ok( -d $project_dir, 'action endpoint creates the fresh project directory' );
     my $project_mode = ( stat($project_dir) )[2] & 07777;
     ok( $project_mode & 0020, sprintf 'fresh action-created project is group-writable (mode %04o)', $project_mode );
+
+    my $inactive_window = 'permission-window-inactive';
+    my $inactive_request = encode_json({
+        '_window' => $inactive_window,
+        '_logon' => 'permission_user',
+        '_project' => 'inactive_project',
+        '_action' => 'conditional_precheck',
+        'sample' => 'pasted',
+        'input_mode' => 'c1',
+    });
+    my $inactive_php_code = join "\n",
+        '$_REQUEST = json_decode(' . encode_json($inactive_request) . ', true);',
+        'session_name("GENAPP_ACTION_BUTTON");',
+        'session_id("genappfilescopeinactivetest");',
+        'session_start();',
+        '$_SESSION[' . encode_json($inactive_window) . '] = array("logon" => "permission_user", "project" => "inactive_project");',
+        'session_write_close();',
+        'include ' . encode_json($runtime_endpoint_path) . ';';
+    open my $inactive_output, '-|', $php, '-r', $inactive_php_code
+        or die "could not run generated action endpoint for inactive file branch with php: $!";
+    my $inactive_json = do { local $/; <$inactive_output> };
+    close $inactive_output;
+    is( $? >> 8, 0, 'generated action endpoint runs with an inactive scoped file branch' );
+    my $inactive_payload = eval { decode_json($inactive_json) };
+    ok( ref($inactive_payload) eq 'HASH' && !$inactive_payload->{error}, 'opted-in action does not require a scoped file from an inactive branch' )
+        or diag($inactive_json);
+    like( $inactive_json, qr/Checked pasted/, 'inactive scoped file branch still reaches its helper executable' );
 
     my $legacy_window = 'permission-window-legacy';
     my $legacy_request = encode_json({

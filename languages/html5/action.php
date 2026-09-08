@@ -132,6 +132,22 @@ function action_file_scope( $modjson, $action ) {
     return $scope;
 }
 
+function action_scoped_file_is_active( $field ) {
+    if ( !isset( $field[ 'repeat' ] ) ||
+         !preg_match( '/^([a-zA-Z0-9_]+):([^:]+)$/', $field[ 'repeat' ], $matches ) ) {
+        return true;
+    }
+    $controller = $matches[1];
+    $expected = $matches[2];
+    if ( !isset( $_REQUEST[ $controller ] ) ) {
+        action_error_exit(
+            "Internal error: action file condition controller '$controller' is missing" );
+    }
+    $value = $_REQUEST[ $controller ];
+    $value = is_array( $value ) ? reset( $value ) : $value;
+    return (string) $value === $expected;
+}
+
 function action_stage_declared_files( $modjson, $action, $action_dir, $user_dir ) {
     if ( !isset( $modjson[ 'fields' ] ) || !is_array( $modjson[ 'fields' ] ) ) {
         return;
@@ -149,6 +165,9 @@ function action_stage_declared_files( $modjson, $action, $action_dir, $user_dir 
         }
         $id = $field[ 'id' ];
         if ( is_array( $scope ) && !isset( $scope[ $id ] ) ) {
+            continue;
+        }
+        if ( is_array( $scope ) && !action_scoped_file_is_active( $field ) ) {
             continue;
         }
         $requests = action_file_requests( $field );

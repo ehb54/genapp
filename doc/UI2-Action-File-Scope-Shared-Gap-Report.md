@@ -25,9 +25,12 @@ continue to require both files.
 
 An action may declare `actionfiledata` as a comma-separated list of file field
 ids. The generated endpoint stages and enforces required status only for those
-fields. An absent declaration preserves the established behavior of staging
-and enforcing every declared file field. Invalid, empty, unknown, or non-file
-ids fail closed as application configuration errors.
+fields. For an opted-in file field with an existing simple `field:value`
+`repeat` condition, the endpoint enforces the file only while that submitted
+condition is active. A missing condition controller fails closed. An absent
+`actionfiledata` declaration preserves the established behavior of staging and
+enforcing every declared file field. Invalid, empty, unknown, or non-file ids
+fail closed as application configuration errors.
 
 The contract is application-neutral. It contains no application, module,
 output, or scientific identifiers and changes neither action response payloads
@@ -46,8 +49,9 @@ of removing the application declaration and reverting the endpoint filter.
 - Check the opted-in and non-opted-in endpoint behavior under PHP.
 - Confirm the action metadata is present in generated UI2 module JSON.
 - Run the existing UI2 runtime and generation suites.
-- Regenerate only the deployed UI2 application and complete the authorized
-  browser acceptance cases, including output verification and reattachment.
+- Regenerate the UI2 target and the HTML5-owned shared action handlers, without
+  opening the legacy interface, then complete the authorized UI2 browser
+  acceptance cases, including output verification and reattachment.
 
 The repository owner explicitly approved the shared GenApp change and exact
 cross-repository manifest in the issue #201 task on 2026-09-08.
