@@ -91,8 +91,8 @@ close $appconfig_fh;
 
 my $runtime_endpoint = $endpoint;
 my %runtime_replacements = (
-    '__docroot:html5__'       => File::Spec->catdir( $generated->{app_dir}, qw(output) ),
-    '__application__'         => 'html5',
+    '__docroot:html5__/action_button' => File::Spec->catdir(
+        $generated->{app_dir}, qw(output html5) ),
     '__appconfig__'           => $runtime_appconfig_path,
     '__executable_path:html5__' => File::Spec->catdir( $generated->{app_dir}, 'bin' ),
 );
