@@ -61,6 +61,8 @@ is( $ui2_action->{type}, 'action', 'ui2 module summary carries action field type
 is( $ui2_action->{executable}, 'precheck_action', 'ui2 module summary carries action executable metadata' );
 is( $ui2_action->{resource}, 'host', 'ui2 module summary carries action resource metadata' );
 is( $ui2_action->{actiondata}, '_allformdata', 'ui2 module summary carries action data selection' );
+is( $ui2_action->{label}, "Input check (\x{00c5})", 'ui2 module summary preserves a standalone Unicode label' );
+is( $ui2_action->{buttontext}, "Precheck \x{00c5}\x{00b2}", 'ui2 module summary preserves adjacent Unicode code points' );
 is( $ui2_scoped_action->{actionfiledata}, 'primary_file', 'ui2 module summary carries the optional action file scope' );
 
 my $ui2_js = read_file( File::Spec->catfile( $generated->{app_dir}, qw(output ui2 js ui2.js) ) );

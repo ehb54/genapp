@@ -995,11 +995,17 @@ sub get_optional_view_json {
     return $view;
 }
 
-sub encode_json_for_single_quoted_template {
+sub encode_json_for_raw_template {
     my $json = $_[0];
     my $js = JSON->new;
     $js->canonical(1);
-    my $encoded = $js->encode( $json );
+    $js->ascii(1);
+    return $js->encode( $json );
+}
+
+sub encode_json_for_single_quoted_template {
+    my $json = $_[0];
+    my $encoded = encode_json_for_raw_template( $json );
 
     # Preserve JSON escapes while the surrounding single-quoted PHP/JavaScript
     # string is parsed, and keep apostrophes from ending that host string.

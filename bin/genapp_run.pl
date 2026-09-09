@@ -486,9 +486,9 @@ foreach my $l ( keys %langs )
                     }
 
                     if ( $freq =~ /^(menu|config|configbase):modules:id$/ && grep /__modulejson_raw__/, @l ) {
-                        my $js = JSON->new;
-                        $js->canonical(1);
-                        my $enc_mod_json = $js->encode( get_file_json_lang_specific( $current_module_file, $l, 1 ) );
+                        my $enc_mod_json = encode_json_for_raw_template(
+                            get_file_json_lang_specific( $current_module_file, $l, 1 )
+                        );
                         grep s/__modulejson_raw__/$enc_mod_json/g, @l;
                     }
                     if ( $freq =~ /^(menu|config|configbase):modules:id$/ && grep /__modulejson__/, @l ) {
@@ -503,9 +503,9 @@ foreach my $l ( keys %langs )
                         grep s/__modulejson__/$enc_mod_json/g, @l;
                     }
                     if ( $freq =~ /^(menu|config|configbase):modules:id$/ && grep /__viewjson_raw__/, @l ) {
-                        my $js = JSON->new;
-                        $js->canonical(1);
-                        my $enc_view_json = $js->encode( get_optional_view_json( $current_module_id, $l ) );
+                        my $enc_view_json = encode_json_for_raw_template(
+                            get_optional_view_json( $current_module_id, $l )
+                        );
                         grep s/__viewjson_raw__/$enc_view_json/g, @l;
                     }
                     if ( $freq =~ /^(menu|config|configbase):modules:id$/ && grep /__viewjson__/, @l ) {
@@ -729,9 +729,9 @@ foreach my $l ( keys %langs )
                                 print "rplc menu:id " . $$rplc_menu2{ "menu:id" } . " " . $$rplc_menu{ 'menu:id' } . "\n" if $debug_srplc; 
                                 @l = @l_sav;
                                 if ( grep /__modulejson_raw__/, @l ) {
-                                    my $js = JSON->new;
-                                    $js->canonical(1);
-                                    my $enc_mod_json = $js->encode( get_file_json_lang_specific( $module_to_file{ $l }{ $$rplc_menu2{ 'menu:modules:id' } }, $l, 1 ) );
+                                    my $enc_mod_json = encode_json_for_raw_template(
+                                        get_file_json_lang_specific( $module_to_file{ $l }{ $$rplc_menu2{ 'menu:modules:id' } }, $l, 1 )
+                                    );
                                     grep s/__modulejson_raw__/$enc_mod_json/g, @l;
                                 }
                                 if ( grep /__modulejson__/, @l ) {
@@ -746,9 +746,9 @@ foreach my $l ( keys %langs )
                                     grep s/__modulejson__/$enc_mod_json/g, @l;
                                 }
                                 if ( grep /__viewjson_raw__/, @l ) {
-                                    my $js = JSON->new;
-                                    $js->canonical(1);
-                                    my $enc_view_json = $js->encode( get_optional_view_json( $$rplc_menu2{ 'menu:modules:id' }, $l ) );
+                                    my $enc_view_json = encode_json_for_raw_template(
+                                        get_optional_view_json( $$rplc_menu2{ 'menu:modules:id' }, $l )
+                                    );
                                     grep s/__viewjson_raw__/$enc_view_json/g, @l;
                                 }
                                 if ( grep /__viewjson__/, @l ) {

@@ -63,12 +63,20 @@ is( $excluded, 'remainder', 'literal conditional removal leaves no pipe-bearing 
 
 is( fix_up_sub_tok('left|right'), 'left\|right', 'replacement quoting treats a pipe as literal text' );
 
+my $unicode_text = "\x{00c5}\x{00b2}";
+my $raw_json = encode_json_for_raw_template({ label => $unicode_text });
+is( $raw_json, '{"label":"\\u00c5\\u00b2"}', 'raw template JSON uses canonical ASCII-safe Unicode escapes' );
+unlike( $raw_json, qr/[^\x00-\x7f]/, 'raw template JSON contains only ASCII bytes' );
+is( decode_json($raw_json)->{label}, $unicode_text, 'raw template JSON decodes to the original Unicode text' );
+
 my $embedded_json = encode_json_for_single_quoted_template(
     {
+        label   => $unicode_text,
         pattern => '^(hello|sample)\.world$',
         note    => q{author's "quoted" value},
     }
 );
+like( $embedded_json, qr/\\\\u00c5\\\\u00b2/, 'embedded JSON preserves ASCII-safe Unicode escapes for its host string' );
 like( $embedded_json, qr/\\\\\\\\\.world/, 'embedded JSON doubles backslashes for its single-quoted host string' );
 like( $embedded_json, qr/author\\'s/, 'embedded JSON escapes apostrophes for its single-quoted host string' );
 

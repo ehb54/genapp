@@ -54,9 +54,9 @@
         {
             "role"       : "input",
             "id"         : "precheck",
-            "label"      : "Input check",
+            "label"      : "Input check (Å)",
             "type"       : "action",
-            "buttontext" : "Precheck",
+            "buttontext" : "Precheck Å²",
             "executable" : "precheck_action",
             "resource"   : "host",
             "actiondata" : "_allformdata",
