@@ -81,6 +81,36 @@
             "repeat"   : "show_conditional"
         },
         {
+            "role"       : "input",
+            "id"         : "fileless_precheck",
+            "label"      : "Fileless input check",
+            "type"       : "action",
+            "buttontext" : "Fileless precheck",
+            "executable" : "precheck_action",
+            "actiondata" : "sample",
+            "actionfiledata" : "_none"
+        },
+        {
+            "role"       : "input",
+            "id"         : "empty_file_scope_precheck",
+            "label"      : "Invalid empty file scope",
+            "type"       : "action",
+            "buttontext" : "Invalid empty file scope",
+            "executable" : "precheck_action",
+            "actiondata" : "sample",
+            "actionfiledata" : ""
+        },
+        {
+            "role"       : "input",
+            "id"         : "mixed_file_scope_precheck",
+            "label"      : "Invalid mixed file scope",
+            "type"       : "action",
+            "buttontext" : "Invalid mixed file scope",
+            "executable" : "precheck_action",
+            "actiondata" : "sample",
+            "actionfiledata" : "_none,primary_file"
+        },
+        {
             "role"  : "output",
             "id"    : "precheck_summary",
             "label" : "Precheck summary",

@@ -30,7 +30,7 @@ like( $endpoint, qr/type' \] == 'action'/, 'action endpoint recognizes action fi
 like( $endpoint, qr/action_execution_command/, 'action endpoint can use a declared application resource' );
 like( $endpoint, qr/proc_open\( \$action_command/, 'action endpoint runs the resolved action command' );
 like( $endpoint, qr/action_stage_declared_files/, 'action endpoint stages declared local or server file inputs for actions' );
-like( $endpoint, qr/function action_file_scope.*?actionfiledata.*?unknown file field/s, 'action endpoint validates an optional action-specific file scope' );
+like( $endpoint, qr/function action_file_scope.*?=== '_none'.*?unknown file field/s, 'action endpoint accepts an explicit fileless scope and validates named file scopes' );
 like( $endpoint, qr/is_array\( \$scope \).*?!isset\( \$scope\[ \$id \] \).*?continue/s, 'scoped actions skip unrelated declared file fields' );
 like( $endpoint, qr/function action_scoped_file_is_active.*?\$controller.*?\$expected.*?\$_REQUEST/s, 'scoped actions evaluate simple file-field visibility conditions from submitted controls' );
 like( $endpoint, qr/is_array\( \$scope \).*?!action_scoped_file_is_active\( \$field \).*?continue/s, 'scoped actions skip required files from inactive conditional branches' );
@@ -57,6 +57,7 @@ like( $ga_js, qr/case "dialog":/, 'action processor supports message and dialog 
 my $ui2_module = decode_json( read_file( File::Spec->catfile( $generated->{app_dir}, qw(output ui2 modules action_demo.json) ) ) );
 my ($ui2_action) = grep { $_->{id} eq 'precheck' } @{ $ui2_module->{modulejson}{fields} };
 my ($ui2_scoped_action) = grep { $_->{id} eq 'conditional_precheck' } @{ $ui2_module->{modulejson}{fields} };
+my ($ui2_fileless_action) = grep { $_->{id} eq 'fileless_precheck' } @{ $ui2_module->{modulejson}{fields} };
 is( $ui2_action->{type}, 'action', 'ui2 module summary carries action field type' );
 is( $ui2_action->{executable}, 'precheck_action', 'ui2 module summary carries action executable metadata' );
 is( $ui2_action->{resource}, 'host', 'ui2 module summary carries action resource metadata' );
@@ -64,6 +65,7 @@ is( $ui2_action->{actiondata}, '_allformdata', 'ui2 module summary carries actio
 is( $ui2_action->{label}, "Input check (\x{00c5})", 'ui2 module summary preserves a standalone Unicode label' );
 is( $ui2_action->{buttontext}, "Precheck \x{00c5}\x{00b2}", 'ui2 module summary preserves adjacent Unicode code points' );
 is( $ui2_scoped_action->{actionfiledata}, 'primary_file', 'ui2 module summary carries the optional action file scope' );
+is( $ui2_fileless_action->{actionfiledata}, '_none', 'ui2 module summary carries the explicit fileless action scope' );
 
 my $ui2_js = read_file( File::Spec->catfile( $generated->{app_dir}, qw(output ui2 js ui2.js) ) );
 my $ui2_source = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 add js ui2.js) ) );
@@ -114,7 +116,7 @@ close $runtime_endpoint_fh;
 my $php = qx{command -v php 2>/dev/null};
 chomp $php;
 SKIP: {
-    skip 'php is not available on PATH; PHP endpoint checks are deferred', 11 if !$php;
+    skip 'php is not available on PATH; PHP endpoint checks are deferred', 16 if !$php;
     for my $check (
         [ action     => $runtime_endpoint_path ],
         [ submission => $submit_endpoint_path ],
@@ -195,6 +197,67 @@ SKIP: {
     ok( ref($inactive_payload) eq 'HASH' && !$inactive_payload->{error}, 'opted-in action does not require a scoped file from an inactive branch' )
         or diag($inactive_json);
     like( $inactive_json, qr/Checked sample 'pasted'/, 'inactive scoped file branch still reaches its helper executable' );
+
+    my $fileless_window = 'permission-window-fileless';
+    my $fileless_request = encode_json({
+        '_window' => $fileless_window,
+        '_logon' => 'permission_user',
+        '_project' => 'fileless_project',
+        '_action' => 'fileless_precheck',
+        'sample' => 'without-files',
+    });
+    my $fileless_php_code = join "\n",
+        '$_REQUEST = json_decode(' . encode_json($fileless_request) . ', true);',
+        'session_name("GENAPP_ACTION_BUTTON");',
+        'session_id("genappfilelessactiontest");',
+        'session_start();',
+        '$_SESSION[' . encode_json($fileless_window) . '] = array("logon" => "permission_user", "project" => "fileless_project");',
+        'session_write_close();',
+        'include ' . encode_json($runtime_endpoint_path) . ';';
+    open my $fileless_output, '-|', $php, '-r', $fileless_php_code
+        or die "could not run generated fileless action endpoint with php: $!";
+    my $fileless_json = do { local $/; <$fileless_output> };
+    close $fileless_output;
+    is( $? >> 8, 0, 'generated action endpoint runs with an explicit fileless scope' );
+    my $fileless_payload = eval { decode_json($fileless_json) };
+    ok( ref($fileless_payload) eq 'HASH' && !$fileless_payload->{error}, 'fileless action ignores every declared required file' )
+        or diag($fileless_json);
+    like( $fileless_json, qr/Checked sample 'without-files'/, 'fileless action reaches its helper executable' );
+
+    for my $invalid_case (
+        [ 'empty_file_scope_precheck', 'emptyfilescope',
+          qr/actionfiledata must name at least one file field/ ],
+        [ 'mixed_file_scope_precheck', 'mixedfilescope',
+          qr/actionfiledata names an unknown file field '_none'/ ],
+    ) {
+        my ( $action_id, $session_id, $expected_error ) = @{$invalid_case};
+        my $invalid_window = "permission-window-$session_id";
+        my $invalid_request = encode_json({
+            '_window' => $invalid_window,
+            '_logon' => 'permission_user',
+            '_project' => "${session_id}_project",
+            '_action' => $action_id,
+            'sample' => 'invalid-scope',
+        });
+        my $invalid_php_code = join "\n",
+            '$_REQUEST = json_decode(' . encode_json($invalid_request) . ', true);',
+            'session_name("GENAPP_ACTION_BUTTON");',
+            'session_id(' . encode_json("genapp${session_id}test") . ');',
+            'session_start();',
+            '$_SESSION[' . encode_json($invalid_window) . '] = array("logon" => "permission_user", "project" => ' . encode_json("${session_id}_project") . ');',
+            'session_write_close();',
+            'include ' . encode_json($runtime_endpoint_path) . ';';
+        open my $invalid_output, '-|', $php, '-r', $invalid_php_code
+            or die "could not run generated invalid action endpoint with php: $!";
+        my $invalid_json = do { local $/; <$invalid_output> };
+        close $invalid_output;
+        my $invalid_payload = eval { decode_json($invalid_json) };
+        like(
+            $invalid_payload->{error} || '',
+            $expected_error,
+            "$action_id fails closed"
+        );
+    }
 
     my $legacy_window = 'permission-window-legacy';
     my $legacy_request = encode_json({

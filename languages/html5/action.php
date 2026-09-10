@@ -110,6 +110,9 @@ function action_file_scope( $modjson, $action ) {
     if ( !is_string( $action[ 'actionfiledata' ] ) ) {
         action_error_exit( "Internal error: actionfiledata must be a comma-separated string" );
     }
+    if ( trim( $action[ 'actionfiledata' ] ) === '_none' ) {
+        return array();
+    }
     $requested = array_values( array_filter( array_map(
         'trim', explode( ',', $action[ 'actionfiledata' ] ) ), 'strlen' ) );
     if ( !count( $requested ) ) {

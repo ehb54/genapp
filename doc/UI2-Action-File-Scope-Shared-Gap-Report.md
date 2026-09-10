@@ -1,6 +1,7 @@
 # Action File Scope Shared-Gap Report
 
-Status: approved for implementation on 2026-09-08.
+Status: approved for implementation on 2026-09-08; fileless extension approved
+under `ehb54/zazzie#281` on 2026-09-10.
 
 ## Application symptom
 
@@ -12,6 +13,12 @@ empty required file from an inactive branch.
 Changing the application helper could not solve this because the generated
 endpoint rejected the request before invoking that helper. Making every
 conditional file optional would weaken ordinary form validation.
+
+Advanced MD adaptive-sampling acceptance later demonstrated the zero-file
+form of the same gap. Its setup inspector intentionally consumes only scalar
+setup values, but the endpoint rejected its required molecular fields before
+invoking the helper. A narrow `actiondata` declaration cannot express file
+scope because action file staging is an independent endpoint contract.
 
 ## Neutral reproduction
 
@@ -25,12 +32,14 @@ continue to require both files.
 
 An action may declare `actionfiledata` as a comma-separated list of file field
 ids. The generated endpoint stages and enforces required status only for those
-fields. For an opted-in file field with an existing simple `field:value`
-`repeat` condition, the endpoint enforces the file only while that submitted
-condition is active. A missing condition controller fails closed. An absent
-`actionfiledata` declaration preserves the established behavior of staging and
-enforcing every declared file field. Invalid, empty, unknown, or non-file ids
-fail closed as application configuration errors.
+fields. The reserved exact value `_none` declares that the action stages and
+validates no files. It cannot be combined with file ids. For an opted-in file
+field with an existing simple `field:value` `repeat` condition, the endpoint
+enforces the file only while that submitted condition is active. A missing
+condition controller fails closed. An absent `actionfiledata` declaration
+preserves the established behavior of staging and enforcing every declared
+file field. Invalid, empty, mixed, unknown, or non-file declarations fail
+closed as application configuration errors.
 
 The contract is application-neutral. It contains no application, module,
 output, or scientific identifiers and changes neither action response payloads
@@ -46,6 +55,8 @@ of removing the application declaration and reverting the endpoint filter.
 ## Verification
 
 - Generate the neutral fixture for HTML5 and UI2.
+- Prove an explicitly fileless action reaches its helper while all declared
+  required files are absent.
 - Check the opted-in and non-opted-in endpoint behavior under PHP.
 - Confirm the action metadata is present in generated UI2 module JSON.
 - Run the existing UI2 runtime and generation suites.
@@ -53,5 +64,6 @@ of removing the application declaration and reverting the endpoint filter.
   opening the legacy interface, then complete the authorized UI2 browser
   acceptance cases, including output verification and reattachment.
 
-The repository owner explicitly approved the shared GenApp change and exact
-cross-repository manifest in the issue #201 task on 2026-09-08.
+The repository owner explicitly approved the original shared GenApp change and
+exact cross-repository manifest in the issue #201 task on 2026-09-08, and the
+fileless extension and exact manifest under `ehb54/zazzie#281` on 2026-09-10.
