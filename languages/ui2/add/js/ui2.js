@@ -1877,14 +1877,6 @@
     });
   }
 
-  function recordTestScenarioSubmitRejection(payload) {
-    if (!payload?.error || payload?._uuid || isTerminalStatus(runtimeStatus(payload))) {
-      return false;
-    }
-    recordTestScenarioValidationOutcome(true);
-    return true;
-  }
-
   function refreshTestScenarioVerification(jobStatus) {
     const scenario = selectedTestScenario();
     if (!scenario) return;
@@ -7620,7 +7612,6 @@
       }
       state.submitResponse = payload;
       showLegacyMessagePayload(payload);
-      recordTestScenarioSubmitRejection(payload);
       if (!response.ok || payload.error || payload._status === "failed") {
         throw new Error(payload.error || `Runtime returned HTTP ${response.status}`);
       }
@@ -13829,7 +13820,6 @@
       attachTestScenarioFile,
       evaluateTestScenarioVerification,
       testScenarioOutputNonempty,
-      recordTestScenarioSubmitRejection,
       applyTestScenario,
       testScenarioSnapshot,
       clearTestScenarios,
