@@ -53,6 +53,13 @@ and omits password-change controls. HTTP 404 means the runtime option is
 disabled and preserves legacy behavior. A malformed explicit policy or a
 non-404 manifest failure fails closed and must not expose password controls.
 
+An external-only manifest may also provide a bounded plain-text
+`warning_banner`. UI2 displays it on the sign-in splash before the provider
+action. The field is ignored for providers-only, legacy, unavailable, malformed,
+or disabled policies. The application owns the text; UI2 inserts it as text,
+not HTML. Applications that do not supply the field retain their existing
+presentation.
+
 UI presentation is not an authorization boundary. Applications using
 external-only mode must opt generated password login, password registration,
 and password-change handlers into `external_auth_policy` and provide the

@@ -1736,6 +1736,23 @@ code {
   font-size: clamp(2rem, 5vw, 3.4rem);
 }
 
+.ui2-splash-warning {
+  width: 100%;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--ui2-border);
+  border-radius: 6px;
+  background: var(--ui2-panel-soft);
+  color: var(--ui2-text);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.ui2-splash-warning[hidden] {
+  display: none;
+}
+
 .ui2-splash-actions {
   display: flex;
   flex-wrap: wrap;

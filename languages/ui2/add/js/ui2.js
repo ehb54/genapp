@@ -81,7 +81,7 @@
   let nglLoadPromise = null;
   let katexLoadPromise = null;
   let externalAuthPolicyPromise = null;
-  let activeExternalAuthPolicy = { mode: "legacy", registration: "legacy", providers: [] };
+  let activeExternalAuthPolicy = { mode: "legacy", registration: "legacy", providers: [], warningBanner: "" };
   let reactWorkbenchRoot = null;
   let reactWorkbenchSyncFrame = null;
   const reactWorkbenchSyncListeners = new Set();
@@ -790,20 +790,22 @@
 
   function normalizeExternalAuthPolicy(payload) {
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-      return { mode: "unavailable", registration: "unavailable", providers: [] };
+      return { mode: "unavailable", registration: "unavailable", providers: [], warningBanner: "" };
     }
     const providers = normalizeExternalAuthProviders(payload);
     const declaredMode = stringValue(payload.authentication_mode).trim();
     const declaredRegistration = stringValue(payload.registration).trim();
     if (!declaredMode && !declaredRegistration) {
-      return { mode: "legacy", registration: "legacy", providers };
+      return { mode: "legacy", registration: "legacy", providers, warningBanner: "" };
     }
     const externalOnly = declaredMode === "external_only" &&
       declaredRegistration === "jit" && providers.length > 0;
+    const warningBanner = stringValue(payload.warning_banner).trim();
     return {
       mode: externalOnly ? "external_only" : "unavailable",
       registration: externalOnly ? "jit" : "unavailable",
-      providers: externalOnly ? providers : []
+      providers: externalOnly ? providers : [],
+      warningBanner: externalOnly && warningBanner.length <= 8000 ? warningBanner : ""
     };
   }
 
@@ -819,13 +821,13 @@
         headers: { Accept: "application/json" }
       }).then(async (response) => {
         if (response.status === 404) {
-          return { mode: "legacy", registration: "legacy", providers: [] };
+          return { mode: "legacy", registration: "legacy", providers: [], warningBanner: "" };
         }
         if (!response.ok) {
           throw new Error("Authentication policy is unavailable.");
         }
         return normalizeExternalAuthPolicy(await response.json());
-      }).catch(() => ({ mode: "unavailable", registration: "unavailable", providers: [] }))
+      }).catch(() => ({ mode: "unavailable", registration: "unavailable", providers: [], warningBanner: "" }))
         .then((policy) => {
           activeExternalAuthPolicy = policy;
           return policy;
@@ -1127,6 +1129,9 @@
     const panel = el("section", "ui2-dialog ui2-splash-dialog");
     const title = el("h2", null, appTitle());
     title.id = "ui2-splash-title";
+    const warning = el("p", "ui2-splash-warning");
+    warning.hidden = true;
+    warning.setAttribute("role", "note");
 
     const actions = el("div", "ui2-splash-actions");
     const login = el("button", "ui2-splash-action", "Login");
@@ -1157,7 +1162,7 @@
       footer.appendChild(el("p", "ui2-splash-meta", line));
     });
 
-    panel.append(title, actions, docs, footer);
+    panel.append(title, warning, actions, docs, footer);
     overlay.appendChild(panel);
     document.body.appendChild(overlay);
     renderSplashAuthentication(overlay);
@@ -1168,6 +1173,7 @@
     const login = actions?.querySelector("button:nth-of-type(1)");
     const register = actions?.querySelector("button:nth-of-type(2)");
     const status = actions?.querySelector(".ui2-splash-auth-status");
+    const warning = overlay?.querySelector(".ui2-splash-warning");
     if (!actions || !login || !register) {
       return;
     }
@@ -1179,6 +1185,10 @@
       login.hidden = true;
       register.hidden = true;
       status.textContent = "Loading sign-in options…";
+      if (warning) {
+        warning.hidden = true;
+        warning.textContent = "";
+      }
     }
     actions.querySelectorAll(".ui2-splash-external-auth").forEach((node) => node.remove());
     const policy = await loadExternalAuthPolicy();
@@ -1189,6 +1199,10 @@
       : "";
     if (policy.mode !== "external_only") {
       return;
+    }
+    if (warning && policy.warningBanner) {
+      warning.textContent = policy.warningBanner;
+      warning.hidden = false;
     }
     policy.providers.forEach((provider) => {
       const link = el("a", "ui2-splash-action ui2-splash-external-auth", provider.label);

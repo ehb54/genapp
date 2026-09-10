@@ -2871,10 +2871,29 @@ assert.strictEqual(
   hooks.normalizeExternalAuthPolicy({
     authentication_mode: "external_only",
     registration: "jit",
-    providers: [{ id: "login-gov", label: "Sign in or create an account with Login.gov", start_url: "auth/login-gov/start.php" }]
+    providers: [{ id: "login-gov", label: "Sign in or create an account with Login.gov", start_url: "auth/login-gov/start.php" }],
+    warning_banner: "Authorized use only."
   }).mode,
   "external_only",
   "an explicit complete policy enables external-only authentication"
+);
+assert.strictEqual(
+  hooks.normalizeExternalAuthPolicy({
+    authentication_mode: "external_only",
+    registration: "jit",
+    providers: [{ id: "login-gov", label: "Sign in with Login.gov", start_url: "auth/login-gov/start.php" }],
+    warning_banner: "  Authorized use only.  "
+  }).warningBanner,
+  "Authorized use only.",
+  "external-only authentication accepts a bounded application-owned warning banner"
+);
+assert.strictEqual(
+  hooks.normalizeExternalAuthPolicy({
+    providers: [{ id: "login-gov", label: "Sign in with Login.gov", start_url: "auth/login-gov/start.php" }],
+    warning_banner: "Must not appear for legacy authentication."
+  }).warningBanner,
+  "",
+  "a warning banner cannot affect a non-opted-in legacy application"
 );
 assert.strictEqual(
   hooks.normalizeExternalAuthPolicy({
@@ -2900,8 +2919,9 @@ assert(
 assert(
   source.includes('function renderSplashAuthentication(overlay)') &&
     source.includes('policy.mode !== "legacy"') &&
-    source.includes('ui2-splash-external-auth'),
-  "UI2 replaces Login and Register only for an explicit external-only policy"
+    source.includes('ui2-splash-external-auth') &&
+    source.includes('warning.textContent = policy.warningBanner'),
+  "UI2 replaces Login and Register and displays the warning only for an explicit external-only policy"
 );
 assert(
   !source.includes('container.dataset.loaded === "true"'),
