@@ -156,6 +156,14 @@ failed terminal job status without running catalog-provided code. Application
 or browser-lane work may supply the event that proves an expected rejection;
 the catalog remains declarative.
 
+For scientific module submission, a parsed application response containing an
+explicit error before a job UUID is accepted is a validation rejection. A
+response carrying an accepted UUID or terminal job status remains in the job
+lifecycle, and transport, authentication, and malformed-response failures do
+not satisfy an expected validation rejection. This classification changes only
+scenario-verification state; ordinary error presentation and submission
+behavior remain unchanged.
+
 The verifier reads final durable output after completion and again when a job
 is reattached.  Its initial allowlist is intentionally small:
 

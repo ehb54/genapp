@@ -5042,6 +5042,87 @@ assert.strictEqual(
   "passed",
   "a successful load-only scenario does not require job submission"
 );
+const validationRejectedScenario = {
+  id: "generic_pre_job_rejection",
+  expected_outcome: "validation_rejected",
+  inputs: {}
+};
+hooks.state.testScenarios = {
+  available: true,
+  loading: false,
+  catalog: {
+    schema_version: 2,
+    catalog_revision: "generic-pre-job-rejection-1",
+    module_id: "neutral_scenario_module",
+    scenarios: [validationRejectedScenario]
+  },
+  selectedId: validationRejectedScenario.id,
+  verification: { state: "failed", checks: [] }
+};
+assert.strictEqual(
+  hooks.recordTestScenarioSubmitRejection({ error: "Neutral input was rejected" }),
+  true,
+  "a parsed application error without an accepted job is a pre-job rejection"
+);
+assert.strictEqual(
+  hooks.state.testScenarios.verification.state,
+  "passed",
+  "a generic pre-job rejection satisfies an expected validation rejection"
+);
+hooks.state.testScenarios.verification = { state: "not_run", checks: [] };
+assert.strictEqual(
+  hooks.recordTestScenarioSubmitRejection({
+    error: "The accepted job later failed",
+    _uuid: "3dcce914-6ccd-4420-89c2-821f8389bdc8"
+  }),
+  false,
+  "an error response carrying an accepted job UUID is not a pre-job rejection"
+);
+assert.strictEqual(
+  hooks.state.testScenarios.verification.state,
+  "not_run",
+  "an accepted job error remains available for terminal job verification"
+);
+assert.strictEqual(
+  hooks.recordTestScenarioSubmitRejection({
+    error: "The job reached a terminal failure",
+    _status: "failed"
+  }),
+  false,
+  "a terminal failed response is not reclassified as a pre-job rejection"
+);
+assert.strictEqual(
+  hooks.state.testScenarios.verification.state,
+  "not_run",
+  "terminal job verification remains unchanged when the response omits its UUID"
+);
+hooks.state.testScenarios.catalog.scenarios = [{
+  ...validationRejectedScenario,
+  expected_outcome: "job_failed"
+}];
+hooks.state.testScenarios.verification = { state: "not_run", checks: [] };
+assert.strictEqual(
+  hooks.recordTestScenarioSubmitRejection({ error: "Neutral input was rejected" }),
+  true,
+  "the generic boundary recognizes a parsed pre-job rejection independently of the expected outcome"
+);
+assert.strictEqual(
+  hooks.state.testScenarios.verification.state,
+  "failed",
+  "a pre-job rejection does not satisfy an expected terminal job failure"
+);
+hooks.state.testScenarios.selectedId = "";
+hooks.state.testScenarios.verification = { state: "not_run", checks: [] };
+assert.strictEqual(
+  hooks.recordTestScenarioSubmitRejection({ error: "Ordinary application rejection" }),
+  true,
+  "ordinary parsed application errors retain the same pre-job classification"
+);
+assert.strictEqual(
+  hooks.state.testScenarios.verification.state,
+  "not_run",
+  "ordinary submissions without a selected scenario do not gain verification state"
+);
 const scenarioSnapshotBefore = hooks.testScenarioSnapshot();
 const scenarioSnapshotRepeated = hooks.testScenarioSnapshot();
 assert.strictEqual(
