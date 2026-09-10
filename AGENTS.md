@@ -450,6 +450,10 @@ changing it, read `../genapp_zazzie/docs/plot_presentation.md` and rollout issue
 - Artists edit `../genapp_zazzie/plot_presentations/*.yaml`.
 - SASSIE-web views map stable scientific identities to named presentation
   styles; drivers do not emit visual styling.
+- Repeated families retain one scientific `series_role` and may add an opaque,
+  deterministic `series_group`; views may select a generic group palette.
+  UI2 and the Lab use the same evaluator and fail open to ordinary Plotly
+  rendering when grouping metadata is unavailable.
 - Responsive geometry is owned by generic UI2 and the application view, not
   presentation YAML.
 - The application compiler generates

@@ -207,6 +207,15 @@ Detailed browser and scientific presentation validation is recorded in
 justify a new plotting architecture; first determine whether the defect is in
 the science values, driver preparation, shared runtime, or UI2 rendering.
 
+### Repeated-family presentation
+
+For repeated members of one scientific family, a producer may add an opaque,
+deterministic `meta.series_group` without changing `meta.series_role`.
+Application views may opt that role into a generic group palette. UI2 uses the
+group only to select appearance channels; it must not infer science, reorder
+traces, or use the value as runtime or reattachment state. Missing grouping
+metadata is a presentation-only fallback, not a plotting error.
+
 ## Preflight For Any Plot Change
 
 Read the applicable `AGENTS.md` files in `genapp`, `genapp_zazzie`, and

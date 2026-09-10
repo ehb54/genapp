@@ -83,6 +83,10 @@ feature parity. Before removal:
 Until that gate is completed, keep target filtering and legacy regression
 tests that prevent shared generator changes from silently altering HTML5.
 
+Plot presentation registries and optional repeated-family group identities are
+additive UI2 metadata. They do not create an HTML5 requirement and do not alter
+the ordinary Plotly payload, final output, or reattachment contract.
+
 ## Application Repository Adoption
 
 Application repositories may record their own migration status, rollout gates,

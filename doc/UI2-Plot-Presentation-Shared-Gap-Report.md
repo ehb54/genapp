@@ -38,6 +38,19 @@ profiles under `window.GENAPP_PLOT_PRESENTATIONS`. A profile may define
 Each token style may set documented Plotly-safe presentation values: color,
 opacity, line width/style, marker shape/size, and legend visibility.
 
+The approved additive extension also covers repeated families. A producer may
+add an opaque deterministic `meta.series_group` while retaining its scientific
+`meta.series_role`. The view may select a generic group palette whose color,
+dash, marker, and marker-pattern channels are resolved by the same shared
+evaluator used by UI2 and the Plot Presentation Lab. Missing or malformed group
+metadata disables grouping only; ordinary token styling and Plotly defaults
+remain available.
+
+The generated registry is a versioned envelope with a content build id. The
+runtime accepts the earlier plain-profile registry during transition. YAML is
+parsed once by the application-owned strict loader; aliases, duplicate keys,
+unknown properties, and geometry are rejected.
+
 The UI2 resolver merges the default UI2 theme, then the selected profile, then
 the token style. It rejects geometry and manual-placement properties. It does
 not inspect module ids, output ids, or scientific role names.

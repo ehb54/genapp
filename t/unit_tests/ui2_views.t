@@ -26,6 +26,7 @@ ok( -f File::Spec->catfile( $ui2, 'index.html' ), 'ui2 index was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(js app-map.js) ), 'ui2 app map was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(css ui2.css) ), 'ui2 stylesheet was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(js ui2.js) ), 'ui2 script was copied' );
+ok( -f File::Spec->catfile( $ui2, qw(js plot-presentation.js) ), 'shared plot presentation evaluator was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(js plotly-surface.js) ), 'shared Plotly final-surface policy was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(js plotly-layout.js) ), 'shared responsive Plotly layout policy was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(ajax ui2_ai_helper.php) ), 'ui2 AI Helper bridge was copied' );
@@ -52,6 +53,8 @@ like( $index, qr/js\/app-map\.js/, 'ui2 index loads the generated app map' );
 like( $index, qr/\.\.\/js\/autobahn\.min\.js/, 'ui2 index preloads the existing legacy Autobahn websocket client' );
 like( $index, qr/\.\.\/js\/plotly-2\.35\.2\.min\.js/, 'ui2 index preloads the existing generated Plotly bundle' );
 like( $index, qr/js\/plot-presentations\.js/, 'ui2 index loads the optional application plot presentation catalog before the UI2 renderer' );
+like( $index, qr/js\/plot-presentation\.js[\s\S]+js\/plot-presentations\.js[\s\S]+js\/ui2\.js/,
+    'ui2 loads the shared evaluator before the application catalog and renderer' );
 like( $index, qr/js\/plotly-surface\.js[\s\S]+js\/ui2\.js/, 'ui2 index loads final-surface contrast policy before the UI2 renderer' );
 like( $index, qr/js\/plotly-layout\.js[\s\S]+js\/ui2\.js/, 'ui2 index loads responsive Plotly layout policy before the UI2 renderer' );
 like( $index, qr/js\/ui2\.js/, 'ui2 index loads the plain JavaScript playground' );

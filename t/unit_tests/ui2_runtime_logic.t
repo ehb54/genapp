@@ -21,6 +21,7 @@ const vm = require("vm");
 const repoRoot = "$repo_root";
 const surfaceSource = fs.readFileSync(path.join(repoRoot, "languages/ui2/add/js/plotly-surface.js"), "utf8");
 const layoutSource = fs.readFileSync(path.join(repoRoot, "languages/ui2/add/js/plotly-layout.js"), "utf8");
+const presentationSource = fs.readFileSync(path.join(repoRoot, "languages/ui2/add/js/plot-presentation.js"), "utf8");
 let source = fs.readFileSync(path.join(repoRoot, "languages/ui2/add/js/ui2.js"), "utf8");
 source = source.replace(/\\n  init\\(\\);\\n\\}\\(\\)\\);\\s*\$/, "\\n}());\\n");
 
@@ -417,7 +418,35 @@ document.body.appendChild(sessionStatus);
 vm.createContext(context);
 vm.runInContext(surfaceSource, context, { filename: "plotly-surface.js" });
 vm.runInContext(layoutSource, context, { filename: "plotly-layout.js" });
+vm.runInContext(presentationSource, context, { filename: "plot-presentation.js" });
 vm.runInContext(source, context, { filename: "ui2.js" });
+
+const presentation = context.window.GenAppPlotPresentation;
+assert.strictEqual(presentation.apiVersion, 1, "plot presentation helper exposes a versioned API");
+const groupTrace = { type: "bar", meta: { series_role: "curve", series_group: "family_0123456789abcdeffedcba98" },
+  marker: { pattern: { solidity: 0.4 } }, error_y: { array: [1] } };
+const groupProfile = { palette: { red: "#f00", blue: "#00f" },
+  styles: { curve: { line_width: 3 } },
+  group_palettes: { repeated: { color: ["red", "blue"], marker_pattern: ["/", "x"] } } };
+const groupStyled = presentation.styleTrace(
+  groupTrace, { token: "curve", groupPalette: "repeated" }, groupProfile, {});
+assert.notStrictEqual(groupStyled, groupTrace, "trace styling is copy-on-write");
+assert.ok(["#f00", "#00f"].includes(groupStyled.marker.color), "group palette selects a color");
+assert.ok(["/", "x"].includes(groupStyled.marker.pattern.shape), "marker pattern is nested correctly");
+assert.strictEqual(groupStyled.marker.pattern.solidity, 0.4, "existing marker pattern fields survive");
+assert.strictEqual(groupStyled.marker.symbol, undefined,
+  "bar traces do not receive scatter-only marker symbols");
+assert.strictEqual(groupTrace.line, undefined, "source trace is unchanged");
+const lineStyled = presentation.styleTrace(
+  { type: "scatter3d", meta: groupTrace.meta, error_z: { array: [1] } },
+  { token: "curve", groupPalette: "repeated" }, groupProfile, {});
+assert.strictEqual(lineStyled.line.width, 3, "line token style is applied to scatter traces");
+assert.ok(lineStyled.error_z.color, "3-D uncertainty receives the resolved presentation color");
+assert.strictEqual(lineStyled.marker?.pattern, undefined,
+  "scatter traces do not receive Plotly bar-only marker patterns");
+const plainTrace = { x: [1], y: [2] };
+assert.strictEqual(presentation.styleTrace(plainTrace, null, groupProfile, {}), plainTrace,
+  "metadata-free traces retain default Plotly rendering");
 
 const hooks = context.window.GenAppUi2TestHooks;
 assert(hooks, "test hooks were exposed");

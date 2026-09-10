@@ -12130,27 +12130,10 @@
   function plotPresentationProfileForOutput(output) {
     const selection = plotPresentationForOutput(output);
     const profileName = String(selection.profile || "").trim();
-    if (!profileName) {
+    if (!profileName || typeof window.GenAppPlotPresentation?.resolveProfile !== "function") {
       return {};
     }
-    const profiles = window.GENAPP_PLOT_PRESENTATIONS;
-    if (!profiles || typeof profiles !== "object") {
-      return {};
-    }
-    const resolve = (name, seen = new Set()) => {
-      if (!name || seen.has(name)) {
-        return {};
-      }
-      seen.add(name);
-      const profile = profiles[name];
-      if (!profile || typeof profile !== "object") {
-        console.warn(`[ui2] unknown plot presentation profile: ${name}`);
-        return {};
-      }
-      const inherited = resolve(String(profile.inherits || "").trim(), seen);
-      return mergePlotPresentationProfiles(inherited, profile);
-    };
-    return resolve(profileName);
+    return window.GenAppPlotPresentation.resolveProfile(profileName);
   }
 
   function mergePlotPresentationProfiles(base, override) {
@@ -12288,54 +12271,19 @@
     const presentation = plotPresentationProfileForOutput(output);
     return data.map((trace) => {
       const role = trace?.meta?.series_role;
-      const policy = role ? traceRoles[role] : null;
+      const rawPolicy = role ? traceRoles[role] : null;
+      const policy = typeof rawPolicy === "string" ? { token: rawPolicy } : rawPolicy;
       if (!policy || typeof policy !== "object") {
         return trace;
       }
-      return applyPlotPresentationStyle(trace, policy, presentation);
+      return window.GenAppPlotPresentation?.styleTrace?.(
+        trace, policy, presentation, plotlyThemeColors()) || trace;
     });
   }
 
   function applyPlotPresentationStyle(trace, policy, presentation) {
-    const styled = Object.assign({}, trace);
-    const token = String(policy?.token || "").trim();
-    const defaultStyles = {
-      context: { color: "rgba(113, 196, 232, 0.42)" }
-    };
-    const style = token ? (presentation?.styles?.[token] || defaultStyles[token]) : null;
-    const colors = plotlyThemeColors();
-    if (style && typeof style === "object") {
-      const color = presentationColor(style.color, presentation, colors);
-      const opacity = presentationNumber(style.opacity);
-      const lineWidth = presentationNumber(style.line_width);
-      const markerSize = presentationNumber(style.marker_size);
-      if (color || lineWidth !== null || typeof style.line_style === "string") {
-        styled.line = Object.assign({}, trace.line || {},
-          color ? { color } : {},
-          lineWidth !== null ? { width: lineWidth } : {},
-          typeof style.line_style === "string" ? { dash: style.line_style } : {});
-      }
-      if (color || markerSize !== null || typeof style.marker === "string") {
-        styled.marker = Object.assign({}, trace.marker || {},
-          color ? { color } : {},
-          markerSize !== null ? { size: markerSize } : {},
-          typeof style.marker === "string" ? { symbol: style.marker } : {});
-      }
-      if (opacity !== null) {
-        styled.opacity = opacity;
-      }
-      if (style.legend === "hidden") {
-        styled.showlegend = false;
-      } else if (style.legend === "shown") {
-        styled.showlegend = true;
-      }
-    }
-    if (policy?.legend === "hide") {
-      styled.showlegend = false;
-    } else if (policy?.legend === "show") {
-      styled.showlegend = true;
-    }
-    return styled;
+    return window.GenAppPlotPresentation?.styleTrace?.(
+      trace, policy, presentation, plotlyThemeColors()) || trace;
   }
 
   function debugPlotlyResize(label, output, width, height) {

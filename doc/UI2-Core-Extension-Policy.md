@@ -165,6 +165,15 @@ surface/text, hover labels, and modebar presentation. Normal UI2 and preview
 tools must use the same resolver; a surrounding theme name or separate
 light/dark shortcut must not override the final-surface result.
 
+### Repeated-family presentation
+
+Repeated-family differentiation follows the same neutral boundary. The
+producer retains one scientific role and may provide an opaque stable group
+identity. A view may select a generic group palette. Core may map that identity
+to color, dash, marker, and marker-pattern slots, but must not interpret the
+identity, inspect module names, or change data. UI2 and authoring previews must
+call the same shared evaluator.
+
 ## Required verification
 
 Every shared-core change requires:
