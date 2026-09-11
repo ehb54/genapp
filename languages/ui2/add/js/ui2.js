@@ -8505,8 +8505,23 @@
       return null;
     }
     applyInputPayload(payload._getinput, { reselectLocalFiles: true });
-    selectTestScenarioForInputs(payload._getinput);
-    return payload._getinput;
+    const restoredInput = savedInputSummaryValues(payload._getinput);
+    selectTestScenarioForInputs(restoredInput);
+    return restoredInput;
+  }
+
+  function savedInputSummaryValues(inputs) {
+    const summary = Object.assign({}, inputs || {});
+    (state.module?.fields || []).forEach((field) => {
+      if (!fieldIsFileLike(field) || valueList(summary[field.id]).some((value) => stringValue(value).trim())) {
+        return;
+      }
+      const restoredValue = state.values?.[field.id];
+      if (valueList(restoredValue).some((value) => stringValue(value).trim())) {
+        summary[field.id] = cloneUi2Value(restoredValue);
+      }
+    });
+    return summary;
   }
 
   function savedInputRestoreError(payload, uuid, inputs = null) {
@@ -13645,6 +13660,7 @@
       dynamicOutputItems,
       updateDynamicOutput,
       mergeSavedInputPayloads,
+      savedInputSummaryValues,
       menuVisibleForSession,
       syncSidebarModuleSelection,
       moduleIdFromSwitchParts,

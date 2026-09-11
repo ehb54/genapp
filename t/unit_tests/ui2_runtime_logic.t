@@ -3559,6 +3559,32 @@ assert.strictEqual(
   "attach replay merges direct saved-input logs over incomplete get_results input"
 );
 
+hooks.state.module = {
+  fields: [
+    { id: "reference_pdb", type: "lrfile" },
+    { id: "notes", type: "text" }
+  ]
+};
+hooks.state.values = {
+  reference_pdb: "no_project_specified/bundle/reference.pdb",
+  notes: "default note"
+};
+const savedInputSummary = hooks.savedInputSummaryValues({
+  run_name: "reattached_run",
+  _selaltval_reference_pdb: "reference_pdb_altval",
+  reference_pdb_altval: ["Li9idW5kbGUvcmVmZXJlbmNlLnBkYg=="]
+});
+assert.strictEqual(
+  savedInputSummary.reference_pdb,
+  "no_project_specified/bundle/reference.pdb",
+  "reattachment summary includes the restored display value for a server-selected file"
+);
+assert.strictEqual(
+  Object.prototype.hasOwnProperty.call(savedInputSummary, "notes"),
+  false,
+  "reattachment summary does not add unrelated active-form defaults"
+);
+
 const replayControl = {
   type: "text",
   value: "",
