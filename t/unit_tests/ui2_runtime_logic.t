@@ -4236,6 +4236,56 @@ assert.deepStrictEqual(
   "UI2 warns only for current-format repeated local files"
 );
 
+const mergedRepeatedLocalInputs = hooks.mergeSavedInputPayloads(
+  {
+    _getinput: {
+      "row_count-data_file_name-0": ["local_one.dat"],
+      "row_count-data_file_name-1": ["local_two.dat"]
+    }
+  },
+  {
+    _getinput: {
+      data_file_name: ["local_one.dat", "local_two.dat"]
+    }
+  }
+)._getinput;
+hooks.state.serverSelections = {};
+assert.deepStrictEqual(
+  hooks.savedInputRestoreWarnings(mergedRepeatedLocalInputs),
+  [
+    "Data file (local_one.dat) was selected from this browser and must be selected again before submitting a new run.",
+    "Data file (local_two.dat) was selected from this browser and must be selected again before submitting a new run."
+  ],
+  "UI2 reports each repeated local file once when saved input sources contain identical aggregate and row values"
+);
+
+hooks.state.serverSelections = {
+  "data_file_name:0": {
+    id: "data_file_name",
+    encodedPath: serverRepeatOne
+  }
+};
+assert.deepStrictEqual(
+  hooks.savedInputRestoreWarnings(mergedRepeatedLocalInputs),
+  ["Data file (local_two.dat) was selected from this browser and must be selected again before submitting a new run."],
+  "UI2 preserves one local warning when identical merged inputs mix a restored server row with a local row"
+);
+
+hooks.state.serverSelections = {};
+const conflictingRepeatedLocalInputs = {
+  ...mergedRepeatedLocalInputs,
+  "row_count-data_file_name-1": ["different_local_two.dat"]
+};
+assert.deepStrictEqual(
+  hooks.savedInputRestoreWarnings(conflictingRepeatedLocalInputs),
+  [
+    "Data file (local_one.dat) was selected from this browser and must be selected again before submitting a new run.",
+    "Data file (local_two.dat) was selected from this browser and must be selected again before submitting a new run.",
+    "Data file (different_local_two.dat) was selected from this browser and must be selected again before submitting a new run."
+  ],
+  "UI2 retains distinct warnings when aggregate and row-specific saved filenames disagree"
+);
+
 hooks.state.module = {
   fields: [
     { id: "late_row_count", type: "integer", repeater: "true", tableize: "true" },

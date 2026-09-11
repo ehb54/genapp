@@ -8590,9 +8590,17 @@
   }
 
   function savedInputRestoreWarnings(inputs) {
-    return unrecoverableSavedLocalFiles(inputs).map((warning) => (
-      `${warning.label} (${warning.savedValue}) was selected from this browser and must be selected again before submitting a new run.`
-    ));
+    const seen = new Set();
+    return unrecoverableSavedLocalFiles(inputs).flatMap((warning) => {
+      const key = JSON.stringify([warning.id, warning.repeatIndex, warning.savedValue]);
+      if (seen.has(key)) {
+        return [];
+      }
+      seen.add(key);
+      return [
+        `${warning.label} (${warning.savedValue}) was selected from this browser and must be selected again before submitting a new run.`
+      ];
+    });
   }
 
   function notifyWorkbenchReattached(uuid, savedValues = null, restoreError = "", restoreWarnings = []) {
