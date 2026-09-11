@@ -2837,6 +2837,12 @@ assert(
   "reattach closes the utility overlay before switching to the attached module"
 );
 assert(
+  source.includes('const restoredInput = await applySavedJobInput(target.uuid);') &&
+    source.includes('notifyWorkbenchReattached(\\n        target.uuid,\\n        restoredInput,') &&
+    source.includes('startJobPolling(target.uuid, form, status, true, !restoredInput, false);'),
+  "reattach restores and publishes the complete saved-input payload before polling durable results"
+);
+assert(
   source.includes('function syncModuleRoute(moduleId, options = {})') &&
     source.includes('routeParams.delete("_switch");') &&
     source.includes('routeParams.set("module", moduleId);') &&

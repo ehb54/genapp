@@ -6839,12 +6839,21 @@
     if (!form || !status) {
       throw new Error(`UI2 view for ${target.moduleId} did not provide a reattach form.`);
     }
+    const restoredInput = await applySavedJobInput(target.uuid);
     clearRuntimeOutputs(form);
     beginJobOutputContext(target.moduleId, target.uuid);
     setSubmitStatus(status, `Attached (${jobId || target.uuid})`, "ok");
-    // Match legacy ga.switch.cb2: the first authoritative result request
-    // hydrates inputs and durable output/event state before live subscription.
-    startJobPolling(target.uuid, form, status, true, true, false);
+    if (isReactWorkbenchView(state.view) && restoredInput) {
+      notifyWorkbenchReattached(
+        target.uuid,
+        restoredInput,
+        "",
+        savedInputRestoreWarnings(restoredInput)
+      );
+    }
+    // Fetch saved inputs through the complete UI2 payload path first.  If that
+    // record is unavailable, retain the legacy result request as the fallback.
+    startJobPolling(target.uuid, form, status, true, !restoredInput, false);
     syncReattachRoute(switchValue);
   }
 

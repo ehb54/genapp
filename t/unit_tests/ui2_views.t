@@ -486,7 +486,7 @@ like( $ui2_js, qr/function toolFieldControl\(section, id, tagName\)/, 'ui2 Job M
 like( $ui2_js, qr/ajax\/sys_config\/sys_managejob\.php/, 'ui2 Job Manager uses the legacy manage-job endpoint for row actions' );
 like( $ui2_js, qr/function submitSystemModuleAction\(action, jobIds, moduleId = "sys_job_manager"\)/, 'ui2 Job Manager can submit legacy system-module actions' );
 like( $ui2_js, qr/function beginViewReady\(\).*?function waitForViewReady\(\)/s, 'ui2 core owns a renderer-ready barrier before reattachment' );
-like( $ui2_js, qr/await loadModule\(target\.moduleId, \{ preserveSwitch: true \}\);\s+const form = document\.getElementById\("ui2-form"\);.*?clearRuntimeOutputs\(form\);.*?startJobPolling\(target\.uuid, form, status, true, true, false\)/s, 'ui2 reattachment clears prior output before hydrating through the legacy results path' );
+like( $ui2_js, qr/await loadModule\(target\.moduleId, \{ preserveSwitch: true \}\);\s+const form = document\.getElementById\("ui2-form"\);.*?const restoredInput = await applySavedJobInput\(target\.uuid\);.*?clearRuntimeOutputs\(form\);.*?notifyWorkbenchReattached\(\s*target\.uuid,\s*restoredInput,.*?startJobPolling\(target\.uuid, form, status, true, !restoredInput, false\)/s, 'ui2 reattachment restores the complete saved-input payload before polling durable results' );
 like( $ui2_js, qr/ajax\/ui2_job_input\.php/, 'ui2 Job Manager has a target-local saved input fallback endpoint' );
 like( $ui2_js, qr/function switchTargetFromValue\(switchValue\).*?parts\.length !== 4.*?entry\.id === menuId/s, 'ui2 Job Manager validates canonical legacy menu/module/project/uuid targets' );
 like( $ui2_js, qr/function applyInputPayload\(inputs, options = \{\}\)/, 'ui2 Job Manager can hydrate form inputs from reattached job payloads' );
@@ -568,7 +568,7 @@ like( $ui2_js, qr/formData\.set\("_project", state\.session\.project/, 'ui2 subm
 like( $ui2_js, qr/if \(state\.module\?\.docrootexecutable\).*?formData\.set\("_docrootexecutable", state\.module\.docrootexecutable\)/s, 'ui2 runtime bridge sends legacy docroot executable metadata for system module submits' );
 like( $ui2_js, qr/const payload = await parseJsonResponse\(response, "Runtime"\);\s+if \(!runtimeOutputContextMatches\(contextToken\)\).*?state\.submitResponse = payload;\s+showLegacyMessagePayload\(payload\);/s, 'ui2 shows submit messages only when the response still belongs to the active output context' );
 like( $ui2_js, qr/function startJobPolling\(\s*uuid, form, statusNode, getLastMsg = true, getInput = false,\s*subscribeFirst = true\)/s, 'ui2 runtime bridge starts polling submitted jobs' );
-like( $ui2_js, qr/startJobPolling\(target\.uuid, form, status, true, true, false\)/s, 'ui2 reattachment hydrates inputs and replay state before subscribing to live events' );
+like( $ui2_js, qr/startJobPolling\(target\.uuid, form, status, true, !restoredInput, false\)/s, 'ui2 reattachment polls durable results before subscribing and requests legacy inputs only as a fallback' );
 like( $ui2_js, qr/function pollJobResults\(uuid, form, statusNode, lastDelay, getLastMsg, getInput = false, contextToken = null\)/, 'ui2 runtime bridge polls legacy job results with output context protection' );
 like( $ui2_js, qr/ajax\/get_results\.php/, 'ui2 runtime bridge uses the legacy job results endpoint' );
 like( $ui2_js, qr/url\.searchParams\.set\("_getlastmsg", getLastMsg \? "1" : "0"\)/, 'ui2 runtime bridge requests legacy last-message updates with the PHP-native flag' );
