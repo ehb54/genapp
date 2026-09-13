@@ -17,8 +17,6 @@
     ,"probe" : {
         "interval"     : 300
         ,"history"     : "em_probe.log"
-        ,"min_pct"     : 50
-        ,"consecutive" : 3
     }
     ,"flavors" : {
         "m3.2xl" : {
