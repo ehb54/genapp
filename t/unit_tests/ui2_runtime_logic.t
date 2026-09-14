@@ -3788,7 +3788,19 @@ scalarConditionalReplayCases.forEach((testCase) => {
     "optional.dat",
     "UI2 reattach includes a " + testCase.name + " scalar server file in the submitted-input summary"
   );
+  assert.deepStrictEqual(
+    hooks.savedInputRestoreWarnings({ optional_file: ["optional.dat"] }),
+    [],
+    "UI2 does not warn for a restored " + testCase.name + " scalar server file"
+  );
 });
+hooks.state.module = { fields: scalarConditionalReplayCases[0].fields };
+hooks.state.serverSelections = {};
+assert.deepStrictEqual(
+  hooks.savedInputRestoreWarnings({ optional_file: ["optional.dat"] }),
+  ["optional_file (optional.dat) was selected from this browser and must be selected again before submitting a new run."],
+  "UI2 still warns for a conditional scalar file that has no restored server selection"
+);
 document.querySelectorAll = (selector) => (
   selector === "[data-field-id=\\\"data_file_name\\\"]" ? [replayControl] : []
 );

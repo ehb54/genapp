@@ -8692,13 +8692,14 @@
 
   function savedLocalFileValues(inputs, field) {
     const savedValues = [];
-    const controller = repeatControllerId(field?.repeat || "");
+    const usesRepeatTableRows = fileFieldUsesRepeatTableRows(field);
+    const controller = usesRepeatTableRows ? repeatControllerId(field?.repeat || "") : "";
     const addValues = (value, repeatIndex = null) => {
       const values = valueList(value).map(stringValue).filter(Boolean);
       values.forEach((savedValue, index) => {
         savedValues.push({
           repeatIndex: repeatIndex == null
-            ? (controller || values.length > 1 ? index : null)
+            ? (usesRepeatTableRows || values.length > 1 ? index : null)
             : repeatIndex,
           savedValue
         });
