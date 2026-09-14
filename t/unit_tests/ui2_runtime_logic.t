@@ -449,6 +449,62 @@ assert.strictEqual(presentation.styleTrace(plainTrace, null, groupProfile, {}), 
   "metadata-free traces retain default Plotly rendering");
 
 const hooks = context.window.GenAppUi2TestHooks;
+
+const moduleAuditRoot = process.env.UI2_MODULE_AUDIT_ROOT || "";
+if (moduleAuditRoot) {
+  const readCommentedJson = (filePath) => JSON.parse(
+    fs.readFileSync(filePath, "utf8").replace(/^\\s*#.*\$/gm, "")
+  );
+  const menu = readCommentedJson(path.join(moduleAuditRoot, "menu.json"));
+  const activeModuleIds = Array.from(new Set(
+    (menu.menu || []).flatMap((group) => (group.modules || []).map((module) => module.id))
+  ));
+  const results = [];
+  activeModuleIds.forEach((moduleId) => {
+    const modulePath = path.join(moduleAuditRoot, "modules", moduleId + ".json");
+    if (!fs.existsSync(modulePath)) {
+      return;
+    }
+    const moduleDefinition = readCommentedJson(modulePath);
+    hooks.state.module = moduleDefinition;
+    const inputFields = (moduleDefinition.fields || []).filter((field) => field.role !== "output");
+    const byId = new Map(inputFields.map((field) => [field.id, field]));
+    inputFields.filter((field) => field.type === "lrfile" && field.repeat).forEach((field) => {
+      const expression = String(field.repeat);
+      const conditional = /(^|[^A-Za-z0-9_:])!|&&|\\|\\||[()]/.test(expression);
+      const controller = conditional ? null : byId.get(expression.split(":")[0].trim());
+      const expectedRows = Boolean(
+        controller
+          && ["true", "yes"].includes(String(controller.repeater || "").toLowerCase())
+          && (
+            String(controller.tableize || "").toLowerCase() === "true"
+              || ["integer", "integerpair"].includes(String(controller.type || "").toLowerCase())
+          )
+      );
+      const actualRows = hooks.fileFieldUsesRepeatTableRows(field);
+      assert.strictEqual(
+        actualRows,
+        expectedRows,
+        moduleId + ":" + field.id + " has the correct scalar-versus-table restore classification"
+      );
+      results.push({ moduleId, fieldId: field.id, rows: actualRows });
+    });
+  });
+  const scalarResults = results.filter((result) => !result.rows);
+  const rowResults = results.filter((result) => result.rows);
+  assert.strictEqual(scalarResults.length, 44, "current SASSIE-web app has 44 scalar conditional server-file fields");
+  assert.strictEqual(rowResults.length, 11, "current SASSIE-web app has 11 repeated-row server-file controls");
+  console.log("MODULE_AUDIT scalar=" + scalarResults.length + " repeated=" + rowResults.length);
+  Array.from(new Set(results.map((result) => result.moduleId))).forEach((moduleId) => {
+    const scalar = scalarResults.filter((result) => result.moduleId === moduleId).map((result) => result.fieldId);
+    const repeated = rowResults.filter((result) => result.moduleId === moduleId).map((result) => result.fieldId);
+    console.log(
+      "MODULE_AUDIT " + moduleId
+        + " scalar=[" + scalar.join(",") + "]"
+        + " repeated=[" + repeated.join(",") + "]"
+    );
+  });
+}
 assert(hooks, "test hooks were exposed");
 assert.strictEqual(hooks.buildReleaseDetails(), null, "applications without a manifest opt-in have no version details panel");
 
@@ -3660,6 +3716,83 @@ assert.strictEqual(
   "attach replay restores the server selection payload for later submit"
 );
 
+const scalarConditionalReplayCases = [
+  {
+    name: "checkbox-controlled",
+    values: { use_optional_file: true },
+    fields: [
+      { id: "use_optional_file", type: "checkbox", repeater: "true" },
+      { id: "optional_file", type: "lrfile", repeat: "use_optional_file" }
+    ]
+  },
+  {
+    name: "listbox-controlled",
+    values: { source_kind: "file" },
+    fields: [
+      { id: "source_kind", type: "listbox", repeater: "true" },
+      { id: "optional_file", type: "lrfile", repeat: "source_kind:file" }
+    ]
+  },
+  {
+    name: "compound-conditioned",
+    values: { use_optional_file: true, source_kind: "file" },
+    fields: [
+      { id: "use_optional_file", type: "checkbox", repeater: "true" },
+      { id: "source_kind", type: "listbox", repeater: "true" },
+      { id: "optional_file", type: "lrfile", repeat: "use_optional_file && source_kind:file" }
+    ]
+  }
+];
+scalarConditionalReplayCases.forEach((testCase) => {
+  const control = {
+    type: "text",
+    value: "",
+    dataset: { fieldId: "optional_file" },
+    closest(selector) {
+      return selector === "#ui2-form" ? {} : null;
+    },
+    dispatchEvent(event) {
+      this.lastEvent = event.type;
+    }
+  };
+  document.querySelectorAll = (selector) => (
+    selector === "[data-field-id=\\\"optional_file\\\"]" ? [control] : []
+  );
+  hooks.state.module = { fields: testCase.fields };
+  hooks.state.values = testCase.values;
+  hooks.state.serverSelections = {};
+  const payload = {
+    _selaltval_optional_file: "optional_file_altval",
+    optional_file_altval: ["Li9vcHRpb25hbC5kYXQ="],
+    _html_optional_file_altval: "<i>Server</i>: optional.dat"
+  };
+  hooks.applyInputPayload(payload);
+  hooks.state.values.optional_file = control.value;
+  assert.strictEqual(
+    control.value,
+    "optional.dat",
+    "UI2 reattach restores a " + testCase.name + " scalar server-file label"
+  );
+  assert.strictEqual(
+    hooks.state.serverSelections["optional_file:"].encodedPath,
+    "Li9vcHRpb25hbC5kYXQ=",
+    "UI2 reattach keeps a " + testCase.name + " scalar server file unindexed"
+  );
+  assert.strictEqual(
+    hooks.state.serverSelections["optional_file:0"],
+    undefined,
+    "UI2 reattach does not invent row zero for a " + testCase.name + " scalar server file"
+  );
+  assert.strictEqual(
+    hooks.savedInputSummaryValues(payload).optional_file,
+    "optional.dat",
+    "UI2 reattach includes a " + testCase.name + " scalar server file in the submitted-input summary"
+  );
+});
+document.querySelectorAll = (selector) => (
+  selector === "[data-field-id=\\\"data_file_name\\\"]" ? [replayControl] : []
+);
+
 hooks.state.module = {
   fields: [
     { id: "pdbfile", label: "Coordinate file", type: "lrfile" }
@@ -5482,6 +5615,7 @@ close $fh;
 my $node = $ENV{NODE} || 'node';
 my $output = `$node "$script" 2>&1`;
 my $status = $? >> 8;
+diag($output) if $ENV{UI2_MODULE_AUDIT_ROOT} && length $output;
 
 is( $status, 0, 'ui2 runtime helper behavior passes executable checks' )
     or diag($output);

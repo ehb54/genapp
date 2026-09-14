@@ -9087,10 +9087,18 @@
   }
 
   function serverSelectionRepeatIndex(field, encodedPaths, index) {
-    if (repeatControllerId(field?.repeat || "")) {
+    if (fileFieldUsesRepeatTableRows(field)) {
       return index;
     }
     return encodedPaths.length > 1 ? index : null;
+  }
+
+  function fileFieldUsesRepeatTableRows(field) {
+    const inputFields = (Array.isArray(state.module?.fields) ? state.module.fields : [])
+      .filter((candidate) => candidate?.role !== "output");
+    return planFields(inputFields).some((item) => (
+      item.kind === "table" && (item.fields || []).includes(field)
+    ));
   }
 
   function submittedFileField(submittedId) {
@@ -13781,6 +13789,7 @@
       serverSelectionDisplayPath,
       serverFileTreeSelectable,
       repeatFileSubmitId,
+      fileFieldUsesRepeatTableRows,
       serverFileEntryIsFolder,
       fileEntryName,
       fileEntryDetails,
