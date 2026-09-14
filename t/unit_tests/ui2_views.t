@@ -26,6 +26,7 @@ ok( -f File::Spec->catfile( $ui2, 'index.html' ), 'ui2 index was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(js app-map.js) ), 'ui2 app map was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(css ui2.css) ), 'ui2 stylesheet was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(js ui2.js) ), 'ui2 script was copied' );
+ok( -f File::Spec->catfile( $ui2, 'release-manifest.json' ), 'application release manifest was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(js plot-presentation.js) ), 'shared plot presentation evaluator was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(js plotly-surface.js) ), 'shared Plotly final-surface policy was copied' );
 ok( -f File::Spec->catfile( $ui2, qw(js plotly-layout.js) ), 'shared responsive Plotly layout policy was copied' );
@@ -80,6 +81,10 @@ like( $index, qr/id="ui2-help-menu"/, 'ui2 index keeps documentation and AI help
 like( $index, qr/id="ui2-docs-module"[\s\S]*?id="ui2-docs"/, 'ui2 Help presents current-module documentation before general documentation' );
 like( $index, qr/id="ui2-account-menu"/, 'ui2 index places account utilities in an avatar menu' );
 like( $app_map_js, qr/generatedOn:\s*"Generated on /, 'ui2 app map carries the legacy generated-on splash metadata' );
+like( $app_map_js, qr/version:\s*"0\.01"/, 'ui2 app map carries the declared application version' );
+like( $app_map_js, qr/genappVersion:\s*"0\.1\.0-beta\.1"/, 'ui2 app map carries the GenApp framework version' );
+like( $app_map_js, qr/appSourceRevision:\s*""/, 'non-Git fixture application has an explicit empty source revision' );
+like( $app_map_js, qr/genappSourceRevision:\s*"[0-9a-f]{40}"/, 'ui2 app map carries the GenApp Git source revision' );
 like( $app_map_js, qr/genappRevision:\s*"GenApp /, 'ui2 app map carries the GenApp revision splash metadata' );
 like( $app_map_js, qr/directives\.docsbaseurl = "docs"/, 'ui2 app map records docsbaseurl for the docs entry point' );
 like( $app_map_js, qr/directives\.ui2_account_avatar = "pngs\/fixture-account-avatar\.png"/, 'ui2 app map records an optional application-owned account avatar' );
@@ -89,6 +94,7 @@ like( $app_map_js, qr/directives\.ui2_plotly_chart_editor_url = "_cedit\/_chart_
 like( $app_map_js, qr/directives\.ui2_plotly_chart_editor_target = "_blank"/, 'ui2 app map records the application Chart Editor target' );
 like( $app_map_js, qr/directives\.ui2_plot_background_preference = "true"/, 'ui2 app map records opt-in plot-background preferences' );
 like( $app_map_js, qr/directives\.ui2_auth_providers_url = "auth\/providers\.php"/, 'ui2 app map records an optional external-auth provider manifest URL' );
+like( $app_map_js, qr/directives\.ui2_release_manifest_url = "release-manifest\.json"/, 'ui2 app map records the optional application release manifest' );
 like( $app_map_js, qr/directives\.nextjobenvironment = "true"/, 'ui2 app map exposes the opted-in one-job environment setting' );
 unlike( $app_map_js, qr/test_scenarios|catalog_revision/, 'an application without catalogs does not expose test-scenario data in its public app map' );
 like( $app_map_js, qr/app\.help\.feedback = "Feedback help"/, 'ui2 app map records legacy feedback help text' );
@@ -437,6 +443,8 @@ like( $ui2_js, qr/PHP source instead of executing it/, 'ui2 runtime bridge calls
 like( $ui2_js, qr/function appTitle\(\)/, 'ui2 splash resolves the generated application title' );
 like( $ui2_js, qr/docs\.href = "\.\.\/docs\/"/, 'ui2 splash documentation link resolves to the legacy app docs directory' );
 like( $ui2_js, qr/function splashFooterLines\(\)/, 'ui2 splash derives footer metadata lines from generated app metadata' );
+like( $ui2_js, qr/function normalizeReleaseManifest\(payload\)/, 'ui2 validates the generic release manifest schema' );
+like( $ui2_js, qr/function renderReleaseManifest\(details\)/, 'ui2 renders opted-in component versions on the splash page' );
 like( $ui2_js, qr/appMap\.generatedOn/, 'ui2 splash footer includes generated-on metadata when present' );
 like( $ui2_js, qr/appMap\.genappRevision/, 'ui2 splash footer includes GenApp revision credit when present' );
 like( $ui2_js, qr/function syncSplashForSession\(\)/, 'ui2 syncs the splash dialog from legacy session state' );
@@ -637,6 +645,7 @@ like( $ui2_css, qr/\.ui2-legacy-message-dialog/, 'ui2 stylesheet includes legacy
 like( $ui2_css, qr/\.ui2-legacy-message-icon/, 'ui2 stylesheet includes legacy backend message icon styling' );
 like( $ui2_css, qr/\.ui2-captcha-dialog/, 'ui2 stylesheet includes a dedicated captcha dialog shell' );
 like( $ui2_css, qr/\.ui2-splash-footer/, 'ui2 stylesheet includes splash footer metadata styles' );
+like( $ui2_css, qr/\.ui2-release-details/, 'ui2 stylesheet includes component release detail styles' );
 like( $ui2_css, qr/\.ui2-splash-auth-status:empty\s*\{[^}]*display:\s*none/s, 'ui2 stylesheet does not let an empty splash authentication status offset provider buttons' );
 like( $ui2_css, qr/\.ui2-ai-helper-usage/, 'ui2 stylesheet includes compact AI Helper token usage styles' );
 like( $ui2_css, qr/\.ui2-ai-helper-math\[data-display="true"\]/, 'ui2 stylesheet includes AI Helper display-equation styling' );

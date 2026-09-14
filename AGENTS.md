@@ -226,6 +226,12 @@ layouts, or presentation features to be backported.
 
 ## Cross-Repository Work
 
+Before planning or changing release versions, tags, publication dates, or an
+application's web-visible component-version list, read
+`doc/Release-Version-Policy.md` and the paired application and SASSIE policies.
+Each repository owns its independent version; unpublished versions must not be
+assigned a release date, tag, or release URL.
+
 Before planning, editing, testing, deploying, or drawing runtime conclusions
 about another repository, read and follow its applicable `AGENTS.md`. The target
 repository controls its interpreter, branch, deployment, testing, ownership,

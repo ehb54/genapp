@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "components": [
+    {
+      "component_id": "fixture_app",
+      "version": "0.01",
+      "display_version": "UI2 Views Fixture 0.01",
+      "release_stage": "beta",
+      "release_date": null,
+      "source_revision": null,
+      "tag_name": null,
+      "release_url": null
+    }
+  ]
+}

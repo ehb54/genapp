@@ -1,5 +1,10 @@
 # GenApp
 
+The current framework version is **0.1.0 Beta 1** (`0.1.0-beta.1`). GenApp
+embeds application and framework version/source metadata in generated UI2 app
+maps. Applications may additionally opt into a same-origin interoperable
+component manifest. See [doc/Release-Version-Policy.md](doc/Release-Version-Policy.md).
+
 GenApp is a framework for generating science gateway and application
 interfaces from JSON definitions plus executable wrappers. Application authors
 describe menus, modules, inputs, outputs, runtime behavior, and target
@@ -62,6 +67,4 @@ Set `GENAPP` to this repository before running the local command-line tools.
 Use `bin/check_json.pl` for JSON validation and `bin/genapp_check.pl` or
 `genapp` for application-directory validation when a fixture or application is
 available.
-
-## please use [GenApp's current subversion repo](https://genapp.rocks/wiki/wiki/get)
 

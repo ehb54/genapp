@@ -1336,6 +1336,43 @@ sub svninfo {
     $ret;
 }
 
+sub gitinfo {
+    my $path = $_[0];
+    return ( "", "" ) if !-e "$path/.git";
+
+    open my $revision_fh, '-|', 'git', '-C', $path, 'rev-parse', '--verify', 'HEAD'
+        or return ( "", "" );
+    my $revision = <$revision_fh> || "";
+    close $revision_fh;
+    chomp $revision;
+    return ( "", "" ) if $revision !~ /^[0-9a-f]{40}$/;
+
+    open my $date_fh, '-|', 'git', '-C', $path, 'show', '-s', '--format=%cI', 'HEAD'
+        or return ( "", "" );
+    my $revision_date = <$date_fh> || "";
+    close $date_fh;
+    chomp $revision_date;
+    my $short_revision = substr( $revision, 0, 12 );
+    return ( "Git $short_revision on $revision_date", $revision );
+}
+
+sub sourceinfo {
+    my $path = $_[0];
+    my ( $info, $revision ) = gitinfo( $path );
+    return ( $info, $revision ) if length( $info );
+    return ( svninfo( $path ), "" );
+}
+
+sub genapp_version {
+    my $version_file = "$gap/VERSION";
+    return "" if !-f $version_file;
+    open my $fh, '<', $version_file or return "";
+    my $version = <$fh> || "";
+    close $fh;
+    chomp $version;
+    return $version;
+}
+
 sub module_exists {
     my $f     = $_[0];
     my $langs = $_[1];
@@ -1516,14 +1553,18 @@ sub check_files {
                 $special_directives{ 'generatedon' } = "Generated on $date";
                 my $path = `pwd`;
                 chomp $path;
-                my $info = svninfo( $path );
+                my ( $info, $app_source_revision ) = sourceinfo( $path );
                 if ( length( $info ) ) {
                     $info = $$directives{ "title" } . " " . $info;
                 }
                 $special_directives{ 'apprevision' } = $info;
+                $special_directives{ 'appsource_revision' } = $app_source_revision;
                 print "info: $info\n";
-                $info = "GenApp " . svninfo( $gap );
+                my ( $genapp_info, $genapp_source_revision ) = sourceinfo( $gap );
+                $info = length( $genapp_info ) ? "GenApp $genapp_info" : "GenApp";
                 $special_directives{ 'revision' } = $info;
+                $special_directives{ 'genappsource_revision' } = $genapp_source_revision;
+                $special_directives{ 'genappversion' } = genapp_version();
                 print "info: $info\n";
                 my $datetimeinseconds = `date +'%s'`;
                 chomp $datetimeinseconds;

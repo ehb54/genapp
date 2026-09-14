@@ -450,6 +450,47 @@ assert.strictEqual(presentation.styleTrace(plainTrace, null, groupProfile, {}), 
 
 const hooks = context.window.GenAppUi2TestHooks;
 assert(hooks, "test hooks were exposed");
+assert.strictEqual(hooks.buildReleaseDetails(), null, "applications without a manifest opt-in have no version details panel");
+
+const releaseComponents = hooks.normalizeReleaseManifest({
+  schema_version: 1,
+  components: [
+    {
+      component_id: "fixture_app",
+      version: "1.2.3-beta.1",
+      display_version: "Fixture App 1.2.3 Beta 1",
+      release_stage: "beta",
+      release_date: null,
+      source_revision: "0123456789abcdef0123456789abcdef01234567",
+      tag_name: null,
+      release_url: null
+    }
+  ]
+});
+assert.strictEqual(releaseComponents.length, 1, "release manifest schema 1 is accepted");
+assert.strictEqual(releaseComponents[0].componentId, "fixture_app", "release component identity is retained");
+assert.strictEqual(hooks.releaseStatusText(releaseComponents[0]), "Unreleased", "missing publication date is labelled unreleased");
+assert.strictEqual(
+  hooks.releaseStatusText({ releaseDate: "2026-09-13" }),
+  "Released 2026-09-13",
+  "published release status uses the declared UTC date"
+);
+assert.strictEqual(
+  hooks.normalizeReleaseManifest({ schema_version: 2, components: [] }),
+  null,
+  "unknown release manifest schema is rejected"
+);
+assert.strictEqual(
+  hooks.normalizeReleaseManifest({
+    schema_version: 1,
+    components: [
+      { component_id: "duplicate", version: "1", display_version: "One", release_stage: "final" },
+      { component_id: "duplicate", version: "2", display_version: "Two", release_stage: "final" }
+    ]
+  }),
+  null,
+  "duplicate release component identities are rejected"
+);
 
 const coupledFields = [
   { id: "sample_source", type: "listbox", default: "prepared", repeat: "sample_count", required: true },

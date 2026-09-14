@@ -10,6 +10,7 @@
     "ui2_plotly_chart_editor_target" : "_blank",
     "ui2_plot_background_preference" : "true",
     "ui2_auth_providers_url" : "auth/providers.php",
+    "ui2_release_manifest_url" : "release-manifest.json",
     "usertheme"   : "true",
     "nextjobenvironment" : "true",
     "nextjobenvironmentid" : "fixture_diagnostics",

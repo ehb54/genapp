@@ -81,6 +81,7 @@
   let nglLoadPromise = null;
   let katexLoadPromise = null;
   let externalAuthPolicyPromise = null;
+  let releaseManifestPromise = null;
   let activeExternalAuthPolicy = { mode: "legacy", registration: "legacy", providers: [], warningBanner: "" };
   let reactWorkbenchRoot = null;
   let reactWorkbenchSyncFrame = null;
@@ -1161,6 +1162,11 @@
     splashFooterLines().forEach((line) => {
       footer.appendChild(el("p", "ui2-splash-meta", line));
     });
+    const releaseDetails = buildReleaseDetails();
+    if (releaseDetails) {
+      footer.appendChild(releaseDetails);
+      renderReleaseManifest(releaseDetails);
+    }
 
     panel.append(title, warning, actions, docs, footer);
     overlay.appendChild(panel);
@@ -1217,9 +1223,17 @@
 
   function splashFooterLines() {
     const lines = [];
+    const applicationVersion = stringValue(appMap.version);
+    const genappVersion = stringValue(appMap.genappVersion);
     const generatedOn = stringValue(appMap.generatedOn);
     const appRevision = stringValue(appMap.appRevision);
     const genappRevision = stringValue(appMap.genappRevision);
+    if (applicationVersion) {
+      lines.push(`Application version ${applicationVersion}`);
+    }
+    if (genappVersion) {
+      lines.push(`GenApp version ${genappVersion}`);
+    }
     if (generatedOn) {
       lines.push(generatedOn);
     }
@@ -1232,6 +1246,123 @@
       lines.push("GenApp");
     }
     return lines;
+  }
+
+  function normalizeReleaseManifest(payload) {
+    if (!payload || payload.schema_version !== 1 || !Array.isArray(payload.components)) {
+      return null;
+    }
+    const seen = new Set();
+    const components = payload.components.slice(0, 32).map((component) => {
+      if (!component || typeof component !== "object" || Array.isArray(component)) {
+        return null;
+      }
+      const componentId = stringValue(component.component_id).trim();
+      const version = stringValue(component.version).trim();
+      const displayVersion = stringValue(component.display_version).trim();
+      const releaseStage = stringValue(component.release_stage).trim();
+      const releaseDate = component.release_date == null ? null : stringValue(component.release_date).trim();
+      const sourceRevision = component.source_revision == null ? null : stringValue(component.source_revision).trim();
+      const tagName = component.tag_name == null ? null : stringValue(component.tag_name).trim();
+      const releaseUrl = component.release_url == null ? null : stringValue(component.release_url).trim();
+      if (!/^[a-z0-9][a-z0-9_-]{0,63}$/.test(componentId) || seen.has(componentId) ||
+          !version || version.length > 128 || !displayVersion || displayVersion.length > 160 ||
+          !["alpha", "beta", "rc", "final"].includes(releaseStage) ||
+          (releaseDate !== null && !/^\d{4}-\d{2}-\d{2}$/.test(releaseDate)) ||
+          (sourceRevision !== null && !/^[0-9a-f]{40}$/.test(sourceRevision)) ||
+          (tagName !== null && (!tagName || tagName.length > 128))) {
+        return null;
+      }
+      if (releaseUrl !== null) {
+        try {
+          const parsedUrl = new URL(releaseUrl);
+          if (parsedUrl.protocol !== "https:") {
+            return null;
+          }
+        } catch (_error) {
+          return null;
+        }
+      }
+      seen.add(componentId);
+      return {
+        componentId,
+        version,
+        displayVersion,
+        releaseStage,
+        releaseDate,
+        sourceRevision,
+        tagName,
+        releaseUrl
+      };
+    });
+    return components.length && components.every(Boolean) ? components : null;
+  }
+
+  function releaseStatusText(component) {
+    return component.releaseDate ? `Released ${component.releaseDate}` : "Unreleased";
+  }
+
+  function loadReleaseManifest() {
+    const manifestUrl = sameOriginApplicationUrl(appMap.directives?.ui2_release_manifest_url);
+    if (!manifestUrl) {
+      return Promise.resolve(null);
+    }
+    if (!releaseManifestPromise) {
+      releaseManifestPromise = fetch(manifestUrl, {
+        cache: "no-store",
+        credentials: "same-origin",
+        headers: { Accept: "application/json" }
+      }).then(async (response) => {
+        if (!response.ok) {
+          throw new Error("Release manifest is unavailable.");
+        }
+        return normalizeReleaseManifest(await response.json());
+      }).catch(() => null);
+    }
+    return releaseManifestPromise;
+  }
+
+  function buildReleaseDetails() {
+    if (!sameOriginApplicationUrl(appMap.directives?.ui2_release_manifest_url)) {
+      return null;
+    }
+    const details = el("details", "ui2-release-details");
+    details.appendChild(el("summary", "ui2-release-summary", "Version details"));
+    details.appendChild(el("p", "ui2-release-loading", "Loading component versions…"));
+    return details;
+  }
+
+  async function renderReleaseManifest(details) {
+    const components = await loadReleaseManifest();
+    if (!details?.isConnected) {
+      return;
+    }
+    const loading = details.querySelector(".ui2-release-loading");
+    if (!components) {
+      if (loading) {
+        loading.textContent = "Component version details are unavailable.";
+      }
+      return;
+    }
+    loading?.remove();
+    const list = el("div", "ui2-release-list");
+    components.forEach((component) => {
+      const item = el("section", "ui2-release-item");
+      item.appendChild(el("strong", "ui2-release-name", component.displayVersion));
+      item.appendChild(el("span", "ui2-release-status", releaseStatusText(component)));
+      if (component.sourceRevision) {
+        item.appendChild(el("code", "ui2-release-revision", component.sourceRevision.slice(0, 12)));
+      }
+      if (component.releaseUrl) {
+        const link = el("a", "ui2-release-link", component.tagName || "Release");
+        link.href = component.releaseUrl;
+        link.target = "_blank";
+        link.rel = "noopener";
+        item.appendChild(link);
+      }
+      list.appendChild(item);
+    });
+    details.appendChild(list);
   }
 
   function appTitle() {
@@ -13689,6 +13820,10 @@
       validExternalAuthWindowName,
       restoreExternalAuthWindowName,
       sameOriginApplicationUrl,
+      normalizeReleaseManifest,
+      releaseStatusText,
+      loadReleaseManifest,
+      buildReleaseDetails,
       normalizeExternalAuthProviders,
       normalizeExternalAuthPolicy,
       loadExternalAuthPolicy,

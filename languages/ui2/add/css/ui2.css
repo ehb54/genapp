@@ -1799,6 +1799,62 @@ code {
   font-style: italic;
 }
 
+.ui2-release-details {
+  width: min(34rem, 100%);
+  margin-top: 0.45rem;
+  border: 1px solid var(--ui2-border);
+  border-radius: 6px;
+  background: var(--ui2-panel-soft);
+  color: var(--ui2-text);
+  text-align: left;
+}
+
+.ui2-release-summary {
+  padding: 0.65rem 0.8rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.ui2-release-loading {
+  margin: 0;
+  padding: 0 0.8rem 0.75rem;
+  color: var(--ui2-muted);
+}
+
+.ui2-release-list {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0 0.8rem 0.8rem;
+}
+
+.ui2-release-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: 0.35rem 0.75rem;
+}
+
+.ui2-release-name {
+  min-width: 0;
+}
+
+.ui2-release-status,
+.ui2-release-revision {
+  color: var(--ui2-muted);
+  font-size: 0.82rem;
+}
+
+.ui2-release-link {
+  color: var(--ui2-accent-strong);
+  font-size: 0.82rem;
+}
+
+@media (max-width: 38rem) {
+  .ui2-release-item {
+    grid-template-columns: 1fr;
+  }
+}
+
 .ui2-dialog-close {
   border: 1px solid var(--ui2-border);
   border-radius: 999px;
