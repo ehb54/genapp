@@ -5632,7 +5632,6 @@
     if (options.requiredPasswordChange === true) {
       inputFields = requiredPasswordChangeFields(inputFields);
     }
-    const outputFields = fields.filter((field) => field.role === "output");
     form.appendChild(renderUtilitySection(
       options.requiredPasswordChange === true ? "Choose a new password" : "Settings",
       inputFields,
@@ -5653,9 +5652,6 @@
       actions.insertBefore(logoff, actions.querySelector(".ui2-submit-status"));
     }
     form.appendChild(actions);
-    if (outputFields.length) {
-      form.appendChild(renderUtilitySection("Status", outputFields, "output"));
-    }
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       await submitUtilityModule(form, module, "ajax/sys_config/sys_user_config.php", {
@@ -13822,6 +13818,8 @@
       beginViewReady,
       markViewReady,
       waitForViewReady,
+      renderUserConfigTool,
+      renderRegisterTool,
       legacyUtilityFieldName,
       normalizeUi2Theme,
       applyUi2Theme,

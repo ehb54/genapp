@@ -450,6 +450,39 @@ assert.strictEqual(presentation.styleTrace(plainTrace, null, groupProfile, {}), 
 
 const hooks = context.window.GenAppUi2TestHooks;
 
+const utilityStatusFields = [
+  { role: "input", id: "preference", label: "Preference", type: "text" },
+  { role: "output", id: "status", label: "Status", type: "textarea" }
+];
+const settingsTool = hooks.renderUserConfigTool(
+  { moduleid: "sys_user_config" },
+  utilityStatusFields
+);
+assert.strictEqual(
+  settingsTool.querySelectorAll(".ui2-submit-status").length,
+  1,
+  "UI2 Settings presents one inline status surface"
+);
+assert.strictEqual(
+  settingsTool.querySelector(".ui2-submit-status").getAttribute("role"),
+  "status",
+  "UI2 Settings keeps its inline status as an accessible live region"
+);
+assert.strictEqual(
+  settingsTool.querySelectorAll("[data-output-field-id]").length,
+  0,
+  "UI2 Settings does not repeat the response in a declared output panel"
+);
+const registerTool = hooks.renderRegisterTool(
+  { moduleid: "sys_register", submit_label: "Register" },
+  utilityStatusFields
+);
+assert.strictEqual(
+  registerTool.querySelectorAll("[data-output-field-id]").length,
+  1,
+  "other utility tools retain their declared output panels"
+);
+
 const moduleAuditRoot = process.env.UI2_MODULE_AUDIT_ROOT || "";
 if (moduleAuditRoot) {
   const readCommentedJson = (filePath) => JSON.parse(
