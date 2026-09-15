@@ -90,12 +90,13 @@ function get_userinfo( $error_json_exit = false ) {
 
    foreach ( $users as $v ) {
        $name = $v[ 'name' ];
+       $email = isset( $v[ 'email' ] ) && is_string( $v[ 'email' ] ) ? $v[ 'email' ] : "";
        $jobcount = ga_db_output( ga_db_count( 'jobs', '', [ "user" => $name ] ) );
        if ( substr( $name, 0, strlen( "_canceled" ) ) != "_canceled" ) {
            $userinfo['data'][] = 
                array( 
                    "name"                => $name
-                   ,"email"              => "<a class='title' href='mailto:" . $v[ 'email' ] . "'>" . $v[ 'email' ] . "</a>"
+                   ,"email"              => $email === "" ? "" : "<a class='title' href='mailto:" . $email . "'>" . $email . "</a>"
                    ,"group"              => isset( $v[ 'group' ] ) ? $v[ 'group' ] : ""
                    ,"projects"           => count( $v[ 'project' ] )
                    ,"last-login"         => isset( $v["lastlogin"] ) ? date( "Y M d H:i T", ga_db_date_secs( $v["lastlogin"] ) ) : ""
@@ -635,7 +636,7 @@ function handle_request() {
     }
 
 
-    if ( isset( $mailuser ) ) {
+    if ( isset( $mailuser ) && isset( $doc[ 'email' ] ) && is_string( $doc[ 'email' ] ) && $doc[ 'email' ] !== "" ) {
         mymail( $doc[ 'email' ], isset( $mailsubject ) ? $mailsubject : "[__application__][account status update]", $mailuser );
     }
 

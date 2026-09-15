@@ -3047,6 +3047,24 @@ assert.strictEqual(
     authentication_mode: "external_only",
     registration: "jit",
     providers: [{ id: "login-gov", label: "Sign in with Login.gov", start_url: "auth/login-gov/start.php" }],
+    managed_account_fields: ["email", "email", "unknown"]
+  }).managedAccountFields.join(","),
+  "email",
+  "external-only authentication accepts only supported managed account fields"
+);
+assert.strictEqual(
+  hooks.normalizeExternalAuthPolicy({
+    providers: [{ id: "login-gov", label: "Sign in with Login.gov", start_url: "auth/login-gov/start.php" }],
+    managed_account_fields: ["email"]
+  }).managedAccountFields.length,
+  0,
+  "managed account fields cannot affect a non-opted-in legacy application"
+);
+assert.strictEqual(
+  hooks.normalizeExternalAuthPolicy({
+    authentication_mode: "external_only",
+    registration: "jit",
+    providers: [{ id: "login-gov", label: "Sign in with Login.gov", start_url: "auth/login-gov/start.php" }],
     warning_banner: "  Authorized use only.  "
   }).warningBanner,
   "Authorized use only.",
@@ -3152,6 +3170,28 @@ assert.deepStrictEqual(
   ]).map((field) => field.id),
   ["changepassword", "password", "password1", "password2"],
   "required password change uses only the existing Settings password fields"
+);
+assert.deepStrictEqual(
+  Array.from(hooks.externalAuthManagedUserConfigFieldIds([
+    { id: "changeemail" },
+    { id: "email1", repeat: "changeemail" },
+    { id: "email2", repeat: "changeemail" },
+    { id: "changeproject" }
+  ], { mode: "external_only", managedAccountFields: ["email"] })),
+  ["changeemail", "email1", "email2"],
+  "an opted-in identity provider removes the email controller and its repeated settings fields"
+);
+assert.strictEqual(
+  hooks.externalAuthManagedUserConfigFieldIds([
+    { id: "changeemail" },
+    { id: "email1", repeat: "changeemail" }
+  ], { mode: "external_only", managedAccountFields: [] }).size,
+  0,
+  "external-only applications retain email settings unless the manifest opts in"
+);
+assert(
+  source.includes("Email is managed by the external identity provider and cannot be changed here."),
+  "Settings explains why an opted-in managed email field is unavailable"
 );
 assert(
   source.includes('await openRequiredPasswordChange(authenticatedPassword, payload);') &&

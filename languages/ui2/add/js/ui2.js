@@ -82,7 +82,13 @@
   let katexLoadPromise = null;
   let externalAuthPolicyPromise = null;
   let releaseManifestPromise = null;
-  let activeExternalAuthPolicy = { mode: "legacy", registration: "legacy", providers: [], warningBanner: "" };
+  let activeExternalAuthPolicy = {
+    mode: "legacy",
+    registration: "legacy",
+    providers: [],
+    warningBanner: "",
+    managedAccountFields: []
+  };
   let reactWorkbenchRoot = null;
   let reactWorkbenchSyncFrame = null;
   const reactWorkbenchSyncListeners = new Set();
@@ -791,22 +797,43 @@
 
   function normalizeExternalAuthPolicy(payload) {
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-      return { mode: "unavailable", registration: "unavailable", providers: [], warningBanner: "" };
+      return {
+        mode: "unavailable",
+        registration: "unavailable",
+        providers: [],
+        warningBanner: "",
+        managedAccountFields: []
+      };
     }
     const providers = normalizeExternalAuthProviders(payload);
     const declaredMode = stringValue(payload.authentication_mode).trim();
     const declaredRegistration = stringValue(payload.registration).trim();
     if (!declaredMode && !declaredRegistration) {
-      return { mode: "legacy", registration: "legacy", providers, warningBanner: "" };
+      return {
+        mode: "legacy",
+        registration: "legacy",
+        providers,
+        warningBanner: "",
+        managedAccountFields: []
+      };
     }
     const externalOnly = declaredMode === "external_only" &&
       declaredRegistration === "jit" && providers.length > 0;
     const warningBanner = stringValue(payload.warning_banner).trim();
+    const declaredManagedAccountFields = Array.isArray(payload.managed_account_fields)
+      ? payload.managed_account_fields
+      : [];
+    const managedAccountFields = externalOnly
+      ? declaredManagedAccountFields
+        .map((field) => stringValue(field).trim())
+        .filter((field, index, fields) => field === "email" && fields.indexOf(field) === index)
+      : [];
     return {
       mode: externalOnly ? "external_only" : "unavailable",
       registration: externalOnly ? "jit" : "unavailable",
       providers: externalOnly ? providers : [],
-      warningBanner: externalOnly && warningBanner.length <= 8000 ? warningBanner : ""
+      warningBanner: externalOnly && warningBanner.length <= 8000 ? warningBanner : "",
+      managedAccountFields
     };
   }
 
@@ -822,13 +849,25 @@
         headers: { Accept: "application/json" }
       }).then(async (response) => {
         if (response.status === 404) {
-          return { mode: "legacy", registration: "legacy", providers: [], warningBanner: "" };
+          return {
+            mode: "legacy",
+            registration: "legacy",
+            providers: [],
+            warningBanner: "",
+            managedAccountFields: []
+          };
         }
         if (!response.ok) {
           throw new Error("Authentication policy is unavailable.");
         }
         return normalizeExternalAuthPolicy(await response.json());
-      }).catch(() => ({ mode: "unavailable", registration: "unavailable", providers: [], warningBanner: "" }))
+      }).catch(() => ({
+        mode: "unavailable",
+        registration: "unavailable",
+        providers: [],
+        warningBanner: "",
+        managedAccountFields: []
+      }))
         .then((policy) => {
           activeExternalAuthPolicy = policy;
           return policy;
@@ -5629,8 +5668,19 @@
         field?.id !== "changepassword" && repeatControllerId(field?.repeat || "") !== "changepassword"
       );
     }
+    const managedFieldIds = externalAuthManagedUserConfigFieldIds(inputFields, activeExternalAuthPolicy);
+    if (managedFieldIds.size) {
+      inputFields = inputFields.filter((field) => !managedFieldIds.has(field?.id));
+    }
     if (options.requiredPasswordChange === true) {
       inputFields = requiredPasswordChangeFields(inputFields);
+    }
+    if (managedFieldIds.has("changeemail") && options.requiredPasswordChange !== true) {
+      form.appendChild(el(
+        "p",
+        "ui2-user-config-note",
+        "Email is managed by the external identity provider and cannot be changed here."
+      ));
     }
     form.appendChild(renderUtilitySection(
       options.requiredPasswordChange === true ? "Choose a new password" : "Settings",
@@ -5671,6 +5721,22 @@
       pullUtilityFieldValues(form);
     }, 0);
     return section;
+  }
+
+  function externalAuthManagedUserConfigFieldIds(fields, policy) {
+    const managed = new Set();
+    if (policy?.mode !== "external_only" || !Array.isArray(policy.managedAccountFields)) {
+      return managed;
+    }
+    if (policy.managedAccountFields.includes("email")) {
+      managed.add("changeemail");
+      fields.forEach((field) => {
+        if (repeatControllerId(field?.repeat || "") === "changeemail") {
+          managed.add(field.id);
+        }
+      });
+    }
+    return managed;
   }
 
   function requiredPasswordChangeFields(fields) {
@@ -13834,6 +13900,7 @@
       buildReleaseDetails,
       normalizeExternalAuthProviders,
       normalizeExternalAuthPolicy,
+      externalAuthManagedUserConfigFieldIds,
       loadExternalAuthPolicy,
       loadExternalAuthProviders,
       renderExternalAuthProviders,

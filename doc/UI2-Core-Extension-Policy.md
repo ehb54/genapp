@@ -60,13 +60,26 @@ or disabled policies. The application owns the text; UI2 inserts it as text,
 not HTML. Applications that do not supply the field retain their existing
 presentation.
 
+An external-only manifest may declare `managed_account_fields: ["email"]`
+when its identity provider owns the email attribute and the application does
+not permit local email changes. UI2 then omits the email-change controller and
+all fields repeated by that controller from Settings, and explains that email
+is managed by the external identity provider. The accepted vocabulary is
+bounded; unsupported values are ignored. This field is ignored for additive
+providers-only, legacy, unavailable, malformed, or disabled policies. Omitting
+it preserves the existing email settings, including for other external-only
+applications.
+
 UI presentation is not an authorization boundary. Applications using
 external-only mode must opt generated password login, password registration,
-and password-change handlers into `external_auth_policy` and provide the
-application-owned `ui2/auth/policy.php` enforcement hook. Applications without
-that directive generate the existing handlers unchanged. Identity-provider
-protocols, account linking, account creation, privileges, and deployment
-configuration remain application-owned.
+password-change, and any declared managed-field handlers into
+`external_auth_policy` and provide the application-owned
+`ui2/auth/policy.php` enforcement hook. Applications without that directive
+generate the existing handlers unchanged. The application-side hook remains
+authoritative and must reject direct attempts to change a managed field;
+hiding it in UI2 is not sufficient. Identity-provider protocols, account
+linking, account creation, privileges, storage, and deployment configuration
+remain application-owned.
 
 ## Shared-core extension gate
 

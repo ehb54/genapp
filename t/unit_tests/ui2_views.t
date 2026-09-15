@@ -50,6 +50,7 @@ my $sys_status_php = read_file( File::Spec->catfile( $repo_root, qw(languages ht
 my $sys_login_template = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_login.php) ) );
 my $sys_register_template = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_register.php) ) );
 my $sys_user_config_template = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_user_config.php) ) );
+my $sys_manageusers_template = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_manageusers.php) ) );
 like( $index, qr/js\/app-map\.js/, 'ui2 index loads the generated app map' );
 like( $index, qr/\.\.\/js\/autobahn\.min\.js/, 'ui2 index preloads the existing legacy Autobahn websocket client' );
 like( $index, qr/\.\.\/js\/plotly-2\.35\.2\.min\.js/, 'ui2 index preloads the existing generated Plotly bundle' );
@@ -114,6 +115,8 @@ unlike( $session_handoff_php, qr/dirname\(__DIR__, 2\)/, 'generated handoff endp
 like( $sys_login_template, qr/__~external_auth_policy\{[^{}]*ga_external_auth_enforce\('password_login'\)/, 'password login exposes an optional application-owned server policy hook' );
 like( $sys_register_template, qr/__~external_auth_policy\{[^{}]*ga_external_auth_enforce\('registration'\)/, 'registration exposes an optional application-owned server policy hook' );
 like( $sys_user_config_template, qr/__~external_auth_policy\{[^{}]*ga_external_auth_enforce\('user_config'\)/, 'password change exposes an optional application-owned server policy hook' );
+like( $sys_manageusers_template, qr/isset\( \$v\[ 'email' \] \).*?\$email === "" \? ""/s, 'administrator user listings tolerate accounts without a locally stored email' );
+like( $sys_manageusers_template, qr/isset\( \$mailuser \).*?isset\( \$doc\[ 'email' \] \).*?mymail/s, 'administrator account actions send mail only when the account stores an email' );
 like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declares a module submit endpoint helper' );
 like( $ui2_js, qr/function renderActionBar\(\).*?const status = el\("div", "ui2-submit-status"\);.*?status\.setAttribute\("role", "status"\)/s, 'native UI2 keeps an initially empty status live region for later lifecycle messages' );
 unlike( $ui2_js, qr/function renderActionBar\(\).*?Not submitted/s, 'native UI2 does not announce a redundant pristine submission state' );
