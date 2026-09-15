@@ -81,6 +81,13 @@ hiding it in UI2 is not sufficient. Identity-provider protocols, account
 linking, account creation, privileges, storage, and deployment configuration
 remain application-owned.
 
+An external-only manifest may declare a same-origin `logout_url`. UI2 first
+completes the existing local GenApp logout and then navigates to that endpoint,
+including only the bounded UI2 window id. The application endpoint owns the
+provider-specific logout protocol, one-use state, and return routing. The URL
+is ignored for legacy, additive providers-only, unavailable, malformed, or
+non-opted-in policies; omitted declarations retain local-only logout.
+
 ## Shared-core extension gate
 
 Before changing UI2 core, write a shared-gap report that states:

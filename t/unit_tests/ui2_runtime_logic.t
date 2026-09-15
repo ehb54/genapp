@@ -3054,6 +3054,34 @@ assert.strictEqual(
 );
 assert.strictEqual(
   hooks.normalizeExternalAuthPolicy({
+    authentication_mode: "external_only",
+    registration: "jit",
+    providers: [{ id: "login-gov", label: "Sign in with Login.gov", start_url: "auth/login-gov/start.php" }],
+    logout_url: "auth/login-gov/logout.php"
+  }).logoutUrl,
+  "https://example.test/sassie3/ui2/auth/login-gov/logout.php",
+  "external-only authentication accepts a same-origin application logout endpoint"
+);
+assert.strictEqual(
+  hooks.normalizeExternalAuthPolicy({
+    authentication_mode: "external_only",
+    registration: "jit",
+    providers: [{ id: "login-gov", label: "Sign in with Login.gov", start_url: "auth/login-gov/start.php" }],
+    logout_url: "https://identity.example/logout"
+  }).logoutUrl,
+  "",
+  "external-auth logout rejects a cross-origin endpoint"
+);
+assert.strictEqual(
+  hooks.normalizeExternalAuthPolicy({
+    providers: [{ id: "login-gov", label: "Sign in with Login.gov", start_url: "auth/login-gov/start.php" }],
+    logout_url: "auth/login-gov/logout.php"
+  }).logoutUrl,
+  "",
+  "a providers-only manifest cannot replace local logout"
+);
+assert.strictEqual(
+  hooks.normalizeExternalAuthPolicy({
     providers: [{ id: "login-gov", label: "Sign in with Login.gov", start_url: "auth/login-gov/start.php" }],
     managed_account_fields: ["email"]
   }).managedAccountFields.length,
@@ -3098,6 +3126,12 @@ assert(
     source.includes('mode: "unavailable"') &&
     source.includes('renderExternalAuthProviders(overlay);'),
   "UI2 loads external providers only through the optional application manifest contract"
+);
+assert(
+  source.includes('policy.mode === "external_only" && policy.logoutUrl') &&
+    source.includes('logoutUrl.searchParams.set("window", window.name)') &&
+    source.includes('window.location.assign(logoutUrl.toString())'),
+  "UI2 completes local logout before following an opted-in same-origin external logout endpoint"
 );
 assert(
   source.includes('function renderSplashAuthentication(overlay)') &&
@@ -3266,7 +3300,10 @@ assert(
   "successful login hides the splash dialog before refreshing session state"
 );
 assert(
-  source.includes('state.freshLoginAfterLogoff = true;\\n      openSplashDialog();'),
+  source.includes('state.freshLoginAfterLogoff = true;') &&
+    source.includes('if (policy.mode === "external_only" && policy.logoutUrl)') &&
+    source.indexOf('openSplashDialog();', source.indexOf('state.freshLoginAfterLogoff = true;')) >
+      source.indexOf('state.freshLoginAfterLogoff = true;'),
   "logoff marks the next login as a fresh session"
 );
 assert(

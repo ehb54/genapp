@@ -25,6 +25,13 @@ labels are limited to 80 characters; and UI2 renders at most five providers.
 Invalid entries are ignored. A missing, disabled, invalid, or unavailable
 manifest leaves password login available and does not display an error.
 
+An explicit external-only manifest may also provide a same-origin
+`logout_url`. UI2 always completes its ordinary local-session logout first,
+then navigates the browser to that application-owned endpoint with the current
+window id. The application owns identity-provider logout, state validation,
+and the safe return to UI2. Omitting or rejecting this URL preserves the
+existing local-only logout behavior.
+
 UI2 adds the current GenApp window id as the `window` query parameter when a
 provider link is followed. The application owns the sign-in endpoint,
 protocol validation, account linking, callback, and session creation. After a

@@ -87,7 +87,8 @@
     registration: "legacy",
     providers: [],
     warningBanner: "",
-    managedAccountFields: []
+    managedAccountFields: [],
+    logoutUrl: ""
   };
   let reactWorkbenchRoot = null;
   let reactWorkbenchSyncFrame = null;
@@ -802,7 +803,8 @@
         registration: "unavailable",
         providers: [],
         warningBanner: "",
-        managedAccountFields: []
+        managedAccountFields: [],
+        logoutUrl: ""
       };
     }
     const providers = normalizeExternalAuthProviders(payload);
@@ -814,7 +816,8 @@
         registration: "legacy",
         providers,
         warningBanner: "",
-        managedAccountFields: []
+        managedAccountFields: [],
+        logoutUrl: ""
       };
     }
     const externalOnly = declaredMode === "external_only" &&
@@ -828,12 +831,14 @@
         .map((field) => stringValue(field).trim())
         .filter((field, index, fields) => field === "email" && fields.indexOf(field) === index)
       : [];
+    const logoutUrl = externalOnly ? sameOriginApplicationUrl(payload.logout_url) : "";
     return {
       mode: externalOnly ? "external_only" : "unavailable",
       registration: externalOnly ? "jit" : "unavailable",
       providers: externalOnly ? providers : [],
       warningBanner: externalOnly && warningBanner.length <= 8000 ? warningBanner : "",
-      managedAccountFields
+      managedAccountFields,
+      logoutUrl
     };
   }
 
@@ -854,7 +859,8 @@
             registration: "legacy",
             providers: [],
             warningBanner: "",
-            managedAccountFields: []
+            managedAccountFields: [],
+            logoutUrl: ""
           };
         }
         if (!response.ok) {
@@ -866,7 +872,8 @@
         registration: "unavailable",
         providers: [],
         warningBanner: "",
-        managedAccountFields: []
+        managedAccountFields: [],
+        logoutUrl: ""
       }))
         .then((policy) => {
           activeExternalAuthPolicy = policy;
@@ -1125,6 +1132,7 @@
   async function logoffSession() {
     const endpoint = legacyEndpoint("logoffBase", "ajax/sys_config/sys_logoff.php");
     try {
+      const policy = await loadExternalAuthPolicy();
       const formData = new FormData();
       formData.set("_window", window.name);
       formData.set("_logon", state.session.logon);
@@ -1141,6 +1149,12 @@
       renderSessionState();
       stopSessionRuntime();
       state.freshLoginAfterLogoff = true;
+      if (policy.mode === "external_only" && policy.logoutUrl) {
+        const logoutUrl = new URL(policy.logoutUrl);
+        logoutUrl.searchParams.set("window", window.name);
+        window.location.assign(logoutUrl.toString());
+        return;
+      }
       openSplashDialog();
     } catch (error) {
       renderSessionState(error);
