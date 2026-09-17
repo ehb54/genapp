@@ -3171,6 +3171,10 @@ assert(
   "logged-out login actions open a mandatory login dialog"
 );
 assert(
+  source.includes('overlay.classList.toggle("ui2-auth-overlay", mandatory);'),
+  "mandatory login overlays obscure the application shell"
+);
+assert(
   source.includes('const requestedPasswordReset = formData.has("forgotpassword");') &&
     source.includes('if (requestedPasswordReset && !state.session.logon)') &&
     source.includes('forgotInput.checked = false;') &&
@@ -3247,9 +3251,10 @@ assert(
 );
 assert(
   source.includes('allowBackdropClose: false') &&
+    source.includes('overlayClass: "ui2-auth-overlay"') &&
     source.includes('onClose: () => {') &&
     source.includes('syncSplashForSession();'),
-  "ui2 register dialog returns the user to the splash flow when it closes"
+  "ui2 register dialog obscures the application shell and returns to the splash when it closes"
 );
 assert(
   source.includes('async function runLegacyCaptchaGate()') &&

@@ -70,6 +70,12 @@ providers-only, legacy, unavailable, malformed, or disabled policies. Omitting
 it preserves the existing email settings, including for other external-only
 applications.
 
+While the session is logged out, the sign-in splash and mandatory Login and
+Register overlays use an opaque theme surface that fully obscures the mounted
+application shell. Ordinary dialogs opened after authentication retain the
+standard translucent backdrop. This presentation rule does not alter session
+state, provider selection, or authorization behavior.
+
 UI presentation is not an authorization boundary. Applications using
 external-only mode must opt generated password login, password registration,
 password-change, and any declared managed-field handlers into

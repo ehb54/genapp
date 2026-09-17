@@ -429,6 +429,7 @@ like( $ui2_js, qr/function openLoginDialog\(options = \{\}\)/, 'ui2 runtime brid
 like( $ui2_js, qr/function openRegisterDialog\(\)/, 'ui2 runtime bridge keeps register on the ui2 page through the legacy sys_register module' );
 like( $ui2_js, qr/function applyLoginDialogMode\(overlay, mandatory\)/, 'ui2 login dialog can switch between mandatory and dismissible modes' );
 like( $ui2_js, qr/openLoginDialog\(\{ mandatory: true \}\)/, 'ui2 logged-out login action opens a mandatory login dialog' );
+like( $ui2_js, qr/overlay\.classList\.toggle\("ui2-auth-overlay", mandatory\)/, 'ui2 limits the opaque login backdrop to mandatory authentication' );
 like( $ui2_js, qr/const requestedPasswordReset = formData\.has\("forgotpassword"\);/, 'ui2 records whether a login submission requested a password reset' );
 like( $ui2_js, qr/if \(requestedPasswordReset && !state\.session\.logon\)[\s\S]*?forgotInput\.checked = false;[\s\S]*?passwordInput\.value = "";/, 'ui2 returns an accepted password-reset request to ordinary login mode' );
 like( $ui2_js, qr/await openRegisterDialog\(\);/, 'ui2 splash register action opens a dedicated register dialog' );
@@ -644,6 +645,7 @@ like( $ui2_css, qr/\.ui2-project-chip-chevron\s*\{[^}]*border-right:\s*2px solid
 like( $ui2_css, qr/\.ui2-project-chip:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--ui2-focus-ring\);/s, 'ui2 project selector has an explicit keyboard focus treatment' );
 like( $ui2_css, qr/\.ui2-project-chip\[aria-expanded="true"\] \.ui2-project-chip-chevron/, 'ui2 project selector changes its chevron when its dialog is open' );
 like( $ui2_css, qr/\.ui2-dialog-overlay/, 'ui2 stylesheet includes login dialog shell styles' );
+like( $ui2_css, qr/\.ui2-splash-overlay,\s*\.ui2-auth-overlay\s*\{[^}]*background:\s*var\(--ui2-bg\);/s, 'logged-out authentication surfaces obscure the application shell with an opaque theme background' );
 like( $ui2_css, qr/\.ui2-login-providers\[hidden\]/, 'ui2 stylesheet keeps unavailable external providers out of the login dialog' );
 like( $ui2_css, qr/\.ui2-password-control.*?\.ui2-password-toggle.*?aria-pressed/s, 'ui2 stylesheet provides an accessible password visibility control' );
 like( $ui2_css, qr/\.ui2-legacy-message-dialog/, 'ui2 stylesheet includes legacy backend message dialog styles' );

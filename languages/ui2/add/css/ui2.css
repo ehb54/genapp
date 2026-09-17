@@ -1594,6 +1594,11 @@ code {
   padding: 1rem;
 }
 
+.ui2-splash-overlay,
+.ui2-auth-overlay {
+  background: var(--ui2-bg);
+}
+
 .ui2-dialog-overlay[hidden] {
   display: none;
 }

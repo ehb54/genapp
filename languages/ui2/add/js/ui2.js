@@ -945,6 +945,7 @@
 
   function applyLoginDialogMode(overlay, mandatory) {
     overlay.dataset.mandatory = mandatory ? "true" : "false";
+    overlay.classList.toggle("ui2-auth-overlay", mandatory);
     const close = overlay.querySelector(".ui2-dialog-close");
     const cancel = overlay.querySelector(".ui2-button-quiet");
     if (close) {
@@ -1445,6 +1446,7 @@
       const content = renderRegisterTool(module, fields);
       showUtilityOverlay("Register", content, {
         allowBackdropClose: false,
+        overlayClass: "ui2-auth-overlay",
         onClose: () => {
           syncSplashForSession();
         }
@@ -2318,6 +2320,9 @@
   function showUtilityOverlay(titleText, content, options = {}) {
     closeUtilityOverlay();
     const overlay = el("div", "ui2-dialog-overlay ui2-utility-overlay");
+    if (options.overlayClass) {
+      overlay.classList.add(options.overlayClass);
+    }
     overlay.id = "ui2-utility-overlay";
     overlay._ui2OnClose = typeof options.onClose === "function" ? options.onClose : null;
     overlay._ui2Trigger = options.trigger || null;
