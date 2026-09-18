@@ -699,8 +699,10 @@ if ( sizeof( $_FILES ) ) {
                 exit();
             }
 #            error_log( "move_uploaded_file( " . $v[ 'tmp_name' ][ $k1 ] . ',' .  $dir . '/' . $v[ 'name' ][ $k1 ] . "\n", 3, "/var/tmp/my-errors.log");
-            $upload_path = ga_submission_upload_destination( $dir, $v[ 'name' ][ $k1 ] );
-            if ( $upload_path === false || !move_uploaded_file( $v[ 'tmp_name' ][ $k1 ], $upload_path ) )
+            $accepted_upload = ga_accept_submission_upload(
+                $v[ 'tmp_name' ][ $k1 ], $v[ 'name' ][ $k1 ], $k,
+                $dir, $logdir, $_REQUEST[ '_uuid' ] );
+            if ( !isset( $accepted_upload[ 'ok' ] ) || !$accepted_upload[ 'ok' ] )
             {
                 if ( isset( $checkrunning ) )
                 {
@@ -729,15 +731,8 @@ if ( sizeof( $_FILES ) ) {
             {
                $_REQUEST[ $k ] = array();
             }
+            $upload_path = $accepted_upload[ 'path' ];
             $v[ 'name' ][ $k1 ] = basename( $upload_path );
-            if ( !ga_record_submission_upload( $logdir, $_REQUEST[ '_uuid' ], $k, $upload_path, $dir ) )
-            {
-                @unlink( $upload_path );
-                $results[ "error" ] = "Could not record uploaded file ownership";
-                $results[ '_status' ] = 'failed';
-                echo (json_encode($results));
-                exit();
-            }
             $_REQUEST[ $k ][] = $upload_path;
             if ( !isset( $org_request[ $k ] ) || !is_array( $org_request[ $k ] ) )
             {
@@ -813,8 +808,10 @@ if ( sizeof( $_FILES ) ) {
                 exit();
             }
 //         error_log( "move_uploaded_file( " . $v[ 'tmp_name' ] . ',' .  $dir . '/' . $v[ 'name' ] . "\n", 3, "/var/tmp/my-errors.log");
-            $upload_path = ga_submission_upload_destination( $dir, $v[ 'name' ] );
-            if ( $upload_path === false || !move_uploaded_file( $v[ 'tmp_name' ], $upload_path ) )
+            $accepted_upload = ga_accept_submission_upload(
+                $v[ 'tmp_name' ], $v[ 'name' ], $k,
+                $dir, $logdir, $_REQUEST[ '_uuid' ] );
+            if ( !isset( $accepted_upload[ 'ok' ] ) || !$accepted_upload[ 'ok' ] )
             {
                 if ( isset( $checkrunning ) )
                 {
@@ -839,15 +836,8 @@ if ( sizeof( $_FILES ) ) {
             {
                $_REQUEST[ $k ] = array();
             }
+            $upload_path = $accepted_upload[ 'path' ];
             $v[ 'name' ] = basename( $upload_path );
-            if ( !ga_record_submission_upload( $logdir, $_REQUEST[ '_uuid' ], $k, $upload_path, $dir ) )
-            {
-                @unlink( $upload_path );
-                $results[ "error" ] = "Could not record uploaded file ownership";
-                $results[ '_status' ] = 'failed';
-                echo (json_encode($results));
-                exit();
-            }
             $_REQUEST[ $k ][] = $upload_path;
             if ( !isset( $org_request[ $k ] ) || !is_array( $org_request[ $k ] ) )
             {

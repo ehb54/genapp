@@ -15,38 +15,102 @@ function ga_submission_upload_path_is_within( $path, $root )
     return $path === $root || strpos( $path, $root . '/' ) === 0;
 }
 
-function ga_submission_upload_destination( $directory, $submitted_name )
+function ga_submission_upload_base_name( $submitted_name )
 {
     $base_name = basename( str_replace( "\\", '/', (string) $submitted_name ) );
     if ( $base_name === '' || $base_name === '.' || $base_name === '..' ) {
         return false;
     }
-
-    $candidate = rtrim( $directory, '/' ) . '/' . $base_name;
-    if ( !file_exists( $candidate ) && !is_link( $candidate ) ) {
-        return $candidate;
-    }
-
-    $extension = pathinfo( $base_name, PATHINFO_EXTENSION );
-    $stem = pathinfo( $base_name, PATHINFO_FILENAME );
-    $suffix = $extension === '' ? '' : '.' . $extension;
-    for ( $number = 1; $number < 100000; ++$number ) {
-        $candidate = rtrim( $directory, '/' ) . '/' . $stem . '-' . $number . $suffix;
-        if ( !file_exists( $candidate ) && !is_link( $candidate ) ) {
-            return $candidate;
-        }
-    }
-    return false;
+    return $base_name;
 }
 
-function ga_record_submission_upload( $log_directory, $uuid, $field, $path, $project_root )
+function ga_submission_upload_identity( $path, $project_root )
 {
+    clearstatcache( true, $path );
     $root = realpath( $project_root );
     $resolved_path = realpath( $path );
     $metadata = lstat( $path );
     if ( $root === false || $resolved_path === false || $metadata === false ||
          is_link( $path ) || !is_file( $path ) ||
          !ga_submission_upload_path_is_within( $resolved_path, $root ) ) {
+        return false;
+    }
+    return array(
+        'path' => $resolved_path,
+        'device' => (int) $metadata[ 'dev' ],
+        'inode' => (int) $metadata[ 'ino' ],
+        'size' => (int) $metadata[ 'size' ],
+    );
+}
+
+function ga_submission_upload_identity_matches( $identity, $expected )
+{
+    return is_array( $identity ) && is_array( $expected ) &&
+        isset( $identity[ 'device' ], $identity[ 'inode' ], $identity[ 'size' ],
+               $expected[ 'device' ], $expected[ 'inode' ], $expected[ 'size' ] ) &&
+        (int) $identity[ 'device' ] === (int) $expected[ 'device' ] &&
+        (int) $identity[ 'inode' ] === (int) $expected[ 'inode' ] &&
+        (int) $identity[ 'size' ] === (int) $expected[ 'size' ];
+}
+
+function ga_remove_submission_upload_if_owned( $path, $identity, $project_root )
+{
+    $current = ga_submission_upload_identity( $path, $project_root );
+    return ga_submission_upload_identity_matches( $current, $identity ) && @unlink( $path );
+}
+
+function ga_submission_upload_staging_directory( $directory )
+{
+    $root = realpath( $directory );
+    if ( $root === false || !is_dir( $root ) ) {
+        return false;
+    }
+
+    for ( $attempt = 0; $attempt < 100; ++$attempt ) {
+        try {
+            $token = bin2hex( random_bytes( 16 ) );
+        } catch ( Exception $exception ) {
+            $token = hash( 'sha256', uniqid( '', true ) . ':' . getmypid() . ':' . $attempt );
+        }
+        $staging_directory = $root . '/.ga-upload-stage-' . $token;
+        if ( @mkdir( $staging_directory, 0700 ) ) {
+            return $staging_directory;
+        }
+    }
+    return false;
+}
+
+function ga_publish_submission_upload( $staged_path, $directory, $submitted_name )
+{
+    $base_name = ga_submission_upload_base_name( $submitted_name );
+    if ( $base_name === false ) {
+        return false;
+    }
+
+    $extension = pathinfo( $base_name, PATHINFO_EXTENSION );
+    $stem = pathinfo( $base_name, PATHINFO_FILENAME );
+    $suffix = $extension === '' ? '' : '.' . $extension;
+    for ( $number = 0; $number < 100000; ++$number ) {
+        $name = $number === 0 ? $base_name : $stem . '-' . $number . $suffix;
+        $candidate = rtrim( $directory, '/' ) . '/' . $name;
+        if ( @link( $staged_path, $candidate ) ) {
+            return $candidate;
+        }
+        clearstatcache( true, $candidate );
+        if ( !file_exists( $candidate ) && !is_link( $candidate ) ) {
+            return false;
+        }
+    }
+    return false;
+}
+
+function ga_record_submission_upload( $log_directory, $uuid, $field, $path, $project_root, $expected_identity = null )
+{
+    $root = realpath( $project_root );
+    $identity = ga_submission_upload_identity( $path, $project_root );
+    if ( $root === false || $identity === false ||
+         ( $expected_identity !== null &&
+           !ga_submission_upload_identity_matches( $identity, $expected_identity ) ) ) {
         return false;
     }
 
@@ -84,10 +148,10 @@ function ga_record_submission_upload( $log_directory, $uuid, $field, $path, $pro
 
     $manifest[ 'uploads' ][] = array(
         'field' => (string) $field,
-        'path' => $resolved_path,
-        'device' => (int) $metadata[ 'dev' ],
-        'inode' => (int) $metadata[ 'ino' ],
-        'size' => (int) $metadata[ 'size' ],
+        'path' => $identity[ 'path' ],
+        'device' => $identity[ 'device' ],
+        'inode' => $identity[ 'inode' ],
+        'size' => $identity[ 'size' ],
     );
 
     rewind( $handle );
@@ -100,6 +164,52 @@ function ga_record_submission_upload( $log_directory, $uuid, $field, $path, $pro
         @chmod( $manifest_path, 0600 );
     }
     return $written;
+}
+
+function ga_accept_submission_upload( $temporary_path, $submitted_name, $field,
+                                      $directory, $log_directory, $uuid )
+{
+    $staging_directory = ga_submission_upload_staging_directory( $directory );
+    if ( $staging_directory === false ) {
+        return array( 'ok' => false, 'error' => 'staging-directory-failed' );
+    }
+
+    $staged_path = $staging_directory . '/upload';
+    $published_path = false;
+    $identity = false;
+    try {
+        if ( !move_uploaded_file( $temporary_path, $staged_path ) ) {
+            return array( 'ok' => false, 'error' => 'upload-move-failed' );
+        }
+        $identity = ga_submission_upload_identity( $staged_path, $directory );
+        if ( $identity === false ) {
+            return array( 'ok' => false, 'error' => 'staged-identity-failed' );
+        }
+
+        $published_path = ga_publish_submission_upload(
+            $staged_path, $directory, $submitted_name );
+        if ( $published_path === false ) {
+            return array( 'ok' => false, 'error' => 'atomic-publish-failed' );
+        }
+        $published_identity = ga_submission_upload_identity( $published_path, $directory );
+        if ( !ga_submission_upload_identity_matches( $published_identity, $identity ) ) {
+            ga_remove_submission_upload_if_owned( $published_path, $identity, $directory );
+            return array( 'ok' => false, 'error' => 'published-identity-mismatch' );
+        }
+        if ( !ga_record_submission_upload(
+                 $log_directory, $uuid, $field, $published_path, $directory, $identity ) ) {
+            ga_remove_submission_upload_if_owned( $published_path, $identity, $directory );
+            return array( 'ok' => false, 'error' => 'ownership-record-failed' );
+        }
+        return array( 'ok' => true, 'path' => $published_path );
+    } finally {
+        if ( $identity !== false ) {
+            ga_remove_submission_upload_if_owned( $staged_path, $identity, $directory );
+        } elseif ( is_file( $staged_path ) && !is_link( $staged_path ) ) {
+            @unlink( $staged_path );
+        }
+        @rmdir( $staging_directory );
+    }
 }
 
 function ga_cleanup_submission_uploads( $log_directory, $uuid, $project_root )
@@ -136,13 +246,8 @@ function ga_cleanup_submission_uploads( $log_directory, $uuid, $project_root )
             if ( !file_exists( $path ) && !is_link( $path ) ) {
                 continue;
             }
-            $metadata = lstat( $path );
-            $resolved_path = realpath( $path );
-            if ( $metadata === false || $resolved_path === false || is_link( $path ) ||
-                 !is_file( $path ) || !ga_submission_upload_path_is_within( $resolved_path, $root ) ||
-                 (int) $metadata[ 'dev' ] !== (int) $entry[ 'device' ] ||
-                 (int) $metadata[ 'ino' ] !== (int) $entry[ 'inode' ] ||
-                 (int) $metadata[ 'size' ] !== (int) $entry[ 'size' ] ) {
+            $identity = ga_submission_upload_identity( $path, $root );
+            if ( !ga_submission_upload_identity_matches( $identity, $entry ) ) {
                 $refused[] = $path;
                 continue;
             }

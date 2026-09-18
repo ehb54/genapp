@@ -7,13 +7,21 @@ failure response.
 
 ## Submission ownership
 
-For each successful `move_uploaded_file` operation, the generated handler must:
+The generated handler accepts each browser upload as one transaction. It must:
 
-1. choose a collision-safe destination without overwriting an existing path;
-2. record the exact final path in a server-only, per-job manifest;
-3. record the canonical project root and the file device, inode, and size; and
-4. fail the submission and remove that new file if ownership cannot be
+1. move the HTTP upload into a private staging directory on the destination
+   filesystem;
+2. atomically publish the staged file with a no-overwrite filesystem operation,
+   selecting a suffixed name when the requested path already exists;
+3. record the exact final path in a server-only, per-job manifest;
+4. record the canonical project root and the file device, inode, and size; and
+5. fail the submission and remove only that same file identity if ownership cannot be
    recorded.
+
+Checking whether a destination exists and then calling an operation that can
+overwrite it is prohibited. Normal concurrent submissions requesting the same
+name must both survive under distinct names. Rollback must compare device,
+inode, and size before unlinking so that a replacement path is preserved.
 
 Only files newly moved from the HTTP upload are owned by this manifest.
 Existing project files and files chosen through `_selaltval_` are never added.
@@ -56,8 +64,9 @@ reattachment.
 
 ## Validation
 
-GenApp tests cover generation of the shared helper, collision naming,
-ownership recording, exact failure dispatch, preservation of unowned files,
-identity mismatch refusal, path containment, symlink refusal, and idempotence.
+GenApp tests cover generation of the shared helper, concurrent atomic collision
+naming without overwrite, ownership recording, exact failure dispatch,
+preservation of unowned files, identity mismatch refusal, path containment,
+symlink refusal, and idempotence.
 Application tests cover the shared classification helper and require active
 drivers to use it for interface-validation responses.
