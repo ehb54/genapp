@@ -483,6 +483,12 @@ current task and does not carry forward.
 
 ### Other SASSIE policy routing
 
+- Failed-submission upload ownership and cleanup are governed by
+  `doc/Submission-Upload-Cleanup-Contract.md` and
+  `../genapp_zazzie/docs/submission_upload_cleanup.md`. GenApp alone records
+  and deletes newly moved HTTP uploads; application drivers may only emit the
+  exact `input_validation` failure classification after pre-execution input
+  rejection.
 - External-authentication presentation and generated-handler opt-in are governed
   by `doc/UI2-Core-Extension-Policy.md`; provider protocol, identity linking,
   account creation, and deployment settings remain application-owned.

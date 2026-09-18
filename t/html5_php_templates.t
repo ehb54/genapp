@@ -24,6 +24,8 @@ my $module_php = read_file( File::Spec->catfile( $app_dir, qw(output html5 ajax 
 my $module_info_php = File::Spec->catfile( $app_dir, qw(output html5 etc module_echo.php) );
 my $results_php = read_file( File::Spec->catfile( $app_dir, qw(output html5 ajax get_results.php) ) );
 my $jobrun_php  = read_file( File::Spec->catfile( $app_dir, qw(output html5 util jobrun.php) ) );
+my $upload_cleanup_php = read_file( File::Spec->catfile(
+    $app_dir, qw(output html5 util submission-upload-cleanup.php) ) );
 my $sys_user_config_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_user_config.php) ) );
 my $sys_login_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_login.php) ) );
 my $sys_project_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_project.php) ) );
@@ -83,6 +85,13 @@ like( $jobrun_php, qr/file_get_contents\( "\$\{logdir\}_cmds_\$id"/, 'jobrun rea
 like( $jobrun_php, qr/exec\( \$cmd \)/, 'jobrun executes recorded command' );
 like( $jobrun_php, qr/file_put_contents\( "\$\{logdir\}_stdout_"/, 'jobrun writes stdout payload' );
 like( $jobrun_php, qr/logjobupdate\( "finished"/, 'jobrun marks job finished' );
+like( $module_php, qr/ga_submission_upload_destination/, 'module php collision-renames new submission uploads' );
+like( $module_php, qr/ga_record_submission_upload/, 'module php records ownership after each successful upload move' );
+like( $jobrun_php, qr/ga_cleanup_input_validation_uploads/, 'jobrun invokes centralized validation-failure cleanup' );
+like( $upload_cleanup_php, qr/function ga_record_submission_upload/, 'generated app contains the upload ownership helper' );
+like( $upload_cleanup_php, qr/function ga_cleanup_submission_uploads/, 'generated app contains the guarded cleanup helper' );
+like( $upload_cleanup_php, qr/\$metadata\[ 'dev' \].*?\$metadata\[ 'ino' \].*?\$metadata\[ 'size' \]/s, 'cleanup binds ownership to file identity and size' );
+like( $upload_cleanup_php, qr/is_link.*?!is_file.*?ga_submission_upload_path_is_within/s, 'cleanup rejects links, non-files, and paths outside the project' );
 
 like(
     $sys_user_config_php,

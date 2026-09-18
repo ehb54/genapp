@@ -57,6 +57,7 @@ $checkrunning = $argv[ ++$pos ];
 
 __~debug:runjob{error_log( "jobrun 3\n", 3, "/tmp/php_errors" );}
 require_once "__docroot:html5__/__application__/ajax/joblog.php";
+require_once "__docroot:html5__/__application__/util/submission-upload-cleanup.php";
 
 if ( !getmenumodule( $id ) )
 {
@@ -151,6 +152,20 @@ if ( !$GLOBALS[ 'wascancelled' ] ) {
     }
 
     $objresults = json_decode( $strresults );
+    $upload_cleanup = ga_cleanup_input_validation_uploads(
+        $strresults,
+        $GLOBALS[ 'getmenumodulelogdir' ],
+        $id,
+        $GLOBALS[ 'getmenumoduledir' ]
+    );
+    if ( is_array( $upload_cleanup ) ) {
+        error_log(
+            date( "Y M d H:i:s T", time() ) . " : " . $argv[ 0 ] .
+            " : input-validation upload cleanup " . json_encode( $upload_cleanup ) . "\n",
+            3,
+            "/tmp/php_errors"
+        );
+    }
     if ( isset( $objresults->_disable_notify ) ) {
         $disable_notify = true;
     }
@@ -256,4 +271,3 @@ function sendudptext( $text ) {
                    $GLOBALS[ 'udp' ]->hostip,
                    $GLOBALS[ 'udp' ]->port );
 }    
-

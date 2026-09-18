@@ -57,7 +57,7 @@
                                     { "menuelement_footer.html" : "once"            }
                                   ]
                    }
-                  ,{
+                   ,{
                     "frequency"  : "menu:modules:id",
                     "output"     : "ajax/__menu:id__/__menu:modules:id__.html",
                     "inputs"     : [ 
@@ -238,11 +238,18 @@
                                     { "util/msg-udpserver.php" : "once" }
                                    ]
                    }
-                   ,{
+                  ,{
                     "frequency"  : "once",
                     "output"     : "util/jobrun.php",
                     "inputs"     : [ 
                                     { "util/jobrun.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "util/submission-upload-cleanup.php",
+                    "inputs"     : [
+                                    { "util/submission-upload-cleanup.php" : "once" }
                                    ]
                    }
                    ,{
