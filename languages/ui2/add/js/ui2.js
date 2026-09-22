@@ -1959,6 +1959,12 @@
     if (!currentForm?.isConnected || state.moduleId !== moduleId) {
       return { ok: false, error: "The module changed while the scenario was loading." };
     }
+    // A controller value can make a React workbench replace ordinary repeated
+    // controls at this render boundary.  The first pass may therefore have
+    // written scenario values into controls that no longer exist.  Reapply the
+    // declared values once to the live controls before attaching files.  This
+    // remains bounded to explicit administrator scenario hydration.
+    applyInputPayload(scenario.inputs, { clearMissing: false });
     try {
       files.forEach(({ fieldId, repeatIndex, file }) => attachTestScenarioFile(
         currentForm, fieldId, file, repeatIndex,

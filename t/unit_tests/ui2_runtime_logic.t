@@ -5355,7 +5355,11 @@ const schemaTwoScenario = {
   ...fileScenario,
   id: "repeated_text_assets",
   expected_outcome: "job_completed",
-  inputs: { run_label: "repeated_scenario_loaded", sample_count: 2 },
+  inputs: {
+    run_label: "repeated_scenario_loaded",
+    sample_count: 2,
+    sample_labels: ["scenario_first", "scenario_second"]
+  },
   files: { sample_files: repeatedFileDeclarations }
 };
 assert.strictEqual(
@@ -5649,6 +5653,17 @@ async function verifyScenarioFileHydration() {
   sampleCount.value = "1";
   repeatedForm.append(repeatedRunLabel, sampleCount);
   const repeatedPickers = [];
+  let repeatedLabels = [];
+  const appendRepeatedLabel = (row) => {
+    const label = createNode("input");
+    label.type = "text";
+    label.dataset.fieldId = "sample_labels";
+    label.dataset.repeatTableField = "sample_labels";
+    label.dataset.repeatTableIndex = String(row);
+    label.value = "renderer_default";
+    repeatedLabels[row] = label;
+    repeatedForm.appendChild(label);
+  };
   const appendRepeatedRow = (row) => {
     const display = createNode("input");
     display.type = "text";
@@ -5664,6 +5679,7 @@ async function verifyScenarioFileHydration() {
     repeatedPickers[row] = picker;
     repeatedForm.append(display, picker);
   };
+  appendRepeatedLabel(0);
   appendRepeatedRow(0);
   assert.strictEqual(
     hooks.attachTestScenarioFile(
@@ -5686,10 +5702,16 @@ async function verifyScenarioFileHydration() {
     fields: [
       { id: "run_label", type: "text", default: "ordinary_default" },
       { id: "sample_count", type: "integer", default: 2, repeater: true },
+      { id: "sample_labels", type: "text", default: "renderer_default", repeat: "sample_count" },
       { id: "sample_files", type: "lrfile", repeat: "sample_count" }
     ]
   };
-  hooks.state.values = { run_label: "ordinary_default", sample_count: "1", sample_files: [""] };
+  hooks.state.values = {
+    run_label: "ordinary_default",
+    sample_count: "1",
+    sample_labels: ["renderer_default"],
+    sample_files: [""]
+  };
   hooks.state.testScenarios = {
     available: true,
     loading: false,
@@ -5701,9 +5723,18 @@ async function verifyScenarioFileHydration() {
   const repeatedLoad = hooks.applyTestScenario("repeated_text_assets", repeatedForm);
   await new Promise((resolve) => setImmediate(resolve));
   assert.strictEqual(scenarioFrames.length, 1, "repeated scenario hydration waits for the renderer boundary once");
+  repeatedLabels[0].remove();
+  repeatedLabels = [];
+  appendRepeatedLabel(0);
+  appendRepeatedLabel(1);
   scenarioFrames.shift()();
   const repeatedLoaded = await repeatedLoad;
   assert.strictEqual(repeatedLoaded.ok, true, "repeated scenario hydration can defer a row that the renderer has not created yet");
+  assert.deepStrictEqual(
+    repeatedLabels.map((control) => control.value),
+    ["scenario_first", "scenario_second"],
+    "scenario hydration reapplies ordinary repeated values after a controller-driven renderer remount"
+  );
   assert.strictEqual(repeatedPickers[0].files[0].name, "sample.txt", "first scenario file attaches to repeated row one");
   assert.strictEqual(scenarioFrames.length, 1, "expanding repeated-file hydration schedules a bounded post-return ownership check");
   appendRepeatedRow(1);
