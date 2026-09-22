@@ -1915,16 +1915,20 @@
     });
   }
 
-  function scheduleTestScenarioFileRestore() {
+  function scheduleTestScenarioPostRenderRestore(inputs) {
     const schedule = window.requestAnimationFrame || ((callback) => window.setTimeout(callback, 0));
     // React publishes the values returned by applyTestScenario after its
-    // promise resolves.  A conditional field group can therefore remount one
-    // render later than the first ownership check.  Keep this bounded to two
-    // frames: one for the immediate reconciliation and one for that published
-    // values render.
-    schedule(() => {
+    // promise resolves.  A conditional field group can therefore remount with
+    // module defaults after the synchronous hydration pass.  Keep restoration
+    // bounded to two frames and restore ordinary values and verified files as
+    // one operation so the live controls retain the complete scenario.
+    const restore = () => {
+      applyInputPayload(inputs, { clearMissing: false });
       restoreTestScenarioFileSelections();
-      schedule(() => restoreTestScenarioFileSelections());
+    };
+    schedule(() => {
+      restore();
+      schedule(restore);
     });
   }
 
@@ -1997,7 +2001,7 @@
     // resulting render may replace a native file picker, so verify ownership
     // once more on the following frame without moving file semantics into the
     // renderer.
-    scheduleTestScenarioFileRestore();
+    scheduleTestScenarioPostRenderRestore(scenario.inputs);
     return { ok: true, values: cloneUi2Value(state.values) };
   }
 

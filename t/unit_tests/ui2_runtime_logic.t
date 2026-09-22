@@ -5737,8 +5737,22 @@ async function verifyScenarioFileHydration() {
   );
   assert.strictEqual(repeatedPickers[0].files[0].name, "sample.txt", "first scenario file attaches to repeated row one");
   assert.strictEqual(scenarioFrames.length, 1, "expanding repeated-file hydration schedules a bounded post-return ownership check");
+  repeatedLabels.forEach((control) => control.remove());
+  repeatedLabels = [];
+  appendRepeatedLabel(0);
+  appendRepeatedLabel(1);
+  assert.deepStrictEqual(
+    repeatedLabels.map((control) => control.value),
+    ["renderer_default", "renderer_default"],
+    "a post-return React remount begins with module defaults"
+  );
   appendRepeatedRow(1);
   scenarioFrames.shift()();
+  assert.deepStrictEqual(
+    repeatedLabels.map((control) => control.value),
+    ["scenario_first", "scenario_second"],
+    "bounded post-return reconciliation restores ordinary scenario values after a late remount"
+  );
   assert.strictEqual(repeatedPickers[1].files[0].name, "sample_second.txt", "verified scenario file attaches after the renderer creates repeated row two");
   assert.strictEqual(scenarioFrames.length, 1, "expanding repeated-file hydration retains one final bounded ownership check");
   scenarioFrames.shift()();
