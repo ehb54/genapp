@@ -29,6 +29,16 @@ like( $normalizer, qr/!array_key_exists\( \$tmp_key, \$_FILES \)/,
     'mixed normalization never replaces a real local upload' );
 like( $normalizer, qr/isset\( \$_REQUEST\[ \$v \] \).*?is_array.*?count.*?== 1/s,
     'mixed normalization requires one complete server selection' );
+like( $base_source, qr/require_once ".*util\/rejected-lrfile\.php"/,
+    'generated module handler loads the upload ownership helper' );
+like( $base_source,
+    qr/move_uploaded_file\(.*?ga_record_rejected_lrfile_upload/s,
+    'ownership is recorded only after a local upload is moved' );
+like( $base_source,
+    qr/if \( \$v\[ 'error' \] == 4.*?\$f = \$bdir.*?\} else \{.*?move_uploaded_file/s,
+    'server-selection branch remains separate from the receipted local-upload branch' );
+like( $base_source, qr/ga_write_rejected_lrfile_receipt/,
+    'module handler writes the private receipt before job launch' );
 
 my $php = qx{command -v php 2>/dev/null};
 chomp $php;

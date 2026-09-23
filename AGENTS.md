@@ -497,7 +497,10 @@ current task and does not carry forward.
   delivery/display cache; normal final outputs own completed-job reattachment.
 - SAS interpolation is governed by
   `../zazzie/docs/source/sas_interpolation_policy.rst` and its SASSIE
-  implementation. Do not reproduce that policy in GenApp core.
+  implementation. Do not reproduce that policy in GenApp core. Cleanup of
+  current-submission experimental `lrfile` uploads rejected by that filter is
+  governed by `doc/Rejected-Experimental-Lrfile-Cleanup.md`; it must never
+  delete a server-selected file or trust a driver-supplied path.
 - SasCalc HDF5 writing, derived files, and downstream consumers are governed by
   `../zazzie/docs/source/sascalc_hdf5_policy.rst`. GenApp must not define or
   reinterpret the scientific schema.

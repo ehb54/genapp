@@ -247,6 +247,13 @@
                    }
                    ,{
                     "frequency"  : "once",
+                    "output"     : "util/rejected-lrfile.php",
+                    "inputs"     : [
+                                    { "util/rejected-lrfile.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
                     "output"     : "util/job-event-cache.php",
                     "inputs"     : [
                                     { "util/job-event-cache.php" : "once" }

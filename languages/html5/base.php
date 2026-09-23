@@ -27,6 +27,7 @@ $do_logoff = 0;
 require_once "__docroot:html5__/__application__/ajax/ga_filter.php";
 require_once "__docroot:html5__/__application__/ajax/getports.php";
 require_once "__docroot:html5__/__application__/ajax/details.php";
+require_once "__docroot:html5__/__application__/util/rejected-lrfile.php";
 $modjson = json_decode( '__modulejson__' );
 $inputs_req = $_REQUEST;
 
@@ -624,6 +625,8 @@ if ( !sizeof( $_FILES ) ) {
 }
 // END GENAPP SERVER FILE NORMALIZATION
 
+$ga_uploaded_lrfile_receipts = array();
+
 if ( sizeof( $_FILES ) ) {
 
     $module_json = json_decode( '__modulejson__' );
@@ -719,6 +722,25 @@ if ( sizeof( $_FILES ) ) {
                     $results[ "error" ] = "";
                 }
                 $results[ "error" ] .= "Could not move file " . $v[ 'name' ][ $k1 ];
+                $results[ '_status' ] = 'failed';
+                echo (json_encode($results));
+                exit();
+            }
+            $ga_uploaded_path = $dir . '/' . $v[ 'name' ][ $k1 ];
+            $ga_uploaded_coordinate = ga_rejected_lrfile_coordinate(
+                $module_json, $k, $k1 );
+            if ( $ga_uploaded_coordinate !== null &&
+                 !ga_record_rejected_lrfile_upload(
+                     $ga_uploaded_lrfile_receipts, $module_json, $k, $k1,
+                     $ga_uploaded_path, $dir ) ) {
+                @unlink( $ga_uploaded_path );
+                ga_remove_receipted_lrfile_uploads(
+                    $ga_uploaded_lrfile_receipts, $dir );
+                if ( isset( $checkrunning ) ) {
+                    ga_db_remove( 'joblock', '', array( "name" => $checkrunning ),
+                                  array( 'justOne' => true ) );
+                }
+                $results[ "error" ] .= "Could not record uploaded file ownership";
                 $results[ '_status' ] = 'failed';
                 echo (json_encode($results));
                 exit();
@@ -823,6 +845,25 @@ if ( sizeof( $_FILES ) ) {
                 echo (json_encode($results));
                 exit();
             }
+            $ga_uploaded_path = $dir . '/' . $v[ 'name' ];
+            $ga_uploaded_coordinate = ga_rejected_lrfile_coordinate(
+                $module_json, $k, 0 );
+            if ( $ga_uploaded_coordinate !== null &&
+                 !ga_record_rejected_lrfile_upload(
+                     $ga_uploaded_lrfile_receipts, $module_json, $k, 0,
+                     $ga_uploaded_path, $dir ) ) {
+                @unlink( $ga_uploaded_path );
+                ga_remove_receipted_lrfile_uploads(
+                    $ga_uploaded_lrfile_receipts, $dir );
+                if ( isset( $checkrunning ) ) {
+                    ga_db_remove( 'joblock', '', array( "name" => $checkrunning ),
+                                  array( 'justOne' => true ) );
+                }
+                $results[ "error" ] .= "Could not record uploaded file ownership";
+                $results[ '_status' ] = 'failed';
+                echo (json_encode($results));
+                exit();
+            }
             if ( !isset( $_REQUEST[ $k ] ) || !is_array( $_REQUEST[ $k ] ) )
             {
                $_REQUEST[ $k ] = array();
@@ -836,6 +877,26 @@ if ( sizeof( $_FILES ) ) {
          }
       }
    }
+}
+
+$ga_uploaded_lrfile_receipt_path = null;
+if ( count( $ga_uploaded_lrfile_receipts ) ) {
+    $ga_uploaded_lrfile_receipt_path = ga_rejected_lrfile_receipt_path(
+        $logdir, $_REQUEST[ '_uuid' ] );
+}
+if ( count( $ga_uploaded_lrfile_receipts ) &&
+     ( $ga_uploaded_lrfile_receipt_path === null ||
+       !ga_write_rejected_lrfile_receipt(
+           $ga_uploaded_lrfile_receipt_path, $ga_uploaded_lrfile_receipts ) ) ) {
+    ga_remove_receipted_lrfile_uploads( $ga_uploaded_lrfile_receipts, $dir );
+    if ( isset( $checkrunning ) ) {
+        ga_db_remove( 'joblock', '', array( "name" => $checkrunning ),
+                      array( 'justOne' => true ) );
+    }
+    $results[ "error" ] .= "Could not save uploaded file ownership receipt";
+    $results[ '_status' ] = 'failed';
+    echo (json_encode($results));
+    exit();
 }
 
 function only_numerics( $a ) {

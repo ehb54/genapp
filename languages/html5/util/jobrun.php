@@ -57,6 +57,7 @@ $checkrunning = $argv[ ++$pos ];
 
 __~debug:runjob{error_log( "jobrun 3\n", 3, "/tmp/php_errors" );}
 require_once "__docroot:html5__/__application__/ajax/joblog.php";
+require_once "__docroot:html5__/__application__/util/rejected-lrfile.php";
 
 if ( !getmenumodule( $id ) )
 {
@@ -151,6 +152,20 @@ if ( !$GLOBALS[ 'wascancelled' ] ) {
     }
 
     $objresults = json_decode( $strresults );
+    $rejected_lrfile_receipt = ga_rejected_lrfile_receipt_path( $logdir, $id );
+    if ( $rejected_lrfile_receipt !== null ) {
+        $rejected_lrfile_cleanup = ga_cleanup_sassie_rejected_lrfiles(
+            $objresults, $rejected_lrfile_receipt,
+            $GLOBALS[ 'getmenumoduledir' ] );
+        if ( $rejected_lrfile_cleanup[ 'deleted' ] ||
+             $rejected_lrfile_cleanup[ 'skipped' ] ) {
+            error_log(
+                "SASSIE rejected lrfile cleanup: deleted=" .
+                $rejected_lrfile_cleanup[ 'deleted' ] . " skipped=" .
+                $rejected_lrfile_cleanup[ 'skipped' ] . "\n",
+                3, "/tmp/php_errors" );
+        }
+    }
     if ( isset( $objresults->_disable_notify ) ) {
         $disable_notify = true;
     }
@@ -256,4 +271,3 @@ function sendudptext( $text ) {
                    $GLOBALS[ 'udp' ]->hostip,
                    $GLOBALS[ 'udp' ]->port );
 }    
-

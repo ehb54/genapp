@@ -24,6 +24,8 @@ my $module_php = read_file( File::Spec->catfile( $app_dir, qw(output html5 ajax 
 my $module_info_php = File::Spec->catfile( $app_dir, qw(output html5 etc module_echo.php) );
 my $results_php = read_file( File::Spec->catfile( $app_dir, qw(output html5 ajax get_results.php) ) );
 my $jobrun_php  = read_file( File::Spec->catfile( $app_dir, qw(output html5 util jobrun.php) ) );
+my $rejected_lrfile_php = read_file(
+    File::Spec->catfile( $app_dir, qw(output html5 util rejected-lrfile.php) ) );
 my $sys_user_config_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_user_config.php) ) );
 my $sys_login_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_login.php) ) );
 my $sys_project_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_project.php) ) );
@@ -35,6 +37,8 @@ my $project_name_message = 'Project names may contain only letters, numbers, and
 like( $module_php, qr/require_once ".*ajax\/ga_filter\.php"/, 'module php includes request filter support' );
 like( $module_php, qr/\$GLOBALS\[ 'module'\s+\]\s+=\s+"echo"/, 'module php sets module global' );
 like( $module_php, qr/\$_REQUEST\[ '_uuid' \]/, 'module php expects a request uuid' );
+like( $module_php, qr/ga_record_rejected_lrfile_upload/, 'module php records successful local lrfile uploads' );
+like( $module_php, qr/ga_write_rejected_lrfile_receipt/, 'module php persists upload ownership before launch' );
 like( $module_php, qr/file_put_contents\( "\$logdir\/_input_"/, 'module php writes input replay data' );
 like( $module_php, qr/\$_REQUEST\[ '_module' \]\s+=\s+"echo"/, 'module php annotates request with module id' );
 like( $module_php, qr/\$cmd \.= \$cmdprefix == "oscluster" \? " echo" : " echo"/, 'module php command path includes executable/module id' );
@@ -82,7 +86,11 @@ like( $results_php, qr/__docroot:html5__\/minimal_html5\/ajax\/ga_filter\.php/, 
 like( $jobrun_php, qr/file_get_contents\( "\$\{logdir\}_cmds_\$id"/, 'jobrun reads generated command file' );
 like( $jobrun_php, qr/exec\( \$cmd \)/, 'jobrun executes recorded command' );
 like( $jobrun_php, qr/file_put_contents\( "\$\{logdir\}_stdout_"/, 'jobrun writes stdout payload' );
+like( $jobrun_php, qr/ga_cleanup_sassie_rejected_lrfiles/,
+    'jobrun applies the receipt-gated rejected-lrfile cleanup' );
 like( $jobrun_php, qr/logjobupdate\( "finished"/, 'jobrun marks job finished' );
+like( $rejected_lrfile_php, qr/function ga_rejected_lrfile_identity_matches/,
+    'generated application includes identity-checked cleanup helper' );
 
 like(
     $sys_user_config_php,
