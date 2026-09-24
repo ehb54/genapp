@@ -216,6 +216,31 @@ ga.data.update = function( mod, data, msging_f, msg_id ) {
                                     })( k, _lwVals )
                                 });
                             }
+
+                            if ( _gp.fontsize ) {
+                                v.config.modeBarButtonsToAdd.push({
+                                    name  : 'fontsizeUp',
+                                    title : 'Increase axis font size',
+                                    icon  : ga.data.plotly._fsUpIcon,
+                                    attr  : 'fontsize',
+                                    click : (function( divId ) {
+                                        return function() {
+                                            ga.data.plotly.fontsize( divId, 1 );
+                                        };
+                                    })( k )
+                                });
+                                v.config.modeBarButtonsToAdd.push({
+                                    name  : 'fontsizeDown',
+                                    title : 'Decrease axis font size',
+                                    icon  : ga.data.plotly._fsDownIcon,
+                                    attr  : 'fontsize',
+                                    click : (function( divId ) {
+                                        return function() {
+                                            ga.data.plotly.fontsize( divId, -1 );
+                                        };
+                                    })( k )
+                                });
+                            }
                         }
 		        Plotly.newPlot(k, v.data, v.layout, v.config);
                     } else {
@@ -787,4 +812,91 @@ ga.data.plotly.linename = function( divId, curvenumber, newlabel ) {
     var gd = document.getElementById( divId );
     if ( !gd || !gd.data ) { console.warn( `no plotly data for ${divId}` ); return; }
     Plotly.restyle( divId, { 'name': newlabel }, curvenumber );
+};
+
+// capital A with a + / - in the upper right corner
+ga.data.plotly._fsUpIcon = {
+    width: 500, height: 500,
+    path: 'M40,480 L150,20 H230 L340,480 H260 L232,360 H148 L120,480 Z ' +
+          'M165,290 H215 L190,150 Z ' +
+          'M415,20 H455 V150 H415 Z ' +
+          'M370,65 H500 V105 H370 Z'
+};
+
+ga.data.plotly._fsDownIcon = {
+    width: 500, height: 500,
+    path: 'M40,480 L150,20 H230 L340,480 H260 L232,360 H148 L120,480 Z ' +
+          'M165,290 H215 L190,150 Z ' +
+          'M370,65 H500 V105 H370 Z'
+};
+
+// resolve a dotted plotly attribute path, e.g. 'xaxis.tickfont.size', against an object
+ga.data.plotly._getPath = function( obj, path ) {
+    return path.split( '.' ).reduce( function( o, p ) {
+        return ( o === undefined || o === null ) ? undefined : o[ p ];
+    }, obj );
+};
+
+// font size attribute paths to step: config.genapp_plotly.fontsize.targets if given,
+// else the tick labels and titles of every cartesian axis present in the plot
+ga.data.plotly._fontsizeTargets = function( gd ) {
+    var cfg = ga.data.plotly._config[ gd.id ];
+    if ( cfg && cfg.fontsize && Array.isArray( cfg.fontsize.targets ) ) {
+        return cfg.fontsize.targets;
+    }
+    var targets = [];
+    Object.keys( gd._fullLayout ).forEach( function( key ) {
+        if ( /^[xy]axis\d*$/.test( key ) ) {
+            targets.push( key + '.tickfont.size', key + '.title.font.size' );
+        }
+    });
+    return targets;
+};
+
+// step every target font size by direction (+1 / -1) times config step, clamped to [min,max];
+// each target keeps its own current size, so title/tick ratios are preserved
+ga.data.plotly.fontsize = function( divId, direction ) {
+    var gd = document.getElementById( divId );
+    if ( !gd || !gd._fullLayout ) { console.warn( `no plotly layout for ${divId}` ); return; }
+    var cfg  = ( ga.data.plotly._config[ divId ] || {} ).fontsize || {};
+    var step = cfg.step !== undefined ? cfg.step : 2;
+    var min  = cfg.min  !== undefined ? cfg.min  : 6;
+    var max  = cfg.max  !== undefined ? cfg.max  : 48;
+    var update = {};
+    var shown;
+    ga.data.plotly._fontsizeTargets( gd ).forEach( function( path ) {
+        var cur = ga.data.plotly._getPath( gd._fullLayout, path );
+        if ( typeof cur !== 'number' ) { return; }
+        var next = Math.min( max, Math.max( min, cur + direction * step ) );
+        update[ path ] = next;
+        if ( shown === undefined ) { shown = next; }
+    });
+    if ( shown === undefined ) { console.warn( `no font size targets found for ${divId}` ); return; }
+    // plotly picks its tick count from the axis pixel length assuming a 12px font
+    // (one tick per 80px on x, 40px on y), so bigger tick labels collide.  Cap
+    // nticks with the same rule scaled by the new tick font size, and let the
+    // outer margins grow to fit.  Only affects axes in automatic tick mode;
+    // disable with config.genapp_plotly.fontsize.nticks = false
+    if ( cfg.nticks !== false ) {
+        Object.keys( gd._fullLayout ).forEach( function( key ) {
+            if ( !/^[xy]axis\d*$/.test( key ) ) { return; }
+            var ax   = gd._fullLayout[ key ];
+            var size = update[ key + '.tickfont.size' ] !== undefined
+                       ? update[ key + '.tickfont.size' ]
+                       : ga.data.plotly._getPath( ax, 'tickfont.size' );
+            if ( typeof size !== 'number' || typeof ax._length !== 'number' ) { return; }
+            // plotly's own default cap at 12px, then scaled by 12/size and floored at 2
+            var minPx = key.charAt( 0 ) === 'y' ? 40 : 80;
+            var nt12  = Math.min( 9, Math.max( 4, ax._length / minPx ) );
+            update[ key + '.nticks' ]     = Math.max( 2, Math.round( nt12 * 12 / size ) ) + 1;
+            update[ key + '.automargin' ] = true;
+        });
+    }
+    Plotly.relayout( divId, update ).then( function() {
+        // show the current (first target's) size in both buttons' tooltips
+        gd.querySelectorAll( '.modebar-btn[data-attr="fontsize"]' ).forEach( function( btn ) {
+            btn.setAttribute( 'data-title',
+                              btn.getAttribute( 'data-title' ).replace( /( \(\d+\))?$/, ` (${shown})` ) );
+        });
+    });
 };
