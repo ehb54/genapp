@@ -872,6 +872,26 @@ ga.data.plotly.fontsize = function( divId, direction ) {
         if ( shown === undefined ) { shown = next; }
     });
     if ( shown === undefined ) { console.warn( `no font size targets found for ${divId}` ); return; }
+    // plotly picks its tick count from the axis pixel length assuming a 12px font
+    // (one tick per 80px on x, 40px on y), so bigger tick labels collide.  Cap
+    // nticks with the same rule scaled by the new tick font size, and let the
+    // outer margins grow to fit.  Only affects axes in automatic tick mode;
+    // disable with config.genapp_plotly.fontsize.nticks = false
+    if ( cfg.nticks !== false ) {
+        Object.keys( gd._fullLayout ).forEach( function( key ) {
+            if ( !/^[xy]axis\d*$/.test( key ) ) { return; }
+            var ax   = gd._fullLayout[ key ];
+            var size = update[ key + '.tickfont.size' ] !== undefined
+                       ? update[ key + '.tickfont.size' ]
+                       : ga.data.plotly._getPath( ax, 'tickfont.size' );
+            if ( typeof size !== 'number' || typeof ax._length !== 'number' ) { return; }
+            // plotly's own default cap at 12px, then scaled by 12/size and floored at 2
+            var minPx = key.charAt( 0 ) === 'y' ? 40 : 80;
+            var nt12  = Math.min( 9, Math.max( 4, ax._length / minPx ) );
+            update[ key + '.nticks' ]     = Math.max( 2, Math.round( nt12 * 12 / size ) ) + 1;
+            update[ key + '.automargin' ] = true;
+        });
+    }
     Plotly.relayout( divId, update ).then( function() {
         // show the current (first target's) size in both buttons' tooltips
         gd.querySelectorAll( '.modebar-btn[data-attr="fontsize"]' ).forEach( function( btn ) {
