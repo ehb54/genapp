@@ -1578,7 +1578,13 @@ assert.strictEqual(
 hooks.beginJobOutputContext("monomer_monte_carlo", "mmc-run-1");
 const mmcRunOneToken = hooks.runtimeOutputToken();
 hooks.applyRuntimePayload({ progress_html: "MMC run one" }, mmcRunOneToken);
+hooks.state.lastLegacyMessageKey = "warning.png\\nRepeated validation error\\n";
 hooks.beginJobOutputContext("monomer_monte_carlo", "mmc-run-2");
+assert.strictEqual(
+  hooks.state.lastLegacyMessageKey,
+  "",
+  "starting a new job permits the same backend warning to be shown again"
+);
 hooks.applyRuntimePayload({ progress_html: "Late MMC run one" }, mmcRunOneToken);
 assert.strictEqual(
   Object.prototype.hasOwnProperty.call(hooks.state.runtimeOutputs, "progress_html"),
@@ -1590,6 +1596,38 @@ assert.strictEqual(
   hooks.state.runtimeOutputs.progress_html,
   "MMC run two",
   "UI2 accepts payloads from the current job context without changing declared output ids"
+);
+assert.strictEqual(
+  JSON.stringify(hooks.legacyMessageFromPayload({
+    error: "Experimental input was rejected",
+    _textarea: "Experimental input was rejected\\nq values must be strictly increasing"
+  })),
+  JSON.stringify({
+    icon: "warning.png",
+    text: "Experimental input was rejected",
+    ptext: "q values must be strictly increasing"
+  }),
+  "a final backend error retains its standard textarea diagnostic as durable dialog detail"
+);
+assert.strictEqual(
+  hooks.legacyErrorDetail(
+    { _textarea: "Experimental input was rejected" },
+    "Experimental input was rejected"
+  ),
+  "",
+  "a final backend error does not repeat an identical title as dialog detail"
+);
+assert.strictEqual(
+  hooks.legacyMessageDedupeKey({
+    icon: "warning.png",
+    text: "q values must be strictly increasing"
+  }),
+  hooks.legacyMessageDedupeKey({
+    icon: "warning.png",
+    text: "Experimental input was rejected",
+    ptext: "q values must be strictly increasing"
+  }),
+  "transient and durable forms of the same job warning share one dialog identity"
 );
 document.body.children = [];
 

@@ -333,6 +333,9 @@ like( $ui2_js, qr/function clearJobReferenceSelections\(form\)[\s\S]*?delete sta
 like( $ui2_js, qr/function utilityAllowsAnonymous\(module\).*?sys_feedback/s, 'ui2 feedback can be submitted before login like legacy' );
 like( $ui2_js, qr/function showLegacyMessagePayload\(payload, options = \{\}\)/, 'ui2 runtime handles legacy backend _message payloads' );
 like( $ui2_js, qr/function legacyMessageFromPayload\(payload\).*?payload\._message/s, 'ui2 runtime maps legacy _message payloads into dialogs' );
+like( $ui2_js, qr/function legacyMessageDedupeKey\(message\).*?detail \|\| text/s, 'ui2 deduplicates transient and durable warning forms by their shared diagnostic detail' );
+like( $ui2_js, qr/function legacyErrorDetail\(payload, title\).*?payload\?\._textarea/s, 'ui2 final backend errors retain standard textarea diagnostics as durable dialog detail' );
+like( $ui2_js, qr/function beginJobOutputContext\(moduleId, jobUuid\)\s*\{\s*state\.lastLegacyMessageKey = "";/s, 'ui2 scopes legacy message deduplication to one job' );
 like( $ui2_js, qr/function showLegacyMessageDialog\(message\).*?ui2-legacy-message-dialog/s, 'ui2 runtime renders backend messages as modal warnings' );
 like( $ui2_js, qr/function sanitizeLegacyMessageHtml\(html\).*?querySelectorAll\("script, style, iframe, object, embed"\)/s, 'ui2 sanitizes legacy message HTML before rendering' );
 like( $ui2_js, qr/if \(!choices\.length\).*?input\.name = field\.name \|\| field\.id/s, 'ui2 supports legacy individual radio fields without values arrays' );
@@ -581,6 +584,7 @@ like( $ui2_js, qr/formData\.set\("_uuid", uuid/, 'ui2 runtime bridge supplies uu
 like( $ui2_js, qr/formData\.set\("_logon", state\.session\.logon/, 'ui2 submit uses the legacy session logon' );
 like( $ui2_js, qr/formData\.set\("_project", state\.session\.project/, 'ui2 submit uses the legacy session project' );
 like( $ui2_js, qr/if \(state\.module\?\.docrootexecutable\).*?formData\.set\("_docrootexecutable", state\.module\.docrootexecutable\)/s, 'ui2 runtime bridge sends legacy docroot executable metadata for system module submits' );
+like( $ui2_js, qr/const contextToken = beginJobOutputContext\(state\.moduleId, uuid\);[\s\S]+subscribeRuntimeMessages\(uuid\);\s+const response = await fetch\(endpoint,/s, 'ui2 subscribes before a fast backend rejection can emit its warning' );
 like( $ui2_js, qr/const payload = await parseJsonResponse\(response, "Runtime"\);\s+if \(!runtimeOutputContextMatches\(contextToken\)\).*?state\.submitResponse = payload;\s+showLegacyMessagePayload\(payload\);/s, 'ui2 shows submit messages only when the response still belongs to the active output context' );
 like( $ui2_js, qr/function startJobPolling\(\s*uuid, form, statusNode, getLastMsg = true, getInput = false,\s*subscribeFirst = true\)/s, 'ui2 runtime bridge starts polling submitted jobs' );
 like( $ui2_js, qr/startJobPolling\(target\.uuid, form, status, true, !restoredInput, false\)/s, 'ui2 reattachment polls durable results before subscribing and requests legacy inputs only as a fallback' );

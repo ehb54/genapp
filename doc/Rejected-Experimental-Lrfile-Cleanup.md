@@ -25,3 +25,11 @@ cancellation, and success do not. The scientific rules and field participation
 are owned by SASSIE and SASSIE-web; see
 `../zazzie/docs/source/sas_interpolation_policy.rst` and
 `../genapp_zazzie/docs/rejected_experimental_lrfile_contract.md`.
+
+The marker does not control browser presentation. UI2 subscribes to the job
+before execution can emit its normal `_message` warning and also treats final
+stdout `error` plus standard `_textarea` detail as a durable dialog fallback.
+Message deduplication is reset for each job, so duplicate delivery within one
+job produces one dialog while a later job with the same rejection still shows
+its own warning. Cleanup remains server-side and independent of whether the
+browser is connected.

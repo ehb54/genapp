@@ -7846,6 +7846,7 @@
       state.jobEvents.reset(uuid, state.moduleId);
       state.jobEvents.setLifecycle({ state: "submitting" });
       refreshTestScenarioVerification("submitting");
+      subscribeRuntimeMessages(uuid);
       const response = await fetch(endpoint, {
         method: "POST",
         body: buildSubmitFormData(form, uuid),
@@ -7885,6 +7886,7 @@
         values: cloneUi2Value(state.values)
       };
     } catch (error) {
+      stopJobPolling();
       state.jobEvents.setLifecycle({ state: "failed", error: error.message });
       setSubmitStatus(status, error.message, "error");
       renderSubmitResponse({ error: error.message });
@@ -8431,13 +8433,19 @@
     if (!message) {
       return false;
     }
-    const key = `${message.icon || ""}\n${message.text || ""}\n${message.ptext || ""}`;
+    const key = legacyMessageDedupeKey(message);
     if (!options.force && key && state.lastLegacyMessageKey === key) {
       return false;
     }
     state.lastLegacyMessageKey = key;
     showLegacyMessageDialog(message);
     return true;
+  }
+
+  function legacyMessageDedupeKey(message) {
+    const detail = stringValue(message?.ptext).trim();
+    const text = stringValue(message?.text).trim();
+    return `${stringValue(message?.icon)}\n${detail || text}`;
   }
 
   function legacyMessageFromPayload(payload) {
@@ -8457,9 +8465,26 @@
       }
     }
     if (payload.error) {
-      return { icon: "warning.png", text: payload.error };
+      const text = stringValue(payload.error);
+      return {
+        icon: "warning.png",
+        text,
+        ptext: legacyErrorDetail(payload, text)
+      };
     }
     return null;
+  }
+
+  function legacyErrorDetail(payload, title) {
+    const detail = stringValue(payload?._textarea).trim();
+    const heading = stringValue(title).trim();
+    if (!detail || detail === heading) {
+      return "";
+    }
+    if (heading && detail.startsWith(`${heading}\n`)) {
+      return detail.slice(heading.length).trim();
+    }
+    return detail;
   }
 
   function legacyMessageIcon(payload) {
@@ -8603,6 +8628,7 @@
   }
 
   function beginJobOutputContext(moduleId, jobUuid) {
+    state.lastLegacyMessageKey = "";
     return beginRuntimeOutputContext(moduleId || state.moduleId, jobUuid || "");
   }
 
@@ -14042,6 +14068,9 @@
       beginJobOutputContext,
       runtimeOutputToken,
       runtimeOutputContextMatches,
+      legacyMessageFromPayload,
+      legacyMessageDedupeKey,
+      legacyErrorDetail,
       applyRuntimePayload,
       applyInputPayload,
       deferUnavailableReactWorkbenchInput,
