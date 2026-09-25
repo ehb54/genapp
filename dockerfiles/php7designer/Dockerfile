@@ -1,25 +1,31 @@
-FROM ubuntu:20.04
+# syntax=docker/dockerfile:1.7
+FROM ubuntu:20.04 AS php7designer-security-base
 
 # user config
 
-ENV SRCBASE /src
-ENV GENAPP $SRCBASE/genapp
+ENV SRCBASE=/src
+ENV GENAPP=$SRCBASE/genapp
 
-ENV APPBASE /opt/genapp
-ENV WEBROOT /var/www/html
-ENV GENAPPETC $GENAPP/etc
-ENV LOCKDIR $GENAPPETC
+ENV APPBASE=/opt/genapp
+ENV WEBROOT=/var/www/html
+ENV GENAPPETC=$GENAPP/etc
+ENV LOCKDIR=$GENAPPETC
 
-ENV WSPORT    30777
-ENV ZMQPORT   30778
-ENV UDPPORT   30779
-ENV TCPPORT   30780
-ENV TCPRPORT  30781
-ENV MONGOPORT 27017
+ENV WSPORT=30777
+ENV ZMQPORT=30778
+ENV UDPPORT=30779
+ENV TCPPORT=30780
+ENV TCPRPORT=30781
+ENV MONGOPORT=27017
 
 # end user config
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
+
+ARG MONGODB_VERSION=8.0.32
+ARG MONGODB_MONGOSH_VERSION=2.12.0
+ARG THRIFT_JAVA_VERSION=0.24.0
+ARG THRIFT_JAVA_SHA256=b72e321ff144e3e5211964764bd45794b96fdf250085f153c44416b35df89a07
 
 EXPOSE 22/tcp
 EXPOSE 80/tcp
@@ -32,68 +38,107 @@ EXPOSE $MONGOPORT/tcp
 
 RUN mkdir -p $SRCBASE $APPBASE
 
-# basic install stuff
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends apt-utils && \
-    apt-get install -y build-essential && \
-    apt-get install -y software-properties-common && \
-    apt-get install -y bind9-host && \
-    apt-get install -y subversion git libssl-dev bc apache2 curl wget && \
-    apt-get install -y zlib1g-dev && \
-    apt-get install -y software-properties-common && \
-    apt-get install -y pkg-config && \
-    apt-get install -y re2c && \
-    apt-get install -y libzmq3-dev && \
-    apt-get install -y uuid-dev && \
-    apt-get install -y abiword && \
-    apt-get install -y libmagickwand-6.q16-dev && \
-    apt-get install -y openssh-server && \
-    apt-get install -y vim && \
-    apt-get install -y emacs-nox
-
-RUN apt-get update && \
-    apt-get install -y mlocate php-pear libcurl3-openssl-dev libapache2-mod-php && \
-#    apt-get install -y php7.2-curl php7.2-dev php7.2-gd php7.2-mbstring php7.2-zip php7.2-xml
-    apt-get install -y php-curl php-dev php-gd php-mbstring php-zip php-xml
-
-RUN apt-get update
-
-# Mongodb from mongodb.org & suppress upgrade by apt-get
-RUN apt-get install gnupg -y
-RUN wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | apt-key add -
-RUN echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.2 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-4.2.list
-RUN apt-get update && \
-    apt-get install -y mongodb-org && \
-    echo "mongodb-org hold" | dpkg --set-selections && \
-    echo "mongodb-org-server hold" | dpkg --set-selections && \
-    echo "mongodb-org-shell hold" | dpkg --set-selections && \
-    echo "mongodb-org-mongos hold" | dpkg --set-selections && \
-    echo "mongodb-org-tools hold" | dpkg --set-selections
+# Install every APT-managed package while Ubuntu Pro is attached.  The attach
+# config is a BuildKit secret containing the account token plus esm-infra and
+# esm-apps.  Attach, update, install, detach, and cleanup must remain in this
+# single layer so neither the token nor Pro APT credentials enter the image.
+RUN --mount=type=secret,id=pro-attach-config,required=true \
+    set -eux; \
+    test -s /run/secrets/pro-attach-config; \
+    apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=60 -o Acquire::https::Timeout=60 update; \
+    apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=60 -o Acquire::https::Timeout=60 install -y --no-install-recommends ca-certificates ubuntu-pro-client; \
+    if ! pro attach --attach-config /run/secrets/pro-attach-config >/tmp/pro-attach.log 2>&1; then \
+        cat /tmp/pro-attach.log >&2; \
+        exit 1; \
+    fi; \
+    apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=60 -o Acquire::https::Timeout=60 update; \
+    apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=60 -o Acquire::https::Timeout=60 upgrade -y; \
+    apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=60 -o Acquire::https::Timeout=60 install -y --no-install-recommends \
+        abiword \
+        apache2 \
+        apt-utils \
+        bc \
+        bind9-host \
+        build-essential \
+        curl \
+        emacs-nox \
+        git \
+        gnupg \
+        golang \
+        libapache2-mod-php \
+        libcurl3-openssl-dev \
+        libmagickwand-6.q16-dev \
+        liblwp-protocol-https-perl \
+        libnode-dev \
+        libssl-dev \
+        libzmq3-dev \
+        mlocate \
+        node-gyp \
+        npm \
+        openjdk-11-jre-headless \
+        openssh-server \
+        php-curl \
+        php-dev \
+        php-gd \
+        php-mail \
+        php-mail-mime \
+        php-mbstring \
+        php-net-smtp \
+        php-pear \
+        php-xml \
+        php-zip \
+        php-zmq \
+        pkg-config \
+        re2c \
+        software-properties-common \
+        subversion \
+        unzip \
+        uuid-dev \
+        vim \
+        wget \
+        zip \
+        zlib1g-dev; \
+    install -d -m 0755 /etc/apt/keyrings; \
+    curl -fsSL -o /tmp/mongodb-server-8.0.asc https://pgp.mongodb.com/server-8.0.asc; \
+    gpg --dearmor --batch --yes \
+        --output /etc/apt/keyrings/mongodb-server-8.0.gpg \
+        /tmp/mongodb-server-8.0.asc; \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/mongodb-server-8.0.gpg] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/8.0 multiverse" \
+        > /etc/apt/sources.list.d/mongodb-org-8.0.list; \
+    apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=60 -o Acquire::https::Timeout=60 update; \
+    apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=60 -o Acquire::https::Timeout=60 install -y --no-install-recommends \
+        "mongodb-org-server=${MONGODB_VERSION}" \
+        "mongodb-mongosh=${MONGODB_MONGOSH_VERSION}"; \
+    apt-mark hold \
+        mongodb-org-server \
+        mongodb-mongosh; \
+    rm -f /etc/ssh/ssh_host_*_key /etc/ssh/ssh_host_*_key.pub; \
+    pro detach --assume-yes; \
+    apt-get purge --auto-remove -y ubuntu-pro-client; \
+    rm -f /tmp/mongodb-server-8.0.asc /tmp/pro-attach.log; \
+    rm -rf /var/lib/apt/lists/* /var/lib/ubuntu-advantage/private; \
+    rm -f /etc/apt/auth.conf.d/90ubuntu-advantage; \
+    test ! -e /etc/apt/auth.conf.d/90ubuntu-advantage; \
+    test ! -d /var/lib/ubuntu-advantage/private
 
 # cpan minus for modules
 
 RUN curl -L http://cpanmin.us | perl - App::cpanminus
     
-RUN cpanm JSON Hash::Merge Data::Dumper Try::Tiny LWP::UserAgent MIME::Lite MIME::Base64
-RUN cpanm -n Net::SSLeay IO::Socket::SSL
-RUN cpanm LWP::Protocol::https
+RUN cpanm JSON Hash::Merge Data::Dumper Try::Tiny MIME::Lite MIME::Base64
 
-RUN pear channel-update pear.php.net
-RUN pear install --alldeps Mail Mail_Mime Net_SMTP
-#RUN yes '' | pecl install uuid zmq-beta mongo imagick
-#Mongodb php driver with pecl
-#RUN yes '' | pecl install uuid zmq-beta mongodb imagick
-# Check zmq-bata or apt-get -y install php-zmq
-RUN yes '' | pecl install uuid mongodb imagick
+# PHP 7.4 is supported by the MongoDB 1.20 extension line.  Pin every PECL
+# extension so a future upstream release cannot silently raise the PHP floor.
+RUN yes '' | pecl install uuid-1.3.0 mongodb-1.20.1 imagick-3.8.1 && \
+    test -s /usr/lib/php/20190902/uuid.so && \
+    test -s /usr/lib/php/20190902/mongodb.so && \
+    test -s /usr/lib/php/20190902/imagick.so
 RUN echo "extension=mongodb.so" >> /etc/php/7.4/cli/php.ini && \
     echo "extension=uuid.so" >> /etc/php/7.4/cli/php.ini && \
     echo "extension=imagick.so" >> /etc/php/7.4/cli/php.ini
 RUN echo "extension=mongodb.so" >> /etc/php/7.4/apache2/php.ini && \
     echo "extension=uuid.so" >> /etc/php/7.4/apache2/php.ini && \
     echo "extension=imagick.so" >> /etc/php/7.4/apache2/php.ini
-
-RUN apt-get install -y php-zmq
 
 #RUN echo '; configuration for php zmq module\n\
 #; priority=20\n\
@@ -142,19 +187,12 @@ RUN echo '\n'\
 
 RUN a2enmod proxy proxy_wstunnel wsproxy
 
-RUN ln -s /usr/bin/php /usr/local/bin/php
+RUN echo "TraceEnable Off\n\
+ServerTokens Prod\n\
+ServerSignature Off\n"\
+> /etc/apache2/conf-enabled/security-hardening.conf
 
-#GENAPP specifics
-RUN apt-get install -y zip unzip
-# for google closure minifier
-RUN apt-get install -y openjdk-11-jre-headless
-RUN apt-get update
-RUN apt-get install -y libssl-dev
-RUN apt-get install -y libnode-dev
-RUN apt-get install -y node-gyp
-RUN apt-get install -y npm
-# for tcp messaging
-RUN apt-get install -y golang
+RUN ln -s /usr/bin/php /usr/local/bin/php
 
 # mpi optional
 # RUN apt-get install -y mpich
@@ -179,7 +217,20 @@ RUN apt-get install -y golang
 # note 1., 2. & 4. will force the compile to take longer (all steps will have to RUN)
 # 3. seems most efficient in terms of build-time - but you have to make sure you put something unique on the RUN line
 
-RUN cd $SRCBASE && git clone https://github.com/ehb54/genapp.git && cd $GENAPP && git checkout php7designer
+# The default HTML5 target copies its assembled JavaScript and does not invoke
+# Closure Compiler.  Omit the dormant compiler JAR from this hardened PHP image
+# rather than ship its vulnerable shaded dependencies.  Keep the Java target's
+# Thrift runtime, but replace its obsolete 0.9.1 JAR with a checksum-verified
+# release that remains compatible with the existing Airavata stubs.
+RUN cd $SRCBASE && \
+    git clone https://github.com/ehb54/genapp.git && \
+    cd $GENAPP && \
+    git checkout php7designer && \
+    rm -f etc/closure_compiler.jar languages/java/add/lib/libthrift-0.9.1.jar && \
+    curl -fsSL \
+        -o "languages/java/add/lib/libthrift-${THRIFT_JAVA_VERSION}.jar" \
+        "https://repo1.maven.org/maven2/org/apache/thrift/libthrift/${THRIFT_JAVA_VERSION}/libthrift-${THRIFT_JAVA_VERSION}.jar" && \
+    echo "${THRIFT_JAVA_SHA256}  languages/java/add/lib/libthrift-${THRIFT_JAVA_VERSION}.jar" | sha256sum -c -
 RUN touch $GENAPPETC/no_sudo
 
 RUN groupadd -g 5401 genapp && \
@@ -206,10 +257,24 @@ phpinfo();\n\
 
 # setup genapptest instance
 
+# Keep the security/runtime base independently buildable.  The maintained
+# minimal HTML5 fixture below validates the complete designer image but is not
+# needed to verify the patched operating-system and web-server boundary.
+FROM php7designer-security-base AS php7designer
+
 RUN $GENAPP/sbin/setconfig.pl -pj
 
-# TODO: later update getapp.pl to use GIT ... likely own repos
-RUN cd $APPBASE && $GENAPP/sbin/getapp.pl -force -gen svn genapptest
+# The former SVN genapptest project no longer generates with the current
+# repository.  Reuse the repository's maintained workflow fixture while
+# retaining the established /opt/genapp/genapptest runtime path.
+COPY --chown=genapp:genapp t/fixtures/apps/minimal_html5/ $APPBASE/genapptest/
+COPY --chown=genapp:genapp dockerfiles/php7designer/genapptest-directives.json \
+    $APPBASE/genapptest/directives.json
+COPY --chown=genapp:genapp dockerfiles/php7designer/genapptest-appconfig.json \
+    $APPBASE/genapptest/appconfig.json
+RUN cd $APPBASE/genapptest && \
+    $GENAPP/bin/genapp --language=html5 -kl && \
+    $GENAPP/sbin/htmlsetuppaths.pl
 
 RUN cp $APPBASE/genapptest/output/html5/util/rc.genapp /etc/init.d
 
@@ -260,8 +325,7 @@ RUN echo '. /etc/profile' >> ~/p
 RUN echo 'export PATH=$PATH:~/bin' >> ~/p 
 RUN cd ~ && tar zxvf /src/genapp/tmp/extra/ee.gz
 
+# Generate a unique SSH server identity for each container instead of storing
+# build-time host private keys in the image.
 # no service or systemctl in container
-CMD (/usr/bin/mongod --config /etc/mongod.conf &) && \
-    /etc/init.d/rc.genapp start && \
-    /etc/init.d/apache2 start && \
-    while true; do sleep 600; done
+CMD ["/bin/sh", "-c", "ssh-keygen -A && (/usr/bin/mongod --config /etc/mongod.conf &) && /etc/init.d/rc.genapp start && /etc/init.d/apache2 start && while true; do sleep 600; done"]

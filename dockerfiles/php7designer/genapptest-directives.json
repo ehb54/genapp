@@ -1,0 +1,14 @@
+{
+    "title"           : "GenApp Designer Test",
+    "application"     : "genapptest",
+    "version"         : "0.01",
+    "languages"       : [ "html5" ],
+    "docroot"         : {
+        "html5" : "/var/www/html"
+    },
+    "executable_path" : {
+        "html5" : "/opt/genapp/genapptest/bin"
+    },
+    "appconfig"       : "/opt/genapp/genapptest/appconfig.json",
+    "usews"           : "true"
+}
