@@ -14,6 +14,8 @@ my $dockerfile = File::Spec->catfile(
 my $source = read_file($dockerfile);
 my $readme = read_file( File::Spec->catfile(
     $root, qw(dockerfiles php7designer README.md) ) );
+my $fixture_directives = read_file( File::Spec->catfile(
+    $root, qw(dockerfiles php7designer genapptest-directives.json) ) );
 
 like( $source, qr/^# syntax=docker\/dockerfile:1[.]7$/m,
     'Dockerfile selects a BuildKit frontend with secret mounts' );
@@ -54,6 +56,32 @@ like( $source,
     'complete image generates only the HTML5 fixture target' );
 like( $source, qr{\$GENAPP/sbin/htmlsetuppaths[.]pl},
     'complete image installs the generated HTML5 links' );
+like( $fixture_directives, qr/"zmqversion"\s*:\s*"4"/,
+    'container fixture builds the shared ZeroMQ 4 TCP messaging server' );
+like( $source, qr/for i in \$\(seq 1 60\).*mongosh.*adminCommand/s,
+    'container startup waits for MongoDB before GenApp messaging' );
+like( $source,
+    qr{FROM ubuntu:20[.]04\@sha256:[0-9a-f]{64} AS genapp-messaging-builder},
+    'TCP messaging binary uses the digest-pinned runtime-compatible builder OS' );
+like( $source, qr/ARG GO_VERSION=1[.]27[.]1/,
+    'TCP messaging binary uses the current pinned Go release' );
+like( $source, qr/GO_LINUX_AMD64_SHA256=.*sha256sum -c -/s,
+    'downloaded Go toolchain is checksum verified' );
+like( $source,
+    qr{github[.]com/ehb54/go-ps=github[.]com/mitchellh/go-ps\@v1[.]0[.]0},
+    'legacy Go process dependency is replaced by its canonical module' );
+like( $source,
+    qr{github[.]com/ehb54/lockfile\@cc765475c0b71203143551503b096080206f5d73},
+    'TCP lockfile dependency is pinned to an exact commit' );
+like( $source,
+    qr{github[.]com/ehb54/zmq4=github[.]com/pebbe/zmq4\@v1[.]2[.]7},
+    'legacy ZeroMQ fork is replaced by its matching canonical release' );
+like( $source,
+    qr{require=github[.]com/ehb54/zmq4\@v1[.]2[.]7},
+    'TCP ZeroMQ dependency is pinned to the matching canonical release' );
+like( $source,
+    qr{COPY --from=genapp-messaging-builder --chown=root:genapp.*msg-tcpserver}s,
+    'only the rebuilt TCP server is copied into the runtime image' );
 unlike( $source, qr/getapp[.]pl[^\n]*\bsvn\b[^\n]*\bgenapptest\b/,
     'complete image does not depend on the obsolete SVN genapptest project' );
 like( $source, qr/pro detach --assume-yes/,
@@ -89,10 +117,12 @@ like( $source, qr/ARG THRIFT_JAVA_VERSION=0[.]24[.]0/,
 like( $source, qr/THRIFT_JAVA_SHA256=.*sha256sum -c -/s,
     'replacement Apache Thrift archive is checksum verified' );
 
-my $after_pro_layer = $source;
-$after_pro_layer =~ s/.*?test ! -d \/var\/lib\/ubuntu-advantage\/private\n//s;
-unlike( $after_pro_layer, qr/^\s*RUN\s+apt-get\b/m,
-    'no later Docker layer installs packages without ESM access' );
+my ($runtime_after_pro) = $source =~
+    m{test ! -d /var/lib/ubuntu-advantage/private\n(.*?)^FROM .* AS genapp-messaging-builder}ms;
+ok( defined $runtime_after_pro,
+    'runtime layers after Ubuntu Pro cleanup are identifiable' );
+unlike( $runtime_after_pro // q{}, qr/^\s*RUN\s+apt-get\b/m,
+    'no later runtime layer installs Ubuntu packages without ESM access' );
 like( $readme, qr/--platform linux\/amd64/,
     'documented build command selects the verified deployment platform' );
 unlike( $readme, qr/token:\s+(?!YOUR_)[A-Za-z0-9]/,

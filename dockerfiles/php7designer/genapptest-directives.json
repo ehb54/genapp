@@ -10,5 +10,6 @@
         "html5" : "/opt/genapp/genapptest/bin"
     },
     "appconfig"       : "/opt/genapp/genapptest/appconfig.json",
+    "zmqversion"      : "4",
     "usews"           : "true"
 }

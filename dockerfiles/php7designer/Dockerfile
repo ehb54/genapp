@@ -260,7 +260,7 @@ phpinfo();\n\
 # Keep the security/runtime base independently buildable.  The maintained
 # minimal HTML5 fixture below validates the complete designer image but is not
 # needed to verify the patched operating-system and web-server boundary.
-FROM php7designer-security-base AS php7designer
+FROM php7designer-security-base AS php7designer-generated
 
 RUN $GENAPP/sbin/setconfig.pl -pj
 
@@ -326,6 +326,45 @@ RUN echo 'export PATH=$PATH:~/bin' >> ~/p
 RUN cd ~ && tar zxvf /src/genapp/tmp/extra/ee.gz
 
 # Generate a unique SSH server identity for each container instead of storing
-# build-time host private keys in the image.
+# build-time host private keys in the image.  Wait for the bundled MongoDB
+# server before starting GenApp messaging; a fresh MongoDB 8 data directory can
+# take longer to initialize than the former MongoDB 4.2 runtime.
 # no service or systemctl in container
-CMD ["/bin/sh", "-c", "ssh-keygen -A && (/usr/bin/mongod --config /etc/mongod.conf &) && /etc/init.d/rc.genapp start && /etc/init.d/apache2 start && while true; do sleep 600; done"]
+CMD ["/bin/sh", "-c", "ssh-keygen -A && (/usr/bin/mongod --config /etc/mongod.conf &) && for i in $(seq 1 60); do mongosh --quiet --eval 'quit(db.adminCommand({ ping: 1 }).ok ? 0 : 1)' >/dev/null 2>&1 && break; test \"$i\" -lt 60 || exit 1; sleep 1; done && /etc/init.d/rc.genapp start && /etc/init.d/apache2 start && while true; do sleep 600; done"]
+
+# Ubuntu 20.04 supplies an obsolete Go toolchain.  Build the small GenApp TCP
+# messaging server with a checksum-pinned current Go release on the same
+# digest-pinned Ubuntu 20.04 base as the runtime.  Matching the builder's glibc
+# to the runtime is required because the ZeroMQ binding uses CGO.
+FROM ubuntu:20.04@sha256:8feb4d8ca5354def3d8fce243717141ce31e2c428701f6682bd2fafe15388214 AS genapp-messaging-builder
+
+ARG GO_VERSION=1.27.1
+ARG GO_LINUX_AMD64_SHA256=63d339f0da5ab53635a56f2490a7984dfe12dfcff22ad749f63edaf590168445
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates curl gcc libzmq3-dev pkg-config && \
+    curl -fsSL -o /tmp/go.tar.gz "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" && \
+    echo "${GO_LINUX_AMD64_SHA256}  /tmp/go.tar.gz" | sha256sum -c - && \
+    tar -C /usr/local -xzf /tmp/go.tar.gz && \
+    rm -f /tmp/go.tar.gz && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV PATH=/usr/local/go/bin:$PATH
+
+WORKDIR /build
+COPY --from=php7designer-generated \
+    /opt/genapp/genapptest/output/html5/util/msg-tcpserver.go ./
+RUN go mod init genapp.local/msg-tcpserver && \
+    go mod edit -replace=github.com/ehb54/go-ps=github.com/mitchellh/go-ps@v1.0.0 && \
+    go mod edit -replace=github.com/ehb54/zmq4=github.com/pebbe/zmq4@v1.2.7 && \
+    go get github.com/ehb54/lockfile@cc765475c0b71203143551503b096080206f5d73 && \
+    go mod edit -require=github.com/ehb54/zmq4@v1.2.7 && \
+    go mod download github.com/ehb54/zmq4 && \
+    CGO_ENABLED=1 go build -trimpath -buildvcs=false -o msg-tcpserver ./msg-tcpserver.go
+
+FROM php7designer-generated AS php7designer
+
+COPY --from=genapp-messaging-builder --chown=root:genapp \
+    /build/msg-tcpserver \
+    /opt/genapp/genapptest/output/html5/util/msg-tcpserver
+RUN chmod 0755 /opt/genapp/genapptest/output/html5/util/msg-tcpserver
