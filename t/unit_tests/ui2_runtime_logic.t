@@ -3010,6 +3010,22 @@ assert.strictEqual(
   "",
   "external-auth callback window names reject unsafe characters"
 );
+assert.strictEqual(hooks.createUuid(), "uuid-for-test", "UI2 UUID creation uses the browser UUID API when available");
+const savedRandomUuid = window.crypto.randomUUID;
+window.crypto.randomUUID = undefined;
+window.crypto.getRandomValues = (bytes) => {
+  for (let index = 0; index < bytes.length; index += 1) {
+    bytes[index] = index;
+  }
+  return bytes;
+};
+assert.strictEqual(
+  hooks.createUuid(),
+  "00010203-0405-4607-8809-0a0b0c0d0e0f",
+  "UI2 UUID fallback remains validator-compatible when randomUUID is unavailable"
+);
+window.crypto.randomUUID = savedRandomUuid;
+delete window.crypto.getRandomValues;
 window.location.href = "https://example.test/sassie3/ui2/?login_gov=success&ui2_auth_window=ui2-returned-window";
 window.location.pathname = "/sassie3/ui2/";
 window.location.search = "?login_gov=success&ui2_auth_window=ui2-returned-window";
