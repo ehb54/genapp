@@ -24,7 +24,7 @@ Status values are `not_recorded`, `passed`, `failed`, or `not_applicable`.
 
 | Group | Module | Output kind | Normal | Expanded / restore | Completion | Reattach | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Tools | data_interpolation | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
+| Tools | data_interpolation | Plotly | passed | not_recorded | passed | passed | `ehb54/zazzie#279` records deployed normal rendering, completion, and fresh-window reattachment; expanded/restore remains unrecorded |
 | Tools | extract_utilities | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
 | Build | prepare_solvated_system | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
 | Contrast | contrast_calculator | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
