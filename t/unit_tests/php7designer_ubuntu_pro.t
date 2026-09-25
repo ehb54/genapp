@@ -60,6 +60,8 @@ like( $fixture_directives, qr/"zmqversion"\s*:\s*"4"/,
     'container fixture builds the shared ZeroMQ 4 TCP messaging server' );
 like( $source, qr/for i in \$\(seq 1 60\).*mongosh.*adminCommand/s,
     'container startup waits for MongoDB before GenApp messaging' );
+like( $source, qr{rm -f /run/apache2/apache2[.]pid},
+    'container restart removes only the stale Apache PID file' );
 like( $source,
     qr{FROM ubuntu:20[.]04\@sha256:[0-9a-f]{64} AS genapp-messaging-builder},
     'TCP messaging binary uses the digest-pinned runtime-compatible builder OS' );

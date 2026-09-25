@@ -330,7 +330,7 @@ RUN cd ~ && tar zxvf /src/genapp/tmp/extra/ee.gz
 # server before starting GenApp messaging; a fresh MongoDB 8 data directory can
 # take longer to initialize than the former MongoDB 4.2 runtime.
 # no service or systemctl in container
-CMD ["/bin/sh", "-c", "ssh-keygen -A && (/usr/bin/mongod --config /etc/mongod.conf &) && for i in $(seq 1 60); do mongosh --quiet --eval 'quit(db.adminCommand({ ping: 1 }).ok ? 0 : 1)' >/dev/null 2>&1 && break; test \"$i\" -lt 60 || exit 1; sleep 1; done && /etc/init.d/rc.genapp start && /etc/init.d/apache2 start && while true; do sleep 600; done"]
+CMD ["/bin/sh", "-c", "ssh-keygen -A && (/usr/bin/mongod --config /etc/mongod.conf &) && for i in $(seq 1 60); do mongosh --quiet --eval 'quit(db.adminCommand({ ping: 1 }).ok ? 0 : 1)' >/dev/null 2>&1 && break; test \"$i\" -lt 60 || exit 1; sleep 1; done && /etc/init.d/rc.genapp start && rm -f /run/apache2/apache2.pid && /etc/init.d/apache2 start && while true; do sleep 600; done"]
 
 # Ubuntu 20.04 supplies an obsolete Go toolchain.  Build the small GenApp TCP
 # messaging server with a checksum-pinned current Go release on the same
