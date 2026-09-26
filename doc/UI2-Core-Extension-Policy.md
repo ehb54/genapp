@@ -191,6 +191,13 @@ surface/text, hover labels, and modebar presentation. Normal UI2 and preview
 tools must use the same resolver; a surrounding theme name or separate
 light/dark shortcut must not override the final-surface result.
 
+An application profile may opt into generic `light_surface` and
+`dark_surface` palette overlays. They are partial overrides of its base palette
+and are selected from the resolved final plotting surface, never from an
+application theme name, module id, output id, trace name, or scientific role.
+Missing or unclassifiable surfaces retain the base palette. Normal UI2 and
+preview tools must call the same inheritance and surface-palette evaluator.
+
 ### Repeated-family presentation
 
 Repeated-family differentiation follows the same neutral boundary. The

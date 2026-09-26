@@ -65,6 +65,14 @@ then supplies readable figure text, axes, grids, legends, hover labels,
 annotations, and modebar controls. This presentation pass does not alter trace
 data or scientific identity and is reused by application preview tools.
 
+An application presentation profile may also provide optional
+`light_surface` and `dark_surface` palette overlays. UI2 classifies the actual
+final plotting surface after background preference and alpha compositing, then
+overlays the matching partial palette before resolving trace style tokens.
+Missing variants, missing tokens, and unavailable classification fall back to
+the base palette. Ordinary UI2 and application preview tools use the same
+resolver.
+
 The producer supplies scientific titles, axis names, units, series names,
 axis scale, uncertainty, and subplot relationships. UI2 controls how those
 items look and where presentation-only elements are placed.

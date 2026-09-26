@@ -601,7 +601,7 @@ like( $ui2_js, qr/function stripUi2RuntimeStatus\(text\)/, 'ui2 runtime bridge s
 like( $ui2_js, qr/function isRuntimeDividerText\(text\)/, 'ui2 runtime bridge preserves repeated textarea divider lines' );
 like( $ui2_js, qr/output\.dataset\.runtimeText = merged/, 'ui2 runtime bridge keeps runtime text across later output redraws' );
 like( $ui2_js, qr/function renderPlotlyOutput\(output, value\)/, 'ui2 runtime bridge has a dedicated Plotly output renderer' );
-like( $ui2_js, qr/Plotly\.react\(output, plotlyDataForOutput\(output, figure\.data\), layout, config\)/, 'ui2 authoritative plot snapshots update the existing Plotly graph through UI2 presentation policy' );
+like( $ui2_js, qr/const data = plotlyDataForOutput\(output, figure\.data, layout\).*?Plotly\.react\(output, data, layout, config\)/s, 'ui2 authoritative plot snapshots update the existing Plotly graph through UI2 presentation policy' );
 like( $ui2_js, qr/Plotly\.extendTraces\(output, \{ x, y \}, indices/, 'ui2 plot append events extend existing traces incrementally' );
 like( $ui2_js, qr/function applyPlotlyModebarHooks\(figure, config\)/, 'ui2 runtime bridge honors legacy Plotly Chart Editor config' );
 like( $ui2_js, qr/toImageButtonOptions:\s*\{ format: "png", scale: 2 \}/, 'ui2 runtime restores scale-2 PNG export' );
@@ -673,7 +673,7 @@ like( $ui2_css, qr/\.ui2-ngl-component-placement\s*\{[^}]*grid-template-columns/
 like( $ui2_css, qr/\.ui2-ngl-fixed-reference\s*\{[^}]*#3b82f6/s, 'ui2 identifies the fixed placement reference with the shared blue reference color' );
 like( $ui2_css, qr/\.ui2-ngl-selection-inspector.*?\.ui2-ngl-residue-row.*?overflow-x:\s*auto/s, 'ui2 stylesheet provides a horizontally scrollable generic residue strip' );
 like( $ui2_css, qr/\.ui2-dynamic-output\s*\{[^}]*display:\s*grid/s, 'ui2 stylesheet stacks dynamic output instances' );
-like( $ui2_js, qr/function plotPresentationForOutput\(output\).*?data-plot-presentation.*?function plotlyDataForOutput\(output, data\).*?traceRoles/s, 'UI2 consumes generic view-declared plot presentation tokens without scientific role branches' );
+like( $ui2_js, qr/function plotPresentationForOutput\(output\).*?data-plot-presentation.*?function plotlyDataForOutput\(output, data, layout\).*?traceRoles/s, 'UI2 consumes generic view-declared plot presentation tokens without scientific role branches' );
 unlike( $ui2_js, qr/ensemble_profile|ensemble_residual|ui2_fit_summary_annotation/, 'UI2 core does not recognize a scientific module plot role or annotation directive' );
 unlike( $ui2_js, qr/preserve_live_frames|accepted_structure|milestone_percent|milestone_trial|_ui2NglViewerRuntimeConfig/, 'UI2 core does not recognize module-specific live-viewer lifecycle fields' );
 like( $ui2_js, qr/const preserveLiveFrames = output\._ui2NglTopologyLoadName === topologyLoadName.*?output\._ui2NglTopologyLoadName = topologyLoadName/s, 'live NGL-frame retention is a generic same-topology lifecycle rule' );

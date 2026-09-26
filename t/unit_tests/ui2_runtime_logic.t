@@ -447,6 +447,37 @@ assert.strictEqual(lineStyled.marker?.pattern, undefined,
 const plainTrace = { x: [1], y: [2] };
 assert.strictEqual(presentation.styleTrace(plainTrace, null, groupProfile, {}), plainTrace,
   "metadata-free traces retain default Plotly rendering");
+const inheritedSurfaceProfile = presentation.resolveProfile("child", {
+  schema_version: 1,
+  profiles: {
+    base: {
+      palette: { primary: "#112233", reference: "#445566" },
+      palette_variants: {
+        light_surface: { primary: "#223344", reference: "#556677" },
+        dark_surface: { primary: "#ddeeff" }
+      }
+    },
+    child: {
+      inherits: "base",
+      palette_variants: { light_surface: { primary: "#334455" } }
+    }
+  }
+});
+assert.strictEqual(inheritedSurfaceProfile.palette_variants.light_surface.primary, "#334455",
+  "child surface variants override one inherited palette token");
+assert.strictEqual(inheritedSurfaceProfile.palette_variants.light_surface.reference, "#556677",
+  "surface variant inheritance retains omitted parent tokens");
+assert.strictEqual(
+  presentation.profileForSurface(inheritedSurfaceProfile, "#202725", "#f7f8f6").palette.primary,
+  "#ddeeff", "a dark final plot surface selects the dark-surface palette overlay");
+assert.strictEqual(
+  presentation.profileForSurface(inheritedSurfaceProfile, "rgba(255, 255, 255, 0.8)", "#202725").palette.primary,
+  "#334455", "surface selection composites an alpha plot color against its paper surface");
+assert.strictEqual(
+  presentation.profileForSurface(inheritedSurfaceProfile, "not-a-color", "#202725").palette.primary,
+  "#112233", "an unclassifiable final plot surface falls back to the base palette");
+assert.strictEqual(inheritedSurfaceProfile.palette.primary, "#112233",
+  "surface palette selection never mutates the resolved profile");
 
 const hooks = context.window.GenAppUi2TestHooks;
 
@@ -2374,6 +2405,7 @@ window.GENAPP_PLOT_PRESENTATIONS = {
     grid: { appearance: "subtle", width: 2 },
     legend: { background: "translucent", border: "subtle", font_size: 10 },
     palette: { primary: "#204a87" },
+    palette_variants: { dark_surface: { primary: "#f5c542" } },
     styles: { focal: { color: "primary", line_width: 4, marker: "diamond", marker_size: 8 } }
   },
   accent: {
@@ -2388,6 +2420,13 @@ assert.strictEqual(catalogSeries[0].line.color, "#a51d2d", "an opted-in profile 
 assert.strictEqual(catalogSeries[0].line.width, 5, "an opted-in profile overrides a house token width");
 assert.strictEqual(catalogSeries[0].marker.symbol, "diamond", "a profile inherits the house marker style");
 assert.strictEqual(catalogSeries[0].marker.size, 8, "a profile inherits the house marker size");
+const housePresentationHost = { dataset: { plotPresentation: JSON.stringify({ profile: "house", traceRoles: { replicate: { token: "focal" } } }) } };
+const housePresentationOutput = { closest: () => housePresentationHost };
+const darkSurfaceSeries = hooks.plotlyDataForOutput(
+  housePresentationOutput, neutralSeries,
+  { plot_bgcolor: "#202725", paper_bgcolor: "#202725" });
+assert.strictEqual(darkSurfaceSeries[0].line.color, "#f5c542",
+  "UI2 resolves trace palette tokens after the final plot surface is known");
 const catalogLayout = hooks.plotlyLayoutForOutput(catalogPresentationOutput, { title: "Neutral figure", xaxis: { title: "x" }, yaxis: { title: "y" } });
 assert.strictEqual(catalogLayout.paper_bgcolor, "#fdfcf8", "a presentation profile controls its plot surface without producer geometry");
 assert.strictEqual(catalogLayout.font.family, "Artist Sans", "a presentation profile controls its font family");

@@ -12150,10 +12150,10 @@
         if (layout.uirevision == null) {
           layout.uirevision = output.dataset.outputFieldId || "ui2-plot";
         }
+        const data = plotlyDataForOutput(output, figure.data, layout);
         applyPlotlyTheme(layout);
         const config = plotlyConfigForOutput(figure);
         applyPlotlyModebarHooks(figure, config);
-        const data = plotlyDataForOutput(output, figure.data);
         return updateExisting
           ? window.Plotly.react(output, data, layout, config)
           : window.Plotly.newPlot(output, data, layout, config);
@@ -12408,10 +12408,11 @@
     if (layout.uirevision == null) {
       layout.uirevision = output.dataset.outputFieldId || "ui2-plot";
     }
+    const data = plotlyDataForOutput(output, figure.data, layout);
     applyPlotlyTheme(layout);
     const config = plotlyConfigForOutput(figure);
     applyPlotlyModebarHooks(figure, config);
-    return window.Plotly.react(output, plotlyDataForOutput(output, figure.data), layout, config);
+    return window.Plotly.react(output, data, layout, config);
   }
 
   function plotPresentationForOutput(output) {
@@ -12562,13 +12563,16 @@
     return layout;
   }
 
-  function plotlyDataForOutput(output, data) {
+  function plotlyDataForOutput(output, data, layout) {
     if (!Array.isArray(data)) {
       return [];
     }
     const selection = plotPresentationForOutput(output);
     const traceRoles = selection.traceRoles || {};
-    const presentation = plotPresentationProfileForOutput(output);
+    const resolvedPresentation = plotPresentationProfileForOutput(output);
+    const presentation = window.GenAppPlotPresentation?.profileForSurface?.(
+      resolvedPresentation, layout?.plot_bgcolor, layout?.paper_bgcolor,
+      window.GenAppPlotlySurface) || resolvedPresentation;
     return data.map((trace) => {
       const role = trace?.meta?.series_role;
       const rawPolicy = role ? traceRoles[role] : null;
@@ -12581,9 +12585,12 @@
     });
   }
 
-  function applyPlotPresentationStyle(trace, policy, presentation) {
+  function applyPlotPresentationStyle(trace, policy, presentation, layout) {
+    const surfacePresentation = window.GenAppPlotPresentation?.profileForSurface?.(
+      presentation, layout?.plot_bgcolor, layout?.paper_bgcolor,
+      window.GenAppPlotlySurface) || presentation;
     return window.GenAppPlotPresentation?.styleTrace?.(
-      trace, policy, presentation, plotlyThemeColors()) || trace;
+      trace, policy, surfacePresentation, plotlyThemeColors()) || trace;
   }
 
   function debugPlotlyResize(label, output, width, height) {

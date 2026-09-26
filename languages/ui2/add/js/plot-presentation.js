@@ -15,6 +15,17 @@
     ["font", "background", "grid", "legend", "palette", "group_palettes"].forEach((key) => {
       merged[key] = { ...copy(base?.[key]), ...copy(override?.[key]) };
     });
+    merged.palette_variants = {};
+    const variantNames = new Set([
+      ...Object.keys(copy(base?.palette_variants)),
+      ...Object.keys(copy(override?.palette_variants))
+    ]);
+    variantNames.forEach((name) => {
+      merged.palette_variants[name] = {
+        ...copy(base?.palette_variants?.[name]),
+        ...copy(override?.palette_variants?.[name])
+      };
+    });
     merged.styles = { ...copy(base?.styles) };
     Object.entries(copy(override?.styles)).forEach(([name, style]) => {
       merged.styles[name] = { ...copy(merged.styles[name]), ...copy(style) };
@@ -63,6 +74,29 @@
     if (typeof palette === "string" && palette.trim()) return palette.trim();
     if (typeof theme[token] === "string" && theme[token].trim()) return theme[token].trim();
     return token;
+  }
+
+  function profileForSurface(profile, plotSurface, paperSurface,
+      surfacePolicy = window.GenAppPlotlySurface) {
+    if (!object(profile)) return profile;
+    const basePalette = copy(profile.palette);
+    const variants = copy(profile.palette_variants);
+    if (!Object.keys(variants).length ||
+        typeof surfacePolicy?.parseColor !== "function" ||
+        typeof surfacePolicy?.isDark !== "function") {
+      return { ...profile, palette: basePalette };
+    }
+    const parsedPlot = surfacePolicy.parseColor(plotSurface);
+    if (!parsedPlot || (parsedPlot.a < 1 && !surfacePolicy.parseColor(paperSurface))) {
+      return { ...profile, palette: basePalette };
+    }
+    const variantName = surfacePolicy.isDark(plotSurface, paperSurface)
+      ? "dark_surface"
+      : "light_surface";
+    return {
+      ...profile,
+      palette: { ...basePalette, ...copy(variants[variantName]) }
+    };
   }
 
   function safeNumber(value) {
@@ -133,6 +167,7 @@
   window.GenAppPlotPresentation = Object.freeze({
     apiVersion: 1,
     resolveProfile,
+    profileForSurface,
     groupSlot,
     styleTrace
   });

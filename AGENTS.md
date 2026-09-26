@@ -460,6 +460,10 @@ changing it, read `../genapp_zazzie/docs/plot_presentation.md` and rollout issue
   deterministic `series_group`; views may select a generic group palette.
   UI2 and the Lab use the same evaluator and fail open to ordinary Plotly
   rendering when grouping metadata is unavailable.
+- Optional `light_surface` and `dark_surface` palette variants are partial
+  overlays selected only after UI2 resolves the final plotting surface. UI2
+  and the Lab use the same shared resolver; an unavailable classification
+  falls back to the base palette.
 - Responsive geometry is owned by generic UI2 and the application view, not
   presentation YAML.
 - The application compiler generates
