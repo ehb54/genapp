@@ -30,6 +30,12 @@ before planning, recommending architecture, or changing code.
   inspect applicable repositories and instructions, identify adaptations, and
   report a concrete plan without changing files or remote state.
 - gacp means scope-check, stage, commit, and push only intended changes.
+- `dc3a` means "deployed, `codex3` approved." It confirms that the requested
+  changes are deployed and grants fresh, task-specific authorization to use
+  administrator account `codex3` for the exact UI2 acceptance operations Codex
+  most recently described, including logout. It does not authorize another
+  account, legacy HTML5, broader operations, or a later task. If no pending
+  acceptance block was described, ask for its scope.
 - Do not use the phrase "smoke test" in communications, chat, Markdown, or documentation.
 
 ### Generated HTML5 artifact policy
