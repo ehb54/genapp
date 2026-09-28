@@ -3397,6 +3397,12 @@ assert(
   "session refresh opens the splash for logged-out users"
 );
 assert(
+  source.includes('response.status === 401 || response.status === 403') &&
+    source.includes('updateSessionIdentity({ _logon: "", _project: "" });') &&
+    source.includes('state.session.usergroups = [];'),
+  "session authorization failures clear UI2's local authenticated identity"
+);
+assert(
   source.includes('if (state.session.logon) {\\n      hideSplashDialog();'),
   "session refresh hides the splash for logged-in users"
 );

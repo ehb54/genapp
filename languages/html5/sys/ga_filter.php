@@ -1,5 +1,7 @@
 <?php
 
+__~external_auth_policy{if (isset($_REQUEST['_window'])) { require_once dirname(__DIR__, 2) . '/ui2/auth/policy.php'; if (function_exists('ga_external_auth_enforce_session')) { ga_external_auth_enforce_session('authenticated_request', $_REQUEST['_window']); } }}
+
 function ga_sanitize_validate( $modjson, $inputs, $modulename ) {
 
     __~debug:validate{error_log("\n================================================================================\n", 3, '/tmp/validatelog' );}

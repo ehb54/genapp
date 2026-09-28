@@ -265,6 +265,7 @@ function get_html_userinfo( $error_json_exit = false ) {
 $results = [];
 
 get_html_userinfo( true );
+__~external_auth_policy{require_once dirname(__DIR__, 3) . '/ui2/auth/policy.php'; if (function_exists('ga_external_auth_user_management_html')) { $html_userinfo = ga_external_auth_user_management_html($html_userinfo); }}
 
 $results[ 'sysuserreport' ] = "<p>Server time " . date( "Y M d H:i:s T", $nowsecs ) . "</p>" . "<p>User count " . count( $userinfo[ 'data' ] ) . "</p>" . $html_userinfo;
 
@@ -324,6 +325,7 @@ function handle_request() {
     }
 
     session_name( strtoupper( preg_replace('/[^a-zA-Z0-9_]+/', '_', "GENAPP___application__" ) ) ); session_start();
+    __~external_auth_policy{require_once dirname(__DIR__, 3) . '/ui2/auth/policy.php'; if (function_exists('ga_external_auth_enforce_session')) { ga_external_auth_enforce_session('user_management', $window); }}
 
     if ( isset( $_REQUEST[ "_logon" ] ) && 
          ( !isset( $_SESSION[ $window ][ 'logon' ] ) || $_REQUEST[ "_logon" ] != $_SESSION[ $window ][ 'logon' ] ) ) {

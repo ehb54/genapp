@@ -40,6 +40,7 @@ if ( isset( $_REQUEST[ '_window' ] ) ) {
 }
 
 session_name( strtoupper( preg_replace('/[^a-zA-Z0-9_]+/', '_', "GENAPP___application__" ) ) ); session_start();
+__~external_auth_policy{require_once dirname(__DIR__, 3) . '/ui2/auth/policy.php'; if (function_exists('ga_external_auth_enforce_session')) { ga_external_auth_enforce_session('job_management', $window); }}
 
 if ( isset( $_REQUEST[ "_logon" ] ) && 
      ( !isset( $_SESSION[ $window ][ 'logon' ] ) || $_REQUEST[ "_logon" ] != $_SESSION[ $window ][ 'logon' ] ) ) {

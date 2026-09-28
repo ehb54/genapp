@@ -21,6 +21,13 @@ $session_logon = '';
 if ($window && isset($_SESSION[$window]) && isset($_SESSION[$window]['logon'])) {
     $session_logon = $_SESSION[$window]['logon'];
 }
+$session_policy = $app_root . '/ui2/auth/policy.php';
+if ($window && is_readable($session_policy)) {
+    require_once $session_policy;
+    if (function_exists('ga_external_auth_enforce_session')) {
+        ga_external_auth_enforce_session('saved_job_input', $window);
+    }
+}
 
 if (!$session_logon && $requested_logon) {
     foreach ($_SESSION as $entry) {

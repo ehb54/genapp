@@ -87,6 +87,22 @@ hiding it in UI2 is not sufficient. Identity-provider protocols, account
 linking, account creation, privileges, storage, and deployment configuration
 remain application-owned.
 
+An application using `external_auth_policy` may additionally implement
+`ga_external_auth_enforce_session(operation, window)` in its application-owned
+policy hook. Generated authenticated request paths call the function only when
+it exists. The application decides eligibility and may clear its session and
+return an authorization failure; GenApp does not interpret provider identity,
+account status, or application-specific block records. Applications without
+the directive, and opted-in applications that omit the optional function,
+retain their current behavior. UI2 clears its local authenticated state when a
+session-status request returns HTTP 401 or 403.
+
+The optional application hook
+`ga_external_auth_user_management_html(html)` may prepend or append a protected
+application-owned administrator link to the generic User management report.
+The returned content is presentation only; the target endpoint must perform
+its own session, administrator, request-integrity, and authorization checks.
+
 An external-only manifest may declare a same-origin `logout_url`. UI2 first
 completes the existing local GenApp logout and then navigates to that endpoint,
 including only the bounded UI2 window id. The application endpoint owns the

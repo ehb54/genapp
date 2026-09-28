@@ -34,6 +34,7 @@ $source_application = isset($source['app']) && is_string($source['app']) ? $sour
 if (!strlen($logon) || !hash_equals($application, $source_application)) {
     ui2_session_handoff_reply(array('error' => 'Your login session has expired. Please log in again.'), 403);
 }
+__~external_auth_policy{require_once dirname(__DIR__, 2) . '/ui2/auth/policy.php'; if (function_exists('ga_external_auth_enforce_session')) { ga_external_auth_enforce_session('session_handoff', $source_window); }}
 
 // Keep this deliberately minimal. Window-local preferences and
 // next_job_environment settings must not leak into a second browsing context.

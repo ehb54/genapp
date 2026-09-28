@@ -20,6 +20,13 @@ $window = isset($_REQUEST['_window']) ? strval($_REQUEST['_window']) : '';
 $requested_logon = isset($_REQUEST['_logon']) ? strval($_REQUEST['_logon']) : '';
 $session_logon = ($window && isset($_SESSION[$window]) && is_array($_SESSION[$window]) &&
     isset($_SESSION[$window]['logon'])) ? strval($_SESSION[$window]['logon']) : '';
+$session_policy = $generated_root . '/ui2/auth/policy.php';
+if ($window && is_readable($session_policy)) {
+    require_once $session_policy;
+    if (function_exists('ga_external_auth_enforce_session')) {
+        ga_external_auth_enforce_session('test_scenarios', $window);
+    }
+}
 if (!$requested_logon || !$session_logon || !hash_equals($session_logon, $requested_logon)) {
     ui2_test_scenarios_reply(array('error' => 'Administrator session required.'), 403);
 }

@@ -327,6 +327,9 @@ job limits, submit blocks, and MOTD.
 - Password-reset credential lifecycle is governed by
   `doc/Authentication-Password-Reset-Contract.md`; do not let a mail-delivery
   failure invalidate a user's current password.
+- External identity eligibility remains application-owned. Generated handlers
+  may call an explicitly opted-in, provider-neutral session-policy hook, but
+  GenApp must not interpret provider identities or application block records.
 
 Before adding or changing the optional administrator scenario catalog, read
 `doc/Test-Scenario-Architecture.md`. For SASSIE-web catalogs, also read

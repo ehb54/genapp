@@ -65,6 +65,7 @@ my $sys_login_template = read_file( File::Spec->catfile( $repo_root, qw(language
 my $sys_register_template = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_register.php) ) );
 my $sys_user_config_template = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_user_config.php) ) );
 my $sys_manageusers_template = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_manageusers.php) ) );
+my $session_handoff_template = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 ui2_session_handoff.php) ) );
 like( $index, qr/js\/app-map\.js/, 'ui2 index loads the generated app map' );
 like( $index, qr/\.\.\/js\/autobahn\.min\.js/, 'ui2 index preloads the existing legacy Autobahn websocket client' );
 like( $index, qr/\.\.\/js\/plotly-2\.35\.2\.min\.js/, 'ui2 index preloads the existing generated Plotly bundle' );
@@ -126,9 +127,13 @@ like( $plotly_layout_js, qr/function wrapPlainText.*?function axisTitleWrapUpdat
 like( $plotly_layout_js, qr/const ABOVE_PLOT = "above_plot".*?function annotationPlacementUpdate.*?annotationPlacement/s, 'responsive layout helper reserves an opted-in lane for named above-plot annotations' );
 like( $session_handoff_php, qr/\$application\s*=\s*"ui2_views"/, 'generated handoff endpoint uses the fixture application session namespace' );
 unlike( $session_handoff_php, qr/dirname\(__DIR__, 2\)/, 'generated handoff endpoint does not mistake output for the application root' );
+like( $session_handoff_template, qr/__~external_auth_policy\{.*ga_external_auth_enforce_session\('session_handoff'/, 'session handoff exposes an optional application session-policy hook' );
 like( $sys_login_template, qr/__~external_auth_policy\{[^{}]*ga_external_auth_enforce\('password_login'\)/, 'password login exposes an optional application-owned server policy hook' );
 like( $sys_register_template, qr/__~external_auth_policy\{[^{}]*ga_external_auth_enforce\('registration'\)/, 'registration exposes an optional application-owned server policy hook' );
 like( $sys_user_config_template, qr/__~external_auth_policy\{[^{}]*ga_external_auth_enforce\('user_config'\)/, 'password change exposes an optional application-owned server policy hook' );
+my $ga_filter_template = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys ga_filter.php) ) );
+like( $ga_filter_template, qr/__~external_auth_policy\{.*ga_external_auth_enforce_session/, 'authenticated generated handlers expose an optional application-owned session policy hook' );
+like( $sys_manageusers_template, qr/__~external_auth_policy\{[^{}]*ga_external_auth_user_management_html/, 'user management exposes an optional application-owned administrator-link hook' );
 like( $sys_manageusers_template, qr/isset\( \$v\[ 'email' \] \).*?\$email === "" \? ""/s, 'administrator user listings tolerate accounts without a locally stored email' );
 like( $sys_manageusers_template, qr/isset\( \$mailuser \).*?isset\( \$doc\[ 'email' \] \).*?mymail/s, 'administrator account actions send mail only when the account stores an email' );
 like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declares a module submit endpoint helper' );

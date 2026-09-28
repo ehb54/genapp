@@ -459,6 +459,12 @@
         credentials: "same-origin"
       });
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          updateSessionIdentity({ _logon: "", _project: "" });
+          state.session.groups = {};
+          state.session.usergroups = [];
+          syncSplashForSession();
+        }
         throw new Error(`session status returned ${response.status}`);
       }
       const payload = await response.json();

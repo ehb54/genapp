@@ -29,5 +29,13 @@ for my $name (qw(sys_login.php sys_register.php sys_user_config.php)) {
         "$name retains legacy behavior when external_auth_policy is absent",
     );
 }
+my $filter = read_file( File::Spec->catfile(
+    $generated->{app_dir}, qw(output html5 ajax ga_filter.php)
+) );
+unlike(
+    $filter,
+    qr/ga_external_auth_enforce_session/,
+    'non-opted-in generated handlers omit the optional session policy hook',
+);
 
 done_testing();
