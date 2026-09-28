@@ -8,9 +8,9 @@ use JSON::PP qw(decode_json);
 use Test::More;
 
 use lib File::Spec->catdir( $FindBin::Bin, 'lib' );
-use GenAppTest qw(repo_root);
+use GenAppTest qw(php_executable repo_root run_command);
 
-my $php = find_executable('php');
+my $php = php_executable();
 plan skip_all => 'php is not available on PATH; job-event cache checks are deferred' if !$php;
 
 my $root = repo_root($FindBin::Bin);
@@ -138,11 +138,17 @@ echo json_encode(array(
 PHP_BODY
 close $fh;
 
-my $syntax = `$php -l "$helper" 2>&1`;
-is( $? >> 8, 0, 'job-event cache helper has valid PHP syntax' ) or diag($syntax);
+my ( $syntax_status, $syntax ) = run_command(
+    cwd => $root,
+    cmd => [ $php, '-l', $helper ],
+);
+is( $syntax_status, 0, 'job-event cache helper has valid PHP syntax' ) or diag($syntax);
 
-my $output = `$php "$script" 2>&1`;
-is( $? >> 8, 0, 'job-event cache helper executes' ) or diag($output);
+my ( $runtime_status, $output ) = run_command(
+    cwd => $root,
+    cmd => [ $php, $script ],
+);
+is( $runtime_status, 0, 'job-event cache helper executes' ) or diag($output);
 my $data = eval { decode_json($output) };
 ok( $data, 'job-event cache helper returns JSON' ) or diag($@ || $output);
 
@@ -207,13 +213,4 @@ sub php_string {
     $value =~ s/\\/\\\\/g;
     $value =~ s/'/\\'/g;
     return "'$value'";
-}
-
-sub find_executable {
-    my ($name) = @_;
-    for my $dir ( split /:/, $ENV{PATH} || q{} ) {
-        my $path = File::Spec->catfile( $dir, $name );
-        return $path if -x $path;
-    }
-    return;
 }

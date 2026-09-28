@@ -11,7 +11,7 @@ use Test::More;
 use Time::HiRes qw(usleep);
 
 use lib File::Spec->catdir( $FindBin::Bin, 'lib' );
-use GenAppTest qw(read_file repo_root run_command);
+use GenAppTest qw(php_executable read_file repo_root run_command);
 
 my $repo_root = repo_root($FindBin::Bin);
 my $helper = File::Spec->catfile(
@@ -24,7 +24,7 @@ like( $source, qr/\@link\( \$staged_path, \$candidate \)/, 'publication uses no-
 like( $source, qr/function ga_record_submission_upload/, 'submission ownership recorder is defined' );
 like( $source, qr/function ga_cleanup_input_validation_uploads/, 'failure-class dispatcher is defined' );
 
-my $php = find_executable('php');
+my $php = php_executable();
 SKIP: {
     skip 'php is not available on PATH; cleanup execution checks are deferred', 29 if !$php;
 

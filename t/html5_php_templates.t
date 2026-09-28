@@ -6,7 +6,7 @@ use FindBin;
 use Test::More;
 
 use lib File::Spec->catdir( $FindBin::Bin, 'lib' );
-use GenAppTest qw(generate_fixture_app read_file repo_root run_command);
+use GenAppTest qw(generate_fixture_app php_executable read_file repo_root run_command);
 
 my $repo_root = repo_root($FindBin::Bin);
 my $generated = generate_fixture_app(
@@ -44,8 +44,7 @@ unlike( $module_php, qr/__modulejson__|__resource__|__executable__|__menu:id__/,
 like( $module_php, qr/\Q(hello|sample)\\\\.world\E/, 'module php preserves regex alternation and host-escaped backslash from module JSON' );
 like( $module_php, qr/\Qroute:left || route:right\E/, 'module php preserves logical OR from module JSON' );
 
-my $php = qx{command -v php 2>/dev/null};
-chomp $php;
+my $php = php_executable();
 SKIP: {
     skip 'php is not available on PATH; generated module runtime checks are deferred', 2 if !$php;
     my ( $lint_status, $lint_output ) = run_command(

@@ -5,7 +5,7 @@ use File::Path qw(make_path);
 use File::Spec;
 use FindBin;
 use lib File::Spec->catdir( $FindBin::Bin, 'lib' );
-use GenAppTest qw(generate_fixture_app read_file repo_root);
+use GenAppTest qw(generate_fixture_app php_executable read_file repo_root);
 use JSON::PP qw(decode_json encode_json);
 use MIME::Base64 qw(encode_base64);
 use Test::More;
@@ -113,8 +113,7 @@ open my $runtime_endpoint_fh, '>', $runtime_endpoint_path
 print {$runtime_endpoint_fh} $runtime_endpoint;
 close $runtime_endpoint_fh;
 
-my $php = qx{command -v php 2>/dev/null};
-chomp $php;
+my $php = php_executable();
 SKIP: {
     skip 'php is not available on PATH; PHP endpoint checks are deferred', 16 if !$php;
     for my $check (

@@ -4,7 +4,8 @@
             "id" : "sys_config",
             "modules" : [
                 { "id" : "sys_user_config" },
-                { "id" : "sys_feedback" }
+                { "id" : "sys_feedback" },
+                { "id" : "sys_feedback2" }
             ]
         }
     ]

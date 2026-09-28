@@ -11,7 +11,34 @@ use File::Path qw(make_path);
 use File::Spec;
 use File::Temp qw(tempdir);
 
-our @EXPORT_OK = qw(assert_command copy_tree generate_fixture_app read_file repo_root run_command);
+our @EXPORT_OK = qw(
+    assert_command copy_tree find_executable generate_fixture_app php_executable
+    read_file repo_root run_command
+);
+
+sub find_executable {
+    my ($name) = @_;
+    return if !defined $name || $name eq q{};
+
+    if ( File::Spec->file_name_is_absolute($name) || $name =~ m{/} ) {
+        return -x $name ? abs_path($name) : undef;
+    }
+
+    for my $directory ( split /:/, $ENV{PATH} || q{} ) {
+        my $path = File::Spec->catfile( $directory, $name );
+        return abs_path($path) if -x $path;
+    }
+    return;
+}
+
+sub php_executable {
+    if ( defined $ENV{PHP} && $ENV{PHP} ne q{} ) {
+        my $configured = find_executable( $ENV{PHP} );
+        die "configured PHP executable '$ENV{PHP}' is not executable\n" if !$configured;
+        return $configured;
+    }
+    return find_executable('php');
+}
 
 sub repo_root {
     my ($test_dir) = @_;

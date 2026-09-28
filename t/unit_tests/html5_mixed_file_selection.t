@@ -8,6 +8,9 @@ use JSON::PP qw(decode_json encode_json);
 use MIME::Base64 qw(encode_base64);
 use Test::More;
 
+use lib File::Spec->catdir( $FindBin::Bin, '..', 'lib' );
+use GenAppTest qw(php_executable);
+
 my $repo_root = File::Spec->rel2abs(
     File::Spec->catdir( $FindBin::Bin, File::Spec->updir, File::Spec->updir )
 );
@@ -30,8 +33,7 @@ like( $normalizer, qr/!array_key_exists\( \$tmp_key, \$_FILES \)/,
 like( $normalizer, qr/isset\( \$_REQUEST\[ \$v \] \).*?is_array.*?count.*?== 1/s,
     'mixed normalization requires one complete server selection' );
 
-my $php = qx{command -v php 2>/dev/null};
-chomp $php;
+my $php = php_executable();
 
 SKIP: {
     skip 'php is not available on PATH; runtime behavior matrix is deferred', 10

@@ -7,7 +7,7 @@ use JSON qw(decode_json);
 use Test::More;
 
 use lib File::Spec->catdir( $FindBin::Bin, '..', 'lib' );
-use GenAppTest qw(generate_fixture_app read_file repo_root);
+use GenAppTest qw(generate_fixture_app read_file repo_root run_command);
 
 my $repo_root = repo_root( File::Spec->catdir( $FindBin::Bin, '..' ) );
 my $generated = generate_fixture_app(
@@ -41,6 +41,20 @@ ok( -f File::Spec->catfile( $ui2, qw(modules workbench_layout.json) ), 'ui2 neut
 ok( -f File::Spec->catfile( $ui2, qw(modules sys_user_config.json) ), 'ui2 config system module summary was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(modules sys_file_manager.json) ), 'ui2 configbase system module summary was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(modules sys_feedback.json) ), 'ui2 feedback system module summary was generated' );
+my $obsolete_feedback = File::Spec->catfile( $ui2, qw(modules sys_feedback2.json) );
+ok( !-e $obsolete_feedback, 'ui2 omits the obsolete legacy feedback form' );
+open my $obsolete_feedback_fh, '>', $obsolete_feedback
+    or die "open '$obsolete_feedback' failed: $!";
+print {$obsolete_feedback_fh} qq({"stale":true}\n);
+close $obsolete_feedback_fh;
+my ( $regenerate_status, $regenerate_output ) = run_command(
+    cwd => $app_dir,
+    env => { GENAPP => $repo_root },
+    cmd => [ File::Spec->catfile( $repo_root, qw(bin genapp) ), '--language', 'ui2' ],
+);
+is( $regenerate_status, 0, 'ui2 regenerates over an existing deployment' )
+    or diag($regenerate_output);
+ok( !-e $obsolete_feedback, 'ui2 regeneration removes a stale obsolete feedback form' );
 
 my $index      = read_file( File::Spec->catfile( $ui2, 'index.html' ) );
 my $app_map_js = read_file( File::Spec->catfile( $ui2, qw(js app-map.js) ) );
@@ -119,6 +133,7 @@ like( $sys_manageusers_template, qr/isset\( \$v\[ 'email' \] \).*?\$email === ""
 like( $sys_manageusers_template, qr/isset\( \$mailuser \).*?isset\( \$doc\[ 'email' \] \).*?mymail/s, 'administrator account actions send mail only when the account stores an email' );
 like( $ui2_js, qr/function moduleSubmitEndpoint\(\)/, 'ui2 runtime bridge declares a module submit endpoint helper' );
 like( $ui2_js, qr/function renderActionBar\(\).*?const status = el\("div", "ui2-submit-status"\);.*?status\.setAttribute\("role", "status"\)/s, 'native UI2 keeps an initially empty status live region for later lifecycle messages' );
+like( $ui2_js, qr/async function sha256Hex\(bytes\).*?window\.crypto\?\.subtle.*?cryptoJs\.SHA256\(wordArray\)\.toString\(cryptoJs\.enc\.Hex\)/s, 'scenario files retain browser-side SHA-256 verification when WebCrypto is unavailable' );
 unlike( $ui2_js, qr/function renderActionBar\(\).*?Not submitted/s, 'native UI2 does not announce a redundant pristine submission state' );
 like( $ui2_js, qr/isReactWorkbenchView\(state\.view\) && renderReactWorkbench\(module, fields\)/, 'ui2 delegates modules to React only through explicit view metadata' );
 like( $ui2_js, qr/function renderReactWorkbench\(module, fields\).*?createFieldGroup:.*?renderReactWorkbenchFieldGroup\(groupFields, role, presentation\).*?fieldGroupMounted: \(onValuesReady\) => scheduleReactWorkbenchSync\(onValuesReady\).*?submit:.*?submitModule\(form\)/s, 'scientific workbench bridge mounts native field groups and republishes canonical defaults after synchronization' );
@@ -153,6 +168,8 @@ my $ui2_react_run_cue_source = read_file( File::Spec->catfile( $repo_root, qw(la
 my $ui2_react_results_visibility_source = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 react src resultsVisibility.ts) ) );
 like( $ui2_react_source, qr/import\s+\{\s*resultsVisibility\s*\}\s+from\s+"@\/resultsVisibility"/, 'React workbench imports the generic results-visibility helper' );
 like( $ui2_react_source, qr/testScenarios\.available && testScenarios\.catalog\?\.scenarios/, 'React renders the administrator scenario control only when core reports an available protected catalog' );
+like( $ui2_react_source, qr/const chooseTestScenario = .*?event\.stopPropagation\(\).*?setScenarioChoice\(event\.currentTarget\.value\)/s, 'React keeps scenario selection events out of ordinary module-input synchronization' );
+like( $ui2_react_source, qr/<select aria-label="Test scenario" value=\{scenarioChoice\} onInput=\{chooseTestScenario\} onChange=\{chooseTestScenario\}>/, 'React retains a scenario choice on Safari input-before-change ordering' );
 like( $ui2_react_source, qr/lifecycleState === "editing" \? "" : lifecycleMessage/, 'React workbench leaves the pristine status live region empty while retaining lifecycle messages' );
 unlike( $ui2_react_source, qr/Not submitted/, 'React workbench does not render a redundant pristine submission state' );
 unlike( $ui2_react_js, qr/Not submitted/, 'generated React bundle omits the redundant pristine submission state' );
@@ -325,7 +342,8 @@ like( $sys_status_php, qr/\$endpoint_state\s*=\s*"development_stub"/, 'html5 sys
 like( $sys_status_php, qr/\$endpoint_state\s*=\s*"configured"/, 'html5 sys_status maps configured AI Helper endpoint state' );
 like( $sys_status_php, qr/\$endpoint_state\s*=\s*"unconfigured"/, 'html5 sys_status maps unconfigured AI Helper endpoint state' );
 like( $ui2_js, qr/id === "aihelperpreference" && !value[\s\S]+control\.value = "default"/, 'ui2 Settings keeps missing AI Helper user preference on deployment default' );
-like( $ui2_js, qr/dialogClass: \(moduleId === "sys_feedback" \|\| moduleId === "sys_feedback2"\) \? "ui2-feedback-dialog"/, 'ui2 feedback opens in a modal-sized utility dialog' );
+like( $ui2_js, qr/dialogClass: moduleId === "sys_feedback" \? "ui2-feedback-dialog"/, 'ui2 feedback opens in a modal-sized utility dialog' );
+unlike( $ui2_js, qr/sys_feedback2/, 'ui2 runtime does not retain the obsolete feedback form' );
 like( $ui2_js, qr/function renderFeedbackTool\(module, fields\)/, 'ui2 runtime has a dedicated Feedback utility renderer' );
 like( $ui2_js, qr/await submitUtilityModule\(form, module, `ajax\/sys_config\/\$\{moduleId\}\.php`/, 'ui2 feedback submits through the generated legacy feedback endpoint' );
 like( $ui2_js, qr/function renderFeedbackTool\(module, fields\)[\s\S]*?afterSuccess:\s*\(\)\s*=>\s*clearJobReferenceSelections\(form\)/, 'successful UI2 feedback clears selected job references' );
@@ -418,7 +436,8 @@ like( $ui2_js, qr/function ensureNglLoaded\(\).*?loadScript\("\.\.\/js\/ngl\.js"
 like( $ui2_js, qr/const NGL_REPRESENTATION_TYPES = \[[\s\S]*"backbone"[\s\S]*"ball\+stick"[\s\S]*"cartoon"[\s\S]*"tube"[\s\S]*\]/, 'ui2 NGL renderer uses the legacy representation button list' );
 like( $ui2_js, qr/function refreshSessionState\(\)/, 'ui2 runtime bridge declares a legacy session status helper' );
 like( $ui2_js, qr/function handoffSessionToWindow\(targetWindowName\)/, 'ui2 runtime bridge declares a same-origin new-window session handoff helper' );
-like( $ui2_js, qr/ajax\/ui2_session_handoff\.php/, 'ui2 runtime bridge uses the UI2-local session handoff endpoint' );
+like( $ui2_js, qr/new URL\("ajax\/ui2_session_handoff\.php", window\.location\.href\)\.toString\(\)/, 'ui2 runtime bridge resolves the handoff endpoint relative to the deployed UI2 path' );
+unlike( $ui2_js, qr/legacyEndpoint\("", "ui2\/ajax\/ui2_session_handoff\.php"\)/, 'UI2 handoff does not assume UI2 is nested below the legacy application path' );
 like( $session_handoff_php, qr/next_job_environment/, 'session handoff documents that window-scoped job settings are excluded' );
 like( $session_handoff_php, qr/'logon'\s*=>\s*\$logon[\s\S]*?'app'\s*=>\s*\$application[\s\S]*?'project'/, 'session handoff copies only the minimal authenticated target session fields' );
 like( $ui2_js, qr/function legacyEndpoint\(paramName, path\)/, 'ui2 runtime bridge builds explicit legacy app-root endpoints' );
