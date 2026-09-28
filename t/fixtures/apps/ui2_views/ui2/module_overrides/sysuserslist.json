@@ -1,0 +1,9 @@
+{
+  "moduleid": "sysuserslist",
+  "label": "Protected administration",
+  "embedded_page": {
+    "url": "admin/protected.php",
+    "title": "Protected administration"
+  },
+  "fields": []
+}

@@ -40,6 +40,7 @@ ok( -f File::Spec->catfile( $ui2, qw(modules typed.json) ), 'ui2 typed module su
 ok( -f File::Spec->catfile( $ui2, qw(modules workbench_layout.json) ), 'ui2 neutral mixed-width workbench fixture was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(modules sys_user_config.json) ), 'ui2 config system module summary was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(modules sys_file_manager.json) ), 'ui2 configbase system module summary was generated' );
+ok( -f File::Spec->catfile( $ui2, qw(modules sysuserslist.json) ), 'ui2 core-fallback module override was generated' );
 ok( -f File::Spec->catfile( $ui2, qw(modules sys_feedback.json) ), 'ui2 feedback system module summary was generated' );
 my $obsolete_feedback = File::Spec->catfile( $ui2, qw(modules sys_feedback2.json) );
 ok( !-e $obsolete_feedback, 'ui2 omits the obsolete legacy feedback form' );
@@ -66,6 +67,8 @@ my $sys_register_template = read_file( File::Spec->catfile( $repo_root, qw(langu
 my $sys_user_config_template = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_user_config.php) ) );
 my $sys_manageusers_template = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_manageusers.php) ) );
 my $session_handoff_template = read_file( File::Spec->catfile( $repo_root, qw(languages ui2 ui2_session_handoff.php) ) );
+my $embedded_admin = decode_json( read_file( File::Spec->catfile( $ui2, qw(modules sysuserslist.json) ) ) );
+is( $embedded_admin->{modulejson}{embedded_page}{url}, 'admin/protected.php', 'ui2 can override a module supplied by the GenApp core fallback' );
 like( $index, qr/js\/app-map\.js/, 'ui2 index loads the generated app map' );
 like( $index, qr/\.\.\/js\/autobahn\.min\.js/, 'ui2 index preloads the existing legacy Autobahn websocket client' );
 like( $index, qr/\.\.\/js\/plotly-2\.35\.2\.min\.js/, 'ui2 index preloads the existing generated Plotly bundle' );
@@ -538,6 +541,10 @@ like( $ui2_js, qr/function conditionalRepeatDependencyIds\(scope\).*?repeatIsCon
 like( $ui2_js, qr/function repeaterControllerIds\(\).*?isRepeater\(field\).*?ids\.add\(field\.id\)/s, 'ui2 replay dependency ordering includes repeater controllers' );
 like( $ui2_js, qr/function applyInputPayload\(inputs, options = \{\}\).*?conditionalRepeatDependencyIds\(document\.getElementById\("ui2-form"\)\).*?repeaterControllerIds\(\).*?syncValues\(\).*?entries\.forEach/s, 'ui2 reattached input replay restores repeat dependencies before dependent values' );
 like( $ui2_js, qr/function renderFileManagerTool\(module, fields\)/, 'ui2 has a dedicated File Manager shell' );
+like( $ui2_js, qr/function renderEmbeddedPageTool\(module\)/, 'ui2 supports explicitly declared embedded application pages' );
+like( $ui2_js, qr/Object\.prototype\.hasOwnProperty\.call\(module, "embedded_page"\)/, 'ui2 embedded pages are opt-in per module' );
+like( $ui2_js, qr/sameOriginApplicationUrl\(declaration\.url\)/, 'ui2 restricts embedded application pages to the current origin' );
+like( $ui2_js, qr/setAttribute\("sandbox", "allow-forms allow-same-origin"\)/, 'ui2 embedded pages use the bounded form sandbox' );
 like( $ui2_js, qr/function downloadFileManagerSelection\(table, status, links, module\)/, 'ui2 File Manager submits selected files for download and renders returned links' );
 like( $ui2_js, qr/"Refresh all".*?"Refresh selected".*?"Remove selected".*?"Download"/s, 'ui2 File Manager distinguishes all-file refresh from selected refresh and removal' );
 like( $ui2_js, qr/function refreshSelectedFileManagerRows\(table, status\).*?fileManagerSelectedParentIds\(table\).*?loadFileManagerFolderChildren/s, 'ui2 File Manager refreshes the parents of selected entries' );

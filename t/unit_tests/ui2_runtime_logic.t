@@ -499,6 +499,47 @@ assert.strictEqual(inheritedSurfaceProfile.palette.primary, "#112233",
 
 const hooks = context.window.GenAppUi2TestHooks;
 
+const embeddedPage = hooks.renderSystemTool({
+  moduleid: "protected_admin",
+  label: "Account Administration",
+  embedded_page: {
+    url: "auth/access-control.php",
+    title: "Access control"
+  }
+}, []);
+const embeddedFrame = embeddedPage.querySelector("iframe");
+assert(embeddedFrame, "an opted-in embedded page renders without the ordinary module form");
+assert.strictEqual(
+  embeddedFrame.src,
+  "https://example.test/sassie3/ui2/auth/access-control.php",
+  "an embedded page resolves relative to the current UI2 deployment path"
+);
+assert.strictEqual(embeddedFrame.title, "Access control", "an embedded page has an accessible title");
+assert.strictEqual(
+  embeddedFrame.getAttribute("sandbox"),
+  "allow-forms allow-same-origin",
+  "an embedded page is limited to its same-origin form workflow"
+);
+assert.strictEqual(
+  hooks.renderSystemTool({ moduleid: "ordinary_module", label: "Ordinary module" }, []),
+  null,
+  "a module without embedded_page retains the ordinary renderer"
+);
+const rejectedEmbeddedPage = hooks.renderSystemTool({
+  moduleid: "unsafe_admin",
+  embedded_page: { url: "https://outside.example/access-control.php" }
+}, []);
+assert.strictEqual(
+  rejectedEmbeddedPage.querySelector("iframe"),
+  null,
+  "a cross-origin embedded page fails closed"
+);
+assert.match(
+  rejectedEmbeddedPage.querySelector(".ui2-error").textContent,
+  /valid same-origin URL/,
+  "an invalid embedded-page declaration reports a configuration error"
+);
+
 const utilityStatusFields = [
   { role: "input", id: "preference", label: "Preference", type: "text" },
   { role: "output", id: "status", label: "Status", type: "textarea" }

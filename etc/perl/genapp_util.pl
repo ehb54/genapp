@@ -809,7 +809,7 @@ sub module_override_file {
     my ( $f, $l ) = @_;
 
     return if !$l;
-    return if $f !~ /^modules\/([^\/]+\.json)$/;
+    return if $f !~ m{(?:^|/)modules/([^/]+\.json)$};
 
     my $override = "$l/module_overrides/$1";
     return -e $override ? $override : undef;
@@ -1637,25 +1637,16 @@ sub check_files {
         foreach my $k ( keys %{$modules_by_language{ $l }} ) {
 # local dir modules take precedence
             my $f = "modules/$k.json";
-            if ( !module_exists( $f, \%langs ) ) {
-#            my $fg = "$gap/modules/" . $rpls{"application"} . "/$k.json";
-                my $fg = "$gap/modules/$k.json";
-                if ( !-e $fg )
-                {
-                    $error .= "missing module '$k' in $f or $fg\n";
-                    next;
-                } else {
-                    $module_files{ $l } = {} if !$module_files{ $l };
-                    $module_files{ $l }{ $fg }++;
-                    $module_to_file{ $l } = {} if !$module_to_file{ $l };
-                    $module_to_file{ $l }{ $k } = $fg;
-                }
-            } else {
-                $module_files{ $l } = {} if !$module_files{ $l };
-                $module_files{ $l }{ $f }++;
-                $module_to_file{ $l } = {} if !$module_to_file{ $l };
-                $module_to_file{ $l }{ $k } = $f;
+            my $fg = "$gap/modules/$k.json";
+            my $resolved = -e $f ? $f : -e $fg ? $fg : module_exists( $f, \%langs ) ? $f : '';
+            if ( !$resolved ) {
+                $error .= "missing module '$k' in $f or $fg\n";
+                next;
             }
+            $module_files{ $l } = {} if !$module_files{ $l };
+            $module_files{ $l }{ $resolved }++;
+            $module_to_file{ $l } = {} if !$module_to_file{ $l };
+            $module_to_file{ $l }{ $k } = $resolved;
         }
     }
 

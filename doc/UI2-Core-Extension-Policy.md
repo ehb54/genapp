@@ -39,6 +39,21 @@ values, routes for loaded modules, execution, outputs, or reattachment. Any
 future sequential navigation requires an explicit application-neutral workflow
 contract and the shared-core extension gate below.
 
+### Embedded application pages
+
+A UI2-specific module override may declare an `embedded_page` object containing
+a required `url` and an optional `title`. UI2 renders the same-origin page
+directly in the module workspace instead of creating the ordinary Inputs,
+Submit, and Outputs form. This is intended for protected application tools that
+own their own request and response workflow and do not create GenApp jobs.
+
+UI2 rejects cross-origin and malformed URLs, applies a no-referrer policy, and
+sandboxes the page to same-origin form submission. The embedded endpoint remains
+responsible for authentication, authorization, request-integrity protection,
+cache policy, and restricting which origins may frame it. Applications that do
+not declare `embedded_page` retain the ordinary module renderer. HTML5 behavior
+is unchanged because the declaration belongs in a UI2 target override.
+
 ## External authentication policy
 
 An application may advertise same-origin external identity providers through

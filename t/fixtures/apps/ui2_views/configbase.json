@@ -3,7 +3,8 @@
         {
             "id" : "sys_configbase",
             "modules" : [
-                { "id" : "sys_file_manager" }
+                { "id" : "sys_file_manager" },
+                { "id" : "sysuserslist" }
             ]
         }
     ]

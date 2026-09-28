@@ -5515,6 +5515,9 @@
 
   function renderSystemTool(module, fields) {
     const moduleId = module.moduleid || module.id || state.moduleId;
+    if (Object.prototype.hasOwnProperty.call(module, "embedded_page")) {
+      return renderEmbeddedPageTool(module);
+    }
     if (moduleId === "sys_job_manager" || moduleId === "sys_job2_manager") {
       return renderJobManagerTool(fields, moduleId);
     }
@@ -5534,6 +5537,42 @@
       return renderFeedbackTool(module, fields);
     }
     return null;
+  }
+
+  function embeddedPageConfiguration(module) {
+    const declaration = module?.embedded_page;
+    if (!declaration || typeof declaration !== "object" || Array.isArray(declaration)) {
+      return null;
+    }
+    const url = sameOriginApplicationUrl(declaration.url);
+    if (!url) {
+      return null;
+    }
+    const title = stringValue(declaration.title || module.label || "Embedded page").trim();
+    return {
+      url,
+      title: title || "Embedded page"
+    };
+  }
+
+  function renderEmbeddedPageTool(module) {
+    const section = el("section", "ui2-section ui2-system-tool ui2-embedded-page-tool");
+    const body = el("div", "ui2-section-body ui2-embedded-page-body");
+    const configuration = embeddedPageConfiguration(module);
+    if (!configuration) {
+      body.appendChild(el("div", "ui2-error", "This embedded page is not configured with a valid same-origin URL."));
+      section.appendChild(body);
+      return section;
+    }
+    const frame = el("iframe", "ui2-embedded-page");
+    frame.src = configuration.url;
+    frame.title = configuration.title;
+    frame.loading = "eager";
+    frame.referrerPolicy = "no-referrer";
+    frame.setAttribute("sandbox", "allow-forms allow-same-origin");
+    body.appendChild(frame);
+    section.appendChild(body);
+    return section;
   }
 
   function isUtilityModule(moduleId) {
@@ -13977,6 +14016,9 @@
       beginViewReady,
       markViewReady,
       waitForViewReady,
+      embeddedPageConfiguration,
+      renderEmbeddedPageTool,
+      renderSystemTool,
       renderUserConfigTool,
       renderRegisterTool,
       legacyUtilityFieldName,
