@@ -7,9 +7,9 @@ use FindBin;
 use Test::More;
 
 use lib File::Spec->catdir( $FindBin::Bin, 'lib' );
-use GenAppTest qw(read_file repo_root run_command);
+use GenAppTest qw(php_executable read_file repo_root run_command);
 
-my $php = find_executable('php');
+my $php = php_executable();
 plan skip_all => 'php is not available on PATH; backend execution contract tests are deferred' if !$php;
 
 my $repo_root = repo_root($FindBin::Bin);
@@ -90,12 +90,3 @@ is(
     'an explicit cancellation remains authoritative over terminal output'
 );
 done_testing();
-
-sub find_executable {
-    my ($name) = @_;
-    for my $dir ( split /:/, $ENV{PATH} || q{} ) {
-        my $path = File::Spec->catfile( $dir, $name );
-        return $path if -x $path;
-    }
-    return;
-}

@@ -251,6 +251,9 @@ Important assembly fields:
 - `prefix`: can prepend a module `prefix` to template file selection.
 - `setexecutable`: chmods the output executable.
 - `clobber`: allows duplicate outputs.
+- `exclude_modules`: skips named module ids for that assembly step, removing
+  an older generated file at the same output path, without changing the shared
+  application menu or system-module configuration.
 - `minify`: supports selected minification paths.
 - `execute`: can run generated files at generation time or at the end.
 

@@ -31,6 +31,7 @@
                   ,{
                     "frequency"  : "menu:modules:id",
                     "output"     : "modules/__menu:modules:id__.json",
+                    "exclude_modules" : [ "sys_feedback2" ],
                     "inputs"     : [
                                     { "module-summary.json" : "once" }
                                    ]
@@ -39,6 +40,7 @@
                     "frequency"  : "config:modules:id",
                     "output"     : "modules/__modules:id__.json",
                     "clobber"    : "true",
+                    "exclude_modules" : [ "sys_feedback2" ],
                     "inputs"     : [
                                     { "module-summary.config.json" : "once" }
                                    ]
@@ -47,6 +49,7 @@
                     "frequency"  : "configbase:modules:id",
                     "output"     : "modules/__modules:id__.json",
                     "clobber"    : "true",
+                    "exclude_modules" : [ "sys_feedback2" ],
                     "inputs"     : [
                                     { "module-summary.configbase.json" : "once" }
                                    ]

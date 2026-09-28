@@ -58,6 +58,7 @@ $checkrunning = $argv[ ++$pos ];
 __~debug:runjob{error_log( "jobrun 3\n", 3, "/tmp/php_errors" );}
 require_once "__docroot:html5__/__application__/ajax/joblog.php";
 require_once "__docroot:html5__/__application__/util/rejected-lrfile.php";
+require_once "__docroot:html5__/__application__/util/submission-upload-cleanup.php";
 
 if ( !getmenumodule( $id ) )
 {
@@ -163,8 +164,22 @@ if ( !$GLOBALS[ 'wascancelled' ] ) {
                 "SASSIE rejected lrfile cleanup: deleted=" .
                 $rejected_lrfile_cleanup[ 'deleted' ] . " skipped=" .
                 $rejected_lrfile_cleanup[ 'skipped' ] . "\n",
-                3, "/tmp/php_errors" );
+            3, "/tmp/php_errors" );
         }
+    }
+    $upload_cleanup = ga_cleanup_input_validation_uploads(
+        $strresults,
+        $GLOBALS[ 'getmenumodulelogdir' ],
+        $id,
+        $GLOBALS[ 'getmenumoduledir' ]
+    );
+    if ( is_array( $upload_cleanup ) ) {
+        error_log(
+            date( "Y M d H:i:s T", time() ) . " : " . $argv[ 0 ] .
+            " : input-validation upload cleanup " . json_encode( $upload_cleanup ) . "\n",
+            3,
+            "/tmp/php_errors"
+        );
     }
     if ( isset( $objresults->_disable_notify ) ) {
         $disable_notify = true;

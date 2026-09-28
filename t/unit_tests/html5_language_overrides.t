@@ -6,7 +6,7 @@ use FindBin;
 use Test::More;
 
 use lib File::Spec->catdir( $FindBin::Bin, '..', 'lib' );
-use GenAppTest qw(generate_fixture_app read_file repo_root);
+use GenAppTest qw(generate_fixture_app php_executable read_file repo_root run_command);
 
 my $repo_root = repo_root( File::Spec->catdir( $FindBin::Bin, '..' ) );
 my $generated = generate_fixture_app(
@@ -52,6 +52,7 @@ unlike( $module_php, qr/base_shared/, 'base module executable is replaced by htm
 unlike( $module_php, qr/BASE_VIEW_SENTINEL_SHOULD_NOT_REACH_HTML5|HTML5_VIEW_SENTINEL_SHOULD_NOT_REACH_HTML5/, 'html5 php output ignores inert view files' );
 
 ok( -f File::Spec->catfile( $html5, qw(etc sys_user_config.html) ), 'html5 config module html was generated' );
+ok( -f File::Spec->catfile( $html5, qw(etc sys_feedback2.html) ), 'html5 retains the legacy feedback form' );
 ok( -f File::Spec->catfile( $html5, qw(ajax sys_config sys_user_config.php) ), 'html5 config module php was generated' );
 ok( -f File::Spec->catfile( $html5, qw(ajax sys_config sys_file_manager.php) ), 'html5 configbase module php was generated' );
 
@@ -62,16 +63,27 @@ my $base_php = read_file( File::Spec->catfile( $html5, qw(ajax html5_menu shared
 like( $settings_html, qr/Diagnostic logging for next submitted job/, 'opted-in HTML5 settings include the one-job diagnostic control' );
 like( $settings_php, qr/GENAPP_FIXTURE_DIAGNOSTICS/, 'settings endpoint persists the fixed declared environment assignment in the browser session' );
 like( $pull_php, qr/next_job_environment/, 'settings pull endpoint reports the armed one-job setting' );
-like( $base_php, qr/env GENAPP_FIXTURE_DIAGNOSTICS=DEBUG/, 'submitted commands receive the fixed declared environment assignment' );
+like(
+    $base_php,
+    qr/\$cmd = "env " \. \$next_job_environment\[ 'variable' \] \. "=" \. \$next_job_environment\[ 'value' \] \. " " \. \$cmd/,
+    'submitted commands receive the fixed declared environment assignment'
+);
 like( $base_php, qr/Could not create the job record/, 'one-job setting is not consumed when job creation fails' );
+my $php = php_executable();
+SKIP: {
+skip 'php is not available on PATH; generated PHP syntax checks are deferred', 3 if !$php;
 for my $php_file (
     File::Spec->catfile( $html5, qw(ajax sys_config sys_user_config.php) ),
     File::Spec->catfile( $html5, qw(ajax sys_config sys_pull.php) ),
     File::Spec->catfile( $html5, qw(ajax html5_menu shared.php) ),
 ) {
-    my $lint = qx{php -l '$php_file' 2>&1};
-    is( $? >> 8, 0, "generated " . $php_file . " passes PHP syntax validation" )
+    my ( $status, $lint ) = run_command(
+        cwd => $app_dir,
+        cmd => [ $php, '-l', $php_file ],
+    );
+    is( $status, 0, "generated " . $php_file . " passes PHP syntax validation" )
         or diag($lint);
+}
 }
 
 my $override_marker = File::Spec->catfile( $html5, 'override_marker.txt' );

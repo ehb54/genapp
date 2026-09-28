@@ -602,6 +602,16 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
     }
   }
 
+  const chooseTestScenario = (event: React.FormEvent<HTMLSelectElement>) => {
+    // Safari emits `input` for a select before `change`.  If that input
+    // reaches the workbench form, its ordinary-input synchronization renders
+    // this controlled select with the previous choice before React receives
+    // the change event.  A catalog choice is UI state, not a module input, so
+    // retain it on both events and keep both out of the module-value bridge.
+    event.stopPropagation()
+    setScenarioChoice(event.currentTarget.value)
+  }
+
   const toggleWorkspaceExpanded = () => {
     setWorkspaceExpanded((current) => {
       if (current) setInputRailCollapsed(false)
@@ -702,7 +712,7 @@ export function ScientificWorkbench({ module, fields, view, bridge, submitted: i
                     <CardDescription>Loads declared inputs and files; review them before running.</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <select aria-label="Test scenario" value={scenarioChoice} onChange={(event) => setScenarioChoice(event.target.value)}>
+                    <select aria-label="Test scenario" value={scenarioChoice} onInput={chooseTestScenario} onChange={chooseTestScenario}>
                       <option value="">Select a documented or test case</option>
                       {testScenarios.catalog.scenarios.map((scenario) => (
                         <option key={scenario.id} value={scenario.id}>{scenario.label}</option>

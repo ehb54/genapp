@@ -6,7 +6,7 @@ use FindBin;
 use Test::More;
 
 use lib File::Spec->catdir( $FindBin::Bin, 'lib' );
-use GenAppTest qw(generate_fixture_app read_file repo_root run_command);
+use GenAppTest qw(generate_fixture_app php_executable read_file repo_root run_command);
 
 my $repo_root = repo_root($FindBin::Bin);
 my $generated = generate_fixture_app(
@@ -26,6 +26,8 @@ my $results_php = read_file( File::Spec->catfile( $app_dir, qw(output html5 ajax
 my $jobrun_php  = read_file( File::Spec->catfile( $app_dir, qw(output html5 util jobrun.php) ) );
 my $rejected_lrfile_php = read_file(
     File::Spec->catfile( $app_dir, qw(output html5 util rejected-lrfile.php) ) );
+my $upload_cleanup_php = read_file( File::Spec->catfile(
+    $app_dir, qw(output html5 util submission-upload-cleanup.php) ) );
 my $sys_user_config_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_user_config.php) ) );
 my $sys_login_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_login.php) ) );
 my $sys_project_php = read_file( File::Spec->catfile( $repo_root, qw(languages html5 sys sys_project.php) ) );
@@ -46,8 +48,7 @@ unlike( $module_php, qr/__modulejson__|__resource__|__executable__|__menu:id__/,
 like( $module_php, qr/\Q(hello|sample)\\\\.world\E/, 'module php preserves regex alternation and host-escaped backslash from module JSON' );
 like( $module_php, qr/\Qroute:left || route:right\E/, 'module php preserves logical OR from module JSON' );
 
-my $php = qx{command -v php 2>/dev/null};
-chomp $php;
+my $php = php_executable();
 SKIP: {
     skip 'php is not available on PATH; generated module runtime checks are deferred', 2 if !$php;
     my ( $lint_status, $lint_output ) = run_command(
@@ -91,6 +92,15 @@ like( $jobrun_php, qr/ga_cleanup_sassie_rejected_lrfiles/,
 like( $jobrun_php, qr/logjobupdate\( "finished"/, 'jobrun marks job finished' );
 like( $rejected_lrfile_php, qr/function ga_rejected_lrfile_identity_matches/,
     'generated application includes identity-checked cleanup helper' );
+like( $module_php, qr/ga_accept_submission_upload/, 'module php atomically accepts and records new submission uploads' );
+unlike( $module_php, qr/ga_submission_upload_destination/, 'module php does not use check-then-move destination selection' );
+like( $jobrun_php, qr/ga_cleanup_input_validation_uploads/, 'jobrun invokes centralized validation-failure cleanup' );
+like( $upload_cleanup_php, qr/function ga_record_submission_upload/, 'generated app contains the upload ownership helper' );
+like( $upload_cleanup_php, qr/function ga_accept_submission_upload/, 'generated app contains the transactional upload helper' );
+like( $upload_cleanup_php, qr/\@link\( \$staged_path, \$candidate \)/, 'generated app publishes uploads without overwriting existing paths' );
+like( $upload_cleanup_php, qr/function ga_cleanup_submission_uploads/, 'generated app contains the guarded cleanup helper' );
+like( $upload_cleanup_php, qr/\$metadata\[ 'dev' \].*?\$metadata\[ 'ino' \].*?\$metadata\[ 'size' \]/s, 'cleanup binds ownership to file identity and size' );
+like( $upload_cleanup_php, qr/is_link.*?!is_file.*?ga_submission_upload_path_is_within/s, 'cleanup rejects links, non-files, and paths outside the project' );
 
 like(
     $sys_user_config_php,

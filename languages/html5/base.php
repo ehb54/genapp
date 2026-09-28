@@ -28,6 +28,7 @@ require_once "__docroot:html5__/__application__/ajax/ga_filter.php";
 require_once "__docroot:html5__/__application__/ajax/getports.php";
 require_once "__docroot:html5__/__application__/ajax/details.php";
 require_once "__docroot:html5__/__application__/util/rejected-lrfile.php";
+require_once "__docroot:html5__/__application__/util/submission-upload-cleanup.php";
 $modjson = json_decode( '__modulejson__' );
 $inputs_req = $_REQUEST;
 
@@ -701,7 +702,10 @@ if ( sizeof( $_FILES ) ) {
                 exit();
             }
 #            error_log( "move_uploaded_file( " . $v[ 'tmp_name' ][ $k1 ] . ',' .  $dir . '/' . $v[ 'name' ][ $k1 ] . "\n", 3, "/var/tmp/my-errors.log");
-            if ( !move_uploaded_file( $v[ 'tmp_name' ][ $k1 ], $dir . '/' . $v[ 'name' ][ $k1 ] ) )
+            $accepted_upload = ga_accept_submission_upload(
+                $v[ 'tmp_name' ][ $k1 ], $v[ 'name' ][ $k1 ], $k,
+                $dir, $logdir, $_REQUEST[ '_uuid' ] );
+            if ( !isset( $accepted_upload[ 'ok' ] ) || !$accepted_upload[ 'ok' ] )
             {
                 if ( isset( $checkrunning ) )
                 {
@@ -749,7 +753,9 @@ if ( sizeof( $_FILES ) ) {
             {
                $_REQUEST[ $k ] = array();
             }
-            $_REQUEST[ $k ][] = $dir . '/' . $v[ 'name' ][ $k1 ];
+            $upload_path = $accepted_upload[ 'path' ];
+            $v[ 'name' ][ $k1 ] = basename( $upload_path );
+            $_REQUEST[ $k ][] = $upload_path;
             if ( !isset( $org_request[ $k ] ) || !is_array( $org_request[ $k ] ) )
             {
                $org_request[ $k ] = array();
@@ -824,7 +830,10 @@ if ( sizeof( $_FILES ) ) {
                 exit();
             }
 //         error_log( "move_uploaded_file( " . $v[ 'tmp_name' ] . ',' .  $dir . '/' . $v[ 'name' ] . "\n", 3, "/var/tmp/my-errors.log");
-            if ( !move_uploaded_file( $v[ 'tmp_name' ], $dir . '/' . $v[ 'name' ] ) )
+            $accepted_upload = ga_accept_submission_upload(
+                $v[ 'tmp_name' ], $v[ 'name' ], $k,
+                $dir, $logdir, $_REQUEST[ '_uuid' ] );
+            if ( !isset( $accepted_upload[ 'ok' ] ) || !$accepted_upload[ 'ok' ] )
             {
                 if ( isset( $checkrunning ) )
                 {
@@ -868,7 +877,9 @@ if ( sizeof( $_FILES ) ) {
             {
                $_REQUEST[ $k ] = array();
             }
-            $_REQUEST[ $k ][] = $dir . '/' . $v[ 'name' ];
+            $upload_path = $accepted_upload[ 'path' ];
+            $v[ 'name' ] = basename( $upload_path );
+            $_REQUEST[ $k ][] = $upload_path;
             if ( !isset( $org_request[ $k ] ) || !is_array( $org_request[ $k ] ) )
             {
                $org_request[ $k ] = array();

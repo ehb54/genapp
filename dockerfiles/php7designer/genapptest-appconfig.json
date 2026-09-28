@@ -1,0 +1,23 @@
+{
+    "hostip"          : "127.0.0.1",
+    "hostname"        : "localhost",
+    "messaging"       : {
+        "wsport"     : 30777,
+        "wssport"    : 80,
+        "zmqhostip"  : "127.0.0.1",
+        "zmqport"    : 30778,
+        "udphostip"  : "127.0.0.1",
+        "udpport"    : 30779,
+        "tcphostip"  : "127.0.0.1",
+        "tcpport"    : 30780,
+        "tcprport"   : 30781,
+        "tcptimeout" : 300
+    },
+    "restricted"      : {},
+    "resources"       : {
+        "local" : ""
+    },
+    "resourcedefault" : "local",
+    "submitpolicy"    : "login",
+    "lockdir"         : "/src/genapp/etc"
+}

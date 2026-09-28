@@ -298,6 +298,24 @@ const window = {
       }
     }
   },
+  CryptoJS: {
+    lib: {
+      WordArray: {
+        create(words, sigBytes) {
+          return { words, sigBytes };
+        }
+      }
+    },
+    enc: { Hex: "hex" },
+    SHA256(wordArray) {
+      const bytes = Buffer.alloc(wordArray.sigBytes);
+      for (let index = 0; index < wordArray.sigBytes; index += 1) {
+        bytes[index] = (wordArray.words[index >>> 2] >>> (24 - (index % 4) * 8)) & 0xff;
+      }
+      const value = require("crypto").createHash("sha256").update(bytes).digest("hex");
+      return { toString(encoding) { assert.strictEqual(encoding, "hex"); return value; } };
+    }
+  },
   localStorage: {
     getItem(key) {
       return window.__localStorage[key] || "{}";
@@ -3019,10 +3037,11 @@ assert(
 );
 assert(
   source.includes('function handoffSessionToWindow(targetWindowName)') &&
-    source.includes('ui2/ajax/ui2_session_handoff.php') &&
+    source.includes('new URL("ajax/ui2_session_handoff.php", window.location.href).toString()') &&
+    !source.includes('legacyEndpoint("", "ui2/ajax/ui2_session_handoff.php")') &&
     source.includes('formData.set("source_window", window.name);') &&
     source.includes('formData.set("target_window", targetWindowName);'),
-  "new-window reattach uses the UI2-local same-origin session handoff endpoint"
+  "new-window reattach resolves the UI2-local same-origin session handoff endpoint from either nested or sibling UI2 paths"
 );
 assert(
   source.includes('nodes.titleLink?.addEventListener("click", (event) => {') &&
@@ -5643,6 +5662,16 @@ async function verifyScenarioFileHydration() {
     selectedId: "",
     verification: { state: "not_run", checks: [] }
   };
+
+  const savedSubtle = window.crypto.subtle;
+  window.crypto.subtle = undefined;
+  const fallbackBytes = Uint8Array.from(Buffer.from("neutral scenario file\\n", "utf8"));
+  assert.strictEqual(
+    await hooks.sha256Hex(fallbackBytes.buffer),
+    "907729515e50a0bef905abcf2188f2fd9e0ae14734f2dd4eb8ae7b9656b686dc",
+    "scenario integrity retains SHA-256 verification when WebCrypto is unavailable"
+  );
+  window.crypto.subtle = savedSubtle;
 
   let replacementPrompts = 0;
   window.confirm = () => { replacementPrompts += 1; return false; };

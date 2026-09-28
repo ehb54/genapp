@@ -8,9 +8,9 @@ use JSON::PP qw(decode_json encode_json);
 use Test::More;
 
 use lib File::Spec->catdir( $FindBin::Bin, 'lib' );
-use GenAppTest qw(repo_root);
+use GenAppTest qw(php_executable repo_root);
 
-my $php = $ENV{PHP} || find_executable('php');
+my $php = php_executable();
 plan skip_all => 'php is not available on PATH; password-reset contract checks are deferred' if !$php;
 
 my $repo_root = repo_root($FindBin::Bin);
@@ -213,15 +213,6 @@ sub write_file {
     close $handle or die "close $path: $!";
 }
 
-sub find_executable {
-    my ($name) = @_;
-    for my $directory ( split /:/, $ENV{PATH} || q{} ) {
-        my $path = File::Spec->catfile( $directory, $name );
-        return $path if -x $path;
-    }
-    return;
-}
-
 sub render_handler {
     my ( $template, $handler, $root ) = @_;
     my $source = read_file($template);
@@ -233,6 +224,7 @@ sub render_handler {
     $source =~ s/__~register:requireapproval\{1\}0/0/g;
     $source =~ s/__~usercolors\{1\}0/0/g;
     $source =~ s/__~xsedeproject\{1\}0/0/g;
+    $source =~ s/__~external_auth_policy\{[^\n]*\}//g;
     $source =~ s/__~debug:basemylog\{[^\n]*\}//g;
     write_file( $handler, $source );
 }

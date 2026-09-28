@@ -200,6 +200,8 @@ foreach my $l ( keys %langs )
         my $inputs  = $$use{ "inputs" };
         my $minify  = $$use{ "minify" };
         my $closure = $$use{ "closure" };
+        my %excluded_module_ids = map { $_ => 1 }
+            @{ ref( $$use{ "exclude_modules" } ) eq 'ARRAY' ? $$use{ "exclude_modules" } : [] };
         my $doexec  = $$use{ "execute" } =~ /^(atend|true)/ ? $$use{ "execute" } : 0;
         if ( $minify ) {
             my $mok = 0;
@@ -311,6 +313,20 @@ foreach my $l ( keys %langs )
                 : $module_id_key;
             if ( $freq =~ /^(menu|config|configbase):modules:id$/ && !$current_module_id ) {
                 $rplc_menu = next_json( $ref_menu, $module_id_match_key );
+                next;
+            }
+            if ( $freq =~ /^(menu|config|configbase):modules:id$/ &&
+                 $excluded_module_ids{ $current_module_id } ) {
+                my $excluded_output = $output;
+                $excluded_output =~ s/__modules:id__/$current_module_id/g;
+                $excluded_output =~ s/__menu:modules:id__/$current_module_id/g;
+                my $excluded_path = "output/$l/$excluded_output";
+                if ( -f $excluded_path || -l $excluded_path ) {
+                    unlink $excluded_path
+                        or $error .= "language $l: could not remove excluded module output $excluded_path: $!\n";
+                }
+                my $next_key = $freq =~ /^(config|configbase):modules:id$/ ? $module_id_match_key : $freq;
+                $rplc_menu = next_json( $ref_menu, $next_key );
                 next;
             }
             $$rplc_menu{ 'modules:id' } = $current_module_id

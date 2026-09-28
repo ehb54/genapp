@@ -1799,6 +1799,25 @@
     return url.toString();
   }
 
+  async function sha256Hex(bytes) {
+    if (window.crypto?.subtle) {
+      const digest = await window.crypto.subtle.digest("SHA-256", bytes);
+      return Array.from(new Uint8Array(digest)).map((value) => value.toString(16).padStart(2, "0")).join("");
+    }
+    const cryptoJs = window.CryptoJS;
+    if (!cryptoJs?.SHA256 || !cryptoJs?.lib?.WordArray?.create || !cryptoJs?.enc?.Hex) {
+      throw new Error("This browser cannot verify scenario file integrity.");
+    }
+    const octets = new Uint8Array(bytes);
+    const words = [];
+    octets.forEach((value, index) => {
+      const wordIndex = index >>> 2;
+      words[wordIndex] = (words[wordIndex] || 0) | value << (24 - (index % 4) * 8);
+    });
+    const wordArray = cryptoJs.lib.WordArray.create(words, octets.byteLength);
+    return cryptoJs.SHA256(wordArray).toString(cryptoJs.enc.Hex);
+  }
+
   async function testScenarioAssetFile(scenarioId, fieldId, declaration, repeatIndex = null) {
     const response = await fetch(testScenarioAssetUrl(scenarioId, fieldId, repeatIndex), {
       cache: "no-cache",
@@ -1811,11 +1830,7 @@
     if (bytes.byteLength !== declaration.size) {
       throw new Error(`Scenario file ${declaration.filename} has an unexpected size.`);
     }
-    if (!window.crypto?.subtle) {
-      throw new Error("This browser cannot verify scenario file integrity.");
-    }
-    const digest = await window.crypto.subtle.digest("SHA-256", bytes);
-    const sha256 = Array.from(new Uint8Array(digest)).map((value) => value.toString(16).padStart(2, "0")).join("");
+    const sha256 = await sha256Hex(bytes);
     if (sha256 !== declaration.sha256) {
       throw new Error(`Scenario file ${declaration.filename} failed its integrity check.`);
     }
@@ -2113,7 +2128,7 @@
         throw new Error(`${moduleId} is not wired as a UI2 utility.`);
       }
       showUtilityOverlay(utilityLabel(module), content, {
-        dialogClass: (moduleId === "sys_feedback" || moduleId === "sys_feedback2") ? "ui2-feedback-dialog" : ""
+        dialogClass: moduleId === "sys_feedback" ? "ui2-feedback-dialog" : ""
       });
     } catch (error) {
       const message = el("div", "ui2-error", `Could not load ${moduleId}: ${error.message}`);
@@ -5509,7 +5524,7 @@
     if (moduleId === "sys_register") {
       return renderRegisterTool(module, fields);
     }
-    if (moduleId === "sys_feedback" || moduleId === "sys_feedback2") {
+    if (moduleId === "sys_feedback") {
       return renderFeedbackTool(module, fields);
     }
     return null;
@@ -5522,7 +5537,6 @@
       "sys_file_manager",
       "sys_user_config",
       "sys_feedback",
-      "sys_feedback2",
       "sys_logoff"
     ].includes(moduleId);
   }
@@ -5541,7 +5555,7 @@
     if (id === "sys_user_config") {
       return "Settings";
     }
-    if (id === "sys_feedback" || id === "sys_feedback2") {
+    if (id === "sys_feedback") {
       return "Feedback";
     }
     if (id === "sys_logoff") {
@@ -6252,7 +6266,7 @@
 
   function utilityAllowsAnonymous(module) {
     const moduleId = module?.moduleid || module?.id || "";
-    return moduleId === "sys_register" || moduleId === "sys_feedback" || moduleId === "sys_feedback2";
+    return moduleId === "sys_register" || moduleId === "sys_feedback";
   }
 
   async function setLegacyProject(project, options = {}) {
@@ -7032,7 +7046,7 @@
   async function handoffSessionToWindow(targetWindowName) {
     // UI2 assets are exposed below the legacy HTML5 document root. Keep this
     // endpoint in the UI2 subtree so target-specific generation supplies it.
-    const endpoint = legacyEndpoint("", "ui2/ajax/ui2_session_handoff.php");
+    const endpoint = new URL("ajax/ui2_session_handoff.php", window.location.href).toString();
     const formData = new FormData();
     formData.set("source_window", window.name);
     formData.set("target_window", targetWindowName);
@@ -14096,6 +14110,7 @@
       applyPendingReactWorkbenchInputValues,
       validTestScenarioCatalog,
       testScenarioAssetUrl,
+      sha256Hex,
       testScenarioAssetFile,
       fetchTestScenarioFiles,
       clearTestScenarioFileSelections,
