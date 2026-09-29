@@ -8759,13 +8759,14 @@
       if (getInput) {
         if (payload?._getinput) {
           applyInputPayload(payload._getinput, { reselectLocalFiles: true });
-          selectTestScenarioForInputs(payload._getinput);
+          const restoredInput = savedInputSummaryValues(payload._getinput);
+          selectTestScenarioForInputs(restoredInput);
           if (isReactWorkbenchView(state.view)) {
             notifyWorkbenchReattached(
               uuid,
-              payload._getinput,
+              restoredInput,
               savedInputRestoreError(payload, uuid, payload._getinput),
-              savedInputRestoreWarnings(payload._getinput)
+              savedInputRestoreWarnings(restoredInput)
             );
           }
         } else if (isReactWorkbenchView(state.view)) {
@@ -8831,7 +8832,14 @@
   function savedInputSummaryValues(inputs) {
     const summary = Object.assign({}, inputs || {});
     (state.module?.fields || []).forEach((field) => {
-      if (!fieldIsFileLike(field) || valueList(summary[field.id]).some((value) => stringValue(value).trim())) {
+      if (!fieldIsFileLike(field)) {
+        return;
+      }
+      if (!savedInputFileFieldIsActive(field)) {
+        delete summary[field.id];
+        return;
+      }
+      if (valueList(summary[field.id]).some((value) => stringValue(value).trim())) {
         return;
       }
       const restoredValue = state.values?.[field.id];
@@ -8840,6 +8848,19 @@
       }
     });
     return summary;
+  }
+
+  function savedInputFileFieldIsActive(field) {
+    if (!fieldIsFileLike(field) || !field?.repeat || fileFieldUsesRepeatTableRows(field)) {
+      return true;
+    }
+    const form = document.getElementById("ui2-form");
+    const row = form?.querySelector(
+      `.ui2-field[data-field-id="${cssEscape(field.id)}"]`
+    );
+    // Fail open for an unavailable renderer row so older/native payloads keep
+    // their established summary and warning behavior.
+    return !row || !row.classList.contains("ui2-hidden");
   }
 
   function savedInputRestoreError(payload, uuid, inputs = null) {
@@ -8858,7 +8879,9 @@
       return [];
     }
     return (state.module?.fields || []).flatMap((field) => {
-      if (!fieldIsFileLike(field) || !fileModes(field.type).includes("local")) {
+      if (!fieldIsFileLike(field)
+          || !fileModes(field.type).includes("local")
+          || !savedInputFileFieldIsActive(field)) {
         return [];
       }
       const savedValues = savedLocalFileValues(inputs, field);

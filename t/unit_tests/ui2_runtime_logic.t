@@ -4075,6 +4075,98 @@ assert.deepStrictEqual(
   ["optional_file (optional.dat) was selected from this browser and must be selected again before submitting a new run."],
   "UI2 still warns for a conditional scalar file that has no restored server selection"
 );
+
+const conditionalSummaryRows = {
+  prepared_file: {
+    classList: { contains: (name) => name === "ui2-hidden" }
+  },
+  reduced_file: {
+    classList: { contains: () => false }
+  }
+};
+const conditionalSummaryForm = {
+  querySelector(selector) {
+    return Object.entries(conditionalSummaryRows).find(([id]) => (
+      selector.includes(`data-field-id=\"\${id}\"`)
+    ))?.[1] || null;
+  }
+};
+document.getElementById = (id) => id === "ui2-form" ? conditionalSummaryForm : null;
+hooks.state.module = {
+  fields: [
+    { id: "input_mode", type: "listbox", repeater: "true" },
+    { id: "prepared_file", label: "Prepared file", type: "lrfile", repeat: "input_mode:prepared" },
+    { id: "reduced_file", label: "Reduced file", type: "lrfile", repeat: "input_mode:reduced" },
+    { id: "always_file", label: "Always file", type: "lrfile" }
+  ]
+};
+hooks.state.serverSelections = {};
+const conditionalSavedInputs = {
+  input_mode: "reduced",
+  prepared_file: ["remembered_prepared.dat"],
+  reduced_file: ["submitted_reduced.dat"],
+  always_file: ["always.dat"]
+};
+let filteredConditionalSummary = hooks.savedInputSummaryValues(conditionalSavedInputs);
+assert.strictEqual(
+  Object.prototype.hasOwnProperty.call(filteredConditionalSummary, "prepared_file"),
+  false,
+  "saved-input summaries omit an inactive scalar conditional file"
+);
+assert.deepStrictEqual(
+  filteredConditionalSummary.reduced_file,
+  ["submitted_reduced.dat"],
+  "saved-input summaries retain the active scalar conditional file"
+);
+assert.deepStrictEqual(
+  filteredConditionalSummary.always_file,
+  ["always.dat"],
+  "saved-input summaries retain an unconditional file"
+);
+assert.deepStrictEqual(
+  hooks.savedInputRestoreWarnings(conditionalSavedInputs),
+  [
+    "Reduced file (submitted_reduced.dat) was selected from this browser and must be selected again before submitting a new run.",
+    "Always file (always.dat) was selected from this browser and must be selected again before submitting a new run."
+  ],
+  "reselection warnings omit the inactive file and retain active and unconditional files"
+);
+hooks.state.serverSelections = {
+  "reduced_file:": {
+    id: "reduced_file",
+    encodedPath: "Li9zdWJtaXR0ZWRfcmVkdWNlZC5kYXQ="
+  }
+};
+assert.deepStrictEqual(
+  hooks.savedInputRestoreWarnings(conditionalSavedInputs),
+  ["Always file (always.dat) was selected from this browser and must be selected again before submitting a new run."],
+  "an active restored server file remains exempt from the local-file warning"
+);
+hooks.state.serverSelections = {};
+
+conditionalSummaryRows.prepared_file.classList.contains = () => false;
+conditionalSummaryRows.reduced_file.classList.contains = (name) => name === "ui2-hidden";
+filteredConditionalSummary = hooks.savedInputSummaryValues(Object.assign({}, conditionalSavedInputs, {
+  input_mode: "prepared"
+}));
+assert.deepStrictEqual(
+  filteredConditionalSummary.prepared_file,
+  ["remembered_prepared.dat"],
+  "switching the controller reverses which conditional file is reported"
+);
+assert.strictEqual(
+  Object.prototype.hasOwnProperty.call(filteredConditionalSummary, "reduced_file"),
+  false,
+  "switching the controller omits the newly inactive conditional file"
+);
+
+document.getElementById = () => null;
+filteredConditionalSummary = hooks.savedInputSummaryValues(conditionalSavedInputs);
+assert.deepStrictEqual(
+  filteredConditionalSummary.prepared_file,
+  ["remembered_prepared.dat"],
+  "an unavailable renderer row fails open for saved-input compatibility"
+);
 document.querySelectorAll = (selector) => (
   selector === "[data-field-id=\\\"data_file_name\\\"]" ? [replayControl] : []
 );
