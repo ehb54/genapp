@@ -496,6 +496,16 @@ current task and does not carry forward.
 
 ### Other SASSIE policy routing
 
+- Apply SASSIE output filename preferences prospectively to new non-canonical,
+  human-readable files. Prefer `.txt` for narrative or otherwise generic text.
+  Avoid new `.csv` and generic `.dat` outputs; use `.tsv` when a rectangular
+  text table is materially useful and `.json` only when structured metadata or
+  integration requires it. Do not rename or reformat established outputs
+  solely for consistency; migrations require explicit module-specific review
+  across SASSIE producers, application consumers, tests, fixtures, and public
+  contracts. Canonical or descriptive scientific formats such as PDB, PSF,
+  DCD, HDF5, FASTA, CIF, and mmCIF are unaffected. This preference is
+  SASSIE-specific and does not constrain unrelated GenApp applications.
 - External-authentication presentation and generated-handler opt-in are governed
   by `doc/UI2-Core-Extension-Policy.md`; provider protocol, identity linking,
   account creation, and deployment settings remain application-owned.
