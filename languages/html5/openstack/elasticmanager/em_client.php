@@ -30,6 +30,10 @@ airavata job status messages
                                  one container per frame, so a low instantaneous
                                  reading is normal between frames but a sustained
                                  low load15 on a held slot is not
+    --nowait                   : with --acquire, fail at once when no instance
+                                 is idle instead of waiting for one. a miss
+                                 prints the usual "error : could not acquire
+                                 instance"
 
 __EOD;
 
@@ -80,6 +84,11 @@ while( count( $u_argv ) && substr( $u_argv[ 0 ], 0, 1 ) == "-" ) {
             $probe = true;
             break;
         }
+        case "--nowait": {
+            array_shift( $u_argv );
+            $nowait = true;
+            break;
+        }
       default:
         error_exit( "\nUnknown option '$u_argv[0]'\n\n$notes" );
     }
@@ -96,6 +105,10 @@ if ( isset( $acquire ) && isset( $release ) ) {
     error_exit( "--acquire & --release are mutually exclusive" );
 }
 
+if ( isset( $nowait ) && !isset( $acquire ) ) {
+    error_exit( "--nowait only applies to --acquire" );
+}
+
 if ( isset( $status ) || isset( $probe ) ) {
     echo $em_openstack->status( false, isset( $probe ) );
 }
@@ -104,12 +117,18 @@ if ( isset( $acquire ) ) {
     $number = -1;
     $ip     = "";
     
-    if ( $em_openstack->acquire( $acquire, $acquire_tag, $number, $ip ) ) {
+    if ( $em_openstack->acquire( $acquire, $acquire_tag, $number, $ip, !isset( $nowait ) ) ) {
         ## got one
         echo "$number $ip\n";
         exit( 0 );
     }
+    if ( isset( $nowait ) ) {
+        $em_openstack->log( "em_client.php : acquire tag $acquire_tag not granted, --nowait so not waiting" );
+    }
     echo "error : could not acquire instance\n";
+    ## exit -1 parses as ( exit ) - 1, so this exits 0, and callers depend on
+    ## it: saxsafold's run_cmd() aborts the job on a non zero status, so it is
+    ## stdout that tells it the acquire failed. do not "fix" this to exit( -1 )
     exit -1;
 }
 
