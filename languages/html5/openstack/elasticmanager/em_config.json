@@ -19,6 +19,7 @@
         ,"history"     : "em_probe.log"
         ,"min_pct"     : 50
         ,"consecutive" : 48
+        ,"repeat"      : 3600
     }
     ,"flavors" : {
         "m3.2xl" : {

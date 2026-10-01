@@ -45,10 +45,10 @@ class em_openstack {
     ## why the last probe_instance() failed, so --probe can say more than "?"
     public $probe_error = "";
 
-    ## consecutive low cpu readings per slot, and whether this episode has
-    ## already been warned about. process local on purpose, see probe_check()
-    private $probe_low     = [];
-    private $probe_alerted = [];
+    ## low cpu tracking per slot: which job it belongs to, consecutive low
+    ## readings, when the low stretch began, and when we last warned (0 = not
+    ## yet). see probe_check() and probe_track_new()
+    private $probe_track = [];
     
     function __construct( $debug = false, $configfile = "em_config.json" ) {
         $this->debug       = $debug;
@@ -492,65 +492,138 @@ class em_openstack {
         return true;
     }
 
-    ## probe_check() - warn once when a held slot stays under probe:min_pct for
-    ## probe:consecutive readings in a row.
+    ## probe_check() - warn when a held slot stays under probe:min_pct for
+    ## probe:consecutive readings in a row, and keep warning every probe:repeat
+    ## seconds for as long as it stays there.
     ##
     ## only held slots: an idle instance is legitimately near nothing, and the
     ## floor is not zero anyway, a kworker stuck in D state since boot puts it
     ## around 2% of a 64 core box.
     ##
-    ## consecutive readings matter because load15 is a 15 minute average that
-    ## decays: a working job that pauses between waxsis frames slides down for
-    ## a while before recovering, and a single low reading proves nothing. an
-    ## unreadable probe is not counted either way, it is a different failure and
-    ## is already recorded with its reason in the history.
+    ## the window has to be long. load15 is a 15 minute average and a working
+    ## job does its between frame processing elsewhere, so a healthy job can sit
+    ## at the idle floor for well over an hour. the two cases separate on how
+    ## long the stretch lasts, not on how low it goes.
     ##
-    ## the counters live in this process, so a daemon restart just delays an
-    ## alert rather than losing correctness.
+    ## an unreadable probe is not counted either way: it is a different failure,
+    ## and it is already recorded with its reason in the history.
 
     function probe_check( $slot, $v, $pct ) {
         if ( !isset( $this->em_config->probe->min_pct ) ) {
             return;
         }
 
-        if ( !isset( $v->use_status ) || $v->use_status != "in use" || !is_numeric( $pct ) ) {
+        $tag = ( isset( $v->use_status ) && $v->use_status == "in use" && !empty( $v->use_id ) ) ? $v->use_id : "";
+
+        ## the counters belong to a job, not a slot. a slot released and then
+        ## acquired by another job must start clean, or the new job inherits
+        ## the old one's streak and its warned state. a daemon restart seeds
+        ## from the history instead, so it does not go quiet for a whole window.
+
+        if ( !isset( $this->probe_track[ $slot ] ) ) {
+            $this->probe_track[ $slot ] = $this->probe_track_new( $slot, $tag, true );
+        } else if ( $this->probe_track[ $slot ]->tag !== $tag ) {
+            $this->probe_track[ $slot ] = $this->probe_track_new( $slot, $tag, false );
+        }
+
+        if ( !strlen( $tag ) || !is_numeric( $pct ) ) {
             return;
         }
 
-        $min  = $this->em_config->probe->min_pct;
-        $need = isset( $this->em_config->probe->consecutive ) ? $this->em_config->probe->consecutive : 3;
+        $t      = $this->probe_track[ $slot ];
+        $min    = $this->em_config->probe->min_pct;
+        $need   = isset( $this->em_config->probe->consecutive ) ? $this->em_config->probe->consecutive : 3;
+        $repeat = isset( $this->em_config->probe->repeat ) ? $this->em_config->probe->repeat : 0;
+        $now    = time();
 
         if ( $pct >= $min ) {
-            if ( !empty( $this->probe_alerted[ $slot ] ) ) {
-                $this->log( sprintf( "probe: slot %s back above %d%% cpu (%d%%)", $slot, $min, $pct ) );
+            if ( $t->warned ) {
+                $this->log( sprintf( "probe: slot %s back above %d%% cpu (%d%%) after %s low", $slot, $min, $pct, $this->held_for( $t->since ) ) );
             }
 
-            $this->probe_low[ $slot ]     = 0;
-            $this->probe_alerted[ $slot ] = false;
+            $t->low    = 0;
+            $t->since  = 0;
+            $t->warned = 0;
             return;
         }
 
-        $this->probe_low[ $slot ] = ( isset( $this->probe_low[ $slot ] ) ? $this->probe_low[ $slot ] : 0 ) + 1;
+        if ( !$t->low ) {
+            $t->since = $now;
+        }
 
-        $this->debug_echo( sprintf( "probe_check: slot %s at %d%%, %d of %d low readings", $slot, $pct, $this->probe_low[ $slot ], $need ) );
+        ++$t->low;
 
-        if ( $this->probe_low[ $slot ] < $need || !empty( $this->probe_alerted[ $slot ] ) ) {
+        $this->debug_echo( sprintf( "probe_check: slot %s at %d%%, %d of %d low readings", $slot, $pct, $t->low, $need ) );
+
+        if ( $t->low < $need ) {
             return;
         }
 
-        ## one alert per episode, not one every interval until it recovers
+        if ( $t->warned && ( $repeat <= 0 || $now - $t->warned < $repeat ) ) {
+            return;
+        }
 
-        $this->probe_alerted[ $slot ] = true;
-
-        $this->echo_warn( sprintf( "slot %s looks idle: %d%% cpu, under %d%% for %d consecutive probes %ds apart. held %s by %s, ip %s"
+        $this->echo_warn( sprintf( "slot %s %s: %d%% cpu, under %d%% for %s (%d probes). held %s by %s, ip %s. if the job is gone: php em_client.php --release %s"
                                    ,$slot
+                                   ,$t->warned ? "still idle" : "looks idle"
                                    ,$pct
                                    ,$min
-                                   ,$this->probe_low[ $slot ]
-                                   ,isset( $this->em_config->probe->interval ) ? $this->em_config->probe->interval : 0
+                                   ,$this->held_for( $t->since )
+                                   ,$t->low
                                    ,$this->held_for( isset( $v->acquired_at ) ? $v->acquired_at : 0 )
-                                   ,empty( $v->use_id ) ? "unknown" : $v->use_id
-                                   ,isset( $v->network ) ? $v->network : "?" ) );
+                                   ,$tag
+                                   ,isset( $v->network ) ? $v->network : "?"
+                                   ,$slot ) );
+
+        $t->warned = $now;
+    }
+
+    ## probe_track_new() - fresh low cpu tracking for a slot.
+    ##
+    ## with $seed, rebuild the job's trailing low stretch from the probe history.
+    ## only done the first time this process sees a slot, i.e. after a restart:
+    ## a job that has just changed hands has no history worth reading. the time
+    ## of the last warning is not recoverable, so a restart during an ongoing
+    ## stretch warns again straight away, which is right for an unresolved
+    ## problem.
+
+    function probe_track_new( $slot, $tag, $seed ) {
+        $t = (object)[ "tag" => $tag, "low" => 0, "since" => 0, "warned" => 0 ];
+
+        if ( !$seed
+             || !strlen( $tag )
+             || !isset( $this->em_config->probe->history )
+             || !file_exists( $this->em_config->probe->history )
+             || !( $fh = fopen( $this->em_config->probe->history, "r" ) ) ) {
+            return $t;
+        }
+
+        $min = $this->em_config->probe->min_pct;
+
+        while ( ( $line = fgets( $fh ) ) !== false ) {
+            if ( !preg_match( '/^(\S+ \S+) slot=(\S+) .*\bpct=(\S+) .*\btag=(\S+)/', $line, $m )
+                 || $m[ 2 ] != $slot
+                 || $m[ 4 ] !== $tag
+                 || !is_numeric( $m[ 3 ] ) ) {
+                continue;
+            }
+
+            if ( $m[ 3 ] < $min ) {
+                if ( !$t->low ) {
+                    $t->since = strtotime( $m[ 1 ] );
+                }
+                ++$t->low;
+            } else {
+                $t->low   = 0;
+                $t->since = 0;
+            }
+        }
+
+        fclose( $fh );
+
+        $this->debug_echo( sprintf( "probe_track_new: slot %s seeded with %d low readings from history", $slot, $t->low ) );
+
+        return $t;
     }
 
     ## held_for() - how long a slot has been held, from acquired_at
