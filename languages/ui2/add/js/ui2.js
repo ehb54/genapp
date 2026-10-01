@@ -1355,7 +1355,41 @@
         releaseUrl
       };
     });
-    return components.length && components.every(Boolean) ? components : null;
+    if (!components.length || !components.every(Boolean)) {
+      return null;
+    }
+    const revisions = normalizeSourceRevisionMetadata(appMap.sourceRevisionMetadata);
+    return components.map((component) => ({
+      ...component,
+      sourceRevision: deploymentSourceRevision(component.componentId, revisions) || component.sourceRevision
+    }));
+  }
+
+  function deploymentSourceRevision(componentId, revisions) {
+    if (componentId === "genapp_zazzie" && /^[0-9a-f]{40}$/.test(stringValue(appMap.appSourceRevision))) {
+      return appMap.appSourceRevision;
+    }
+    if (componentId === "genapp" && /^[0-9a-f]{40}$/.test(stringValue(appMap.genappSourceRevision))) {
+      return appMap.genappSourceRevision;
+    }
+    return revisions?.get(componentId) || null;
+  }
+
+  function normalizeSourceRevisionMetadata(payload) {
+    if (!payload || payload.schema_version !== 1 || !Array.isArray(payload.components)) {
+      return null;
+    }
+    const revisions = new Map();
+    for (const component of payload.components.slice(0, 32)) {
+      const componentId = stringValue(component?.component_id).trim();
+      const revision = stringValue(component?.revision).trim();
+      if (!/^[a-z0-9][a-z0-9_-]{0,63}$/.test(componentId) ||
+          !/^[0-9a-f]{40}$/.test(revision) || revisions.has(componentId)) {
+        return null;
+      }
+      revisions.set(componentId, revision);
+    }
+    return revisions.size ? revisions : null;
   }
 
   function releaseStatusText(component) {

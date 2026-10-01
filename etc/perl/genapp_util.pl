@@ -1373,6 +1373,44 @@ sub genapp_version {
     return $version;
 }
 
+sub source_revision_metadata {
+    my ( $application_path, $declared_path ) = @_;
+    return "null" if !defined $declared_path || !length $declared_path;
+    die "source_revision_metadata_file must be a relative application path\n"
+        if $declared_path =~ m{^/} || $declared_path =~ m{(?:^|/)\.\.(?:/|$)};
+
+    my $application_root = abs_path( $application_path );
+    my $metadata_path = abs_path( "$application_path/$declared_path" );
+    die "source revision metadata is unavailable: $declared_path\n"
+        if !defined $application_root || !defined $metadata_path || !-f $metadata_path;
+    die "source revision metadata escapes the application directory: $declared_path\n"
+        if index( $metadata_path, "$application_root/" ) != 0;
+
+    open my $fh, '<', $metadata_path
+        or die "cannot read source revision metadata $declared_path: $!\n";
+    local $/;
+    my $content = <$fh>;
+    close $fh;
+    my $metadata = eval { decode_json( $content ) };
+    die "invalid source revision metadata JSON: $declared_path\n"
+        if $@ || ref( $metadata ) ne 'HASH';
+    die "unsupported source revision metadata schema: $declared_path\n"
+        if !defined $$metadata{ 'schema_version' } || $$metadata{ 'schema_version' } != 1 ||
+           ref( $$metadata{ 'components' } ) ne 'ARRAY' || !@{ $$metadata{ 'components' } };
+
+    my %seen;
+    foreach my $component ( @{ $$metadata{ 'components' } } ) {
+        die "invalid source revision metadata component: $declared_path\n"
+            if ref( $component ) ne 'HASH' ||
+               !defined $$component{ 'component_id' } ||
+               $$component{ 'component_id' } !~ /^[a-z0-9][a-z0-9_-]{0,63}$/ ||
+               $seen{ $$component{ 'component_id' } }++ ||
+               !defined $$component{ 'revision' } ||
+               $$component{ 'revision' } !~ /^[0-9a-f]{40}$/;
+    }
+    return encode_json( $metadata );
+}
+
 sub module_exists {
     my $f     = $_[0];
     my $langs = $_[1];
@@ -1565,6 +1603,13 @@ sub check_files {
                 $special_directives{ 'revision' } = $info;
                 $special_directives{ 'genappsource_revision' } = $genapp_source_revision;
                 $special_directives{ 'genappversion' } = genapp_version();
+                my $source_revision_file = $$directives{ 'source_revision_metadata_file' };
+                if ( !defined $source_revision_file && -f "$path/.local/source_revision_metadata.json" ) {
+                    $source_revision_file = ".local/source_revision_metadata.json";
+                }
+                $special_directives{ 'source_revision_metadata' } = source_revision_metadata(
+                    $path, $source_revision_file
+                );
                 print "info: $info\n";
                 my $datetimeinseconds = `date +'%s'`;
                 chomp $datetimeinseconds;

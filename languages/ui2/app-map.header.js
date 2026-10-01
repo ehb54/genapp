@@ -11,6 +11,7 @@
     genappVersion: "__genappversion__",
     genappRevision: "__revision__",
     genappSourceRevision: "__genappsource_revision__",
+    sourceRevisionMetadata: __source_revision_metadata__,
     directives: {},
     help: {},
     menus: [],

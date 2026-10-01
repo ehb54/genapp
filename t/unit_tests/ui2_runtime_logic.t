@@ -3314,6 +3314,13 @@ assert(
   "ui2 splash builds footer metadata from generated app details"
 );
 assert(
+  source.includes('function normalizeSourceRevisionMetadata(payload)') &&
+    source.includes('deploymentSourceRevision(component.componentId, revisions) || component.sourceRevision') &&
+    source.includes('componentId === "genapp_zazzie"') &&
+    source.includes('componentId === "genapp"'),
+  "UI2 overlays deployment revisions onto application-owned release records"
+);
+assert(
   source.includes('appMap.generatedOn') &&
     source.includes('appMap.appRevision') &&
     source.includes('appMap.genappRevision'),

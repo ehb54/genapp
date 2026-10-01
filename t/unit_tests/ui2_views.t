@@ -105,6 +105,7 @@ like( $app_map_js, qr/genappVersion:\s*"0\.1\.0-beta\.1"/, 'ui2 app map carries 
 like( $app_map_js, qr/appSourceRevision:\s*""/, 'non-Git fixture application has an explicit empty source revision' );
 like( $app_map_js, qr/genappSourceRevision:\s*"[0-9a-f]{40}"/, 'ui2 app map carries the GenApp Git source revision' );
 like( $app_map_js, qr/genappRevision:\s*"GenApp /, 'ui2 app map carries the GenApp revision splash metadata' );
+like( $app_map_js, qr/sourceRevisionMetadata:\s*null/, 'applications without source metadata have an explicit null app-map value' );
 like( $app_map_js, qr/directives\.docsbaseurl = "docs"/, 'ui2 app map records docsbaseurl for the docs entry point' );
 like( $app_map_js, qr/directives\.ui2_account_avatar = "pngs\/fixture-account-avatar\.png"/, 'ui2 app map records an optional application-owned account avatar' );
 like( $app_map_js, qr/directives\.ui2_module_navigation = "sidebar"/, 'ui2 app map records application opt-in to sidebar module navigation' );

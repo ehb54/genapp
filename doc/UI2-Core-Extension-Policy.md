@@ -238,6 +238,22 @@ to color, dash, marker, and marker-pattern slots, but must not interpret the
 identity, inspect module names, or change data. UI2 and authoring previews must
 call the same shared evaluator.
 
+## Deployment source provenance
+
+An application may opt into an ignored, application-local source revision
+metadata file at `.local/source_revision_metadata.json`, or declare another
+relative location through `source_revision_metadata_file`. Generation validates
+and embeds schema version 1 in the application map. UI2 may use matching
+`component_id` values to overlay exact deployment revisions onto an
+application-owned release manifest. GenApp does not discover application
+repositories, assign releases, interpret compatibility, or write the metadata.
+Missing metadata remains an explicit null value for applications that do not
+opt in; an opted-in missing or invalid file is a generation error.
+
+The application owns component selection and ordering. The metadata contains
+deployment provenance only and must not replace version, release stage, date,
+tag, or release URL fields.
+
 ## Required verification
 
 Every shared-core change requires:
