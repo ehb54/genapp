@@ -536,9 +536,21 @@ class em_openstack {
         $repeat = isset( $this->em_config->probe->repeat ) ? $this->em_config->probe->repeat : 0;
         $now    = time();
 
+        ## the end of a stretch long enough to warn about is mailed too, so a
+        ## run of warnings finishes with an all clear instead of just stopping.
+        ## tested on the stretch rather than $t->warned: after a restart the
+        ## warnings were sent by the previous process
+
         if ( $pct >= $min ) {
-            if ( $t->warned ) {
-                $this->log( sprintf( "probe: slot %s back above %d%% cpu (%d%%) after %s low", $slot, $min, $pct, $this->held_for( $t->since ) ) );
+            if ( $t->low >= $need ) {
+                $this->log( sprintf( "CLEARED: slot %s working again: %d%% cpu after %s under %d%% (%d probes). held %s by %s"
+                                     ,$slot
+                                     ,$pct
+                                     ,$this->held_for( $t->since )
+                                     ,$min
+                                     ,$t->low
+                                     ,$this->held_for( isset( $v->acquired_at ) ? $v->acquired_at : 0 )
+                                     ,$tag ) );
             }
 
             $t->low    = 0;
@@ -573,7 +585,7 @@ class em_openstack {
                                    ,$this->held_for( isset( $v->acquired_at ) ? $v->acquired_at : 0 )
                                    ,$tag
                                    ,isset( $v->network ) ? $v->network : "?"
-                                   ,$slot ) );
+                                   ,escapeshellarg( $tag ) ) );
 
         $t->warned = $now;
     }
@@ -1457,7 +1469,7 @@ class em_openstack {
     function log( $msg ) {
         file_put_contents( $this->logfile, $this->timestamp() . " - $msg\n", LOCK_EX | FILE_APPEND );
         if ( isset( $this->notify )
-             && preg_match( '/(ERROR|WARNING|STARTUP|SHUTDOWN)/', $msg ) ) {
+             && preg_match( '/(ERROR|WARNING|STARTUP|SHUTDOWN|CLEARED)/', $msg ) ) {
             $tag = "";
             if ( preg_match( '/WARNING/', $msg ) ) {
                 $tag .= " WARNING";
@@ -1470,6 +1482,9 @@ class em_openstack {
             }
             if ( preg_match( '/SHUTDOWN/', $msg ) ) {
                 $tag .= "shutdown";
+            }
+            if ( preg_match( '/CLEARED/', $msg ) ) {
+                $tag .= " CLEARED";
             }
             $host = gethostname();
             mymail( $this->notify, "[$host][$this->id] $tag", $msg );
@@ -1559,11 +1574,40 @@ class em_openstack {
         }
     }
 
-    ## could verify tag for a validated release
+    ## release() - free a slot, given its number or the tag of the job holding
+    ## it. by hand the tag is the safer form: it can only free that job's slot,
+    ## so acting on a stale warning cannot release a job that has taken the
+    ## slot since. the log line always carries the number, em_log.php reads it
+
     function release( $number ) {
         $this->debug_echo( "em_openstack: release( $number )" );
-        $this->log( "em_client.php : release $number" );
         $this->em_state->read_lock();
+
+        if ( !preg_match( '/^\d+$/', $number ) ) {
+            $tag    = $number;
+            $number = null;
+            foreach ( (array) $this->em_state->state as $k => $v ) {
+                if ( isset( $v->use_status ) && $v->use_status == "in use"
+                     && isset( $v->use_id ) && $v->use_id === $tag ) {
+                    $number = $k;
+                    break;
+                }
+            }
+            if ( $number === null ) {
+                $this->em_state->release_lock();
+                $this->echo_warn( "release $tag: no slot is held by that tag" );
+                return false;
+            }
+        }
+
+        $this->log( "em_client.php : release $number" );
+
+        if ( !isset( $this->em_state->state->$number ) ) {
+            $this->em_state->release_lock();
+            $this->echo_warn( "release $number: no such slot" );
+            return false;
+        }
+
         if ( $this->em_state->state->$number->use_status != "in use" ) {
             $this->em_state->release_lock();
             $this->echo_warn( "release $number was not in use" );
