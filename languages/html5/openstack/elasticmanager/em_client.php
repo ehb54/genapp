@@ -22,7 +22,10 @@ airavata job status messages
     --help                     : print this information and exit
 
     --acquire flavor tag       : get an instance and tag it supplementary info
-    --release id               : release an instance
+    --release id|tag           : release an instance, by slot number or by the
+                                 tag of the job holding it. the tag is safer by
+                                 hand: it cannot free a slot that another job
+                                 has taken since you looked
     --status                   : print status
     --probe                    : print status, and ask each active instance what
                                  it is doing. one ssh per instance, so slower.
