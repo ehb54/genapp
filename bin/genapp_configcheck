@@ -1,0 +1,172 @@
+#!/usr/bin/perl
+
+# genapp_configcheck: checks that the web server is set up the way a generated html5 application
+# needs it, and prints copy & paste fixes for anything missing
+
+my $gb = $ENV{ "GENAPP" } || die "$0: environment variable GENAPP must be set\n";
+
+$notes = "usage: $0 --check
+
+run in a GenApp application directory ( the one holding directives.json ) after generating html5.
+checks that the web server is set up the way the generated html5 application needs it, and prints
+copy & paste fixes for anything missing.
+
+checks:
+  results files are served with Cache-Control: no-cache
+    results keep their file names when a job is rerun. without this header a browser can keep
+    showing its cached copy of an earlier run's file for hours ( e.g. an old structure in a
+    viewer or an old csv download ). the check writes a small test file into
+    <docroot>/<application>/results/users/, requests it from the local web server and removes it.
+
+exit status: 0 all checks passed, 1 a check failed ( fix printed ), 2 a check could not run
+
+genapp runs this automatically after generating html5 when directives.json has
+  \"configcheck\" : \"on\"
+
+environment:
+  GENAPP_CONFIGCHECK_URLBASE  base url of the local web server ( default http://localhost )
+";
+
+if ( $] < 5.018 ) {
+    if ( -e "$gb/perl/bin/perl" ) {
+        $pv =`$gb/perl/bin/perl -e 'print \$];'`;
+        if ( $pv >= 5.018 ) {
+            unshift @ARGV, $0;
+            exec( "$gb/perl/bin/perl", @ARGV );
+        } else {
+            die "$gb/perl/bin/perl exists, but not a correct version of perl (needs a minimum of 5.18)\n";
+        }
+    } else {
+        die "you need to install a version of perl >= 5.18 in $gb/perl\n
+there is a script $gb/sbin/install-perl-stable to do this";
+    }
+}
+
+if ( @ARGV != 1 || $ARGV[ 0 ] ne '--check' ) {
+    print $notes;
+    exit;
+}
+
+require JSON::PP;
+
+## a check that can not run reports why and how to check by hand, and exits 2
+sub cannot_run {
+    my $msg = $_[0];
+    print "results cache check: could not run: $msg\n";
+    exit 2;
+}
+
+## HEAD request following redirects: returns ( status, { lowercase header name => value } ) of the final reply
+sub http_head {
+    my $url = $_[0];
+    my $out = `curl -skIL --max-time 10 '$url' 2>/dev/null`;
+    if ( $? == -1 || ( $? >> 8 ) == 127 ) {
+        ## no curl: core HTTP::Tiny ( http only )
+        require HTTP::Tiny;
+        my $r = HTTP::Tiny->new( timeout => 10 )->head( $url );
+        return ( $$r{ status } == 599 ? 0 : $$r{ status }, $$r{ headers } || {} );
+    }
+    my @replies = grep /^HTTP\//, split /\r?\n\r?\n/, $out;
+    return ( 0, {} ) if !@replies;
+    my $last = $replies[ -1 ];
+    my ( $status ) = $last =~ /^HTTP\/\S+\s+(\d+)/;
+    my %headers;
+    foreach my $line ( split /\r?\n/, $last ) {
+        $headers{ lc $1 } = $2 if $line =~ /^([^:\s]+):\s*(.*?)\s*$/;
+    }
+    return ( $status, \%headers );
+}
+
+## -- read directives.json for the application name and the html5 document root
+
+my $directivesfile = "directives.json";
+-e $directivesfile || cannot_run( "no $directivesfile here: run this in the application directory" );
+my $directives;
+{
+    open my $fh, $directivesfile or cannot_run( "can not open $directivesfile: $!" );
+    my $text = join '', grep !/^\s*#/, <$fh>;
+    close $fh;
+    $directives = eval { JSON::PP->new->relaxed->decode( $text ) } or cannot_run( "can not parse $directivesfile: $@" );
+}
+my $app     = $$directives{ 'application' }       || cannot_run( "$directivesfile has no application" );
+my $docroot = $$directives{ 'docroot' }{ 'html5' } || cannot_run( "$directivesfile has no docroot:html5" );
+
+my $resultsdir = "$docroot/$app/results/users";
+-d $resultsdir || cannot_run( "$resultsdir does not exist yet ( it appears once a user has run a job ), check again later" );
+
+## -- request a test file from the results tree
+
+my $urlbase = $ENV{ "GENAPP_CONFIGCHECK_URLBASE" } || "http://localhost";
+my $probe   = "_genapp_configcheck_$$.txt";
+my $file    = "$resultsdir/$probe";
+my $url     = "$urlbase/$app/results/users/$probe";
+
+{
+    my $fh;
+    open $fh, ">", $file or cannot_run( "can not write the test file $file ( $! ): run this as root or as the web server's user" );
+    print $fh "genapp configcheck\n";
+    close $fh;
+}
+my ( $status, $headers ) = http_head( $url );
+unlink $file;
+
+cannot_run( "no reply from the web server for $url: is it running and serving $docroot/$app ?" ) if !$status;
+cannot_run( "the web server answered $status for $url, expected 200: is it serving $docroot/$app at /$app ?" ) if $status != 200;
+
+my $cachecontrol = $$headers{ 'cache-control' };
+
+if ( ( $cachecontrol // '' ) =~ /\b(no-cache|no-store|max-age=0)\b/i ) {
+    print "results cache check: ok, results files are served with Cache-Control: $cachecontrol\n";
+    exit 0;
+}
+
+## -- the fix, for the web server layout found here
+
+my $appdir = `pwd`;
+chomp $appdir;
+
+my $block = <<'__BLOCK__';
+# GenApp results files keep their names across reruns: browsers must revalidate before reusing a cached copy
+# ( an unchanged file costs a 304 reply, a changed one is fetched again )
+<IfModule mod_headers.c>
+    <LocationMatch "/results/users/">
+        Header always set Cache-Control "no-cache"
+    </LocationMatch>
+</IfModule>
+__BLOCK__
+
+my $fix;
+if ( -d "/etc/apache2/conf-available" ) {
+    ## Debian / Ubuntu layout ( the GenApp images )
+    $fix = "cat > /etc/apache2/conf-available/results-nocache.conf <<'EOF'\n"
+        . $block
+        . "EOF\n"
+        . "a2enmod headers && a2enconf results-nocache && apache2ctl configtest && apache2ctl graceful\n";
+} elsif ( -d "/etc/httpd/conf.d" ) {
+    ## Red Hat layout, where mod_headers is loaded by default
+    $fix = "cat > /etc/httpd/conf.d/results-nocache.conf <<'EOF'\n"
+        . $block
+        . "EOF\n"
+        . "apachectl configtest && apachectl graceful\n";
+} else {
+    $fix = "# add this to the web server configuration, enable mod_headers and reload the web server:\n"
+        . $block;
+}
+$fix .= "cd $appdir && \$GENAPP/bin/genapp_configcheck --check\n";
+
+print "results cache check: FAILED, results files are served with "
+    . ( defined $cachecontrol ? "Cache-Control: $cachecontrol" : "no Cache-Control header" ) . "
+
+Results files keep their names when a job is rerun. Without \"Cache-Control: no-cache\" a browser
+can keep showing its cached copy of an earlier run's file for hours, e.g. an old structure in a
+viewer or an old csv download. With it the browser asks the server before reusing its copy: an
+unchanged file costs a short 304 reply, a changed one is fetched again.
+
+To fix, run these as root on the web server's host ( inside the container ); the last line repeats
+this check:
+
+$fix
+Browsers that already hold an old copy need their cache cleared once ( Ctrl+Shift+Delete in
+Firefox or Chrome, cached files only ); after that, changed files show up by themselves.
+";
+exit 1;
