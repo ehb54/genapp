@@ -1313,6 +1313,22 @@ foreach my $l ( keys %langs )
         my $res = `$cmd`;
         print "registering:$res\n" if $debug_main;
     }
+    ## optional checks of the web server setup the generated html5 application needs ( opt-in: "configcheck" : "on" );
+    ## a failed check is reported with copy & paste fix instructions among the warnings
+    if ( $l eq 'html5'
+         && $$directives{ 'configcheck' }
+         && $$directives{ 'configcheck' } ne 'false'
+         && $$directives{ 'configcheck' } ne 'off' ) {
+        print '='x80 . "\n";
+        print "configuration checks\n";
+        my $res = `$gap/bin/genapp_configcheck --check 2>&1`;
+        if ( $? >> 8 ) {
+            print "configuration checks reported a problem, see Warnings below\n";
+            $warn .= "language $l: configuration check:\n$res";
+        } else {
+            print $res;
+        }
+    }
     if ( $$directives{ 'designer' } 
          && $$directives{ 'designer' } ne 'false'
          && $$directives{ 'designer' } ne 'off' ) {
