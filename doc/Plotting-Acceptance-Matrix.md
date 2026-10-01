@@ -32,8 +32,6 @@ Status values are `not_recorded`, `passed`, `failed`, or `not_applicable`.
 | Contrast | contrast_variation_analysis | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
 | Contrast | rg_center_of_mass_distance_calculator | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
 | Simulate | torsion_angle_monte_carlo | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
-| Simulate | monomer_monte_carlo | Plotly | failed | failed | failed | failed | `ehb54/zazzie#249` remained reproducible after `a3e807c`; responsive renderer-owned title wrapping and renewed deployed acceptance are required |
-| Simulate | monomer_monte_carlo | NGL | not_recorded | not_recorded | not_recorded | not_recorded | Separate molecular-viewer contract; plot-presentation clearance does not assert NGL acceptance |
 | Simulate | tamd | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | Native live stream integrated; deployed check pending |
 | Simulate | sas_assembly | Plotly and images | not_recorded | not_recorded | not_recorded | not_recorded | Density images remain ordinary outputs |
 | Calculate | sascalc | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
@@ -49,11 +47,9 @@ Status values are `not_recorded`, `passed`, `failed`, or `not_applicable`.
 
 ## Tracking boundaries
 
-- The responsive MMC subplot-label regression in `ehb54/zazzie#249` remains
-  open after a later 2026-08-31 evaluation reproduced the title collision.
-  Restore this row to `passed` only after renewed normal, expanded/restore,
-  completion, fresh-window reattachment, and Plot Presentation Lab checks. Its
-  NGL viewer remains a separately recorded concern.
+- MMC was removed from this active inventory when support was withdrawn. The
+  failed browser evidence in `ehb54/zazzie#249` remains historical context and
+  does not define pending acceptance work or a revival plan.
 - The shared driver/runtime migration is complete when the module has the
   normal driver final-output and reattachment path.  Detailed browser results
   are recorded above as they are obtained.

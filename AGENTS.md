@@ -384,6 +384,13 @@ deployment, or SASSIE-driven use of GenApp. Do not apply SASSIE-specific module,
 science, deployment, or presentation requirements to unrelated GenApp
 applications.
 
+For the SASSIE-web support inventory, `complex_monte_carlo` (CMC),
+`energy_minimization`, and `monomer_monte_carlo` (MMC) are no longer supported.
+Do not expose them in an active or Retired application menu or use them as
+supported implementation references. Historical code, tests, and documentation
+may remain as explicitly labeled reference material unless revival is
+separately approved.
+
 ### Required cross-repository preflight
 
 Before planning, recommending architecture for, or changing SASSIE-web behavior:
