@@ -137,6 +137,29 @@
     });
   }
 
+  // Selected annotations are presentation elements, never data-axis inputs.
+  // Prepare a detached layout before Plotly computes its first autorange.
+  function prepareAnnotationPlacement(sourceLayout, selection) {
+    const placements = selection?.annotationPlacement;
+    if (!placements || !Array.isArray(sourceLayout?.annotations)) {
+      return sourceLayout;
+    }
+    let selectedCount = 0;
+    const annotations = sourceLayout.annotations.map((annotation) => {
+      if (!annotation?.name || placements[annotation.name] !== ABOVE_PLOT) {
+        return annotation;
+      }
+      const laneIndex = selectedCount++;
+      return {
+        ...annotation,
+        xref: "paper", yref: "paper", x: 0, y: 1,
+        xanchor: "left", yanchor: "bottom", showarrow: false,
+        align: "left", xshift: 0, yshift: laneIndex * 36
+      };
+    });
+    return selectedCount ? { ...sourceLayout, annotations } : sourceLayout;
+  }
+
   function annotationPlacementUpdate(plot, sourceLayout, selection, options) {
     const placements = selection?.annotationPlacement;
     const annotations = Array.isArray(sourceLayout?.annotations) ? sourceLayout.annotations : [];
@@ -162,6 +185,12 @@
     let laneHeight = 0;
     selected.forEach(({ index }) => {
       const height = nodeHeight(renderedAnnotations[index]) || fallbackAnnotationHeight;
+      update[`annotations[${index}].xref`] = "paper";
+      update[`annotations[${index}].x`] = 0;
+      update[`annotations[${index}].xanchor`] = "left";
+      update[`annotations[${index}].showarrow`] = false;
+      update[`annotations[${index}].align`] = "left";
+      update[`annotations[${index}].xshift`] = 0;
       update[`annotations[${index}].yref`] = "paper";
       update[`annotations[${index}].y`] = 1;
       update[`annotations[${index}].yanchor`] = "bottom";
@@ -206,6 +235,7 @@
   }
 
   window.GenAppPlotlyLayout = {
+    prepareAnnotationPlacement,
     annotationPlacementUpdate,
     applyAnnotationPlacement,
     applyAxisTitleOverflow,

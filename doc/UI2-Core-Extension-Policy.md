@@ -189,6 +189,13 @@ recomputes its top margin after responsive resizing. The driver supplies the
 annotation identity and text, never UI2 geometry or an ad-hoc placement flag.
 Unselected and unnamed annotations retain their declared Plotly behavior.
 
+For annotations selected as `above_plot`, UI2 supplies complete paper-coordinate
+placement and disables arrows before the first Plotly render or update. The
+subsequent measured pass adjusts the responsive lane and margin without using
+scientific axes for placement. Preparation must not mutate the saved figure;
+unnamed and unselected annotations retain their declared behavior. Application
+preview tools use the same preparation helper before rendering.
+
 An application view may opt a Plotly result group into
 `plotPresentation.axisTitleOverflow: "wrap"`. UI2 measures plain axis titles
 against their rendered axis span and font, wraps only at word boundaries and

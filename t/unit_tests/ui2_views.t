@@ -122,6 +122,8 @@ like( $app_map_js, qr/app\.help\.feedback = "Feedback help"/, 'ui2 app map recor
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
 my $plotly_surface_js = read_file( File::Spec->catfile( $ui2, qw(js plotly-surface.js) ) );
 my $plotly_layout_js = read_file( File::Spec->catfile( $ui2, qw(js plotly-layout.js) ) );
+like( $plotly_layout_js, qr/function prepareAnnotationPlacement/, 'generated helper prepares complete annotation geometry before rendering' );
+like( $ui2_js, qr/return window\.GenAppPlotlyLayout\?\.prepareAnnotationPlacement\?\./, 'common output layout preparation includes annotation policy' );
 my $ui2_css = read_file( File::Spec->catfile( $ui2, qw(css ui2.css) ) );
 like( $ui2_css, qr/\.ui2-splash-warning\[hidden\]/, 'external-auth warning banner remains absent unless an opted-in policy supplies it' );
 like( $plotly_surface_js, qr/window\.GenAppPlotlySurface/, 'generated UI2 exposes one shared final-surface resolver' );

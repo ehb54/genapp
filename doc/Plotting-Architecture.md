@@ -83,6 +83,13 @@ to the generic `plotPresentation.annotationPlacement` value `above_plot`.
 UI2 measures and stacks those opted-in annotations in a responsive top lane;
 the source figure remains unchanged for completion and reattachment.
 
+For annotations selected as `above_plot`, UI2 supplies complete paper-coordinate
+placement and disables arrows before the first Plotly render or update. The
+subsequent measured pass adjusts the responsive lane and margin without using
+scientific axes for placement. Preparation must not mutate the saved figure;
+unnamed and unselected annotations retain their declared behavior. Application
+preview tools use the same preparation helper before rendering.
+
 ## Required Implementation
 
 1. **Confirm the data source.** Use existing SASSIE outputs or existing stream

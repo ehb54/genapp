@@ -12357,7 +12357,9 @@
     if (output) {
       output._ui2PlotlyBaseTopMargin = Number(layout.margin?.t) || 96;
     }
-    return layout;
+    return window.GenAppPlotlyLayout?.prepareAnnotationPlacement?.(
+      layout, plotPresentationForOutput(output)
+    ) || layout;
   }
 
   function enabledSetting(value) {

@@ -2551,6 +2551,43 @@ assert.strictEqual(
   "Observed samples / retained observation",
   "responsive title fitting never mutates the saved source layout"
 );
+const bareAnnotationLayout = {
+  xaxis: { range: [0, 0.003], autorange: false },
+  yaxis: { range: [-5, -2] },
+  annotations: [
+    { name: "summary_note", text: "Summary" },
+    { name: "method_note", text: "Method", xref: "x", x: 4, showarrow: true },
+    { name: "inside_note", text: "Inside", xref: "x", x: 0.002, showarrow: true },
+    { text: "Unnamed", x: 0.001 }
+  ]
+};
+const bareAnnotationBefore = JSON.stringify(bareAnnotationLayout);
+const bareAnnotationSelection = { annotationPlacement: { summary_note: "above_plot", method_note: "above_plot" } };
+const preparedAnnotations = layoutPolicy.prepareAnnotationPlacement(bareAnnotationLayout, bareAnnotationSelection);
+for (const annotation of preparedAnnotations.annotations.slice(0, 2)) {
+  assert.strictEqual(annotation.xref, "paper");
+  assert.strictEqual(annotation.yref, "paper");
+  assert.strictEqual(annotation.x, 0);
+  assert.strictEqual(annotation.y, 1);
+  assert.strictEqual(annotation.xanchor, "left");
+  assert.strictEqual(annotation.yanchor, "bottom");
+  assert.strictEqual(annotation.showarrow, false);
+}
+assert.strictEqual(JSON.stringify(bareAnnotationLayout), bareAnnotationBefore, "preparation preserves saved output");
+assert.strictEqual(preparedAnnotations.annotations[2], bareAnnotationLayout.annotations[2], "unselected annotation is unchanged");
+assert.strictEqual(preparedAnnotations.annotations[3], bareAnnotationLayout.annotations[3], "unnamed annotation is unchanged");
+assert.strictEqual(preparedAnnotations.xaxis, bareAnnotationLayout.xaxis, "explicit scientific range is unchanged");
+assert.strictEqual(preparedAnnotations.yaxis, bareAnnotationLayout.yaxis);
+assert.strictEqual(layoutPolicy.prepareAnnotationPlacement(bareAnnotationLayout, {}), bareAnnotationLayout, "no opt-in is a no-op");
+const emptyAnnotationLayout = { annotations: [] };
+assert.strictEqual(layoutPolicy.prepareAnnotationPlacement(emptyAnnotationLayout, bareAnnotationSelection), emptyAnnotationLayout);
+assert.strictEqual(JSON.stringify(layoutPolicy.prepareAnnotationPlacement(preparedAnnotations, bareAnnotationSelection)), JSON.stringify(preparedAnnotations), "preparation is stable across updates");
+const preparedOutput = hooks.plotlyLayoutForOutput({
+  dataset: {},
+  closest() { return { dataset: { plotPresentation: JSON.stringify(bareAnnotationSelection) } }; }
+}, bareAnnotationLayout);
+assert.strictEqual(preparedOutput.annotations[0].xref, "paper", "the layout passed to newPlot/react is prepared");
+assert.strictEqual(preparedOutput.annotations[0].showarrow, false);
 const neutralAnnotationNodes = [48, 30].map((height) => ({
   getBoundingClientRect() { return { height }; }
 }));
@@ -2579,6 +2616,10 @@ const neutralAnnotationUpdate = layoutPolicy.annotationPlacementUpdate(
   { annotationPlacement: { summary_note: "above_plot", method_note: "above_plot" } },
   { baseTopMargin: 96 }
 );
+assert.strictEqual(neutralAnnotationUpdate["annotations[0].xref"], "paper");
+assert.strictEqual(neutralAnnotationUpdate["annotations[0].x"], 0);
+assert.strictEqual(neutralAnnotationUpdate["annotations[0].xanchor"], "left");
+assert.strictEqual(neutralAnnotationUpdate["annotations[0].showarrow"], false);
 assert.strictEqual(neutralAnnotationUpdate["annotations[0].y"], 1, "the first opted-in annotation is anchored directly above the plotting area");
 assert.strictEqual(neutralAnnotationUpdate["annotations[0].yshift"], 0, "the first annotation starts the responsive top lane");
 assert.strictEqual(neutralAnnotationUpdate["annotations[1].yshift"], 60, "additional annotations stack by measured height and the shared gap");
