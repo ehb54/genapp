@@ -24,7 +24,7 @@ Status values are `not_recorded`, `passed`, `failed`, or `not_applicable`.
 
 | Group | Module | Output kind | Normal | Expanded / restore | Completion | Reattach | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Tools | data_interpolation | Plotly | passed | not_recorded | passed | passed | `ehb54/zazzie#279` records deployed normal rendering, completion, and fresh-window reattachment; expanded/restore remains unrecorded |
+| Tools | data_interpolation | Plotly | passed | passed | passed | passed | `madscatt/zazzie#507` records 2026-10-02 deployed codex3 acceptance of normal, expanded/restore, completion, same-window and fresh-window reattachment, plus Plot Presentation Lab preview; diagnostic annotation has no arrow and q² remains data-driven |
 | Tools | extract_utilities | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
 | Build | prepare_solvated_system | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
 | Contrast | contrast_calculator | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
@@ -59,3 +59,21 @@ Status values are `not_recorded`, `passed`, `failed`, or `not_applicable`.
 - `madscatt/zazzie#435` covers retirement of SAS Assembly presentation
   artifacts that are not needed by the web driver.
 - The rejected `ehb54/zazzie#193` design must not be revived.
+
+## Data Interpolation annotation recovery — 2026-10-02
+
+- Issue: `madscatt/zazzie#507`; authorized administrator account: `codex3`.
+- Deployed runtime: GenApp `f5dea869972915eec81dc7758c6746377064e6c4`
+  (annotation fix `795e269a`); application `a13679b142f80d06b26009a3e122548c171d8e2b`.
+- Scenario: `data_interpolation_documented_automatic_31`; completed job
+  `f36c4f78-b1d5-4a88-b806-2cddd488cf09`; scientific scenario verification passed.
+- Normal, expanded/restore, completed, same-window reattach and the normal
+  Job Manager **Attach in new window** path passed. Direct browser inspection
+  showed the q² ticks at 0 through 0.0025, visible data and fit, above-plot
+  diagnostic text, and no annotation arrow. The ordinary profile also rendered.
+- The deployed Plot Presentation Lab Guinier fixture passed with the same
+  placement helper and data-driven q² range. No YAML was published or edited.
+- Local evidence: 792 UI2/HTML5 checks, five Lab parity tests and 15 real-Plotly
+  fixture checks passed, including autorange, source immutability, explicit
+  ranges, multiple annotations, and zoom across react/resizing.
+- Both authorized browser sessions were logged out after acceptance.
