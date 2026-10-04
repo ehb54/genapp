@@ -292,3 +292,23 @@ Every shared-core change requires:
 Do not use a migration-status registry, a permanent exception list, or a
 plot-specific replay store to bypass these checks. Remove existing debt before
 making a zero-exception gate mandatory.
+
+### Hover-label trace identity
+
+The final-surface resolver leaves Plotly hover-label color properties
+unspecified unless the figure already declares them. After presentation colors
+resolve, Plotly selects the line or hovered-point color, including per-point
+arrays and colorscales, and contrasts the label foreground and border against
+that background. Do not inject a neutral plot-wide hover background, text color,
+or border color. Explicit layout, trace, and template hover styling remains
+authoritative. Ordinary UI2 and application previews use this same policy.
+
+Closest and x/y compare hover use individual trace-colored labels. Unified
+hover retains Plotly's shared box and colored series keys. This changes display
+only; scientific arrays, uncertainty, axes, saved outputs, and reattachment
+remain unchanged. No new application directive or producer metadata is needed.
+
+Native Plotly contrast is not a universal 4.5:1 guarantee. With Plotly 2.35.2,
+white label text on `#ea580c` has a measured contrast ratio of approximately
+3.56:1. Keep that limitation visible during acceptance; stricter contrast
+requires separately scoped renderer work rather than a module workaround.

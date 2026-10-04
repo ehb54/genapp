@@ -2340,7 +2340,7 @@ assert.strictEqual(contrastingPlotLayout.xaxis.title.font.color, "#17201d", "axi
 assert.strictEqual(contrastingPlotLayout.xaxis.tickfont.color, "#17201d", "axis ticks follow final plot luminance without losing their size");
 assert.strictEqual(contrastingPlotLayout.xaxis.tickfont.size, 11, "surface contrast preserves authored axis font sizing");
 assert.strictEqual(contrastingPlotLayout.legend.font.color, "#17201d", "legend text follows its final translucent light surface");
-assert.strictEqual(contrastingPlotLayout.hoverlabel.font.color, "#17201d", "hover text follows its final light surface");
+assert.deepStrictEqual(contrastingPlotLayout.hoverlabel, { font: { size: 10 } }, "surface policy leaves hover colors to Plotly while preserving authored sizing");
 assert.strictEqual(contrastingPlotLayout.annotations[0].font.color, "#17201d", "annotation text follows the final paper surface");
 assert.strictEqual(contrastingPlotLayout.modebar.color, "#17201d", "modebar controls follow final paper luminance");
 assert.strictEqual(JSON.stringify(producerPlotLayout), contrastSourceSnapshot, "surface contrast never mutates producer layout data");

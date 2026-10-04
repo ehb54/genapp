@@ -128,7 +128,8 @@ like( $ui2_js, qr/return window\.GenAppPlotlyLayout\?\.prepareAnnotationPlacemen
 my $ui2_css = read_file( File::Spec->catfile( $ui2, qw(css ui2.css) ) );
 like( $ui2_css, qr/\.ui2-splash-warning\[hidden\]/, 'external-auth warning banner remains absent unless an opted-in policy supplies it' );
 like( $plotly_surface_js, qr/window\.GenAppPlotlySurface/, 'generated UI2 exposes one shared final-surface resolver' );
-like( $plotly_surface_js, qr/function apply\(layout, options\).*?paper_bgcolor.*?plot_bgcolor.*?hoverlabel.*?modebar/s, 'surface resolver covers final paper, plot, hover, and toolbar presentation' );
+like( $plotly_surface_js, qr/function apply\(layout, options\).*?paper_bgcolor.*?plot_bgcolor.*?modebar/s, 'surface resolver covers final paper, plot, and toolbar presentation' );
+unlike( $plotly_surface_js, qr/result\.hoverlabel\s*=/, 'generated surface policy preserves native trace-colored hover labels' );
 like( $plotly_layout_js, qr/window\.GenAppPlotlyLayout/, 'generated UI2 exposes one shared responsive Plotly layout helper' );
 like( $plotly_layout_js, qr/function wrapPlainText.*?function axisTitleWrapUpdate.*?axisTitleOverflow/s, 'responsive layout helper wraps opted-in axis titles without application vocabulary' );
 like( $plotly_layout_js, qr/const ABOVE_PLOT = "above_plot".*?function annotationPlacementUpdate.*?annotationPlacement/s, 'responsive layout helper reserves an opted-in lane for named above-plot annotations' );

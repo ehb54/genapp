@@ -568,3 +568,12 @@ its policy is `genapp_zazzie/docs/plot_presentation.md` in the paired checkout.
 Ordinary UI2 and the Lab share one helper. Preserve explicit producer formats,
 scientific arrays, and saved outputs; do not add module-specific formatting
 branches, presentation YAML keys, or new 3D uncertainty-label behavior.
+
+### Hover-label identity route
+
+GenApp's `doc/Plotting-Architecture.md` and `doc/UI2-Core-Extension-Policy.md`
+govern hover colors. Ordinary UI2 and the Lab preserve native trace/point colors
+and explicit hover styling without changing scientific data or saved outputs.
+Do not add module color workarounds. Application guidance and the documented
+native orange contrast limitation are in the paired
+`genapp_zazzie/docs/plot_presentation.md` (`ehb54/zazzie#299`).

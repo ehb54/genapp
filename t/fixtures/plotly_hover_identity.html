@@ -1,0 +1,88 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Generic hover-label identity acceptance</title>
+<script src="../../languages/html5/add/js/plotly-2.35.2.min.js"></script>
+<script src="../../languages/ui2/add/js/plotly-surface.js"></script>
+<script src="../../languages/ui2/add/js/plot-presentation.js"></script>
+<div id="plot" style="width:640px;height:480px"></div><pre id="results">pending</pre>
+<script>
+(async()=>{
+ const plot=document.getElementById('plot'),checks=[],examples=[],copy=x=>JSON.parse(JSON.stringify(x));
+ const check=(yes,label)=>{if(!yes)throw Error(label);checks.push(label);};
+ const wait=()=>new Promise(resolve=>setTimeout(resolve,60));
+ const hover=async(points)=>{Plotly.Fx.unhover(plot);Plotly.Fx.hover(plot,points);await wait();return Array.from(plot.querySelectorAll('.hovertext')).map(node=>({text:node.textContent,bg:getComputedStyle(node.querySelector('path')).fill,border:getComputedStyle(node.querySelector('path')).stroke,fg:getComputedStyle(node.querySelector('.nums')).fill}));};
+ const registry={base:{palette:{first:'#dc2626',second:'#0f766e'},palette_variants:{dark_surface:{first:'#f87171',second:'#2dd4bf'}},styles:{first:{color:'first'},second:{color:'second'}}},child:{inherits:'base'}};
+ const inherited=GenAppPlotPresentation.resolveProfile('child',registry);
+ const source={data:[{type:'scatter',mode:'lines+markers',name:'A',x:[1,2],y:[1,2],error_y:{type:'data',array:[0.1,0.2],visible:true},meta:{series_role:'a'}},{type:'scatter',mode:'lines+markers',name:'B',x:[1,2],y:[1,2],error_y:{type:'data',array:[0.1,0.2],visible:true},meta:{series_role:'b'}}],layout:{}};
+ const saved=JSON.stringify(source);
+ for(const bg of ['#ffffff','#202725','#f7f8f6','#1a201f']){
+  const style=GenAppPlotPresentation.profileForSurface(inherited,bg,bg);
+  const data=source.data.map((trace,index)=>GenAppPlotPresentation.styleTrace(copy(trace),{token:index?'second':'first'},style));
+  const layout={paper_bgcolor:bg,plot_bgcolor:bg};
+  await Plotly.newPlot(plot,copy(data),copy(layout));const native=await hover([{curveNumber:0,pointNumber:0},{curveNumber:1,pointNumber:0}]);
+  await Plotly.react(plot,copy(data),GenAppPlotlySurface.apply(copy(layout)));const labels=await hover([{curveNumber:0,pointNumber:0},{curveNumber:1,pointNumber:0}]);
+  check(labels.length===2&&labels[0].bg!==labels[1].bg,'overlapping traces distinct on '+bg);
+  check(JSON.stringify(labels)===JSON.stringify(native),'native foreground and border preserved on '+bg);
+  const compare=await hover({xval:1,yval:1,hovermode:'x'});
+  check(compare.length===2&&compare[0].bg!==compare[1].bg,'compare-data trace identity on '+bg);
+  examples.push({surface:bg,labels});
+ }
+ for(const marker of [{color:['#dc2626','#0f766e']},{color:[0,1],cmin:0,cmax:1,colorscale:[[0,'#dc2626'],[1,'#0f766e']]}]){
+  const data=[{type:'scatter',mode:'markers',x:[1,2],y:[1,2],marker}];
+  for(const bg of ['#ffffff','#202725']){
+   const layout={paper_bgcolor:bg,plot_bgcolor:bg};await Plotly.newPlot(plot,copy(data),copy(layout));
+   const native=[];for(let pointNumber=0;pointNumber<2;pointNumber++)native.push(await hover([{curveNumber:0,pointNumber}]));
+   await Plotly.react(plot,copy(data),GenAppPlotlySurface.apply(copy(layout)));
+   const actual=[];for(let pointNumber=0;pointNumber<2;pointNumber++)actual.push(await hover([{curveNumber:0,pointNumber}]));
+   check(actual[0][0].bg!==actual[1][0].bg,'per-point colors distinct '+bg);
+   check(JSON.stringify(actual)===JSON.stringify(native),'per-point native contrast preserved '+bg);
+  }
+ }
+ for(const location of ['layout','trace','template']){
+  const figure={data:[{type:'scatter',x:[1],y:[1],mode:'markers'}],layout:{paper_bgcolor:'#fff',plot_bgcolor:'#fff'}};
+  const authored={bgcolor:'#004488',bordercolor:'#ffcc00',font:{color:'#fff',size:15}};
+  if(location==='layout')figure.layout.hoverlabel=authored;
+  if(location==='trace')figure.data[0].hoverlabel=authored;
+  if(location==='template')figure.layout.template={layout:{hoverlabel:authored}};
+  await Plotly.newPlot(plot,copy(figure.data),copy(figure.layout));const native=await hover([{curveNumber:0,pointNumber:0}]);
+  await Plotly.react(plot,copy(figure.data),GenAppPlotlySurface.apply(copy(figure.layout)));const actual=await hover([{curveNumber:0,pointNumber:0}]);
+  check(JSON.stringify(actual)===JSON.stringify(native),'explicit '+location+' hover styling preserved');
+ }
+ const pointStyled=[{type:'scatter',mode:'markers',x:[1,2],y:[1,2],marker:{color:['#dc2626','#0f766e']},hoverlabel:{bgcolor:['#004488','#880044'],font:{color:['#fff','#ffff00']},bordercolor:['#ffcc00','#00ffff']}}];
+ await Plotly.newPlot(plot,copy(pointStyled),{});const authoredPointLabels=[];
+ for(let pointNumber=0;pointNumber<2;pointNumber++)authoredPointLabels.push(await hover([{curveNumber:0,pointNumber}]));
+ await Plotly.react(plot,copy(pointStyled),GenAppPlotlySurface.apply({}));const preservedPointLabels=[];
+ for(let pointNumber=0;pointNumber<2;pointNumber++)preservedPointLabels.push(await hover([{curveNumber:0,pointNumber}]));
+ check(JSON.stringify(authoredPointLabels)===JSON.stringify(preservedPointLabels),'explicit per-point hover styles preserved');
+ const colors={styles:{family:{}},group_palettes:{members:{color:['#dc2626','#0f766e']}}};
+ const grouped=[];for(let n=0;grouped.length<2&&n<30;n++){
+  const trace={type:'scatter',mode:'lines+markers',x:[1,2],y:[1,2],name:'member '+n,meta:{series_group:'family_'+n.toString(16).padStart(24,'0')}};
+  const styled=GenAppPlotPresentation.styleTrace(trace,{token:'family',groupPalette:'members'},colors);
+  if(!grouped.some(t=>t.line.color===styled.line.color))grouped.push(styled);
+ }
+ check(grouped.length===2,'grouped palette supplies distinct colors');
+ for(const bg of ['#fff','#202725']){
+  await Plotly.newPlot(plot,copy(grouped),GenAppPlotlySurface.apply({paper_bgcolor:bg,plot_bgcolor:bg}));
+  const labels=await hover([{curveNumber:0,pointNumber:0},{curveNumber:1,pointNumber:0}]);
+  check(labels.length===2&&labels[0].bg!==labels[1].bg,'grouped palette trace identity '+bg);
+ }
+ const layout={paper_bgcolor:'#202725',plot_bgcolor:'#202725',uirevision:'neutral'};
+ for(const operation of ['new','react','expanded','restore','completion','reattach']){
+  if(operation==='reattach')Plotly.purge(plot);
+  if(operation==='expanded'||operation==='restore'){plot.style.width=(operation==='expanded'?1000:640)+'px';await Plotly.Plots.resize(plot);}
+  else await Plotly[operation==='new'||operation==='reattach'?'newPlot':'react'](plot,copy(grouped),GenAppPlotlySurface.apply(copy(layout)));
+  const labels=await hover([{curveNumber:0,pointNumber:0},{curveNumber:1,pointNumber:0}]);check(labels.length===2&&labels[0].bg!==labels[1].bg,'group identity after '+operation);
+ }
+ await Plotly.relayout(plot,{hovermode:'x unified'});await hover({xval:1,yval:1,hovermode:'x unified'});
+ check(!!plot.querySelector('.hoverlayer .legend'),'unified hover keeps native shared box');
+ const unifiedColors=Array.from(plot.querySelectorAll('.hoverlayer .legend .scatterpts')).map(n=>getComputedStyle(n).fill);
+ check(new Set(unifiedColors).size===2,'unified hover retains colored series keys');
+ check(JSON.stringify(source)===saved,'saved source scientific arrays and identity unchanged');
+ const plain=[{type:'scatter',mode:'lines+markers',x:[1,2],y:[1,2]}];
+ await Plotly.newPlot(plot,copy(plain),{});const native=await hover([{curveNumber:0,pointNumber:0}]);
+ await Plotly.react(plot,copy(plain),GenAppPlotlySurface.apply({}));const control=await hover([{curveNumber:0,pointNumber:0}]);
+ check(JSON.stringify(native)===JSON.stringify(control),'consumer without presentation profile retains native hover behavior');
+ window.hoverIdentityAcceptance={passed:true,version:Plotly.version,checks,examples,limitations:['Native white text on orange #ea580c has approximately 3.56:1 contrast.']};
+ document.getElementById('results').textContent=JSON.stringify(window.hoverIdentityAcceptance);
+})().catch(error=>{window.hoverIdentityAcceptance={passed:false,error:error.message};document.getElementById('results').textContent=JSON.stringify(window.hoverIdentityAcceptance);});
+</script>
