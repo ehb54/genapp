@@ -12248,6 +12248,18 @@
     });
   }
 
+  function plotlyDisplayFigure(figure) {
+    return window.GenAppPlotlyLayout?.validNumericHoverFormat?.(
+      appMap.directives?.ui2_plotly_hover_number_format
+    ) ? cloneUi2Value(figure) : figure;
+  }
+
+  function applyPlotlyNumericHoverFormat(output) {
+    return window.GenAppPlotlyLayout?.applyNumericHoverFormat?.(
+      output, appMap.directives?.ui2_plotly_hover_number_format
+    );
+  }
+
   function renderPlotlyOutput(output, value) {
     const figure = parsePlotlyFigure(value);
     if (!figure) {
@@ -12255,6 +12267,7 @@
       return;
     }
     output._ui2PlotlyLastFigure = cloneUi2Value(figure);
+    const displayFigure = plotlyDisplayFigure(figure);
     output.classList.add("ui2-output-rendered", "ui2-output-plotly-ready");
     const updateExisting = Boolean(output.data && window.Plotly?.react);
     if (!updateExisting) {
@@ -12262,11 +12275,11 @@
     }
     ensurePlotlyLoaded()
       .then(() => {
-        const layout = plotlyLayoutForOutput(output, figure.layout);
+        const layout = plotlyLayoutForOutput(output, displayFigure.layout);
         if (layout.uirevision == null) {
           layout.uirevision = output.dataset.outputFieldId || "ui2-plot";
         }
-        const data = plotlyDataForOutput(output, figure.data, layout);
+        const data = plotlyDataForOutput(output, displayFigure.data, layout);
         applyPlotlyTheme(layout);
         const config = plotlyConfigForOutput(figure);
         applyPlotlyModebarHooks(figure, config);
@@ -12274,6 +12287,7 @@
           ? window.Plotly.react(output, data, layout, config)
           : window.Plotly.newPlot(output, data, layout, config);
       })
+      .then(() => applyPlotlyNumericHoverFormat(output))
       .then(() => {
         normalizePlotlyModebar(output);
         improvePlotlyModebarAccessibility(output);
@@ -12328,6 +12342,7 @@
         rememberPlotlyAppend(output, indices, x, y, max_points);
         return extended;
       })
+      .then(() => applyPlotlyNumericHoverFormat(output))
       .then(() => {
         normalizePlotlyModebar(output);
         improvePlotlyModebarAccessibility(output);
@@ -12522,15 +12537,17 @@
     if (has_plot) {
       return null;
     }
-    const layout = plotlyLayoutForOutput(output, figure.layout);
+    const displayFigure = plotlyDisplayFigure(figure);
+    const layout = plotlyLayoutForOutput(output, displayFigure.layout);
     if (layout.uirevision == null) {
       layout.uirevision = output.dataset.outputFieldId || "ui2-plot";
     }
-    const data = plotlyDataForOutput(output, figure.data, layout);
+    const data = plotlyDataForOutput(output, displayFigure.data, layout);
     applyPlotlyTheme(layout);
     const config = plotlyConfigForOutput(figure);
     applyPlotlyModebarHooks(figure, config);
-    return window.Plotly.react(output, data, layout, config);
+    return Promise.resolve(window.Plotly.react(output, data, layout, config))
+      .then(() => applyPlotlyNumericHoverFormat(output));
   }
 
   function plotPresentationForOutput(output) {
@@ -14170,6 +14187,8 @@
       resizePlotlyOutputToVisibleBox,
       applyPlotPresentationStyle,
       plotlyDataForOutput,
+      plotlyDisplayFigure,
+      applyPlotlyNumericHoverFormat,
       appendPlotlyOutput,
       rememberPlotlyAppend,
       refreshPlotlyOutputIfNeeded,

@@ -499,6 +499,25 @@ assert.strictEqual(inheritedSurfaceProfile.palette.primary, "#112233",
 
 const hooks = context.window.GenAppUi2TestHooks;
 
+const numericSavedFigure = {data:[{type:"scatter",x:[0.04515],y:[0.01965],error_y:{array:[0.0008006]}}],layout:{yaxis:{type:"log"}}};
+const numericSavedBefore = JSON.stringify(numericSavedFigure);
+window.GenAppUi2App.directives = {ui2_plotly_hover_number_format:".5e"};
+const numericDisplayFigure = hooks.plotlyDisplayFigure(numericSavedFigure);
+numericDisplayFigure.data[0].yhoverformat = ".5e";
+numericDisplayFigure.layout.yaxis.hoverformat = ".5e";
+assert.strictEqual(JSON.stringify(numericSavedFigure),numericSavedBefore,"opted-in UI2 formatting uses detached display data");
+const numericApplyCalls=[];
+const numericOriginalApply=window.GenAppPlotlyLayout.applyNumericHoverFormat;
+window.GenAppPlotlyLayout.applyNumericHoverFormat=(plot,format)=>numericApplyCalls.push([plot,format]);
+const numericOutput=createNode("div");
+hooks.applyPlotlyNumericHoverFormat(numericOutput);
+assert.strictEqual(numericApplyCalls[0][0],numericOutput);
+assert.strictEqual(numericApplyCalls[0][1],".5e","UI2 forwards the application format to the shared helper");
+window.GenAppPlotlyLayout.applyNumericHoverFormat=numericOriginalApply;
+window.GenAppUi2App.directives={};
+assert.strictEqual(hooks.plotlyDisplayFigure(numericSavedFigure),numericSavedFigure,"non-opted-in UI2 preserves its original display path");
+
+
 const embeddedPage = hooks.renderSystemTool({
   moduleid: "protected_admin",
   label: "Account Administration",

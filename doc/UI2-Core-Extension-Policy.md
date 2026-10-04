@@ -204,6 +204,23 @@ continues to supply the unmodified semantic title; it must not insert responsive
 `<br>` markup. Rich titles with explicit markup and non-opted-in figures retain
 their declared behavior.
 
+
+An application may set `ui2_plotly_hover_number_format` to a bounded numeric
+D3 format: `.0e` through `.15e`, or `.1g`/`.1r` through `.16g`/`.16r`.
+Missing or invalid settings preserve ordinary Plotly behavior. The shared
+`GenAppPlotlyLayout.applyNumericHoverFormat` helper applies the default after
+Plotly resolves axis types, including numbered Cartesian axes and 3D scenes.
+It skips date/category axes and preserves explicit axis formats, including
+formats inherited from a Plotly template. Supported non-coordinate numeric
+trace values, such as a heatmap's z matrix, use their schema-declared formats.
+Explicit trace formats and producer-authored template text/inline formats
+remain authoritative; unformatted template placeholders inherit the default.
+Normal UI2 and application previews call this same idempotent helper on
+detached display data, without changing scientific arrays or saved outputs.
+The policy persists across redraw, bounded updates, resize, completion, and
+normal final-output reattachment. It does not introduce new uncertainty labels
+or repair Plotly's existing endpoint-subtraction precision limitations.
+
 ## NGL contract
 
 A coordinate-frame event may contain `coordinates`, `atom_count`, `frame_id`,

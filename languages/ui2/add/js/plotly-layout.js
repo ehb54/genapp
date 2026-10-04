@@ -234,7 +234,82 @@
       });
   }
 
+
+  // Numeric defaults are opt-in presentation. Inspect Plotly's resolved axis
+  // types rather than guessing whether an input column is numeric or a date.
+  function validNumericHoverFormat(format) {
+    return typeof format === "string" &&
+      /^(?:\.(?:[0-9]|1[0-5])e|\.(?:[1-9]|1[0-6])[gr])$/.test(format);
+  }
+
+  function numericHoverFormatUpdate(plot, format) {
+    if (!validNumericHoverFormat(format)) return null;
+    const update = {};
+    const visit = (layout, prefix = "") => {
+      Object.entries(layout || {}).forEach(([name, axis]) => {
+        if (/^[xyz]axis\d*$/.test(name) && axis &&
+            ["linear", "log"].includes(axis.type) && !axis.hoverformat) {
+          update[`${prefix}${name}.hoverformat`] = format;
+        } else if (/^scene\d*$/.test(name) && axis && typeof axis === "object") {
+          visit(axis, `${prefix}${name}.`);
+        }
+      });
+    };
+    visit(plot?._fullLayout);
+    return Object.keys(update).length ? update : null;
+  }
+
+  function numericHoverValues(values) {
+    let found = false;
+    const numeric = (value) => {
+      if (Array.isArray(value) || ArrayBuffer.isView(value)) {
+        return Array.from(value).every(numeric);
+      }
+      if (value == null) return true;
+      const valid = (typeof value === "number" ||
+        (typeof value === "string" && value.trim() !== "")) &&
+        Number.isFinite(Number(value));
+      found = found || valid;
+      return valid;
+    };
+    return (Array.isArray(values) || ArrayBuffer.isView(values)) && numeric(values) && found;
+  }
+
+  function numericHoverTraceUpdates(plot, format) {
+    if (!validNumericHoverFormat(format)) return [];
+    const schema = window.Plotly?.PlotSchema?.get?.()?.traces;
+    if (!schema) return [];
+    // Non-coordinate values (for example a heatmap's z matrix) do not use a
+    // layout axis. Use only formats declared by the trace's Plotly schema.
+    return [["zhoverformat", "z"], ["valuehoverformat", "value"]].flatMap(([key, field]) => {
+      const indices = [];
+      (plot?._fullData || []).forEach((trace, index) => {
+        if (key === "zhoverformat" && trace.scene) return;
+        if (schema[trace.type]?.attributes?.[key] && !trace[key] &&
+            numericHoverValues(trace[field])) indices.push(index);
+      });
+      return indices.length ? [{ update: { [key]: format }, indices }] : [];
+    });
+  }
+
+  async function applyNumericHoverFormat(plot, format) {
+    if (!validNumericHoverFormat(format)) return;
+    const layoutUpdate = numericHoverFormatUpdate(plot, format);
+    if (layoutUpdate && typeof window.Plotly?.relayout === "function") {
+      await window.Plotly.relayout(plot, layoutUpdate);
+    }
+    if (typeof window.Plotly?.restyle === "function") {
+      for (const { update, indices } of numericHoverTraceUpdates(plot, format)) {
+        await window.Plotly.restyle(plot, update, indices);
+      }
+    }
+  }
+
   window.GenAppPlotlyLayout = {
+    validNumericHoverFormat,
+    numericHoverFormatUpdate,
+    numericHoverTraceUpdates,
+    applyNumericHoverFormat,
     prepareAnnotationPlacement,
     annotationPlacementUpdate,
     applyAnnotationPlacement,

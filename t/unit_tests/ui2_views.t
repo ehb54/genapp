@@ -113,6 +113,7 @@ like( $app_map_js, qr/directives\.ui2_plotly_chart_editor = "true"/, 'ui2 app ma
 like( $app_map_js, qr/directives\.ui2_plotly_chart_editor_url = "_cedit\/_chart_edit\.html"/, 'ui2 app map records the application Chart Editor URL' );
 like( $app_map_js, qr/directives\.ui2_plotly_chart_editor_target = "_blank"/, 'ui2 app map records the application Chart Editor target' );
 like( $app_map_js, qr/directives\.ui2_plot_background_preference = "true"/, 'ui2 app map records opt-in plot-background preferences' );
+like( $app_map_js, qr/directives\.ui2_plotly_hover_number_format = "\.5e"/, 'ui2 app map records the generic numeric hover default' );
 like( $app_map_js, qr/directives\.ui2_auth_providers_url = "auth\/providers\.php"/, 'ui2 app map records an optional external-auth provider manifest URL' );
 like( $app_map_js, qr/directives\.ui2_release_manifest_url = "release-manifest\.json"/, 'ui2 app map records the optional application release manifest' );
 like( $app_map_js, qr/directives\.nextjobenvironment = "true"/, 'ui2 app map exposes the opted-in one-job environment setting' );
@@ -635,7 +636,7 @@ like( $ui2_js, qr/function stripUi2RuntimeStatus\(text\)/, 'ui2 runtime bridge s
 like( $ui2_js, qr/function isRuntimeDividerText\(text\)/, 'ui2 runtime bridge preserves repeated textarea divider lines' );
 like( $ui2_js, qr/output\.dataset\.runtimeText = merged/, 'ui2 runtime bridge keeps runtime text across later output redraws' );
 like( $ui2_js, qr/function renderPlotlyOutput\(output, value\)/, 'ui2 runtime bridge has a dedicated Plotly output renderer' );
-like( $ui2_js, qr/const data = plotlyDataForOutput\(output, figure\.data, layout\).*?Plotly\.react\(output, data, layout, config\)/s, 'ui2 authoritative plot snapshots update the existing Plotly graph through UI2 presentation policy' );
+like( $ui2_js, qr/const data = plotlyDataForOutput\(output, displayFigure\.data, layout\).*?Plotly\.react\(output, data, layout, config\)/s, 'ui2 authoritative plot snapshots update the existing Plotly graph through UI2 presentation policy' );
 like( $ui2_js, qr/Plotly\.extendTraces\(output, \{ x, y \}, indices/, 'ui2 plot append events extend existing traces incrementally' );
 like( $ui2_js, qr/function applyPlotlyModebarHooks\(figure, config\)/, 'ui2 runtime bridge honors legacy Plotly Chart Editor config' );
 like( $ui2_js, qr/toImageButtonOptions:\s*\{ format: "png", scale: 2 \}/, 'ui2 runtime restores scale-2 PNG export' );

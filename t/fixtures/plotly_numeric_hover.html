@@ -1,0 +1,75 @@
+<!doctype html><meta charset="utf-8"><script src="../../languages/html5/add/js/plotly-2.35.2.min.js"></script><script src="../../languages/ui2/add/js/plotly-layout.js"></script><script>
+window.numericHoverPolicy={
+  apply:async(plot,source,format)=>{const update=GenAppPlotlyLayout.numericHoverFormatUpdate(plot,format)||{};await GenAppPlotlyLayout.applyNumericHoverFormat(plot,format);return update;},
+  axisFormatUpdate:(plot,source,format)=>GenAppPlotlyLayout.numericHoverFormatUpdate(plot,format)||{}
+};</script><div id="plot" style="width:640px;height:480px"></div><pre id="results">pending</pre><script>
+(async()=>{
+const plot=document.getElementById('plot'), results={version:Plotly.version,checks:[],examples:[]};
+const copy=x=>JSON.parse(JSON.stringify(x));
+const check=(yes,label)=>{if(!yes)throw Error(label);results.checks.push(label);};
+const hover=async(point=0)=>{Plotly.Fx.unhover(plot);Plotly.Fx.hover(plot,[{curveNumber:0,pointNumber:point}]);await new Promise(resolve=>setTimeout(resolve,40));return Array.from(plot.querySelectorAll('.hoverlayer .hovertext')).map(n=>n.textContent).join(' | ');};
+const values=[0.01965,-0.01965,0,1e-15,1e12];
+const errors=[0.0008006,0.0004491,1e-15,0.0008006,1e8];
+for(const type of ['linear','log']){
+  for(let index=0;index<values.length;index++){
+    const value=values[index];if(type==='log'&&value<=0)continue;
+    const source={data:[{type:'scatter',mode:'markers',x:[0.04515],y:[value],hoverinfo:'x+y',error_y:{type:'data',array:[errors[index]],visible:true}}],layout:{yaxis:{type}}};
+    const before=JSON.stringify(source);
+    await Plotly.newPlot(plot,copy(source.data),copy(source.layout));const original=await hover();
+    await numericHoverPolicy.apply(plot,source,'.5e');const formatted=await hover();
+    check(!/[μµ]/.test(formatted)&&/e[−-]\d/.test(formatted),'scientific values and errors: '+type+' '+value+' '+formatted);
+    check(formatted.includes(errors[index].toExponential(5).replace('-','−'))||formatted.includes(errors[index].toExponential(5)),'error precision: '+type+' '+value);
+    check(JSON.stringify(source)===before,'saved source unchanged: '+type+' '+value);
+    results.examples.push({type,value,error:errors[index],original,formatted});
+  }
+}
+const symmetric={data:[{type:'scatter',x:[0.04515],y:[0.01965],hoverinfo:'x+y',error_x:{type:'data',array:[0.0004491],visible:true},error_y:{type:'data',symmetric:false,array:[0.0008006],arrayminus:[0.0004491],visible:true}}],layout:{}};
+await Plotly.newPlot(plot,copy(symmetric.data),{});await numericHoverPolicy.apply(plot,symmetric,'.5e');let text=await hover();
+check(text.includes('8.00600e')&&text.includes('4.49100e')&&!/[μµ]/.test(text),'x errors and asymmetric y errors use scientific notation');results.asymmetric=text;
+for(const scenario of [
+{label:'explicit axis format',data:[{type:'scatter',x:[0.04515],y:[0.01965],hoverinfo:'x+y',error_y:{type:'data',array:[0.0008006],visible:true}}],layout:{yaxis:{hoverformat:'.3e'}}},
+{label:'explicit trace format',data:[{type:'scatter',x:[0.04515],y:[0.01965],yhoverformat:'.2f',hoverinfo:'x+y',error_y:{type:'data',array:[0.0008006],visible:true}}],layout:{}},
+{label:'explicit template',data:[{type:'scatter',x:[0.04515],y:[0.01965],hovertemplate:'Producer %{y:.2f}<extra></extra>'}],layout:{}},
+{label:'date axis',data:[{type:'scatter',x:['2026-10-04'],y:[0.01965]}],layout:{}},
+{label:'category axis',data:[{type:'scatter',x:['sample'],y:[0.01965]}],layout:{}},
+{label:'secondary axes',data:[{type:'scatter',x:[0.04515],y:[0.01965],xaxis:'x2',yaxis:'y2'}],layout:{xaxis2:{},yaxis2:{}}},
+{label:'template axis format',data:[{type:'scatter',x:[0.04515],y:[0.01965]}],layout:{template:{layout:{yaxis:{hoverformat:'.3e'}}}}}
+]){
+ await Plotly.newPlot(plot,copy(scenario.data),copy(scenario.layout));let before=await hover();
+ const update=await numericHoverPolicy.apply(plot,scenario,'.5e');let after=await hover();
+ if(scenario.label==='explicit axis format')check(plot._fullLayout.yaxis.hoverformat==='.3e','explicit axis override preserved');
+ if(scenario.label==='explicit trace format')check(plot.data[0].yhoverformat==='.2f'&&after.includes('0.02'),'explicit trace override preserved');
+ if(scenario.label==='explicit template')check(before===after,'explicit formatted template renders identically');
+ if(scenario.label==='date axis'||scenario.label==='category axis')check(!('xaxis.hoverformat' in update),'skip '+scenario.label);
+ if(scenario.label==='secondary axes')check(update['xaxis2.hoverformat']==='.5e'&&update['yaxis2.hoverformat']==='.5e','implicit subplot axes covered');
+ if(scenario.label==='template axis format')check(plot._fullLayout.yaxis.hoverformat==='.3e','template-provided axis format preserved');
+ results.examples.push({scenario:scenario.label,before,after});
+}
+const lifecycle={data:[{type:'scatter',x:[0.04515],y:[0.01965],hoverinfo:'x+y',error_y:{type:'data',array:[0.0008006],visible:true}}],layout:{uirevision:'neutral'}};
+const saved=JSON.stringify(lifecycle);
+for(const operation of ['new','react','resize','reattach']){
+  if(operation==='new')await Plotly.newPlot(plot,copy(lifecycle.data),copy(lifecycle.layout));
+  if(operation==='react')await Plotly.react(plot,copy(lifecycle.data),copy(lifecycle.layout));
+  if(operation==='resize'){plot.style.width='1000px';await Plotly.Plots.resize(plot);}
+  if(operation==='reattach'){Plotly.purge(plot);await Plotly.newPlot(plot,copy(lifecycle.data),copy(lifecycle.layout));}
+  await numericHoverPolicy.apply(plot,lifecycle,'.5e');const displayed=await hover();
+  check(displayed.includes('8.00600e'),'local figure lifecycle '+operation);
+  check(JSON.stringify(lifecycle)===saved,'saved output immutable after '+operation);
+  check(Object.keys(numericHoverPolicy.axisFormatUpdate(plot,lifecycle,'.5e')).length===0,'format application idempotent after '+operation);
+}
+await Plotly.extendTraces(plot,{x:[[0.055]],y:[[0.017]]},[0],10);check(plot._fullLayout.yaxis.hoverformat==='.5e','bounded trace append retains numeric policy');
+for(const template of ['Raw %{y}<extra></extra>','Producer %{y:.2f}<extra></extra>']){
+ const authored={data:[{type:'scatter',x:[1],y:[0.0008006],hovertemplate:template}],layout:{}};
+ await Plotly.newPlot(plot,copy(authored.data),{});const original=await hover();await numericHoverPolicy.apply(plot,authored,'.5e');const displayed=await hover();results.examples.push({scenario:'template '+template,before:original,after:displayed});
+ check(plot.data[0].hovertemplate===template,'producer template text retained '+template);
+}
+const control={data:[{type:'scatter',x:[0.04515],y:[0.01965],error_y:{type:'data',array:[0.0008006],visible:true}}],layout:{}};
+await Plotly.newPlot(plot,copy(control.data),{});const before=await hover();await numericHoverPolicy.apply(plot,control,'');check(before===await hover(),'non-opted-in consumer unchanged');
+const scene={data:[{type:'scatter3d',mode:'markers',x:[0.0004491],y:[0.0008006],z:[1e-12],error_z:{type:'data',array:[0.0004491],visible:true}}],layout:{}};
+await Plotly.newPlot(plot,copy(scene.data),{});const sceneUpdate=await numericHoverPolicy.apply(plot,scene,'.5e');check(['x','y','z'].every(a=>plot._fullLayout.scene[a+'axis'].hoverformat==='.5e'),'numeric 3-D scene axes covered');results.sceneUpdates=sceneUpdate;
+const heatmap={data:[{type:'heatmap',x:[1,2],y:[1,2],z:[[0.0008006,0.0004491],[1e-12,0]]}],layout:{}};
+await Plotly.newPlot(plot,copy(heatmap.data),{});let heatBefore=await hover([0,0]);await numericHoverPolicy.apply(plot,heatmap,'.5e');let heatAfter=await hover([0,0]);check(heatAfter.includes('8.00600e'),'heatmap numeric z requires supported trace-value format');results.heatmap={before:heatBefore,after:heatAfter};
+const extreme={data:[{type:'scatter',x:[1],y:[1e12],hoverinfo:'x+y',error_y:{type:'data',array:[0.0004491],visible:true}}],layout:{}};
+await Plotly.newPlot(plot,copy(extreme.data),{});const extremeBefore=await hover();await numericHoverPolicy.apply(plot,extreme,'.5e');const extremeAfter=await hover();results.extremeScaleLimitation={sourceError:0.0004491,before:extremeBefore,after:extremeAfter,note:'Plotly default error labels reconstruct uncertainty by subtracting endpoints; formatting preserves that existing limitation.'};
+results.passed=true;window.numericHoverAcceptance=results;document.getElementById('results').textContent=JSON.stringify(results,null,2);
+})().catch(error=>{window.numericHoverAcceptance={passed:false,error:error.stack};document.getElementById('results').textContent=JSON.stringify(window.numericHoverAcceptance);});</script>

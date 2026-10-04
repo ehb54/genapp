@@ -9,6 +9,7 @@
     "ui2_plotly_chart_editor_url" : "_cedit/_chart_edit.html",
     "ui2_plotly_chart_editor_target" : "_blank",
     "ui2_plot_background_preference" : "true",
+    "ui2_plotly_hover_number_format" : ".5e",
     "ui2_auth_providers_url" : "auth/providers.php",
     "ui2_release_manifest_url" : "release-manifest.json",
     "usertheme"   : "true",
