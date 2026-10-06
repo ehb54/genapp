@@ -61,6 +61,9 @@ class em_openstack {
 
     ## no new start before this time, after one failed with openstack answering
     private $start_retry_at = 0;
+
+    ## when a server list last worked, see refresh_if_due()
+    private $last_listed = 0;
     
     function __construct( $debug = false, $configfile = "em_config.json" ) {
         $this->debug       = $debug;
@@ -394,6 +397,7 @@ class em_openstack {
         ## every list worked, so any outage is over
 
         $this->api_answering();
+        $this->last_listed = time();
 
         ## setup statefile
 
@@ -727,6 +731,22 @@ class em_openstack {
 
         $this->log( sprintf( "CLEARED: openstack answering again after %s, %d failed attempts, pool changes resume"
                              ,$this->dur_text( time() - $d->since ), $d->failures ) );
+    }
+
+    ## refresh_if_due() - list servers when nothing has for api:refresh seconds.
+    ## the state is otherwise refreshed only after a pool change, so a status
+    ## that changes on its own (a reboot, an instance gone to ERROR, a shelve
+    ## that half happened during an outage) goes unseen until the next change.
+    ## not during an outage: status() already retries every api:retry seconds
+
+    function refresh_if_due() {
+        $refresh = isset( $this->em_config->api->refresh ) ? $this->em_config->api->refresh : 600;
+
+        if ( $this->api_down || $refresh <= 0 || time() - $this->last_listed < $refresh ) {
+            return false;
+        }
+
+        return $this->reload_state();
     }
 
     ## listing_unsure() - a server list could not vouch for slot $k, warn once
@@ -1520,6 +1540,8 @@ class em_openstack {
         $last_probe = 0;
 
         while( 1 ) {
+            $this->refresh_if_due();
+
             $this->debug_echo( $this->status( true ) );
 
             ## probing is one ssh per active instance, far too slow for every

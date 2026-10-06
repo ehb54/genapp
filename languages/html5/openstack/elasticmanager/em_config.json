@@ -22,8 +22,9 @@
         ,"repeat"      : 3600
     }
     ,"api" : {
-        "retry"   : 300
-        ,"repeat" : 3600
+        "retry"    : 300
+        ,"repeat"  : 3600
+        ,"refresh" : 600
     }
     ,"flavors" : {
         "m3.2xl" : {
