@@ -493,7 +493,9 @@ class em_openstack {
     ## probe_sample() - probe every ACTIVE instance and append one line each to
     ## the probe history. records every sample, not just interesting ones: no
     ## threshold can be chosen honestly until we know what a working job and an
-    ## idle gap actually look like over time.
+    ## idle gap actually look like over time. a slot in use whose instance is
+    ## not ACTIVE gets a line too, as a failed probe: there is no OS to ask, and
+    ## a stopped or crashed instance under a running job must not go unnoticed.
 
     function probe_sample() {
         if ( !isset( $this->em_config->probe->history )
@@ -511,13 +513,23 @@ class em_openstack {
 
         foreach ( (array) $this->em_state->state as $k => $v ) {
             if ( !isset( $v->status ) || $v->status != "ACTIVE" || !isset( $v->network ) ) {
+                if ( isset( $v->use_status ) && $v->use_status == "in use" ) {
+                    $error = "instance " . ( isset( $v->status ) ? $v->status : "status unknown" );
+                    $this->probe_check( $k, $v, "?", $error );
+                    $lines[] = sprintf( "%s slot=%s cores=? load15=? pct=? waxsis=? use=inuse ip=%s tag=%s error=%s"
+                                        ,$this->timestamp()
+                                        ,$k
+                                        ,isset( $v->network ) ? $v->network : "?"
+                                        ,empty( $v->use_id ) ? "-" : $v->use_id
+                                        ,str_replace( " ", "_", $error ) );
+                }
                 continue;
             }
 
             $ok  = $this->probe_instance( $v->network, $load, $waxsis, $cores );
             $pct = $this->load_pct( $load, $cores );
 
-            $this->probe_check( $k, $v, $pct );
+            $this->probe_check( $k, $v, $pct, $ok ? "" : $this->probe_error );
 
             $lines[] = sprintf( "%s slot=%s cores=%s load15=%s pct=%s waxsis=%s use=%s ip=%s tag=%s%s"
                                 ,$this->timestamp()
@@ -529,7 +541,7 @@ class em_openstack {
                                 ,( isset( $v->use_status ) && $v->use_status == "in use" ) ? "inuse" : "idle"
                                 ,$v->network
                                 ,empty( $v->use_id ) ? "-" : $v->use_id
-                                ,$ok ? "" : " error=" . str_replace( " ", "_", $this->probe_error )
+                                ,$ok || !strlen( $this->probe_error ) ? "" : " error=" . str_replace( " ", "_", $this->probe_error )
                 );
         }
 
@@ -556,9 +568,10 @@ class em_openstack {
     ## long the stretch lasts, not on how low it goes.
     ##
     ## an unreadable probe is not counted either way: it is a different failure,
-    ## and it is already recorded with its reason in the history.
+    ## with its own alert, see probe_unreachable(). $error is why it failed,
+    ## empty when no probe could be tried at all.
 
-    function probe_check( $slot, $v, $pct ) {
+    function probe_check( $slot, $v, $pct, $error = "" ) {
         if ( !isset( $this->em_config->probe->min_pct ) ) {
             return;
         }
@@ -576,15 +589,25 @@ class em_openstack {
             $this->probe_track[ $slot ] = $this->probe_track_new( $slot, $tag, false );
         }
 
-        if ( !strlen( $tag ) || !is_numeric( $pct ) ) {
+        if ( !strlen( $tag ) ) {
             return;
         }
 
         $t      = $this->probe_track[ $slot ];
-        $min    = $this->em_config->probe->min_pct;
-        $need   = isset( $this->em_config->probe->consecutive ) ? $this->em_config->probe->consecutive : 3;
         $repeat = isset( $this->em_config->probe->repeat ) ? $this->em_config->probe->repeat : 0;
         $now    = time();
+
+        if ( !is_numeric( $pct ) ) {
+            if ( strlen( $error ) ) {
+                $this->probe_unreachable( $slot, $v, $t, $error, $now, $repeat );
+            }
+            return;
+        }
+
+        $this->probe_reachable( $slot, $t, $now );
+
+        $min    = $this->em_config->probe->min_pct;
+        $need   = isset( $this->em_config->probe->consecutive ) ? $this->em_config->probe->consecutive : 3;
 
         ## the end of a stretch long enough to warn about is mailed too, so a
         ## run of warnings finishes with an all clear instead of just stopping.
@@ -640,6 +663,60 @@ class em_openstack {
         $t->warned = $now;
     }
 
+    ## probe_unreachable() - a slot in use did not answer its probe. one miss is
+    ## normal, ssh can be slow to log in while the job keeps every core busy, so
+    ## warn after probe:fail_consecutive in a row, and again every probe:repeat
+    ## seconds while it lasts: the job may be stalled, or its instance hung or
+    ## down
+
+    function probe_unreachable( $slot, $v, $t, $error, $now, $repeat ) {
+        $need = isset( $this->em_config->probe->fail_consecutive ) ? $this->em_config->probe->fail_consecutive : 3;
+
+        if ( !$t->fail ) {
+            $t->fail_since = $now;
+        }
+
+        ++$t->fail;
+
+        if ( $t->fail < $need ) {
+            return;
+        }
+
+        if ( $t->fail_warned && ( $repeat <= 0 || $now - $t->fail_warned < $repeat ) ) {
+            return;
+        }
+
+        $this->echo_warn( sprintf( "slot %s %s: %d probes in a row failed over %s, last: %s. held %s by %s, ip %s. the job may be stalled or its instance down; if the job is gone: php em_client.php --release %s"
+                                   ,$slot
+                                   ,$t->fail_warned ? "still unreachable" : "unreachable"
+                                   ,$t->fail
+                                   ,$this->dur_text( $now - $t->fail_since )
+                                   ,$error
+                                   ,$this->held_for( isset( $v->acquired_at ) ? $v->acquired_at : 0 )
+                                   ,$t->tag
+                                   ,isset( $v->network ) ? $v->network : "?"
+                                   ,escapeshellarg( $t->tag ) ) );
+
+        $t->fail_warned = $now;
+    }
+
+    ## probe_reachable() - a slot in use answered: end any unreachable run, with
+    ## an all clear if it was long enough to warn about. decided on the run, not
+    ## on fail_warned: after a restart the warning came from the previous process
+
+    function probe_reachable( $slot, $t, $now ) {
+        $need = isset( $this->em_config->probe->fail_consecutive ) ? $this->em_config->probe->fail_consecutive : 3;
+
+        if ( $t->fail >= $need ) {
+            $this->log( sprintf( "CLEARED: slot %s answering probes again after %s, %d failed probes"
+                                 ,$slot, $this->dur_text( $now - $t->fail_since ), $t->fail ) );
+        }
+
+        $t->fail        = 0;
+        $t->fail_since  = 0;
+        $t->fail_warned = 0;
+    }
+
     ## probe_track_new() - fresh low cpu tracking for a slot.
     ##
     ## with $seed, rebuild the job's trailing low stretch from the probe history.
@@ -650,7 +727,8 @@ class em_openstack {
     ## problem.
 
     function probe_track_new( $slot, $tag, $seed ) {
-        $t = (object)[ "tag" => $tag, "low" => 0, "since" => 0, "warned" => 0 ];
+        $t = (object)[ "tag" => $tag, "low" => 0, "since" => 0, "warned" => 0
+                       ,"fail" => 0, "fail_since" => 0, "fail_warned" => 0 ];
 
         if ( !$seed
              || !strlen( $tag )
@@ -663,12 +741,27 @@ class em_openstack {
         $min = $this->em_config->probe->min_pct;
 
         while ( ( $line = fgets( $fh ) ) !== false ) {
-            if ( !preg_match( '/^(\S+ \S+) slot=(\S+) .*\bpct=(\S+) .*\btag=(\S+)/', $line, $m )
+            if ( !preg_match( '/^(\S+ \S+) slot=(\S+) .*\bpct=(\S+) .*\btag=(\S+)( error=)?/', $line, $m )
                  || $m[ 2 ] != $slot
-                 || $m[ 4 ] !== $tag
-                 || !is_numeric( $m[ 3 ] ) ) {
+                 || $m[ 4 ] !== $tag ) {
                 continue;
             }
+
+            ## a failed probe extends the unreachable run and leaves the low
+            ## run alone; a reading ends the unreachable run
+
+            if ( !is_numeric( $m[ 3 ] ) ) {
+                if ( !empty( $m[ 5 ] ) ) {
+                    if ( !$t->fail ) {
+                        $t->fail_since = strtotime( $m[ 1 ] );
+                    }
+                    ++$t->fail;
+                }
+                continue;
+            }
+
+            $t->fail       = 0;
+            $t->fail_since = 0;
 
             if ( $m[ 3 ] < $min ) {
                 if ( !$t->low ) {
@@ -683,7 +776,7 @@ class em_openstack {
 
         fclose( $fh );
 
-        $this->debug_echo( sprintf( "probe_track_new: slot %s seeded with %d low readings from history", $slot, $t->low ) );
+        $this->debug_echo( sprintf( "probe_track_new: slot %s seeded with %d low readings, %d failed probes from history", $slot, $t->low, $t->fail ) );
 
         return $t;
     }
@@ -796,6 +889,10 @@ class em_openstack {
         $load   = "?";
         $waxsis = "?";
         $cores  = "?";
+
+        ## empty unless a probe was actually tried and failed: not being able
+        ## to probe at all says nothing about the instance
+        $this->probe_error = "";
 
         if ( !$this->appconfig_loaded ) {
             $this->load_appconfig();
