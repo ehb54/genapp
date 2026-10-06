@@ -21,6 +21,11 @@
         ,"consecutive" : 48
         ,"repeat"      : 3600
     }
+    ,"api" : {
+        "retry"    : 300
+        ,"repeat"  : 3600
+        ,"refresh" : 600
+    }
     ,"flavors" : {
         "m3.2xl" : {
             "idle" : 1
