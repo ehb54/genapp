@@ -71,5 +71,50 @@ const heatmap={data:[{type:'heatmap',x:[1,2],y:[1,2],z:[[0.0008006,0.0004491],[1
 await Plotly.newPlot(plot,copy(heatmap.data),{});let heatBefore=await hover([0,0]);await numericHoverPolicy.apply(plot,heatmap,'.5e');let heatAfter=await hover([0,0]);check(heatAfter.includes('8.00600e'),'heatmap numeric z requires supported trace-value format');results.heatmap={before:heatBefore,after:heatAfter};
 const extreme={data:[{type:'scatter',x:[1],y:[1e12],hoverinfo:'x+y',error_y:{type:'data',array:[0.0004491],visible:true}}],layout:{}};
 await Plotly.newPlot(plot,copy(extreme.data),{});const extremeBefore=await hover();await numericHoverPolicy.apply(plot,extreme,'.5e');const extremeAfter=await hover();results.extremeScaleLimitation={sourceError:0.0004491,before:extremeBefore,after:extremeAfter,note:'Plotly default error labels reconstruct uncertainty by subtracting endpoints; formatting preserves that existing limitation.'};
+
+// Compare general notation without reducing the established six-digit default.
+for(const format of ['.5g','.6g']) {
+ for(const type of ['linear','log']) for(const value of [0.0936103,0.00575030,0.000478538,-0.0936103,0,1e-15,1e12]) {
+  if(type==='log'&&value<=0)continue;
+  const source={data:[{type:'scatter',x:[0.04515],y:[value],hoverinfo:'x+y',error_y:{type:'data',array:[Math.abs(value)*0.01||0.0008006],visible:true}}],layout:{yaxis:{type}}};
+  const saved=JSON.stringify(source);
+  await Plotly.newPlot(plot,copy(source.data),copy(source.layout));await numericHoverPolicy.apply(plot,source,format);
+  const text=await hover();
+  check(!/[μµ]/.test(text),'general notation avoids SI prefixes '+format+' '+type+' '+value);
+  if(value===0.0936103)check(text.includes(format==='.6g'?'0.0936103':'0.093610'),'general notation precision '+format+' '+type);
+  if(value===1e-15||value===1e12)check(/e[+−-]\d/.test(text),'extreme values retain exponent notation '+format+' '+type+' '+value);
+  check(JSON.stringify(source)===saved,'general notation preserves source '+format+' '+type+' '+value);
+  results.examples.push({format,type,value,formatted:text});
+ }
+}
+const general={data:[{type:'scatter',x:[0.04515],y:[0.01965],hoverinfo:'x+y',error_x:{type:'data',array:[0.0004491],visible:true},error_y:{type:'data',symmetric:false,array:[0.0008006],arrayminus:[0.0004491],visible:true}}],layout:{xaxis:{type:'linear',tickformat:'.4~g'},yaxis:{type:'log',tickformat:'.4~g'}}};
+const generalSaved=JSON.stringify(general);
+for(const operation of ['new','react','resize','reattach']) {
+ if(operation==='new')await Plotly.newPlot(plot,copy(general.data),copy(general.layout));
+ if(operation==='react')await Plotly.react(plot,copy(general.data),copy(general.layout));
+ if(operation==='resize'){plot.style.width='640px';await Plotly.Plots.resize(plot);}
+ if(operation==='reattach'){Plotly.purge(plot);await Plotly.newPlot(plot,copy(general.data),copy(general.layout));}
+ await numericHoverPolicy.apply(plot,general,'.6g');const text=await hover();
+ check(text.includes('0.000800600')&&text.includes('0.000449100'),'general uncertainty '+operation);
+ check(plot._fullLayout.xaxis.tickformat==='.4~g'&&plot._fullLayout.yaxis.tickformat==='.4~g','tick notation independent '+operation);
+ check(JSON.stringify(general)===generalSaved,'general lifecycle saved output '+operation);
+}
+await Plotly.extendTraces(plot,{x:[[0.055]],y:[[0.017]]},[0],10);
+check(plot._fullLayout.yaxis.hoverformat==='.6g','general notation survives bounded append');
+for(const scenario of [
+ {label:'axis',data:[{type:'scatter',x:[1],y:[0.0936103]}],layout:{yaxis:{hoverformat:'.3e'}}},
+ {label:'trace',data:[{type:'scatter',x:[1],y:[0.0936103],yhoverformat:'.2f'}],layout:{}},
+ {label:'template',data:[{type:'scatter',x:[1],y:[0.0936103],hovertemplate:'Producer %{y:.2f}<extra></extra>'}],layout:{}},
+ {label:'inherited axis',data:[{type:'scatter',x:[1],y:[0.0936103]}],layout:{template:{layout:{yaxis:{hoverformat:'.3e'}}}}}
+]) {
+ await Plotly.newPlot(plot,copy(scenario.data),copy(scenario.layout));const before=await hover();
+ await numericHoverPolicy.apply(plot,scenario,'.6g');const after=await hover();
+ const expected=['axis','inherited axis'].includes(scenario.label)?'9.361e−2':'0.09';
+ check(after.includes(expected),'general producer override '+scenario.label+' '+after);
+ if(scenario.label==='template')check(before===after,'formatted template unchanged');
+}
+await Plotly.newPlot(plot,copy(heatmap.data),{});await numericHoverPolicy.apply(plot,heatmap,'.6g');
+check((await hover([0,0])).includes('0.000800600'),'general heatmap value');
+
 results.passed=true;window.numericHoverAcceptance=results;document.getElementById('results').textContent=JSON.stringify(results,null,2);
 })().catch(error=>{window.numericHoverAcceptance={passed:false,error:error.stack};document.getElementById('results').textContent=JSON.stringify(window.numericHoverAcceptance);});</script>

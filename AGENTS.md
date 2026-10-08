@@ -563,7 +563,8 @@ current task and does not carry forward.
 
 The generic `ui2_plotly_hover_number_format` opt-in is governed by GenApp's
 `doc/UI2-Core-Extension-Policy.md` and `doc/Plotting-Architecture.md`.
-SASSIE-web selects `.5e` (six significant digits) in application directives;
+SASSIE-web selects `.6g` (six significant digits, adaptive decimal/exponent
+notation) in application directives;
 its policy is `genapp_zazzie/docs/plot_presentation.md` in the paired checkout.
 Ordinary UI2 and the Lab share one helper. Preserve explicit producer formats,
 scientific arrays, and saved outputs; do not add module-specific formatting

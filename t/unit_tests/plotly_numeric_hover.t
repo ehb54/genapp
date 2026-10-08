@@ -21,8 +21,20 @@ vm.runInContext(fs.readFileSync(process.argv[2],'utf8'),context);
 const policy=window.GenAppPlotlyLayout;
 const plain=value=>JSON.parse(JSON.stringify(value));
 (async()=>{
-for(const format of ['.0e','.5e','.15e','.1g','.16r'])assert(policy.validNumericHoverFormat(format),format);
+for(const format of ['.0e','.5e','.15e','.5g','.6g','.1g','.16r'])assert(policy.validNumericHoverFormat(format),format);
 for(const format of [undefined,'','.5s','.0g','.16e','.17g','.5f','<script>'])assert(!policy.validNumericHoverFormat(format),String(format));
+for(const format of ['.5g','.6g']) {
+ const candidate={_fullLayout:{xaxis:{type:'linear'},yaxis:{type:'log'},yaxis2:{type:'linear',hoverformat:'.3e'},xaxis2:{type:'date'}},_fullData:[{type:'heatmap',z:[[0.0008006]],hovertemplate:'Producer %{z:.2f}<extra></extra>'},{type:'heatmap',z:[[1]],zhoverformat:'.2r'}]};
+ await policy.applyNumericHoverFormat(candidate,format);
+ assert.strictEqual(candidate._fullLayout.xaxis.hoverformat,format);
+ assert.strictEqual(candidate._fullLayout.yaxis.hoverformat,format);
+ assert.strictEqual(candidate._fullLayout.yaxis2.hoverformat,'.3e');
+ assert.strictEqual(candidate._fullLayout.xaxis2.hoverformat,undefined);
+ assert.strictEqual(candidate._fullData[0].zhoverformat,format);
+ assert.strictEqual(candidate._fullData[1].zhoverformat,'.2r');
+ assert.strictEqual(candidate._fullData[0].hovertemplate,'Producer %{z:.2f}<extra></extra>');
+ calls.length=0;await policy.applyNumericHoverFormat(candidate,format);assert.strictEqual(calls.length,0);
+}
 const plot={_fullLayout:{xaxis:{type:'linear'},yaxis:{type:'log'},xaxis2:{type:'date'},yaxis2:{type:'category'},xaxis3:{type:'multicategory'},yaxis3:{type:'linear',hoverformat:'.3e'},scene:{xaxis:{type:'linear'},yaxis:{type:'linear',hoverformat:'.2g'},zaxis:{type:'linear'}}},_fullData:[
 {type:'heatmap',z:[[0.0008006,null],[0.0004491,0]]},
 {type:'heatmap',z:[[1]],zhoverformat:'.3e'},
