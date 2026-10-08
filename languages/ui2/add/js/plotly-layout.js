@@ -137,6 +137,29 @@
     });
   }
 
+  // Selected annotations are presentation elements, never data-axis inputs.
+  // Prepare a detached layout before Plotly computes its first autorange.
+  function prepareAnnotationPlacement(sourceLayout, selection) {
+    const placements = selection?.annotationPlacement;
+    if (!placements || !Array.isArray(sourceLayout?.annotations)) {
+      return sourceLayout;
+    }
+    let selectedCount = 0;
+    const annotations = sourceLayout.annotations.map((annotation) => {
+      if (!annotation?.name || placements[annotation.name] !== ABOVE_PLOT) {
+        return annotation;
+      }
+      const laneIndex = selectedCount++;
+      return {
+        ...annotation,
+        xref: "paper", yref: "paper", x: 0, y: 1,
+        xanchor: "left", yanchor: "bottom", showarrow: false,
+        align: "left", xshift: 0, yshift: laneIndex * 36
+      };
+    });
+    return selectedCount ? { ...sourceLayout, annotations } : sourceLayout;
+  }
+
   function annotationPlacementUpdate(plot, sourceLayout, selection, options) {
     const placements = selection?.annotationPlacement;
     const annotations = Array.isArray(sourceLayout?.annotations) ? sourceLayout.annotations : [];
@@ -162,6 +185,12 @@
     let laneHeight = 0;
     selected.forEach(({ index }) => {
       const height = nodeHeight(renderedAnnotations[index]) || fallbackAnnotationHeight;
+      update[`annotations[${index}].xref`] = "paper";
+      update[`annotations[${index}].x`] = 0;
+      update[`annotations[${index}].xanchor`] = "left";
+      update[`annotations[${index}].showarrow`] = false;
+      update[`annotations[${index}].align`] = "left";
+      update[`annotations[${index}].xshift`] = 0;
       update[`annotations[${index}].yref`] = "paper";
       update[`annotations[${index}].y`] = 1;
       update[`annotations[${index}].yanchor`] = "bottom";
@@ -205,7 +234,129 @@
       });
   }
 
+
+  // View-selected tick notation applies only to declared numeric axes. Work on
+  // detached axis objects so final outputs remain authoritative and unchanged.
+  function validNumericTickFormat(format) {
+    return typeof format === "string" &&
+      /^(?:\.(?:[0-9]|1[0-5])~?e|\.(?:[1-9]|1[0-6])~?[gr])$/.test(format);
+  }
+
+  function prepareNumericTickFormat(sourceLayout, selection) {
+    const formats = selection?.axisTickFormats;
+    if (!formats || typeof formats !== "object" || Array.isArray(formats)) {
+      return sourceLayout;
+    }
+    let layout = sourceLayout;
+    Object.entries(formats).forEach(([name, format]) => {
+      if (!AXIS_KEY.test(name) || !validNumericTickFormat(format)) return;
+      const axis = sourceLayout?.[name];
+      const templateAxis = sourceLayout?.template?.layout?.[name];
+      const hasExplicitTicks = (value) => value && (
+        value.tickformat || value.tickformatstops?.length ||
+        (value.tickmode === "array" && value.ticktext?.length)
+      );
+      if (!axis || !["linear", "log"].includes(axis.type) ||
+          hasExplicitTicks(axis) || hasExplicitTicks(templateAxis)) return;
+      if (layout === sourceLayout) layout = { ...sourceLayout };
+      layout[name] = { ...axis, tickformat: format };
+    });
+    return layout;
+  }
+
+  // Presentation defaults never rewrite saved figures or explicit hover policy.
+  function prepareHoverNameDisplay(sourceLayout, selection) {
+    if (selection?.hoverNameDisplay !== "full" || !sourceLayout ||
+        typeof sourceLayout !== "object" || Array.isArray(sourceLayout) ||
+        sourceLayout.hoverlabel?.namelength != null ||
+        sourceLayout.template?.layout?.hoverlabel?.namelength != null) {
+      return sourceLayout;
+    }
+    return {
+      ...sourceLayout,
+      hoverlabel: { ...sourceLayout.hoverlabel, namelength: -1 }
+    };
+  }
+
+  // Numeric defaults are opt-in presentation. Inspect Plotly's resolved axis
+  // types rather than guessing whether an input column is numeric or a date.
+  function validNumericHoverFormat(format) {
+    return typeof format === "string" &&
+      /^(?:\.(?:[0-9]|1[0-5])e|\.(?:[1-9]|1[0-6])[gr])$/.test(format);
+  }
+
+  function numericHoverFormatUpdate(plot, format) {
+    if (!validNumericHoverFormat(format)) return null;
+    const update = {};
+    const visit = (layout, prefix = "") => {
+      Object.entries(layout || {}).forEach(([name, axis]) => {
+        if (/^[xyz]axis\d*$/.test(name) && axis &&
+            ["linear", "log"].includes(axis.type) && !axis.hoverformat) {
+          update[`${prefix}${name}.hoverformat`] = format;
+        } else if (/^scene\d*$/.test(name) && axis && typeof axis === "object") {
+          visit(axis, `${prefix}${name}.`);
+        }
+      });
+    };
+    visit(plot?._fullLayout);
+    return Object.keys(update).length ? update : null;
+  }
+
+  function numericHoverValues(values) {
+    let found = false;
+    const numeric = (value) => {
+      if (Array.isArray(value) || ArrayBuffer.isView(value)) {
+        return Array.from(value).every(numeric);
+      }
+      if (value == null) return true;
+      const valid = (typeof value === "number" ||
+        (typeof value === "string" && value.trim() !== "")) &&
+        Number.isFinite(Number(value));
+      found = found || valid;
+      return valid;
+    };
+    return (Array.isArray(values) || ArrayBuffer.isView(values)) && numeric(values) && found;
+  }
+
+  function numericHoverTraceUpdates(plot, format) {
+    if (!validNumericHoverFormat(format)) return [];
+    const schema = window.Plotly?.PlotSchema?.get?.()?.traces;
+    if (!schema) return [];
+    // Non-coordinate values (for example a heatmap's z matrix) do not use a
+    // layout axis. Use only formats declared by the trace's Plotly schema.
+    return [["zhoverformat", "z"], ["valuehoverformat", "value"]].flatMap(([key, field]) => {
+      const indices = [];
+      (plot?._fullData || []).forEach((trace, index) => {
+        if (key === "zhoverformat" && trace.scene) return;
+        if (schema[trace.type]?.attributes?.[key] && !trace[key] &&
+            numericHoverValues(trace[field])) indices.push(index);
+      });
+      return indices.length ? [{ update: { [key]: format }, indices }] : [];
+    });
+  }
+
+  async function applyNumericHoverFormat(plot, format) {
+    if (!validNumericHoverFormat(format)) return;
+    const layoutUpdate = numericHoverFormatUpdate(plot, format);
+    if (layoutUpdate && typeof window.Plotly?.relayout === "function") {
+      await window.Plotly.relayout(plot, layoutUpdate);
+    }
+    if (typeof window.Plotly?.restyle === "function") {
+      for (const { update, indices } of numericHoverTraceUpdates(plot, format)) {
+        await window.Plotly.restyle(plot, update, indices);
+      }
+    }
+  }
+
   window.GenAppPlotlyLayout = {
+    validNumericTickFormat,
+    prepareNumericTickFormat,
+    prepareHoverNameDisplay,
+    validNumericHoverFormat,
+    numericHoverFormatUpdate,
+    numericHoverTraceUpdates,
+    applyNumericHoverFormat,
+    prepareAnnotationPlacement,
     annotationPlacementUpdate,
     applyAnnotationPlacement,
     applyAxisTitleOverflow,

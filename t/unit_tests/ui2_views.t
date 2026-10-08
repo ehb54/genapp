@@ -113,6 +113,7 @@ like( $app_map_js, qr/directives\.ui2_plotly_chart_editor = "true"/, 'ui2 app ma
 like( $app_map_js, qr/directives\.ui2_plotly_chart_editor_url = "_cedit\/_chart_edit\.html"/, 'ui2 app map records the application Chart Editor URL' );
 like( $app_map_js, qr/directives\.ui2_plotly_chart_editor_target = "_blank"/, 'ui2 app map records the application Chart Editor target' );
 like( $app_map_js, qr/directives\.ui2_plot_background_preference = "true"/, 'ui2 app map records opt-in plot-background preferences' );
+like( $app_map_js, qr/directives\.ui2_plotly_hover_number_format = "\.5e"/, 'ui2 app map records the generic numeric hover default' );
 like( $app_map_js, qr/directives\.ui2_auth_providers_url = "auth\/providers\.php"/, 'ui2 app map records an optional external-auth provider manifest URL' );
 like( $app_map_js, qr/directives\.ui2_release_manifest_url = "release-manifest\.json"/, 'ui2 app map records the optional application release manifest' );
 like( $app_map_js, qr/directives\.nextjobenvironment = "true"/, 'ui2 app map exposes the opted-in one-job environment setting' );
@@ -122,10 +123,13 @@ like( $app_map_js, qr/app\.help\.feedback = "Feedback help"/, 'ui2 app map recor
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
 my $plotly_surface_js = read_file( File::Spec->catfile( $ui2, qw(js plotly-surface.js) ) );
 my $plotly_layout_js = read_file( File::Spec->catfile( $ui2, qw(js plotly-layout.js) ) );
+like( $plotly_layout_js, qr/function prepareAnnotationPlacement/, 'generated helper prepares complete annotation geometry before rendering' );
+like( $ui2_js, qr/return window\.GenAppPlotlyLayout\?\.prepareAnnotationPlacement\?\./, 'common output layout preparation includes annotation policy' );
 my $ui2_css = read_file( File::Spec->catfile( $ui2, qw(css ui2.css) ) );
 like( $ui2_css, qr/\.ui2-splash-warning\[hidden\]/, 'external-auth warning banner remains absent unless an opted-in policy supplies it' );
 like( $plotly_surface_js, qr/window\.GenAppPlotlySurface/, 'generated UI2 exposes one shared final-surface resolver' );
-like( $plotly_surface_js, qr/function apply\(layout, options\).*?paper_bgcolor.*?plot_bgcolor.*?hoverlabel.*?modebar/s, 'surface resolver covers final paper, plot, hover, and toolbar presentation' );
+like( $plotly_surface_js, qr/function apply\(layout, options\).*?paper_bgcolor.*?plot_bgcolor.*?modebar/s, 'surface resolver covers final paper, plot, and toolbar presentation' );
+unlike( $plotly_surface_js, qr/result\.hoverlabel\s*=/, 'generated surface policy preserves native trace-colored hover labels' );
 like( $plotly_layout_js, qr/window\.GenAppPlotlyLayout/, 'generated UI2 exposes one shared responsive Plotly layout helper' );
 like( $plotly_layout_js, qr/function wrapPlainText.*?function axisTitleWrapUpdate.*?axisTitleOverflow/s, 'responsive layout helper wraps opted-in axis titles without application vocabulary' );
 like( $plotly_layout_js, qr/const ABOVE_PLOT = "above_plot".*?function annotationPlacementUpdate.*?annotationPlacement/s, 'responsive layout helper reserves an opted-in lane for named above-plot annotations' );
@@ -633,7 +637,7 @@ like( $ui2_js, qr/function stripUi2RuntimeStatus\(text\)/, 'ui2 runtime bridge s
 like( $ui2_js, qr/function isRuntimeDividerText\(text\)/, 'ui2 runtime bridge preserves repeated textarea divider lines' );
 like( $ui2_js, qr/output\.dataset\.runtimeText = merged/, 'ui2 runtime bridge keeps runtime text across later output redraws' );
 like( $ui2_js, qr/function renderPlotlyOutput\(output, value\)/, 'ui2 runtime bridge has a dedicated Plotly output renderer' );
-like( $ui2_js, qr/const data = plotlyDataForOutput\(output, figure\.data, layout\).*?Plotly\.react\(output, data, layout, config\)/s, 'ui2 authoritative plot snapshots update the existing Plotly graph through UI2 presentation policy' );
+like( $ui2_js, qr/const data = plotlyDataForOutput\(output, displayFigure\.data, layout\).*?Plotly\.react\(output, data, layout, config\)/s, 'ui2 authoritative plot snapshots update the existing Plotly graph through UI2 presentation policy' );
 like( $ui2_js, qr/Plotly\.extendTraces\(output, \{ x, y \}, indices/, 'ui2 plot append events extend existing traces incrementally' );
 like( $ui2_js, qr/function applyPlotlyModebarHooks\(figure, config\)/, 'ui2 runtime bridge honors legacy Plotly Chart Editor config' );
 like( $ui2_js, qr/toImageButtonOptions:\s*\{ format: "png", scale: 2 \}/, 'ui2 runtime restores scale-2 PNG export' );

@@ -38,7 +38,8 @@ they waited to get it
     --sessions          : every acquire, when it was released, wait and hold time
     --summary           : totals, hold time distribution, queue waits, churn
     --events            : the parsed log lines themselves
-    --problems          : WARNING and ERROR lines only
+    --problems          : WARNING and ERROR lines, and the CLEARED line that
+                          ends a run of idle warnings
 
     --since <when>      : only entries at or after <when>. anything strtotime
                           understands: "2026-07-01", "-3 days", "yesterday"
@@ -244,6 +245,8 @@ while ( ( $line = fgets( $fh ) ) !== false ) {
         $e->type = "shutdown";
     } else if ( preg_match( '/^WARNING: /', $msg ) ) {
         $e->type = "warning";
+    } else if ( preg_match( '/^CLEARED: /', $msg ) ) {
+        $e->type = "cleared";
     } else if ( preg_match( '/^ERROR/', $msg ) ) {
         $e->type = "error";
     }
@@ -507,7 +510,7 @@ if ( isset( $reports[ "events" ] ) ) {
 
 if ( isset( $reports[ "problems" ] ) ) {
     $rows = array_values( array_filter( $events, function( $e ) {
-        return $e->type == "warning" || $e->type == "error";
+        return $e->type == "warning" || $e->type == "error" || $e->type == "cleared";
     } ) );
 
     echo "problems:\n\n";

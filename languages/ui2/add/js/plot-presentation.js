@@ -155,7 +155,7 @@
       ["error_x", "error_y", "error_z"].forEach((key) => {
         if (errorColor && object(trace[key])) styled[key] = { ...trace[key], color: errorColor };
       });
-      const legend = policy.legend || style?.legend;
+      const legend = typeof policy.legend === "string" ? policy.legend : style?.legend;
       if (legend === "hide" || legend === "hidden") styled.showlegend = false;
       if (legend === "show" || legend === "shown") styled.showlegend = true;
       return styled;
@@ -164,11 +164,46 @@
     }
   }
 
+  // Collection-level legend policy applies only to detached display traces.
+  function styleTraces(data, traceRoles = {}, profile = {}, theme = {}) {
+    if (!Array.isArray(data)) return data;
+    const policyFor = (trace) => {
+      const role = trace?.meta?.series_role;
+      const raw = typeof role === "string" ? traceRoles?.[role] : null;
+      return typeof raw === "string" ? { token: raw } : raw;
+    };
+    const styled = data.map((trace) => styleTrace(trace, policyFor(trace), profile, theme));
+    const families = new Map();
+    data.forEach((trace, index) => {
+      const legend = policyFor(trace)?.legend;
+      if (!object(trace) || !object(legend) || legend.mode !== "compact" ||
+          typeof legend.title !== "string" || !legend.title.trim() ||
+          legend.title.length > 200 || trace.visible === false) return;
+      // Existing legend slots and producer groups remain separate.
+      const key = JSON.stringify([trace.meta.series_role,
+        trace.legend || "legend", trace.legendgroup || ""]);
+      if (!families.has(key)) families.set(key, { title: legend.title.trim(), indices: [] });
+      families.get(key).indices.push(index);
+    });
+    families.forEach(({ title, indices }, key) => {
+      indices.forEach((index, position) => {
+        styled[index] = { ...styled[index],
+          legendgroup: data[index].legendgroup || "genapp_compact_" + key,
+          showlegend: position === 0,
+          legendgrouptitle: { ...copy(styled[index].legendgrouptitle),
+            text: title + " (" + indices.length + " traces)" }
+        };
+      });
+    });
+    return styled;
+  }
+
   window.GenAppPlotPresentation = Object.freeze({
     apiVersion: 1,
     resolveProfile,
     profileForSurface,
     groupSlot,
-    styleTrace
+    styleTrace,
+    styleTraces
   });
 })();

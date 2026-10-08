@@ -184,11 +184,9 @@
         font: Object.assign({}, legend.font || {}, { color: legendTokens.text })
       });
     });
-    result.hoverlabel = Object.assign({}, result.hoverlabel || {}, {
-      bgcolor: result.hoverlabel?.bgcolor || plot.translucent,
-      bordercolor: plot.border,
-      font: Object.assign({}, result.hoverlabel?.font || {}, { color: tokensFor(result.hoverlabel?.bgcolor || plot.translucent, result.plot_bgcolor).text })
-    });
+    // Plotly resolves hover colors from the final trace or hovered point and
+    // contrasts its foreground against that color. Leave hoverlabel untouched
+    // so explicit layout/trace/template settings and per-point colors survive.
     if (Array.isArray(result.annotations)) {
       result.annotations = result.annotations.map((annotation) => {
         if (!annotation) {

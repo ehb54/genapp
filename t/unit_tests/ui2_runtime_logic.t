@@ -499,6 +499,25 @@ assert.strictEqual(inheritedSurfaceProfile.palette.primary, "#112233",
 
 const hooks = context.window.GenAppUi2TestHooks;
 
+const numericSavedFigure = {data:[{type:"scatter",x:[0.04515],y:[0.01965],error_y:{array:[0.0008006]}}],layout:{yaxis:{type:"log"}}};
+const numericSavedBefore = JSON.stringify(numericSavedFigure);
+window.GenAppUi2App.directives = {ui2_plotly_hover_number_format:".5e"};
+const numericDisplayFigure = hooks.plotlyDisplayFigure(numericSavedFigure);
+numericDisplayFigure.data[0].yhoverformat = ".5e";
+numericDisplayFigure.layout.yaxis.hoverformat = ".5e";
+assert.strictEqual(JSON.stringify(numericSavedFigure),numericSavedBefore,"opted-in UI2 formatting uses detached display data");
+const numericApplyCalls=[];
+const numericOriginalApply=window.GenAppPlotlyLayout.applyNumericHoverFormat;
+window.GenAppPlotlyLayout.applyNumericHoverFormat=(plot,format)=>numericApplyCalls.push([plot,format]);
+const numericOutput=createNode("div");
+hooks.applyPlotlyNumericHoverFormat(numericOutput);
+assert.strictEqual(numericApplyCalls[0][0],numericOutput);
+assert.strictEqual(numericApplyCalls[0][1],".5e","UI2 forwards the application format to the shared helper");
+window.GenAppPlotlyLayout.applyNumericHoverFormat=numericOriginalApply;
+window.GenAppUi2App.directives={};
+assert.strictEqual(hooks.plotlyDisplayFigure(numericSavedFigure),numericSavedFigure,"non-opted-in UI2 preserves its original display path");
+
+
 const embeddedPage = hooks.renderSystemTool({
   moduleid: "protected_admin",
   label: "Account Administration",
@@ -2321,7 +2340,7 @@ assert.strictEqual(contrastingPlotLayout.xaxis.title.font.color, "#17201d", "axi
 assert.strictEqual(contrastingPlotLayout.xaxis.tickfont.color, "#17201d", "axis ticks follow final plot luminance without losing their size");
 assert.strictEqual(contrastingPlotLayout.xaxis.tickfont.size, 11, "surface contrast preserves authored axis font sizing");
 assert.strictEqual(contrastingPlotLayout.legend.font.color, "#17201d", "legend text follows its final translucent light surface");
-assert.strictEqual(contrastingPlotLayout.hoverlabel.font.color, "#17201d", "hover text follows its final light surface");
+assert.deepStrictEqual(contrastingPlotLayout.hoverlabel, { font: { size: 10 } }, "surface policy leaves hover colors to Plotly while preserving authored sizing");
 assert.strictEqual(contrastingPlotLayout.annotations[0].font.color, "#17201d", "annotation text follows the final paper surface");
 assert.strictEqual(contrastingPlotLayout.modebar.color, "#17201d", "modebar controls follow final paper luminance");
 assert.strictEqual(JSON.stringify(producerPlotLayout), contrastSourceSnapshot, "surface contrast never mutates producer layout data");
@@ -2551,6 +2570,43 @@ assert.strictEqual(
   "Observed samples / retained observation",
   "responsive title fitting never mutates the saved source layout"
 );
+const bareAnnotationLayout = {
+  xaxis: { range: [0, 0.003], autorange: false },
+  yaxis: { range: [-5, -2] },
+  annotations: [
+    { name: "summary_note", text: "Summary" },
+    { name: "method_note", text: "Method", xref: "x", x: 4, showarrow: true },
+    { name: "inside_note", text: "Inside", xref: "x", x: 0.002, showarrow: true },
+    { text: "Unnamed", x: 0.001 }
+  ]
+};
+const bareAnnotationBefore = JSON.stringify(bareAnnotationLayout);
+const bareAnnotationSelection = { annotationPlacement: { summary_note: "above_plot", method_note: "above_plot" } };
+const preparedAnnotations = layoutPolicy.prepareAnnotationPlacement(bareAnnotationLayout, bareAnnotationSelection);
+for (const annotation of preparedAnnotations.annotations.slice(0, 2)) {
+  assert.strictEqual(annotation.xref, "paper");
+  assert.strictEqual(annotation.yref, "paper");
+  assert.strictEqual(annotation.x, 0);
+  assert.strictEqual(annotation.y, 1);
+  assert.strictEqual(annotation.xanchor, "left");
+  assert.strictEqual(annotation.yanchor, "bottom");
+  assert.strictEqual(annotation.showarrow, false);
+}
+assert.strictEqual(JSON.stringify(bareAnnotationLayout), bareAnnotationBefore, "preparation preserves saved output");
+assert.strictEqual(preparedAnnotations.annotations[2], bareAnnotationLayout.annotations[2], "unselected annotation is unchanged");
+assert.strictEqual(preparedAnnotations.annotations[3], bareAnnotationLayout.annotations[3], "unnamed annotation is unchanged");
+assert.strictEqual(preparedAnnotations.xaxis, bareAnnotationLayout.xaxis, "explicit scientific range is unchanged");
+assert.strictEqual(preparedAnnotations.yaxis, bareAnnotationLayout.yaxis);
+assert.strictEqual(layoutPolicy.prepareAnnotationPlacement(bareAnnotationLayout, {}), bareAnnotationLayout, "no opt-in is a no-op");
+const emptyAnnotationLayout = { annotations: [] };
+assert.strictEqual(layoutPolicy.prepareAnnotationPlacement(emptyAnnotationLayout, bareAnnotationSelection), emptyAnnotationLayout);
+assert.strictEqual(JSON.stringify(layoutPolicy.prepareAnnotationPlacement(preparedAnnotations, bareAnnotationSelection)), JSON.stringify(preparedAnnotations), "preparation is stable across updates");
+const preparedOutput = hooks.plotlyLayoutForOutput({
+  dataset: {},
+  closest() { return { dataset: { plotPresentation: JSON.stringify(bareAnnotationSelection) } }; }
+}, bareAnnotationLayout);
+assert.strictEqual(preparedOutput.annotations[0].xref, "paper", "the layout passed to newPlot/react is prepared");
+assert.strictEqual(preparedOutput.annotations[0].showarrow, false);
 const neutralAnnotationNodes = [48, 30].map((height) => ({
   getBoundingClientRect() { return { height }; }
 }));
@@ -2579,6 +2635,10 @@ const neutralAnnotationUpdate = layoutPolicy.annotationPlacementUpdate(
   { annotationPlacement: { summary_note: "above_plot", method_note: "above_plot" } },
   { baseTopMargin: 96 }
 );
+assert.strictEqual(neutralAnnotationUpdate["annotations[0].xref"], "paper");
+assert.strictEqual(neutralAnnotationUpdate["annotations[0].x"], 0);
+assert.strictEqual(neutralAnnotationUpdate["annotations[0].xanchor"], "left");
+assert.strictEqual(neutralAnnotationUpdate["annotations[0].showarrow"], false);
 assert.strictEqual(neutralAnnotationUpdate["annotations[0].y"], 1, "the first opted-in annotation is anchored directly above the plotting area");
 assert.strictEqual(neutralAnnotationUpdate["annotations[0].yshift"], 0, "the first annotation starts the responsive top lane");
 assert.strictEqual(neutralAnnotationUpdate["annotations[1].yshift"], 60, "additional annotations stack by measured height and the shared gap");

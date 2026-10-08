@@ -45,10 +45,25 @@ class em_openstack {
     ## why the last probe_instance() failed, so --probe can say more than "?"
     public $probe_error = "";
 
-    ## consecutive low cpu readings per slot, and whether this episode has
-    ## already been warned about. process local on purpose, see probe_check()
-    private $probe_low     = [];
-    private $probe_alerted = [];
+    ## low cpu tracking per slot: which job it belongs to, consecutive low
+    ## readings, when the low stretch began, and when we last warned (0 = not
+    ## yet). see probe_check() and probe_track_new()
+    private $probe_track = [];
+
+    ## openstack outage tracking, see api_unavailable() and api_answering():
+    ## null while server lists work, otherwise when it began, failed attempts,
+    ## when we last mailed, and when to try again
+    private $api_down = null;
+
+    ## slots a server list could not vouch for, warned about once each, see
+    ## reload_state()
+    private $listing_warned = [];
+
+    ## no new start before this time, after one failed with openstack answering
+    private $start_retry_at = 0;
+
+    ## when a server list last worked, see refresh_if_due()
+    private $last_listed = 0;
     
     function __construct( $debug = false, $configfile = "em_config.json" ) {
         $this->debug       = $debug;
@@ -214,6 +229,7 @@ class em_openstack {
         ## might have gone in_use
         $this->em_state->read_lock();
         if ( !isset( $this->em_state->state->$number ) ) {
+            $this->em_state->release_lock();
             $this->echo_warn( "em_openstack: shelve() $number is missing from em_state" );
             return false;
         }
@@ -335,11 +351,12 @@ class em_openstack {
             ## a failed list means "we do not know what is out there", not "there
             ## is nothing out there". believing it drops every tracked instance,
             ## in use included, and the next loop launches replacements for all
-            ## of them. a DNS outage did exactly that on 2025-08-04.
+            ## of them. a DNS outage did exactly that on 2025-08-04. it also
+            ## means pool changes would fail, so it starts an outage, during
+            ## which status() holds them off, see api_unavailable()
 
             if ( $this->run_cmd_last_error_code ) {
-                $this->echo_warn( "reload_state() could not list servers for project $project, leaving state untouched"
-                                  ,implode( " ", $results_all ) );
+                $this->api_unavailable( $project, implode( " ", $results_all ) );
                 return false;
             }
 
@@ -362,7 +379,8 @@ class em_openstack {
 
                 $nets = preg_split( '/genapp_net=/', $networks );
                 
-                $network = $nets[ 1 ];
+                ## empty when openstack lists the server without its network
+                $network = isset( $nets[ 1 ] ) ? $nets[ 1 ] : "";
 
                 $current->$number = (object)[];
                 $current->$number->id      = $id;
@@ -376,6 +394,11 @@ class em_openstack {
             debug_json( "current", $current );
         }
 
+        ## every list worked, so any outage is over
+
+        $this->api_answering();
+        $this->last_listed = time();
+
         ## setup statefile
 
         $this->em_state->read_lock();
@@ -387,18 +410,45 @@ class em_openstack {
         ## compare state with current
 
         foreach ( (array) $this->em_state->state as $k => $v ) {
+            ## a list taken while openstack is degraded can leave servers out or
+            ## show them without a network. believing it about a slot in use
+            ## drops or resets that slot, and the next acquire hands the running
+            ## job's machine to a second job. so a slot in use is kept as it is,
+            ## and so is any slot that merely lost its network in the list, each
+            ## warned about once. other inconsistencies are handled as before
+
+            $in_use = isset( $v->use_status ) && $v->use_status == "in use";
+
             if ( !isset( $current->$k ) ) {
+                if ( $in_use ) {
+                    $this->listing_unsure( $k, "slot $k is in use but missing from the server list, keeping it as it is" );
+                    continue;
+                }
                 $this->echo_warn( "state inconsistency, entry in state not in current" );
                 unset( $this->em_state->state->$k );
+                unset( $this->listing_warned[ $k ] );
+                continue;
+            }
+            if ( !strlen( (string) $current->$k->network ) && strlen( isset( $v->network ) ? (string) $v->network : "" ) ) {
+                $this->listing_unsure( $k, "slot $k is listed without a network, keeping it as it is" );
+                unset( $current->$k );
                 continue;
             }
             if ( $current->$k->id != $this->em_state->state->$k->id
                  || $current->$k->name != $this->em_state->state->$k->name
                  || $current->$k->network != $this->em_state->state->$k->network ) {
+                if ( $in_use ) {
+                    $this->listing_unsure( $k, "slot $k is in use but listed with a different id, name or network, keeping it as it is" );
+                    unset( $current->$k );
+                    continue;
+                }
                 $this->echo_warn( "state inconsistency, entry in state and in current, but has differences" );
                 unset( $this->em_state->state->$k );
+                unset( $this->listing_warned[ $k ] );
                 continue;
             }
+
+            $this->listing_sure( $k );
 
             if ( $this->em_state->state->$k->status != $current->$k->status ) {
                 $this->debug_echo( "instance $k status differences" );
@@ -443,7 +493,9 @@ class em_openstack {
     ## probe_sample() - probe every ACTIVE instance and append one line each to
     ## the probe history. records every sample, not just interesting ones: no
     ## threshold can be chosen honestly until we know what a working job and an
-    ## idle gap actually look like over time.
+    ## idle gap actually look like over time. a slot in use whose instance is
+    ## not ACTIVE gets a line too, as a failed probe: there is no OS to ask, and
+    ## a stopped or crashed instance under a running job must not go unnoticed.
 
     function probe_sample() {
         if ( !isset( $this->em_config->probe->history )
@@ -461,13 +513,23 @@ class em_openstack {
 
         foreach ( (array) $this->em_state->state as $k => $v ) {
             if ( !isset( $v->status ) || $v->status != "ACTIVE" || !isset( $v->network ) ) {
+                if ( isset( $v->use_status ) && $v->use_status == "in use" ) {
+                    $error = "instance " . ( isset( $v->status ) ? $v->status : "status unknown" );
+                    $this->probe_check( $k, $v, "?", $error );
+                    $lines[] = sprintf( "%s slot=%s cores=? load15=? pct=? waxsis=? use=inuse ip=%s tag=%s error=%s"
+                                        ,$this->timestamp()
+                                        ,$k
+                                        ,isset( $v->network ) ? $v->network : "?"
+                                        ,empty( $v->use_id ) ? "-" : $v->use_id
+                                        ,str_replace( " ", "_", $error ) );
+                }
                 continue;
             }
 
             $ok  = $this->probe_instance( $v->network, $load, $waxsis, $cores );
             $pct = $this->load_pct( $load, $cores );
 
-            $this->probe_check( $k, $v, $pct );
+            $this->probe_check( $k, $v, $pct, $ok ? "" : $this->probe_error );
 
             $lines[] = sprintf( "%s slot=%s cores=%s load15=%s pct=%s waxsis=%s use=%s ip=%s tag=%s%s"
                                 ,$this->timestamp()
@@ -479,7 +541,7 @@ class em_openstack {
                                 ,( isset( $v->use_status ) && $v->use_status == "in use" ) ? "inuse" : "idle"
                                 ,$v->network
                                 ,empty( $v->use_id ) ? "-" : $v->use_id
-                                ,$ok ? "" : " error=" . str_replace( " ", "_", $this->probe_error )
+                                ,$ok || !strlen( $this->probe_error ) ? "" : " error=" . str_replace( " ", "_", $this->probe_error )
                 );
         }
 
@@ -492,65 +554,322 @@ class em_openstack {
         return true;
     }
 
-    ## probe_check() - warn once when a held slot stays under probe:min_pct for
-    ## probe:consecutive readings in a row.
+    ## probe_check() - warn when a held slot stays under probe:min_pct for
+    ## probe:consecutive readings in a row, and keep warning every probe:repeat
+    ## seconds for as long as it stays there.
     ##
     ## only held slots: an idle instance is legitimately near nothing, and the
     ## floor is not zero anyway, a kworker stuck in D state since boot puts it
     ## around 2% of a 64 core box.
     ##
-    ## consecutive readings matter because load15 is a 15 minute average that
-    ## decays: a working job that pauses between waxsis frames slides down for
-    ## a while before recovering, and a single low reading proves nothing. an
-    ## unreadable probe is not counted either way, it is a different failure and
-    ## is already recorded with its reason in the history.
+    ## the window has to be long. load15 is a 15 minute average and a working
+    ## job does its between frame processing elsewhere, so a healthy job can sit
+    ## at the idle floor for well over an hour. the two cases separate on how
+    ## long the stretch lasts, not on how low it goes.
     ##
-    ## the counters live in this process, so a daemon restart just delays an
-    ## alert rather than losing correctness.
+    ## an unreadable probe is not counted either way: it is a different failure,
+    ## with its own alert, see probe_unreachable(). $error is why it failed,
+    ## empty when no probe could be tried at all.
 
-    function probe_check( $slot, $v, $pct ) {
+    function probe_check( $slot, $v, $pct, $error = "" ) {
         if ( !isset( $this->em_config->probe->min_pct ) ) {
             return;
         }
 
-        if ( !isset( $v->use_status ) || $v->use_status != "in use" || !is_numeric( $pct ) ) {
+        $tag = ( isset( $v->use_status ) && $v->use_status == "in use" && !empty( $v->use_id ) ) ? $v->use_id : "";
+
+        ## the counters belong to a job, not a slot. a slot released and then
+        ## acquired by another job must start clean, or the new job inherits
+        ## the old one's streak and its warned state. a daemon restart seeds
+        ## from the history instead, so it does not go quiet for a whole window.
+
+        if ( !isset( $this->probe_track[ $slot ] ) ) {
+            $this->probe_track[ $slot ] = $this->probe_track_new( $slot, $tag, true );
+        } else if ( $this->probe_track[ $slot ]->tag !== $tag ) {
+            $this->probe_track[ $slot ] = $this->probe_track_new( $slot, $tag, false );
+        }
+
+        if ( !strlen( $tag ) ) {
             return;
         }
 
-        $min  = $this->em_config->probe->min_pct;
-        $need = isset( $this->em_config->probe->consecutive ) ? $this->em_config->probe->consecutive : 3;
+        $t      = $this->probe_track[ $slot ];
+        $repeat = isset( $this->em_config->probe->repeat ) ? $this->em_config->probe->repeat : 0;
+        $now    = time();
+
+        if ( !is_numeric( $pct ) ) {
+            if ( strlen( $error ) ) {
+                $this->probe_unreachable( $slot, $v, $t, $error, $now, $repeat );
+            }
+            return;
+        }
+
+        $this->probe_reachable( $slot, $t, $now );
+
+        $min    = $this->em_config->probe->min_pct;
+        $need   = isset( $this->em_config->probe->consecutive ) ? $this->em_config->probe->consecutive : 3;
+
+        ## the end of a stretch long enough to warn about is mailed too, so a
+        ## run of warnings finishes with an all clear instead of just stopping.
+        ## tested on the stretch rather than $t->warned: after a restart the
+        ## warnings were sent by the previous process
 
         if ( $pct >= $min ) {
-            if ( !empty( $this->probe_alerted[ $slot ] ) ) {
-                $this->log( sprintf( "probe: slot %s back above %d%% cpu (%d%%)", $slot, $min, $pct ) );
+            if ( $t->low >= $need ) {
+                $this->log( sprintf( "CLEARED: slot %s working again: %d%% cpu after %s under %d%% (%d probes). held %s by %s"
+                                     ,$slot
+                                     ,$pct
+                                     ,$this->held_for( $t->since )
+                                     ,$min
+                                     ,$t->low
+                                     ,$this->held_for( isset( $v->acquired_at ) ? $v->acquired_at : 0 )
+                                     ,$tag ) );
             }
 
-            $this->probe_low[ $slot ]     = 0;
-            $this->probe_alerted[ $slot ] = false;
+            $t->low    = 0;
+            $t->since  = 0;
+            $t->warned = 0;
             return;
         }
 
-        $this->probe_low[ $slot ] = ( isset( $this->probe_low[ $slot ] ) ? $this->probe_low[ $slot ] : 0 ) + 1;
+        if ( !$t->low ) {
+            $t->since = $now;
+        }
 
-        $this->debug_echo( sprintf( "probe_check: slot %s at %d%%, %d of %d low readings", $slot, $pct, $this->probe_low[ $slot ], $need ) );
+        ++$t->low;
 
-        if ( $this->probe_low[ $slot ] < $need || !empty( $this->probe_alerted[ $slot ] ) ) {
+        $this->debug_echo( sprintf( "probe_check: slot %s at %d%%, %d of %d low readings", $slot, $pct, $t->low, $need ) );
+
+        if ( $t->low < $need ) {
             return;
         }
 
-        ## one alert per episode, not one every interval until it recovers
+        if ( $t->warned && ( $repeat <= 0 || $now - $t->warned < $repeat ) ) {
+            return;
+        }
 
-        $this->probe_alerted[ $slot ] = true;
-
-        $this->echo_warn( sprintf( "slot %s looks idle: %d%% cpu, under %d%% for %d consecutive probes %ds apart. held %s by %s, ip %s"
+        $this->echo_warn( sprintf( "slot %s %s: %d%% cpu, under %d%% for %s (%d probes). held %s by %s, ip %s. if the job is gone: php em_client.php --release %s"
                                    ,$slot
+                                   ,$t->warned ? "still idle" : "looks idle"
                                    ,$pct
                                    ,$min
-                                   ,$this->probe_low[ $slot ]
-                                   ,isset( $this->em_config->probe->interval ) ? $this->em_config->probe->interval : 0
+                                   ,$this->held_for( $t->since )
+                                   ,$t->low
                                    ,$this->held_for( isset( $v->acquired_at ) ? $v->acquired_at : 0 )
-                                   ,empty( $v->use_id ) ? "unknown" : $v->use_id
-                                   ,isset( $v->network ) ? $v->network : "?" ) );
+                                   ,$tag
+                                   ,isset( $v->network ) ? $v->network : "?"
+                                   ,escapeshellarg( $tag ) ) );
+
+        $t->warned = $now;
+    }
+
+    ## probe_unreachable() - a slot in use did not answer its probe. one miss is
+    ## normal, ssh can be slow to log in while the job keeps every core busy, so
+    ## warn after probe:fail_consecutive in a row, and again every probe:repeat
+    ## seconds while it lasts: the job may be stalled, or its instance hung or
+    ## down
+
+    function probe_unreachable( $slot, $v, $t, $error, $now, $repeat ) {
+        $need = isset( $this->em_config->probe->fail_consecutive ) ? $this->em_config->probe->fail_consecutive : 3;
+
+        if ( !$t->fail ) {
+            $t->fail_since = $now;
+        }
+
+        ++$t->fail;
+
+        if ( $t->fail < $need ) {
+            return;
+        }
+
+        if ( $t->fail_warned && ( $repeat <= 0 || $now - $t->fail_warned < $repeat ) ) {
+            return;
+        }
+
+        $this->echo_warn( sprintf( "slot %s %s: %d probes in a row failed over %s, last: %s. held %s by %s, ip %s. the job may be stalled or its instance down; if the job is gone: php em_client.php --release %s"
+                                   ,$slot
+                                   ,$t->fail_warned ? "still unreachable" : "unreachable"
+                                   ,$t->fail
+                                   ,$this->dur_text( $now - $t->fail_since )
+                                   ,$error
+                                   ,$this->held_for( isset( $v->acquired_at ) ? $v->acquired_at : 0 )
+                                   ,$t->tag
+                                   ,isset( $v->network ) ? $v->network : "?"
+                                   ,escapeshellarg( $t->tag ) ) );
+
+        $t->fail_warned = $now;
+    }
+
+    ## probe_reachable() - a slot in use answered: end any unreachable run, with
+    ## an all clear if it was long enough to warn about. decided on the run, not
+    ## on fail_warned: after a restart the warning came from the previous process
+
+    function probe_reachable( $slot, $t, $now ) {
+        $need = isset( $this->em_config->probe->fail_consecutive ) ? $this->em_config->probe->fail_consecutive : 3;
+
+        if ( $t->fail >= $need ) {
+            $this->log( sprintf( "CLEARED: slot %s answering probes again after %s, %d failed probes"
+                                 ,$slot, $this->dur_text( $now - $t->fail_since ), $t->fail ) );
+        }
+
+        $t->fail        = 0;
+        $t->fail_since  = 0;
+        $t->fail_warned = 0;
+    }
+
+    ## probe_track_new() - fresh low cpu tracking for a slot.
+    ##
+    ## with $seed, rebuild the job's trailing low stretch from the probe history.
+    ## only done the first time this process sees a slot, i.e. after a restart:
+    ## a job that has just changed hands has no history worth reading. the time
+    ## of the last warning is not recoverable, so a restart during an ongoing
+    ## stretch warns again straight away, which is right for an unresolved
+    ## problem.
+
+    function probe_track_new( $slot, $tag, $seed ) {
+        $t = (object)[ "tag" => $tag, "low" => 0, "since" => 0, "warned" => 0
+                       ,"fail" => 0, "fail_since" => 0, "fail_warned" => 0 ];
+
+        if ( !$seed
+             || !strlen( $tag )
+             || !isset( $this->em_config->probe->history )
+             || !file_exists( $this->em_config->probe->history )
+             || !( $fh = fopen( $this->em_config->probe->history, "r" ) ) ) {
+            return $t;
+        }
+
+        $min = $this->em_config->probe->min_pct;
+
+        while ( ( $line = fgets( $fh ) ) !== false ) {
+            if ( !preg_match( '/^(\S+ \S+) slot=(\S+) .*\bpct=(\S+) .*\btag=(\S+)( error=)?/', $line, $m )
+                 || $m[ 2 ] != $slot
+                 || $m[ 4 ] !== $tag ) {
+                continue;
+            }
+
+            ## a failed probe extends the unreachable run and leaves the low
+            ## run alone; a reading ends the unreachable run
+
+            if ( !is_numeric( $m[ 3 ] ) ) {
+                if ( !empty( $m[ 5 ] ) ) {
+                    if ( !$t->fail ) {
+                        $t->fail_since = strtotime( $m[ 1 ] );
+                    }
+                    ++$t->fail;
+                }
+                continue;
+            }
+
+            $t->fail       = 0;
+            $t->fail_since = 0;
+
+            if ( $m[ 3 ] < $min ) {
+                if ( !$t->low ) {
+                    $t->since = strtotime( $m[ 1 ] );
+                }
+                ++$t->low;
+            } else {
+                $t->low   = 0;
+                $t->since = 0;
+            }
+        }
+
+        fclose( $fh );
+
+        $this->debug_echo( sprintf( "probe_track_new: slot %s seeded with %d low readings, %d failed probes from history", $slot, $t->low, $t->fail ) );
+
+        return $t;
+    }
+
+    ## api_unavailable() - a server list failed, so openstack is down or
+    ## degraded. mail when that starts and every api:repeat seconds while it
+    ## lasts, only log the attempts in between, and have status() hold off pool
+    ## changes for api:retry seconds before the next attempt
+
+    function api_unavailable( $project, $detail ) {
+        $now    = time();
+        $retry  = isset( $this->em_config->api->retry )  ? $this->em_config->api->retry  : 300;
+        $repeat = isset( $this->em_config->api->repeat ) ? $this->em_config->api->repeat : 3600;
+
+        if ( !$this->api_down ) {
+            $this->api_down = (object)[ "since" => $now, "failures" => 0, "warned" => 0, "next_try" => 0 ];
+        }
+
+        $d = $this->api_down;
+        ++$d->failures;
+        $d->next_try = $now + $retry;
+
+        if ( !$d->warned ) {
+            $this->echo_warn( sprintf( "reload_state() could not list servers for project %s, leaving state untouched and holding off pool changes, retrying every %ds"
+                                       ,$project, $retry ), $detail );
+            $d->warned = $now;
+        } else if ( $repeat > 0 && $now - $d->warned >= $repeat ) {
+            $this->echo_warn( sprintf( "openstack still unavailable after %s, %d failed attempts, still holding off pool changes"
+                                       ,$this->dur_text( $now - $d->since ), $d->failures ), $detail );
+            $d->warned = $now;
+        } else {
+            ## no detail: it could contain a word that mails
+            $this->log( sprintf( "openstack still unavailable, attempt %d", $d->failures ) );
+        }
+    }
+
+    ## api_answering() - a server list worked: end any outage, and say so
+    function api_answering() {
+        if ( !$this->api_down ) {
+            return;
+        }
+
+        $d = $this->api_down;
+        $this->api_down = null;
+
+        $this->log( sprintf( "CLEARED: openstack answering again after %s, %d failed attempts, pool changes resume"
+                             ,$this->dur_text( time() - $d->since ), $d->failures ) );
+    }
+
+    ## refresh_if_due() - list servers when nothing has for api:refresh seconds.
+    ## the state is otherwise refreshed only after a pool change, so a status
+    ## that changes on its own (a reboot, an instance gone to ERROR, a shelve
+    ## that half happened during an outage) goes unseen until the next change.
+    ## not during an outage: status() already retries every api:retry seconds
+
+    function refresh_if_due() {
+        $refresh = isset( $this->em_config->api->refresh ) ? $this->em_config->api->refresh : 600;
+
+        if ( $this->api_down || $refresh <= 0 || time() - $this->last_listed < $refresh ) {
+            return false;
+        }
+
+        return $this->reload_state();
+    }
+
+    ## listing_unsure() - a server list could not vouch for slot $k, warn once
+    function listing_unsure( $k, $msg ) {
+        if ( empty( $this->listing_warned[ $k ] ) ) {
+            $this->echo_warn( $msg );
+            $this->listing_warned[ $k ] = time();
+        }
+    }
+
+    ## listing_sure() - slot $k is listed normally, close any warning about it
+    function listing_sure( $k ) {
+        if ( !empty( $this->listing_warned[ $k ] ) ) {
+            unset( $this->listing_warned[ $k ] );
+            $this->log( "CLEARED: slot $k is listed normally again" );
+        }
+    }
+
+    ## dur_text() - a duration for messages: "2d 03h", "3h 05m", "12m", "40s"
+    function dur_text( $s ) {
+        if ( $s >= 86400 ) {
+            return sprintf( "%dd %02dh", intdiv( $s, 86400 ), intdiv( $s % 86400, 3600 ) );
+        }
+        if ( $s >= 3600 ) {
+            return sprintf( "%dh %02dm", intdiv( $s, 3600 ), intdiv( $s % 3600, 60 ) );
+        }
+        if ( $s >= 60 ) {
+            return sprintf( "%dm", intdiv( $s, 60 ) );
+        }
+        return sprintf( "%ds", $s );
     }
 
     ## held_for() - how long a slot has been held, from acquired_at
@@ -570,6 +889,10 @@ class em_openstack {
         $load   = "?";
         $waxsis = "?";
         $cores  = "?";
+
+        ## empty unless a probe was actually tried and failed: not being able
+        ## to probe at all says nothing about the instance
+        $this->probe_error = "";
 
         if ( !$this->appconfig_loaded ) {
             $this->load_appconfig();
@@ -643,6 +966,16 @@ class em_openstack {
 
     function status( $update = false, $probe = false ) {
         $this->debug_echo( "em_openstack: status()" );
+
+        ## while openstack is unavailable every pool change fails, and every
+        ## failure mails, every service loop. so report only, and try a server
+        ## list again every api:retry seconds: the first one that works ends the
+        ## outage, refreshes the state, and pool changes resume in this same loop
+
+        if ( $update && $this->api_down
+             && ( time() < $this->api_down->next_try || !$this->reload_state() ) ) {
+            $update = false;
+        }
 
         $this->em_state->read_lock();
 
@@ -806,23 +1139,36 @@ class em_openstack {
                 $do_reload_state = true;
             }
                 
-            if ( $instances_to_start > 0
+            ## a start can fail with openstack answering: no capacity, no
+            ## quota. retried every loop it fails and mails every loop, so after
+            ## one fails wait api:retry seconds before the next
+
+            $start_now = $instances_to_start > 0 && time() >= $this->start_retry_at;
+
+            if ( $start_now
                  || $instances_to_idle > 0 ) {
                 $this->debug_echo( "updating.... (to start $instances_to_start, to idle $instances_to_idle) " );
                 $do_reload_state = true;
                 while (
-                    $instances_to_start > 0
+                    $start_now
+                    && $instances_to_start > 0
                     && count( $shelved )
                     ) {
                     $k = array_shift( $shelved );
                     if ( $this->unshelve( $k ) ) {
                         ## ok
                         --$instances_to_start;
+                    } else if ( !$this->reload_state() ) {
+                        ## openstack itself is down, so every further change
+                        ## fails and mails too. the outage warning covers it
+                        break;
                     }
                 }
                 while (
-                    $instances_to_start > 0
-                    && count( $missing ) ) {
+                    $start_now
+                    && $instances_to_start > 0
+                    && count( $missing )
+                    && !$this->api_down ) {
                     $k = array_shift( $missing );
                     if ( isset( $this->em_state->state->$k ) ) {
                         $this->echo_warn( "trying to launch an instance that already exists!" );
@@ -830,15 +1176,24 @@ class em_openstack {
                         if ( $this->launch_one( $k ) ) {
                             ## ok
                             --$instances_to_start;
+                        } else {
+                            ## a boot that fails fails the same way for every
+                            ## slot number, so do not try them all. the list
+                            ## tells an outage from a failure of its own
+                            $this->reload_state();
+                            break;
                         }
                     }
                 }                    
-                if ( $instances_to_start > 0 ) {
-                    $this->echo_warn( "could not start expected instances" );
+                if ( $start_now && $instances_to_start > 0 && !$this->api_down ) {
+                    $retry = isset( $this->em_config->api->retry ) ? $this->em_config->api->retry : 300;
+                    $this->echo_warn( "could not start expected instances, next try in {$retry}s" );
+                    $this->start_retry_at = time() + $retry;
                 }
 
                 while ( $instances_to_idle > 0
-                        && count( $idle ) ) {
+                        && count( $idle )
+                        && !$this->api_down ) {
                     $k = array_shift( $idle );
                     if ( $this->shelve( $k ) ) {
                         ## ok
@@ -846,16 +1201,22 @@ class em_openstack {
                     } else {
                         ## likely was acquired, assume needed, don't idle, worry about it next loop
                         --$instances_to_idle;
+                        if ( !$this->reload_state() ) {
+                            break;
+                        }
                     }
                 }
 
-                if ( $instances_to_idle > 0 ) {
+                if ( $instances_to_idle > 0 && !$this->api_down ) {
                     $this->echo_warn( "could not idle expected instances" );
                 }
             }
 
             if ( $do_reload_state ) {
-                $this->reload_state();
+                ## unless this loop already found openstack down
+                if ( !$this->api_down ) {
+                    $this->reload_state();
+                }
             } else {
                 ## nothing to update
                 return "nothing to update\n";
@@ -1276,6 +1637,8 @@ class em_openstack {
         $last_probe = 0;
 
         while( 1 ) {
+            $this->refresh_if_due();
+
             $this->debug_echo( $this->status( true ) );
 
             ## probing is one ssh per active instance, far too slow for every
@@ -1384,7 +1747,7 @@ class em_openstack {
     function log( $msg ) {
         file_put_contents( $this->logfile, $this->timestamp() . " - $msg\n", LOCK_EX | FILE_APPEND );
         if ( isset( $this->notify )
-             && preg_match( '/(ERROR|WARNING|STARTUP|SHUTDOWN)/', $msg ) ) {
+             && preg_match( '/(ERROR|WARNING|STARTUP|SHUTDOWN|CLEARED)/', $msg ) ) {
             $tag = "";
             if ( preg_match( '/WARNING/', $msg ) ) {
                 $tag .= " WARNING";
@@ -1397,6 +1760,9 @@ class em_openstack {
             }
             if ( preg_match( '/SHUTDOWN/', $msg ) ) {
                 $tag .= "shutdown";
+            }
+            if ( preg_match( '/CLEARED/', $msg ) ) {
+                $tag .= " CLEARED";
             }
             $host = gethostname();
             mymail( $this->notify, "[$host][$this->id] $tag", $msg );
@@ -1486,11 +1852,40 @@ class em_openstack {
         }
     }
 
-    ## could verify tag for a validated release
+    ## release() - free a slot, given its number or the tag of the job holding
+    ## it. by hand the tag is the safer form: it can only free that job's slot,
+    ## so acting on a stale warning cannot release a job that has taken the
+    ## slot since. the log line always carries the number, em_log.php reads it
+
     function release( $number ) {
         $this->debug_echo( "em_openstack: release( $number )" );
-        $this->log( "em_client.php : release $number" );
         $this->em_state->read_lock();
+
+        if ( !preg_match( '/^\d+$/', $number ) ) {
+            $tag    = $number;
+            $number = null;
+            foreach ( (array) $this->em_state->state as $k => $v ) {
+                if ( isset( $v->use_status ) && $v->use_status == "in use"
+                     && isset( $v->use_id ) && $v->use_id === $tag ) {
+                    $number = $k;
+                    break;
+                }
+            }
+            if ( $number === null ) {
+                $this->em_state->release_lock();
+                $this->echo_warn( "release $tag: no slot is held by that tag" );
+                return false;
+            }
+        }
+
+        $this->log( "em_client.php : release $number" );
+
+        if ( !isset( $this->em_state->state->$number ) ) {
+            $this->em_state->release_lock();
+            $this->echo_warn( "release $number: no such slot" );
+            return false;
+        }
+
         if ( $this->em_state->state->$number->use_status != "in use" ) {
             $this->em_state->release_lock();
             $this->echo_warn( "release $number was not in use" );

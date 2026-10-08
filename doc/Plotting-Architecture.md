@@ -83,6 +83,30 @@ to the generic `plotPresentation.annotationPlacement` value `above_plot`.
 UI2 measures and stacks those opted-in annotations in a responsive top lane;
 the source figure remains unchanged for completion and reattachment.
 
+For annotations selected as `above_plot`, UI2 supplies complete paper-coordinate
+placement and disables arrows before the first Plotly render or update. The
+subsequent measured pass adjusts the responsive lane and margin without using
+scientific axes for placement. Preparation must not mutate the saved figure;
+unnamed and unselected annotations retain their declared behavior. Application
+preview tools use the same preparation helper before rendering.
+
+
+An application may set `ui2_plotly_hover_number_format` to a bounded numeric
+D3 format: `.0e` through `.15e`, or `.1g`/`.1r` through `.16g`/`.16r`.
+Missing or invalid settings preserve ordinary Plotly behavior. The shared
+`GenAppPlotlyLayout.applyNumericHoverFormat` helper applies the default after
+Plotly resolves axis types, including numbered Cartesian axes and 3D scenes.
+It skips date/category axes and preserves explicit axis formats, including
+formats inherited from a Plotly template. Supported non-coordinate numeric
+trace values, such as a heatmap's z matrix, use their schema-declared formats.
+Explicit trace formats and producer-authored template text/inline formats
+remain authoritative; unformatted template placeholders inherit the default.
+Normal UI2 and application previews call this same idempotent helper on
+detached display data, without changing scientific arrays or saved outputs.
+The policy persists across redraw, bounded updates, resize, completion, and
+normal final-output reattachment. It does not introduce new uncertainty labels
+or repair Plotly's existing endpoint-subtraction precision limitations.
+
 ## Required Implementation
 
 1. **Confirm the data source.** Use existing SASSIE outputs or existing stream
@@ -231,3 +255,95 @@ Read the applicable `AGENTS.md` files in `genapp`, `genapp_zazzie`, and
 whether SASSIE changes are required, and whether a shared driver/helper gap
 exists. Preserve unrelated work and do not move to another module group until
 the current reference work passes its deployed acceptance checks.
+
+### Hover-label trace identity
+
+The final-surface resolver leaves Plotly hover-label color properties
+unspecified unless the figure already declares them. After presentation colors
+resolve, Plotly selects the line or hovered-point color, including per-point
+arrays and colorscales, and contrasts the label foreground and border against
+that background. Do not inject a neutral plot-wide hover background, text color,
+or border color. Explicit layout, trace, and template hover styling remains
+authoritative. Ordinary UI2 and application previews use this same policy.
+
+Closest and x/y compare hover use individual trace-colored labels. Unified
+hover retains Plotly's shared box and colored series keys. This changes display
+only; scientific arrays, uncertainty, axes, saved outputs, and reattachment
+remain unchanged. No new application directive or producer metadata is needed.
+
+Native Plotly contrast is not a universal 4.5:1 guarantee. With Plotly 2.35.2,
+white label text on `#ea580c` has a measured contrast ratio of approximately
+3.56:1. Keep that limitation visible during acceptance; stricter contrast
+requires separately scoped renderer work rather than a module workaround.
+
+## Numeric axis tick notation
+
+A result group may opt into `plotPresentation.axisTickFormats`, mapping ordinary
+Cartesian axis names (including numbered x/y axes) to bounded numeric D3
+formats. Supported formats are `.0e` through `.15e`, `.1g`/`.1r` through
+`.16g`/`.16r`, optionally with `~` before the type to trim trailing zeros.
+For example, `{"xaxis": ".4~g", "yaxis": ".4~g"}` selects concise adaptive
+labels with up to four significant digits.
+
+The shared `GenAppPlotlyLayout.prepareNumericTickFormat` helper prepares
+detached axis objects before rendering in UI2 and application previews. It
+applies only to explicitly declared linear/log axes. Missing or invalid
+settings, absent/inferred axes, and date/category axes retain ordinary Plotly
+behavior. Explicit axis or template tick formats, tick-format stops, and
+custom tick-text arrays remain authoritative. The setting changes notation
+only: values, uncertainty, titles, units, axis types/ranges, hover formats,
+final outputs, and reattachment contracts remain unchanged. Reapplying the
+setting is idempotent; removing it restores the original saved figure behavior.
+
+Plotly 2.35.2 uses a `fakehover` formatting path for some default log-axis
+decade labels. An axis hover default can consequently pad those ticks. A
+separate explicit display tick format avoids that path without reducing hover
+precision. Test both ticks and hover labels after redraw, resizing, updates,
+completion, and reconstruction from saved final output. The generic helper
+must never branch on application, module, output, or scientific-role names.
+
+## Compact legends for repeated families
+
+A view's `plotPresentation.traceRoles` mapping may select
+`legend: {"mode": "compact", "title": "Repeated observations"}` for an opaque
+series role. The shared `GenAppPlotPresentation.styleTraces` helper applies
+this opt-in to detached display traces in ordinary UI2 and application previews.
+It shows the first eligible member beneath the supplied family title and trace
+count, and hides the other members' legend entries. All curves remain plotted.
+Existing legend slots and producer legend groups remain separate; traces with
+`visible: false` are excluded. Ordinary Plotly group interaction applies.
+
+The first entry retains its original trace name. The family title describes
+the shared role rather than promising identical styling for every member.
+Names, metadata, scientific arrays, trace order, source layouts, and saved
+outputs are unchanged. Empty data removes the display group; completion and
+reattachment reconstruct it from the ordinary final payload and current view.
+Missing or invalid policies retain existing behavior. Titles must be nonempty
+strings of at most 200 characters. Removing the opt-in restores the original
+presentation. A role-level `legend: "show"` also explicitly identifies a single
+named trace that Plotly's automatic legend would otherwise omit.
+
+Issue `ehb54/zazzie#304` supplied the neutral repeated-family reproduction:
+showing 100 members through the existing per-trace policy produced 100 entries.
+The owner approved this generic collection-level opt-in, its exact file scope,
+and deployment. Core selects only declared opaque roles, never module ids,
+output ids, scientific terms, or trace-name parsing. Tests cover opt-in,
+controls, producer groups, empty/populated/cleared/repopulated data, immutable
+source payloads, and saved-output reconstruction. HTML5 generation is unchanged.
+
+## Full hover names
+
+A result group may opt into `plotPresentation.hoverNameDisplay: "full"`.
+The shared `GenAppPlotlyLayout.prepareHoverNameDisplay` helper sets the default
+hover-name length to `-1` on a detached display layout before rendering.
+Missing or invalid selections preserve ordinary Plotly behavior. Explicit
+layout, trace, and template name lengths, including per-point arrays, remain
+authoritative. Other hover styling and producer-authored templates remain
+unchanged. Ordinary UI2 and application previews use the same helper.
+
+This is presentation only: scientific trace names, arrays, uncertainty, numeric
+formats, axes, units, saved outputs, and reattachment contracts do not change.
+Apply the selection again when rendering updates, completed output, or saved
+final output. Verify closest and compare-data hover on overlapping long names,
+light and dark surfaces, expanded/restore views, and saved-output reconstruction.
+Removing the view selection restores native behavior from the original figure.

@@ -36,6 +36,22 @@ before planning, recommending architecture, or changing code.
   most recently described, including logout. It does not authorize another
   account, legacy HTML5, broader operations, or a later task. If no pending
   acceptance block was described, ask for its scope.
+- `tell_susan`: comment on the GitHub issue established by the current task
+  context and ask `@skrueger111` to evaluate. Also add `skrueger111` as an
+  assignee and remove `madscatt` as an assignee if assigned; preserve all other
+  assignees. If the request specifies an issue such as `gh #XXX`, use that
+  issue; if no issue can be determined, ask rather than guessing.
+- `tell_susan_plus` means "plan and manifest approved, gacp, approved to deploy
+  if needed, codex3 approved, if passed tell_susan." It approves the most
+  recently presented exact plan and file manifest for the current task,
+  requests guarded gacp, and authorizes the established deployment workflow
+  when needed to validate those changes. It grants fresh authorization to use
+  administrator account `codex3` only for the most recently described UI2
+  acceptance operations, including logout. Execute `tell_susan` only after
+  all required validation and acceptance checks pass. If the plan, manifest,
+  deployment target, or acceptance scope is missing, ask for that scope; do
+  not infer approval for unrelated work or container maintenance. The separate
+  **Publish YAML** and **Recompile UI2** gates still require their own approval.
 - Do not use the phrase "smoke test" in communications, chat, Markdown, or documentation.
 
 ### Generated HTML5 artifact policy
@@ -558,3 +574,53 @@ current task and does not carry forward.
   separate named workflow with separate approval.
 - Do not deploy unreviewed core changes or use Zazzie3 regeneration as a
   substitute for local generic and application-specific validation.
+
+### Numeric hover formatting route
+
+The generic `ui2_plotly_hover_number_format` opt-in is governed by GenApp's
+`doc/UI2-Core-Extension-Policy.md` and `doc/Plotting-Architecture.md`.
+SASSIE-web selects `.6g` (six significant digits, adaptive decimal/exponent
+notation) in application directives;
+its policy is `genapp_zazzie/docs/plot_presentation.md` in the paired checkout.
+Ordinary UI2 and the Lab share one helper. Preserve explicit producer formats,
+scientific arrays, and saved outputs; do not add module-specific formatting
+branches, presentation YAML keys, or new 3D uncertainty-label behavior.
+
+### Hover-label identity route
+
+GenApp's `doc/Plotting-Architecture.md` and `doc/UI2-Core-Extension-Policy.md`
+govern hover colors. Ordinary UI2 and the Lab preserve native trace/point colors
+and explicit hover styling without changing scientific data or saved outputs.
+Do not add module color workarounds. Application guidance and the documented
+native orange contrast limitation are in the paired
+`genapp_zazzie/docs/plot_presentation.md` (`ehb54/zazzie#299`).
+
+### Numeric tick notation route
+
+Generic per-axis display tick formatting is governed by GenApp's
+`doc/Plotting-Architecture.md` and `doc/UI2-Core-Extension-Policy.md` through
+`plotPresentation.axisTickFormats`. Application views opt in; ordinary UI2
+and the Lab share `prepareNumericTickFormat`. Preserve explicit producer tick
+formats, scientific values, axis scales, hover precision, and saved outputs.
+Do not put tick styling in SASSIE, drivers, or presentation YAML. Application
+selection is documented in `genapp_zazzie/docs/plot_presentation.md` (#302).
+
+### Compact legend route
+
+Generic repeated-family legend display is governed by GenApp's
+`doc/Plotting-Architecture.md` and `doc/UI2-Core-Extension-Policy.md` through
+the view's `plotPresentation.traceRoles` legend opt-in. Ordinary UI2 and the
+Lab use the same collection-level evaluator. Preserve trace names, metadata,
+scientific arrays, source payloads, completion, and reattachment. Application
+selection belongs in `genapp_zazzie/docs/plot_presentation.md` (#304); do not
+put legend policy in SASSIE or add module-specific core branches.
+
+### Full hover-name presentation route
+
+GenApp's `doc/Plotting-Architecture.md` and `doc/UI2-Core-Extension-Policy.md`
+govern the generic `plotPresentation.hoverNameDisplay: "full"` selection.
+Ordinary UI2 and the Lab share `prepareHoverNameDisplay` and preserve explicit
+layout, trace, and template name lengths. Keep scientific names and saved
+outputs unchanged; do not add SASSIE or driver name-length workarounds.
+The Extract Utilities opt-in is documented in the paired
+`genapp_zazzie/docs/plot_presentation.md` (#305).

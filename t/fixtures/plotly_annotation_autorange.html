@@ -1,0 +1,67 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Generic above-plot annotation acceptance</title>
+<script src="../../languages/html5/add/js/plotly-latest.min.js"></script>
+<script src="../../languages/ui2/add/js/plotly-layout.js"></script>
+<style>.plot {width:640px;height:480px;display:inline-block}</style>
+<div id="control" class="plot"></div><div id="selected" class="plot"></div>
+<pre id="results">Running…</pre>
+<script>
+(async () => {
+  const checks = [];
+  function check(value, message) { if (!value) throw new Error(message); checks.push(message); }
+  const copy = value => JSON.parse(JSON.stringify(value));
+  const selection = {annotationPlacement:{summary_note:"above_plot",method_note:"above_plot"}};
+  const source = {
+    margin:{t:96,b:70,l:80,r:30}, uirevision:"neutral-fixture",
+    xaxis:{title:"Observation squared"}, yaxis:{title:"Log response"},
+    annotations:[{name:"summary_note",text:"Summary<br>Second line"}]
+  };
+  const data = [{type:"scatter",mode:"lines",x:[0.0001,0.0004,0.0009],y:[-4,-4.2,-4.5]}];
+  const before = JSON.stringify(source);
+  const control = document.getElementById("control"), selected = document.getElementById("selected");
+  const config = {responsive:true};
+  const policy = window.GenAppPlotlyLayout;
+  const without = copy(source); delete without.annotations;
+  await Plotly.newPlot(control,copy(data),without,config);
+  await Plotly.newPlot(selected,copy(data),policy.prepareAnnotationPlacement(copy(source),selection),config);
+  const ranges = plot => [plot._fullLayout.xaxis.range.slice(),plot._fullLayout.yaxis.range.slice()];
+  const baseline = ranges(control);
+  const equalRanges = (a,b) => a.every((range,i) => range.every((v,j)=>Math.abs(v-b[i][j]) < 1e-10));
+  check(equalRanges(ranges(selected),baseline),"Initial scientific autorange matches annotation-free control");
+  check(selected._fullLayout.annotations[0].showarrow === false,"No annotation arrow after initial rendering");
+  await policy.applyAnnotationPlacement(selected,source,selection,{baseTopMargin:96});
+  check(equalRanges(ranges(selected),baseline),"Measured lane leaves scientific autorange unchanged");
+  check(!selected.querySelector(".annotation-arrow-g"),"No rendered arrow element");
+  await Plotly.relayout(selected,{"xaxis.range":[0.0002,0.0006],"yaxis.range":[-4.4,-4.1]});
+  const zoom = ranges(selected);
+  await Plotly.react(selected,copy(data),policy.prepareAnnotationPlacement(copy(source),selection),config);
+  await policy.applyAnnotationPlacement(selected,source,selection,{baseTopMargin:96});
+  check(equalRanges(ranges(selected),zoom),"User zoom survives react and measured placement");
+  for (const width of [1000,360,640]) {
+    selected.style.width = width+"px";
+    await Plotly.Plots.resize(selected);
+    await policy.applyAnnotationPlacement(selected,source,selection,{baseTopMargin:96});
+    check(equalRanges(ranges(selected),zoom),"Zoom survives resize to "+width);
+  }
+  const multiple=copy(source);
+  multiple.annotations.push({name:"method_note",text:"Method",xref:"x",x:4,showarrow:true});
+  await Plotly.newPlot(selected,copy(data),policy.prepareAnnotationPlacement(copy(multiple),selection),config);
+  await policy.applyAnnotationPlacement(selected,multiple,selection,{baseTopMargin:96});
+  check(equalRanges(ranges(selected),baseline),"Multiple selected annotations preserve scientific autorange");
+  check(selected._fullLayout.annotations.every(a=>a.xref==="paper"&&a.yref==="paper"&&!a.showarrow),"Legacy selected geometry is normalized");
+  check(selected.layout.annotations[1].yshift>selected.layout.annotations[0].yshift,"Multiple annotations stack by measured height");
+  const explicit=copy(source);explicit.xaxis.range=[0,0.003];explicit.xaxis.autorange=false;
+  await Plotly.newPlot(selected,copy(data),policy.prepareAnnotationPlacement(explicit,selection),config);
+  check(selected._fullLayout.xaxis.range[1]===0.003,"Explicit scientific axis range is retained");
+  const inside={annotations:[{name:"inside_note",text:"Inside",xref:"x",yref:"y",x:0.0004,y:-4.2,showarrow:true}]};
+  check(policy.prepareAnnotationPlacement(inside,selection)===inside,"Unselected annotation retains its declared behavior");
+  check(policy.prepareAnnotationPlacement(source,{})===source,"Non-opted-in figure is an exact no-op");
+  check(JSON.stringify(source)===before,"Saved producer source is unchanged");
+  window.annotationAcceptance={passed:true,checks,baseline};
+  document.getElementById("results").textContent=JSON.stringify(window.annotationAcceptance,null,2);
+})().catch(error=>{
+  window.annotationAcceptance={passed:false,error:error.stack};
+  document.getElementById("results").textContent=JSON.stringify(window.annotationAcceptance,null,2);
+});
+</script>
