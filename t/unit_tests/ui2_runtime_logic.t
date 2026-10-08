@@ -2349,6 +2349,34 @@ hooks.applyPlotlyTheme(darkCanvasLayout);
 assert.strictEqual(darkCanvasLayout.font.color, "#eef4f1", "dark final paper uses light figure text even under a light surrounding theme");
 assert.strictEqual(darkCanvasLayout.xaxis.gridcolor, "rgba(238, 244, 241, 0.16)", "dark final plot uses a visible light grid");
 assert.strictEqual(darkCanvasLayout.legend.font.color, "#eef4f1", "dark final legend uses light text");
+// Neutral opposite-surface legends must resolve headings from their own surface.
+for (const [paper, background, expected] of [
+  ["#202725", "#ffffff", "#17201d"],
+  ["#ffffff", "#202725", "#eef4f1"]
+]) {
+  const saved = { paper_bgcolor: paper,
+    legend: { bgcolor: background, font: { size: 12 }, grouptitlefont: { size: 13, family: "serif" } },
+    legend2: { bgcolor: background, grouptitlefont: { color: "#ff0000", size: 15 } } };
+  const snapshot = JSON.stringify(saved);
+  const display = JSON.parse(snapshot);
+  hooks.applyPlotlyTheme(display);
+  for (const key of ["legend", "legend2"]) {
+    assert.strictEqual(display[key].grouptitlefont.color, expected, "group headings follow their legend surface");
+    assert.strictEqual(display[key].font.color, expected, "ordinary legend entries keep resolved contrast");
+  }
+  assert.strictEqual(display.legend.grouptitlefont.size, 13, "heading size is preserved");
+  assert.strictEqual(display.legend.grouptitlefont.family, "serif", "heading family is preserved");
+  assert.strictEqual(display.legend2.grouptitlefont.size, 15, "numbered legend heading size is preserved");
+  const restored = JSON.parse(snapshot);
+  hooks.applyPlotlyTheme(restored);
+  assert.strictEqual(JSON.stringify(restored), JSON.stringify(display), "saved-output reconstruction restores heading contrast");
+  const styled = JSON.stringify(display);
+  hooks.applyPlotlyTheme(display);
+  assert.strictEqual(JSON.stringify(display), styled, "heading contrast is idempotent");
+  assert.strictEqual(JSON.stringify(saved), snapshot, "saved layout remains immutable");
+}
+assert.strictEqual(contrastingPlotLayout.legend.grouptitlefont.color, contrastingPlotLayout.legend.font.color, "ordinary light legend heading shares entry contrast");
+assert.strictEqual(darkCanvasLayout.legend.grouptitlefont.color, darkCanvasLayout.legend.font.color, "ordinary dark legend heading shares entry contrast");
 hooks.setPlotBackgroundModePreference("match_panel", true);
 assert.strictEqual(fixedPlotLayout.width, undefined, "ordinary UI2 Plotly outputs remove producer width");
 assert.strictEqual(fixedPlotLayout.height, undefined, "ordinary UI2 Plotly outputs remove producer height");

@@ -242,7 +242,10 @@ application, module, output, or scientific-role identifiers.
 After the final paper and plot backgrounds are selected, the shared UI2 surface
 resolver derives neutral readable colors from those actual surfaces. It owns
 figure and annotation text, axes and ticks, grids and zero lines, legend
-surface/text, hover labels, and modebar presentation. Normal UI2 and preview
+surface/text (including group headings), hover labels, and modebar presentation.
+Legend entry and group-heading colors resolve from each legend's own final
+background, preserving authored font size and family, including numbered
+legends. Normal UI2 and preview
 tools must use the same resolver; a surrounding theme name or separate
 light/dark shortcut must not override the final-surface result.
 

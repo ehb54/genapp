@@ -181,7 +181,8 @@
       result[key] = Object.assign({}, legend, {
         bgcolor: background,
         bordercolor: legendTokens.border,
-        font: Object.assign({}, legend.font || {}, { color: legendTokens.text })
+        font: Object.assign({}, legend.font || {}, { color: legendTokens.text }),
+        grouptitlefont: Object.assign({}, legend.grouptitlefont || {}, { color: legendTokens.text })
       });
     });
     // Plotly resolves hover colors from the final trace or hovered point and
