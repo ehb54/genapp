@@ -3835,6 +3835,24 @@ const links = hooks.fileDownloadLinks("results/users/Joseph/min3.pdb");
 assert(links.includes("../results/users/Joseph/min3.pdb"), "download link targets the generated app path");
 assert(links.includes("min3.pdb"), "download link labels the selected file");
 
+window.GenAppUi2App.directives = window.GenAppUi2App.directives || {};
+window.GenAppUi2App.directives.ui2_file_transfer_audit = "true";
+const auditedLink = hooks.auditedDownloadUrl("../results/users/Joseph/min3.pdb");
+assert(auditedLink.includes("/sassie3/ajax/sys_config/sys_transfer_audit.php?"), "opted-in result downloads use the authenticated audit endpoint");
+assert(auditedLink.includes("target=results%2Fusers%2FJoseph%2Fmin3.pdb"), "audited downloads identify the app-relative result path");
+assert(auditedLink.includes("window=ui2-test"), "audited downloads preserve the authenticated UI window");
+assert.strictEqual(
+  hooks.auditedDownloadUrl("https://other.example/results/users/Joseph/min3.pdb"),
+  "https://other.example/results/users/Joseph/min3.pdb",
+  "auditing never rewrites cross-origin links"
+);
+window.GenAppUi2App.directives.ui2_file_transfer_audit = "false";
+assert.strictEqual(
+  hooks.auditedDownloadUrl("../results/users/Joseph/min3.pdb"),
+  "../results/users/Joseph/min3.pdb",
+  "non-opted-in applications retain their existing download links"
+);
+
 assert.strictEqual(
   hooks.moduleSubmitEndpointFor({ executable: "sys_file_manager" }, "etc", "sys_file_manager"),
   "/sassie3/ajax/etc/sys_file_manager.php",

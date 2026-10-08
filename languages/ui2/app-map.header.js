@@ -33,6 +33,7 @@ __~ui2_plot_background_preference{app.directives.ui2_plot_background_preference 
 __~ui2_plotly_hover_number_format{app.directives.ui2_plotly_hover_number_format = "__ui2_plotly_hover_number_format__";}
 __~ui2_auth_providers_url{app.directives.ui2_auth_providers_url = "__ui2_auth_providers_url__";}
 __~ui2_release_manifest_url{app.directives.ui2_release_manifest_url = "__ui2_release_manifest_url__";}
+__~ui2_file_transfer_audit{app.directives.ui2_file_transfer_audit = "__ui2_file_transfer_audit__";}
 __~help:user_config{app.help.user_config = "__help:user_config__";}
 __~help:register{app.help.register = "__help:register__";}
 __~help:jobs{app.help.jobs = "__help:jobs__";}

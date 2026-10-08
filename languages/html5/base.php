@@ -28,6 +28,7 @@ require_once "__docroot:html5__/__application__/ajax/ga_filter.php";
 require_once "__docroot:html5__/__application__/ajax/getports.php";
 require_once "__docroot:html5__/__application__/ajax/details.php";
 require_once "__docroot:html5__/__application__/util/rejected-lrfile.php";
+require_once "__docroot:html5__/__application__/ajax/sys_config/ga_audit.php";
 $modjson = json_decode( '__modulejson__' );
 $inputs_req = $_REQUEST;
 
@@ -672,6 +673,12 @@ if ( sizeof( $_FILES ) ) {
          {
             if ( $v[ 'error' ][ $k1 ] )
             {
+                ga_file_transfer_audit( 'upload_failed', array(
+                    'username' => $GLOBALS[ 'logon' ], 'project' => $GLOBALS[ 'project' ],
+                    'module' => '__menu:modules:id__', 'field' => $k,
+                    'filename' => basename( $v[ 'name' ][ $k1 ] ),
+                    'size_bytes' => intval( $v[ 'size' ][ $k1 ] ),
+                    'outcome' => 'failed', 'failure' => 'php_upload_error_' . intval( $v[ 'error' ][ $k1 ] ) ) );
                 if ( isset( $checkrunning ) )
                 {
                     if ( !ga_db_status(
@@ -703,6 +710,12 @@ if ( sizeof( $_FILES ) ) {
 #            error_log( "move_uploaded_file( " . $v[ 'tmp_name' ][ $k1 ] . ',' .  $dir . '/' . $v[ 'name' ][ $k1 ] . "\n", 3, "/var/tmp/my-errors.log");
             if ( !move_uploaded_file( $v[ 'tmp_name' ][ $k1 ], $dir . '/' . $v[ 'name' ][ $k1 ] ) )
             {
+                ga_file_transfer_audit( 'upload_failed', array(
+                    'username' => $GLOBALS[ 'logon' ], 'project' => $GLOBALS[ 'project' ],
+                    'module' => '__menu:modules:id__', 'field' => $k,
+                    'filename' => basename( $v[ 'name' ][ $k1 ] ),
+                    'size_bytes' => intval( $v[ 'size' ][ $k1 ] ),
+                    'outcome' => 'failed', 'failure' => 'move_uploaded_file_failed' ) );
                 if ( isset( $checkrunning ) )
                 {
                     if ( !ga_db_status(
@@ -726,6 +739,11 @@ if ( sizeof( $_FILES ) ) {
                 echo (json_encode($results));
                 exit();
             }
+            ga_file_transfer_audit( 'upload_succeeded', array(
+                'username' => $GLOBALS[ 'logon' ], 'project' => $GLOBALS[ 'project' ],
+                'module' => '__menu:modules:id__', 'field' => $k,
+                'filename' => basename( $v[ 'name' ][ $k1 ] ),
+                'size_bytes' => intval( $v[ 'size' ][ $k1 ] ), 'outcome' => 'succeeded' ) );
             $ga_uploaded_path = $dir . '/' . $v[ 'name' ][ $k1 ];
             $ga_uploaded_coordinate = ga_rejected_lrfile_coordinate(
                 $module_json, $k, $k1 );
@@ -795,6 +813,12 @@ if ( sizeof( $_FILES ) ) {
          } else {
             if ( $v[ 'error' ] )
             {
+                ga_file_transfer_audit( 'upload_failed', array(
+                    'username' => $GLOBALS[ 'logon' ], 'project' => $GLOBALS[ 'project' ],
+                    'module' => '__menu:modules:id__', 'field' => $k,
+                    'filename' => basename( $v[ 'name' ] ),
+                    'size_bytes' => intval( $v[ 'size' ] ),
+                    'outcome' => 'failed', 'failure' => 'php_upload_error_' . intval( $v[ 'error' ] ) ) );
                 if ( isset( $checkrunning ) )
                 {
                     if ( !ga_db_status(
@@ -826,6 +850,12 @@ if ( sizeof( $_FILES ) ) {
 //         error_log( "move_uploaded_file( " . $v[ 'tmp_name' ] . ',' .  $dir . '/' . $v[ 'name' ] . "\n", 3, "/var/tmp/my-errors.log");
             if ( !move_uploaded_file( $v[ 'tmp_name' ], $dir . '/' . $v[ 'name' ] ) )
             {
+                ga_file_transfer_audit( 'upload_failed', array(
+                    'username' => $GLOBALS[ 'logon' ], 'project' => $GLOBALS[ 'project' ],
+                    'module' => '__menu:modules:id__', 'field' => $k,
+                    'filename' => basename( $v[ 'name' ] ),
+                    'size_bytes' => intval( $v[ 'size' ] ),
+                    'outcome' => 'failed', 'failure' => 'move_uploaded_file_failed' ) );
                 if ( isset( $checkrunning ) )
                 {
                     if ( !ga_db_status(
@@ -845,6 +875,11 @@ if ( sizeof( $_FILES ) ) {
                 echo (json_encode($results));
                 exit();
             }
+            ga_file_transfer_audit( 'upload_succeeded', array(
+                'username' => $GLOBALS[ 'logon' ], 'project' => $GLOBALS[ 'project' ],
+                'module' => '__menu:modules:id__', 'field' => $k,
+                'filename' => basename( $v[ 'name' ] ),
+                'size_bytes' => intval( $v[ 'size' ] ), 'outcome' => 'succeeded' ) );
             $ga_uploaded_path = $dir . '/' . $v[ 'name' ];
             $ga_uploaded_coordinate = ga_rejected_lrfile_coordinate(
                 $module_json, $k, 0 );

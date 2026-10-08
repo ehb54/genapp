@@ -4,6 +4,7 @@
 
 header('Content-type: application/json');
 session_name( strtoupper( preg_replace('/[^a-zA-Z0-9_]+/', '_', "GENAPP___application__" ) ) ); session_start();
+require_once "__docroot:html5__/__application__/ajax/sys_config/ga_audit.php";
 
 $results = array( '_status' => 'complete' );
 
@@ -68,6 +69,11 @@ function action_stage_file_request( $field, $request, $files_dir, $user_root ) {
     if ( isset( $_FILES[ $submit_id ] ) &&
          $_FILES[ $submit_id ][ 'error' ] != UPLOAD_ERR_NO_FILE ) {
         if ( $_FILES[ $submit_id ][ 'error' ] != UPLOAD_ERR_OK ) {
+            ga_file_transfer_audit( 'upload_failed', array_merge(
+                isset( $GLOBALS[ 'ga_action_audit' ] ) ? $GLOBALS[ 'ga_action_audit' ] : array(),
+                array( 'field' => $submit_id, 'filename' => basename( $_FILES[ $submit_id ][ 'name' ] ),
+                       'size_bytes' => intval( $_FILES[ $submit_id ][ 'size' ] ),
+                       'outcome' => 'failed', 'failure' => 'php_upload_error' ) ) );
             action_error_exit( "Could not upload $label" );
         }
         $name = basename( $_FILES[ $submit_id ][ 'name' ] );
@@ -77,8 +83,18 @@ function action_stage_file_request( $field, $request, $files_dir, $user_root ) {
         $safe_id = preg_replace( '/[^a-zA-Z0-9_.-]+/', '_', $submit_id );
         $target = "$files_dir/$safe_id-$name";
         if ( !move_uploaded_file( $_FILES[ $submit_id ][ 'tmp_name' ], $target ) ) {
+            ga_file_transfer_audit( 'upload_failed', array_merge(
+                isset( $GLOBALS[ 'ga_action_audit' ] ) ? $GLOBALS[ 'ga_action_audit' ] : array(),
+                array( 'field' => $submit_id, 'filename' => $name,
+                       'size_bytes' => intval( $_FILES[ $submit_id ][ 'size' ] ),
+                       'outcome' => 'failed', 'failure' => 'move_uploaded_file_failed' ) ) );
             action_error_exit( "Could not stage uploaded $label ($name)" );
         }
+        ga_file_transfer_audit( 'upload_succeeded', array_merge(
+            isset( $GLOBALS[ 'ga_action_audit' ] ) ? $GLOBALS[ 'ga_action_audit' ] : array(),
+            array( 'field' => $submit_id, 'filename' => $name,
+                   'size_bytes' => intval( $_FILES[ $submit_id ][ 'size' ] ),
+                   'outcome' => 'succeeded' ) ) );
         return $target;
     }
     $alt_key = "_selaltval_$submit_id";
@@ -333,6 +349,11 @@ if ( !is_dir( $action_dir ) ) {
 
 $_REQUEST[ '_action_workdir' ] = $action_dir;
 $_REQUEST[ '_module' ] = "__moduleid__";
+$GLOBALS[ 'ga_action_audit' ] = array(
+    'username' => $_SESSION[ $window ][ 'logon' ],
+    'project' => $project,
+    'module' => '__moduleid__'
+);
 action_stage_declared_files( $modjson, $action, $action_dir, $dir );
 $payload = json_encode( $_REQUEST );
 $action_command = action_execution_command( $action, $actionexe );
