@@ -193,6 +193,20 @@
                    }
                    ,{
                     "frequency"  : "once",
+                    "output"     : "ajax/sys_config/ga_audit.php",
+                    "inputs"     : [
+                                    { "sys/ga_audit.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
+                    "output"     : "ajax/sys_config/sys_transfer_audit.php",
+                    "inputs"     : [
+                                    { "sys/sys_transfer_audit.php" : "once" }
+                                   ]
+                   }
+                   ,{
+                    "frequency"  : "once",
                     "output"     : "ajax/sys_config/sys_joblocked.php",
                     "inputs"     : [ 
                                     { "sys/sys_joblocked.php" : "once"        }

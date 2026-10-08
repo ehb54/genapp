@@ -21,6 +21,7 @@ if ( !sizeof( $_REQUEST ) ) {
 }
 
 require_once "__docroot:html5__/__application__/ajax/ga_filter.php";
+require_once "__docroot:html5__/__application__/ajax/sys_config/ga_audit.php";
 $modjson = array();
 $inputs_req = $_REQUEST;
 $validation_inputs = ga_sanitize_validate( $modjson, $inputs_req, 'uploader' );
@@ -199,6 +200,11 @@ if ( sizeof( $_FILES ) ) {
          {
             if ( $v[ 'error' ][ $k1 ] )
             {
+               ga_file_transfer_audit( 'upload_failed', array(
+                   'username' => $GLOBALS[ 'logon' ], 'project' => $project,
+                   'field' => $k, 'filename' => basename( $v[ 'name' ][ $k1 ] ),
+                   'size_bytes' => intval( $v[ 'size' ][ $k1 ] ),
+                   'outcome' => 'failed', 'failure' => 'php_upload_error_' . intval( $v[ 'error' ][ $k1 ] ) ) );
                if ( !isset( $results[ "error" ] ) )
                {
                    $results[ "error" ] = "";
@@ -230,6 +236,11 @@ if ( sizeof( $_FILES ) ) {
             __~debug:uploadermylog{error_log( "move_uploaded_file( " . $v[ 'tmp_name' ][ $k1 ] . ',' .  $dir . '/' . $v[ 'name' ][ $k1 ] . "\n", 3, "/tmp/umylog");}
             if ( !move_uploaded_file( $v[ 'tmp_name' ][ $k1 ], $dir . '/' . $v[ 'name' ][ $k1 ] ) )
             {
+               ga_file_transfer_audit( 'upload_failed', array(
+                   'username' => $GLOBALS[ 'logon' ], 'project' => $project,
+                   'field' => $k, 'filename' => basename( $v[ 'name' ][ $k1 ] ),
+                   'size_bytes' => intval( $v[ 'size' ][ $k1 ] ),
+                   'outcome' => 'failed', 'failure' => 'move_uploaded_file_failed' ) );
                if ( !isset( $results[ "error" ] ) )
                {
                    $results[ "error" ] = "";
@@ -239,6 +250,10 @@ if ( sizeof( $_FILES ) ) {
                echo (json_encode($results));
                exit();
             }
+            ga_file_transfer_audit( 'upload_succeeded', array(
+                'username' => $GLOBALS[ 'logon' ], 'project' => $project,
+                'field' => $k, 'filename' => basename( $v[ 'name' ][ $k1 ] ),
+                'size_bytes' => intval( $v[ 'size' ][ $k1 ] ), 'outcome' => 'succeeded' ) );
             if ( !isset( $_REQUEST[ $k ] ) || !is_array( $_REQUEST[ $k ] ) )
             {
                $_REQUEST[ $k ] = array();
@@ -305,6 +320,11 @@ if ( sizeof( $_FILES ) ) {
          } else {
             if ( $v[ 'error' ] )
             {
+               ga_file_transfer_audit( 'upload_failed', array(
+                   'username' => $GLOBALS[ 'logon' ], 'project' => $project,
+                   'field' => $k, 'filename' => basename( $v[ 'name' ] ),
+                   'size_bytes' => intval( $v[ 'size' ] ),
+                   'outcome' => 'failed', 'failure' => 'php_upload_error_' . intval( $v[ 'error' ] ) ) );
                if ( !isset( $results[ "error" ] ) )
                {
                    $results[ "error" ] = "";
@@ -337,11 +357,20 @@ if ( sizeof( $_FILES ) ) {
 
             if ( !move_uploaded_file( $v[ 'tmp_name' ], $dir . '/' . $v[ 'name' ] ) )
             {
+               ga_file_transfer_audit( 'upload_failed', array(
+                   'username' => $GLOBALS[ 'logon' ], 'project' => $project,
+                   'field' => $k, 'filename' => basename( $v[ 'name' ] ),
+                   'size_bytes' => intval( $v[ 'size' ] ),
+                   'outcome' => 'failed', 'failure' => 'move_uploaded_file_failed' ) );
                $results[ "error" ] .= "Could not move file " . $v[ 'name' ];
                $results[ '_status' ] = 'failed';
                echo (json_encode($results));
                exit();
             }
+            ga_file_transfer_audit( 'upload_succeeded', array(
+                'username' => $GLOBALS[ 'logon' ], 'project' => $project,
+                'field' => $k, 'filename' => basename( $v[ 'name' ] ),
+                'size_bytes' => intval( $v[ 'size' ] ), 'outcome' => 'succeeded' ) );
             if ( !isset( $_REQUEST[ $k ] ) || !is_array( $_REQUEST[ $k ] ) )
             {
                $_REQUEST[ $k ] = array();

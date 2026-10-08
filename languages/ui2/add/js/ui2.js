@@ -7713,10 +7713,56 @@
       return "";
     }
     return normalized.map((file) => {
-      const href = `../${String(file).replace(/^\/+/, "")}`;
+      const href = auditedDownloadUrl(`../${String(file).replace(/^\/+/, "")}`);
       const label = String(file).split("/").pop() || file;
       return `<a href="${escapeHtml(href)}" download>${escapeHtml(label)}</a>`;
     }).join("<br>");
+  }
+
+  function fileTransferAuditEnabled() {
+    return /^(?:1|true|yes|on)$/i.test(String(
+      appMap?.directives?.ui2_file_transfer_audit || ""
+    ).trim());
+  }
+
+  function auditedDownloadUrl(href) {
+    if (!fileTransferAuditEnabled()) {
+      return href;
+    }
+    try {
+      const source = new URL(String(href || ""), window.location.href);
+      if (source.origin !== new URL(window.location.href).origin ||
+          source.pathname.includes("/ajax/sys_config/sys_transfer_audit.php")) {
+        return href;
+      }
+      const marker = "/results/users/";
+      const index = source.pathname.indexOf(marker);
+      if (index < 0) {
+        return href;
+      }
+      const target = decodeURIComponent(source.pathname.slice(index + 1));
+      const endpoint = new URL(
+        legacyEndpoint("", "ajax/sys_config/sys_transfer_audit.php"),
+        window.location.href
+      );
+      endpoint.searchParams.set("target", target);
+      endpoint.searchParams.set("window", window.name || "");
+      return endpoint.toString();
+    } catch (error) {
+      return href;
+    }
+  }
+
+  function auditResultDownloadLinks(container) {
+    if (!fileTransferAuditEnabled() || !container?.querySelectorAll) {
+      return;
+    }
+    container.querySelectorAll("a[href]").forEach((anchor) => {
+      const audited = auditedDownloadUrl(anchor.getAttribute("href"));
+      if (audited !== anchor.getAttribute("href")) {
+        anchor.setAttribute("href", audited);
+      }
+    });
   }
 
   function fileEntryName(entry) {
@@ -10181,6 +10227,7 @@
     const html = stringValue(value);
     output.classList.add("ui2-output-rendered");
     output.innerHTML = html;
+    auditResultDownloadLinks(output);
   }
 
   function imageSource(value) {
@@ -14023,6 +14070,8 @@
       normalizeFileList,
       payloadFileList,
       fileDownloadLinks,
+      auditedDownloadUrl,
+      fileTransferAuditEnabled,
       moduleActionEndpointFor,
       buildActionFormData,
       buildHookFormData,
