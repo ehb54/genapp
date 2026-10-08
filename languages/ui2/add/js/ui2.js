@@ -12372,9 +12372,12 @@
     if (output) {
       output._ui2PlotlyBaseTopMargin = Number(layout.margin?.t) || 96;
     }
-    return window.GenAppPlotlyLayout?.prepareAnnotationPlacement?.(
+    const tickLayout = window.GenAppPlotlyLayout?.prepareNumericTickFormat?.(
       layout, plotPresentationForOutput(output)
     ) || layout;
+    return window.GenAppPlotlyLayout?.prepareAnnotationPlacement?.(
+      tickLayout, plotPresentationForOutput(output)
+    ) || tickLayout;
   }
 
   function enabledSetting(value) {

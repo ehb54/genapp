@@ -577,3 +577,13 @@ and explicit hover styling without changing scientific data or saved outputs.
 Do not add module color workarounds. Application guidance and the documented
 native orange contrast limitation are in the paired
 `genapp_zazzie/docs/plot_presentation.md` (`ehb54/zazzie#299`).
+
+### Numeric tick notation route
+
+Generic per-axis display tick formatting is governed by GenApp's
+`doc/Plotting-Architecture.md` and `doc/UI2-Core-Extension-Policy.md` through
+`plotPresentation.axisTickFormats`. Application views opt in; ordinary UI2
+and the Lab share `prepareNumericTickFormat`. Preserve explicit producer tick
+formats, scientific values, axis scales, hover precision, and saved outputs.
+Do not put tick styling in SASSIE, drivers, or presentation YAML. Application
+selection is documented in `genapp_zazzie/docs/plot_presentation.md` (#302).

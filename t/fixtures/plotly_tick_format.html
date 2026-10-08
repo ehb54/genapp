@@ -1,0 +1,68 @@
+<!doctype html><meta charset="utf-8">
+<script src="../../languages/html5/add/js/plotly-2.35.2.min.js"></script>
+<script src="../../languages/ui2/add/js/plotly-layout.js"></script>
+<div id="plot" style="width:640px;height:480px"></div><pre id="results">pending</pre>
+<script>
+(async()=>{
+ const plot=document.getElementById('plot'),p=GenAppPlotlyLayout;
+ const results={version:Plotly.version,checks:[],examples:[]};
+ const copy=x=>JSON.parse(JSON.stringify(x));
+ const check=(ok,label)=>{if(!ok)throw Error(label);results.checks.push(label);};
+ const ticks=axis=>Array.from(plot.querySelectorAll('.'+axis+'tick text')).map(n=>n.textContent);
+ const selection={axisTickFormats:{xaxis:'.4~g',yaxis:'.4~g'}};
+ const source={data:[{type:'scatter',mode:'markers',x:[.0001,.001,.01,.1],y:[.0001,.001,.01,.1],hoverinfo:'x+y',error_y:{type:'data',array:[.00001,.0001,.0008006,.001],visible:true}}],layout:{xaxis:{type:'log',range:[-4,-1],dtick:1},yaxis:{type:'log',range:[-4,-1],dtick:1}}};
+ const saved=JSON.stringify(source);
+ const hover=()=>{Plotly.Fx.hover(plot,[{curveNumber:0,pointNumber:2}]);return Array.from(plot.querySelectorAll('.hoverlayer .hovertext')).map(n=>n.textContent).join(' | ');};
+ await Plotly.newPlot(plot,copy(source.data),copy(source.layout));
+ await p.applyNumericHoverFormat(plot,'.5e');
+ await Plotly.redraw(plot);
+ results.control={x:ticks('x'),y:ticks('y')};
+ check(results.control.x.some(t=>t.includes('1.00000e')),'reproduces padded log ticks from hover default');
+ for(const operation of ['new','react','resize','append','reattach']){
+   const layout=p.prepareNumericTickFormat(copy(source.layout),selection);
+   if(operation==='new')await Plotly.newPlot(plot,copy(source.data),layout);
+   if(operation==='react')await Plotly.react(plot,copy(source.data),layout);
+   if(operation==='resize'){plot.style.width='1000px';await Plotly.Plots.resize(plot);}
+   if(operation==='append')await Plotly.extendTraces(plot,{x:[[.02]],y:[[.02]],'error_y.array':[[.0004491]]},[0],10);
+   if(operation==='reattach'){Plotly.purge(plot);await Plotly.newPlot(plot,copy(source.data),layout);}
+   await p.applyNumericHoverFormat(plot,'.5e');
+   for(const axis of ['x','y'])check(JSON.stringify(ticks(axis))===JSON.stringify(['0.0001','0.001','0.01','0.1']),operation+' '+axis+' concise decades');
+   const text=hover();check(text.includes('8.00600e'),'hover retains six significant digits: '+operation);
+   check(plot._fullLayout.xaxis.type==='log'&&plot._fullLayout.yaxis.type==='log','log scales retained: '+operation);
+   check(JSON.stringify(source)===saved,'saved output unchanged: '+operation);
+   results.examples.push({operation,x:ticks('x'),y:ticks('y'),hover:text});
+ }
+ const signed={data:[{type:'scatter',x:[.001,.01,.1],y:[-.001,0,.001]}],layout:{xaxis:{type:'log'},yaxis:{type:'linear'}}};
+ await Plotly.newPlot(plot,copy(signed.data),p.prepareNumericTickFormat(copy(signed.layout),selection));
+ await p.applyNumericHoverFormat(plot,'.5e');
+ check(plot._fullLayout.yaxis.tickformat==='.4~g','signed linear tick format applied');
+ check(plot._fullLayout.yaxis.type==='linear'&&plot.data[0].y[0]===-.001&&plot.data[0].y[1]===0,'signed linear values retained');
+ const overrides=[{tickformat:'.2e'},{tickformatstops:[{dtickrange:[null,null],value:'.2e'}]},{tickmode:'array',tickvals:[.001,.01],ticktext:['lower','upper']}];
+ for(const explicit of overrides){const layout={xaxis:{type:'log',...explicit},yaxis:{type:'linear'}};
+   const prepared=p.prepareNumericTickFormat(layout,selection);
+   check(prepared.xaxis===layout.xaxis,'explicit producer ticks retained '+JSON.stringify(explicit));
+   await Plotly.newPlot(plot,[{x:[.001,.01],y:[1,2]}],prepared);await p.applyNumericHoverFormat(plot,'.5e');
+   if(explicit.tickformat)check(ticks('x').every(t=>/^\d\.\d{2}e/.test(t)),'producer numeric format rendered');
+   if(explicit.ticktext)check(JSON.stringify(ticks('x'))===JSON.stringify(explicit.ticktext),'custom tick text rendered');
+ }
+ const templated={xaxis:{type:'log'},yaxis:{type:'linear'},template:{layout:{xaxis:{tickformat:'.2e'}}}};
+ await Plotly.newPlot(plot,[{x:[.001,.01],y:[1,2]}],p.prepareNumericTickFormat(templated,selection));
+ await p.applyNumericHoverFormat(plot,'.5e');
+ check(plot._fullLayout.xaxis.tickformat==='.2e','template tick format retained');
+ for(const type of ['date','category']){
+   const layout={xaxis:{type},yaxis:{type:'linear'}},x=type==='date'?['2026-10-01','2026-10-02']:['first','second'];
+   await Plotly.newPlot(plot,[{x,y:[1,2]}],p.prepareNumericTickFormat(layout,selection));
+   check(plot._fullLayout.xaxis.type===type&&!plot._fullLayout.xaxis.tickformat,'nonnumeric axis unchanged '+type);
+ }
+ for(const value of [1e-12,1e12]){
+   const layout={xaxis:{type:'log',range:[Math.log10(value)-1,Math.log10(value)+1],dtick:1},yaxis:{type:'linear'}};
+   await Plotly.newPlot(plot,[{x:[value],y:[1]}],p.prepareNumericTickFormat(layout,selection));
+   await p.applyNumericHoverFormat(plot,'.5e');check(ticks('x').every(t=>/e[−+\-]/.test(t)),'adaptive scientific notation '+value);
+ }
+ // Reconstruction without the selection restores the original, non-opted-in behavior.
+ await Plotly.newPlot(plot,copy(source.data),copy(source.layout));await p.applyNumericHoverFormat(plot,'.5e');await Plotly.redraw(plot);
+ check(JSON.stringify(ticks('x'))===JSON.stringify(results.control.x),'rollback restores non-opted-in ticks');
+ check(JSON.stringify(source)===saved,'all scenarios leave source unchanged');
+ results.passed=true;window.tickFormatAcceptance=results;document.getElementById('results').textContent=JSON.stringify(results);
+})().catch(error=>{window.tickFormatAcceptance={passed:false,error:error.stack};document.getElementById('results').textContent=JSON.stringify(window.tickFormatAcceptance);});
+</script>

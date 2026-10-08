@@ -275,3 +275,29 @@ Native Plotly contrast is not a universal 4.5:1 guarantee. With Plotly 2.35.2,
 white label text on `#ea580c` has a measured contrast ratio of approximately
 3.56:1. Keep that limitation visible during acceptance; stricter contrast
 requires separately scoped renderer work rather than a module workaround.
+
+## Numeric axis tick notation
+
+A result group may opt into `plotPresentation.axisTickFormats`, mapping ordinary
+Cartesian axis names (including numbered x/y axes) to bounded numeric D3
+formats. Supported formats are `.0e` through `.15e`, `.1g`/`.1r` through
+`.16g`/`.16r`, optionally with `~` before the type to trim trailing zeros.
+For example, `{"xaxis": ".4~g", "yaxis": ".4~g"}` selects concise adaptive
+labels with up to four significant digits.
+
+The shared `GenAppPlotlyLayout.prepareNumericTickFormat` helper prepares
+detached axis objects before rendering in UI2 and application previews. It
+applies only to explicitly declared linear/log axes. Missing or invalid
+settings, absent/inferred axes, and date/category axes retain ordinary Plotly
+behavior. Explicit axis or template tick formats, tick-format stops, and
+custom tick-text arrays remain authoritative. The setting changes notation
+only: values, uncertainty, titles, units, axis types/ranges, hover formats,
+final outputs, and reattachment contracts remain unchanged. Reapplying the
+setting is idempotent; removing it restores the original saved figure behavior.
+
+Plotly 2.35.2 uses a `fakehover` formatting path for some default log-axis
+decade labels. An axis hover default can consequently pad those ticks. A
+separate explicit display tick format avoids that path without reducing hover
+precision. Test both ticks and hover labels after redraw, resizing, updates,
+completion, and reconstruction from saved final output. The generic helper
+must never branch on application, module, output, or scientific-role names.

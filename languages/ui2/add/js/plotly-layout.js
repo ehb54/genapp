@@ -235,6 +235,35 @@
   }
 
 
+  // View-selected tick notation applies only to declared numeric axes. Work on
+  // detached axis objects so final outputs remain authoritative and unchanged.
+  function validNumericTickFormat(format) {
+    return typeof format === "string" &&
+      /^(?:\.(?:[0-9]|1[0-5])~?e|\.(?:[1-9]|1[0-6])~?[gr])$/.test(format);
+  }
+
+  function prepareNumericTickFormat(sourceLayout, selection) {
+    const formats = selection?.axisTickFormats;
+    if (!formats || typeof formats !== "object" || Array.isArray(formats)) {
+      return sourceLayout;
+    }
+    let layout = sourceLayout;
+    Object.entries(formats).forEach(([name, format]) => {
+      if (!AXIS_KEY.test(name) || !validNumericTickFormat(format)) return;
+      const axis = sourceLayout?.[name];
+      const templateAxis = sourceLayout?.template?.layout?.[name];
+      const hasExplicitTicks = (value) => value && (
+        value.tickformat || value.tickformatstops?.length ||
+        (value.tickmode === "array" && value.ticktext?.length)
+      );
+      if (!axis || !["linear", "log"].includes(axis.type) ||
+          hasExplicitTicks(axis) || hasExplicitTicks(templateAxis)) return;
+      if (layout === sourceLayout) layout = { ...sourceLayout };
+      layout[name] = { ...axis, tickformat: format };
+    });
+    return layout;
+  }
+
   // Numeric defaults are opt-in presentation. Inspect Plotly's resolved axis
   // types rather than guessing whether an input column is numeric or a date.
   function validNumericHoverFormat(format) {
@@ -306,6 +335,8 @@
   }
 
   window.GenAppPlotlyLayout = {
+    validNumericTickFormat,
+    prepareNumericTickFormat,
     validNumericHoverFormat,
     numericHoverFormatUpdate,
     numericHoverTraceUpdates,
