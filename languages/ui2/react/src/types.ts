@@ -106,6 +106,7 @@ export type WorkbenchResultGroup = {
     profile?: string
     axisTitleOverflow?: "wrap" | string
     axisTickFormats?: Record<string, string>
+    hoverNameDisplay?: "full"
     traceRoles?: Record<string, { token?: "primary" | "reference" | "context" | "experimental" | "uncertainty" | "residual" | string; legend?: "show" | "hide" | string }>
   }
   visibility?: "declared" | "available"

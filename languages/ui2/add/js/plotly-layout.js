@@ -264,6 +264,20 @@
     return layout;
   }
 
+  // Presentation defaults never rewrite saved figures or explicit hover policy.
+  function prepareHoverNameDisplay(sourceLayout, selection) {
+    if (selection?.hoverNameDisplay !== "full" || !sourceLayout ||
+        typeof sourceLayout !== "object" || Array.isArray(sourceLayout) ||
+        sourceLayout.hoverlabel?.namelength != null ||
+        sourceLayout.template?.layout?.hoverlabel?.namelength != null) {
+      return sourceLayout;
+    }
+    return {
+      ...sourceLayout,
+      hoverlabel: { ...sourceLayout.hoverlabel, namelength: -1 }
+    };
+  }
+
   // Numeric defaults are opt-in presentation. Inspect Plotly's resolved axis
   // types rather than guessing whether an input column is numeric or a date.
   function validNumericHoverFormat(format) {
@@ -337,6 +351,7 @@
   window.GenAppPlotlyLayout = {
     validNumericTickFormat,
     prepareNumericTickFormat,
+    prepareHoverNameDisplay,
     validNumericHoverFormat,
     numericHoverFormatUpdate,
     numericHoverTraceUpdates,

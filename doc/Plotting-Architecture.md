@@ -330,3 +330,20 @@ and deployment. Core selects only declared opaque roles, never module ids,
 output ids, scientific terms, or trace-name parsing. Tests cover opt-in,
 controls, producer groups, empty/populated/cleared/repopulated data, immutable
 source payloads, and saved-output reconstruction. HTML5 generation is unchanged.
+
+## Full hover names
+
+A result group may opt into `plotPresentation.hoverNameDisplay: "full"`.
+The shared `GenAppPlotlyLayout.prepareHoverNameDisplay` helper sets the default
+hover-name length to `-1` on a detached display layout before rendering.
+Missing or invalid selections preserve ordinary Plotly behavior. Explicit
+layout, trace, and template name lengths, including per-point arrays, remain
+authoritative. Other hover styling and producer-authored templates remain
+unchanged. Ordinary UI2 and application previews use the same helper.
+
+This is presentation only: scientific trace names, arrays, uncertainty, numeric
+formats, axes, units, saved outputs, and reattachment contracts do not change.
+Apply the selection again when rendering updates, completed output, or saved
+final output. Verify closest and compare-data hover on overlapping long names,
+light and dark surfaces, expanded/restore views, and saved-output reconstruction.
+Removing the view selection restores native behavior from the original figure.

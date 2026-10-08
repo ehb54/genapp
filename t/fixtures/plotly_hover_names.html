@@ -1,0 +1,72 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Generic full hover-name acceptance</title>
+<script src="../../languages/html5/add/js/plotly-2.35.2.min.js"></script>
+<script src="../../languages/ui2/add/js/plotly-layout.js"></script>
+<script src="../../languages/ui2/add/js/plotly-surface.js"></script>
+<div id="plot" style="width:640px;height:480px"></div><pre id="results">pending</pre>
+<script>
+(async()=>{
+ const plot=document.getElementById('plot'),checks=[],copy=x=>JSON.parse(JSON.stringify(x));
+ const check=(yes,label)=>{if(!yes)throw Error(label);checks.push(label);};
+ const policy=GenAppPlotlyLayout,selection={hoverNameDisplay:'full'};
+ const names=['observation_group member 1','observation_group member 2','observation_group full average','observation_group selected average'];
+ const source={data:names.map((name,index)=>({type:'scatter',mode:'lines+markers',name,x:[1,2],y:[1,2],line:{color:['#dc2626','#0f766e','#1d4ed8','#7e22ce'][index]},hoverlabel:index===0?{align:'left'}:undefined})),layout:{xaxis:{title:'Position (a.u.)'},yaxis:{title:'Response (a.u.)'}}};
+ const saved=JSON.stringify(source);
+ const hover=async(mode,index)=>{
+  Plotly.Fx.unhover(plot);
+  Plotly.Fx.hover(plot,mode==='closest'?[{curveNumber:index,pointNumber:0}]:{xval:1,yval:1,hovermode:mode});
+  await new Promise(resolve=>setTimeout(resolve,60));
+  return Array.from(plot.querySelectorAll('.hovertext .name')).map(node=>node.textContent);
+ };
+ const draw=async(bg,opt,method='react',figure=source)=>{
+  const layout=copy(figure.layout);layout.paper_bgcolor=bg;layout.plot_bgcolor=bg;
+  await Plotly[method](plot,copy(figure.data),GenAppPlotlySurface.apply(policy.prepareHoverNameDisplay(layout,opt)));
+ };
+ await draw('#fff',{},'newPlot');
+ const truncated=await hover('closest',3);
+ check(truncated.length===1&&truncated[0].includes('...')&&!truncated[0].includes('selected'),'native truncation reproduced');
+ for(const bg of ['#ffffff','#202725']){
+  await draw(bg,selection);
+  for(let index=0;index<names.length;index++){
+   const labels=await hover('closest',index);
+   check(labels.length===1&&labels[0]===names[index],'complete closest identity '+bg+' '+index);
+  }
+  for(const mode of ['x','y']){
+   const labels=await hover(mode);
+   check(labels.length===4&&names.every(name=>labels.includes(name)),'overlapping compare identities '+bg+' '+mode);
+  }
+  for(const operation of ['expanded','restore','update','completion','reattach']){
+   if(operation==='expanded'||operation==='restore'){
+    plot.style.width=(operation==='expanded'?1000:640)+'px';await Plotly.Plots.resize(plot);
+   }else{
+    if(operation==='reattach')Plotly.purge(plot);
+    await draw(bg,selection,operation==='reattach'?'newPlot':'react',JSON.parse(saved));
+   }
+   check((await hover('closest',3))[0]===names[3],'full identity after '+operation+' '+bg);
+   const labels=await hover('x');
+   check(labels.length===4&&names.every(name=>labels.includes(name)),'compare identities after '+operation+' '+bg);
+  }
+ }
+ for(const location of ['layout','trace','template-layout','template-trace']){
+  const figure=copy(source);const authored={namelength:8,bgcolor:'#004488',font:{color:'#fff'}};
+  if(location==='layout')figure.layout.hoverlabel=authored;
+  if(location==='trace')figure.data[0].hoverlabel=authored;
+  if(location==='template-layout')figure.layout.template={layout:{hoverlabel:authored}};
+  if(location==='template-trace')figure.layout.template={data:{scatter:[{hoverlabel:authored}]}};
+  await draw('#fff',{},'react',figure);const native=await hover('closest',0);
+  await draw('#fff',selection,'react',figure);const actual=await hover('closest',0);
+  check(JSON.stringify(actual)===JSON.stringify(native),'explicit '+location+' name length preserved');
+ }
+ const perPoint=copy(source);perPoint.data[0].hoverlabel={namelength:[6,-1]};
+ await draw('#fff',selection,'react',perPoint);
+ check(plot._fullData[0].hoverlabel.namelength[0]===6&&plot._fullData[0].hoverlabel.namelength[1]===-1,'explicit per-point lengths preserved');
+ const templated=copy(source);templated.data[0].hovertemplate='Position %{x}<extra>authored identity</extra>';
+ await draw('#fff',selection,'react',templated);
+ check((await hover('closest',0))[0]==='authored identity','authored hover template preserved');
+ await draw('#fff',{},'react',JSON.parse(saved));
+ check(JSON.stringify(await hover('closest',3))===JSON.stringify(truncated),'removing opt-in restores native truncation');
+ check(JSON.stringify(source)===saved,'scientific arrays, names, axes and saved output unchanged');
+ document.getElementById('results').textContent=JSON.stringify({passed:true,version:Plotly.version,checks});
+})().catch(error=>{document.getElementById('results').textContent=JSON.stringify({passed:false,error:error.message});});
+</script>

@@ -36,6 +36,20 @@ before planning, recommending architecture, or changing code.
   most recently described, including logout. It does not authorize another
   account, legacy HTML5, broader operations, or a later task. If no pending
   acceptance block was described, ask for its scope.
+- `tell_susan`: comment on the GitHub issue established by the current task
+  context and ask `@skrueger111` to evaluate. Also add `skrueger111` as an
+  assignee and remove `madscatt` as an assignee if assigned; preserve all other
+  assignees. If the request specifies an issue such as `gh #XXX`, use that
+  issue; if no issue can be determined, ask rather than guessing.
+- `tell_susan_plus` means "plan and manifest approved, gacp, codex3 approved,
+  if passed tell_susan." It approves the most recently presented exact plan
+  and file manifest for the current task and requests guarded gacp. It grants
+  fresh authorization to use administrator account `codex3` only for the
+  most recently described UI2 acceptance operations, including logout. Execute
+  `tell_susan` only after all required validation and acceptance checks pass.
+  If the plan, manifest, or acceptance scope is missing, ask for that scope;
+  do not infer approval for unrelated work. This alias does not authorize
+  deployment or bypass the separate **Publish YAML** and **Recompile UI2** gates.
 - Do not use the phrase "smoke test" in communications, chat, Markdown, or documentation.
 
 ### Generated HTML5 artifact policy
@@ -598,3 +612,13 @@ Lab use the same collection-level evaluator. Preserve trace names, metadata,
 scientific arrays, source payloads, completion, and reattachment. Application
 selection belongs in `genapp_zazzie/docs/plot_presentation.md` (#304); do not
 put legend policy in SASSIE or add module-specific core branches.
+
+### Full hover-name presentation route
+
+GenApp's `doc/Plotting-Architecture.md` and `doc/UI2-Core-Extension-Policy.md`
+govern the generic `plotPresentation.hoverNameDisplay: "full"` selection.
+Ordinary UI2 and the Lab share `prepareHoverNameDisplay` and preserve explicit
+layout, trace, and template name lengths. Keep scientific names and saved
+outputs unchanged; do not add SASSIE or driver name-length workarounds.
+The Extract Utilities opt-in is documented in the paired
+`genapp_zazzie/docs/plot_presentation.md` (#305).

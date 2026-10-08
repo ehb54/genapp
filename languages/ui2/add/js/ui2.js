@@ -12372,9 +12372,12 @@
     if (output) {
       output._ui2PlotlyBaseTopMargin = Number(layout.margin?.t) || 96;
     }
-    const tickLayout = window.GenAppPlotlyLayout?.prepareNumericTickFormat?.(
+    const hoverLayout = window.GenAppPlotlyLayout?.prepareHoverNameDisplay?.(
       layout, plotPresentationForOutput(output)
     ) || layout;
+    const tickLayout = window.GenAppPlotlyLayout?.prepareNumericTickFormat?.(
+      hoverLayout, plotPresentationForOutput(output)
+    ) || hoverLayout;
     return window.GenAppPlotlyLayout?.prepareAnnotationPlacement?.(
       tickLayout, plotPresentationForOutput(output)
     ) || tickLayout;
