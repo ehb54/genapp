@@ -19,7 +19,13 @@
         ,"history"     : "em_probe.log"
         ,"min_pct"     : 50
         ,"consecutive" : 48
+        ,"fail_consecutive" : 3
         ,"repeat"      : 3600
+    }
+    ,"api" : {
+        "retry"    : 300
+        ,"repeat"  : 3600
+        ,"refresh" : 600
     }
     ,"flavors" : {
         "m3.2xl" : {
