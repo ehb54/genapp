@@ -588,3 +588,13 @@ and the Lab share `prepareNumericTickFormat`. Preserve explicit producer tick
 formats, scientific values, axis scales, hover precision, and saved outputs.
 Do not put tick styling in SASSIE, drivers, or presentation YAML. Application
 selection is documented in `genapp_zazzie/docs/plot_presentation.md` (#302).
+
+### Compact legend route
+
+Generic repeated-family legend display is governed by GenApp's
+`doc/Plotting-Architecture.md` and `doc/UI2-Core-Extension-Policy.md` through
+the view's `plotPresentation.traceRoles` legend opt-in. Ordinary UI2 and the
+Lab use the same collection-level evaluator. Preserve trace names, metadata,
+scientific arrays, source payloads, completion, and reattachment. Application
+selection belongs in `genapp_zazzie/docs/plot_presentation.md` (#304); do not
+put legend policy in SASSIE or add module-specific core branches.

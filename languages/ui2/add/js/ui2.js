@@ -12711,16 +12711,8 @@
     const presentation = window.GenAppPlotPresentation?.profileForSurface?.(
       resolvedPresentation, layout?.plot_bgcolor, layout?.paper_bgcolor,
       window.GenAppPlotlySurface) || resolvedPresentation;
-    return data.map((trace) => {
-      const role = trace?.meta?.series_role;
-      const rawPolicy = role ? traceRoles[role] : null;
-      const policy = typeof rawPolicy === "string" ? { token: rawPolicy } : rawPolicy;
-      if (!policy || typeof policy !== "object") {
-        return trace;
-      }
-      return window.GenAppPlotPresentation?.styleTrace?.(
-        trace, policy, presentation, plotlyThemeColors()) || trace;
-    });
+    return window.GenAppPlotPresentation?.styleTraces?.(
+      data, traceRoles, presentation, plotlyThemeColors()) || data;
   }
 
   function applyPlotPresentationStyle(trace, policy, presentation, layout) {

@@ -301,3 +301,32 @@ separate explicit display tick format avoids that path without reducing hover
 precision. Test both ticks and hover labels after redraw, resizing, updates,
 completion, and reconstruction from saved final output. The generic helper
 must never branch on application, module, output, or scientific-role names.
+
+## Compact legends for repeated families
+
+A view's `plotPresentation.traceRoles` mapping may select
+`legend: {"mode": "compact", "title": "Repeated observations"}` for an opaque
+series role. The shared `GenAppPlotPresentation.styleTraces` helper applies
+this opt-in to detached display traces in ordinary UI2 and application previews.
+It shows the first eligible member beneath the supplied family title and trace
+count, and hides the other members' legend entries. All curves remain plotted.
+Existing legend slots and producer legend groups remain separate; traces with
+`visible: false` are excluded. Ordinary Plotly group interaction applies.
+
+The first entry retains its original trace name. The family title describes
+the shared role rather than promising identical styling for every member.
+Names, metadata, scientific arrays, trace order, source layouts, and saved
+outputs are unchanged. Empty data removes the display group; completion and
+reattachment reconstruct it from the ordinary final payload and current view.
+Missing or invalid policies retain existing behavior. Titles must be nonempty
+strings of at most 200 characters. Removing the opt-in restores the original
+presentation. A role-level `legend: "show"` also explicitly identifies a single
+named trace that Plotly's automatic legend would otherwise omit.
+
+Issue `ehb54/zazzie#304` supplied the neutral repeated-family reproduction:
+showing 100 members through the existing per-trace policy produced 100 entries.
+The owner approved this generic collection-level opt-in, its exact file scope,
+and deployment. Core selects only declared opaque roles, never module ids,
+output ids, scientific terms, or trace-name parsing. Tests cover opt-in,
+controls, producer groups, empty/populated/cleared/repopulated data, immutable
+source payloads, and saved-output reconstruction. HTML5 generation is unchanged.
