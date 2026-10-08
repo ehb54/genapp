@@ -20,11 +20,18 @@ const source=Array.from({length:100},(_,i)=>({type:'scatter',name:'observation '
 source.push({type:'scatter',name:'Summary',meta:{series_role:'summary'},x:[1],y:[3]});
 const before=JSON.stringify(source),display=p.styleTraces(source,policy,profile);
 assert.strictEqual(display.filter(t=>t.showlegend).length,2);
-assert.strictEqual(display[0].legendgrouptitle.text,'Repeated observations (100 traces)');
+assert.strictEqual(display.length,102);
+assert.strictEqual(display[101].name,'Repeated observations (100 traces)');
+assert.strictEqual(display[101]._genappCompactLegendProxy,true);
+assert.deepStrictEqual(plain(display[101].x),[null]);
+assert.deepStrictEqual(plain(display[101].y),[null]);
+assert.strictEqual(display[101].hoverinfo,'skip');
+assert.strictEqual(display[101].meta,undefined);
+assert.strictEqual(display[0].showlegend,false);
 assert.strictEqual(new Set(display.slice(0,100).map(t=>t.legendgroup)).size,1);
 assert.strictEqual(display[100].legendgroup,undefined,'summary separate');
 assert.strictEqual(JSON.stringify(source),before,'source immutable');
-display.forEach((t,i)=>{assert.strictEqual(t.name,source[i].name);assert.strictEqual(t.meta,source[i].meta);
+display.slice(0,source.length).forEach((t,i)=>{assert.strictEqual(t.name,source[i].name);assert.strictEqual(t.meta,source[i].meta);
  assert.strictEqual(t.x,source[i].x);assert.strictEqual(t.y,source[i].y);});
 assert.deepStrictEqual(plain(p.styleTraces(JSON.parse(before),policy,profile)),plain(display),'reattach');
 assert.deepStrictEqual(plain(p.styleTraces(display,policy,profile)),plain(display),'idempotent');
@@ -33,6 +40,13 @@ assert.deepStrictEqual(plain(p.styleTraces(source,policy,profile)),plain(display
 assert.strictEqual(p.styleTraces(null,policy),null);
 assert.strictEqual(p.styleTraces([source[0]],{},profile)[0],source[0],'non opted in');
 assert.strictEqual(p.styleTraces([source[0]],{member:{legend:'show'}})[0].showlegend,true,'existing show');
+for(const count of [1,2,4,5]) {
+ const result=p.styleTraces(source.slice(0,count),policy,profile);
+ assert.strictEqual(result.length,count+(count>4?1:0));
+ assert.strictEqual(result.filter(t=>t.showlegend).length,count>4?1:count);
+ result.slice(0,count).forEach((t,i)=>assert.strictEqual(t.name,source[i].name));
+ if(count>4)assert.strictEqual(result[count].name,'Repeated observations (5 traces)');
+}
 const single=p.styleTraces([source[100]],policy,profile);
 assert.strictEqual(single[0].showlegend,true,'single named trace');
 for(const legend of [{mode:'unknown',title:'x'},{mode:'compact',title:''},{mode:'compact',title:3},{mode:'compact',title:'x'.repeat(201)}]) {

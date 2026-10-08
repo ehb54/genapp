@@ -348,19 +348,24 @@ A view's `plotPresentation.traceRoles` mapping may select
 `legend: {"mode": "compact", "title": "Repeated observations"}` for an opaque
 series role. The shared `GenAppPlotPresentation.styleTraces` helper applies
 this opt-in to detached display traces in ordinary UI2 and application previews.
-It shows the first eligible member beneath the supplied family title and trace
-count, and hides the other members' legend entries. All curves remain plotted.
-Existing legend slots and producer legend groups remain separate; traces with
-`visible: false` are excluded. Ordinary Plotly group interaction applies.
+Families with up to four eligible members list every original trace name
+beneath the supplied family title and count. Larger families hide individual
+entries and append one generic, sample-free display key named from the title
+and count. It must not name a specific member as the representative of others.
+The key has null coordinates, no scientific metadata, and no hover content;
+it adds no plotted samples or axis extent. Native legend-group interaction
+controls the corresponding real traces. Existing legend slots and producer
+groups remain separate; traces with `visible: false` are excluded.
 
-The first entry retains its original trace name. The family title describes
-the shared role rather than promising identical styling for every member.
-Names, metadata, scientific arrays, trace order, source layouts, and saved
-outputs are unchanged. Empty data removes the display group; completion and
-reattachment reconstruct it from the ordinary final payload and current view.
+Every real trace retains its original name, metadata, scientific arrays, order,
+and hover behavior. Source layouts and saved outputs remain unchanged. The
+reserved `_genappCompactLegendProxy` marker identifies display-only keys, which
+are removed before repeat preparation; at most one key is added per large
+family. Empty data removes the group; completion and reattachment reconstruct
+it from the ordinary final payload and current view. Removing the opt-in
+removes the display keys and restores the original presentation.
 Missing or invalid policies retain existing behavior. Titles must be nonempty
-strings of at most 200 characters. Removing the opt-in restores the original
-presentation. A role-level `legend: "show"` also explicitly identifies a single
+strings of at most 200 characters. A role-level `legend: "show"` also explicitly identifies a single
 named trace that Plotly's automatic legend would otherwise omit.
 
 Issue `ehb54/zazzie#304` supplied the neutral repeated-family reproduction:

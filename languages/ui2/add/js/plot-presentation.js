@@ -172,6 +172,8 @@
       const raw = typeof role === "string" ? traceRoles?.[role] : null;
       return typeof raw === "string" ? { token: raw } : raw;
     };
+    // Proxies exist only in display data; rebuilding must never accumulate them.
+    data = data.filter((trace) => trace?._genappCompactLegendProxy !== true);
     const styled = data.map((trace) => styleTrace(trace, policyFor(trace), profile, theme));
     const families = new Map();
     data.forEach((trace, index) => {
@@ -186,14 +188,32 @@
       families.get(key).indices.push(index);
     });
     families.forEach(({ title, indices }, key) => {
-      indices.forEach((index, position) => {
+      const individual = indices.length <= 4;
+      const first = data[indices[0]];
+      const group = first.legendgroup || "genapp_compact_" + key;
+      indices.forEach((index) => {
         styled[index] = { ...styled[index],
-          legendgroup: data[index].legendgroup || "genapp_compact_" + key,
-          showlegend: position === 0,
+          legendgroup: group,
+          showlegend: individual,
           legendgrouptitle: { ...copy(styled[index].legendgrouptitle),
-            text: title + " (" + indices.length + " traces)" }
+            text: individual ? title + " (" + indices.length + " traces)" : "" }
         };
       });
+      if (!individual) {
+        // A sample-free legend key avoids renaming any real trace or hover label.
+        const proxy = styleTrace({
+          type: first.type === "scatter3d" ? "scatter3d" : "scatter",
+          mode: "lines", x: [null], y: [null],
+          ...(first.type === "scatter3d" ? { z: [null], scene: first.scene } :
+            { xaxis: first.xaxis, yaxis: first.yaxis }),
+          name: title + " (" + indices.length + " traces)",
+          legend: first.legend, legendgroup: group, legendrank: first.legendrank,
+          showlegend: true, hoverinfo: "skip", opacity: 1,
+          _genappCompactLegendProxy: true
+        }, { token: policyFor(first)?.token }, profile, theme);
+        // Family opacity styles describe plotted samples, not this generic key.
+        styled.push({ ...proxy, opacity: 1, showlegend: true });
+      }
     });
     return styled;
   }

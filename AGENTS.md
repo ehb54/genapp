@@ -624,3 +624,13 @@ layout, trace, and template name lengths. Keep scientific names and saved
 outputs unchanged; do not add SASSIE or driver name-length workarounds.
 The Extract Utilities opt-in is documented in the paired
 `genapp_zazzie/docs/plot_presentation.md` (#305).
+
+### Unambiguous compact-legend route (#304)
+
+GenApp owns the opt-in compact-family contract in
+`doc/Plotting-Architecture.md` and `doc/UI2-Core-Extension-Policy.md`
+(in the paired GenApp checkout). Up to four members retain individual legend
+entries; larger groups use one generic, sample-free display key. Real trace
+names, values, hover identities, and saved outputs remain unchanged. Application
+selection and acceptance route to `genapp_zazzie/docs/plot_presentation.md`;
+SASSIE supplies no legend keys or browser presentation state.
