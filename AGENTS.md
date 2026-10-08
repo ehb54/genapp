@@ -41,15 +41,17 @@ before planning, recommending architecture, or changing code.
   assignee and remove `madscatt` as an assignee if assigned; preserve all other
   assignees. If the request specifies an issue such as `gh #XXX`, use that
   issue; if no issue can be determined, ask rather than guessing.
-- `tell_susan_plus` means "plan and manifest approved, gacp, codex3 approved,
-  if passed tell_susan." It approves the most recently presented exact plan
-  and file manifest for the current task and requests guarded gacp. It grants
-  fresh authorization to use administrator account `codex3` only for the
-  most recently described UI2 acceptance operations, including logout. Execute
-  `tell_susan` only after all required validation and acceptance checks pass.
-  If the plan, manifest, or acceptance scope is missing, ask for that scope;
-  do not infer approval for unrelated work. This alias does not authorize
-  deployment or bypass the separate **Publish YAML** and **Recompile UI2** gates.
+- `tell_susan_plus` means "plan and manifest approved, gacp, approved to deploy
+  if needed, codex3 approved, if passed tell_susan." It approves the most
+  recently presented exact plan and file manifest for the current task,
+  requests guarded gacp, and authorizes the established deployment workflow
+  when needed to validate those changes. It grants fresh authorization to use
+  administrator account `codex3` only for the most recently described UI2
+  acceptance operations, including logout. Execute `tell_susan` only after
+  all required validation and acceptance checks pass. If the plan, manifest,
+  deployment target, or acceptance scope is missing, ask for that scope; do
+  not infer approval for unrelated work or container maintenance. The separate
+  **Publish YAML** and **Recompile UI2** gates still require their own approval.
 - Do not use the phrase "smoke test" in communications, chat, Markdown, or documentation.
 
 ### Generated HTML5 artifact policy
