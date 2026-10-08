@@ -248,6 +248,15 @@ group only to select appearance channels; it must not infer science, reorder
 traces, or use the value as runtime or reattachment state. Missing grouping
 metadata is a presentation-only fallback, not a plotting error.
 
+### Patterned bars and histograms
+
+Presentation-selected marker patterns default to Plotly `fillmode: "overlay"`
+so the resolved series color remains behind the pattern. This preserves the
+solid background used by Plotly to contrast embedded labels and supplies a
+non-color cue in grayscale. Explicit producer pattern settings, including
+`fillmode`, remain authoritative. Ordinary UI2 and application previews use the
+same helper; scientific arrays and saved source payloads remain unchanged.
+
 ## Preflight For Any Plot Change
 
 Read the applicable `AGENTS.md` files in `genapp`, `genapp_zazzie`, and

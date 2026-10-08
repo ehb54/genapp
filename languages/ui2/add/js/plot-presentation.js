@@ -147,7 +147,7 @@
           ...(supportsMarkerSymbol && markerSize !== null ? { size: markerSize } : {}),
           ...(supportsMarkerSymbol && typeof marker === "string" ? { symbol: marker } : {}) };
         if (supportsPattern && typeof markerPattern === "string") {
-          styled.marker.pattern = { ...copy(trace.marker?.pattern), shape: markerPattern };
+          styled.marker.pattern = { fillmode: "overlay", ...copy(trace.marker?.pattern), shape: markerPattern };
         }
       }
       if (opacity !== null) styled.opacity = opacity;
