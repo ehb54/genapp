@@ -410,3 +410,20 @@ Track ownership by module and login, prevent concurrent duplicate submission,
 and use the existing job cancellation endpoint and confirmation. Navigation may
 resume an owned active tool without launching another job. Browser memory is
 only a navigation cache; normal saved-job reattachment remains authoritative.
+
+### Deployment menu visibility
+
+`ui2_hidden_menu_items` is an optional array of exact menu module IDs in
+application directives. UI2 generation validates the array against the effective
+(target-specific) menu and serializes it as JSON into the navigation map.
+Listed module entries are skipped when that map is assembled. An absent or empty
+array preserves existing map registration. Invalid values and unknown IDs fail
+UI2 generation; duplicate IDs are harmless. Base and target directive arrays
+retain the existing additive merge behavior. HTML5 ignores this UI2 option.
+
+This is navigation presentation, not authorization or module disabling. Module
+metadata, backend generation, direct module routes, saved jobs, restrictions,
+and authentication remain unchanged. Empty groups are hidden by the existing
+UI2 renderer. Applications must retain endpoint authorization independently.
+No provider, deployment hostname, or application module ID is hard-coded in
+GenApp. See `UI2-Menu-Visibility-Shared-Gap-Report.md` (#312).

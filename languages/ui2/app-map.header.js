@@ -83,7 +83,10 @@ __~help:reset{app.help.reset = "__help:reset__";}
     }
   };
 
+  __~ui2_hidden_menu_items_json{const hiddenMenuItems = __ui2_hidden_menu_items_json__;}
+
   app.addModule = function (menuId, module) {
+    __~ui2_hidden_menu_items_json{if (hiddenMenuItems.indexOf(module.id) !== -1) { return; }}
     if (!app.menuById[menuId]) {
       app.addMenu({ id: menuId, label: menuId });
     }

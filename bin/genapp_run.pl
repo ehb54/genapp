@@ -168,10 +168,27 @@ foreach my $l ( keys %langs )
     # reload for language specific content
     $directives = add_special_directives( get_file_json_lang_specific( "directives.json", $l, 0 ) );
     die "directives:application '$$directives{application}' must match current directory name '$toppath'\n" if $$directives{application} ne $toppath;
-    $rplc_directives = start_json( $directives, $ref_directives );
 
     # reload for language specific content
     $menu = get_file_json_lang_specific( "menu.json", $l, 1 );
+    # Visibility belongs only to the UI2 navigation map, never module assembly.
+    delete $$directives{ "ui2_hidden_menu_items_json" };
+    if ( $l eq 'ui2' && exists $$directives{ "ui2_hidden_menu_items" } ) {
+        my $hidden_items = $$directives{ "ui2_hidden_menu_items" };
+        die "ui2_hidden_menu_items must be an array of menu module IDs\n"
+            if ref( $hidden_items ) ne 'ARRAY';
+        my %menu_module_ids = map { $_->{id} => 1 }
+            map { @{ $_->{modules} || [] } } @{ $$menu{menu} || [] };
+        foreach my $module_id ( @$hidden_items ) {
+            die "ui2_hidden_menu_items contains an invalid module ID\n"
+                if !defined $module_id || ref( $module_id ) || $module_id !~ /^[A-Za-z0-9_]+$/;
+            die "ui2_hidden_menu_items contains unknown menu module ID '$module_id'\n"
+                if !$menu_module_ids{ $module_id };
+        }
+        $$directives{ "ui2_hidden_menu_items_json" } = encode_json_for_raw_template( $hidden_items )
+            if @$hidden_items;
+    }
+    $rplc_directives = start_json( $directives, $ref_directives );
     $rplc_menu   = start_json( $menu,   $ref_menu );
 #    print "module to file\n";
 #    print Dumper( %module_to_file );

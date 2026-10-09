@@ -645,3 +645,11 @@ forms must never authorize repairs. Read the GenApp shared-gap report and core
 extension policy before changing this boundary.
 The owner documents are `doc/UI2-Admin-Tools-Shared-Gap-Report.md` and
 `doc/UI2-Core-Extension-Policy.md`.
+
+## UI2 deployment menu visibility
+
+The optional `ui2_hidden_menu_items` directive is navigation-only; it must not
+change backend generation, module access, or authentication. Its owner contract
+is `doc/UI2-Core-Extension-Policy.md` and shared-gap report
+`doc/UI2-Menu-Visibility-Shared-Gap-Report.md` (#312). Omitted/empty settings
+preserve behavior; deployment opt-ins require their own approved scope.
