@@ -28,9 +28,9 @@ Status values are `not_recorded`, `passed`, `failed`, or `not_applicable`.
 | Tools | extract_utilities | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
 | Build | prepare_solvated_system | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
 | Contrast | contrast_calculator | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
-| Contrast | multi_component_analysis | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
+| Contrast | multi_component_analysis | Plotly | passed | passed | passed | passed | `ehb54/zazzie#291` records deployed Match Point success, expanded/restore, completion, refresh, and fresh-window reattachment; controlled automatic-fit failure preserved its report and omitted the plot and successful completion state |
 | Contrast | contrast_variation_analysis | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
-| Contrast | rg_center_of_mass_distance_calculator | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
+| Contrast | rg_center_of_mass_distance_calculator | Plotly | passed | passed | passed | passed | `madscatt/zazzie#208` records deployed single-frame PDB and multi-frame DCD acceptance on 2026-09-29; both completed with the Rg/COM plot and summary, passed same-window and fresh-window reattachment, and the multi-frame plot passed expanded/restore inspection |
 | Simulate | torsion_angle_monte_carlo | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | |
 | Simulate | tamd | Plotly | not_recorded | not_recorded | not_recorded | not_recorded | Native live stream integrated; deployed check pending |
 | Simulate | sas_assembly | Plotly and images | not_recorded | not_recorded | not_recorded | not_recorded | Density images remain ordinary outputs |

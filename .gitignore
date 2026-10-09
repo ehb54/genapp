@@ -2,6 +2,8 @@
 *.lock
 !languages/ui2/react/pnpm-lock.yaml
 *.tsbuildinfo
+.last_sas*
+.last_json*
 .pnpm-store/
 node_modules/
 etc/apps.json
