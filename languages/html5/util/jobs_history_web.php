@@ -49,12 +49,12 @@ if ( !in_array( $_REQUEST[ '_logon' ], $appconfig->restricted->admin ) ) {
 
 require_once "__docroot:html5__/__application__/ajax/ga_db_lib.php";
 
-$arg1 = $_REQUEST['input1'];
-$arg2 = $_REQUEST['input2'];      
+$arg1 = $_REQUEST['input1'] ?? '';
+$arg2 = $_REQUEST['input2'] ?? '';
 
 function check_dates($argument){
     $split = array();
-    if (preg_match ("/^([0-9]{4})-([0-9]{2})-([0-9]{2})$/", $argument, $split)){
+    if (is_string($argument) && preg_match ("/^([0-9]{4})-([0-9]{2})-([0-9]{2})$/", $argument, $split)){
         
         if(checkdate($split[2],$split[3],$split[1])){
             return true;
@@ -74,12 +74,16 @@ if ( !check_dates($arg1) || !check_dates($arg2) ) {
 }
 
 
+if ($arg1 > $arg2) {
+    echo json_encode(['error' => 'Start Date must not be after End Date.']);
+    exit();
+}
 $start_date = new DateTime($arg1);
 $end_date = new DateTime($arg2);
 $end_date->add(new DateInterval('P1D'));
 
 $date_1 = ga_db_output( ga_db_date( strtotime( $start_date->format( "Y-m-d H:i:s" ) ) ) );
-$date_2 = ga_db_output( ga_db_date( strtotime( $end_date->format( "Y-m-d H:i:s" ) . " +1 day" ) ) );
+$date_2 = ga_db_output( ga_db_date( $end_date->getTimestamp() ) );
 
 //echo $arg1. $arg2 . "\n";
 
@@ -137,25 +141,21 @@ foreach ($cursor_jobs as $obj_jobs) {
       $this_status = 'unknown';
   }
 
+  // A missing running record is a stale job, not an active one. Classify it
+  // before choosing its duration and applying the requested date window.
+  if (($this_status == 'started' || $this_status == 'running') &&
+      !ga_db_output(ga_db_findOne('running', '', ['_id' => $obj_jobs['_id']]))) {
+      $this_status = 'failed';
+  }
+
   if ( $this_status == 'running' ) {
       $user_current = time();
   }
 
-  if (date(DATE_ISO8601, $user_start) >= $start_date->format(DATE_ISO8601) && date(DATE_ISO8601, $user_current) <= $end_date->format(DATE_ISO8601)){
+  if (date(DATE_ISO8601, $user_start) >= $start_date->format(DATE_ISO8601) && date(DATE_ISO8601, $user_current) < $end_date->format(DATE_ISO8601)){
         
       // Status
       
-      if ( ($this_status == 'started' || $this_status == 'running') && 
-           !ga_db_output(
-               ga_db_find(
-                   'running',
-                   '',
-                   [ "_id" => $obj_jobs['_id'] ]
-               )
-           )
-      ) {
-          $this_status = 'failed';
-      }
       
       if ( $this_user == "not logged in" ) {
           $this_user = isset( $obj_jobs[ 'remoteip' ] ) ? $obj_jobs[ 'remoteip' ] : "anonymous";
@@ -244,6 +244,7 @@ foreach ( $possible_status as $status => $null) {
 }
 
 $i=0;
+$userinfo = [];
 
 $group_totals = [];
 
@@ -300,7 +301,7 @@ foreach ( $final_users as $v ) {
 
 
 // HTML Table//////
-$html_userinfo = "<table class='padcell'><tr><th>" . implode( "</th><th>", array_keys( $userinfo[ 0 ] ) ) . "</th></tr>";
+$html_userinfo = "<table class='padcell'><tr><th>" . implode( "</th><th>", array_keys( $userinfo[ 0 ] ?? $totals_info ) ) . "</th></tr>";
 $html_userinfo .= "<tr><td>" . implode( "</td><td> ",  $totals_info ) . "</td></tr>";
 
 foreach ( $group_totals as $k => $v ) {

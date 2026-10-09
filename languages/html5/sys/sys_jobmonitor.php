@@ -30,6 +30,14 @@ if ( !isset( $_REQUEST[ 'interval' ] ) ) {
     exit();
 }
 
+$interval_value = $_REQUEST['interval'];
+$interval = filter_var($interval_value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 5]]);
+$plot_format = $_REQUEST['plot_format'] ?? 'plot2d';
+if ($interval === false || !in_array($plot_format, ['plot2d', 'plotly'], true)) {
+    echo json_encode(['error' => 'Invalid monitor interval or plot format.']);
+    exit();
+}
+
 $appconfig = json_decode( file_get_contents( "__appconfig__" ) );
 
 if ( !isset( $appconfig->messaging->zmqhostip ) ||
@@ -134,16 +142,14 @@ function ProcStats( $sys ) {
 
     $result[ "net" ] = array();
 
-    foreach ( $net as $v ) {
-        $thisnet = preg_split( "/\s+/",  strtr( $v, ":", " " ) );
-        $if = $thisnet[ 1 ];
-        // for sep tx,rx $result[ "net" ][ $if ] = array( $thisnet[ 2 ], $thisnet[ 10 ] );
-        $totuse = $thisnet[ 2 ] + $thisnet[ 10 ];
-        // skip lo for now
-        if ( $totuse > 0 && $if != "lo" ) {
-            $result[ "net" ][ $if ] = $totuse;
-        }
-    }        
+    foreach ($net as $line) {
+        if (!preg_match('/^\s*([^:]+):\s*(.*)$/', $line, $matches)) continue;
+        $interface = trim($matches[1]);
+        $counters = preg_split('/\s+/', trim($matches[2]));
+        if (count($counters) < 16 || !is_numeric($counters[0]) || !is_numeric($counters[8])) continue;
+        $bytes = (float) $counters[0] + (float) $counters[8];
+        if ($interface !== 'lo') $result['net'][$interface] = $bytes;
+    }
 
     return $result;
 }
@@ -158,18 +164,20 @@ function UpdateStats( $sys, $init = false ) {
     if ( !$init ) {
         $total = $load[ $sys ][ "this" ][ "sum" ] - $load[ $sys ][ "prev" ][ "sum" ];
 
-        $load[ $sys ][ "this" ][ "load" ] = round( 100 * 
+        $load[ $sys ][ "this" ][ "load" ] = $total > 0 ? round( 100 *
                                                       ( $load[ $sys ][ "this" ][ "sum012" ] -
                                                         $load[ $sys ][ "prev" ][ "sum012" ] ) 
-                                                      / $total, 2 );
+                                                      / $total, 2 ) : 0.0;
 
-        $load[ $sys ][ "this" ][ "iowait"  ] = round( 100 * 
+        $load[ $sys ][ "this" ][ "iowait" ] = $total > 0 ? round( 100 *
                                                       ( $load[ $sys ][ "this" ][ "stats" ][ "cpu" ][ 4 ] -
                                                         $load[ $sys ][ "prev" ][ "stats" ][ "cpu" ][ 4 ] )
-                                                      / $total, 2 );
+                                                      / $total, 2 ) : 0.0;
 
-        foreach ( $load[ $sys ][ "this" ][ "stats" ][ "net" ] as $k => $v ) {
-            $load[ $sys ][ "this" ][ "net" ][ $k ] = ( $v - $load[ $sys ][ "prev" ][ "stats" ][ "net" ][ $k ] ) * 1e-6;
+        $load[$sys]['this']['net'] = [];
+        foreach ($load[$sys]['this']['stats']['net'] as $interface => $bytes) {
+            $previous = $load[$sys]['prev']['stats']['net'][$interface] ?? $bytes;
+            $load[$sys]['this']['net'][$interface] = max(0, $bytes - $previous) * 1e-6;
         }
     }
 
@@ -418,7 +426,7 @@ function get_runinfo( $error_json_exit = false ) {
        $if  = $plotdata[ "net" ][ "data" ][ $k ][ "if" ];
 
        $plotdata[ "net" ][ "data" ][ $k ][ "data" ][] = 
-           array( $thissecs, $load[ $sys ][ "this" ][ "net" ][ $if ] / $interval );
+           array( $thissecs, ($load[$sys]["this"]["net"][$if] ?? 0.0) / $interval );
        $plotdata[ "net" ][ "data" ][ $k ][ "data" ] = 
            array_slice(
                $plotdata[ "net" ][ "data" ][ $k ][ "data" ],
@@ -468,6 +476,24 @@ function get_runinfo( $error_json_exit = false ) {
    return true;
 }
 
+// Presentation-neutral Plotly payloads reuse the bounded operational samples.
+function monitor_plotly_payload($id, $plot, $start_seconds) {
+    $titles = ['jobhistory' => 'Active job count', 'load' => 'Load %', 'iowait' => 'IO wait %',
+               'memused' => 'Memory used %', 'swapused' => 'Swap used %', 'net' => 'Network MB/s'];
+    $data = [];
+    foreach ($plot['data'] as $series) {
+        $x = []; $y = [];
+        foreach ($series['data'] as $point) {
+            $x[] = ($start_seconds + $point[0]) * 1000;
+            $y[] = $point[1];
+        }
+        $data[] = ['type' => 'scatter', 'mode' => 'lines', 'name' => $series['label'] ?? $id, 'x' => $x, 'y' => $y];
+    }
+    return ['data' => $data, 'layout' => ['title' => $titles[$id],
+        'xaxis' => ['title' => 'Time (UTC)', 'type' => 'date'],
+        'yaxis' => ['title' => $titles[$id], 'type' => 'linear']]];
+}
+
 function get_html_runinfo( $error_json_exit = false ) {
     global $runinfo;
     global $html_runinfo;
@@ -489,6 +515,7 @@ function get_html_runinfo( $error_json_exit = false ) {
     }        
 
     $html_runinfo .= "</table>";
+    return true;
 }
 
 $results = [];
@@ -514,7 +541,7 @@ do {
     $results[ "monitordata" ] = "<p>Last refreshed " . date( "Y M d H:i:s T", $nowsecs ) . "</p>" .  $html_runinfo;
 
     foreach ( $plotdata as $k => $v ) {
-        $results[ $k ] = $v;
+        $results[$k] = $plot_format === "plotly" ? monitor_plotly_payload($k, $v, $startsecs) : $v;
     }
     // __~debug:jobmonitor{error_log( print_r( $results, true ) , 3, "/tmp/mylog" );}
     // __~debug:jobmonitor{error_log( json_encode( $results ) . "\n", 3, "/tmp/mylog" );}

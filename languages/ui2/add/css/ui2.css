@@ -3034,3 +3034,8 @@ body:not(.ui2-help-enabled) .ui2-hover-help {
     grid-template-columns: 1fr;
   }
 }
+
+/* Opt-in operational tools use their controls/report without job-form headings. */
+.ui2-tool-module .ui2-section { margin-top: 1rem; }
+.ui2-tool-module .ui2-section:empty { display: none; }
+.ui2-tool-module .ui2-output-html { overflow-x: auto; }

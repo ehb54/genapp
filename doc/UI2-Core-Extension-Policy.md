@@ -392,3 +392,21 @@ Apply the selection again when rendering updates, completed output, or saved
 final output. Verify closest and compare-data hover on overlapping long names,
 light and dark surfaces, expanded/restore views, and saved-output reconstruction.
 Removing the view selection restores native behavior from the original figure.
+
+## Native tool views
+
+The approved neutral gap report is `UI2-Admin-Tools-Shared-Gap-Report.md`.
+Applications may opt into `layout: "tool"` for operational forms and reports.
+This layout uses ordinary native field/output rendering and existing submission,
+transport, polling, cancellation and reattachment. It omits canonical section
+headings, shortcuts and empty-input messages. It must not branch on module ids.
+
+`submit_label` selects the action caption; enabled `noreset` omits Reset.
+For tool views only, enabled `autosubmit` schedules submission only when every
+input is hidden or absent, and never during reattachment. Visible controls,
+including repair checkboxes, must require explicit submission.
+Optional `tool.stopLabel` exposes cancellation of the current tool's owned UUID.
+Track ownership by module and login, prevent concurrent duplicate submission,
+and use the existing job cancellation endpoint and confirmation. Navigation may
+resume an owned active tool without launching another job. Browser memory is
+only a navigation cache; normal saved-job reattachment remains authoritative.

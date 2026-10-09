@@ -518,6 +518,50 @@ window.GenAppUi2App.directives={};
 assert.strictEqual(hooks.plotlyDisplayFigure(numericSavedFigure),numericSavedFigure,"non-opted-in UI2 preserves its original display path");
 
 
+// Neutral tool fixtures exercise shared behavior without application ids.
+assert(hooks.isToolView({layout:"tool"}));
+assert(!hooks.isToolView({layout:"workbench"}));
+const savedToolState = {module:hooks.state.module, view:hooks.state.view,
+  moduleId:hooks.state.moduleId, session:hooks.state.session, toolJobs:hooks.state.toolJobs};
+hooks.state.moduleId = "neutral_report_tool";
+hooks.state.module = {submit_label:"Refresh report", noreset:"true", autosubmit:"true",fields:[]};
+hooks.state.view = {layout:"tool",tool:{stopLabel:"Stop report"}};
+hooks.state.session = {logon:"test_admin"};
+hooks.state.toolJobs = {};
+let toolActions = hooks.renderActionBar();
+assert.strictEqual(toolActions.children[0].textContent,"Refresh report");
+assert(!toolActions.children.some(n=>n.type === "reset"),"noreset removes the reset action");
+assert(toolActions.children.find(n=>n.dataset.toolStop).disabled,"stop is disabled without an owned running tool");
+hooks.state.toolJobs.neutral_report_tool={uuid:"owned-run",logon:"test_admin"};
+assert.strictEqual(hooks.currentToolJob().uuid,"owned-run");
+assert(!hooks.renderActionBar().children.find(n=>n.dataset.toolStop).disabled);
+hooks.state.session.logon="another_admin";
+assert.strictEqual(hooks.currentToolJob(),null,"tool ownership never crosses login sessions");
+hooks.state.session.logon="test_admin";
+hooks.state.toolJobs={};
+const plainReport=hooks.renderSection("Report",[],"output",true);
+assert(!plainReport.querySelector("h2"),"tool report has no canonical header");
+assert.strictEqual(plainReport.querySelector(".ui2-section-body").children.length,0,
+  "empty tool reports keep an output host without distracting help text");
+assert(hooks.renderSection("Outputs",[],"output").querySelector("h2"),
+  "ordinary modules retain their canonical header");
+const toolTimer=window.setTimeout;
+const scheduledToolSubmissions=[];
+window.setTimeout=callback=>scheduledToolSubmissions.push(callback);
+const neutralToolForm=createNode("form");
+hooks.initializeToolView(neutralToolForm);
+assert.strictEqual(scheduledToolSubmissions.length,1,"output-only opted-in tools load automatically");
+hooks.initializeToolView(neutralToolForm,{preserveSwitch:true});
+assert.strictEqual(scheduledToolSubmissions.length,1,"reattachment never submits another tool run");
+hooks.state.module.fields=[{id:"repair",role:"input",type:"checkbox",default:false}];
+hooks.initializeToolView(neutralToolForm);
+assert.strictEqual(scheduledToolSubmissions.length,1,"a visible mutation checkbox prevents autosubmit");
+hooks.state.view={}; hooks.state.module.fields=[];
+hooks.initializeToolView(neutralToolForm);
+assert.strictEqual(scheduledToolSubmissions.length,1,"ordinary modules do not opt into tool autosubmit");
+window.setTimeout=toolTimer;
+Object.assign(hooks.state,savedToolState);
+
 const embeddedPage = hooks.renderSystemTool({
   moduleid: "protected_admin",
   label: "Account Administration",
@@ -6140,6 +6184,24 @@ async function verifyScenarioFileHydration() {
   repeatedForm.remove();
 }
 
+async function verifyToolSubmissionGuards() {
+  const saved={module:hooks.state.module,view:hooks.state.view,moduleId:hooks.state.moduleId,
+    session:hooks.state.session,toolJobs:hooks.state.toolJobs};
+  hooks.state.moduleId="neutral_live_tool";
+  hooks.state.module={executable:"neutral_live_tool",fields:[]};
+  hooks.state.view={layout:"tool",tool:{stopLabel:"Stop"}};
+  hooks.state.session={logon:"fixture_admin"};
+  hooks.state.toolJobs={neutral_live_tool:{uuid:"owned-job",logon:"fixture_admin"}};
+  const form=createNode("form");
+  const alreadyRunning=await hooks.submitModule(form);
+  assert.strictEqual(alreadyRunning.ok,false);
+  assert.strictEqual(alreadyRunning.error,"This tool is already running.","existing owned tool blocks duplicate starts before any request");
+  hooks.state.toolJobs={};form.dataset.submitting="true";
+  const pending=await hooks.submitModule(form);
+  assert.strictEqual(pending.ok,false,"pending submission blocks duplicate starts before any request");
+  Object.assign(hooks.state,saved);
+}
+
 setImmediate(() => {
   context.fetch = async (url) => ({
     ok: true,
@@ -6150,7 +6212,7 @@ setImmediate(() => {
       return bytes.buffer;
     }
   });
-  verifyScenarioFileHydration().catch((error) => {
+  verifyToolSubmissionGuards().then(verifyScenarioFileHydration).catch((error) => {
     console.error(error);
     process.exitCode = 1;
   });

@@ -837,4 +837,14 @@ my $invalid = generate_fixture_app(
 isnt( $invalid->{status}, 0, 'invalid ui2 view JSON fails generation' );
 like( $invalid->{output}, qr/JSON Error in view file views\/shared\.json/, 'invalid ui2 view JSON reports the view file path' );
 
+open my $tool_view_fh, '>', File::Spec->catfile($app_dir, 'views', 'plain.json') or die $!;
+print {$tool_view_fh} '{"layout":"tool","tool":{"stopLabel":"Stop report"}}';
+close $tool_view_fh;
+my ($tool_status, $tool_output) = run_command(cwd=>$app_dir, env=>{GENAPP=>$repo_root},
+    cmd=>[File::Spec->catfile($repo_root, 'bin', 'genapp'), '--language', 'ui2']);
+is($tool_status, 0, 'neutral tool fixture generates') or diag($tool_output);
+my $tool_summary = decode_json(read_file(File::Spec->catfile($ui2, 'modules', 'plain.json')));
+is($tool_summary->{viewjson}{layout}, 'tool', 'neutral tool view survives generation');
+is($tool_summary->{viewjson}{tool}{stopLabel}, 'Stop report', 'generic tool lifecycle metadata survives generation');
+
 done_testing();

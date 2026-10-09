@@ -16,5 +16,7 @@
             ,"type"    : "checkbox"
             ,"help"    : "Correct fixable errors"
         }
+        ,{"role":"output", "id":"jobintegrityreport", "label":"Status", "type":"text"}
+        ,{"role":"output", "id":"integrity_details", "label":"Diagnostic report", "type":"textarea"}
     ]
 }

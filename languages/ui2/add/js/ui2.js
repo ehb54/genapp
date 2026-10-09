@@ -123,6 +123,7 @@
     viewReady: null,
     viewReadyGeneration: 0,
     runtimeOutputs: {},
+    toolJobs: {},
     nglFrameHistories: {},
     runtimeOutputContext: {
       moduleId: "",
@@ -1530,7 +1531,7 @@
       state.jobEvents.reset("", moduleId);
       await loadTestScenarios(moduleId);
       beginViewReady();
-      renderModule();
+      renderModule(options);
       await waitForViewReady();
       updateSelectedNavigation();
       syncDocsLink();
@@ -3216,7 +3217,7 @@
     syncDocsLink();
   }
 
-  function renderModule() {
+  function renderModule(options = {}) {
     const module = state.module || {};
     const fields = visibleFields(Array.isArray(module.fields) ? module.fields : []);
     const inputFields = fields.filter((field) => field.role !== "output");
@@ -3242,17 +3243,23 @@
       return;
     }
 
-    container.appendChild(renderHeader(module, fields));
-    container.appendChild(renderTabs(inputFields.length, outputFields.length));
+    const tool = isToolView(state.view);
+    container.classList.toggle("ui2-tool-module", tool);
+    container.appendChild(tool ? renderToolHeader(module) : renderHeader(module, fields));
+    if (!tool) container.appendChild(renderTabs(inputFields.length, outputFields.length));
 
     const form = el("form");
     form.id = "ui2-form";
-    form.appendChild(renderSection("Inputs", inputFields, "input"));
-    form.appendChild(renderTestScenarioPanel());
+    if (!tool || inputFields.some((field) => !isHiddenField(field))) {
+      form.appendChild(renderSection(tool ? "Controls" : "Inputs", inputFields, "input", tool));
+    } else {
+      inputFields.forEach((field) => form.appendChild(renderField(field, "input")));
+    }
+    if (!tool) form.appendChild(renderTestScenarioPanel());
     if (module.executable) {
       form.appendChild(renderActionBar());
     }
-    form.appendChild(renderSection("Outputs", outputFields, "output"));
+    form.appendChild(renderSection(tool ? "Report" : "Outputs", outputFields, "output", tool));
     if (devMode) {
       form.appendChild(renderPreview());
     }
@@ -3273,6 +3280,44 @@
     nodes.root.appendChild(container);
     syncValues();
     markViewReady();
+    initializeToolView(form, options);
+  }
+
+  function isToolView(view) {
+    return view?.layout === "tool";
+  }
+
+  function currentToolJob() {
+    const job = state.toolJobs[state.moduleId];
+    return job?.logon === state.session.logon ? job : null;
+  }
+
+  function updateToolControls() {
+    if (!isToolView(state.view)) return;
+    const form = document.getElementById("ui2-form");
+    const job = currentToolJob();
+    const submit = form?.querySelector('button[type="submit"]');
+    if (submit) submit.disabled = Boolean(job || form.dataset.submitting === "true");
+    const stop = form?.querySelector('[data-tool-stop]');
+    if (stop) stop.disabled = !job;
+  }
+
+  function initializeToolView(form, options = {}) {
+    if (!isToolView(state.view) || options.preserveSwitch) return;
+    const job = currentToolJob();
+    if (job && state.view.tool?.stopLabel) {
+      beginJobOutputContext(state.moduleId, job.uuid);
+      startJobPolling(job.uuid, form, document.getElementById("ui2-submit-status"), true, true);
+      updateToolControls();
+      return;
+    }
+    // Automatic loading is restricted to tools without visible inputs.
+    const fields = state.module.fields || [];
+    if (enabledSetting(state.module.autosubmit) && !fields.some((field) => field.role !== "output" && !isHiddenField(field))) {
+      window.setTimeout(() => {
+        if (form.isConnected && state.session.logon) submitModule(form);
+      }, 0);
+    }
   }
 
   // Module definition and job state belong to UI2 core.  A renderer may mount
@@ -4057,7 +4102,7 @@
     return button;
   }
 
-  function renderSection(title, fields, role) {
+  function renderSection(title, fields, role, tool = false) {
     const section = el("section", "ui2-section");
     section.id = role === "output" ? "ui2-output-section" : "ui2-input-section";
     const header = el("div", "ui2-section-header");
@@ -4066,14 +4111,15 @@
     const renderPlan = planFields(fields);
 
     if (!fields.length) {
-      body.appendChild(el("p", "ui2-help", `No ${title.toLowerCase()} declared.`));
+      if (!tool) body.appendChild(el("p", "ui2-help", `No ${title.toLowerCase()} declared.`));
     } else {
       renderPlan.forEach((item) => {
         body.appendChild(item.kind === "table" ? renderTableizedRepeater(item, role) : renderField(item.field, role));
       });
     }
 
-    section.append(header, body);
+    if (!tool) section.appendChild(header);
+    section.appendChild(body);
     return section;
   }
 
@@ -5441,14 +5487,38 @@
 
   function renderActionBar() {
     const actions = el("div", "ui2-form-actions");
-    const submit = el("button", "ui2-button ui2-button-primary", "Submit");
+    const submit = el("button", "ui2-button ui2-button-primary", state.module?.submit_label || "Submit");
     submit.type = "submit";
     const reset = el("button", "ui2-button ui2-button-quiet", "Reset");
     reset.type = "reset";
     const status = el("div", "ui2-submit-status");
     status.id = "ui2-submit-status";
     status.setAttribute("role", "status");
-    actions.append(submit, reset, status);
+    actions.appendChild(submit);
+    if (!enabledSetting(state.module?.noreset)) actions.appendChild(reset);
+    if (isToolView(state.view) && state.view.tool?.stopLabel) {
+      const stop = el("button", "ui2-button ui2-button-quiet", state.view.tool.stopLabel);
+      stop.type = "button";
+      stop.dataset.toolStop = "true";
+      stop.disabled = !currentToolJob();
+      stop.addEventListener("click", async () => {
+        const moduleId = state.moduleId;
+        const job = currentToolJob();
+        if (!job) return;
+        stop.disabled = true;
+        if (await manageJob(job.uuid, "jobcancel", "Stop this running tool?")) {
+          delete state.toolJobs[moduleId];
+          if (state.moduleId === moduleId) {
+            if (state.activeJob?.uuid === job.uuid) stopJobPolling();
+            state.jobEvents.setLifecycle({ state: "cancelled" });
+            setSubmitStatus(status, "Stopped", "ok");
+          }
+        }
+        updateToolControls();
+      });
+      actions.appendChild(stop);
+    }
+    actions.appendChild(status);
     return actions;
   }
 
@@ -7213,7 +7283,7 @@
       return;
     }
     if (!window.confirm(prompt)) {
-      return;
+      return false;
     }
     try {
       await refreshSessionState();
@@ -7235,8 +7305,10 @@
       if (table) {
         await loadJobManagerRows(table);
       }
+      return true;
     } catch (error) {
       setSystemMessage("messages", error.message, true);
+      return false;
     }
   }
 
@@ -7950,6 +8022,9 @@
   }
 
   async function submitModule(form) {
+    if (isToolView(state.view) && (currentToolJob() || form.dataset.submitting === "true")) {
+      return { ok: false, error: "This tool is already running." };
+    }
     syncValues(form);
     const endpoint = moduleSubmitEndpoint();
     const status = document.getElementById("ui2-submit-status");
@@ -7967,6 +8042,7 @@
       return { ok: false, error: invalid.message };
     }
 
+    form.dataset.submitting = "true";
     const submitButton = form.querySelector('button[type="submit"]');
     if (submitButton) {
       submitButton.disabled = true;
@@ -8011,6 +8087,9 @@
       setSubmitStatus(status, `Started${jobUuid ? ` (${jobUuid})` : ""}`, "ok");
       renderSubmitResponse(payload);
       if (jobUuid && !isTerminalStatus(runtimeStatus(payload))) {
+        if (isToolView(state.view) && state.view.tool?.stopLabel) {
+          state.toolJobs[state.moduleId] = { uuid: jobUuid, logon: state.session.logon };
+        }
         startJobPolling(jobUuid, form, status);
       }
       if (isReactWorkbenchView(state.view)) {
@@ -8031,9 +8110,9 @@
       renderSubmitResponse({ error: error.message });
       return { ok: false, error: error.message };
     } finally {
-      if (submitButton) {
-        submitButton.disabled = false;
-      }
+      form.dataset.submitting = "false";
+      if (submitButton) submitButton.disabled = false;
+      updateToolControls();
     }
   }
 
@@ -8868,7 +8947,9 @@
         setSubmitStatus(statusNode, statusLabel(status), statusKind(status));
       }
       if (isTerminalStatus(status)) {
+        if (currentToolJob()?.uuid === uuid) delete state.toolJobs[state.moduleId];
         stopJobPolling();
+        updateToolControls();
         return;
       }
 
@@ -9921,6 +10002,8 @@
         return;
       }
       if (id === "_textarea" || id === "_airavata") {
+        if (id === "_textarea" && (state.module?.fields || []).some((field) =>
+          field.role === "output" && field.type === "textarea" && payload[field.id] === value)) return;
         if (isReactWorkbenchView(state.view)) {
           // Capability-aware drivers continue emitting legacy messages so a
           // legacy client can attach to the same job. Once native events have
@@ -10076,7 +10159,7 @@
 
     let section = document.getElementById("ui2-output-section");
     if (!section) {
-      section = renderSection("Outputs", [], "output");
+      section = renderSection(isToolView(state.view) ? "Report" : "Outputs", [], "output", isToolView(state.view));
       const form = document.getElementById("ui2-form");
       form?.appendChild(section);
     }
@@ -14099,6 +14182,12 @@
       submitModule,
       moduleSubmitEndpointFor,
       buildSubmitFormData,
+      isToolView,
+      renderActionBar,
+      renderSection,
+      initializeToolView,
+      currentToolJob,
+      updateToolControls,
       serverFileInitialDir,
       serverFileProjectDir,
       serverFileParentDir,

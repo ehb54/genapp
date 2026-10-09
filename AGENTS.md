@@ -634,3 +634,14 @@ entries; larger groups use one generic, sample-free display key. Real trace
 names, values, hover identities, and saved outputs remain unchanged. Application
 selection and acceptance route to `genapp_zazzie/docs/plot_presentation.md`;
 SASSIE supplies no legend keys or browser presentation state.
+
+## Administrator tool contract routing
+
+Native operational tools may opt into the shared `layout: "tool"` contract.
+Use ordinary submission, transport and cancellation; no module-id branches or
+second runner. Automatic submission is limited to tools without visible inputs;
+repair controls always require explicit submission. False integrity-checkbox
+forms must never authorize repairs. Read the GenApp shared-gap report and core
+extension policy before changing this boundary.
+The owner documents are `doc/UI2-Admin-Tools-Shared-Gap-Report.md` and
+`doc/UI2-Core-Extension-Policy.md`.
