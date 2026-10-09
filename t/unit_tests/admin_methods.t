@@ -119,6 +119,7 @@ for my $failure('open','apps','running') {
  is_deeply($calls,[],'unreadable database never permits process or DB mutation');
 }
 my($empty_integrity)=exercise('integrity',{}, {apps=>[{_id=>'fixture'}]});like($empty_integrity->{integrity_details},qr/All ok/,'empty system reports healthy');
+is($empty_integrity->{jobintegrityreport},'All ok.','healthy check has a visible status');
 
 my($modern)=exercise('monitor',{interval=>5,plot_format=>'plotly'},{samples=>245});
 for my $id(qw(jobhistory load iowait memused swapused net)) {

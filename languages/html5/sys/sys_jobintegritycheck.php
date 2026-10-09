@@ -202,7 +202,7 @@ if ( !count( $pidkill ) && !count( $runningremove ) ) {
     $results[ '_textarea' ] .= "========================================\n";
     $results[ '_textarea' ] .= "All ok\n";
     $results[ '_textarea' ] .= "========================================\n";
-    $results[ 'jobintegrityreport' ] = "";
+    $results[ 'jobintegrityreport' ] = "All ok.";
 } else {
     if ( $fix_errors ) {
         $results[ '_textarea' ] .= "========================================\n";
