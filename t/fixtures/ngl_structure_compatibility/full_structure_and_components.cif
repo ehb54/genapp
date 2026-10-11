@@ -1,0 +1,45 @@
+data_neutral_full
+#
+loop_
+_chem_comp.id
+_chem_comp.name
+ALA 'ALANINE'
+GLY 'GLYCINE'
+#
+loop_
+_chem_comp_atom.comp_id
+_chem_comp_atom.atom_id
+_chem_comp_atom.type_symbol
+_chem_comp_atom.model_Cartn_x
+_chem_comp_atom.model_Cartn_y
+_chem_comp_atom.model_Cartn_z
+_chem_comp_atom.pdbx_component_comp_id
+ALA N N 90.0 90.0 90.0 ALA
+ALA CA C 91.0 90.0 90.0 ALA
+#
+loop_
+_atom_site.group_PDB
+_atom_site.id
+_atom_site.type_symbol
+_atom_site.label_atom_id
+_atom_site.label_alt_id
+_atom_site.label_comp_id
+_atom_site.label_asym_id
+_atom_site.label_entity_id
+_atom_site.label_seq_id
+_atom_site.pdbx_PDB_ins_code
+_atom_site.Cartn_x
+_atom_site.Cartn_y
+_atom_site.Cartn_z
+_atom_site.occupancy
+_atom_site.B_iso_or_equiv
+_atom_site.auth_seq_id
+_atom_site.auth_comp_id
+_atom_site.auth_asym_id
+_atom_site.auth_atom_id
+_atom_site.pdbx_PDB_model_num
+ATOM 1 N N . ALA A 1 1 ? 0.000 0.000 0.000 1.0 0.0 1 ALA A N 1
+ATOM 2 C CA . ALA A 1 1 ? 1.450 0.000 0.000 1.0 0.0 1 ALA A CA 1
+ATOM 3 C C . ALA A 1 1 ? 2.100 1.300 0.000 1.0 0.0 1 ALA A C 1
+ATOM 4 O O . ALA A 1 1 ? 1.600 2.400 0.000 1.0 0.0 1 ALA A O 1
+#

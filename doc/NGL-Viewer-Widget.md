@@ -293,3 +293,21 @@ structure.  Start it with:
 ```sh
 python3 -m http.server 8000
 ```
+
+## Structure-format compatibility
+
+The shared bundled NGL parser uses `atom_site` coordinates for complete mmCIF
+structures even when chemical-component categories are also present. Standalone
+chemical-component files retain their model and ideal coordinate handling.
+When mmCIF helix-class metadata is absent, supported declared helix types supply
+the corresponding display class; an existing numeric class remains authoritative.
+Cartoon endpoint lookup follows actual connected residues, including wrapped
+connections, without changing molecular coordinates or connectivity.
+
+These compatibility repairs apply to every consumer of the shared asset and
+require no module payload changes. Completed-job reconstruction continues to
+load the ordinary saved structure. See the
+[shared-gap report](NGL-Structure-Compatibility-Shared-Gap-Report.md) for bounded
+patch provenance, fixtures and remaining deployed browser acceptance. Run
+`prove -v t/unit_tests/ngl_structure_compatibility.t` for parser and geometry
+regressions.
