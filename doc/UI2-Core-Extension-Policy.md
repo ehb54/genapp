@@ -427,3 +427,21 @@ and authentication remain unchanged. Empty groups are hidden by the existing
 UI2 renderer. Applications must retain endpoint authorization independently.
 No provider, deployment hostname, or application module ID is hard-coded in
 GenApp. See `UI2-Menu-Visibility-Shared-Gap-Report.md` (#312).
+
+## 3D scene surface contrast
+
+The shared final-surface resolver applies to declared `scene` and numbered
+scenes as well as Cartesian axes. Each scene's explicit or template background
+falls back to the selected plotting canvas; each axis plane falls back to the
+scene background. Alpha compositing and `showbackground` determine the actual
+surface used for tick/title text, ticks, axis lines, grids, and zero lines.
+3D grids and axis lines use the stronger neutral zero-line token so they remain
+discernible under rotation and perspective. Existing font sizes/families,
+scientific labels/units, coordinates, axis ranges/types, visibility flags,
+camera, aspect mode, templates, and saved outputs remain unchanged.
+
+Ordinary UI2 and application previews use the same `GenAppPlotlySurface.apply`
+pass on detached display layouts. Chart Editor receives that displayed scene
+through its existing handoff. Figures without scenes retain existing behavior;
+no new application option or producer styling is needed. The approved evidence
+and rollback are in `UI2-3D-Scene-Contrast-Shared-Gap-Report.md` (#318).

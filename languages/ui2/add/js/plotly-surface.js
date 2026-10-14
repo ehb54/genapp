@@ -174,6 +174,39 @@
           : { text: axis.title, font: { color: plot.text } })
       });
     });
+    // A 3D scene has its own canvas and optional axis planes. Resolve each
+    // actual surface rather than borrowing the surrounding application's theme.
+    Object.keys(result).filter((key) => /^scene\d*$/.test(key)).forEach((key) => {
+      const scene = result[key];
+      if (!scene || typeof scene !== "object" || Array.isArray(scene)) return;
+      const template = result.template?.layout?.[key] || {};
+      const background = scene.bgcolor || template.bgcolor || result.plot_bgcolor;
+      const resolved = composite(background, result.paper_bgcolor);
+      const sceneSurface = `rgb(${resolved.r}, ${resolved.g}, ${resolved.b})`;
+      const styled = Object.assign({}, scene, { bgcolor: background });
+      ["xaxis", "yaxis", "zaxis"].forEach((name) => {
+        const axis = scene[name] || {};
+        const inherited = template[name] || {};
+        const plane = axis.backgroundcolor || inherited.backgroundcolor || background;
+        const showBackground = axis.showbackground ?? inherited.showbackground ?? true;
+        const tokens = tokensFor(showBackground ? plane : background, sceneSurface);
+        const title = axis.title ?? inherited.title;
+        styled[name] = Object.assign({}, axis, {
+          backgroundcolor: plane,
+          color: tokens.text,
+          tickcolor: tokens.text,
+          linecolor: tokens.zeroLine,
+          // 3D grids must remain discernible through rotation and perspective.
+          gridcolor: tokens.zeroLine,
+          zerolinecolor: tokens.zeroLine,
+          tickfont: Object.assign({}, inherited.tickfont || {}, axis.tickfont || {}, { color: tokens.text }),
+          ...(title == null ? {} : { title: typeof title === "object"
+            ? Object.assign({}, title, { font: Object.assign({}, inherited.title?.font || {}, title.font || {}, { color: tokens.text }) })
+            : { text: title, font: { color: tokens.text } } })
+        });
+      });
+      result[key] = styled;
+    });
     legendKeys(result).forEach((key) => {
       const legend = result[key] || {};
       const background = legend.bgcolor || paper.translucent;

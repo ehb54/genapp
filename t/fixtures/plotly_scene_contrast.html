@@ -1,0 +1,41 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Generic 3D scene contrast acceptance</title>
+<script src="../../languages/html5/add/js/plotly-2.35.2.min.js"></script>
+<script src="../../languages/ui2/add/js/plotly-surface.js"></script>
+<div id="plot" style="width:720px;height:560px"></div><pre id="results">pending</pre>
+<script>
+(async()=>{
+ const plot=document.getElementById('plot'),checks=[],copy=x=>JSON.parse(JSON.stringify(x));
+ const check=(value,label)=>{if(!value)throw Error(label);checks.push(label);};
+ const source={data:[{type:'scatter3d',mode:'markers',name:'Observation A',x:[1,2,3],y:[2,4,3],z:[3,1,2],marker:{symbol:'circle'},showlegend:true},{type:'scatter3d',mode:'markers',name:'Observation B',x:[2,3],y:[1,2],z:[4,2],marker:{symbol:'diamond'},showlegend:true}],layout:{scene:{xaxis:{title:{text:'X (units)'}},yaxis:{title:{text:'Y (units)'}},zaxis:{title:{text:'Z (units)'}},aspectmode:'data'}}};
+ const saved=JSON.stringify(source),surface=GenAppPlotlySurface;
+ const verify=(bg,operation)=>{
+  const full=plot._fullLayout.scene;
+  check(!!plot.querySelector('.gl-container canvas'),'WebGL canvas exists '+operation);
+  for(const name of ['xaxis','yaxis','zaxis']){
+   const a=full[name],token=surface.tokensFor(bg);
+   check(a.tickfont.color===token.text,'tick contrast '+name+' '+operation);
+   check(a.title.font.color===token.text,'title contrast '+name+' '+operation);
+   check(a.gridcolor===token.zeroLine,'grid contrast '+name+' '+operation);
+   check(a.title.text===source.layout.scene[name].title.text,'units preserved '+name+' '+operation);
+  }
+  check(plot.querySelectorAll('.legend .traces').length===2,'two legend identities '+operation);
+  check(JSON.stringify(plot.data.map(t=>[t.name,t.x,t.y,t.z]))===JSON.stringify(source.data.map(t=>[t.name,t.x,t.y,t.z])),'scientific arrays and identities '+operation);
+ };
+ for(const bg of ['#ffffff','#202725']){
+  const layout=surface.apply({...copy(source.layout),paper_bgcolor:bg,plot_bgcolor:bg});
+  await Plotly.newPlot(plot,copy(source.data),copy(layout));verify(bg,'new');
+  await Plotly.relayout(plot,{'scene.camera.eye':{x:-1.8,y:1.4,z:.6}});verify(bg,'rotation');
+  await Plotly.react(plot,copy(source.data),copy(layout));verify(bg,'react');
+  for(const [label,width] of [['expanded',1000],['restore',720]]){plot.style.width=width+'px';await Plotly.Plots.resize(plot);verify(bg,label);}
+  const editor=copy(plot.layout);delete editor.width;delete editor.height;editor.autosize=true;
+  await Plotly.newPlot(plot,copy(plot.data),editor);verify(bg,'editor handoff');
+  await Plotly.react(plot,copy(source.data),copy(layout));verify(bg,'completion');
+  Plotly.purge(plot);
+  await Plotly.newPlot(plot,copy(JSON.parse(saved).data),surface.apply({...copy(JSON.parse(saved).layout),paper_bgcolor:bg,plot_bgcolor:bg}));verify(bg,'saved reconstruction');
+ }
+ check(JSON.stringify(source)===saved,'saved payload unchanged');
+ document.getElementById('results').textContent=JSON.stringify({passed:true,version:Plotly.version,checks});
+})().catch(error=>{document.getElementById('results').textContent=JSON.stringify({passed:false,error:error.message});});
+</script>

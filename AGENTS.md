@@ -653,3 +653,13 @@ change backend generation, module access, or authentication. Its owner contract
 is `doc/UI2-Core-Extension-Policy.md` and shared-gap report
 `doc/UI2-Menu-Visibility-Shared-Gap-Report.md` (#312). Omitted/empty settings
 preserve behavior; deployment opt-ins require their own approved scope.
+
+## 3D scene contrast route (#318)
+
+Generic scene/axis-plane contrast belongs to GenApp's shared final-surface
+resolver, reused by UI2 and the Lab and carried through the displayed-layout
+Chart Editor handoff. Preserve scientific values, names, units, camera,
+ranges, templates, and saved outputs; do not add module-specific axis colors.
+Owner contracts: `doc/Plotting-Architecture.md`,
+`doc/UI2-Core-Extension-Policy.md`, and
+`doc/UI2-3D-Scene-Contrast-Shared-Gap-Report.md`.
