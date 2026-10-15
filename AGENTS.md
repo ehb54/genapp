@@ -663,3 +663,13 @@ ranges, templates, and saved outputs; do not add module-specific axis colors.
 Owner contracts: `doc/Plotting-Architecture.md`,
 `doc/UI2-Core-Extension-Policy.md`, and
 `doc/UI2-3D-Scene-Contrast-Shared-Gap-Report.md`.
+
+## Installed Version Tracking
+
+Installed versions come from build receipts carried with verified artifacts,
+not from the current checkout HEAD. Preserve independent release identities;
+unknown installations stay unrecorded and partial differing builds stay mixed.
+Git hooks must not publish installed revisions. Read `doc/Release-Version-Policy.md` and the
+paired application/framework policies before changing this boundary. Deployment
+and live legacy-hook cleanup require their own task scope; local build checks
+do not establish deployed acceptance.

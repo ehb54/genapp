@@ -265,21 +265,22 @@ to color, dash, marker, and marker-pattern slots, but must not interpret the
 identity, inspect module names, or change data. UI2 and authoring previews must
 call the same shared evaluator.
 
-## Deployment source provenance
+## Installed build provenance
 
-An application may opt into an ignored, application-local source revision
-metadata file at `.local/source_revision_metadata.json`, or declare another
-relative location through `source_revision_metadata_file`. Generation validates
-and embeds schema version 1 in the application map. UI2 may use matching
-`component_id` values to overlay exact deployment revisions onto an
-application-owned release manifest. GenApp does not discover application
-repositories, assign releases, interpret compatibility, or write the metadata.
-Missing metadata remains an explicit null value for applications that do not
-opt in; an opted-in missing or invalid file is a generation error.
+The generic installed-tracking opt-in and receipt schema are governed by
+`Release-Version-Policy.md`; the demonstrated neutral gap and approved core
+scope are in `UI2-Installed-Version-Shared-Gap-Report.md`. UI2 must fetch the
+served manifest on opening Version details and must not replace an opted-in
+installed identity with older embedded checkout metadata. Generation records
+its own generator and the application build evidence, preserves the existing
+instance stack, and leaves publication to the application's verified publisher.
+No component-specific logic, host discovery or scientific imports belong here.
 
-The application owns component selection and ordering. The metadata contains
-deployment provenance only and must not replace version, release stage, date,
-tag, or release URL fields.
+For applications without installed tracking, the existing optional
+`.local/source_revision_metadata.json` / `source_revision_metadata_file`
+validation and embedded schema-1 overlay remain compatible. Opted-in installed
+tracking ignores this retired collector file. Both forms describe provenance;
+neither changes release versions, dates, tags, URLs or compatibility.
 
 ## Required verification
 

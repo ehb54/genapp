@@ -734,6 +734,61 @@ assert.strictEqual(
   "duplicate release component identities are rejected"
 );
 
+
+const oldBuild = "a".repeat(40);
+const currentBuild = "b".repeat(40);
+window.GenAppUi2App.sourceRevisionMetadata = {schema_version:1,components:[{component_id:"fixture_app",revision:oldBuild}]};
+const installedPayload = {
+  schema_version: 1, installed_tracking: 1,
+  components: [{component_id:"fixture_app",version:"1.0",display_version:"Fixture 1.0",release_stage:"beta",
+    source_revision:oldBuild,installed:{version:"1.1",status:"recorded",revision:currentBuild}}]
+};
+const installed = hooks.normalizeReleaseManifest(installedPayload)[0];
+assert.strictEqual(installed.installedRevision,currentBuild,"fetched installed revision wins over stale embedded source metadata");
+assert.strictEqual(installed.sourceRevision,oldBuild,"release identity remains separate from installed identity");
+assert.strictEqual(installed.installedVersion,"1.1","actual installed package version may differ from release template");
+const legacyPayload = JSON.parse(JSON.stringify(installedPayload));
+delete legacyPayload.installed_tracking;
+assert.strictEqual(hooks.normalizeReleaseManifest(legacyPayload)[0].sourceRevision,oldBuild,"non-opted applications retain embedded revision behavior");
+installedPayload.components[0].installed=null;
+assert.strictEqual(hooks.normalizeReleaseManifest(installedPayload)[0].installedStatus,"not_recorded","unrecorded installation never falls back to checkout HEAD");
+for (const status of ["modified","mixed","not_recorded"]) {
+  installedPayload.components[0].installed={version:"1.0",status,revision:status==="modified"?currentBuild:null};
+  assert.strictEqual(hooks.normalizeReleaseManifest(installedPayload)[0].installedStatus,status);
+}
+installedPayload.components[0].installed={version:"1.0",status:"recorded",revision:null};
+assert.strictEqual(hooks.normalizeReleaseManifest(installedPayload),null,"recorded builds require a valid revision");
+delete window.GenAppUi2App.sourceRevisionMetadata;
+
+async function verifyInstalledVersionRefresh() {
+  const savedDirectives=window.GenAppUi2App.directives;
+  const savedFetch=context.fetch;
+  window.GenAppUi2App.directives={ui2_release_manifest_url:"release-manifest.json"};
+  let count=0;
+  installedPayload.components[0].installed={version:"1.0",status:"recorded",revision:oldBuild};
+  context.fetch=async (_url,options)=>{
+    assert.strictEqual(options.cache,"no-store");
+    count+=1;
+    return {ok:true,json:async()=>JSON.parse(JSON.stringify(installedPayload))};
+  };
+  const details=hooks.buildReleaseDetails();
+  await hooks.renderReleaseManifest(details);
+  assert.strictEqual(details.querySelector(".ui2-release-revision").textContent,oldBuild.slice(0,12));
+  installedPayload.components[0].installed.revision=currentBuild;
+  details.open=true;
+  details.dispatchEvent(new context.Event("toggle"));
+  await new Promise(setImmediate);
+  assert.strictEqual(count,2,"reopening version details fetches a fresh stack");
+  assert.strictEqual(details.querySelectorAll(".ui2-release-list").length,1,"refresh replaces the previous list");
+  assert.strictEqual(details.querySelector(".ui2-release-revision").textContent,currentBuild.slice(0,12));
+  context.fetch=async()=>{throw new Error("offline");};
+  await hooks.renderReleaseManifest(details);
+  assert.strictEqual(details.querySelectorAll(".ui2-release-list").length,0,"failed refresh never presents stale records as current");
+  assert(details.querySelector(".ui2-release-loading").textContent.includes("unavailable"));
+  context.fetch=savedFetch;
+  window.GenAppUi2App.directives=savedDirectives;
+}
+
 const coupledFields = [
   { id: "sample_source", type: "listbox", default: "prepared", repeat: "sample_count", required: true },
   { id: "sample_handling", type: "listbox", default: "keep", repeat: "sample_count", required: true }
@@ -6212,7 +6267,7 @@ setImmediate(() => {
       return bytes.buffer;
     }
   });
-  verifyToolSubmissionGuards().then(verifyScenarioFileHydration).catch((error) => {
+  verifyInstalledVersionRefresh().then(verifyToolSubmissionGuards).then(verifyScenarioFileHydration).catch((error) => {
     console.error(error);
     process.exitCode = 1;
   });

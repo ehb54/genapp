@@ -133,6 +133,7 @@ my $notice;
 my $created;
 my $compiled_app;
 my @compiled_languages;
+my %installed_build_receipts;
 my $ref_directives = {};
 my $ref_menu       = {};
 #my $ref_config     = {};
@@ -157,6 +158,7 @@ print "menu start_json\n" if $debug_main;
 foreach my $l ( keys %langs )
 {
     my @post_cmds;
+    $installed_build_receipts{$l} = installed_build_receipt( $path, $l );
     $compiled_app = $$directives{ "application" };
     $compiled_app = $compiled_app ? $compiled_app : $toppath;
 
@@ -1071,6 +1073,7 @@ foreach my $l ( keys %langs )
                     my $cmpdata = join '', @l;
                     $docopy = ( $cmpdata ne $outdata );
                 }
+                $docopy = 1 if defined $installed_build_receipts{$l};
                 if ( $docopy ) {
                     mkdir_for_file( $fo );
                     my $fh;
@@ -1087,6 +1090,7 @@ foreach my $l ( keys %langs )
             if ( $setexec ) {
                 my $cmd = "chmod +x $fo";
                 `$cmd`;
+                $error .= "language $l: command failed: $cmd\n" if $? && defined $installed_build_receipts{$l};
             }
             {
                 my $cmd = "chmod g+w $fo";
@@ -1104,6 +1108,7 @@ foreach my $l ( keys %langs )
                     my $cmd = "minify -o $fn $fo";
                     print "$cmd\n";
                     my $res = `$cmd 2>&1\n`;
+                    $error .= "language $l: build command failed: $cmd\n" if $? && defined $installed_build_receipts{$l};
                     print $res;
                     $error .= "JS minification error: $fo $res" if $res !~ /^Minification complete/;
                     $created .= "$fn\n";
@@ -1111,6 +1116,7 @@ foreach my $l ( keys %langs )
                     $fd =~ s/output\/$l/$gap\/languages\/$l\/add/;
                     print "mv -f $fn $fd\n";
                     print `mv -f $fn $fd\n`;
+                    $error .= "language $l: generated artifact move failed\n" if $? && defined $installed_build_receipts{$l};
                 }
             }
             if ( $minify eq "closure" ) {
@@ -1124,6 +1130,7 @@ foreach my $l ( keys %langs )
                     my $cmd = "java -jar $gap/etc/closure_compiler.jar --js $fo --js_output_file $fn";
                     print "$cmd\n";
                     my $res = `$cmd 2>&1\n`;
+                    $error .= "language $l: build command failed: $cmd\n" if $? && defined $installed_build_receipts{$l};
                     print $res;
                     $error .= "JS closure error: $fo $res" if $res =~ /(\d+) error\(s\)/ && $1 ne "0";
                     $created .= "$fn\n";
@@ -1131,6 +1138,7 @@ foreach my $l ( keys %langs )
                     $fd =~ s/output\/$l/$gap\/languages\/$l\/add/;
                     print "mv -f $fn $fd\n";
                     print `mv -f $fn $fd\n`;
+                    $error .= "language $l: generated artifact move failed\n" if $? && defined $installed_build_receipts{$l};
                 }
             }
             if ( $minify eq "copy" ) {
@@ -1140,12 +1148,14 @@ foreach my $l ( keys %langs )
                 my $cmd = "cp -f $fo $fn";
                 print "$cmd\n";
                 my $res = `$cmd 2>&1\n`;
+                $error .= "language $l: build command failed: $cmd\n" if $? && defined $installed_build_receipts{$l};
                 print $res;
                 $created .= "$fn\n";
                 my $fd = $fn;
                 $fd =~ s/output\/$l/$gap\/languages\/$l\/add/;
                 print "mv $fn $fd\n";
                 print `mv $fn $fd\n`;
+                $error .= "language $l: generated artifact move failed\n" if $? && defined $installed_build_receipts{$l};
             }
 
             if ( $doexec ) {
@@ -1159,6 +1169,7 @@ foreach my $l ( keys %langs )
                     }
                     print "executing: $cmd\n";
                     print `$cmd`;
+                    $error .= "language $l: command failed: $cmd\n" if $? && defined $installed_build_receipts{$l};
                 }
                 if ( $doexec eq 'atend' ) {
                     my $cmd = "cd output/$l; bash $use_output";
@@ -1192,11 +1203,13 @@ foreach my $l ( keys %langs )
             system( $cmd );
             $docopy = $?;
         }
+        $docopy = 1 if defined $installed_build_receipts{$l};
         if ( $docopy ) {
             mkdir_for_file( $fo );
             my $cmd = "cp $k $fo\n";
             $created .= "$fo\n";
             `$cmd`;
+            $error .= "language $l: command failed: $cmd\n" if $? && defined $installed_build_receipts{$l};
         }
     }
     # include_additional_files
@@ -1209,11 +1222,13 @@ foreach my $l ( keys %langs )
             system( $cmd );
             $docopy = $?;
         }
+        $docopy = 1 if defined $installed_build_receipts{$l};
         if ( $docopy ) {
             mkdir_for_file( $fo );
             my $cmd = "cp $k $fo\n";
             $created .= "$fo\n";
             `$cmd`;
+            $error .= "language $l: command failed: $cmd\n" if $? && defined $installed_build_receipts{$l};
         }
     }
     # copy over add/*
@@ -1236,11 +1251,13 @@ foreach my $l ( keys %langs )
                     # system( $cmd );
                     # docopy = $?;
                 }
+                $docopy = 1 if defined $installed_build_receipts{$l};
                 if ( $docopy ) {
                     mkdir_for_file( $fo );
                     my $cmd = "cp $gap/languages/$l/add/$k $fo\n";
                     $created .= "$fo\n";
                     print `$cmd`;
+                    $error .= "language $l: command failed: $cmd\n" if $? && defined $installed_build_receipts{$l};
                 }
             }
         }
@@ -1265,11 +1282,13 @@ foreach my $l ( keys %langs )
                     # system( $cmd );
                     # $docopy = $?;
                 }
+                $docopy = 1 if defined $installed_build_receipts{$l};
                 if ( $docopy ) {
                     mkdir_for_file( $fo );
                     my $cmd = "cp add/$k $fo\n";
                     $created .= "$fo\n";
                     print `$cmd`;
+                    $error .= "language $l: command failed: $cmd\n" if $? && defined $installed_build_receipts{$l};
                 }
             }
         }
@@ -1284,6 +1303,10 @@ foreach my $l ( keys %langs )
             if ( $k !~ /^\./ && $k !~ /\/\./ )
             {
                 my $fo = "output/$l/$k";
+                # The publisher owns the installed stack. Regeneration must not
+                # erase records of components that were not rebuilt.
+                next if $k eq 'release-manifest.json' && -f $fo &&
+                        defined $installed_build_receipts{$l};
                 # Language-specific add files are the final application overlay,
                 # so replacing a core or application-wide asset is intentional.
                 $created{ $fo }++;
@@ -1291,6 +1314,7 @@ foreach my $l ( keys %langs )
                 my $cmd = "cp $l/add/$k $fo\n";
                 $created .= "$fo\n";
                 print `$cmd`;
+                $error .= "language $l: command failed: $cmd\n" if $? && defined $installed_build_receipts{$l};
             }
         }
     }
@@ -1320,6 +1344,7 @@ foreach my $l ( keys %langs )
         foreach my $cmd ( @post_cmds ) {
             print "executing: $cmd\n";
             print `$cmd`;
+            $error .= "language $l: command failed: $cmd\n" if $? && defined $installed_build_receipts{$l};
         }
         undef @post_cmds;
     }
@@ -1328,6 +1353,7 @@ foreach my $l ( keys %langs )
         $cmd =~ s/__genapp__/$gap/g;
         $error .= "registration command $cmd does not exist\n" if !-e $cmd;
         my $res = `$cmd`;
+        $error .= "language $l: registration command failed: $cmd\n" if $? && defined $installed_build_receipts{$l};
         print "registering:$res\n" if $debug_main;
     }
     ## optional checks of the web server setup the generated html5 application needs ( opt-in: "configcheck" : "on" );
@@ -1365,8 +1391,13 @@ print '-'x60 . "\nNotices:\n$notice" . '-'x60 . "\n"  if $notice;
 print '-'x60 . "\nWarnings:\n$warn" . '-'x60 . "\n"   if $warn;
 print '-'x60 . "\nErrors:\n$error" . '-'x60 . "\n"    if $error;
 if ( !$error ) {
+    foreach my $language ( @compiled_languages ) {
+        write_installed_build_receipt( $path, $language, $installed_build_receipts{$language}, [ keys %created ] );
+    }
     print '='x60 . "\n";
     print "genapp compiled $compiled_app correctly\n";
     print "compiled language" . ( @compiled_languages == 1 ? "" : "s" ) . ": " . join( ", ", @compiled_languages ) . "\n";
     print '='x60 . "\n";
 }
+
+exit( $error ? 1 : 0 );

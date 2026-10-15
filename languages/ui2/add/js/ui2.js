@@ -81,7 +81,6 @@
   let nglLoadPromise = null;
   let katexLoadPromise = null;
   let externalAuthPolicyPromise = null;
-  let releaseManifestPromise = null;
   let activeExternalAuthPolicy = {
     mode: "legacy",
     registration: "legacy",
@@ -1226,7 +1225,6 @@
     const releaseDetails = buildReleaseDetails();
     if (releaseDetails) {
       footer.appendChild(releaseDetails);
-      renderReleaseManifest(releaseDetails);
     }
 
     panel.append(title, warning, actions, docs, footer);
@@ -1313,6 +1311,7 @@
     if (!payload || payload.schema_version !== 1 || !Array.isArray(payload.components)) {
       return null;
     }
+    const installedTracking = payload.installed_tracking === 1;
     const seen = new Set();
     const components = payload.components.slice(0, 32).map((component) => {
       if (!component || typeof component !== "object" || Array.isArray(component)) {
@@ -1344,6 +1343,15 @@
           return null;
         }
       }
+      const installed = component.installed;
+      if (installedTracking && installed != null &&
+          (!installed || typeof installed !== "object" ||
+           !["recorded", "modified", "mixed", "not_recorded"].includes(installed.status) ||
+           typeof installed.version !== "string" || !installed.version || installed.version.length > 128 ||
+           (installed.revision != null && !/^[0-9a-f]{40}$/.test(installed.revision)) ||
+           (["recorded", "modified"].includes(installed.status) && !installed.revision))) {
+        return null;
+      }
       seen.add(componentId);
       return {
         componentId,
@@ -1353,11 +1361,18 @@
         releaseDate,
         sourceRevision,
         tagName,
-        releaseUrl
+        releaseUrl,
+        installedTracking,
+        installedVersion: installedTracking ? installed?.version || null : null,
+        installedStatus: installedTracking ? installed?.status || "not_recorded" : null,
+        installedRevision: installedTracking ? installed?.revision || null : null
       };
     });
     if (!components.length || !components.every(Boolean)) {
       return null;
+    }
+    if (installedTracking) {
+      return components; // The fetched install record is authoritative, including unknowns.
     }
     const revisions = normalizeSourceRevisionMetadata(appMap.sourceRevisionMetadata);
     return components.map((component) => ({
@@ -1402,19 +1417,16 @@
     if (!manifestUrl) {
       return Promise.resolve(null);
     }
-    if (!releaseManifestPromise) {
-      releaseManifestPromise = fetch(manifestUrl, {
-        cache: "no-store",
-        credentials: "same-origin",
-        headers: { Accept: "application/json" }
-      }).then(async (response) => {
-        if (!response.ok) {
-          throw new Error("Release manifest is unavailable.");
-        }
-        return normalizeReleaseManifest(await response.json());
-      }).catch(() => null);
-    }
-    return releaseManifestPromise;
+    return fetch(manifestUrl, {
+      cache: "no-store",
+      credentials: "same-origin",
+      headers: { Accept: "application/json" }
+    }).then(async (response) => {
+      if (!response.ok) {
+        throw new Error("Release manifest is unavailable.");
+      }
+      return normalizeReleaseManifest(await response.json());
+    }).catch(() => null);
   }
 
   function buildReleaseDetails() {
@@ -1423,30 +1435,54 @@
     }
     const details = el("details", "ui2-release-details");
     details.appendChild(el("summary", "ui2-release-summary", "Version details"));
-    details.appendChild(el("p", "ui2-release-loading", "Loading component versions…"));
+    details.appendChild(el("p", "ui2-release-loading", "Open to load component versions."));
+    details.addEventListener("toggle", () => {
+      if (details.open) {
+        renderReleaseManifest(details);
+      }
+    });
     return details;
   }
 
   async function renderReleaseManifest(details) {
+    const request = Number(details.dataset.versionRequest || 0) + 1;
+    details.dataset.versionRequest = String(request);
+    details.querySelector(".ui2-release-list")?.remove();
+    let loading = details.querySelector(".ui2-release-loading");
+    if (!loading) {
+      loading = el("p", "ui2-release-loading");
+      details.appendChild(loading);
+    }
+    loading.textContent = "Loading component versions…";
     const components = await loadReleaseManifest();
-    if (!details?.isConnected) {
+    if (!details.isConnected || details.dataset.versionRequest !== String(request)) {
       return;
     }
-    const loading = details.querySelector(".ui2-release-loading");
     if (!components) {
-      if (loading) {
-        loading.textContent = "Component version details are unavailable.";
-      }
+      loading.textContent = "Component version details are unavailable.";
       return;
     }
-    loading?.remove();
+    loading.remove();
     const list = el("div", "ui2-release-list");
     components.forEach((component) => {
       const item = el("section", "ui2-release-item");
       item.appendChild(el("strong", "ui2-release-name", component.displayVersion));
       item.appendChild(el("span", "ui2-release-status", releaseStatusText(component)));
-      if (component.sourceRevision) {
-        item.appendChild(el("code", "ui2-release-revision", component.sourceRevision.slice(0, 12)));
+      if (component.installedTracking) {
+        if (component.installedVersion) {
+          item.appendChild(el("span", "ui2-release-installed-version", `Installed version ${component.installedVersion}`));
+        }
+        const status = {
+          recorded: "Installed build",
+          modified: "Installed build · modified source",
+          mixed: "Mixed installed builds",
+          not_recorded: "Installed build not recorded"
+        }[component.installedStatus];
+        item.appendChild(el("span", "ui2-release-install-status", status));
+      }
+      const revision = component.installedTracking ? component.installedRevision : component.sourceRevision;
+      if (revision) {
+        item.appendChild(el("code", "ui2-release-revision", revision.slice(0, 12)));
       }
       if (component.releaseUrl) {
         const link = el("a", "ui2-release-link", component.tagName || "Release");
@@ -14245,6 +14281,7 @@
       normalizeReleaseManifest,
       releaseStatusText,
       loadReleaseManifest,
+      renderReleaseManifest,
       buildReleaseDetails,
       normalizeExternalAuthProviders,
       normalizeExternalAuthPolicy,

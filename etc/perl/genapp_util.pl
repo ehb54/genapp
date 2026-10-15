@@ -1373,6 +1373,101 @@ sub genapp_version {
     return $version;
 }
 
+
+# Portable build evidence for applications that explicitly opt into installed
+# tracking. No scientific component IDs or machine/container paths belong here.
+sub installed_build_stamp {
+    my ( $root, $component_id, $version, $scope ) = @_;
+    my ( $revision, $modified ) = ( undef, JSON::false );
+    if ( -e "$root/.git" ) {
+        my ( $display, $head ) = gitinfo( $root );
+        die "cannot identify build checkout $root\n" if !$head;
+        $revision = $head;
+        open my $fh, '-|', 'git', '-C', $root, 'status', '--porcelain', '--untracked-files=no'
+            or die "cannot inspect build checkout $root\n";
+        local $/;
+        my $status = <$fh> || '';
+        close $fh or die "cannot inspect build checkout $root\n";
+        $modified = length( $status ) ? JSON::true : JSON::false;
+    } elsif ( -f "$root/.local/build-info.json" ) {
+        open my $fh, '<', "$root/.local/build-info.json" or die "$!\n";
+        local $/;
+        my $receipt = decode_json( <$fh> );
+        close $fh;
+        die "unsupported copied-source receipt\n" if $receipt->{schema_version} != 1;
+        my @matches = grep { $_->{component_id} eq $component_id } @{ $receipt->{components} || [] };
+        die "copied-source receipt does not identify $component_id $version\n"
+            if @matches != 1 || $matches[0]->{version} ne $version;
+        $revision = $matches[0]->{revision};
+        $modified = $matches[0]->{modified};
+        die "invalid copied-source revision\n"
+            if defined $revision && $revision !~ /^[0-9a-f]{40}$/;
+        die "invalid copied-source modified flag\n" if !JSON::is_bool( $modified );
+    }
+    require POSIX;
+    return { schema_version => 1, component_id => $component_id, version => $version,
+             revision => $revision, modified => $modified, scope => $scope,
+             built_at => POSIX::strftime( '%Y-%m-%dT%H:%M:%SZ', gmtime ) };
+}
+
+sub installed_build_receipt {
+    my ( $root, $language ) = @_;
+    my $manifest = "$root/$language/add/release-manifest.json";
+    return undef if !-f $manifest;
+    open my $fh, '<', $manifest or die "$!\n";
+    local $/;
+    my $declared = eval { decode_json( <$fh> ) };
+    close $fh;
+    return undef if $@ || ref( $declared ) ne 'HASH' || !$declared->{installed_tracking};
+    die "unsupported installed tracking schema\n" if $declared->{installed_tracking} != 1 || $declared->{schema_version} != 1;
+    my %components = map { $_->{component_id} => $_ } @{ $declared->{components} || [] };
+    my $app_id = $declared->{application_component};
+    my $generator_id = $declared->{generator_component};
+    die "installed tracking requires application and generator component identities\n"
+        if !$app_id || !$generator_id ||
+           $app_id !~ /^[a-z0-9][a-z0-9_-]{0,63}$/ ||
+           $generator_id !~ /^[a-z0-9][a-z0-9_-]{0,63}$/ || $app_id eq $generator_id ||
+           !$components{$app_id} || !$components{$generator_id};
+    return { schema_version => 1, language => $language, components => [
+        installed_build_stamp( $root, $app_id, $components{$app_id}->{version}, 'application' ),
+        installed_build_stamp( $gap, $generator_id, genapp_version(), 'generator' )
+    ] };
+}
+
+sub write_installed_build_receipt {
+    my ( $root, $language, $before, $generated_files ) = @_;
+    return if !defined $before;
+    my $after = installed_build_receipt( $root, $language );
+    for my $index ( 0 .. 1 ) {
+        for my $field ( 'revision', 'modified', 'version' ) {
+            die "source changed during generation; generate again\n"
+                if encode_json( $before->{components}->[$index]->{$field} ) ne
+                   encode_json( $after->{components}->[$index]->{$field} );
+        }
+    }
+    # Bind the receipt to the generated files. Verification is local and works
+    # identically on copied trees and in containers without Git at runtime.
+    my %artifacts;
+    my $output = "$root/output/$language";
+    foreach my $relative ( @$generated_files ) {
+        next if $relative !~ m{^output/\Q$language\E/};
+        my $file = "$root/$relative";
+        next if !-f $file || -l $file || $file =~ m{/(?:release-manifest\.json(?:\.lock)?|build-info\.json)$};
+        open my $input, '<:raw', $file or die "$file: $!\n";
+        local $/;
+        $artifacts{ substr( $file, length( $output ) + 1 ) } = sha256_hex( <$input> // '' );
+        close $input;
+    }
+    die "no generated artifacts to record\n" if !keys %artifacts;
+    $after->{artifacts} = \%artifacts;
+    require File::Temp;
+    my ( $fh, $temporary ) = File::Temp::tempfile( '.build-info-XXXXXX', DIR => $output, UNLINK => 0 );
+    print $fh JSON->new->canonical->pretty->encode( $after ) or die "$!\n";
+    close $fh or die "$!\n";
+    chmod 0644, $temporary;
+    rename $temporary, "$output/build-info.json" or die "$!\n";
+}
+
 sub source_revision_metadata {
     my ( $application_path, $declared_path ) = @_;
     return "null" if !defined $declared_path || !length $declared_path;
@@ -1604,7 +1699,10 @@ sub check_files {
                 $special_directives{ 'genappsource_revision' } = $genapp_source_revision;
                 $special_directives{ 'genappversion' } = genapp_version();
                 my $source_revision_file = $$directives{ 'source_revision_metadata_file' };
-                if ( !defined $source_revision_file && -f "$path/.local/source_revision_metadata.json" ) {
+                my $installed_manifest = installed_build_receipt( $path, 'ui2' );
+                if ( $installed_manifest ) {
+                    $source_revision_file = undef;
+                } elsif ( !defined $source_revision_file && -f "$path/.local/source_revision_metadata.json" ) {
                     $source_revision_file = ".local/source_revision_metadata.json";
                 }
                 $special_directives{ 'source_revision_metadata' } = source_revision_metadata(

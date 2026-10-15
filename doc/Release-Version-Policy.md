@@ -38,3 +38,40 @@ To publish a GenApp release, update and validate `VERSION`, commit the release
 state, create the immutable mapped tag, publish the GitHub release, and record
 the original publication date and URL in consuming application manifests.
 Changing `VERSION` alone does not publish a release.
+
+## Installed build tracking (explicit opt-in)
+
+A schema-1 manifest may declare `installed_tracking: 1`, `application_component`
+and `generator_component` IDs present in its component list. For that language,
+GenApp emits `output/<language>/build-info.json` after successful generation.
+The receipt records application and actual generator build stamps and hashes
+of generated artifacts. Stamps contain schema version 1, component ID, version,
+full revision or null, tracked-source modified boolean, UTC build time and scope
+(`application` or `generator`). A copied source root may carry these stamps in
+`.local/build-info.json`; without Git or a receipt its revision is unknown.
+The generator's version always comes from its own `VERSION`. Source changes
+across generation, invalid receipts and opted-in post-command failures stop
+successful receipt creation. The application owns deployment verification and
+publication; a receipt alone is not a deployment claim.
+
+The served manifest's per-component `installed` value is null or an object:
+`version`, `revision` (full hash or null), `status` (`recorded`, `modified`,
+`mixed`, `not_recorded`), `parts` (scope-to-build-stamp map), and `verified_at`.
+Publication preserves the component's release fields and other components.
+A generator must preserve an already-served opted-in manifest on regeneration;
+only the application's verified atomic publisher updates the instance stack.
+An intentional release-template update must likewise preserve installed records.
+
+UI2 fetches the same-origin manifest without cache on every Version details
+opening. For opted-in records, installed information comes only from that
+manifest, including unknown and mixed states; embedded checkout metadata may
+not override it. Failed reads show unavailable, not a previous stack presented
+as current. Release source revisions, dates and tags retain their meaning.
+Applications without the opt-in retain their existing source-metadata overlay;
+HTML5 behavior and existing directive/template contracts remain supported.
+Old `.local/source_revision_metadata.json` is not loaded for installed-tracking
+applications. There is no framework dependency on SASSIE, Docker or host paths.
+
+See [the neutral shared-gap report](UI2-Installed-Version-Shared-Gap-Report.md)
+for evidence, scope, compatibility controls and rollback. The application owns
+scientific interpreter selection, component selection and deployment ordering.
