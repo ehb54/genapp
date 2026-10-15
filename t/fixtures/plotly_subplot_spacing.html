@@ -1,0 +1,49 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Generic independent subplot spacing acceptance</title>
+<script src="../../languages/html5/add/js/plotly-latest.min.js"></script>
+<script src="../../languages/ui2/add/js/plotly-layout.js"></script>
+<div id="plot" style="width:640px;height:460px"></div><pre id="results">Running…</pre>
+<script>
+(async () => {
+ const checks=[], check=(v,m)=>{if(!v)throw Error(m);checks.push(m);};
+ const clone=v=>JSON.parse(JSON.stringify(v)), plot=document.getElementById('plot');
+ const source={grid:{rows:2,columns:1,subplots:[['xy'],['x2y2']]},title:{text:'Two-panel response'},
+ xaxis:{title:{text:'Observation fraction'}},xaxis2:{title:{text:'Observation fraction'}},
+ yaxis:{title:'Response'},yaxis2:{title:'Difference'},uirevision:'neutral'};
+ const data=[{type:'scatter',mode:'lines',name:'Model',x:[0,.25,.75,1],y:[1,.5,-.5,-1],xaxis:'x',yaxis:'y'},
+ {type:'scatter',mode:'markers',name:'Measurements',x:[0,.25,.75,1],y:[1.1,.4,-.45,-1.05],error_y:{type:'data',array:[.1,.1,.1,.1],visible:true},xaxis:'x',yaxis:'y'},
+ {type:'scatter',mode:'markers',name:'Difference',x:[0,.25,.75,1],y:[.1,-.1,.05,-.05],xaxis:'x2',yaxis:'y2'}];
+ const saved=JSON.stringify({source,data}), policy=GenAppPlotlyLayout, selection={subplotSpacing:'avoid-overlap'};
+ const display=()=>({...clone(source),margin:{l:72,r:32,t:96,b:128},font:{family:'system-ui, sans-serif',size:12},legend:{orientation:'h',y:-.5}});
+ const ranges=()=>['xaxis','yaxis','xaxis2','yaxis2'].map(k=>plot._fullLayout[k].range.slice());
+ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ function gap(){const f=plot._fullLayout;return plot.getBoundingClientRect().top+f.yaxis2._offset-plot.querySelector('.xtitle').getBoundingClientRect().bottom;}
+ await Plotly.newPlot(plot,clone(data),display(),{responsive:true});
+ check(gap()<0,'Neutral control reproduces original collision');
+ check(policy.subplotSpacingUpdate(plot,source,{})===null,'Non-opted-in control unchanged');
+ const baseline=ranges();await policy.applySubplotSpacing(plot,source,selection);
+ check(gap()>=12,'Initial measured spacing');check(same(plot.data.map(t=>t.x),data.map(t=>t.x)),'Scientific x values unchanged');
+ const fixed={};['xaxis','yaxis','xaxis2','yaxis2'].forEach((k,i)=>{fixed[k+'.range']=baseline[i];fixed[k+'.autorange']=false;});
+ await Plotly.relayout(plot,fixed);await policy.applySubplotSpacing(plot,source,selection);check(same(ranges(),baseline),'Explicit scientific ranges unchanged by spacing');
+ for(const [width,height] of [[1100,740],[360,460],[640,460],[640,460]]){
+  plot.style.width=width+'px';plot.style.height=height+'px';await Plotly.Plots.resize(plot);
+  await policy.applySubplotSpacing(plot,source,selection);
+  check(gap()>=12,'Resize spacing '+width+'x'+height);
+  const domains=JSON.stringify([plot.layout.yaxis.domain,plot.layout.yaxis2.domain]);
+  await policy.applySubplotSpacing(plot,source,selection);
+  check(domains===JSON.stringify([plot.layout.yaxis.domain,plot.layout.yaxis2.domain]),'Idempotent spacing '+width+' '+domains+' -> '+JSON.stringify([plot.layout.yaxis.domain,plot.layout.yaxis2.domain]));
+ }
+ await Plotly.relayout(plot,{'xaxis.range':[.1,.9],'xaxis.autorange':false});const zoom=ranges();
+ await policy.applySubplotSpacing(plot,source,selection);check(same(ranges(),zoom),'Zoom retained');
+ await Plotly.react(plot,clone(data),display(),{responsive:true});await policy.applySubplotSpacing(plot,source,selection);
+ check(gap()>=12,'Completion redraw retains spacing');check(same(ranges(),zoom),'Zoom retained across redraw');
+ Plotly.purge(plot);await Plotly.newPlot(plot,clone(data),display(),{responsive:true});await policy.applySubplotSpacing(plot,source,selection);
+ check(gap()>=12,'Saved-output reconstruction spacing');
+ const editor=clone(plot.layout);delete editor.width;delete editor.height;
+ check(editor.grid.subplots.length===2 && same(plot.data[1].error_y.array,data[1].error_y.array),'Displayed editor handoff preserves panels and uncertainty');
+ const image=await Plotly.toImage(plot,{format:'png',scale:2});check(image.startsWith('data:image/png;base64,'),'Scale-2 PNG export succeeds');
+ check(JSON.stringify({source,data})===saved,'Source science and saved payload unchanged');
+ window.subplotAcceptance={passed:true,checks};document.getElementById('results').textContent=JSON.stringify(window.subplotAcceptance);
+})().catch(error=>{window.subplotAcceptance={passed:false,error:error.stack};document.getElementById('results').textContent=JSON.stringify(window.subplotAcceptance);});
+</script>

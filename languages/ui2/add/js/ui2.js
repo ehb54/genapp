@@ -13160,7 +13160,12 @@
   function fitPlotlyPresentationGeometry(output) {
     return Promise.resolve(fitPlotlyLegendsBelowPlot(output))
       .then(() => fitPlotlyAnnotations(output))
-      .then(() => fitPlotlyAxisTitles(output));
+      .then(() => fitPlotlyAxisTitles(output))
+      .then(() => window.GenAppPlotlyLayout?.applySubplotSpacing?.(
+        output,
+        output?._ui2PlotlyLastFigure?.layout || {},
+        plotPresentationForOutput(output)
+      ));
   }
 
   function plotlyOutputReadyForRelayout(output) {
