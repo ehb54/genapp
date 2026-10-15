@@ -94,7 +94,8 @@ is($installed->{status},0,'neutral opted-in UI2 generation succeeds')
 my $receipt_path="$installed->{app_dir}/output/ui2/build-info.json";
 my $receipt=decode_json(read_file($receipt_path));
 is($receipt->{components}->[0]->{revision},'a'x40,'copied application uses portable source receipt');
-like($receipt->{components}->[1]->{revision},qr/^[a-f0-9]{40}$/,'generator records actual build checkout');
+like($receipt->{components}->[1]->{revision},qr/\A[a-f0-9]{40}\z/,'generator records exactly the full build checkout revision');
+is($receipt->{components}->[1]->{version},'0.1.0-beta.1','generator receipt version has no trailing newline');
 ok(exists $receipt->{artifacts}->{'js/app-map.js'},'receipt binds generated application map');
 ok(!-e "$installed->{app_dir}/output/html5",'opted-in target generation does not write another language');
 my $manifest_path="$installed->{app_dir}/output/ui2/release-manifest.json";

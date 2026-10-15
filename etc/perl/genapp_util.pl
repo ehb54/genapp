@@ -1415,8 +1415,7 @@ sub installed_build_receipt {
     my $manifest = "$root/$language/add/release-manifest.json";
     return undef if !-f $manifest;
     open my $fh, '<', $manifest or die "$!\n";
-    local $/;
-    my $declared = eval { decode_json( <$fh> ) };
+    my $declared = eval { local $/; decode_json( <$fh> ) };
     close $fh;
     return undef if $@ || ref( $declared ) ne 'HASH' || !$declared->{installed_tracking};
     die "unsupported installed tracking schema\n" if $declared->{installed_tracking} != 1 || $declared->{schema_version} != 1;
