@@ -673,3 +673,12 @@ Git hooks must not publish installed revisions. Read `doc/Release-Version-Policy
 paired application/framework policies before changing this boundary. Deployment
 and live legacy-hook cleanup require their own task scope; local build checks
 do not establish deployed acceptance.
+
+Normal supported installs update a configured instance automatically after
+owner verification. The one-time binding belongs to the selected Python
+environment at `etc/sassie/version-stack.json`; standalone environments need
+no website. Preserve the existing verified web-deployment publisher. An update
+failure must fail the command and identify the completed install separately.
+The binding schema and operator workflow are owned by
+`genapp_zazzie/docs/source_revision_metadata.md` in the paired checkout.
+Live binding setup and deployment require their own approved scope.

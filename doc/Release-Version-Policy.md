@@ -75,3 +75,23 @@ applications. There is no framework dependency on SASSIE, Docker or host paths.
 See [the neutral shared-gap report](UI2-Installed-Version-Shared-Gap-Report.md)
 for evidence, scope, compatibility controls and rollback. The application owns
 scientific interpreter selection, component selection and deployment ordering.
+
+
+## Automatic application-owned completion
+
+Applications should integrate verified installed-record publication into their
+normal install/deploy commands so operators do not need a separate publication
+step. This remains an application deployment responsibility. GenApp's generic
+generation receipt is build evidence; the existing verified deployment wrapper
+decides when it becomes the instance's installed record. Bare generation must
+not claim that scientific packages were installed.
+
+For SASSIE-web, the supported scientific owner installers notify the existing
+application atomic writer after their checks. A one-time, machine-local binding
+connects the scientific Python prefix to its exact publisher/instance manifest.
+The owner contract is `../genapp_zazzie/docs/source_revision_metadata.md`.
+Standalone scientific environments need no website. Completion updates only the
+verified component and requires an exact installed/build-stamp match. Failed
+recording fails the command and distinguishes successful installation from
+unsuccessful bookkeeping. UI2's manifest schema and fresh reads are unchanged;
+there is no new framework callback, SASSIE dependency, service or version API.
