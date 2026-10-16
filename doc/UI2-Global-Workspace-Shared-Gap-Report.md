@@ -36,3 +36,22 @@ consumption and immediate deletion of the record.
 This is the minimum shared extension needed by the SASSIE Analysis AI workspace
 without introducing a second module runner or an application-specific core
 exception.
+
+## Project lifecycle refresh
+
+The application-level workspace manifest can legitimately depend on the
+authenticated project. UI2 originally fetched it during session refresh only.
+After the existing project-selection and project-creation handlers updated the
+active project locally, workspace availability therefore remained stale until
+a full page reload. The application endpoint could not repair that lifecycle
+gap because shared UI2 owns the top-bar controls and manifest fetch.
+
+After a successful project selection or creation, UI2 now refetches the same
+optional manifest after updating session identity. The behavior remains fully
+generic: the runtime does not name an application or workspace and does
+nothing when `ui2_global_workspaces_url` is absent. A failed or unavailable
+manifest retains the existing empty-control behavior. Rollback is removal of
+the two post-project-change refetches; ordinary project state and module/job
+contracts are otherwise unchanged. The application owner approved this exact
+shared-core lifecycle change as part of the Analysis AI issue 499 implementation
+manifest on 2026-10-16.

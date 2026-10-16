@@ -488,3 +488,10 @@ the bounded manifest but must not branch on an application or workspace id.
 Context handoffs use bounded, one-use browser session storage; they never carry
 credentials or grant server authority. The application owns authorization,
 the destination, durable data, and feature opt-in.
+
+Because workspace authorization or availability may depend on the active
+project, shared UI2 refetches the optional manifest after successful project
+selection and project creation as well as during normal session refresh. This
+is an application-neutral lifecycle rule: applications without the directive
+perform no workspace request, and UI2 still does not interpret workspace ids or
+application-specific meaning.

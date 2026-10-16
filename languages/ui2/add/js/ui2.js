@@ -2534,6 +2534,7 @@
     if (changed) {
       clearReattachRouteForProjectChange();
     }
+    await loadGlobalWorkspaces();
     return payload;
   }
 
@@ -6598,6 +6599,7 @@
     if (changed && !options.preserveReattachRoute) {
       clearReattachRouteForProjectChange();
     }
+    await loadGlobalWorkspaces();
     return payload;
   }
 

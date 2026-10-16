@@ -3345,6 +3345,22 @@ const normalizedWorkspaces = hooks.normalizeGlobalWorkspaces({ workspaces: [
 assert.strictEqual(normalizedWorkspaces.length, 1, "global workspace manifests reject cross-origin and malformed entries");
 assert.strictEqual(normalizedWorkspaces[0].url, "https://example.test/sassie3/ui2/analysis/", "global workspace URLs resolve against the UI2 application surface");
 assert.strictEqual(normalizedWorkspaces[0].contextHandoff, true, "global workspaces may opt into a bounded context handoff");
+const createProjectBlock = source.slice(
+  source.indexOf("async function createLegacyProject"),
+  source.indexOf("function showUtilityOverlay")
+);
+const selectProjectBlock = source.slice(
+  source.indexOf("async function setLegacyProject"),
+  source.indexOf("function validateModuleForm")
+);
+assert(
+  createProjectBlock.includes("await loadGlobalWorkspaces();"),
+  "successful project creation refetches project-scoped global workspace availability"
+);
+assert(
+  selectProjectBlock.includes("await loadGlobalWorkspaces();"),
+  "successful project selection refetches project-scoped global workspace availability"
+);
 hooks.state.session.project = "project_one";
 const workspaceToken = hooks.storeGlobalWorkspaceHandoff(normalizedWorkspaces[0]);
 const workspaceHandoff = JSON.parse(window.__sessionStorage[`genapp.ui2.workspace.handoff.\${workspaceToken}`]);
