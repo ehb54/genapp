@@ -468,3 +468,13 @@ source layout on the next render. HTML5 behavior is unchanged.
 
 The approved evidence and scope are in
 `UI2-Subplot-Spacing-Shared-Gap-Report.md` (#321).
+
+
+### Wrapped-title automatic margins (#322)
+
+The existing axis-title wrap opt-in supplies a display-only automatic margin
+only for titles that actually wrap. Explicit axis/template settings remain
+authoritative. The shared helper releases its defaults when wrapping ends or
+the opt-in is removed, without mutating saved figures or scientific arrays.
+The neutral reproduction, compatibility details and validation requirements are
+in `doc/UI2-Axis-Title-Overflow-Shared-Gap-Report.md`.

@@ -2675,6 +2675,7 @@ const neutralWrapUpdate = layoutPolicy.axisTitleWrapUpdate(
   { measureText: measureAxisTitle }
 );
 assert.ok(neutralWrapUpdate["yaxis2.title.text"].includes("<br>"), "a neutral opted-in subplot receives a responsive title update");
+assert.strictEqual(neutralWrapUpdate["yaxis2.automargin"], true, "a wrapped title receives generic automatic margin fitting");
 assert.strictEqual(
   layoutPolicy.axisTitleWrapUpdate(neutralWrapPlot, neutralSourceLayout, {}, { measureText: measureAxisTitle }),
   null,

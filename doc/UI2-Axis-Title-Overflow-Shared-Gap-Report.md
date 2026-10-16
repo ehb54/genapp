@@ -46,3 +46,25 @@ The repository owner explicitly requested implementation, guarded commits,
 GenApp UI2 regeneration, Plot Presentation Lab deployment, and deployed review
 for `ehb54/zazzie#249`. The implementation is application-neutral and contains
 no SASSIE module ids, output ids, or scientific vocabulary in GenApp core.
+
+
+### Wrapped-title automatic margin correction (#322)
+
+Only an opted-in plain axis title that actually wraps receives a display-only
+`automargin: true` default. Explicit axis or resolved template settings,
+including false and directional settings, remain authoritative; unresolved
+named templates are preserved conservatively. Short titles, rich titles and
+non-opted-in figures retain their behavior. UI2 and application previews use
+the same helper. Helper-owned margin defaults are released when the title no
+longer wraps or the opt-in is removed; saved source figures remain unchanged.
+
+A neutral two-panel real-Plotly reproduction showed wrapped titles intersecting
+ten tick labels; axis automatic margins removed all ten intersections. The
+application dry run covered seven MCA lanes in 56 light/dark and size cases:
+Match Point intersections fell from 52 to zero, while 24 existing intersections
+in other lanes were unchanged. The owner approved the narrow shared repair.
+Automatic margins can reduce plot area and affect ordinary autorange padding;
+scientific arrays and explicit ranges must remain unchanged. No module identity,
+scientific interpretation, fixed pixel margins or new configuration token is
+introduced. Verify resize/restore, repeated fitting, completion, saved-output
+reconstruction, Chart Editor handoff and scale-2 export.

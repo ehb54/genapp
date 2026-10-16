@@ -4,6 +4,7 @@
   const AXIS_KEY = /^(xaxis|yaxis)\d*$/;
   const PLAIN_TITLE = /^[^<>]*$/;
   const ABOVE_PLOT = "above_plot";
+  const wrappedAxisMargins = new WeakMap();
 
   function titleText(axis) {
     if (axis?.title == null) {
@@ -84,29 +85,42 @@
     return Number.isFinite(total) && total > 0 ? span * total : 0;
   }
 
+  function explicitAxisMargin(plot, sourceLayout, axisName) {
+    if (sourceLayout?.[axisName]?.automargin !== undefined) return true;
+    const template = sourceLayout?.template;
+    const layout = (typeof template === "object" ? template?.layout : null) ||
+      plot?._fullLayout?.template?.layout;
+    const baseAxis = axisName.startsWith("x") ? "xaxis" : "yaxis";
+    if (layout?.[axisName]?.automargin !== undefined || layout?.[baseAxis]?.automargin !== undefined) return true;
+    // An unresolved named template is authoritative, too.
+    return typeof template === "string" && !layout;
+  }
+
   function axisTitleWrapUpdate(plot, sourceLayout, selection, options) {
-    if (selection?.axisTitleOverflow !== "wrap") {
-      return null;
-    }
+    const selected = selection?.axisTitleOverflow === "wrap";
+    const owned = wrappedAxisMargins.get(plot) || new Set();
+    if (!selected && !owned.size) return null;
     const update = {};
-    Object.keys(sourceLayout || {}).filter((key) => AXIS_KEY.test(key)).forEach((axisName) => {
-      const sourceAxis = sourceLayout[axisName];
+    const axes = new Set([...Object.keys(sourceLayout || {}).filter((key) => AXIS_KEY.test(key)), ...owned]);
+    axes.forEach((axisName) => {
+      const sourceAxis = sourceLayout?.[axisName];
       const sourceTitle = titleText(sourceAxis);
-      if (!sourceTitle || !PLAIN_TITLE.test(sourceTitle)) {
-        return;
+      let wrapped = "";
+      if (selected && sourceTitle && PLAIN_TITLE.test(sourceTitle)) {
+        const available = axisLength(plot, axisName) - 8;
+        const measure = options?.measureText || canvasMeasure(axisFont(plot, axisName, sourceAxis));
+        if (available > 0 && measure) wrapped = wrapPlainText(sourceTitle, available, measure);
       }
-      const available = axisLength(plot, axisName) - 8;
-      if (!(available > 0)) {
-        return;
-      }
-      const measure = options?.measureText || canvasMeasure(axisFont(plot, axisName, sourceAxis));
-      if (!measure) {
-        return;
-      }
-      const wrapped = wrapPlainText(sourceTitle, available, measure);
       const displayedTitle = titleText(plot?.layout?.[axisName]);
-      if (wrapped && wrapped !== displayedTitle) {
-        update[`${axisName}.title.text`] = wrapped;
+      if (wrapped && wrapped !== displayedTitle) update[`${axisName}.title.text`] = wrapped;
+      else if (!selected && owned.has(axisName) && sourceTitle && displayedTitle !== sourceTitle) {
+        update[`${axisName}.title.text`] = sourceTitle;
+      }
+      if (wrapped.includes("<br>") && !explicitAxisMargin(plot, sourceLayout, axisName)) {
+        if (plot?.layout?.[axisName]?.automargin !== true) update[`${axisName}.automargin`] = true;
+      } else if (owned.has(axisName)) {
+        const original = sourceAxis?.automargin ?? null;
+        if (plot?.layout?.[axisName]?.automargin !== original) update[`${axisName}.automargin`] = original;
       }
     });
     return Object.keys(update).length ? update : null;
@@ -114,10 +128,17 @@
 
   function applyAxisTitleOverflow(plot, sourceLayout, selection, options) {
     const update = axisTitleWrapUpdate(plot, sourceLayout, selection, options);
-    if (!update || typeof window.Plotly?.relayout !== "function") {
-      return null;
-    }
-    return Promise.resolve(window.Plotly.relayout(plot, update));
+    if (!update || typeof window.Plotly?.relayout !== "function") return null;
+    return Promise.resolve(window.Plotly.relayout(plot, update)).then(() => {
+      const owned = wrappedAxisMargins.get(plot) || new Set();
+      Object.keys(update).filter((key) => key.endsWith(".automargin")).forEach((key) => {
+        const axisName = key.split(".")[0];
+        if (update[key] === true && !explicitAxisMargin(plot, sourceLayout, axisName)) owned.add(axisName);
+        else owned.delete(axisName);
+      });
+      if (owned.size) wrappedAxisMargins.set(plot, owned);
+      else wrappedAxisMargins.delete(plot);
+    });
   }
 
   // Opted-in independent vertical panels reserve measured display-only lanes.
