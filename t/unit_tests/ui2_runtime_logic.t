@@ -287,6 +287,7 @@ const window = {
   GenAppUi2ExposeTestHooks: true,
   __styleVars: {},
   __localStorage: {},
+  __sessionStorage: {},
   __openCalls: [],
   CSS: { escape(value) { return String(value); } },
   crypto: {
@@ -322,6 +323,17 @@ const window = {
     },
     setItem(key, value) {
       window.__localStorage[key] = String(value);
+    }
+  },
+  sessionStorage: {
+    getItem(key) {
+      return Object.prototype.hasOwnProperty.call(window.__sessionStorage, key) ? window.__sessionStorage[key] : null;
+    },
+    setItem(key, value) {
+      window.__sessionStorage[key] = String(value);
+    },
+    removeItem(key) {
+      delete window.__sessionStorage[key];
     }
   },
   location: { href: "https://example.test/sassie3/ui2/", pathname: "/sassie3/ui2/", search: "" },
@@ -3325,6 +3337,20 @@ assert.strictEqual(
   "",
   "external-auth manifests reject cross-origin URLs"
 );
+const normalizedWorkspaces = hooks.normalizeGlobalWorkspaces({ workspaces: [
+  { id: "analysis", label: "Analysis", url: "analysis/", context_handoff: true },
+  { id: "external", label: "External", url: "https://identity.example/workspace" },
+  { id: "Bad Id", label: "Invalid", url: "invalid/" }
+] });
+assert.strictEqual(normalizedWorkspaces.length, 1, "global workspace manifests reject cross-origin and malformed entries");
+assert.strictEqual(normalizedWorkspaces[0].url, "https://example.test/sassie3/ui2/analysis/", "global workspace URLs resolve against the UI2 application surface");
+assert.strictEqual(normalizedWorkspaces[0].contextHandoff, true, "global workspaces may opt into a bounded context handoff");
+hooks.state.session.project = "project_one";
+const workspaceToken = hooks.storeGlobalWorkspaceHandoff(normalizedWorkspaces[0]);
+const workspaceHandoff = JSON.parse(window.__sessionStorage[`genapp.ui2.workspace.handoff.\${workspaceToken}`]);
+assert.strictEqual(workspaceHandoff.workspace_id, "analysis", "workspace handoff records the validated workspace identity");
+assert.strictEqual(workspaceHandoff.context.project, "project_one", "workspace handoff carries the active project name without a server path");
+assert.strictEqual(Object.prototype.hasOwnProperty.call(workspaceHandoff.context, "user_question"), false, "workspace handoff omits the AI Helper question field");
 assert.strictEqual(
   hooks.validExternalAuthWindowName("ui2-1788458967037-3b8937ce858c78"),
   "ui2-1788458967037-3b8937ce858c78",

@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 import json
 import os
-import socket
 import sys
-import urllib.error
-import urllib.request
 import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 SERVICE_DIR = Path(__file__).resolve().parent
+TOOLS_DIR = SERVICE_DIR.parent
+if str(TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(TOOLS_DIR))
+from ai_provider_client.client import post_json
 ENV_PATH = SERVICE_DIR / ".env"
 USAGE_PATH = SERVICE_DIR / "usage.json"
 MAX_BODY_BYTES = 262144
@@ -502,16 +503,16 @@ def provider_timeout_message(timeout):
 
 def request_provider_once(kind, url, api_key, payload, timeout, compact_context=False):
     request_payload = provider_request_body(kind, payload, compact_context)
-    data = json.dumps(request_payload).encode("utf-8")
     session_id = request_payload.get("session_id") if kind == "openrouter" and isinstance(request_payload, dict) else None
-    request = urllib.request.Request(url, data=data, headers=provider_headers(api_key, kind, session_id), method="POST")
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            return response.read(MAX_BODY_BYTES).decode("utf-8", errors="replace")
-    except urllib.error.HTTPError as error:
-        detail = error.read(4096).decode("utf-8", errors="replace")
-        raise RuntimeError("provider returned HTTP %s: %s" % (error.code, detail[:500]))
-    except (TimeoutError, socket.timeout):
+        return post_json(
+            url,
+            request_payload,
+            provider_headers(api_key, kind, session_id),
+            timeout=timeout,
+            max_response_bytes=MAX_BODY_BYTES,
+        )
+    except TimeoutError:
         raise TimeoutError(provider_timeout_message(timeout))
     except Exception as error:
         if "timed out" in str(error).lower():

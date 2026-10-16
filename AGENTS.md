@@ -691,3 +691,12 @@ GenApp's `doc/Plotting-Architecture.md`, `doc/UI2-Core-Extension-Policy.md`, and
 UI2 and the Lab share one measured inter-panel lane helper. Preserve source
 figures, scientific arrays, uncertainty, identities, ranges and reattachment;
 no SASSIE calculation or producer spacing workaround belongs here.
+
+## Global UI2 workspace route
+
+Optional application-wide workspaces are discovered only through the generic
+same-origin `ui2_global_workspaces_url` manifest. Keep shared UI2 independent of
+application and workspace ids. Bounded context handoffs use one-use browser
+session storage and do not convey credentials or server authorization. Read
+`doc/UI2-Global-Workspace-Shared-Gap-Report.md` and
+`doc/UI2-Core-Extension-Policy.md` before changing this boundary.

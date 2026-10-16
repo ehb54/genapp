@@ -12,6 +12,7 @@
     "ui2_plotly_hover_number_format" : ".5e",
     "ui2_auth_providers_url" : "auth/providers.php",
     "ui2_release_manifest_url" : "release-manifest.json",
+    "ui2_global_workspaces_url" : "workspaces/manifest.php",
     "usertheme"   : "true",
     "nextjobenvironment" : "true",
     "nextjobenvironmentid" : "fixture_diagnostics",

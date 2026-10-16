@@ -478,3 +478,13 @@ authoritative. The shared helper releases its defaults when wrapping ends or
 the opt-in is removed, without mutating saved figures or scientific arrays.
 The neutral reproduction, compatibility details and validation requirements are
 in `doc/UI2-Axis-Title-Overflow-Shared-Gap-Report.md`.
+
+## Global application workspaces
+
+Application-wide workspaces use the optional, same-origin
+`ui2_global_workspaces_url` manifest described in
+`UI2-Global-Workspace-Shared-Gap-Report.md`. Shared UI2 validates and renders
+the bounded manifest but must not branch on an application or workspace id.
+Context handoffs use bounded, one-use browser session storage; they never carry
+credentials or grant server authority. The application owns authorization,
+the destination, durable data, and feature opt-in.
