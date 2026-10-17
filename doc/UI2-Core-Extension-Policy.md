@@ -489,6 +489,16 @@ Context handoffs use bounded, one-use browser session storage; they never carry
 credentials or grant server authority. The application owns authorization,
 the destination, durable data, and feature opt-in.
 
+An entry may select `presentation: "companion_window"`. UI2 opens a named
+secondary browsing context through the existing authenticated UI2 session
+handoff, stores the initial one-use context in that target's session storage,
+and keeps the originating module mounted. Re-selecting the same workspace in
+the same project focuses the existing companion and sends a fresh bounded
+context snapshot over a same-origin message carrying a random per-window
+channel identity. Applications validate and persist those snapshots; shared
+UI2 does not interpret them. The default remains `same_tab`, and browsers may
+honor a user's preference to present a requested window as a tab.
+
 Because workspace authorization or availability may depend on the active
 project, shared UI2 refetches the optional manifest after successful project
 selection and project creation as well as during normal session refresh. This

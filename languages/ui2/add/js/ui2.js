@@ -94,6 +94,7 @@
   const reactWorkbenchSyncListeners = new Set();
   let hoverHelpTimer = null;
   let hoverHelpTarget = null;
+  const globalWorkspaceWindows = new Map();
 
   const state = {
     moduleId: "",
@@ -805,7 +806,8 @@
         id,
         label,
         url,
-        contextHandoff: workspace?.context_handoff === true
+        contextHandoff: workspace?.context_handoff === true,
+        presentation: workspace?.presentation === "companion_window" ? "companion_window" : "same_tab"
       };
     }).filter(Boolean);
   }
@@ -864,13 +866,17 @@
   }
 
   function storeGlobalWorkspaceHandoff(workspace) {
+    const options = arguments[1] || {};
     const token = createUuid();
     const key = `genapp.ui2.workspace.handoff.${token}`;
+    const channelId = stringValue(options.channelId);
+    const storage = options.storage || window.sessionStorage;
     let context = buildGlobalWorkspaceContext();
     let encoded = JSON.stringify({
       version: 1,
       workspace_id: workspace.id,
       created_at: new Date().toISOString(),
+      channel_id: channelId || null,
       context
     });
     if (encoded.length > 131072) {
@@ -886,15 +892,76 @@
         version: 1,
         workspace_id: workspace.id,
         created_at: new Date().toISOString(),
+        channel_id: channelId || null,
         context,
         reduced: true
       });
     }
-    window.sessionStorage.setItem(key, encoded);
+    if (storage === window.sessionStorage) {
+      window.sessionStorage.setItem(key, encoded);
+    } else {
+      storage.setItem(key, encoded);
+    }
     return token;
   }
 
+  function globalWorkspaceCompanionKey(workspace) {
+    return `${workspace.id}:${stringValue(state.session.project)}`;
+  }
+
+  function refreshGlobalWorkspaceCompanion(workspace, record) {
+    record.window.postMessage({
+      type: "genapp-ui2-workspace-context",
+      version: 1,
+      workspace_id: workspace.id,
+      channel_id: record.channelId,
+      created_at: new Date().toISOString(),
+      context: buildGlobalWorkspaceContext()
+    }, new URL(workspace.url).origin);
+    record.window.focus();
+  }
+
+  async function openGlobalWorkspaceCompanion(workspace) {
+    const key = globalWorkspaceCompanionKey(workspace);
+    const existing = globalWorkspaceWindows.get(key);
+    if (existing && !existing.window.closed) {
+      refreshGlobalWorkspaceCompanion(workspace, existing);
+      return existing.window;
+    }
+    globalWorkspaceWindows.delete(key);
+    const targetWindow = reserveUi2Window("popup=yes,width=1180,height=900,resizable=yes,scrollbars=yes");
+    if (!targetWindow) {
+      return null;
+    }
+    const channelId = createUuid();
+    globalWorkspaceWindows.set(key, { window: targetWindow, channelId });
+    try {
+      await handoffSessionToWindow(targetWindow.name);
+      const url = new URL(workspace.url);
+      url.searchParams.set("_window", targetWindow.name);
+      if (workspace.contextHandoff) {
+        url.searchParams.set("handoff", storeGlobalWorkspaceHandoff(workspace, {
+          channelId,
+          storage: targetWindow.sessionStorage
+        }));
+      }
+      targetWindow.location.replace(url.toString());
+      targetWindow.focus();
+      return targetWindow;
+    } catch (error) {
+      globalWorkspaceWindows.delete(key);
+      if (!targetWindow.closed) {
+        targetWindow.close();
+      }
+      setSystemMessage("messages", error.message, true);
+      return null;
+    }
+  }
+
   function openGlobalWorkspace(workspace) {
+    if (workspace.presentation === "companion_window") {
+      return openGlobalWorkspaceCompanion(workspace);
+    }
     const url = new URL(workspace.url);
     url.searchParams.set("_window", window.name);
     if (workspace.contextHandoff) {
@@ -7316,8 +7383,8 @@
     }
   }
 
-  function reserveUi2Window() {
-    const targetWindow = window.open("about:blank", createUuid());
+  function reserveUi2Window(features = "") {
+    const targetWindow = window.open("about:blank", createUuid(), features || undefined);
     if (!targetWindow) {
       setSystemMessage("messages", "Your browser blocked the new application window. Allow popups for this site and try again.", true);
       return null;

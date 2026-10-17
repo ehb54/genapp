@@ -3271,7 +3271,7 @@ assert(
   source.includes('const targetWindow = newWindow ? reserveUi2Window() : null;') &&
     source.includes('await openAuthenticatedUi2Window({ switchValue, targetWindow });') &&
     source.includes('async function openAuthenticatedUi2Window({ switchValue = "", targetWindow = reserveUi2Window() } = {})') &&
-    source.includes('const targetWindow = window.open("about:blank", createUuid());') &&
+    source.includes('const targetWindow = window.open("about:blank", createUuid(), features || undefined);') &&
     source.includes('await handoffSessionToWindow(targetWindow.name);') &&
     source.includes('targetWindow.location.replace(url.toString());'),
   "new-window reattach uses the shared authenticated popup handoff and navigation path"
@@ -3338,13 +3338,14 @@ assert.strictEqual(
   "external-auth manifests reject cross-origin URLs"
 );
 const normalizedWorkspaces = hooks.normalizeGlobalWorkspaces({ workspaces: [
-  { id: "analysis", label: "Analysis", url: "analysis/", context_handoff: true },
+  { id: "analysis", label: "Analysis", url: "analysis/", context_handoff: true, presentation: "companion_window" },
   { id: "external", label: "External", url: "https://identity.example/workspace" },
   { id: "Bad Id", label: "Invalid", url: "invalid/" }
 ] });
 assert.strictEqual(normalizedWorkspaces.length, 1, "global workspace manifests reject cross-origin and malformed entries");
 assert.strictEqual(normalizedWorkspaces[0].url, "https://example.test/sassie3/ui2/analysis/", "global workspace URLs resolve against the UI2 application surface");
 assert.strictEqual(normalizedWorkspaces[0].contextHandoff, true, "global workspaces may opt into a bounded context handoff");
+assert.strictEqual(normalizedWorkspaces[0].presentation, "companion_window", "global workspaces may request the generic companion-window presentation");
 const createProjectBlock = source.slice(
   source.indexOf("async function createLegacyProject"),
   source.indexOf("function showUtilityOverlay")
@@ -3362,11 +3363,24 @@ assert(
   "successful project selection refetches project-scoped global workspace availability"
 );
 hooks.state.session.project = "project_one";
-const workspaceToken = hooks.storeGlobalWorkspaceHandoff(normalizedWorkspaces[0]);
+const workspaceToken = hooks.storeGlobalWorkspaceHandoff(normalizedWorkspaces[0], { channelId: "channel-one" });
 const workspaceHandoff = JSON.parse(window.__sessionStorage[`genapp.ui2.workspace.handoff.\${workspaceToken}`]);
 assert.strictEqual(workspaceHandoff.workspace_id, "analysis", "workspace handoff records the validated workspace identity");
+assert.strictEqual(workspaceHandoff.channel_id, "channel-one", "companion handoffs retain only their random context-channel identity");
 assert.strictEqual(workspaceHandoff.context.project, "project_one", "workspace handoff carries the active project name without a server path");
 assert.strictEqual(Object.prototype.hasOwnProperty.call(workspaceHandoff.context, "user_question"), false, "workspace handoff omits the AI Helper question field");
+assert(
+  source.includes('reserveUi2Window("popup=yes,width=1180,height=900,resizable=yes,scrollbars=yes")') &&
+    source.includes("await handoffSessionToWindow(targetWindow.name);") &&
+    source.includes("storage: targetWindow.sessionStorage") &&
+    source.includes('type: "genapp-ui2-workspace-context"') &&
+    source.includes("record.window.focus();"),
+  "companion workspaces reuse authenticated new-window handoff, target-local context storage, refresh, and focus"
+);
+assert(
+  source.includes('return `\${workspace.id}:\${stringValue(state.session.project)}`;'),
+  "companion windows remain isolated by workspace and selected project"
+);
 assert.strictEqual(
   hooks.validExternalAuthWindowName("ui2-1788458967037-3b8937ce858c78"),
   "ui2-1788458967037-3b8937ce858c78",

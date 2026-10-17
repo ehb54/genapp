@@ -697,6 +697,11 @@ no SASSIE calculation or producer spacing workaround belongs here.
 Optional application-wide workspaces are discovered only through the generic
 same-origin `ui2_global_workspaces_url` manifest. Keep shared UI2 independent of
 application and workspace ids. Bounded context handoffs use one-use browser
-session storage and do not convey credentials or server authorization. Read
+session storage and do not convey credentials or server authorization. A
+workspace may opt into the generic `companion_window` presentation; UI2 then
+uses its existing authenticated new-window session handoff, keeps one companion
+per workspace and project, and sends later bounded context snapshots through a
+random-channel same-origin message. The destination owns validation and durable
+context revisions. Read
 `doc/UI2-Global-Workspace-Shared-Gap-Report.md` and
 `doc/UI2-Core-Extension-Policy.md` before changing this boundary.
