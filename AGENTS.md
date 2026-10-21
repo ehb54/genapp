@@ -8,6 +8,17 @@ If a task concerns SASSIE, Zazzie, the Zazzie3 deployment, or SASSIE-driven use
 of GenApp, read the branch-specific SASSIE-web addendum at the end of this file
 before planning, recommending architecture, or changing code.
 
+## SASSIE Instance Configuration Records
+
+For SASSIE/Zazzie machine architecture, installed SASSIE/SASmol builds, and
+existing installation quirks, consult the private
+[madscatt/sassie-instances](https://github.com/madscatt/sassie-instances) repository.
+Start with its `AGENTS.md`, `BUILD_STATUS.md`, and matching `instances/` profile.
+Copies are at `~/git_working_copies/sassie-instances`; Onsager uses
+`/onsager_home_2/sassie_cluster/sassie-instances`. These are dated reference
+records, not authorization to upgrade or otherwise change an installation.
+The secure `sassie.nist.gov` installation is excluded.
+
 ## Authority And Communication
 
 - Use plain language first. State what changed, what was verified, remaining
