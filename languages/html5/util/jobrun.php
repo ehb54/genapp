@@ -58,6 +58,7 @@ $checkrunning = $argv[ ++$pos ];
 __~debug:runjob{error_log( "jobrun 3\n", 3, "/tmp/php_errors" );}
 require_once "__docroot:html5__/__application__/ajax/joblog.php";
 require_once "__docroot:html5__/__application__/util/rejected-lrfile.php";
+require_once "__docroot:html5__/__application__/ajax/sys_config/ga_audit.php";
 
 if ( !getmenumodule( $id ) )
 {
@@ -157,6 +158,20 @@ if ( !$GLOBALS[ 'wascancelled' ] ) {
         $rejected_lrfile_cleanup = ga_cleanup_sassie_rejected_lrfiles(
             $objresults, $rejected_lrfile_receipt,
             $GLOBALS[ 'getmenumoduledir' ] );
+        foreach ( $rejected_lrfile_cleanup[ 'deleted_uploads' ] as $deleted_upload ) {
+            ga_file_transfer_audit( 'upload_failed', array(
+                'transfer_id' => isset( $deleted_upload[ 'transfer_id' ] )
+                    ? $deleted_upload[ 'transfer_id' ] : '',
+                'username' => $GLOBALS[ 'logon' ],
+                'project' => $GLOBALS[ 'getmenumoduleproject' ],
+                'module' => $GLOBALS[ 'module' ],
+                'field' => $deleted_upload[ 'field' ],
+                'filename' => $deleted_upload[ 'filename' ],
+                'size_bytes' => $deleted_upload[ 'size_bytes' ],
+                'outcome' => 'rejected',
+                'failure' => 'scientific_validation',
+            ) );
+        }
         if ( $rejected_lrfile_cleanup[ 'deleted' ] ||
              $rejected_lrfile_cleanup[ 'skipped' ] ) {
             error_log(

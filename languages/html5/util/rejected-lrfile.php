@@ -62,7 +62,8 @@ function ga_rejected_lrfile_identity( $path ) {
 }
 
 function ga_record_rejected_lrfile_upload( &$entries, $module_json, $upload_key,
-                                            $member_index, $path, $project_root ) {
+                                            $member_index, $path, $project_root,
+                                            $transfer_id = null ) {
     $coordinate = ga_rejected_lrfile_coordinate(
         $module_json, $upload_key, $member_index );
     if ( $coordinate === null ||
@@ -74,12 +75,17 @@ function ga_record_rejected_lrfile_upload( &$entries, $module_json, $upload_key,
     if ( $identity === null ) {
         return false;
     }
-    $entries[] = array(
+    $entry = array(
         'field' => $coordinate[ 'field' ],
         'index' => $coordinate[ 'index' ],
         'path' => $real_path,
         'identity' => $identity,
     );
+    if ( is_string( $transfer_id ) &&
+         preg_match( '/^[A-Za-z0-9_-]{1,128}$/', $transfer_id ) ) {
+        $entry[ 'transfer_id' ] = $transfer_id;
+    }
+    $entries[] = $entry;
     return true;
 }
 
@@ -149,6 +155,7 @@ function ga_rejected_lrfile_identity_matches( $expected, $actual ) {
 function ga_remove_receipted_lrfile_uploads( $entries, $project_root, $coordinates = null ) {
     $deleted = 0;
     $skipped = 0;
+    $deleted_uploads = array();
     $wanted = null;
     if ( is_array( $coordinates ) ) {
         $wanted = array();
@@ -185,27 +192,43 @@ function ga_remove_receipted_lrfile_uploads( $entries, $project_root, $coordinat
         }
         if ( @unlink( $path ) ) {
             ++$deleted;
+            $deleted_upload = array(
+                'field' => $entry[ 'field' ],
+                'filename' => basename( $path ),
+                'size_bytes' => intval( $entry[ 'identity' ][ 'size' ] ),
+            );
+            if ( isset( $entry[ 'transfer_id' ] ) &&
+                 is_string( $entry[ 'transfer_id' ] ) &&
+                 preg_match( '/^[A-Za-z0-9_-]{1,128}$/',
+                             $entry[ 'transfer_id' ] ) ) {
+                $deleted_upload[ 'transfer_id' ] = $entry[ 'transfer_id' ];
+            }
+            $deleted_uploads[] = $deleted_upload;
         } else {
             ++$skipped;
         }
     }
-    return array( 'deleted' => $deleted, 'skipped' => $skipped );
+    return array(
+        'deleted' => $deleted,
+        'skipped' => $skipped,
+        'deleted_uploads' => $deleted_uploads,
+    );
 }
 
 function ga_cleanup_sassie_rejected_lrfiles( $output, $receipt_path, $project_root ) {
     if ( !is_file( $receipt_path ) ) {
-        return array( 'deleted' => 0, 'skipped' => 0 );
+        return array( 'deleted' => 0, 'skipped' => 0, 'deleted_uploads' => array() );
     }
     if ( !is_object( $output ) || !isset( $output->_sassie_rejected_lrfiles ) ||
          !is_array( $output->_sassie_rejected_lrfiles ) ) {
         @unlink( $receipt_path );
-        return array( 'deleted' => 0, 'skipped' => 0 );
+        return array( 'deleted' => 0, 'skipped' => 0, 'deleted_uploads' => array() );
     }
     $receipt = json_decode( @file_get_contents( $receipt_path ), true );
     if ( !is_array( $receipt ) || !isset( $receipt[ 'version' ], $receipt[ 'uploads' ] ) ||
          $receipt[ 'version' ] !== 1 || !is_array( $receipt[ 'uploads' ] ) ) {
         @unlink( $receipt_path );
-        return array( 'deleted' => 0, 'skipped' => 1 );
+        return array( 'deleted' => 0, 'skipped' => 1, 'deleted_uploads' => array() );
     }
     $result = ga_remove_receipted_lrfile_uploads(
         $receipt[ 'uploads' ], $project_root, $output->_sassie_rejected_lrfiles );

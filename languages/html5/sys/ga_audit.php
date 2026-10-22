@@ -62,44 +62,63 @@ function ga_audit_resolve_user_result( $application_root, $username, $target ) {
     return $resolved;
 }
 
+function ga_file_transfer_audit_message( $event, $details = array() ) {
+    $allowed = array(
+        'transfer_id', 'username', 'project', 'module', 'field',
+        'filename', 'relative_path', 'size_bytes', 'outcome', 'failure'
+    );
+    $record = array(
+        'schema'       => 'genapp.file_transfer.v1',
+        'timestamp'    => gmdate( 'c' ),
+        'application'  => '__application__',
+        'event'        => ga_audit_safe_value( $event, 64 ),
+        'source_ip'    => isset( $_SERVER[ 'REMOTE_ADDR' ] )
+            ? ga_audit_safe_value( $_SERVER[ 'REMOTE_ADDR' ], 64 ) : ''
+    );
+    foreach ( $allowed as $key ) {
+        if ( array_key_exists( $key, $details ) ) {
+            $value = ga_audit_safe_value( $details[ $key ] );
+            if ( $value !== null ) {
+                $record[ $key ] = $value;
+            }
+        }
+    }
+    $encoded = json_encode( $record,
+        JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+    return $encoded === false ? false : 'GENAPP_AUDIT ' . $encoded;
+}
+
+function ga_audit_write_message( $message, $config ) {
+    if ( isset( $config[ 'destination' ] ) &&
+         strtolower( $config[ 'destination' ] ) === 'syslog' ) {
+        $opened = @openlog( 'genapp', LOG_PID, LOG_AUTH );
+        $written = $opened ? @syslog( LOG_INFO, $message ) : false;
+        if ( $opened ) {
+            @closelog();
+        }
+        if ( !$written ) {
+            // Keep the request non-blocking, but leave a local signal that the
+            // configured sink did not accept the event. Do not repeat event data.
+            @error_log( 'GENAPP_AUDIT_DELIVERY_FAILURE destination=syslog' );
+        }
+        return $written;
+    }
+    return @error_log( $message );
+}
+
 function ga_file_transfer_audit( $event, $details = array() ) {
     if ( !ga_file_transfer_audit_enabled() ) {
         return false;
     }
     try {
-        $allowed = array(
-            'transfer_id', 'username', 'project', 'module', 'field',
-            'filename', 'relative_path', 'size_bytes', 'outcome', 'failure'
-        );
-        $record = array(
-            'schema'       => 'genapp.file_transfer.v1',
-            'timestamp'    => gmdate( 'c' ),
-            'application'  => '__application__',
-            'event'        => ga_audit_safe_value( $event, 64 ),
-            'source_ip'    => isset( $_SERVER[ 'REMOTE_ADDR' ] )
-                ? ga_audit_safe_value( $_SERVER[ 'REMOTE_ADDR' ], 64 ) : ''
-        );
-        foreach ( $allowed as $key ) {
-            if ( array_key_exists( $key, $details ) ) {
-                $value = ga_audit_safe_value( $details[ $key ] );
-                if ( $value !== null ) {
-                    $record[ $key ] = $value;
-                }
-            }
+        $message = ga_file_transfer_audit_message( $event, $details );
+        if ( $message === false ) {
+            @error_log( 'GENAPP_AUDIT_DELIVERY_FAILURE destination=encoding' );
+            return false;
         }
-        $message = 'GENAPP_AUDIT ' . json_encode( $record,
-            JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
-        $config = ga_audit_config();
-        if ( isset( $config[ 'destination' ] ) &&
-             strtolower( $config[ 'destination' ] ) === 'syslog' ) {
-            @openlog( 'genapp', LOG_PID, LOG_AUTH );
-            @syslog( LOG_INFO, $message );
-            @closelog();
-        } else {
-            @error_log( $message );
-        }
-        return true;
+        return ga_audit_write_message( $message, ga_audit_config() );
     } catch ( Exception $error ) {
+        @error_log( 'GENAPP_AUDIT_DELIVERY_FAILURE destination=exception' );
         return false;
     }
 }

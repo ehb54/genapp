@@ -52,6 +52,15 @@ Events are one-line JSON prefixed with `GENAPP_AUDIT` and use schema
 request so the receiving log system can correlate the application event with
 the Apache status and byte count.
 
+For a newly uploaded experimental `lrfile`, the same transfer ID also follows
+the private ownership receipt. If SASSIE's designated scientific profile filter
+rejects that exact current-submission upload and the receipt-gated cleanup
+deletes it, the runtime emits `upload_failed` with outcome `rejected` and
+failure `scientific_validation`. The earlier `upload_succeeded` event records
+successful byte receipt; the correlated follow-up records that the content was
+not accepted for calculation. General run failures and files selected from the
+server do not produce this scientific-rejection event.
+
 Allowed details are authenticated username, project, module/input identifier,
 safe basename or user-relative path, byte size, outcome/failure category,
 source IP, and transfer ID. Never log file contents, request bodies, cookies,
@@ -63,6 +72,15 @@ The redirect endpoint accepts only an existing regular file beneath
 user's tree, traversal, unresolved paths, and non-files. Audit failure must not
 interrupt ordinary application processing.
 
+The emitter returns success only when the configured local sink accepts the
+message. That result does not prove that a downstream collector or SDL received
+the event. A failed syslog write produces the content-free local warning
+`GENAPP_AUDIT_DELIVERY_FAILURE destination=syslog`; the warning deliberately
+does not repeat usernames, paths, filenames, or other event fields. Encoding
+and unexpected runtime failures use the same marker with an appropriate
+destination value. These signals allow operations staff to detect local
+delivery failures without turning logging trouble into an upload failure.
+
 ## Operational boundary
 
 The application produces events; the deployment owns collection, encrypted
@@ -73,3 +91,13 @@ and retain local logs only within their approved time and size limits.
 
 Tests must cover an opted-in application, a non-opted-in control, same-origin
 result links, cross-origin links, and server-side user-tree containment.
+
+Acceptance has two separate stages. First, a local format test sends a real
+emitter message to a mock collector and verifies the prefix, JSON schema,
+required fields, single-line sanitization, and exclusion of sensitive fields.
+Second, the deployment must exercise the actual IT-supported forwarding path
+with a unique transfer ID and confirm that the corresponding record is visible
+in SDL. The transport test must use the same source, protocol, and routing used
+in production; a passing format test or a successful local write is not
+evidence of SDL receipt. The deployment is not complete until the SDL canary is
+observed and correlated by its transfer ID.

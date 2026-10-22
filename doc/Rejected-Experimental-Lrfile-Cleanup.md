@@ -7,9 +7,10 @@ Generated module handlers record a private receipt only after
 `move_uploaded_file` succeeds for a field declared as `lrfile` in that module's
 JSON. The owner-only receipt is kept in a process-private temporary directory
 outside the user project tree and contains the declared field id, zero-based
-repeat index, canonical path, and filesystem identity. It is discarded when
-the completed output is processed. Server-selected and previously stored files
-do not pass through `move_uploaded_file` and are never receipted.
+repeat index, canonical path, filesystem identity, and the upload audit transfer
+ID. It is discarded when the completed output is processed. Server-selected
+and previously stored files do not pass through `move_uploaded_file` and are
+never receipted.
 
 A completed driver may return `_sassie_rejected_lrfiles`, whose entries contain
 only a field id and zero-based index. GenApp treats these as untrusted
@@ -18,6 +19,14 @@ deletes only a regular non-link file still located directly in the expected
 project directory with the same device, inode, size, change time, and modified
 time. Missing, replaced, linked, moved, malformed, unmatched, or out-of-root
 files are preserved. Driver output never supplies a deletion path.
+
+After an identity-checked deletion succeeds, the job runtime emits a second
+file-transfer audit event using the original transfer ID. The event is
+`upload_failed` with outcome `rejected` and failure category
+`scientific_validation`; it includes only the authenticated user, project,
+module, declared field, safe basename, and byte count. It never contains file
+contents or an absolute path. No rejection event is emitted for an unmatched,
+replaced, linked, server-selected, or preserved file.
 
 Only errors from SASSIE's compact-consumer SAS profile file filter may cause a
 SASSIE-web driver to emit this marker. General input errors, runtime failures,

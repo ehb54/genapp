@@ -739,7 +739,9 @@ if ( sizeof( $_FILES ) ) {
                 echo (json_encode($results));
                 exit();
             }
+            $ga_upload_transfer_id = ga_audit_transfer_id();
             ga_file_transfer_audit( 'upload_succeeded', array(
+                'transfer_id' => $ga_upload_transfer_id,
                 'username' => $GLOBALS[ 'logon' ], 'project' => $GLOBALS[ 'project' ],
                 'module' => '__menu:modules:id__', 'field' => $k,
                 'filename' => basename( $v[ 'name' ][ $k1 ] ),
@@ -750,7 +752,7 @@ if ( sizeof( $_FILES ) ) {
             if ( $ga_uploaded_coordinate !== null &&
                  !ga_record_rejected_lrfile_upload(
                      $ga_uploaded_lrfile_receipts, $module_json, $k, $k1,
-                     $ga_uploaded_path, $dir ) ) {
+                     $ga_uploaded_path, $dir, $ga_upload_transfer_id ) ) {
                 @unlink( $ga_uploaded_path );
                 ga_remove_receipted_lrfile_uploads(
                     $ga_uploaded_lrfile_receipts, $dir );
@@ -875,7 +877,9 @@ if ( sizeof( $_FILES ) ) {
                 echo (json_encode($results));
                 exit();
             }
+            $ga_upload_transfer_id = ga_audit_transfer_id();
             ga_file_transfer_audit( 'upload_succeeded', array(
+                'transfer_id' => $ga_upload_transfer_id,
                 'username' => $GLOBALS[ 'logon' ], 'project' => $GLOBALS[ 'project' ],
                 'module' => '__menu:modules:id__', 'field' => $k,
                 'filename' => basename( $v[ 'name' ] ),
@@ -886,7 +890,7 @@ if ( sizeof( $_FILES ) ) {
             if ( $ga_uploaded_coordinate !== null &&
                  !ga_record_rejected_lrfile_upload(
                      $ga_uploaded_lrfile_receipts, $module_json, $k, 0,
-                     $ga_uploaded_path, $dir ) ) {
+                     $ga_uploaded_path, $dir, $ga_upload_transfer_id ) ) {
                 @unlink( $ga_uploaded_path );
                 ga_remove_receipted_lrfile_uploads(
                     $ga_uploaded_lrfile_receipts, $dir );

@@ -40,8 +40,10 @@ $server = $root . '/server.dat';
 file_put_contents($first, "0 1 0.1\n");
 file_put_contents($second, "0 2 0.1\n");
 file_put_contents($server, "stored\n");
-ga_record_rejected_lrfile_upload($entries, $module, 'profile', 0, $first, $root);
-ga_record_rejected_lrfile_upload($entries, $module, 'rows-profile-1', 0, $second, $root);
+ga_record_rejected_lrfile_upload(
+    $entries, $module, 'profile', 0, $first, $root, 'transfer-first');
+ga_record_rejected_lrfile_upload(
+    $entries, $module, 'rows-profile-1', 0, $second, $root, 'transfer-second');
 $receipt = ga_rejected_lrfile_receipt_path($log, 'job-1');
 $results['receipt_written'] = ga_write_rejected_lrfile_receipt($receipt, $entries);
 $results['receipt_mode'] = fileperms($receipt) & 0777;
@@ -130,25 +132,39 @@ is_deeply( $result->{repeated_coordinate}, { field => 'profile', index => 7 },
 ok( !defined $result->{non_lrfile_coordinate}, 'non-lrfile fields cannot enter a receipt' );
 ok( $result->{receipt_written}, 'private receipt is written' );
 is( $result->{receipt_mode}, 0600, 'private receipt is owner-readable and owner-writable only' );
-is_deeply( $result->{exact_cleanup}, { deleted => 1, skipped => 0 },
+is_deeply( $result->{exact_cleanup}, {
+        deleted => 1,
+        skipped => 0,
+        deleted_uploads => [{
+            field => 'profile',
+            filename => 'second.dat',
+            size_bytes => 8,
+            transfer_id => 'transfer-second',
+        }],
+    },
     'only the exact marked receipt coordinate is deleted' );
 ok( $result->{exact_deleted}, 'matched current upload is removed' );
 ok( $result->{unmatched_preserved}, 'unmatched current upload is preserved' );
 ok( $result->{server_preserved}, 'unreceipted server file is preserved' );
-is_deeply( $result->{generic_result}, { deleted => 0, skipped => 0 },
+is_deeply( $result->{generic_result}, {
+        deleted => 0, skipped => 0, deleted_uploads => [] },
     'ordinary validation failure performs no cleanup' );
 ok( $result->{generic_preserved}, 'ordinary validation failure preserves its upload' );
 ok( $result->{generic_receipt_discarded}, 'completed ordinary failure discards its receipt' );
-is_deeply( $result->{replacement_skipped}, { deleted => 0, skipped => 1 },
+is_deeply( $result->{replacement_skipped}, {
+        deleted => 0, skipped => 1, deleted_uploads => [] },
     'identity mismatch prevents deletion' );
 ok( $result->{replacement_preserved}, 'replacement file is preserved' );
-is_deeply( $result->{outside_skipped}, { deleted => 0, skipped => 1 },
+is_deeply( $result->{outside_skipped}, {
+        deleted => 0, skipped => 1, deleted_uploads => [] },
     'out-of-root receipt entry is refused' );
 ok( $result->{outside_preserved}, 'out-of-root file is preserved' );
-is_deeply( $result->{link_skipped}, { deleted => 0, skipped => 1 },
+is_deeply( $result->{link_skipped}, {
+        deleted => 0, skipped => 1, deleted_uploads => [] },
     'link replacement prevents deletion' );
 ok( $result->{link_preserved}, 'linked path and its target are preserved' );
-is_deeply( $result->{malformed_marker}, { deleted => 0, skipped => 0 },
+is_deeply( $result->{malformed_marker}, {
+        deleted => 0, skipped => 0, deleted_uploads => [] },
     'malformed driver coordinates match no receipt entry' );
 ok( $result->{first_still_preserved}, 'malformed coordinates cannot delete an upload' );
 
