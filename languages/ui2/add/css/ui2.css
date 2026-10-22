@@ -487,6 +487,16 @@ code {
   margin-left: auto;
 }
 
+.ui2-global-workspaces {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ui2-global-workspaces[hidden] {
+  display: none;
+}
+
 .ui2-utility-button {
   min-height: 2.2rem;
   border: 1px solid var(--ui2-border);

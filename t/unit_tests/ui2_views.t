@@ -95,6 +95,7 @@ like( $index, qr/id="ui2-session-status"[^>]*aria-haspopup="dialog"[^>]*aria-exp
 like( $index, qr/id="ui2-session-project-label">Select project<\/span>[\s\S]*?class="ui2-project-chip-chevron" aria-hidden="true"/, 'ui2 project selector pairs its label with a decorative visible chevron' );
 like( $index, qr/id="ui2-feedback"/, 'ui2 index exposes the legacy feedback utility entry point' );
 like( $index, qr/id="ui2-ai-helper"[^>]*hidden/, 'ui2 index exposes an AI Helper entry point hidden until appconfig allows it' );
+like( $index, qr/id="ui2-global-workspaces"[^>]*hidden/, 'ui2 index reserves an application-neutral global workspace area' );
 like( $index, qr/id="ui2-docs"/, 'ui2 index exposes the legacy docs entry point' );
 like( $index, qr/id="ui2-help-menu"/, 'ui2 index keeps documentation and AI help in a prominent Help menu' );
 like( $index, qr/id="ui2-docs-module"[\s\S]*?id="ui2-docs"/, 'ui2 Help presents current-module documentation before general documentation' );
@@ -116,11 +117,16 @@ like( $app_map_js, qr/directives\.ui2_plot_background_preference = "true"/, 'ui2
 like( $app_map_js, qr/directives\.ui2_plotly_hover_number_format = "\.5e"/, 'ui2 app map records the generic numeric hover default' );
 like( $app_map_js, qr/directives\.ui2_auth_providers_url = "auth\/providers\.php"/, 'ui2 app map records an optional external-auth provider manifest URL' );
 like( $app_map_js, qr/directives\.ui2_release_manifest_url = "release-manifest\.json"/, 'ui2 app map records the optional application release manifest' );
+like( $app_map_js, qr/directives\.ui2_global_workspaces_url = "workspaces\/manifest\.php"/, 'ui2 app map records the optional application workspace manifest' );
 like( $app_map_js, qr/directives\.nextjobenvironment = "true"/, 'ui2 app map exposes the opted-in one-job environment setting' );
 unlike( $app_map_js, qr/test_scenarios|catalog_revision/, 'an application without catalogs does not expose test-scenario data in its public app map' );
 like( $app_map_js, qr/app\.help\.feedback = "Feedback help"/, 'ui2 app map records legacy feedback help text' );
 
 my $ui2_js = read_file( File::Spec->catfile( $ui2, qw(js ui2.js) ) );
+like( $ui2_js, qr/function normalizeGlobalWorkspaces\(payload\)/, 'ui2 validates application-owned workspace manifests generically' );
+like( $ui2_js, qr/function storeGlobalWorkspaceHandoff\(workspace\)/, 'ui2 creates bounded same-tab context handoffs for opted-in workspaces' );
+like( $ui2_js, qr/window\.sessionStorage\.setItem\(key, encoded\)/, 'global workspace handoffs stay in browser session storage' );
+unlike( $ui2_js, qr/workspace\.id\s*===\s*["']analysis_ai/, 'shared UI2 contains no Analysis AI application branch' );
 my $plotly_surface_js = read_file( File::Spec->catfile( $ui2, qw(js plotly-surface.js) ) );
 my $plotly_layout_js = read_file( File::Spec->catfile( $ui2, qw(js plotly-layout.js) ) );
 like( $plotly_layout_js, qr/function prepareAnnotationPlacement/, 'generated helper prepares complete annotation geometry before rendering' );

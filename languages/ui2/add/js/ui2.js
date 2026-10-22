@@ -94,6 +94,7 @@
   const reactWorkbenchSyncListeners = new Set();
   let hoverHelpTimer = null;
   let hoverHelpTarget = null;
+  const globalWorkspaceWindows = new Map();
 
   const state = {
     moduleId: "",
@@ -166,6 +167,7 @@
     projectControl: document.getElementById("ui2-project-control"),
     jobs: document.getElementById("ui2-jobs"),
     files: document.getElementById("ui2-files"),
+    globalWorkspaces: document.getElementById("ui2-global-workspaces"),
     settings: document.getElementById("ui2-settings"),
     feedback: document.getElementById("ui2-feedback"),
     aiHelper: document.getElementById("ui2-ai-helper"),
@@ -480,6 +482,7 @@
       renderSessionState();
       renderAiHelperAvailability();
       syncSplashForSession();
+      await loadGlobalWorkspaces();
       return payload;
     } catch (error) {
       state.session.loaded = false;
@@ -488,6 +491,7 @@
       renderMenu();
       renderSessionState(error);
       renderAiHelperAvailability();
+      renderGlobalWorkspaces([]);
       return {};
     }
   }
@@ -787,6 +791,187 @@
     } catch (_error) {
       return "";
     }
+  }
+
+  function normalizeGlobalWorkspaces(payload) {
+    const workspaces = Array.isArray(payload?.workspaces) ? payload.workspaces : [];
+    return workspaces.slice(0, 6).map((workspace) => {
+      const id = stringValue(workspace?.id).trim();
+      const label = stringValue(workspace?.label).trim();
+      const url = sameOriginApplicationUrl(workspace?.url);
+      if (!/^[a-z0-9][a-z0-9_-]{0,63}$/.test(id) || !label || label.length > 80 || !url) {
+        return null;
+      }
+      return {
+        id,
+        label,
+        url,
+        contextHandoff: workspace?.context_handoff === true,
+        presentation: workspace?.presentation === "companion_window" ? "companion_window" : "same_tab"
+      };
+    }).filter(Boolean);
+  }
+
+  async function loadGlobalWorkspaces() {
+    const manifestUrl = sameOriginApplicationUrl(appMap.directives?.ui2_global_workspaces_url);
+    if (!manifestUrl || !nodes.globalWorkspaces) {
+      renderGlobalWorkspaces([]);
+      return [];
+    }
+    try {
+      const url = new URL(manifestUrl);
+      url.searchParams.set("_window", window.name);
+      const response = await fetch(url.toString(), {
+        cache: "no-cache",
+        credentials: "same-origin"
+      });
+      if (!response.ok) {
+        if ([401, 403, 404].includes(response.status)) {
+          renderGlobalWorkspaces([]);
+          return [];
+        }
+        throw new Error(`global workspace manifest returned ${response.status}`);
+      }
+      const workspaces = normalizeGlobalWorkspaces(await response.json());
+      renderGlobalWorkspaces(workspaces);
+      return workspaces;
+    } catch (_error) {
+      renderGlobalWorkspaces([]);
+      return [];
+    }
+  }
+
+  function renderGlobalWorkspaces(workspaces) {
+    const container = nodes.globalWorkspaces;
+    if (!container) {
+      return;
+    }
+    container.replaceChildren();
+    workspaces.forEach((workspace) => {
+      const button = el("button", "ui2-utility-button", workspace.label);
+      button.type = "button";
+      button.dataset.workspaceId = workspace.id;
+      button.addEventListener("click", () => openGlobalWorkspace(workspace));
+      container.appendChild(button);
+    });
+    container.hidden = workspaces.length === 0;
+    applyGlobalHelpBindings();
+  }
+
+  function buildGlobalWorkspaceContext() {
+    const context = buildAiHelperContext("");
+    delete context.user_question;
+    context.project = stringValue(state.session.project) || null;
+    return context;
+  }
+
+  function storeGlobalWorkspaceHandoff(workspace) {
+    const options = arguments[1] || {};
+    const token = createUuid();
+    const key = `genapp.ui2.workspace.handoff.${token}`;
+    const channelId = stringValue(options.channelId);
+    const storage = options.storage || window.sessionStorage;
+    let context = buildGlobalWorkspaceContext();
+    let encoded = JSON.stringify({
+      version: 1,
+      workspace_id: workspace.id,
+      created_at: new Date().toISOString(),
+      channel_id: channelId || null,
+      context
+    });
+    if (encoded.length > 131072) {
+      context = {
+        application: context.application,
+        module: context.module,
+        page: context.page,
+        project: context.project,
+        run_context: context.run_context,
+        output_analysis: context.output_analysis
+      };
+      encoded = JSON.stringify({
+        version: 1,
+        workspace_id: workspace.id,
+        created_at: new Date().toISOString(),
+        channel_id: channelId || null,
+        context,
+        reduced: true
+      });
+    }
+    if (storage === window.sessionStorage) {
+      window.sessionStorage.setItem(key, encoded);
+    } else {
+      storage.setItem(key, encoded);
+    }
+    return token;
+  }
+
+  function globalWorkspaceCompanionKey(workspace) {
+    return `${workspace.id}:${stringValue(state.session.project)}`;
+  }
+
+  function refreshGlobalWorkspaceCompanion(workspace, record) {
+    record.window.postMessage({
+      type: "genapp-ui2-workspace-context",
+      version: 1,
+      workspace_id: workspace.id,
+      channel_id: record.channelId,
+      created_at: new Date().toISOString(),
+      context: buildGlobalWorkspaceContext()
+    }, new URL(workspace.url).origin);
+    record.window.focus();
+  }
+
+  async function openGlobalWorkspaceCompanion(workspace) {
+    const key = globalWorkspaceCompanionKey(workspace);
+    const existing = globalWorkspaceWindows.get(key);
+    if (existing && !existing.window.closed) {
+      refreshGlobalWorkspaceCompanion(workspace, existing);
+      return existing.window;
+    }
+    globalWorkspaceWindows.delete(key);
+    const targetWindow = reserveUi2Window("popup=yes,width=1180,height=900,resizable=yes,scrollbars=yes");
+    if (!targetWindow) {
+      return null;
+    }
+    const channelId = createUuid();
+    globalWorkspaceWindows.set(key, { window: targetWindow, channelId });
+    try {
+      await handoffSessionToWindow(targetWindow.name);
+      const url = new URL(workspace.url);
+      url.searchParams.set("_window", targetWindow.name);
+      if (workspace.contextHandoff) {
+        url.searchParams.set("handoff", storeGlobalWorkspaceHandoff(workspace, {
+          channelId,
+          storage: targetWindow.sessionStorage
+        }));
+      }
+      targetWindow.location.replace(url.toString());
+      targetWindow.focus();
+      return targetWindow;
+    } catch (error) {
+      globalWorkspaceWindows.delete(key);
+      if (!targetWindow.closed) {
+        targetWindow.close();
+      }
+      setSystemMessage("messages", error.message, true);
+      return null;
+    }
+  }
+
+  function openGlobalWorkspace(workspace) {
+    if (workspace.presentation === "companion_window") {
+      return openGlobalWorkspaceCompanion(workspace);
+    }
+    const url = new URL(workspace.url);
+    url.searchParams.set("_window", window.name);
+    if (workspace.contextHandoff) {
+      try {
+        url.searchParams.set("handoff", storeGlobalWorkspaceHandoff(workspace));
+      } catch (_error) {
+        // The workspace remains usable when browser session storage is unavailable.
+      }
+    }
+    window.location.assign(url.toString());
   }
 
   function normalizeExternalAuthProviders(payload) {
@@ -2416,6 +2601,7 @@
     if (changed) {
       clearReattachRouteForProjectChange();
     }
+    await loadGlobalWorkspaces();
     return payload;
   }
 
@@ -6480,6 +6666,7 @@
     if (changed && !options.preserveReattachRoute) {
       clearReattachRouteForProjectChange();
     }
+    await loadGlobalWorkspaces();
     return payload;
   }
 
@@ -7196,8 +7383,8 @@
     }
   }
 
-  function reserveUi2Window() {
-    const targetWindow = window.open("about:blank", createUuid());
+  function reserveUi2Window(features = "") {
+    const targetWindow = window.open("about:blank", createUuid(), features || undefined);
     if (!targetWindow) {
       setSystemMessage("messages", "Your browser blocked the new application window. Allow popups for this site and try again.", true);
       return null;
@@ -13160,7 +13347,12 @@
   function fitPlotlyPresentationGeometry(output) {
     return Promise.resolve(fitPlotlyLegendsBelowPlot(output))
       .then(() => fitPlotlyAnnotations(output))
-      .then(() => fitPlotlyAxisTitles(output));
+      .then(() => fitPlotlyAxisTitles(output))
+      .then(() => window.GenAppPlotlyLayout?.applySubplotSpacing?.(
+        output,
+        output?._ui2PlotlyLastFigure?.layout || {},
+        plotPresentationForOutput(output)
+      ));
   }
 
   function plotlyOutputReadyForRelayout(output) {
@@ -14278,6 +14470,11 @@
       validExternalAuthWindowName,
       restoreExternalAuthWindowName,
       sameOriginApplicationUrl,
+      normalizeGlobalWorkspaces,
+      loadGlobalWorkspaces,
+      renderGlobalWorkspaces,
+      buildGlobalWorkspaceContext,
+      storeGlobalWorkspaceHandoff,
       normalizeReleaseManifest,
       releaseStatusText,
       loadReleaseManifest,

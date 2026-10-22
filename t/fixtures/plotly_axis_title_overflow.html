@@ -1,0 +1,44 @@
+<!doctype html><meta charset="utf-8"><title>Wrapped axis margin acceptance</title>
+<style>body{font:14px Arial}#plot{width:1000px;height:480px}pre{white-space:pre-wrap}</style>
+<script src="../../languages/html5/add/js/plotly-2.35.2.min.js"></script>
+<script src="../../languages/ui2/add/js/plotly-layout.js"></script>
+<h1>Wrapped axis margin acceptance</h1><pre id="results">Running</pre><div id="plot"></div><div id="export"></div>
+<script>
+(async()=>{
+ const clone=x=>JSON.parse(JSON.stringify(x)),same=(a,b)=>JSON.stringify(a)===JSON.stringify(b),p=GenAppPlotlyLayout;
+ const source={grid:{rows:2,columns:1,subplots:[['xy'],['x2y2']]},title:'Independent observations',
+ xaxis:{title:'Time',range:[0,2]},xaxis2:{title:'Time',range:[0,2]},
+ yaxis:{title:'Observed counts / measurement interval [counts / second]',range:[0,0.4]},
+ yaxis2:{title:'Observed counts / measurement interval [counts / second]',range:[0,0.004]}};
+ const data=[{x:[0,1,2],y:[0.1,0.2,0.3],type:'scatter',xaxis:'x',yaxis:'y'},
+ {x:[0,1,2],y:[0.001,0.002,0.003],type:'scatter',xaxis:'x2',yaxis:'y2'}];
+ const saved=JSON.stringify({source,data}),graph=document.getElementById('plot'),selection={axisTitleOverflow:'wrap',subplotSpacing:'avoid-overlap'};
+ let checks=0;function check(v,message){if(!v)throw Error(message);checks++;}
+ const title=g=>g.layout.yaxis.title.text;
+ const collide=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
+ function count(){let n=0;for(const id of ['y','y2']){const box=graph.querySelector('.'+id+'title').getBoundingClientRect();for(const tick of graph.querySelectorAll('.'+id+'tick text'))if(collide(box,tick.getBoundingClientRect()))n++;}return n;}
+ function display(bg='#ffffff'){return {...clone(source),width:1000,height:480,margin:{l:72,r:32,t:96,b:128},font:{size:14,color:bg==='#ffffff'?'#222':'#eee'},paper_bgcolor:bg,plot_bgcolor:bg};}
+ async function fit(){await p.applyAxisTitleOverflow(graph,source,selection);await p.applySubplotSpacing(graph,source,selection);await p.applyAxisTitleOverflow(graph,source,selection);}
+ await Plotly.newPlot(graph,clone(data),display(),{displayModeBar:false});
+ const control=clone(source);const wrapOnly=p.axisTitleWrapUpdate(graph,source,selection);for(const key of Object.keys(wrapOnly))if(key.endsWith('.automargin'))delete wrapOnly[key];
+ await Plotly.relayout(graph,wrapOnly);check(count()>0,'neutral baseline must reproduce title/tick collision');
+ const cases=[];
+ for(const bg of ['#ffffff','#202725'])for(const width of [560,1000])for(const height of [480,700]){
+ await Plotly.react(graph,clone(data),{...display(bg),width,height},{displayModeBar:false});await fit();
+ check(count()===0,'wrapped title/tick separation '+width+'x'+height);
+ for(const axis of ['xaxis','xaxis2','yaxis','yaxis2'])check(same(graph._fullLayout[axis].range,source[axis].range),'explicit range preserved');
+ const before=JSON.stringify(graph.layout);await fit();check(before===JSON.stringify(graph.layout),'repeated fit stable');
+ const editor=clone(graph.layout);delete editor.width;delete editor.height;check(editor.yaxis.title.text===graph.layout.yaxis.title.text,'displayed title transferred to editor');
+ cases.push({bg,width,height,collisions:count()});
+ }
+ await Plotly.relayout(graph,{height:1400});await fit();check(!title(graph).includes('<br>'),'large axis unwraps');check(graph.layout.yaxis.automargin===undefined,'unwrapped title releases margin');
+ await Plotly.relayout(graph,{height:480});await fit();check(graph.layout.yaxis.automargin===true,'restored small axis refits');
+ await p.applyAxisTitleOverflow(graph,source,{});check(graph.layout.yaxis.automargin===undefined,'removing opt-in releases owned margin');
+ await fit();await Plotly.react(graph,[],display(),{displayModeBar:false});await fit();check(graph.data.length===0,'empty update supported');
+ await Plotly.react(graph,clone(data),display(),{displayModeBar:false});await fit();check(count()===0,'repopulated output fits');
+ Plotly.purge(graph);await Plotly.newPlot(graph,clone(data),display(),{displayModeBar:false});await fit();check(count()===0,'fresh saved-output reconstruction fits');
+ const url=await Plotly.toImage(graph,{format:'png',scale:2});const image=new Image();image.src=url;await image.decode();check(image.naturalWidth===2000&&image.naturalHeight===960,'scale-2 PNG dimensions');document.getElementById('export').append(image);image.style.width='1000px';
+ check(JSON.stringify({source,data})===saved,'saved scientific figure immutable');
+ document.getElementById('results').textContent=JSON.stringify({passed:true,checks,cases,scale2:[image.naturalWidth,image.naturalHeight]});
+})().catch(e=>{document.getElementById('results').textContent=JSON.stringify({passed:false,error:e.message,stack:e.stack});});
+</script>

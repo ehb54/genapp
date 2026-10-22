@@ -446,3 +446,62 @@ pass on detached display layouts. Chart Editor receives that displayed scene
 through its existing handoff. Figures without scenes retain existing behavior;
 no new application option or producer styling is needed. The approved evidence
 and rollback are in `UI2-3D-Scene-Contrast-Shared-Gap-Report.md` (#318).
+
+## Responsive independent subplot spacing
+
+A view may select `plotPresentation.subplotSpacing: "avoid-overlap"` for
+independent Cartesian panels arranged in an explicit one-column `grid.subplots`.
+The shared `GenAppPlotlyLayout.applySubplotSpacing` helper measures rendered
+bottom-axis titles and tick labels, reserves an inter-panel lane, and rebuilds
+detached display y domains using source panel-height ratios (equal when absent).
+It runs after legend, annotation and title fitting and again after resize or
+redraw in UI2 and the application preview. No application identifiers or
+scientific-role interpretation enter the helper.
+
+Source figures, values, uncertainties, explicit axis ranges, zoom, titles and
+identities remain unchanged; ordinary autorange padding may follow pixel span; saved-output reattachment recomputes presentation. Missing or
+invalid selection, single panels, shared/overlaid axes, top x axes, non-column
+grids, and containers too short for 24-pixel panels remain unchanged. This
+capability does not lay out arbitrary inset figures or replace declared
+scientific subplot relationships. Removing the selection restores ordinary
+source layout on the next render. HTML5 behavior is unchanged.
+
+The approved evidence and scope are in
+`UI2-Subplot-Spacing-Shared-Gap-Report.md` (#321).
+
+
+### Wrapped-title automatic margins (#322)
+
+The existing axis-title wrap opt-in supplies a display-only automatic margin
+only for titles that actually wrap. Explicit axis/template settings remain
+authoritative. The shared helper releases its defaults when wrapping ends or
+the opt-in is removed, without mutating saved figures or scientific arrays.
+The neutral reproduction, compatibility details and validation requirements are
+in `doc/UI2-Axis-Title-Overflow-Shared-Gap-Report.md`.
+
+## Global application workspaces
+
+Application-wide workspaces use the optional, same-origin
+`ui2_global_workspaces_url` manifest described in
+`UI2-Global-Workspace-Shared-Gap-Report.md`. Shared UI2 validates and renders
+the bounded manifest but must not branch on an application or workspace id.
+Context handoffs use bounded, one-use browser session storage; they never carry
+credentials or grant server authority. The application owns authorization,
+the destination, durable data, and feature opt-in.
+
+An entry may select `presentation: "companion_window"`. UI2 opens a named
+secondary browsing context through the existing authenticated UI2 session
+handoff, stores the initial one-use context in that target's session storage,
+and keeps the originating module mounted. Re-selecting the same workspace in
+the same project focuses the existing companion and sends a fresh bounded
+context snapshot over a same-origin message carrying a random per-window
+channel identity. Applications validate and persist those snapshots; shared
+UI2 does not interpret them. The default remains `same_tab`, and browsers may
+honor a user's preference to present a requested window as a tab.
+
+Because workspace authorization or availability may depend on the active
+project, shared UI2 refetches the optional manifest after successful project
+selection and project creation as well as during normal session refresh. This
+is an application-neutral lifecycle rule: applications without the directive
+perform no workspace request, and UI2 still does not interpret workspace ids or
+application-specific meaning.

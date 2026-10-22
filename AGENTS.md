@@ -693,3 +693,26 @@ failure must fail the command and identify the completed install separately.
 The binding schema and operator workflow are owned by
 `genapp_zazzie/docs/source_revision_metadata.md` in the paired checkout.
 Live binding setup and deployment require their own approved scope.
+
+## Independent subplot spacing route (#321)
+
+View-selected `plotPresentation.subplotSpacing: "avoid-overlap"` is owned by
+GenApp's `doc/Plotting-Architecture.md`, `doc/UI2-Core-Extension-Policy.md`, and
+`doc/UI2-Subplot-Spacing-Shared-Gap-Report.md` in the paired GenApp checkout.
+UI2 and the Lab share one measured inter-panel lane helper. Preserve source
+figures, scientific arrays, uncertainty, identities, ranges and reattachment;
+no SASSIE calculation or producer spacing workaround belongs here.
+
+## Global UI2 workspace route
+
+Optional application-wide workspaces are discovered only through the generic
+same-origin `ui2_global_workspaces_url` manifest. Keep shared UI2 independent of
+application and workspace ids. Bounded context handoffs use one-use browser
+session storage and do not convey credentials or server authorization. A
+workspace may opt into the generic `companion_window` presentation; UI2 then
+uses its existing authenticated new-window session handoff, keeps one companion
+per workspace and project, and sends later bounded context snapshots through a
+random-channel same-origin message. The destination owns validation and durable
+context revisions. Read
+`doc/UI2-Global-Workspace-Shared-Gap-Report.md` and
+`doc/UI2-Core-Extension-Policy.md` before changing this boundary.

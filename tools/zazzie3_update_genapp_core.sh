@@ -369,6 +369,12 @@ if [[ -d "$core_dir/tools/ai_helper_service" ]]; then
         ! -name "ai_helper.pid" \
         ! -name "ai_helper_supervisor.pid" \
         -exec cp {} "$service_dir"/ \;
+    provider_source="$core_dir/tools/ai_provider_client"
+    if [[ -d "$provider_source" ]]; then
+        provider_dir="$service_dir/ai_provider_client"
+        mkdir -p "$provider_dir"
+        find "$provider_source" -maxdepth 1 -type f -name '*.py' -exec cp {} "$provider_dir"/ \;
+    fi
     chmod +x "$service_dir/ai_helper_server.py" \
         "$service_dir/run_forever.sh" \
         "$service_dir/start.sh" \

@@ -4,6 +4,7 @@
   const AXIS_KEY = /^(xaxis|yaxis)\d*$/;
   const PLAIN_TITLE = /^[^<>]*$/;
   const ABOVE_PLOT = "above_plot";
+  const wrappedAxisMargins = new WeakMap();
 
   function titleText(axis) {
     if (axis?.title == null) {
@@ -84,29 +85,42 @@
     return Number.isFinite(total) && total > 0 ? span * total : 0;
   }
 
+  function explicitAxisMargin(plot, sourceLayout, axisName) {
+    if (sourceLayout?.[axisName]?.automargin !== undefined) return true;
+    const template = sourceLayout?.template;
+    const layout = (typeof template === "object" ? template?.layout : null) ||
+      plot?._fullLayout?.template?.layout;
+    const baseAxis = axisName.startsWith("x") ? "xaxis" : "yaxis";
+    if (layout?.[axisName]?.automargin !== undefined || layout?.[baseAxis]?.automargin !== undefined) return true;
+    // An unresolved named template is authoritative, too.
+    return typeof template === "string" && !layout;
+  }
+
   function axisTitleWrapUpdate(plot, sourceLayout, selection, options) {
-    if (selection?.axisTitleOverflow !== "wrap") {
-      return null;
-    }
+    const selected = selection?.axisTitleOverflow === "wrap";
+    const owned = wrappedAxisMargins.get(plot) || new Set();
+    if (!selected && !owned.size) return null;
     const update = {};
-    Object.keys(sourceLayout || {}).filter((key) => AXIS_KEY.test(key)).forEach((axisName) => {
-      const sourceAxis = sourceLayout[axisName];
+    const axes = new Set([...Object.keys(sourceLayout || {}).filter((key) => AXIS_KEY.test(key)), ...owned]);
+    axes.forEach((axisName) => {
+      const sourceAxis = sourceLayout?.[axisName];
       const sourceTitle = titleText(sourceAxis);
-      if (!sourceTitle || !PLAIN_TITLE.test(sourceTitle)) {
-        return;
+      let wrapped = "";
+      if (selected && sourceTitle && PLAIN_TITLE.test(sourceTitle)) {
+        const available = axisLength(plot, axisName) - 8;
+        const measure = options?.measureText || canvasMeasure(axisFont(plot, axisName, sourceAxis));
+        if (available > 0 && measure) wrapped = wrapPlainText(sourceTitle, available, measure);
       }
-      const available = axisLength(plot, axisName) - 8;
-      if (!(available > 0)) {
-        return;
-      }
-      const measure = options?.measureText || canvasMeasure(axisFont(plot, axisName, sourceAxis));
-      if (!measure) {
-        return;
-      }
-      const wrapped = wrapPlainText(sourceTitle, available, measure);
       const displayedTitle = titleText(plot?.layout?.[axisName]);
-      if (wrapped && wrapped !== displayedTitle) {
-        update[`${axisName}.title.text`] = wrapped;
+      if (wrapped && wrapped !== displayedTitle) update[`${axisName}.title.text`] = wrapped;
+      else if (!selected && owned.has(axisName) && sourceTitle && displayedTitle !== sourceTitle) {
+        update[`${axisName}.title.text`] = sourceTitle;
+      }
+      if (wrapped.includes("<br>") && !explicitAxisMargin(plot, sourceLayout, axisName)) {
+        if (plot?.layout?.[axisName]?.automargin !== true) update[`${axisName}.automargin`] = true;
+      } else if (owned.has(axisName)) {
+        const original = sourceAxis?.automargin ?? null;
+        if (plot?.layout?.[axisName]?.automargin !== original) update[`${axisName}.automargin`] = original;
       }
     });
     return Object.keys(update).length ? update : null;
@@ -114,9 +128,76 @@
 
   function applyAxisTitleOverflow(plot, sourceLayout, selection, options) {
     const update = axisTitleWrapUpdate(plot, sourceLayout, selection, options);
-    if (!update || typeof window.Plotly?.relayout !== "function") {
-      return null;
-    }
+    if (!update || typeof window.Plotly?.relayout !== "function") return null;
+    return Promise.resolve(window.Plotly.relayout(plot, update)).then(() => {
+      const owned = wrappedAxisMargins.get(plot) || new Set();
+      Object.keys(update).filter((key) => key.endsWith(".automargin")).forEach((key) => {
+        const axisName = key.split(".")[0];
+        if (update[key] === true && !explicitAxisMargin(plot, sourceLayout, axisName)) owned.add(axisName);
+        else owned.delete(axisName);
+      });
+      if (owned.size) wrappedAxisMargins.set(plot, owned);
+      else wrappedAxisMargins.delete(plot);
+    });
+  }
+
+  // Opted-in independent vertical panels reserve measured display-only lanes.
+  // Rebuild domains from the source relationships, never from prior adjustments.
+  function subplotSpacingUpdate(plot, sourceLayout, selection) {
+    if (selection?.subplotSpacing !== "avoid-overlap") return null;
+    const grid = sourceLayout?.grid;
+    if (grid?.columns !== 1 || !Array.isArray(grid.subplots) || grid.subplots.length < 2) return null;
+    const full = plot?._fullLayout;
+    const height = Number(full?._size?.h);
+    const plotTop = Number(plot?.getBoundingClientRect?.().top);
+    if (!(height > 0) || !Number.isFinite(plotTop)) return null;
+    const rows = grid.subplots.map((row) => {
+      const match = Array.isArray(row) && row.length === 1 && /^x(\d*)y(\d*)$/.exec(row[0]);
+      if (!match) return null;
+      const xName = `xaxis${match[1]}`, yName = `yaxis${match[2]}`;
+      const xAxis = full[xName], yAxis = full[yName];
+      if (!xAxis || !yAxis || xAxis.side === "top" || xAxis.overlaying || yAxis.overlaying) return null;
+      const domain = sourceLayout[yName]?.domain;
+      const weight = Array.isArray(domain) && domain.length === 2 ? Number(domain[1]) - Number(domain[0]) : 1;
+      return Number.isFinite(weight) && weight > 0 ? { xName, yName, xId: `x${match[1]}`, yAxis, weight } : null;
+    });
+    if (rows.some((row) => !row) || new Set(rows.map((r) => r.xName)).size !== rows.length ||
+        new Set(rows.map((r) => r.yName)).size !== rows.length) return null;
+    const gaps = rows.slice(0, -1).map((row) => {
+      const bottom = plotTop + Number(row.yAxis._offset) + Number(row.yAxis._length);
+      const nodes = [plot.querySelector?.(`.${row.xId}title`),
+        ...Array.from(plot.querySelectorAll?.(`.${row.xId}tick text`) || [])];
+      let depth = 0;
+      nodes.forEach((node) => {
+        const rect = node?.getBoundingClientRect?.();
+        if (rect?.height > 0) depth = Math.max(depth, rect.bottom - bottom);
+      });
+      // Four-pixel lanes avoid subpixel font-rounding drift after relayout.
+      return Math.max(24, 4 * Math.ceil((depth + 16 - 0.01) / 4));
+    });
+    if (gaps.some((gap) => !Number.isFinite(gap))) return null;
+    const available = height - gaps.reduce((total, gap) => total + gap, 0);
+    // Do not collapse scientific panels when a host supplies an unusable height.
+    if (available < rows.length * 24) return null;
+    const totalWeight = rows.reduce((total, row) => total + row.weight, 0);
+    if (rows.some((row) => available * row.weight / totalWeight < 24)) return null;
+    let top = 1;
+    const update = {};
+    rows.forEach((row, index) => {
+      const bottom = top - available * row.weight / totalWeight / height;
+      const domain = [Math.max(0, bottom), top];
+      const current = full[row.yName].domain;
+      if (!Array.isArray(current) || domain.some((value, i) => Math.abs(value - current[i]) > 0.0001)) {
+        update[`${row.yName}.domain`] = domain;
+      }
+      top = bottom - (gaps[index] || 0) / height;
+    });
+    return Object.keys(update).length ? update : null;
+  }
+
+  function applySubplotSpacing(plot, sourceLayout, selection) {
+    const update = subplotSpacingUpdate(plot, sourceLayout, selection);
+    if (!update || typeof window.Plotly?.relayout !== "function") return null;
     return Promise.resolve(window.Plotly.relayout(plot, update));
   }
 
@@ -349,6 +430,8 @@
   }
 
   window.GenAppPlotlyLayout = {
+    subplotSpacingUpdate,
+    applySubplotSpacing,
     validNumericTickFormat,
     prepareNumericTickFormat,
     prepareHoverNameDisplay,
