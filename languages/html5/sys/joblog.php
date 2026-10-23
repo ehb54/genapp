@@ -339,7 +339,8 @@ function clearprojectlock( $projectdir,  $error_json_exit = false )
    $GLOBALS[ 'lasterror' ] = "";
    $GLOBALS[ 'lastnotice' ] = "";
 
-   $dk = end( explode( "/", $projectdir ) );
+   $dk = explode( "/", $projectdir );
+   $dk = end( $dk );
    if ( !isprojectlocked( $projectdir, $error_json_exit ) )
    {
       $GLOBALS[ 'lastnotice' ] = "Project '$dk' is not locked. ";

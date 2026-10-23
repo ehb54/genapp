@@ -125,7 +125,7 @@ function get_userinfo( $error_json_exit = false ) {
                    "name"                => $name
                    ,"email"              => "<a class='title' href='mailto:" . $v[ 'email' ] . "'>" . $v[ 'email' ] . "</a>"
                    ,"group"              => isset( $v[ 'group' ] ) ? $v[ 'group' ] : ""
-                   ,"projects"           => count( $v[ 'project' ] )
+                   ,"projects"           => isset( $v[ 'project' ] ) ? count( $v[ 'project' ] ) : 0
                    ,"last-login"         => isset( $v["lastlogin"] ) ? date( "Y M d H:i T",$v["lastlogin"]->sec ) : ""
                    ,"registered"         => isset( $v["registered"] ) ? date( "Y M d H:i T",$v["registered"]->sec ) : ""
                    ,"jobs-not-removed"   => $jobcount
