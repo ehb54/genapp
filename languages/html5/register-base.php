@@ -98,7 +98,7 @@ EOT;
                 admin_mail( "[__application__][new user approval request] " . $doc[ 'email' ], $body );
             } else {
                 $html .= "<p>You may now <a href='http://$app->hostname/__application__'>logon</a></p>";
-                admin_mail( "[__application__][new user verified] $email", "User: " . $doc[ 'name' ] . "\nEmail: " . $doc[ 'email' ] . "\n" );
+                admin_mail( "[__application__][new user verified] " . $doc[ 'email' ], "User: " . $doc[ 'name' ] . "\nEmail: " . $doc[ 'email' ] . "\n" );
             }
         }
     } else {
