@@ -1,5 +1,6 @@
 #!/usr/bin/php 
 <?php
+require_once "__docroot:html5__/__application__/vendor/autoload.php"; # ext-mongo API (MongoClient etc.) via alcaeus/mongo-php-adapter
 
 ////////////////////////////////////////////////////////////////////
 function check_input_dates(&$argument, $split, $Str_type){

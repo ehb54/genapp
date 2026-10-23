@@ -1,4 +1,5 @@
 <?php
+require_once "__docroot:html5__/__application__/vendor/autoload.php"; # ext-mongo API (MongoClient etc.) via alcaeus/mongo-php-adapter
 __~debug:runjob{error_log( "jobrun start\n", 3, "/tmp/php_errors" );}
 function shutdown() {
     posix_kill(posix_getpid(), SIGHUP);
