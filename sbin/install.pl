@@ -328,7 +328,7 @@ _EOF
 
     # setup genapptest instance
 
-    runcmd( "cd $appbase && $gb/sbin/getapp.pl -force -gen -admin $whoami svn genapptest" );
+    runcmd( "cd $appbase && $gb/sbin/getapp.pl -force -gen -admin $whoami git genapptest" );
 
     # apache2 security needed ?
 
@@ -494,7 +494,7 @@ _EOF
 
     # setup genapptest instance
 
-    runcmd( "cd $appbase && $gb/sbin/getapp.pl -force -gen -admin $whoami svn genapptest" );
+    runcmd( "cd $appbase && $gb/sbin/getapp.pl -force -gen -admin $whoami git genapptest" );
 
     # add ws servers to startup
 
@@ -656,7 +656,7 @@ _EOF
 
     # setup genapptest instance
 
-    runcmd( "cd $appbase && $gb/sbin/getapp.pl -force -gen -admin $whoami svn genapptest" );
+    runcmd( "cd $appbase && $gb/sbin/getapp.pl -force -gen -admin $whoami git genapptest" );
 
     # add ws servers to startup
 
@@ -870,7 +870,7 @@ _EOF
 
     # setup genapptest instance
 
-    runcmd( "cd $appbase && $gb/sbin/getapp.pl -force -gen -admin $whoami svn genapptest" );
+    runcmd( "cd $appbase && $gb/sbin/getapp.pl -force -gen -admin $whoami git genapptest" );
 
     # add ws servers to startup
 
@@ -1005,7 +1005,7 @@ _EOF
 
     # setup genapptest instance
 
-    runcmd( "cd $appbase && $gb/sbin/getapp.pl -force -gen -admin $whoami svn genapptest" );
+    runcmd( "cd $appbase && $gb/sbin/getapp.pl -force -gen -admin $whoami git genapptest" );
 
     # apache2 security needed ?
 
@@ -1184,7 +1184,7 @@ _EOF
 
     # setup genapptest instance
 
-    runcmd( "cd $appbase && $gb/sbin/getapp.pl -force -gen -admin $whoami svn genapptest" );
+    runcmd( "cd $appbase && $gb/sbin/getapp.pl -force -gen -admin $whoami git genapptest" );
 
     # add ws servers to startup
 
@@ -1385,7 +1385,7 @@ _EOF
 
     # setup genapptest instance
 
-    runcmd( "cd $appbase && $gb/sbin/getapp.pl -force -gen -admin $whoami svn genapptest" );
+    runcmd( "cd $appbase && $gb/sbin/getapp.pl -force -gen -admin $whoami git genapptest" );
 
     # add ws servers to startup
 
