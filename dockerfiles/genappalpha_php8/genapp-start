@@ -13,7 +13,11 @@ fi
 
 mkdir -p /var/log/mongodb /var/lib/mongodb
 chown mongodb:mongodb /var/log/mongodb /var/lib/mongodb
-su -s /bin/sh mongodb -c "mongod --config /etc/mongod.conf --fork" || exit 1
+# mongod with the settings of MongoDB's own mongod.service (there is no systemd here): glibc's rseq off, so
+# that tcmalloc can use its per-CPU caches, and soft limits of 64000 open files and processes (su resets
+# the open files one to 1024), or the hard limit if that is lower
+lim() { h=$(ulimit -H "$1"); if [ "$h" = unlimited ] || [ "$h" -ge 64000 ]; then echo 64000; else echo "$h"; fi; }
+su -s /bin/sh mongodb -c "GLIBC_TUNABLES=glibc.pthread.rseq=0 prlimit --nofile=$(lim -n): --nproc=$(lim -p): mongod --config /etc/mongod.conf --fork" || exit 1
 until mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' > /dev/null 2>&1; do
     sleep 1
 done

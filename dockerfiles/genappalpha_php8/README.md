@@ -29,6 +29,12 @@ Why these choices:
 - **ext-mongodb from PECL:** Ubuntu's `php-mongodb` 1.15.0 cannot run `mongodb/mongodb` 1.21.5 (which has the
   fixes for CVE-2026-81525 and CVE-2026-88023), and 1.15 itself is affected by several 2026 driver advisories
   fixed in 1.21.12. The 1.x line is the one `alcaeus/mongo-php-adapter` works with.
+- **mongod as MongoDB's `mongod.service` would run it:** the image has no systemd, so `genapp-start` applies the
+  unit's settings itself. It turns off glibc's rseq (`GLIBC_TUNABLES=glibc.pthread.rseq=0`), so that MongoDB
+  8.0's tcmalloc can use its per-CPU caches, and sets soft limits of 64000 open files and processes. Without
+  these, mongod logs startup warnings about both.
+- **No mongosh telemetry:** `/etc/mongosh.conf` sets `forceDisableTelemetry`, so interactive mongosh sessions
+  send no usage data to MongoDB.
 
 ## Targets
 

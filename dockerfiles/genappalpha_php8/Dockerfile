@@ -88,7 +88,8 @@ RUN curl -fsSL https://pgp.mongodb.com/server-8.0.asc | gpg --dearmor -o /usr/sh
         > /etc/apt/sources.list.d/mongodb-org-8.0.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends mongodb-org-server=$MONGODB_VERSION mongodb-mongosh mongodb-database-tools && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    printf '# no usage data from interactive mongosh sessions to MongoDB, for every user\nmongosh:\n  forceDisableTelemetry: true\n' > /etc/mongosh.conf
 
 ARG GO_VERSION=1.27.3
 ARG GO_SHA256=65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40
