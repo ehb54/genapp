@@ -1,6 +1,11 @@
 #!/usr/bin/perl
 
 $svnbase = "svn.genapp.rocks/svn/base";
+# the git repository of applications: one branch app/<name> per application
+# (appsrepo in $GENAPP/etc/config.json or -repo url use another one)
+$appsrepo = "https://github.com/ehb54/genapp_apps.git";
+
+use File::Path qw( remove_tree );
 
 $|=1;
 
@@ -32,24 +37,33 @@ my $gap = $gb;
 require "$gap/etc/perl/genapp_util.pl";
 
 $notes = 
-"usage[1]: $0 {options} svntype applicationname
-usage[2]: $0 list 
+"usage[1]: $0 {options} type applicationname
+usage[2]: $0 list [git|svn]
 
 When using usage[1]:
- svntype can be svn or svn+ssh
+ type can be git, svn or svn+ssh
+  git      clones the branch app/applicationname of the git repository of applications
+           ($appsrepo unless appsrepo in $gb/etc/config.json or -repo says otherwise)
+  svn      checks the application out of svn ($svnbase); svn+ssh checks it out over ssh
  applicationname must be a valid application name (use usage[2] to get a list)
- svn checks out application and sets up paths
+ the application is installed and its paths are set up
 
  Options:
    -admin user         add user name to admin list for application
    -svnuser user       user name for svn+ssh checkout (if different then current user)
    -force              force checkout even if directory exists
+                       (git: the directory becomes a clone and keeps its files, which git status then
+                       shows as local changes, and gets the files it lacks, as svn --force does)
    -gen                run genapp.pl after install
    -nolinks            do not setup html links
    -dir directory      use specified directory instead of application name
+                       (git: several directories can each hold a clone of the same application)
+   -repo url           git: the repository of applications to clone from
+   -ref ref            git: install this commit, tag or branch of the application instead of the
+                       branch head; rN installs the application as it was at svn revision N
 
 when using usage[2];
- this will list the available application names
+ this will list the available application names, in git (the default) or in svn
 
 ";
 
@@ -61,6 +75,8 @@ my $gen;
 my $nolinks;
 my $targetdir;
 my $svnuser;
+my $repo;
+my $ref;
 
 while ( $ARGV[ 0 ] =~ /^-/ ) {
     my $option = shift @ARGV;
@@ -79,6 +95,16 @@ while ( $ARGV[ 0 ] =~ /^-/ ) {
         $targetdir = shift @ARGV;
         next;
     }
+    if ( $option =~ /^-repo$/ ) {
+        die "$0: option $option requires an argument\n" . $notes if !@ARGV;
+        $repo = shift @ARGV;
+        next;
+    }
+    if ( $option =~ /^-ref$/ ) {
+        die "$0: option $option requires an argument\n" . $notes if !@ARGV;
+        $ref = shift @ARGV;
+        next;
+    }
     if ( $option =~ /^-force$/ ) {
         $force = "--force";
         next;
@@ -94,7 +120,7 @@ while ( $ARGV[ 0 ] =~ /^-/ ) {
     die "Unknown command line option specified '$option'\n" . $notes;
 }
 
-$svntype = shift || die $notes;
+$type = shift || die $notes;
 
 #--- get config.json info
 
@@ -168,7 +194,10 @@ $cfgjsonnotes
     }
 }
 
-sub listapps {
+$appsrepo = $$cfgjson{ 'appsrepo' } if $$cfgjson{ 'appsrepo' };
+$appsrepo = $repo if $repo;
+
+sub listapps_svn {
     my @l = `svn ls svn://$svnbase`;
     grep chomp, @l;
     grep s/\///, @l;
@@ -176,8 +205,53 @@ sub listapps {
     return @l;
 }
 
-if ( $svntype eq 'list' ) {
-    print join "\n", listapps();
+# git runs without a shell; the command is printed first, as the svn command is
+sub rungit {
+    my @cmd = ( 'git', @_ );
+    print "@cmd\n";
+    system( @cmd ) == 0 || die "$0: command failed: @cmd\n";
+}
+
+sub gitout {
+    my @cmd = ( 'git', @_ );
+    open my $fh, '-|', @cmd or die "$0: could not run @cmd\n";
+    local $/;
+    my $out = <$fh>;
+    close $fh;
+    die "$0: command failed: @cmd\n" if $?;
+    return $out;
+}
+
+# the applications are the branches app/<name> of the repository
+sub listapps_git {
+    my @l = map { m{\trefs/heads/app/(\S+)$} ? $1 : () } split /\n/, gitout( 'ls-remote', '--heads', $appsrepo );
+    return sort @l;
+}
+
+# the commit -ref names in a clone of an application: a commit, tag or branch, or rN for the
+# newest commit at or below svn revision N (each commit imported from svn ends with "svn-revision: N")
+sub resolveref {
+    my ( $dir, $ref ) = @_;
+    if ( $ref =~ /^r(\d+)$/ ) {
+        my $want = $1;
+        foreach my $c ( split /\0/, gitout( '-C', $dir, 'log', '-z', '--format=%H%n%B' ) ) {
+            my ( $h, $body ) = split /\n/, $c, 2;
+            return $h if $body =~ /^svn-revision: (\d+)\s*$/m && $1 <= $want;
+        }
+        die "$0: $dir has no commit at or below svn revision $want\n";
+    }
+    open my $fh, '-|', 'git', '-C', $dir, 'rev-parse', '--verify', '--quiet', "$ref^{commit}" or die "$0: could not run git\n";
+    my $h = <$fh>;
+    close $fh;
+    chomp $h if defined $h;
+    die "$0: $ref is not a commit, tag or branch of $app\n" if $? || !$h;
+    return $h;
+}
+
+if ( $type eq 'list' ) {
+    my $from = shift || 'git';
+    die "$0: list takes git or svn, not '$from'\n" if $from !~ /^(git|svn)$/;
+    print join "\n", ( $from eq 'git' ? listapps_git() : listapps_svn() );
     print "\n";
     exit;
 }
@@ -185,32 +259,89 @@ if ( $svntype eq 'list' ) {
 $app       = shift || die $notes;
 $targetdir = $app if !$targetdir;
 
-die "$0: svn-type must be svn or svn+ssh and you specified '$svntype'\n" if $svntype !~ /^svn(\+ssh|)$/;
+die "$0: type must be git, svn or svn+ssh and you specified '$type'\n" if $type !~ /^(git|svn(\+ssh|))$/;
+die "$0: -ref is for type git only\n" if $ref && $type ne 'git';
+
+# another directory name becomes the application's name in directives.json, which genapp.pl checks
+if ( $targetdir ne $app ) {
+    $::gap = $gap;
+    load_reserved_words();
+    my $error = valid_name( "-dir", \$targetdir );
+    die "$0: ${error}the directory name becomes the application's name (e.g. ${app}_beta)\n" if $error;
+}
 
 die "$0: $targetdir directory already exists\n" if -e $targetdir && !$force;
 
-@l = listapps();
+@l = $type eq 'git' ? listapps_git() : listapps_svn();
 foreach $i ( @l ) {
     $vapp{ $i }++;
 }
 
 die "$0: Error: $app is not known as an application name\n" if !$vapp{ $app };
 
-if ( $svnuser &&
-     $svntype eq 'svn+ssh' ) {
-    $svnuser .= '@';
+if ( $type eq 'git' ) {
+    # a clone of the application's branch only. With -force, an existing directory becomes the clone:
+    # its files stay as they are and it gets the files it lacks, as svn checkout --force does
+    my $adopt = -e $targetdir;
+    if ( $adopt ) {
+        die "$0: $targetdir is not a directory\n" if !-d $targetdir;
+        die "$0: $targetdir is already a git clone, update it with git pull\n" if -e "$targetdir/.git";
+        my $tmp = "$targetdir/.getapp-clone-$$";
+        rungit( 'clone', '--quiet', '--no-checkout', '--single-branch', '--branch', "app/$app", $appsrepo, $tmp );
+        rename( "$tmp/.git", "$targetdir/.git" ) || die "$0: could not move $tmp/.git to $targetdir/.git: $!\n";
+        rmdir( $tmp ) || die "$0: could not remove $tmp: $!\n";
+    } else {
+        rungit( 'clone', '--quiet', '--single-branch', '--branch', "app/$app", $appsrepo, $targetdir );
+    }
+    if ( $ref ) {
+        my $commit = eval { resolveref( $targetdir, $ref ) };
+        if ( !$commit ) {
+            my $error = $@;
+            # leave the directory as it was
+            remove_tree( $adopt ? "$targetdir/.git" : $targetdir );
+            die $error;
+        }
+        rungit( '-C', $targetdir, 'reset', '--quiet', ( $adopt ? () : '--hard' ), $commit );
+    } elsif ( $adopt ) {
+        rungit( '-C', $targetdir, 'reset', '--quiet' );
+    }
+    if ( $adopt ) {
+        # only the files the directory lacks (checkout-index --all also fails on the ones it has)
+        my @missing = grep { length } split /\0/, gitout( '-C', $targetdir, 'ls-files', '-z', '--deleted' );
+        if ( @missing ) {
+            print "git -C $targetdir checkout-index -z --stdin (" . scalar( @missing ) . " files)\n";
+            open my $fh, '|-', 'git', '-C', $targetdir, 'checkout-index', '-z', '--stdin' or die "$0: could not run git\n";
+            print $fh join( "\0", @missing ), "\0";
+            close $fh;
+            die "$0: command failed: git -C $targetdir checkout-index\n" if $?;
+        }
+    }
+
+    # what genapp and getapp.pl make, or the site sets, stays out of git status
+    # (an application may track some of these; git status still shows changes to those)
+    my $f = "$targetdir/.git/info/exclude";
+    mkdir "$targetdir/.git/info" if !-d "$targetdir/.git/info";
+    open my $fh, '>>', $f or die "$0: could not open $f: $!\n";
+    print $fh "# made by genapp or getapp.pl, or set by the site\n/appconfig.json\n/directives.json\n/output/\n/ajax\n/results\n/util\n/.svn/\n";
+    close $fh;
+    print gitout( '-C', $targetdir, 'log', '-1', '--format=installed %h (%ad) %s', '--date=short' );
 } else {
-    $svnuser = '';
-}
+    if ( $svnuser &&
+         $type eq 'svn+ssh' ) {
+        $svnuser .= '@';
+    } else {
+        $svnuser = '';
+    }
 
-$cmd = "svn $force co ${svntype}://$svnuser$svnbase/$app $targetdir";
+    $cmd = "svn $force co ${type}://$svnuser$svnbase/$app $targetdir";
 
-print "$cmd\n";
+    print "$cmd\n";
 
-print `$cmd`;
-die "$0: checkout failed. 
+    print `$cmd`;
+    die "$0: checkout failed.
 One possibility is you switched from svn to svn+ssh or vice-versa, if this is true, you will have to remove or rename the directory.
 Other possibilities include a network issue, host issue, local diskspace or permissions issue or ?\n" if $?;
+}
 
 # sets up the app's appconfig.json:
 

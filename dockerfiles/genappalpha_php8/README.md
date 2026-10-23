@@ -35,6 +35,8 @@ Why these choices:
 - `base`: GenApp and its runtime, no applications. A site image would start here and add its applications.
 - `test`: `base` plus `demo`, `tutorial2` and `mulch`, installed with `sbin/getapp.pl` as a site would
   (`svn-from-dir` stands in for `svn`), then completed by `test-appconfig.php`. `smokeadmin` is their administrator.
+  `demo` and `mulch` come from svn. `tutorial2` comes from the git repository of applications
+  ([ehb54/genapp_apps](https://github.com/ehb54/genapp_apps)) at the tag of its svn import, so the build needs network.
 
 ## Recipe
 
@@ -85,6 +87,14 @@ Run on a Linux host with Docker (BuildKit is used when available, not required).
    ./adapter-tests.sh ~/gaphp8-adapter mongo:4.4
    ```
 
+7. `sbin/getapp.pl`'s git mode, in a throwaway container of the test image (needs network). The tests cover
+   the application lists from git and svn, a second clone under another directory name, `-ref rN` and a tag,
+   `-force` into an existing directory, and what getapp.pl refuses:
+
+   ```
+   ./getapp-tests.sh
+   ```
+
 To look at the test container in a browser, run it with the web port published on the loopback interface,
 for example `docker run -d --name gaphp8-web -p 127.0.0.1:8080:80 genappalpha-php8:test`, after building
 with `-- --build-arg GENAPP_PUBLICPORT=8080` so that the page's websocket uses the same port.
@@ -95,6 +105,17 @@ genappalpha-php8-browser genappalpha-php8-phpcs genappalpha-php8-svntools`.
 
 ## Notes for sites moving to this branch
 
+- **Applications from git.** The applications of the GenApp svn repository are in
+  [ehb54/genapp_apps](https://github.com/ehb54/genapp_apps), with their svn history. Each one is a branch,
+  `app/<name>`, with the application at its root.
+  - `sbin/getapp.pl git <name>` clones only that branch into an application directory. With `-dir`, any
+    number of directories can each hold a clone of the same application. The directory name becomes the
+    application's name, so it must start with a letter and have only letters, digits and `_`.
+  - `-ref rN` installs an application as it was at svn revision N. Every commit ends with `svn-revision: N`.
+  - `-force` turns an existing directory, such as an old svn checkout, into a clone. Its files stay as they
+    are and show as local changes in `git status`.
+  - `getapp.pl list` lists the applications in git, and `getapp.pl list svn` those in svn. The `svn` and
+    `svn+ssh` modes are unchanged.
 - **MongoDB 4.0 or newer.** ext-mongodb 1.21 refuses the MongoDB 3.6 server of the PHP 5.6 containers
   ("reports wire version 6, but this version of libmongoc requires at least 7 (MongoDB 4.0)"). Move the data
   with `mongodump` from the old server and `mongorestore` into the new one (MongoDB 8.0 in this image).
