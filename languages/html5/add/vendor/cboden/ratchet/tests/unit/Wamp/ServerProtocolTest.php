@@ -1,14 +1,12 @@
 <?php
 namespace Ratchet\Wamp;
-use Ratchet\Wamp\ServerProtocol;
-use Ratchet\Wamp\WampConnection;
 use Ratchet\Mock\Connection;
 use Ratchet\Mock\WampComponent as TestComponent;
 
 /**
- * @covers Ratchet\Wamp\ServerProtocol
- * @covers Ratchet\Wamp\WampServerInterface
- * @covers Ratchet\Wamp\WampConnection
+ * @covers \Ratchet\Wamp\ServerProtocol
+ * @covers \Ratchet\Wamp\WampServerInterface
+ * @covers \Ratchet\Wamp\WampConnection
  */
 class ServerProtocolTest extends \PHPUnit_Framework_TestCase {
     protected $_comp;
@@ -25,13 +23,13 @@ class ServerProtocolTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function invalidMessageProvider() {
-        return array(
-            array(0)
-          , array(3)
-          , array(4)
-          , array(8)
-          , array(9)
-        );
+        return [
+            [0]
+          , [3]
+          , [4]
+          , [8]
+          , [9]
+        ];
     }
 
     /**
@@ -42,7 +40,7 @@ class ServerProtocolTest extends \PHPUnit_Framework_TestCase {
 
         $conn = $this->newConn();
         $this->_comp->onOpen($conn);
-        $this->_comp->onMessage($conn, json_encode(array($type)));
+        $this->_comp->onMessage($conn, json_encode([$type]));
     }
 
     public function testWelcomeMessage() {
@@ -84,16 +82,16 @@ class ServerProtocolTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function callProvider() {
-        return array(
-            array(2, 'a', 'b')
-          , array(2, array('a', 'b'))
-          , array(1, 'one')
-          , array(3, 'one', 'two', 'three')
-          , array(3, array('un', 'deux', 'trois'))
-          , array(2, 'hi', array('hello', 'world'))
-          , array(2, array('hello', 'world'), 'hi')
-          , array(2, array('hello' => 'world', 'herp' => 'derp'))
-        );
+        return [
+            [2, 'a', 'b']
+          , [2, ['a', 'b']]
+          , [1, 'one']
+          , [3, 'one', 'two', 'three']
+          , [3, ['un', 'deux', 'trois']]
+          , [2, 'hi', ['hello', 'world']]
+          , [2, ['hello', 'world'], 'hi']
+          , [2, ['hello' => 'world', 'herp' => 'derp']]
+        ];
     }
 
     /**
@@ -104,7 +102,7 @@ class ServerProtocolTest extends \PHPUnit_Framework_TestCase {
         $paramNum = array_shift($args);
 
         $uri = 'http://example.com/endpoint/' . rand(1, 100);
-        $id  = uniqid();
+        $id  = uniqid('', false);
         $clientMessage = array_merge(array(2, $id, $uri), $args);
 
         $conn = $this->newConn();
@@ -147,8 +145,8 @@ class ServerProtocolTest extends \PHPUnit_Framework_TestCase {
     public function testPublishAndEligible() {
         $conn = $this->newConn();
 
-        $buddy  = uniqid();
-        $friend = uniqid();
+        $buddy  = uniqid('', false);
+        $friend = uniqid('', false);
 
         $this->_comp->onOpen($conn);
         $this->_comp->onMessage($conn, json_encode(array(7, 'topic', 'event', false, array($buddy, $friend))));
@@ -213,13 +211,14 @@ class ServerProtocolTest extends \PHPUnit_Framework_TestCase {
         $conn = new WampConnection($this->newConn());
         $this->_comp->onOpen($conn);
 
-        $shortIn  = 'incoming';
-        $longIn   = 'http://example.com/incoming/';
+        $prefix  = 'incoming';
+        $fullURI   = "http://example.com/$prefix";
+        $method = 'call';
 
-        $this->_comp->onMessage($conn, json_encode(array(1, $shortIn, $longIn)));
+        $this->_comp->onMessage($conn, json_encode(array(1, $prefix, $fullURI)));
 
-        $this->assertEquals($longIn, $conn->WAMP->prefixes[$shortIn]);
-        $this->assertEquals($longIn, $conn->getUri($shortIn));
+        $this->assertEquals($fullURI, $conn->WAMP->prefixes[$prefix]);
+        $this->assertEquals("$fullURI#$method", $conn->getUri("$prefix:$method"));
     }
 
     public function testMessageMustBeJson() {
@@ -260,10 +259,37 @@ class ServerProtocolTest extends \PHPUnit_Framework_TestCase {
      * @dataProvider badFormatProvider
      */
     public function testValidJsonButInvalidProtocol($message) {
-        $this->setExpectedException('\UnexpectedValueException');
+        $this->setExpectedException('\Ratchet\Wamp\Exception');
 
         $conn = $this->newConn();
         $this->_comp->onOpen($conn);
         $this->_comp->onMessage($conn, $message);
+    }
+
+    public function testBadClientInputFromNonStringTopic() {
+        $this->setExpectedException('\Ratchet\Wamp\Exception');
+
+        $conn = new WampConnection($this->newConn());
+        $this->_comp->onOpen($conn);
+
+        $this->_comp->onMessage($conn, json_encode([5, ['hells', 'nope']]));
+    }
+
+    public function testBadPrefixWithNonStringTopic() {
+        $this->setExpectedException('\Ratchet\Wamp\Exception');
+
+        $conn = new WampConnection($this->newConn());
+        $this->_comp->onOpen($conn);
+
+        $this->_comp->onMessage($conn, json_encode([1, ['hells', 'nope'], ['bad', 'input']]));
+    }
+
+    public function testBadPublishWithNonStringTopic() {
+        $this->setExpectedException('\Ratchet\Wamp\Exception');
+
+        $conn = new WampConnection($this->newConn());
+        $this->_comp->onOpen($conn);
+
+        $this->_comp->onMessage($conn, json_encode([7, ['bad', 'input'], 'Hider']));
     }
 }

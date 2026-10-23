@@ -2,7 +2,8 @@
 
 # all custom bits
 
-include( '__docroot:html5__/__application__/vendor/rmccue/requests/Requests.php' );
+require_once '__docroot:html5__/__application__/vendor/autoload.php'; # rmccue/requests 2.x
+use WpOrg\Requests\Requests;
 $secrets = json_decode( file_get_contents( "__secrets__" ) );
 $dockerhub       = (object) [];
 $dockerhub->user = "__dockerhub:user__";
@@ -11,7 +12,6 @@ $appname         = "__application__";
 
 # end custom bits
 
-Requests::register_autoloader();
 
 $results = (object) [];
 
@@ -96,11 +96,11 @@ function container_name( $menu, $mod ) {
     # make container name
 
     # current docker:local resource specifier 
-    $cname = strtolower( "genapp_${dhtag}$appname" );
+    $cname = strtolower( "genapp_{$dhtag}$appname" );
     if ( strlen( $cname ) > 30 ) {
         $cname = substr( $cname, 0, 30 );
     }
-    $tname = "${menu}-${mod}";
+    $tname = "{$menu}-{$mod}";
 
     if ( strlen( $tname ) > 128 ) {
         $tname = substr( $tname, 0, 128 );

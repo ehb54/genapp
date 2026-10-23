@@ -22,7 +22,7 @@ foreach ( $projects as $project => $v ) {
 #    putenv( "OS_TENANT_NAME=$project" );
     putenv( "OS_PROJECT_NAME=$project" );
 
-    $cmd = "openstack server list | grep ' ${project}-run-" . $argv[ 1 ] . "-... ' | awk '{ print $2 }'";
+    $cmd = "openstack server list | grep ' {$project}-run-" . $argv[ 1 ] . "-... ' | awk '{ print $2 }'";
     # echo $cmd . "\n";
     $results = `$cmd`;
     $ids = preg_split( "/\s+/", $results, -1, PREG_SPLIT_NO_EMPTY );

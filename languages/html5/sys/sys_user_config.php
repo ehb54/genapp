@@ -1,4 +1,5 @@
 <?php
+require_once "__docroot:html5__/__application__/vendor/autoload.php"; # ext-mongo API (MongoClient etc.) via alcaeus/mongo-php-adapter
 header('Content-type: application/json');
 
 session_start(); 
@@ -212,17 +213,9 @@ if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) )
       $ok_to_update = 0;
       $pw = $_REQUEST[ 'changepassword-password' ];
 
-      if ( PHP_VERSION_ID < 50500 )
-      {
-         if ( crypt( $pw, $doc[ 'password' ]) == $doc[ 'password' ] )
-         {
-            $ok_to_update = 1;
-         }
-      } else {
-         if ( password_verify ( $pw , $doc[ 'password' ] ) )
-         {  
-            $ok_to_update = 1;
-         }
+      if ( password_verify ( $pw , $doc[ 'password' ] ) )
+      {  
+         $ok_to_update = 1;
       }
       if ( $ok_to_update != 1 )
       {
@@ -243,12 +236,7 @@ if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) )
 
       if ( $ok_to_update == 1 )
       {
-         if ( PHP_VERSION_ID < 50500 )
-         {
-            $pw = crypt( $_REQUEST[ 'changepassword-password1' ] );
-         } else {
-            $pw = password_hash( $_REQUEST[ 'changepassword-password1' ], PASSWORD_DEFAULT );
-         }
+         $pw = password_hash( $_REQUEST[ 'changepassword-password1' ], PASSWORD_DEFAULT );
 
          $update[ '$set' ][ 'password' ]           = $pw;
          $update[ '$set' ][ 'passwordchangewhen' ] = $now;
@@ -314,7 +302,7 @@ if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) )
 
          admin_mail( "[__application__][new email address] $email1", "User: " . $_REQUEST[ '_logon' ] . "\nEmail: $email1\n" );
 
-         $results[ 'status' ] .= "Changing email address to ${email1}. ";
+         $results[ 'status' ] .= "Changing email address to {$email1}. ";
          $do_update = 1;
       }
    }

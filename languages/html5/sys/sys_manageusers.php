@@ -1,5 +1,6 @@
 #!/usr/local/bin/php
 <?php
+require_once "__docroot:html5__/__application__/vendor/autoload.php"; # ext-mongo API (MongoClient etc.) via alcaeus/mongo-php-adapter
 
 date_default_timezone_set("UTC");
 
@@ -124,7 +125,7 @@ function get_userinfo( $error_json_exit = false ) {
                    "name"                => $name
                    ,"email"              => "<a class='title' href='mailto:" . $v[ 'email' ] . "'>" . $v[ 'email' ] . "</a>"
                    ,"group"              => isset( $v[ 'group' ] ) ? $v[ 'group' ] : ""
-                   ,"projects"           => count( $v[ 'project' ] )
+                   ,"projects"           => isset( $v[ 'project' ] ) ? count( $v[ 'project' ] ) : 0
                    ,"last-login"         => isset( $v["lastlogin"] ) ? date( "Y M d H:i T",$v["lastlogin"]->sec ) : ""
                    ,"registered"         => isset( $v["registered"] ) ? date( "Y M d H:i T",$v["registered"]->sec ) : ""
                    ,"jobs-not-removed"   => $jobcount
@@ -191,14 +192,14 @@ function get_userinfo( $error_json_exit = false ) {
 
            foreach ( $thisbuttons as $v2 ) {
                $cmd = str_replace( ' ', '_', strtolower( $v2 ) );
-               $id = "_usermanage_${cmd}_${name}";
+               $id = "_usermanage_{$cmd}_{$name}";
                $buttons .= "<button id='$id'>$v2</button> ";
                if ( $cmd == "remove" ) {
                    $usecmd = "ga.admin.ajax.remove";
                } else {
                    $usecmd = "ga.admin.ajax";
                }
-               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;${usecmd}('$cmd','$name','$uid','$manageid');});";
+               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;{$usecmd}('$cmd','$name','$uid','$manageid');});";
            }
 
            // group buttons
@@ -214,11 +215,11 @@ function get_userinfo( $error_json_exit = false ) {
                
            foreach ( $thisbuttons as $v2 ) {
                $cmd = str_replace( ' ', '_', strtolower( $v2 ) );
-               $id = "_usermanage_${cmd}_${name}";
+               $id = "_usermanage_{$cmd}_{$name}";
                $group_buttons .= "<button id='$id'>$v2</button> ";
                $usecmd = "ga.admin.ajax.group";
                $users_group = isset( $v[ 'group' ] ) ? $v[ 'group' ] : '';
-               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;${usecmd}('$cmd','$name','$uid','$manageid','$users_group');});";
+               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;{$usecmd}('$cmd','$name','$uid','$manageid','$users_group');});";
            }
 
            // job buttons
@@ -232,10 +233,10 @@ function get_userinfo( $error_json_exit = false ) {
                
            foreach ( $thisbuttons as $v2 ) {
                $cmd = str_replace( ' ', '_', strtolower( $v2 ) );
-               $id = "_usermanage_${cmd}_${name}";
+               $id = "_usermanage_{$cmd}_{$name}";
                $job_buttons .= "<button id='$id'>$v2</button> ";
                $usecmd = "ga.admin.ajax.jobview";
-               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;${usecmd}('$cmd','$name','$uid','$manageid','$users_group');});";
+               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;{$usecmd}('$cmd','$name','$uid','$manageid','$users_group');});";
            }
 
            $userinfo['buttons'      ][] = $buttons;

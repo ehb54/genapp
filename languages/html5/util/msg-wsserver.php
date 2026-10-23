@@ -89,7 +89,9 @@ $restartMyself = function () {
     global $_, $argv;
     global $webSock;
     echo "restart caught\n";
-    $webSock->shutdown();
+    if ( isset( $webSock ) ) {
+        $webSock->close();
+    }
     unlink( LOCK_FILE );
     ## restart myself
     ## if running under nohup, need to add php to front of argv array
@@ -257,7 +259,8 @@ __~debug:ws{        echo "postData[_uuid] = " . $postData[ '_uuid' ] . "\n";}
         if ( isset( $postData[ "_cancel" ] ) ) {
             __~debug:cancel{echo "cancel set for " . $postData[ '_uuid' ] . "\n";}
             try {
-                $mongo->msgs->cancel->insert( array( "_id" => $postData[ '_uuid' ] )__~mongojournal{, array("j" => true )} );
+                $insertdoc = array( "_id" => $postData[ '_uuid' ] );
+                $mongo->msgs->cancel->insert( $insertdoc__~mongojournal{, array("j" => true )} );
             } catch ( MongoException $e ) {
                 echo "Error: Could not insert to msgs->cancel for " . $postData[ '_uuid' ] . " " . $e->getMessage();
             }
@@ -290,7 +293,8 @@ __~debug:ws{   echo "mongo save() updated $postmsg\n";}
         }
 
         try {
-            $mongocoll->save( array( "_id" => $postData['_uuid'], "data" => $postmsg ) );
+            $savedoc = array( "_id" => $postData['_uuid'], "data" => $postmsg );
+            $mongocoll->save( $savedoc );
         } catch(MongoCursorException $e) {
             echo "mongo save exception $e\n";
         }
@@ -308,7 +312,7 @@ __~debug:ws{        echo "array key exists\n";}
 }
 
 
-$loop   = React\EventLoop\Factory::create();
+$loop   = React\EventLoop\Loop::get();
 $pusher = new Pusher;
 
 // Listen for the web server to make a ZeroMQ push after an ajax request
@@ -318,8 +322,7 @@ $pull->bind('tcp://' . $json->messaging->zmqhostip . ':' . $json->messaging->zmq
 $pull->on('message', array($pusher, 'onMsgPost'));
 
 // Set up our WebSocket server for clients wanting real-time updates
-$webSock = new React\Socket\Server($loop);
-$webSock->listen( $json->messaging->wsport, '0.0.0.0'); // Binding to 0.0.0.0 means remotes can connect
+$webSock = new React\Socket\SocketServer( '0.0.0.0:' . $json->messaging->wsport, [], $loop ); // Binding to 0.0.0.0 means remotes can connect
 $webServer = new Ratchet\Server\IoServer(
     new Ratchet\Http\HttpServer(
         new Ratchet\WebSocket\WsServer(
@@ -328,7 +331,8 @@ $webServer = new Ratchet\Server\IoServer(
             )
         )
     ),
-    $webSock
+    $webSock,
+    $loop
 );
 
 echo "msg_wsserver: listening WS port:" . $json->messaging->wsport . " receiving ZMQ port: " . $json->messaging->zmqport . PHP_EOL;

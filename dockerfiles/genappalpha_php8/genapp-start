@@ -1,0 +1,36 @@
+#!/bin/sh
+# container entry point: mongod, the genapp messaging services (/etc/init.d/rc.genapp*), apache in the foreground
+# docker stop (SIGTERM) stops apache, mongod (cleanly) and the messaging services; allow ~30 s (docker stop -t 60)
+# GENAPP_PHP_LOG_ALL=1 logs every php error level, deprecations included, for testing:
+# apache php to /var/log/apache2/error.log, command line php (messaging services, jobrun.php) to /var/log/php-cli.log
+
+if [ "${GENAPP_PHP_LOG_ALL:-0}" = 1 ]; then
+    printf 'error_reporting = E_ALL\nlog_errors = On\ndisplay_errors = Off\n' > /etc/php/8.3/apache2/conf.d/99-genapp-log-all.ini
+    printf 'error_reporting = E_ALL\nlog_errors = On\ndisplay_errors = Off\nerror_log = /var/log/php-cli.log\n' > /etc/php/8.3/cli/conf.d/99-genapp-log-all.ini
+    touch /var/log/php-cli.log
+    chmod 666 /var/log/php-cli.log
+fi
+
+mkdir -p /var/log/mongodb /var/lib/mongodb
+chown mongodb:mongodb /var/log/mongodb /var/lib/mongodb
+su -s /bin/sh mongodb -c "mongod --config /etc/mongod.conf --fork" || exit 1
+until mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' > /dev/null 2>&1; do
+    sleep 1
+done
+
+for rc in /etc/init.d/rc.genapp*; do
+    [ -x "$rc" ] && "$rc" start
+done
+
+stop() {
+    apache2ctl -k stop
+    su -s /bin/sh mongodb -c "mongod --config /etc/mongod.conf --shutdown"
+    for rc in /etc/init.d/rc.genapp*; do
+        [ -x "$rc" ] && "$rc" stop
+    done
+    exit 0
+}
+trap stop TERM INT
+
+apache2ctl -D FOREGROUND &
+wait $!

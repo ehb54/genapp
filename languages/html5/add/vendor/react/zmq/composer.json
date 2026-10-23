@@ -4,20 +4,18 @@
     "keywords": ["zmq", "zeromq"],
     "license": "MIT",
     "require": {
-        "php": ">=5.3.2",
+        "php": ">=5.4.0",
         "ext-zmq": "*",
-        "evenement/evenement": "~1.0",
-        "react/event-loop": "0.3.*"
+        "evenement/evenement": "^3.0 || ^2.0",
+        "react/event-loop": "^1.0 || ^0.5 || ^0.4"
     },
     "require-dev": {
-        "ext-pcntl": "*"
+        "ext-pcntl": "*",
+        "phpunit/phpunit": "~4.8.35 || ~5.7 || ~6.4"
     },
     "autoload": {
-        "psr-0": { "React\\ZMQ": "src" }
-    },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "0.2-dev"
+        "psr-4": {
+            "React\\ZMQ\\": "src"
         }
     }
 }

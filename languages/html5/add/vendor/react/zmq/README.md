@@ -2,21 +2,24 @@
 
 ZeroMQ bindings for React.
 
-[![Build Status](https://secure.travis-ci.org/reactphp/zmq.png?branch=master)](http://travis-ci.org/reactphp/zmq)
+[![Build Status](https://secure.travis-ci.org/friends-of-reactphp/zmq.png?branch=master)](http://travis-ci.org/friends-of-reactphp/zmq)
 
 ## Install
 
 The recommended way to install react/zmq is [through composer](http://getcomposer.org).
 
-```JSON
-{
-    "require": {
-        "react/zmq": "0.2.*"
-    }
-}
+```bash
+composer require react/zmq
 ```
 
 ## Example
+
+And don't forget to autoload:
+
+```php
+<?php
+require 'vendor/autoload.php';
+```
 
 Here is an example of a push socket:
 

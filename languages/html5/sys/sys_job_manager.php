@@ -94,7 +94,8 @@ switch( $_REQUEST[ 'action' ] )
 //          error_log( print_r( $projectdirs, true ), 3, "/tmp/mylog" );
           foreach ( $projectdirs as $k => $v )
           {
-             $dk = end( explode( "/", $k ) );
+             $dk = explode( "/", $k );
+             $dk = end( $dk );
              if ( clearprojectlock( $k ) )
              {
                  $results[ 'messages' ] .= "Cleared project '$dk'.\n";

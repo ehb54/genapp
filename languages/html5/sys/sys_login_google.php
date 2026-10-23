@@ -1,4 +1,5 @@
 <?php
+require_once "__docroot:html5__/__application__/vendor/autoload.php"; # ext-mongo API (MongoClient etc.) via alcaeus/mongo-php-adapter
 header('Content-type: application/json');
 
 date_default_timezone_set("UTC");
@@ -100,17 +101,9 @@ if ( isset( $_REQUEST[ 'forgotpassword' ] ) &&
 $results[ 'status' ] = "User not found or incorrect password";
 if ( isset( $pw ) && $doc = $coll->findOne( array( "name" => $userid ) ) )
 {
-   if ( PHP_VERSION_ID < 50500 )
-   {
-      if ( crypt( $pw, $doc[ 'password' ]) == $doc[ 'password' ] )
-      {
-         $loginok = 1;
-      }
-   } else {
-      if ( password_verify ( $pw , $doc[ 'password' ] ) )
-      {  
-         $loginok = 1;
-      }
+   if ( password_verify ( $pw , $doc[ 'password' ] ) )
+   {  
+      $loginok = 1;
    }
 }
 
@@ -223,7 +216,7 @@ if ( $loginok ) {
 
             $ext = 0;
             do {
-                $doc[ 'name' ] = "_canceled_" . ( $ext ? "${ext}_" : "" ) . $orgname;
+                $doc[ 'name' ] = "_canceled_" . ( $ext ? "{$ext}_" : "" ) . $orgname;
                 $ext++;
             } while ( $coll->findOne( array( "name" => $doc[ 'name' ] ) ) );
 
@@ -518,12 +511,7 @@ if ( $loginok == 1 )
 // update password
          $newpw = base_convert(rand(783641640, 28211099074), 10, 36) . base_convert(rand(78364164096, 2821109907455), 10, 36);
 
-         if ( PHP_VERSION_ID < 50500 )
-         {
-           $doc[ 'password' ] = crypt( $newpw );
-         } else {
-           $doc[ 'password' ] = password_hash( $newpw, PASSWORD_DEFAULT );
-         }
+         $doc[ 'password' ] = password_hash( $newpw, PASSWORD_DEFAULT );
 
          $expires = new MongoDate();
          $expires->sec += 60 * 60;

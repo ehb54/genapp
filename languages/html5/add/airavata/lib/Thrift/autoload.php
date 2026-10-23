@@ -36,8 +36,9 @@
 $GLOBALS['THRIFT_AUTOLOAD'] = array();
 $GLOBALS['AUTOLOAD_HOOKS'] = array();
 
-if (!function_exists('__autoload')) {
-  function __autoload($class) {
+if (!function_exists('thrift_autoload')) {
+  // php 8 removed __autoload(); the same loader is registered with spl_autoload_register() below
+  function thrift_autoload($class) {
     global $THRIFT_AUTOLOAD;
     $classl = strtolower($class);
     if (isset($THRIFT_AUTOLOAD[$classl])) {
@@ -48,4 +49,5 @@ if (!function_exists('__autoload')) {
       }
     }
   }
+  spl_autoload_register('thrift_autoload');
 }

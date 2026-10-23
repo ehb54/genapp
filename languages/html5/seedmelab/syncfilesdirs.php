@@ -468,7 +468,7 @@ function upload_files_to_seedmelab() {
 
     foreach ( $uploadfiles as $value ) {
         $dest = preg_replace( "/\/[^\/]+$/", "", $value );
-        $cmds[] = [ "runcmd" => "put '${fs}$value' '$dest'" ];
+        $cmds[] = [ "runcmd" => "put '{$fs}$value' '$dest'" ];
         $cmds[] = [ "waitfor" => "foldershare> " ];
     }
 

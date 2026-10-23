@@ -72,7 +72,7 @@ if ( isset( $json->resources->oscluster->properties->user_data ) ) {
 if ( isset( $json->resources->oscluster->properties->network ) ) {
     $use_network = $json->resources->oscluster->properties->network;
 } else {
-    $use_network = "${project}-api";
+    $use_network = "{$project}-api";
 }
 
 echo `nova list`;
@@ -86,7 +86,7 @@ $image = [];
 for ( $i = 0; $i < $argv[ 2 ]; ++$i ) {
     
     $name =  
-        "${project}-run-" . $argv[ 3 ] . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
+        "{$project}-run-" . $argv[ 3 ] . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
 //        "-run-" . bin2hex( openssl_random_pseudo_bytes ( 16, $cstrong ) );
 
     $cmd = "nova boot $name --flavor $flavor --image $baseimage --key-name $key --security-groups $secgroup --nic net-name=$use_network $userdata";

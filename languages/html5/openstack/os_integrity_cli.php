@@ -1,4 +1,5 @@
 <?php
+require_once "__docroot:html5__/__application__/vendor/autoload.php"; # ext-mongo API (MongoClient etc.) via alcaeus/mongo-php-adapter
 
 require "os_header_cli.php";
 
@@ -36,7 +37,7 @@ foreach ( $projects as $project => $v ) {
 #    putenv( "OS_TENANT_NAME=$project" );
     putenv( "OS_PROJECT_NAME=$project" );
 
-    $cmd = "openstack server list -c ID -c Name -c Status -c Networks | grep ' ${project}-run-........-....-....-....-............-... ' ";
+    $cmd = "openstack server list -c ID -c Name -c Status -c Networks | grep ' {$project}-run-........-....-....-....-............-... ' ";
 
     $results .= `$cmd`;
 }

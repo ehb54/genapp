@@ -1,4 +1,5 @@
 <?php
+require_once "__docroot:html5__/__application__/vendor/autoload.php"; # ext-mongo API (MongoClient etc.) via alcaeus/mongo-php-adapter
 __~debug:runjob{error_log( "jobrun start\n", 3, "/tmp/php_errors" );}
 function shutdown() {
     posix_kill(posix_getpid(), SIGHUP);
@@ -66,7 +67,7 @@ if ( !getmenumodule( $id ) )
 
 __~debug:runjob{error_log( "jobrun 4\n", 3, "/tmp/php_errors" );}
 ob_start();
-if ( FALSE === ( $cmd = file_get_contents( "${logdir}_cmds_$id" ) ) )
+if ( FALSE === ( $cmd = file_get_contents( "{$logdir}_cmds_$id" ) ) )
 {
    $cont = ob_get_contents();
    ob_end_clean();
@@ -109,7 +110,7 @@ if ( !$GLOBALS[ 'wascancelled' ] ) {
     $results = str_replace( "__docroot:html5__/__application__/", "", $results );
 
     ob_start();
-    if ( FALSE === file_put_contents( "${logdir}_stdout_" . $_REQUEST[ '_uuid' ], $results ) ) {
+    if ( FALSE === file_put_contents( "{$logdir}_stdout_" . $_REQUEST[ '_uuid' ], $results ) ) {
         $cont = ob_get_contents();
         error_log( date( "Y M d H:i:s T", time() ) . " : " .  $argv[ 0 ] . " : error writing _stdout results\n", 3, "/tmp/php_errors" );
     }

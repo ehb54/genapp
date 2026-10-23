@@ -110,7 +110,8 @@ if ( !isset( $uniquedir ) &&
           exit();
       }
       try {
-          $coll->insert( array( "name" => $checkrunning, "jobweight" => $GLOBALS[ 'jobweight' ], "user" => $GLOBALS[ 'logon' ] )__~mongojournal{, array("j" => true )});
+          $insertdoc = array( "name" => $checkrunning, "jobweight" => $GLOBALS[ 'jobweight' ], "user" => $GLOBALS[ 'logon' ] );
+          $coll->insert( $insertdoc__~mongojournal{, array("j" => true )});
       } catch(MongoCursorException $e) {
           $results[ 'error' ] = "A job is already running in this project, please wait until it completes or change projects. " . $e->getMessage();
           $results[ '_status' ] = 'failed';
@@ -309,7 +310,7 @@ if ( isset( $useresource ) &&
       exit();
 }
 
-if ( !isset( $_SESSION[ $window ][ 'resources' ]->$_SESSION[ $window ][ 'resourcedefault' ] ) &&
+if ( !isset( $_SESSION[ $window ][ 'resources' ]->{$_SESSION[ $window ][ 'resourcedefault' ]} ) &&
      !isset( $useresource ) )
 {
      if ( isset( $checkrunning ) )
@@ -330,7 +331,7 @@ if ( !isset( $_SESSION[ $window ][ 'resources' ]->$_SESSION[ $window ][ 'resourc
       $cmdprefix = $_SESSION[ $window ][ 'resources' ]->$useresource;
       $GLOBALS[ 'resource' ] = $useresource;
    } else {
-      $cmdprefix = $_SESSION[ $window ][ 'resources' ]->$_SESSION[ $window ][ 'resourcedefault' ];
+      $cmdprefix = $_SESSION[ $window ][ 'resources' ]->{$_SESSION[ $window ][ 'resourcedefault' ]};
       $GLOBALS[ 'resource' ] = $_SESSION[ $window ][ 'resourcedefault' ];
    }
    if(isset($cmdprefix->run)){

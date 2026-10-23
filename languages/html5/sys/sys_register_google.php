@@ -1,4 +1,5 @@
 <?php
+require_once "__docroot:html5__/__application__/vendor/autoload.php"; # ext-mongo API (MongoClient etc.) via alcaeus/mongo-php-adapter
 header('Content-type: application/json');
 
 session_start(); 
@@ -131,12 +132,7 @@ if ( $doc = $coll->findOne( array( "name" => $_REQUEST[ 'userid' ] ) ) && !isset
 
 
 if ( !isset( $_REQUEST[ "globusid" ] ) && !isset( $_REQUEST[ "googleid" ] ) ){      // FOR GLOBUS&GOOGLE ///// 
-if ( PHP_VERSION_ID < 50500 )
-{
-  $pw = crypt( $_REQUEST[ 'password1' ] );
-} else {
-  $pw = password_hash( $_REQUEST[ 'password1' ], PASSWORD_DEFAULT );
-}
+$pw = password_hash( $_REQUEST[ 'password1' ], PASSWORD_DEFAULT );
 }
 
 $do_verifyemail     = __~register:verifyemail{1}0;
@@ -150,8 +146,7 @@ if ( $do_requireapproval ) {
 
 if ( isset( $_REQUEST[ "globusid" ] ) ){   // FOR GLOBUS /////     
 try {
-    $coll->insert( 
-        array( 
+    $insertdoc = array(
             "name" => $_REQUEST[ 'userid' ]
             //,"password" => $pw		// FOR GLOBUS /////    
 	    ,"email" => $email  
@@ -162,7 +157,9 @@ try {
             __~register:requireapproval{,"needsapproval" => "pending"}
             __~register:requireapproval{,"approvalid" => $aid}
             __~register:requireapproval{,"denyid" => $did}
-        )
+        );
+    $coll->insert(
+        $insertdoc
         __~mongojournal{, array("j" => true )}
         );
 } catch(MongoCursorException $e) {
@@ -175,8 +172,7 @@ else
 {
    if ( isset( $_REQUEST[ "googleid" ] ) ){   // FOR GOOGLE /////  
   try {
-    $coll->insert( 
-        array( 
+    $insertdoc = array(
             "name" => $_REQUEST[ 'userid' ]
             //,"password" => $pw		// FOR GOOGLE /////    
 	    ,"email" => $email  
@@ -187,7 +183,9 @@ else
             __~register:requireapproval{,"needsapproval" => "pending"}
             __~register:requireapproval{,"approvalid" => $aid}
             __~register:requireapproval{,"denyid" => $did}
-        )
+        );
+    $coll->insert(
+        $insertdoc
         __~mongojournal{, array("j" => true )}
         );
 } catch(MongoCursorException $e) {
@@ -199,8 +197,7 @@ else
 else 
 {
 try {
-    $coll->insert( 
-        array( 
+    $insertdoc = array(
             "name" => $_REQUEST[ 'userid' ]
             ,"password" => $pw, "email" => $email
             ,"registered" => new MongoDate() 
@@ -209,7 +206,9 @@ try {
             __~register:requireapproval{,"needsapproval" => "pending"}
             __~register:requireapproval{,"approvalid" => $aid}
             __~register:requireapproval{,"denyid" => $did}
-        )
+        );
+    $coll->insert(
+        $insertdoc
         __~mongojournal{, array("j" => true )}
         );
 } catch(MongoCursorException $e) {
