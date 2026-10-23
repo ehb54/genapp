@@ -68,6 +68,7 @@ EXPOSE $TCPRPORT/tcp
 
 # php: distro 8.3 with the distro zmq and imagick extensions the svn-era sites used (mongodb comes from phpext)
 # perl: modules genapp needs (JSON, Hash::Merge) and those the old images added with cpanm
+# abiword: bin/doc2html.pl converts the Word documents that application pages include (the old images had it)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         apache2 libapache2-mod-php8.3 \
@@ -76,7 +77,7 @@ RUN apt-get update && \
         php-mail php-mail-mime php-net-smtp \
         perl libjson-perl libhash-merge-perl libtry-tiny-perl libwww-perl liblwp-protocol-https-perl \
         libmime-lite-perl libio-socket-ssl-perl libnet-ssleay-perl \
-        imagemagick \
+        imagemagick abiword \
         build-essential pkg-config libzmq3-dev \
         ca-certificates curl wget gnupg bind9-host bc git subversion procps less \
         libbz2-1.0 libffi8 libgdbm6t64 libncursesw6 libreadline8t64 libsqlite3-0 zlib1g && \
