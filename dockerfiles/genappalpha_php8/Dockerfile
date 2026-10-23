@@ -164,10 +164,15 @@ RUN cd /src/test-apps/mulch && \
     sed -i '0,/^{/s//{\n  "zmqversion" : "4",/' directives.json.template
 
 # install as a site would, with getapp.pl (genapp also runs util/build-tcp.sh, which builds util/msg-tcpserver),
-# then finish appconfig.json as a site administrator would (test-appconfig.php); smokeadmin administers the applications
+# then finish appconfig.json as a site administrator would (test-appconfig.php); smokeadmin administers the applications.
+# demo and mulch come from svn, tutorial2 from the git repository of applications (ehb54/genapp_apps), at the
+# tag of its svn import, so both kinds of install are tested
 RUN cd $APPBASE && \
-    for app in demo tutorial2 mulch; do \
+    for app in demo mulch; do \
         PATH=/usr/local/lib/genapp-test:$PATH GENAPP_TEST_APPS=/src/test-apps $GENAPP/sbin/getapp.pl -force -gen svn $app || exit 1; \
+    done && \
+    $GENAPP/sbin/getapp.pl -gen -ref svn-r1767/tutorial2 git tutorial2 && \
+    for app in demo tutorial2 mulch; do \
         php /usr/local/lib/genapp-test/test-appconfig.php $app/appconfig.json smokeadmin || exit 1; \
     done && \
     test -x $APPBASE/demo/output/html5/util/msg-tcpserver && \
