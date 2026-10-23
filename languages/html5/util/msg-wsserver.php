@@ -259,7 +259,8 @@ __~debug:ws{        echo "postData[_uuid] = " . $postData[ '_uuid' ] . "\n";}
         if ( isset( $postData[ "_cancel" ] ) ) {
             __~debug:cancel{echo "cancel set for " . $postData[ '_uuid' ] . "\n";}
             try {
-                $mongo->msgs->cancel->insert( array( "_id" => $postData[ '_uuid' ] )__~mongojournal{, array("j" => true )} );
+                $insertdoc = array( "_id" => $postData[ '_uuid' ] );
+                $mongo->msgs->cancel->insert( $insertdoc__~mongojournal{, array("j" => true )} );
             } catch ( MongoException $e ) {
                 echo "Error: Could not insert to msgs->cancel for " . $postData[ '_uuid' ] . " " . $e->getMessage();
             }
@@ -292,7 +293,8 @@ __~debug:ws{   echo "mongo save() updated $postmsg\n";}
         }
 
         try {
-            $mongocoll->save( array( "_id" => $postData['_uuid'], "data" => $postmsg ) );
+            $savedoc = array( "_id" => $postData['_uuid'], "data" => $postmsg );
+            $mongocoll->save( $savedoc );
         } catch(MongoCursorException $e) {
             echo "mongo save exception $e\n";
         }

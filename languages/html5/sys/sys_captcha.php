@@ -116,10 +116,11 @@ try {
 }
 
 try {
-    $m->__application__->captcha->insert( array( "_id"     => $id,
-                                                 "captcha" => $captcha,
-                                                 "time"    => $now,
-                                                 "window"  => $_REQUEST[ '_window' ] ) );
+    $insertdoc = array( "_id"     => $id,
+                        "captcha" => $captcha,
+                        "time"    => $now,
+                        "window"  => $_REQUEST[ '_window' ] );
+    $m->__application__->captcha->insert( $insertdoc );
 } catch ( MongoException $e ) {
     $results[ 'error' ] = "Internal error: could not insert into db";
     echo json_encode( $results );

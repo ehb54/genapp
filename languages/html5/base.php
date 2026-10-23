@@ -110,7 +110,8 @@ if ( !isset( $uniquedir ) &&
           exit();
       }
       try {
-          $coll->insert( array( "name" => $checkrunning, "jobweight" => $GLOBALS[ 'jobweight' ], "user" => $GLOBALS[ 'logon' ] )__~mongojournal{, array("j" => true )});
+          $insertdoc = array( "name" => $checkrunning, "jobweight" => $GLOBALS[ 'jobweight' ], "user" => $GLOBALS[ 'logon' ] );
+          $coll->insert( $insertdoc__~mongojournal{, array("j" => true )});
       } catch(MongoCursorException $e) {
           $results[ 'error' ] = "A job is already running in this project, please wait until it completes or change projects. " . $e->getMessage();
           $results[ '_status' ] = 'failed';

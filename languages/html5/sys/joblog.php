@@ -574,7 +574,8 @@ function logrunning( $error_json_exit = false ) {
 
     if ( !( $doc = $use_db->global->apps->findOne( array( "_id" => "__application__" ) ) ) ) {
         try {
-            $use_db->global->apps->insert( array( "_id" => "__application__" )__~mongojournal{, array("j" => true )} );
+            $insertdoc = array( "_id" => "__application__" );
+            $use_db->global->apps->insert( $insertdoc__~mongojournal{, array("j" => true )} );
         } catch(MongoCursorException $e) {
             $db_error = "Error updating the database. " . $e->getMessage();
             if ( $error_json_exit )

@@ -203,15 +203,16 @@ $keyno   = bin2hex( openssl_random_pseudo_bytes ( 20, $cstrong ) );
 $now = new MongoDate();
 
 try {
-    $coll->insert( 
-        Array( 
+    $insertdoc = Array( 
             '_id'      => $keyyes,
             'no'       => $keyno,
             'events'   => Array( Array( "what" => "request sent", "when" => $now ) ),
             'user'     => $logon,
             'request'  => $_REQUEST,
             'remoteip' => isset( $_SERVER[ 'REMOTE_ADDR' ] ) ? $_SERVER[ 'REMOTE_ADDR' ] : "not from an ip"
-        )
+        );
+    $coll->insert( 
+        $insertdoc
         __~mongojournal{, array("j" => true )} );
 } catch(MongoCursorException $e) {
     $db_error = "Error inserting. " . $e->getMessage();

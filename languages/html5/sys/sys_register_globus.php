@@ -151,8 +151,7 @@ if ( $do_requireapproval ) {
 
 if ( isset( $_REQUEST[ "globusid" ] ) ){   // FOR GLOBUS /////     
 try {
-    $coll->insert( 
-        array( 
+    $insertdoc = array(
             "name" => $_REQUEST[ 'userid' ]
             //,"password" => $pw		// FOR GLOBUS /////    
 	    ,"email" => $email  
@@ -163,7 +162,9 @@ try {
             __~register:requireapproval{,"needsapproval" => "pending"}
             __~register:requireapproval{,"approvalid" => $aid}
             __~register:requireapproval{,"denyid" => $did}
-        )
+        );
+    $coll->insert(
+        $insertdoc
         __~mongojournal{, array("j" => true )}
         );
 } catch(MongoCursorException $e) {
@@ -176,8 +177,7 @@ else
 {
    if ( isset( $_REQUEST[ "googleid" ] ) ){   // FOR GOOGLE /////  
   try {
-    $coll->insert( 
-        array( 
+    $insertdoc = array(
             "name" => $_REQUEST[ 'userid' ]
             //,"password" => $pw		// FOR GOOGLE /////    
 	    ,"email" => $email  
@@ -188,7 +188,9 @@ else
             __~register:requireapproval{,"needsapproval" => "pending"}
             __~register:requireapproval{,"approvalid" => $aid}
             __~register:requireapproval{,"denyid" => $did}
-        )
+        );
+    $coll->insert(
+        $insertdoc
         __~mongojournal{, array("j" => true )}
         );
 } catch(MongoCursorException $e) {
@@ -200,8 +202,7 @@ else
 else 
 {
 try {
-    $coll->insert( 
-        array( 
+    $insertdoc = array(
             "name" => $_REQUEST[ 'userid' ]
             ,"password" => $pw, "email" => $email
             ,"registered" => new MongoDate() 
@@ -210,7 +211,9 @@ try {
             __~register:requireapproval{,"needsapproval" => "pending"}
             __~register:requireapproval{,"approvalid" => $aid}
             __~register:requireapproval{,"denyid" => $did}
-        )
+        );
+    $coll->insert(
+        $insertdoc
         __~mongojournal{, array("j" => true )}
         );
 } catch(MongoCursorException $e) {
