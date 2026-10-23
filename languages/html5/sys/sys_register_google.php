@@ -132,12 +132,7 @@ if ( $doc = $coll->findOne( array( "name" => $_REQUEST[ 'userid' ] ) ) && !isset
 
 
 if ( !isset( $_REQUEST[ "globusid" ] ) && !isset( $_REQUEST[ "googleid" ] ) ){      // FOR GLOBUS&GOOGLE ///// 
-if ( PHP_VERSION_ID < 50500 )
-{
-  $pw = crypt( $_REQUEST[ 'password1' ] );
-} else {
-  $pw = password_hash( $_REQUEST[ 'password1' ], PASSWORD_DEFAULT );
-}
+$pw = password_hash( $_REQUEST[ 'password1' ], PASSWORD_DEFAULT );
 }
 
 $do_verifyemail     = __~register:verifyemail{1}0;

@@ -213,17 +213,9 @@ if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) )
       $ok_to_update = 0;
       $pw = $_REQUEST[ 'changepassword-password' ];
 
-      if ( PHP_VERSION_ID < 50500 )
-      {
-         if ( crypt( $pw, $doc[ 'password' ]) == $doc[ 'password' ] )
-         {
-            $ok_to_update = 1;
-         }
-      } else {
-         if ( password_verify ( $pw , $doc[ 'password' ] ) )
-         {  
-            $ok_to_update = 1;
-         }
+      if ( password_verify ( $pw , $doc[ 'password' ] ) )
+      {  
+         $ok_to_update = 1;
       }
       if ( $ok_to_update != 1 )
       {
@@ -244,12 +236,7 @@ if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) )
 
       if ( $ok_to_update == 1 )
       {
-         if ( PHP_VERSION_ID < 50500 )
-         {
-            $pw = crypt( $_REQUEST[ 'changepassword-password1' ] );
-         } else {
-            $pw = password_hash( $_REQUEST[ 'changepassword-password1' ], PASSWORD_DEFAULT );
-         }
+         $pw = password_hash( $_REQUEST[ 'changepassword-password1' ], PASSWORD_DEFAULT );
 
          $update[ '$set' ][ 'password' ]           = $pw;
          $update[ '$set' ][ 'passwordchangewhen' ] = $now;
