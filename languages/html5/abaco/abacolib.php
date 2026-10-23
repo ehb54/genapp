@@ -2,7 +2,8 @@
 
 # all custom bits
 
-include( '__docroot:html5__/__application__/vendor/rmccue/requests/Requests.php' );
+require_once '__docroot:html5__/__application__/vendor/autoload.php'; # rmccue/requests 2.x
+use WpOrg\Requests\Requests;
 $secrets = json_decode( file_get_contents( "__secrets__" ) );
 $dockerhub       = (object) [];
 $dockerhub->user = "__dockerhub:user__";
@@ -11,7 +12,6 @@ $appname         = "__application__";
 
 # end custom bits
 
-Requests::register_autoloader();
 
 $results = (object) [];
 

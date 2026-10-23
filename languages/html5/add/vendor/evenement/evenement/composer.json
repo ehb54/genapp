@@ -1,7 +1,7 @@
 {
     "name": "evenement/evenement",
-    "description": "Événement is a very simple event dispatching library for PHP 5.3",
-    "keywords": ["event-dispatcher"],
+    "description": "Événement is a very simple event dispatching library for PHP",
+    "keywords": ["event-dispatcher", "event-emitter"],
     "license": "MIT",
     "authors": [
         {
@@ -10,11 +10,20 @@
         }
     ],
     "require": {
-        "php": ">=5.3.0"
+        "php": ">=7.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9 || ^6"
     },
     "autoload": {
-        "psr-0": {
-            "Evenement": "src"
+        "psr-4": {
+            "Evenement\\": "src/"
         }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Evenement\\Tests\\": "tests/"
+        },
+        "files": ["tests/functions.php"]
     }
 }

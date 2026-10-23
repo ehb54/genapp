@@ -1,43 +1,24 @@
 # Événement
 
-Événement is a very simple event dispatching library for PHP 5.3.
+Événement is a very simple event dispatching library for PHP.
 
-It has the same design goals as [Silex](http://silex-project.org) and
-[Pimple](http://pimple-project.org), to empower the user while staying concise
+It has the same design goals as [Silex](https://silex.symfony.com/) and
+[Pimple](https://github.com/silexphp/Pimple), to empower the user while staying concise
 and simple.
 
-It is very strongly inspired by the EventEmitter API found in
-[node.js](http://nodejs.org). It includes an implementation of
-[EventEmitter2](https://github.com/hij1nx/EventEmitter2), that extends
-the original EventEmitter.
+It is very strongly inspired by the [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter) API found in
+[node.js](http://nodejs.org).
 
-[![Build Status](https://secure.travis-ci.org/igorw/evenement.png)](http://travis-ci.org/igorw/evenement)
+![Continuous Integration](https://github.com/igorw/evenement/workflows/CI/badge.svg)
+[![Latest Stable Version](https://poser.pugx.org/evenement/evenement/v/stable.png)](https://packagist.org/packages/evenement/evenement)
+[![Total Downloads](https://poser.pugx.org/evenement/evenement/downloads.png)](https://packagist.org/packages/evenement/evenement/stats)
+[![License](https://poser.pugx.org/evenement/evenement/license.png)](https://packagist.org/packages/evenement/evenement)
 
 ## Fetch
 
-The recommended way to install Événement is [through composer](http://getcomposer.org).
+The recommended way to install Événement is [through composer](http://getcomposer.org). By running the following command:
 
-Just create a composer.json file for your project:
-
-```JSON
-{
-    "require": {
-        "evenement/evenement": "dev-master"
-    }
-}
-```
-
-And run these two commands to install it:
-
-    $ curl -s http://getcomposer.org/installer | php
-    $ php composer.phar install
-
-Now you can add the autoloader, and you will have access to the library:
-
-```php
-<?php
-require 'vendor/autoload.php';
-```
+    $ composer require evenement/evenement
 
 ## Usage
 
@@ -52,7 +33,16 @@ $emitter = new Evenement\EventEmitter();
 
 ```php
 <?php
-$emitter->on('user.create', function (User $user) use ($logger) {
+$emitter->on('user.created', function (User $user) use ($logger) {
+    $logger->log(sprintf("User '%s' was created.", $user->getLogin()));
+});
+```
+
+### Removing Listeners
+
+```php
+<?php
+$emitter->removeListener('user.created', function (User $user) use ($logger) {
     $logger->log(sprintf("User '%s' was created.", $user->getLogin()));
 });
 ```
@@ -61,13 +51,13 @@ $emitter->on('user.create', function (User $user) use ($logger) {
 
 ```php
 <?php
-$emitter->emit('user.create', array($user));
+$emitter->emit('user.created', [$user]);
 ```
 
 Tests
 -----
 
-    $ phpunit
+    $ ./vendor/bin/phpunit
 
 License
 -------
