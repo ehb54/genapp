@@ -66,6 +66,13 @@ EXPOSE $UDPPORT/udp
 EXPOSE $TCPPORT/tcp
 EXPOSE $TCPRPORT/tcp
 
+# the mongodb user and group as mongodb-org-server's postinst would make them, but with fixed ids: uid 100
+# and gid 101 own the database files in the sites' volumes, and packages installed before MongoDB create
+# system users of their own (abiword brings dbus and its messagebus), which would take those ids first
+RUN groupadd --system --gid 101 mongodb && \
+    useradd --system --uid 100 --gid nogroup --groups mongodb --home-dir /nonexistent --no-create-home \
+        --shell /usr/sbin/nologin mongodb
+
 # php: distro 8.3 with the distro zmq and imagick extensions the svn-era sites used (mongodb comes from phpext)
 # perl: modules genapp needs (JSON, Hash::Merge) and those the old images added with cpanm
 # abiword: bin/doc2html.pl converts the Word documents that application pages include (the old images had it)
