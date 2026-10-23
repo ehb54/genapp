@@ -223,7 +223,7 @@ if ( $loginok ) {
 
             $ext = 0;
             do {
-                $doc[ 'name' ] = "_canceled_" . ( $ext ? "${ext}_" : "" ) . $orgname;
+                $doc[ 'name' ] = "_canceled_" . ( $ext ? "{$ext}_" : "" ) . $orgname;
                 $ext++;
             } while ( $coll->findOne( array( "name" => $doc[ 'name' ] ) ) );
 

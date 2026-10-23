@@ -191,14 +191,14 @@ function get_userinfo( $error_json_exit = false ) {
 
            foreach ( $thisbuttons as $v2 ) {
                $cmd = str_replace( ' ', '_', strtolower( $v2 ) );
-               $id = "_usermanage_${cmd}_${name}";
+               $id = "_usermanage_{$cmd}_{$name}";
                $buttons .= "<button id='$id'>$v2</button> ";
                if ( $cmd == "remove" ) {
                    $usecmd = "ga.admin.ajax.remove";
                } else {
                    $usecmd = "ga.admin.ajax";
                }
-               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;${usecmd}('$cmd','$name','$uid','$manageid');});";
+               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;{$usecmd}('$cmd','$name','$uid','$manageid');});";
            }
 
            // group buttons
@@ -214,11 +214,11 @@ function get_userinfo( $error_json_exit = false ) {
                
            foreach ( $thisbuttons as $v2 ) {
                $cmd = str_replace( ' ', '_', strtolower( $v2 ) );
-               $id = "_usermanage_${cmd}_${name}";
+               $id = "_usermanage_{$cmd}_{$name}";
                $group_buttons .= "<button id='$id'>$v2</button> ";
                $usecmd = "ga.admin.ajax.group";
                $users_group = isset( $v[ 'group' ] ) ? $v[ 'group' ] : '';
-               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;${usecmd}('$cmd','$name','$uid','$manageid','$users_group');});";
+               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;{$usecmd}('$cmd','$name','$uid','$manageid','$users_group');});";
            }
 
            // job buttons
@@ -232,10 +232,10 @@ function get_userinfo( $error_json_exit = false ) {
                
            foreach ( $thisbuttons as $v2 ) {
                $cmd = str_replace( ' ', '_', strtolower( $v2 ) );
-               $id = "_usermanage_${cmd}_${name}";
+               $id = "_usermanage_{$cmd}_{$name}";
                $job_buttons .= "<button id='$id'>$v2</button> ";
                $usecmd = "ga.admin.ajax.jobview";
-               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;${usecmd}('$cmd','$name','$uid','$manageid','$users_group');});";
+               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;{$usecmd}('$cmd','$name','$uid','$manageid','$users_group');});";
            }
 
            $userinfo['buttons'      ][] = $buttons;

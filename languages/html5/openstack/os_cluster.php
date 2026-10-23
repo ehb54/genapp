@@ -74,7 +74,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
     if ( isset( $appjson->resources->oscluster->properties->network ) ) {
         $use_network = $appjson->resources->oscluster->properties->network;
     } else {
-        $use_network = "${project}-api";
+        $use_network = "{$project}-api";
     }
 
 #    sendudptext( `nova list` );
@@ -90,7 +90,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
     for ( $i = 0; $i < $nodes; ++$i ) {
             
         $name =  
-            "${project}-run-" . $uuid . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
+            "{$project}-run-" . $uuid . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
         //        "-run-" . bin2hex( openssl_random_pseudo_bytes ( 16, $cstrong ) );
 
         $cmd = "nova boot $name --flavor $flavor --image $baseimage --key-name $key --security-groups $secgroup --nic net-name=$use_network $userdata";

@@ -18,7 +18,7 @@ function os_delete( $nodes, $uuid, $project = NULL, $quiet = false ) {
     }
 
     if ( isset( $use_nova_to_get_ids ) ) {
-        $cmd = "nova list | grep ' ${project}-run-" . $uuid . "-... ' | awk '{ print $2 }'";
+        $cmd = "nova list | grep ' {$project}-run-" . $uuid . "-... ' | awk '{ print $2 }'";
 
         if ( !$quiet ) {
             sendudptext( $cmd . "\n" );
@@ -33,7 +33,7 @@ function os_delete( $nodes, $uuid, $project = NULL, $quiet = false ) {
         $ids = [];
         for ( $i = 0; $i < $nodes; ++$i ) {
             $ids[] =  
-                "${project}-run-" . $uuid . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
+                "{$project}-run-" . $uuid . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
         }
     }
 

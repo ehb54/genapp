@@ -314,7 +314,7 @@ if ( $doc = $coll->findOne( array( "name" => $_SESSION[ $window ][ 'logon' ] ) )
 
          admin_mail( "[__application__][new email address] $email1", "User: " . $_REQUEST[ '_logon' ] . "\nEmail: $email1\n" );
 
-         $results[ 'status' ] .= "Changing email address to ${email1}. ";
+         $results[ 'status' ] .= "Changing email address to {$email1}. ";
          $do_update = 1;
       }
    }

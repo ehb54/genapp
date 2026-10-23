@@ -26,7 +26,7 @@ $zmq_socket->connect("tcp://" . $json->messaging->zmqhostip . ":" . $json->messa
 
 $keepalive = isset( $json->messaging->keepalive ) ? $json->messaging->keepalive : 30;
 
-echo "msg_keepalive: interval ${keepalive}s sending ZMQ host:" . $json->messaging->zmqhostip . " port:" . $json->messaging->zmqport . PHP_EOL;
+echo "msg_keepalive: interval {$keepalive}s sending ZMQ host:" . $json->messaging->zmqhostip . " port:" . $json->messaging->zmqport . PHP_EOL;
 
 $buf = '{"_uuid":"keepalive"}';
 

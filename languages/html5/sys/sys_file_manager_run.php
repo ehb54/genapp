@@ -183,7 +183,7 @@ if ( !count( $outfiles ) )
    exit();
 }
 
-$pkgname = "__application___${logon}_" . date( "YmdHisT", time() );
+$pkgname = "__application___{$logon}_" . date( "YmdHisT", time() );
 
 // setup the command
 

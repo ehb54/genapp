@@ -96,11 +96,11 @@ function container_name( $menu, $mod ) {
     # make container name
 
     # current docker:local resource specifier 
-    $cname = strtolower( "genapp_${dhtag}$appname" );
+    $cname = strtolower( "genapp_{$dhtag}$appname" );
     if ( strlen( $cname ) > 30 ) {
         $cname = substr( $cname, 0, 30 );
     }
-    $tname = "${menu}-${mod}";
+    $tname = "{$menu}-{$mod}";
 
     if ( strlen( $tname ) > 128 ) {
         $tname = substr( $tname, 0, 128 );
