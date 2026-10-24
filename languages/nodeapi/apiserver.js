@@ -84,6 +84,12 @@ function writeend( res, robj ) {
     res.end();
 }
 
+// user, _uuid and file become path components under the stage directory: allow only a safe,
+// non-traversing name (no '/', no leading dot) so a request cannot reach outside its job directory
+function valid_name( s ) {
+    return typeof s === 'string' && /^[A-Za-z0-9][A-Za-z0-9._-]*$/.test( s );
+}
+
 app.use( fileUpload({
     limits: { fileSize: 50 * 1024 * 1024 } // 50M
 //    limits: { fileSize: 10 * 1024 } // 10K
@@ -115,15 +121,10 @@ app.get( '/useradd', ( req, res ) => {
 
     let ip = req_ip( req );
 
-    console.log( "ip:" + ip );
-    console.log( "useradd" );
-    console.log( req.url );
+    // do not log the URL or query: for useradd it carries the password
+    console.log( "useradd from ip:" + ip );
     let q = url.parse( req.url, true );
-    console.log( JSON.stringify( q ) );
-    console.log( q.pathname );
-    console.log( q.search );
     let query = q.query;
-    console.log( JSON.stringify( query ) );
 
     let robj = {};
     if ( !query.email ||
@@ -134,6 +135,10 @@ app.get( '/useradd', ( req, res ) => {
     }
     if ( !validator.isEmail( query.email ) ) {
         robj.error = "useradd: incorrect email format";
+        return writeend( res, robj );
+    }
+    if ( !valid_name( query.user ) ) {
+        robj.error = "useradd: incorrect user format";
         return writeend( res, robj );
     }
 
@@ -147,7 +152,6 @@ app.get( '/useradd', ( req, res ) => {
             } else {
                 // try to add
                 bcrypt.hash( query.pw, saltRounds, ( err, hash ) => {
-                    console.log( "hashed: " + hash );
                     mongodb.collection("users").insertOne( {
                         name : query.user
                         ,password : hash
@@ -193,18 +197,12 @@ app.get( '/userstatus', ( req, res ) => {
 
     let ip = req_ip( req );
 
-    console.log( "userstatus" );
-    console.log( req.url );
+    console.log( "userstatus from ip:" + ip );
     let q = url.parse( req.url, true );
-    console.log( JSON.stringify( q ) );
-    console.log( q.pathname );
-    console.log( q.search );
     let query = q.query;
-    console.log( JSON.stringify( query ) );
 
     let robj = {};
-    console.log( "userstatus" );
-    if ( !query.user ) {
+    if ( !query.user || !valid_name( query.user ) ) {
         robj.error = "userstatus: incorrect format";
         return writeend( res, robj );
     }
@@ -216,7 +214,7 @@ app.get( '/userstatus', ( req, res ) => {
                 robj.info = "found";
                 robj.name = result.name;
                 robj.email = result.email;
-                robj.pw = result.password;
+                // the stored password hash is never returned
                 console.log( "found" );
             } else {
                 robj.info = "not found";
@@ -234,21 +232,22 @@ app.get( '/userstatus', ( req, res ) => {
 app.post( '/jobsubmit', async ( req, res ) => {
     let ip = req_ip( req );
 
-    console.log( req.url );
+    // do not log the URL or query: for jobsubmit it carries the password
+    console.log( "jobsubmit from ip:" + ip );
     let q = url.parse( req.url, true );
-    console.log( JSON.stringify( q ) );
-    console.log( q.pathname );
-    console.log( q.search );
     let query = q.query;
-    console.log( JSON.stringify( query ) );
-    
+
     let robj = {};
-    if ( 
+    if (
         !query.user ||
             !query.pw ||
             !query._uuid ||
-            !query.module 
+            !query.module
     ) {
+        robj.error = "jobsubmit: incorrect format";
+        return writeend( res, robj );
+    }
+    if ( !valid_name( query.user ) || !valid_name( query._uuid ) ) {
         robj.error = "jobsubmit: incorrect format";
         return writeend( res, robj );
     }
@@ -462,14 +461,17 @@ app.get( '/jobstatus', async ( req, res ) => {
 
     let q = url.parse( req.url, true );
     let query = q.query;
-    console.log( JSON.stringify( query ) );
-    
+
     let robj = {};
-    if ( 
+    if (
         !query.user ||
             !query.pw ||
             !query._uuid
     ) {
+        robj.error = "jobstatus: incorrect format";
+        return writeend( res, robj );
+    }
+    if ( !valid_name( query.user ) || !valid_name( query._uuid ) ) {
         robj.error = "jobstatus: incorrect format";
         return writeend( res, robj );
     }
@@ -552,16 +554,20 @@ app.get( '/jobresults', async ( req, res ) => {
 
     let q = url.parse( req.url, true );
     let query = q.query;
-    console.log( JSON.stringify( query ) );
-    
+
     let robj = {};
-    if ( 
+    if (
         !query.user ||
             !query.pw ||
             !query._uuid ||
             !query.file
     ) {
         robj.error = "jobstatus: incorrect format";
+        res.status( 400 );
+        return writeend( res, robj );
+    }
+    if ( !valid_name( query.user ) || !valid_name( query._uuid ) || !valid_name( query.file ) ) {
+        robj.error = "jobresults: incorrect format";
         res.status( 400 );
         return writeend( res, robj );
     }
@@ -671,15 +677,19 @@ app.get( '/jobcancel', async ( req, res ) => {
 
     let q = url.parse( req.url, true );
     let query = q.query;
-    console.log( JSON.stringify( query ) );
-    
+
     let robj = {};
-    if ( 
+    if (
         !query.user ||
             !query.pw ||
-            !query._uuid 
+            !query._uuid
     ) {
         robj.error = "jobstatus: incorrect format";
+        res.status( 400 );
+        return writeend( res, robj );
+    }
+    if ( !valid_name( query.user ) || !valid_name( query._uuid ) ) {
+        robj.error = "jobcancel: incorrect format";
         res.status( 400 );
         return writeend( res, robj );
     }
