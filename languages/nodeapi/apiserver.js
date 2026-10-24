@@ -22,7 +22,9 @@ const app            = express();
 const util           = require('util');
 const MongoClient    = require('mongodb').MongoClient;
 const url            = require('url');
-const bcrypt         = require('bcrypt');
+// bcryptjs: bcrypt in plain JavaScript, so there is no native module to build for each node version;
+// its hashes are bcrypt's ($2a$, $2b$), so passwords stored by the bcrypt module still match
+const bcrypt         = require('bcryptjs');
 const saltRounds     = 10;
 const validator      = require('validator');
 const requestIp      = require('request-ip');
@@ -135,11 +137,8 @@ app.get( '/useradd', ( req, res ) => {
         return writeend( res, robj );
     }
 
-    mongodb.collection("users").findOne({ name : query.user }, ( err, result ) => {
-        if ( err ) {
-            robj.error = err;
-            writeend( res, robj );
-        } else {
+    mongodb.collection("users").findOne({ name : query.user } )
+        .then( ( result ) => {
             if ( result ) {
                 console.log( result );
                 console.log( "already exists" );
@@ -149,32 +148,32 @@ app.get( '/useradd', ( req, res ) => {
                 // try to add
                 bcrypt.hash( query.pw, saltRounds, ( err, hash ) => {
                     console.log( "hashed: " + hash );
-                    mongodb.collection("users").insert( { 
+                    mongodb.collection("users").insertOne( {
                         name : query.user
                         ,password : hash
                         ,email : query.email
 //                        ,registered : new Date( Date.now() ).toISOString()
                         ,registered : new Date()
-                        ,registerip : ip 
-                    }, ( err, result ) => 
-                        {
-                            if ( err ) {
-                                console.log( "useradd err: " + err );
-                                robj.error = err;
-                            } else {
-                                console.log( "useradd ok: " + JSON.stringify( result ) );
-                                robj.info = "User " + query.user + " added";
-                                console.log( "useradd set robj.info" );
-                            }
-                            console.log( "useradd writeend: " + JSON.stringify( result ) );
+                        ,registerip : ip
+                    })
+                        .then( ( result ) => {
+                            console.log( "useradd ok: " + JSON.stringify( result ) );
+                            robj.info = "User " + query.user + " added";
+                            console.log( "useradd set robj.info" );
+                        })
+                        .catch( ( err ) => {
+                            console.log( "useradd err: " + err.message );
+                            robj.error = err.message;
+                        })
+                        .finally( () => {
                             console.log( "robj:" + JSON.stringify( robj ) );
                             writeend( res, robj );
                             console.log( "useradd after writeend" );
-                        } );
-                    
-                    
+                        });
+
+
                     // now we have ip, name, encrypted pw, add to mongo users
-                    
+
                     // if(bcrypt.compareSync('somePassword', hash)) {
                     // Passwords match
                     //    } else {
@@ -182,9 +181,12 @@ app.get( '/useradd', ( req, res ) => {
                     //}
                 });
             }
-        }
-    });
-});    
+        })
+        .catch( ( err ) => {
+            robj.error = err.message;
+            writeend( res, robj );
+        });
+});
 
 app.get( '/userstatus', ( req, res ) => {
     // TODO make async, remove minor callback hell for consistency
@@ -207,10 +209,8 @@ app.get( '/userstatus', ( req, res ) => {
         return writeend( res, robj );
     }
     
-    mongodb.collection("users").findOne({ name : query.user }, function(err, result) {
-        if ( err ) {
-            robj.error = err;
-        } else {
+    mongodb.collection("users").findOne({ name : query.user } )
+        .then( ( result ) => {
             if ( result ) {
                 console.log( result );
                 robj.info = "found";
@@ -222,10 +222,14 @@ app.get( '/userstatus', ( req, res ) => {
                 robj.info = "not found";
                 console.log( "not found" );
             }
-        }
-        writeend( res, robj );
-    });
-});    
+        })
+        .catch( ( err ) => {
+            robj.error = err.message;
+        })
+        .finally( () => {
+            writeend( res, robj );
+        });
+});
 
 app.post( '/jobsubmit', async ( req, res ) => {
     let ip = req_ip( req );
@@ -839,10 +843,13 @@ try {
 
 // startup services:
 
-MongoClient.connect( mongo_url, ( err, db ) => {
-    if (err) throw err;
-    mongodb = db.db( mongo_db_name );
-    mongodb_msg = db.db( "msgs" );
-    console.log( "connected to mongo:" + mongo_url );
-    app.listen( listen_port, listen_host, () => console.log('Listening on host:' + listen_host + ' port:' + listen_port ) );
-});
+MongoClient.connect( mongo_url )
+    .then( ( client ) => {
+        mongodb = client.db( mongo_db_name );
+        mongodb_msg = client.db( "msgs" );
+        console.log( "connected to mongo:" + mongo_url );
+        app.listen( listen_port, listen_host, () => console.log('Listening on host:' + listen_host + ' port:' + listen_port ) );
+    })
+    .catch( ( err ) => {
+        throw err;
+    });
