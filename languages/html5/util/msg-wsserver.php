@@ -187,9 +187,10 @@ __~debug:ws{           echo "as unsub $tmp\n";}
 //__~debug:ws{    echo "NOT found topic mongo doc " . $topic->getId() . "\n";}
 //           }
 
-           if (!array_key_exists($topic->getId(), $this->subscribedTopics)) {
-              $this->subscribedTopics[$topic->getId()] = $topic;
-           }
+           // keep the Topic object Ratchet passes: since Ratchet 0.4 its TopicManager drops a topic when the last
+           // subscriber leaves and gives the next one a new object (Ratchet 0.3 kept them). Keeping the first object,
+           // as before, sent later messages for a reused topic (keepalive, a job after a page reload) to no one
+           $this->subscribedTopics[$topic->getId()] = $topic;
         }
     }
 

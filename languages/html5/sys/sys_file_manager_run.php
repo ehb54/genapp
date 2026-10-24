@@ -37,7 +37,9 @@ function expand_dir( $dir ) {
 
    $result = array();
 
-   $cdir = array_diff( scandir( $dir ), array('..', '.') );
+   // no directory yet: scandir() returns false, which array_diff() rejects since PHP 8
+   $entries = is_dir( $dir ) ? scandir( $dir ) : false;
+   $cdir = array_diff( $entries === false ? [] : $entries, array('..', '.') );
 
    foreach ($cdir as $key => $value)
    {
