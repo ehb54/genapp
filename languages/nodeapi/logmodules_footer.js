@@ -1,9 +1,10 @@
     process.exit(0);
 };
 
-MongoClient.connect( mongo_url, ( err, db ) => {
-    if (err) throw err;
-    mongodb = db.db( mongo_db_name );
+MongoClient.connect( mongo_url ).then( ( client ) => {
+    mongodb = client.db( mongo_db_name );
     console.log( "connected to mongo:" + mongo_url );
     logmodules();
+}).catch( ( err ) => {
+    throw err;
 });

@@ -50,7 +50,7 @@ module.exports = {
                     throw err;
                 });
         } else {
-            await mongodb.collection( "jobs" ).insertOne( mobj, { j : true } )
+            await mongodb.collection( "jobs" ).insertOne( mobj, { writeConcern: { j : true } } )
                 .then( ( res ) => {
                     console.log( "logjobstart insertOne result:" + JSON.stringify( res ) );
                 })
@@ -113,7 +113,7 @@ module.exports = {
         
         console.log( "logjobupdate: obj: " + JSON.stringify( update ) );
 
-        await mongodb.collection( "jobs" ).update( { _id: uuid }, update, { upsert : true, writeConcern: { j : true } } )
+        await mongodb.collection( "jobs" ).updateOne( { _id: uuid }, update, { upsert : true, writeConcern: { j : true } } )
             .then( ( res ) => {
                 console.log( "logjobstart insertOne result:" + JSON.stringify( res ) );
             })

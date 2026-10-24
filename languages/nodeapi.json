@@ -20,10 +20,17 @@
         ,{
             "frequency"     : "once",
             "output"        : "jobrun.js",
-            "inputs"     : [ 
+            "inputs"     : [
                 { "jobrun.js" : "once" }
             ]
-        }    
+        }
+        ,{
+            "frequency"     : "once",
+            "output"        : "package.json",
+            "inputs"     : [
+                { "package.json" : "once" }
+            ]
+        }
         ,{
             "frequency"      : "once"
             ,"setexecutable" : "true"
