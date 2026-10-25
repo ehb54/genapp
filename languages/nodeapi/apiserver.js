@@ -144,7 +144,8 @@ app.get( '/useradd', ( req, res ) => {
     mongodb.collection("users").findOne({ name : query.user } )
         .then( ( result ) => {
             if ( result ) {
-                console.log( result );
+                // the name only: the stored record holds the password hash
+                console.log( "user " + result.name );
                 console.log( "already exists" );
                 robj.info = "already exists";
                 writeend( res, robj );
@@ -209,7 +210,8 @@ app.get( '/userstatus', ( req, res ) => {
     mongodb.collection("users").findOne({ name : query.user } )
         .then( ( result ) => {
             if ( result ) {
-                console.log( result );
+                // the name only: the stored record holds the password hash
+                console.log( "user " + result.name );
                 robj.info = "found";
                 robj.name = result.name;
                 robj.email = result.email;
@@ -745,14 +747,16 @@ app.get( '/jobcancel', async ( req, res ) => {
 app.get( /.*/, ( req, res ) => {
     let ip = req_ip( req );
 
-    console.log( `${Date().toString()} ${ip} 404 GET ${req.url}`);
+    // the path only: a query string can carry the password
+    console.log( `${Date().toString()} ${ip} 404 GET ${req.path}`);
     res.status( 404 ).send( '{"error":"unknown"}' )
 });
 
 app.post( /.*/, ( req, res ) => {
     let ip = req_ip( req );
 
-    console.log( `${Date().toString()} ${ip} 404 POST ${req.url}`);
+    // the path only: a query string can carry the password
+    console.log( `${Date().toString()} ${ip} 404 POST ${req.path}`);
     res.status( 404 ).send( '{"error":"unknown"}' )
 });
 
