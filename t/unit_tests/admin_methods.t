@@ -48,8 +48,9 @@ function fixture_proc() {
  'eth1: 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0',
  ' lo: 999 0 0 0 0 0 0 0 999 0 0 0 0 0 0 0', 'malformed network line'];
 }
-class ZMQ {const SOCKET_PUSH=1;}
-class ZMQContext {function getSocket(...$args) {return new FixtureSocket();}}
+// stand-ins for the zmq extension's classes, named apart from them so the fixture also runs where it is loaded
+class FixtureZMQ {const SOCKET_PUSH=1;}
+class FixtureZMQContext {function getSocket(...$args) {return new FixtureSocket();}}
 class FixtureSocket {
  function connect(...$args) {}
  function send($json) {
@@ -70,6 +71,8 @@ for my $kind(keys %paths) {
  }
  if($kind eq 'monitor') {
   is(($s=~s/exec\( \$cmd, \$res \);/\$res = fixture_proc();/g),1,'proc access replaced in disposable copy');
+  is(($s=~s/new ZMQContext\(\)/new FixtureZMQContext()/g),1,'ZMQ context replaced in disposable copy');
+  is(($s=~s/\bZMQ::SOCKET_PUSH\b/FixtureZMQ::SOCKET_PUSH/g),1,'ZMQ socket type replaced in disposable copy');
   $s=~s/sleep\( [^)]* \);/\/\/ fixture has no sleeps/g;
  }
  put("$tmp/$kind.php",$s);
