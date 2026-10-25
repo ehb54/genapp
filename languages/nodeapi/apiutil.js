@@ -130,7 +130,8 @@ module.exports = {
         let appconfig_json = "";
         try {
             appconfig_json = fs.readFileSync( appconfig_file, 'utf8' );
-            console.log( appconfig_json );
+            // the file name only: appconfig.json holds the site's mail and OAuth credentials
+            console.log( "read appconfig file " + appconfig_file );
         } catch (err) {
             console.log( "Could not open appconfig file " + appconfig_file + " : " + err.message );
             process.exit( -101 );
