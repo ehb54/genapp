@@ -11,7 +11,7 @@ const util = require('util');
 const MongoClient = require('mongodb').MongoClient;
 const execSync = require('child_process').execSync;
 const apiutil = require('./apiutil.js');
-const { exec }      = require('child_process');
+const { spawn }     = require('child_process');
 
 var request = {};
 try {
@@ -23,6 +23,12 @@ try {
 
 if ( !request._uuid ) {
     console.log( "jobrun: no _uuid found in input" );
+    process.exit(-202);
+}
+
+// _uuid becomes part of file and directory paths; allow only a safe, non-traversing name
+if ( !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test( request._uuid ) ) {
+    console.log( "jobrun: _uuid has an unexpected format" );
     process.exit(-202);
 }
 
@@ -126,40 +132,78 @@ MongoClient.connect( mongo_url ).then( async ( client ) => {
         return error_exit( -208, `Error creating argslog file ${argslog} : ${err.message}` );
     }
 
-    let stderr = `${job.directorylog}/_stderr_${request._uuid}`;
+    let stderrfile  = `${job.directorylog}/_stderr_${request._uuid}`;
+    let stdout_file = `${job.directorylog}/_stdout_${request._uuid}`;
 
-    // this can change based on resource type, but for now, simply pass json_input in cmd line
-    // N.B. can prefix ${cmd} with 'taskset -c 4-7 ' to run on cpus 4-7 etc.
-    //      to avoid noted behavior of all cmds being pinned to one cpu
-    cmd = `(cd ${job.directory}; ${cmd} '${json_input}') 2> ${stderr} | head -c50000000`;
+    // Run the module's executable directly, with no shell. The JSON input is passed as a single argv
+    // element, so no value in it can be parsed as a shell command, redirection or separate word. An
+    // optional module.exec_prefix (an array, e.g. a scheduler, nice, or a cpu-pinning wrapper) runs in
+    // front of the executable; its words come from the module definition, never from the request.
+    let argv = Array.isArray( module.exec_prefix ) ? module.exec_prefix.slice() : [];
+    argv.push( cmd );
+    argv.push( json_input );
 
     try {
         let cmdlog = job.directorylog + "/_cmds_" + request._uuid;
         console.log( "cmdlog is " + cmdlog );
-        fs.writeFileSync( cmdlog, cmd + "\n" );
+        fs.writeFileSync( cmdlog, JSON.stringify( argv ) + "\n" );
     } catch ( err ) {
         return error_exit( -208, "Error creating cmd file " + cmdlog + " : " + err.message );
     }
 
-    console.log( "command is <" + cmd + ">" );
+    console.log( "argv is " + JSON.stringify( argv ) );
 
     await apiutil.logjobupdate( mongodb, request._uuid, "running", false )
         .catch( ( err ) => {
             return error_exit( -208, "logjobupdate error:" + err.message );
         });
 
-    exec( cmd, { maxBuffer : 1024 * 1024 }, async ( err, stdout, stderr ) => {
-        if ( err ) {
-            return error_exit( -209, `Error running cmd $cmd : ${err.message}` );
+    let outfd, errfd;
+    try {
+        outfd = fs.openSync( stdout_file, 'w' );
+        errfd = fs.openSync( stderrfile, 'w' );
+    } catch ( err ) {
+        return error_exit( -210, `Error creating output files : ${err.message}` );
+    }
+
+    // cap captured stdout at the former 'head -c' limit
+    const maxout = 50000000;
+    let written  = 0;
+
+    const child = spawn( argv[ 0 ], argv.slice( 1 ),
+                         {
+                             cwd : job.directory
+                             ,stdio : [ 'ignore', 'pipe', errfd ]
+                         }
+                       );
+
+    child.stdout.on( 'data', ( chunk ) => {
+        if ( written >= maxout ) {
+            return;
+        }
+        if ( written + chunk.length > maxout ) {
+            chunk = chunk.slice( 0, maxout - written );
         }
         try {
-            let stdout_file = `${job.directorylog}/_stdout_${request._uuid}`;
-            console.log( "stdout_file is: " + stdout_file );
-            fs.writeFileSync( stdout_file, stdout );
+            fs.writeSync( outfd, chunk );
         } catch ( err ) {
-            return error_exit( -210, `Error creating stdout_file ${stdout_file} : ${err.message}` );
+            console.log( "error writing stdout file: " + err.message );
         }
+        written += chunk.length;
+    });
 
+    child.on( 'error', ( err ) => {
+        try { fs.closeSync( outfd ); } catch ( e ) {}
+        try { fs.closeSync( errfd ); } catch ( e ) {}
+        return error_exit( -209, `Error running ${cmd} : ${err.message}` );
+    });
+
+    child.on( 'close', async ( code ) => {
+        try { fs.closeSync( outfd ); } catch ( e ) {}
+        try { fs.closeSync( errfd ); } catch ( e ) {}
+        if ( code ) {
+            console.log( `${cmd} exited with code ${code}` );
+        }
         await apiutil.logjobupdate( mongodb, request._uuid, "finished", true )
             .catch( ( err ) => {
                 return error_exit( -211, "logjobupdate upon finish error:" + err.message );

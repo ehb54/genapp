@@ -11,6 +11,10 @@
         mobj.resource = mjson.resource;
     }
 
+    if ( mjson.exec_prefix ) {
+        mobj.exec_prefix = mjson.exec_prefix;
+    }
+
     await mongodb.collection( "modules" ).replaceOne( { _id: "__menu:modules:id__" }, mobj, { upsert : true, writeConcern: { j : true } } )
         .then( ( res ) => {
             console.log( "logmodules: added to mongo modules: __menu:modules:id__" );
