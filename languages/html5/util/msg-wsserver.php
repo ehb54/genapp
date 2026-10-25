@@ -93,7 +93,9 @@ $restartMyself = function () {
     global $_, $argv;
     global $webSock;
     echo "restart caught\n";
-    $webSock->shutdown();
+    if ( isset( $webSock ) ) {
+        $webSock->close();
+    }
     unlink( LOCK_FILE );
     ## restart myself
     ## if running under nohup, need to add php to front of argv array
@@ -175,9 +177,10 @@ __~debug:ws{           echo "as unsub $tmp\n";}
 #//__~debug:ws{    echo "NOT found topic mongo doc " . $topic->getId() . "\n";}
 #//           }
 
-           if (!array_key_exists($topic->getId(), $this->subscribedTopics)) {
-              $this->subscribedTopics[$topic->getId()] = $topic;
-           }
+           // keep the Topic object Ratchet passes: since Ratchet 0.4 its TopicManager drops a topic when the last
+           // subscriber leaves and gives the next one a new object (Ratchet 0.3 kept them). Keeping the first object,
+           // as before, sent later messages for a reused topic (keepalive, a job after a page reload) to no one
+           $this->subscribedTopics[$topic->getId()] = $topic;
         }
     }
 
@@ -265,7 +268,7 @@ __~debug:ws{        echo "postData[_uuid] = " . $postData[ '_uuid' ] . "\n";}
                       )
                  )
                 ) {
-                echo "Error: Could not insert to msgs->cancel for " . $postData[ '_uuid' ] . " " . $ga_db_errors;
+                echo "Error: Could not insert to msgs->cancel for " . $postData[ '_uuid' ] . " " . $GLOBALS[ 'ga_db_errors' ];
             }
         }            
 
@@ -330,7 +333,7 @@ __~debug:ws{   echo "mongo save() updated $postmsg\n";}
                   )
              )
             ) {
-            echo "mongo save exception $e\n";
+            echo "mongo save exception " . $GLOBALS[ 'ga_db_errors' ] . "\n";
         }
         
         if (!array_key_exists( $postData[ '_uuid' ], $this->subscribedTopics ) ) {
@@ -346,7 +349,7 @@ __~debug:ws{        echo "array key exists\n";}
 }
 
 
-$loop   = React\EventLoop\Factory::create();
+$loop   = React\EventLoop\Loop::get();
 $pusher = new Pusher;
 
 // Listen for the web server to make a ZeroMQ push after an ajax request
@@ -356,8 +359,7 @@ $pull->bind('tcp://' . $json->messaging->zmqhostip . ':' . $json->messaging->zmq
 $pull->on('message', array($pusher, 'onMsgPost'));
 
 // Set up our WebSocket server for clients wanting real-time updates
-$webSock = new React\Socket\Server($loop);
-$webSock->listen( $json->messaging->wsport, '0.0.0.0'); // Binding to 0.0.0.0 means remotes can connect
+$webSock = new React\Socket\SocketServer( '0.0.0.0:' . $json->messaging->wsport, [], $loop ); // Binding to 0.0.0.0 means remotes can connect
 $webServer = new Ratchet\Server\IoServer(
     new Ratchet\Http\HttpServer(
         new Ratchet\WebSocket\WsServer(
@@ -366,7 +368,8 @@ $webServer = new Ratchet\Server\IoServer(
             )
         )
     ),
-    $webSock
+    $webSock,
+    $loop
 );
 
 echo "msg_wsserver: listening WS port:" . $json->messaging->wsport . " receiving ZMQ port: " . $json->messaging->zmqport . PHP_EOL;
