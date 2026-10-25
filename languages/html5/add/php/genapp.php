@@ -29,7 +29,7 @@ class GenApp {
             return $result;
         }
 
-        $msgj = utf8_encode( json_encode( $msg ) );
+        $msgj = mb_convert_encoding( json_encode( $msg ), "UTF-8", "ISO-8859-1" );
         # udpmessage( [ "_textarea" => "message:\n" . json_encode( json_decode( $msgj ), JSON_PRETTY_PRINT ) ] );
 
         # $this->output->_textarea = "tcpmessagebox message:\n" . json_encode( json_decode( $msgj ), JSON_PRETTY_PRINT ) . "\n";
@@ -83,7 +83,7 @@ class GenApp {
 
         $msg->_uuid   = $this->input->_uuid;
 
-        $msgj = utf8_encode( json_encode( $msg ) );
+        $msgj = mb_convert_encoding( json_encode( $msg ), "UTF-8", "ISO-8859-1" );
 
         # open socket
         if ( !($socket = socket_create( AF_INET, SOCK_STREAM, SOL_TCP ) ) ) {
@@ -124,7 +124,7 @@ class GenApp {
             return $result;
         }
 
-        $msgj = utf8_encode( json_encode( $msg ) );
+        $msgj = mb_convert_encoding( json_encode( $msg ), "UTF-8", "ISO-8859-1" );
 
         # $this->output->_textarea = "udp message:\n" . json_encode( json_decode( $msgj ), JSON_PRETTY_PRINT );
 
@@ -168,7 +168,7 @@ class GenApp {
 
         $msg->_uuid   = $this->input->_uuid;
 
-        $msgj = utf8_encode( json_encode( $msg ) );
+        $msgj = mb_convert_encoding( json_encode( $msg ), "UTF-8", "ISO-8859-1" );
 
         # $this->output->_textarea = "udp message:\n" . json_encode( json_decode( $msgj ), JSON_PRETTY_PRINT );
 
@@ -200,7 +200,7 @@ class GenApp {
             return $result;
         }
         
-        $msgj = utf8_encode( json_encode( $msg ) );
+        $msgj = mb_convert_encoding( json_encode( $msg ), "UTF-8", "ISO-8859-1" );
         # a newline is also required when sending a question
         $msgj .= "\n";
         

@@ -960,7 +960,6 @@ function addJobSubmissionInterface( $client, $hostId, $jsp, $jobsubmission ) {
     if ( !array_key_exists( 'resourcemanager', $jobsubmission ) ) {
         fwrite( STDERR, "Error: addJobSubmissionInterface: 'resourcemanager' not defined for job submission $jsp on host $hosstId\n" );
         exit( 254 );
-        break;
     }        
 
     $rm = createResourceJobManager( 

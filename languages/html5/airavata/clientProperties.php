@@ -6,19 +6,19 @@ if ( null === $appjson ) {
     echo "The file __appconfig__ could not be decoded and is likely missing or corrupt\n";
     exit;
 }
-if ( !array_key_exists( 'resources', $appjson ) ) {
+if ( !property_exists( $appjson, 'resources' ) ) {
     echo "No resources defined in __appconfig__. Fix this issue and try again.\n";
     exit;
 }
-if ( !array_key_exists( 'airavata', $appjson->resources ) ) {
+if ( !property_exists( $appjson->resources, 'airavata' ) ) {
     echo "resources:airavata must be defined in __appconfig__. Fix this issue and try again.\n";
     exit;
 }
-if ( !array_key_exists( 'properties', $appjson->resources->airavata ) ) {
+if ( !property_exists( $appjson->resources->airavata, 'properties' ) ) {
     echo "resources:airavata:properties must be defined in __appconfig__. Fix this issue and try again.\n";
     exit;
 }
-if ( !array_key_exists( 'resources', $appjson->resources->airavata ) ) {
+if ( !property_exists( $appjson->resources->airavata, 'resources' ) ) {
     echo "resources:airavata:resources must be defined in __appconfig__. Fix this issue and try again.\n";
     exit;
 }

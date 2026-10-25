@@ -82,9 +82,9 @@ like( $results_php, qr/_getinputerror/, 'get_results carries deleted-run restora
 unlike( $results_php, qr/__application__/, 'get_results php has application substitution applied' );
 like( $results_php, qr/__docroot:html5__\/minimal_html5\/ajax\/ga_filter\.php/, 'get_results php retains docroot deployment placeholder with app path' );
 
-like( $jobrun_php, qr/file_get_contents\( "\$\{logdir\}_cmds_\$id"/, 'jobrun reads generated command file' );
+like( $jobrun_php, qr/file_get_contents\( "\{\$logdir\}_cmds_\$id"/, 'jobrun reads generated command file' );
 like( $jobrun_php, qr/exec\( \$cmd \)/, 'jobrun executes recorded command' );
-like( $jobrun_php, qr/file_put_contents\( "\$\{logdir\}_stdout_"/, 'jobrun writes stdout payload' );
+like( $jobrun_php, qr/file_put_contents\( "\{\$logdir\}_stdout_"/, 'jobrun writes stdout payload' );
 like( $jobrun_php, qr/ga_cleanup_sassie_rejected_lrfiles/,
     'jobrun applies the receipt-gated rejected-lrfile cleanup' );
 like( $jobrun_php,

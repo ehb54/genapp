@@ -453,7 +453,9 @@ function restore_set( $dir ) {
 
     $restored = [];
 
-    foreach ( array_diff( scandir( $dir ), [ ".", ".." ] ) as $f ) {
+    // a missing set: scandir() returns false, which array_diff() rejects since PHP 8
+    $entries = is_dir( $dir ) ? scandir( $dir ) : false;
+    foreach ( array_diff( $entries === false ? [] : $entries, [ ".", ".." ] ) as $f ) {
         $src = "$dir/$f";
         $tmp = "$emdir/$f.rollback." . getmypid();
 

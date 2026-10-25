@@ -151,14 +151,14 @@ if ( !isset( $_REQUEST[ "_tree" ] ) &&
        $row[ "cells" ] = array();
        $row[ "cells" ][] = array( "value" => small_string( $job["menu"] . "/" . $job["module"] ) );
        $row[ "cells" ][] = array( "value" => small_string( $project ) );
-       $row[ "cells" ][] = array( "value" => small_string( isset( $job["start"] ) ? date( "Y M d H:i:s T", ga_db_date_secs( $job["start"] ) ): "unknown", 2 ) );
+       $row[ "cells" ][] = array( "value" => small_string( isset( $job["start"] ) ? date( "Y M d H:i:s T", (int) ga_db_date_secs( $job["start"] ) ): "unknown", 2 ) );
        $row[ "cells" ][] = array( "value" => intval( isset( $job["start"] ) ? ga_db_date_secs( $job["start"] ) : 0 ) );
        if ( $endasprogress )
        {
           $row[ "cells" ][] = array( "value" => small_string( $job["end"], 2 ) );
           $row[ "cells" ][] = array( "value" => intval( 100000 * $GLOBALS[ 'cached_progress' ] ) );
        } else {
-          $row[ "cells" ][] = array( "value" => small_string( isset( $job["end"] ) ? date( "Y M d H:i:s T", ga_db_date_secs( $job["end"] ) ) : "", 2 ) );
+          $row[ "cells" ][] = array( "value" => small_string( isset( $job["end"] ) ? date( "Y M d H:i:s T", (int) ga_db_date_secs( $job["end"] ) ) : "", 2 ) );
           $row[ "cells" ][] = array( "value" => intval( isset( $job["end"] ) ? ga_db_date_secs( $job["end"] ) : 0 ) );
        }
        $row[ "cells" ][] = array( "value" => small_string( $duration ) );
@@ -250,10 +250,10 @@ if ( isset( $_REQUEST[ "_tree" ] ) ) {
         if ( isset( $job[ "start" ] ) )
         {
             $time = ga_db_date_secs( $job[ "start" ] );
-            $ym  = date( "Y-m",     $time );
-            $d   = date( "d",       $time );
-            $hr  = date( "H",       $time );
-            $hms = date( "H:i:s T", $time );
+            $ym  = date( "Y-m",     (int) $time );
+            $d   = date( "d",       (int) $time );
+            $hr  = date( "H",       (int) $time );
+            $hms = date( "H:i:s T", (int) $time );
         } else {
             $time = 0;
             $ym  = "unknown";
@@ -382,7 +382,7 @@ if ( isset( $_REQUEST[ "_asuser" ] ) ) {
         if ( isset( $job[ "start" ] ) )
         {
             $time = ga_db_date_secs( $job[ "start" ] );
-            $date  = date( "Y-m-d H:i:s T",     $time );
+            $date  = date( "Y-m-d H:i:s T",     (int) $time );
         } else {
             $time = 0;
             $date = "unknown";

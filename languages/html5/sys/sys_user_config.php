@@ -77,7 +77,7 @@ if ( $_REQUEST[ '_logon' ] != $_SESSION[ $window ][ 'logon' ] )
            'requestuser: ' . $insert[ 'requestuser' ] . "\n" .
            'sessionuser: ' . $insert[ 'sessionuser' ] . "\n" .
            'remoteip:    ' . $insert[ 'remoteip' ] . "\n" .
-           'when:        ' . date('Y-m-d H:i:s', ga_db_date_secs( $insert[ 'when' ] ) ) . " UTC\n" .
+           'when:        ' . date('Y-m-d H:i:s', (int) ga_db_date_secs( $insert[ 'when' ] ) ) . " UTC\n" .
            '' );
    echo (json_encode($results));
    exit();
@@ -264,17 +264,9 @@ if ( $doc =
       $ok_to_update = 0;
       $pw = $_REQUEST[ 'changepassword-password' ];
 
-      if ( PHP_VERSION_ID < 50500 )
-      {
-         if ( crypt( $pw, $doc[ 'password' ]) == $doc[ 'password' ] )
-         {
-            $ok_to_update = 1;
-         }
-      } else {
-         if ( password_verify ( $pw , $doc[ 'password' ] ) )
-         {  
-            $ok_to_update = 1;
-         }
+      if ( password_verify ( $pw , $doc[ 'password' ] ) )
+      {  
+         $ok_to_update = 1;
       }
       if ( $ok_to_update != 1 )
       {
@@ -295,12 +287,7 @@ if ( $doc =
 
       if ( $ok_to_update == 1 )
       {
-         if ( PHP_VERSION_ID < 50500 )
-         {
-            $pw = crypt( $_REQUEST[ 'changepassword-password1' ] );
-         } else {
-            $pw = password_hash( $_REQUEST[ 'changepassword-password1' ], PASSWORD_DEFAULT );
-         }
+         $pw = password_hash( $_REQUEST[ 'changepassword-password1' ], PASSWORD_DEFAULT );
 
          $update[ '$set' ][ 'password' ]           = $pw;
          $update[ '$set' ][ 'passwordchangewhen' ] = $now;
@@ -316,7 +303,7 @@ if ( $doc =
 
          mymail( $doc[ 'email' ] , 'password change notice __application__', "Your password has been changed\n" .
                  'remoteip:    ' . $update[ '$set' ][ 'passwordchangeip' ] . "\n" .
-                 'when:        ' . date('Y-m-d H:i:s', ga_db_date_secs( $update[ '$set' ][ 'passwordchangewhen' ] ) ) . " UTC\n" .
+                 'when:        ' . date('Y-m-d H:i:s', (int) ga_db_date_secs( $update[ '$set' ][ 'passwordchangewhen' ] ) ) . " UTC\n" .
                  "\n" . 'If you do not recognize this change please forward this email with a comment to ' . $appconfig->mail->admin . "\n" .
                  '' );
 
@@ -360,13 +347,13 @@ if ( $doc =
          mymail( $doc[ 'email' ] , 'email change notice __application__', "Your email address has been changed\n" .
                  'new email:   ' . $email1 . "\n" .
                  'remoteip:    ' . $update[ '$set' ][ 'emailchangeip' ] . "\n" .
-                 'when:        ' . date('Y-m-d H:i:s', ga_db_date_secs( $update[ '$set' ][ 'emailchangewhen' ] ) ) . " UTC\n" .
+                 'when:        ' . date('Y-m-d H:i:s', (int) ga_db_date_secs( $update[ '$set' ][ 'emailchangewhen' ] ) ) . " UTC\n" .
                  "\n" . 'If you do not recognize this change please forward this email with a comment to ' . $appconfig->mail->admin . "\n" .
                  '' );
 
          admin_mail( "[__application__][new email address] $email1", "User: " . $_REQUEST[ '_logon' ] . "\nEmail: $email1\n" );
 
-         $results[ 'status' ] .= "Changing email address to ${email1}. ";
+         $results[ 'status' ] .= "Changing email address to {$email1}. ";
          $do_update = 1;
       }
    }

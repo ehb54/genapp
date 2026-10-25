@@ -127,10 +127,17 @@ function ga_db_open( $error_json_exit = false ) {
 
     if ( !isset( $ga_db_mongo ) ) {
        try {
-           $ga_db_mongo = new MongoDB\Client(
-               __~mongo:url{"__mongo:url__"}
-               __~mongo:cafile{,[], [ "context" => stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] ) ]}
-           );
+           // stored arrays come back as PHP arrays: the code gives them to in_array(), implode(), sort(),
+           // end() and the like, which PHP 8 refuses (or deprecates) for the library's default
+           // MongoDB\Model\BSONArray objects. Documents stay MongoDB\Model\BSONDocument objects
+           $ga_db_driver_options = [ "typeMap" => [ "array"    => "array",
+                                                    "document" => MongoDB\Model\BSONDocument::class,
+                                                    "root"     => MongoDB\Model\BSONDocument::class ] ];
+           __~mongo:cafile{$ga_db_driver_options[ "context" ] = stream_context_create([ "ssl" => [ "cafile" => "__mongo:cafile__" ] ] );}
+           // no url: the library's default, mongodb://127.0.0.1/
+           $ga_db_uri = null;
+           __~mongo:url{$ga_db_uri = "__mongo:url__";}
+           $ga_db_mongo = new MongoDB\Client( $ga_db_uri, [], $ga_db_driver_options );
            $results[ '_status' ] = 'success';
        } catch ( Exception $e ) {
            $db_errors = "Error connecting to db " . $e->getMessage();
@@ -146,7 +153,7 @@ function ga_db_open( $error_json_exit = false ) {
     return $results;
 }
 
-function ga_db_findOne( $coll, $appname = "__application__", $query, $projection = [], $options = [], $error_json_exit = false ) {
+function ga_db_findOne( $coll, $appname, $query, $projection = [], $options = [], $error_json_exit = false ) {
     global $ga_db_log_file;
     if ( isset( $ga_db_log_file ) ) {
         error_log( date('m/d/Y h:i:s a', time() ) . "\n" . "ga_db_findOne( $coll, $appname,\n" . "\$query = " . json_encode( $query, JSON_PRETTY_PRINT )  . "\n" . "\$projection = " . json_encode( $projection ) . "\n" . "\$error_json_exit = ".( $error_json_exit ? "true" : "false" ) . ") =\n", 3, $ga_db_log_file );
@@ -209,7 +216,7 @@ function ga_db_findOne( $coll, $appname = "__application__", $query, $projection
     return $results;
 }
 
-function ga_db_count( $coll, $appname = "__application__", $query, $options = [], $error_json_exit = false ) {
+function ga_db_count( $coll, $appname, $query, $options = [], $error_json_exit = false ) {
     global $ga_db_log_file;
     if ( isset( $ga_db_log_file ) ) {
         error_log( date('m/d/Y h:i:s a', time() ) . " ga_db_count( $coll, $appname,\n" . json_encode( $query, JSON_PRETTY_PRINT ) . "\n" . json_encode( $options, JSON_PRETTY_PRINT ) . "\n" . ( $error_json_exit ? "true" : "false" ) . ") =\n", 3, $ga_db_log_file );
@@ -240,7 +247,7 @@ function ga_db_count( $coll, $appname = "__application__", $query, $options = []
     return $results;
 }
 
-function ga_db_save( $coll, $appname = "__application__", $document, $options = [], $error_json_exit = false ) {
+function ga_db_save( $coll, $appname, $document, $options = [], $error_json_exit = false ) {
 // maintain the original mongo save() method 
 // if $document exists use insertOne() else replaceOne()
 // note this method is slow 
@@ -348,7 +355,7 @@ function ga_db_save( $coll, $appname = "__application__", $document, $options = 
     return $results;
 }
 
-function ga_db_command( $appname = "__application__", $command, $options = [], $error_json_exit = false ) {
+function ga_db_command( $appname, $command, $options = [], $error_json_exit = false ) {
     global $ga_db_log_file;
     if ( isset( $ga_db_log_file ) ) {
         error_log( date('m/d/Y h:i:s a', time() ) . " ga_db_command( $appname,\n" . json_encode( $command, JSON_PRETTY_PRINT ) . "\n" . json_encode( $options, JSON_PRETTY_PRINT ) . "\n" . ( $error_json_exit ? "true" : "false" ) . ") =\n", 3, $ga_db_log_file );
@@ -462,7 +469,7 @@ function ga_db_find( $coll, $appname = "__application__", $query = [], $projecti
     return $results;
 }
 
-function ga_db_insert( $coll, $appname = "__application__", $insert, $options = [], $error_json_exit = false ) {
+function ga_db_insert( $coll, $appname, $insert, $options = [], $error_json_exit = false ) {
 //  return inserted Id(s) as $results[ "output" ]
     global $ga_db_log_file;
     if ( isset( $ga_db_log_file ) ) {
@@ -543,7 +550,7 @@ function ga_db_insert( $coll, $appname = "__application__", $insert, $options = 
     return $results;
 }
 
-function ga_db_update( $coll, $appname = "__application__", $criteria, $update, $options = [], $error_json_exit = false ) { 
+function ga_db_update( $coll, $appname, $criteria, $update, $options = [], $error_json_exit = false ) { 
 // use updateOne()
     global $ga_db_log_file;
 
@@ -610,7 +617,7 @@ function ga_db_update( $coll, $appname = "__application__", $criteria, $update, 
     return $results;
 }
 
-function ga_db_remove( $coll, $appname = "__application__", $criteria, $options = [], $error_json_exit = false ) {
+function ga_db_remove( $coll, $appname, $criteria, $options = [], $error_json_exit = false ) {
 // if $options[ "justOne" ] === true use deleteOne(), otherwise deleteMany()
     global $ga_db_log_file;
 
@@ -689,7 +696,7 @@ function ga_db_remove( $coll, $appname = "__application__", $criteria, $options 
     return $results;
 }
 
-function ga_db_distinct( $coll, $appname = "__application__", $key, $query, $options = [], $error_json_exit = false ) {
+function ga_db_distinct( $coll, $appname, $key, $query, $options = [], $error_json_exit = false ) {
     global $ga_db_log_file;
 
     if ( isset( $ga_db_log_file ) ) {

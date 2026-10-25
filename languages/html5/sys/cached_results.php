@@ -194,7 +194,9 @@ function get_cached( $error_json_exit = false ) {
        $html_out .= "<tr>";
        // $ahref = "<a href=?_switch=" . urlencode( $v2[ 'vs:' ][ 'menu' ] . '/' . $v2[ 'vs:' ][ 'module' ] . '/' . $v2[ 'vs:' ][ 'project' ] . '/' . $v2[ 'vs:' ][ 'jobid' ] ) . ">";
        foreach ( $v as $k2 => $v2 ) {
-           if ( $k2 != "vs:" ) {
+           // the parsed values, then the cache entry, which array_push() added under key 0
+           // (testing $k2 != "vs:" worked only while PHP compared 0 == "vs:" as true, before PHP 8)
+           if ( !is_array( $v2 ) || !isset( $v2[ 'vs:' ] ) ) {
                // $html_out .= "<td>$ahref$v2</a></td>";
                $html_out .= "<td>$v2</td>";
            } else {

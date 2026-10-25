@@ -163,12 +163,7 @@ if ( $doc =
 
 # // FOR GLOBUS&GOOGLE ///// 
 if ( !isset( $_REQUEST[ "globusid" ] ) && !isset( $_REQUEST[ "googleid" ] ) ) {
-    if ( PHP_VERSION_ID < 50500 )
-    {
-        $pw = crypt( $_REQUEST[ 'password1' ] );
-    } else {
-        $pw = password_hash( $_REQUEST[ 'password1' ], PASSWORD_DEFAULT );
-    }
+    $pw = password_hash( $_REQUEST[ 'password1' ], PASSWORD_DEFAULT );
 }
 
 $do_verifyemail     = __~register:verifyemail{1}0;

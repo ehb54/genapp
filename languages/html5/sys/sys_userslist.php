@@ -104,9 +104,9 @@ function get_userinfo( $error_json_exit = false ) {
                array( 
                    "name"                => $name
                    ,"email"              => "<a class='title' href='mailto:" . $v[ 'email' ] . "'>" . $v[ 'email' ] . "</a>"
-                   ,"projects"           => count( $v[ 'project' ] )
-                   ,"last-login"         => isset( $v["lastlogin"] ) ? date( "Y M d H:i T", ga_db_date_secs( $v["lastlogin"] ) ) : ""
-                   ,"registered"         => isset( $v["registered"] ) ? date( "Y M d H:i T", ga_db_date_secs( $v["registered"] ) ) : ""
+                   ,"projects"           => isset( $v[ 'project' ] ) ? count( $v[ 'project' ] ) : 0
+                   ,"last-login"         => isset( $v["lastlogin"] ) ? date( "Y M d H:i T", (int) ga_db_date_secs( $v["lastlogin"] ) ) : ""
+                   ,"registered"         => isset( $v["registered"] ) ? date( "Y M d H:i T", (int) ga_db_date_secs( $v["registered"] ) ) : ""
                    ,"jobs-not-removed"   => ga_db_output( ga_db_count( 'jobs', '', [ "user" => $name ] ) )
                    ,"running"            => isset( $runcount[ $name ] ) ? $runcount[ $name ] : 0
                    ,"admin"              => in_array( $v[ 'name' ], $appconfig->restricted->admin ) ? "yes" : ""
@@ -143,6 +143,6 @@ $results = [];
 
 get_html_userinfo( true );
 
-$results[ 'sysuserreport' ] = "<p>Server time " . date( "Y M d H:i:s T", $nowsecs ) . "</p>" . "<p>User count " . count( $userinfo ) . "</p>" . $html_userinfo;
+$results[ 'sysuserreport' ] = "<p>Server time " . date( "Y M d H:i:s T", (int) $nowsecs ) . "</p>" . "<p>User count " . count( $userinfo ) . "</p>" . $html_userinfo;
 
 echo json_encode( $results );

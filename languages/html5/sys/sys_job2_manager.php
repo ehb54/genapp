@@ -106,7 +106,8 @@ switch( $_REQUEST[ 'action' ] )
           }
           foreach ( $projectdirs as $k => $v )
           {
-             $dk = end( explode( "/", $k ) );
+             $dk = explode( "/", $k );
+             $dk = end( $dk );
              if ( clearprojectlock( $k ) )
              {
                  $results[ 'messages' ] .= "Cleared project '$dk'.\n";

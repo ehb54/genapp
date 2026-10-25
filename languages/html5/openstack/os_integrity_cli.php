@@ -36,7 +36,7 @@ foreach ( $projects as $project => $v ) {
 #    putenv( "OS_TENANT_NAME=$project" );
     putenv( "OS_PROJECT_NAME=$project" );
 
-    $cmd = "openstack server list -c ID -c Name -c Status -c Networks | grep ' ${project}-run-........-....-....-....-............-... ' ";
+    $cmd = "openstack server list -c ID -c Name -c Status -c Networks | grep ' {$project}-run-........-....-....-....-............-... ' ";
 
     $results .= `$cmd`;
 }

@@ -98,9 +98,9 @@ function get_userinfo( $error_json_exit = false ) {
                    "name"                => $name
                    ,"email"              => $email === "" ? "" : "<a class='title' href='mailto:" . $email . "'>" . $email . "</a>"
                    ,"group"              => isset( $v[ 'group' ] ) ? $v[ 'group' ] : ""
-                   ,"projects"           => count( $v[ 'project' ] )
-                   ,"last-login"         => isset( $v["lastlogin"] ) ? date( "Y M d H:i T", ga_db_date_secs( $v["lastlogin"] ) ) : ""
-                   ,"registered"         => isset( $v["registered"] ) ? date( "Y M d H:i T", ga_db_date_secs( $v["registered"] ) ) : ""
+                   ,"projects"           => isset( $v[ 'project' ] ) ? count( $v[ 'project' ] ) : 0
+                   ,"last-login"         => isset( $v["lastlogin"] ) ? date( "Y M d H:i T", (int) ga_db_date_secs( $v["lastlogin"] ) ) : ""
+                   ,"registered"         => isset( $v["registered"] ) ? date( "Y M d H:i T", (int) ga_db_date_secs( $v["registered"] ) ) : ""
                    ,"jobs-not-removed"   => $jobcount
                    ,"running"            => isset( $runcount[ $name ] ) ? $runcount[ $name ] : 0
                    ,"admin"              => in_array( $v[ 'name' ], $appconfig->restricted->admin ) ? "yes" : ""
@@ -169,14 +169,14 @@ function get_userinfo( $error_json_exit = false ) {
 
            foreach ( $thisbuttons as $v2 ) {
                $cmd = str_replace( ' ', '_', strtolower( $v2 ) );
-               $id = "_usermanage_${cmd}_${name}";
+               $id = "_usermanage_{$cmd}_{$name}";
                $buttons .= "<button id='$id'>$v2</button> ";
                if ( $cmd == "remove" ) {
                    $usecmd = "ga.admin.ajax.remove";
                } else {
                    $usecmd = "ga.admin.ajax";
                }
-               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;${usecmd}('$cmd','$name','$uid','$manageid');});";
+               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;{$usecmd}('$cmd','$name','$uid','$manageid');});";
            }
 
            // group buttons
@@ -192,11 +192,11 @@ function get_userinfo( $error_json_exit = false ) {
                
            foreach ( $thisbuttons as $v2 ) {
                $cmd = str_replace( ' ', '_', strtolower( $v2 ) );
-               $id = "_usermanage_${cmd}_${name}";
+               $id = "_usermanage_{$cmd}_{$name}";
                $group_buttons .= "<button class='ga-button-select' id='$id'>$v2</button> ";
                $usecmd = "ga.admin.ajax.group";
                $users_group = isset( $v[ 'group' ] ) ? $v[ 'group' ] : '';
-               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;${usecmd}('$cmd','$name','$uid','$manageid','$users_group');});";
+               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;{$usecmd}('$cmd','$name','$uid','$manageid','$users_group');});";
            }
 
            // job buttons
@@ -210,10 +210,10 @@ function get_userinfo( $error_json_exit = false ) {
                
            foreach ( $thisbuttons as $v2 ) {
                $cmd = str_replace( ' ', '_', strtolower( $v2 ) );
-               $id = "_usermanage_${cmd}_${name}";
+               $id = "_usermanage_{$cmd}_{$name}";
                $job_buttons .= "<button class='ga-button-select' id='$id'>$v2</button> ";
                $usecmd = "ga.admin.ajax.jobview";
-               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;${usecmd}('$cmd','$name','$uid','$manageid','$users_group');});";
+               $script .= "$('#$id').click(function(e){e.preventDefault();e.returnValue=false;{$usecmd}('$cmd','$name','$uid','$manageid','$users_group');});";
            }
 
            $userinfo['buttons'      ][] = $buttons;
@@ -267,7 +267,7 @@ $results = [];
 get_html_userinfo( true );
 __~external_auth_policy{require_once dirname(__DIR__, 3) . '/ui2/auth/policy.php'; if (function_exists('ga_external_auth_user_management_html')) { $html_userinfo = ga_external_auth_user_management_html($html_userinfo); }}
 
-$results[ 'sysuserreport' ] = "<p>Server time " . date( "Y M d H:i:s T", $nowsecs ) . "</p>" . "<p>User count " . count( $userinfo[ 'data' ] ) . "</p>" . $html_userinfo;
+$results[ 'sysuserreport' ] = "<p>Server time " . date( "Y M d H:i:s T", (int) $nowsecs ) . "</p>" . "<p>User count " . count( $userinfo[ 'data' ] ) . "</p>" . $html_userinfo;
 
 echo json_encode( $results );
 

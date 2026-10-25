@@ -89,17 +89,9 @@ $loginusingpendingreset = 0;
 $results[ 'status' ] = "User not found or incorrect password";
 if ( isset( $pw ) && $doc = ga_db_output( ga_db_findOne( 'users', '', [ 'name' => $userid ] ) ) ) 
 {
-   if ( PHP_VERSION_ID < 50500 )
-   {
-      if ( crypt( $pw, $doc[ 'password' ]) == $doc[ 'password' ] )
-      {
-         $loginok = 1;
-      }
-   } else {
-      if ( password_verify ( $pw , $doc[ 'password' ] ) )
-      {  
-         $loginok = 1;
-      }
+   if ( password_verify ( $pw , $doc[ 'password' ] ) )
+   {  
+      $loginok = 1;
    }
 }
 
@@ -221,7 +213,7 @@ if ( $loginok ) {
 
             $ext = 0;
             do {
-                $doc[ 'name' ] = "_canceled_" . ( $ext ? "${ext}_" : "" ) . $orgname;
+                $doc[ 'name' ] = "_canceled_" . ( $ext ? "{$ext}_" : "" ) . $orgname;
                 $ext++;
             } while ( ga_db_status( ga_db_findOne( 'users', '', [ 'name' => $doc[ 'name' ] ] ) ) );
 
@@ -557,12 +549,7 @@ if ( $loginok == 1 )
             exit();
          }
 
-         if ( PHP_VERSION_ID < 50500 )
-         {
-           $doc[ 'password' ] = crypt( $newpw );
-         } else {
-           $doc[ 'password' ] = password_hash( $newpw, PASSWORD_DEFAULT );
-         }
+         $doc[ 'password' ] = password_hash( $newpw, PASSWORD_DEFAULT );
 
          $expires = ga_db_date_add_secs( ga_db_output( ga_db_date() ), 60 * 60 );
 

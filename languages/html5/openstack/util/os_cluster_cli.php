@@ -85,7 +85,7 @@ $image = [];
 for ( $i = 0; $i < $argv[ 2 ]; ++$i ) {
     
     $name =  
-        "${project}-run-" . $argv[ 3 ] . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
+        "{$project}-run-" . $argv[ 3 ] . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
 ##        "-run-" . bin2hex( openssl_random_pseudo_bytes ( 16, $cstrong ) );
 
     $cmd = "openstack server create $name --flavor $flavor --image $baseimage --key-name $key --security-group $secgroup --network $network $userdata";

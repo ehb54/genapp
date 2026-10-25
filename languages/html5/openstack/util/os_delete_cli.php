@@ -21,7 +21,7 @@ $docmd = "";
 foreach ( $projects as $project => $v ) {
     project_putenv( $project );
 
-    $cmd = "openstack server list | grep ' ${project}-run-" . $argv[ 1 ] . "-... ' | awk '{ print $2 }'";
+    $cmd = "openstack server list | grep ' {$project}-run-" . $argv[ 1 ] . "-... ' | awk '{ print $2 }'";
     # echo $cmd . "\n";
     $results = `$cmd`;
     $ids = preg_split( "/\s+/", $results, -1, PREG_SPLIT_NO_EMPTY );

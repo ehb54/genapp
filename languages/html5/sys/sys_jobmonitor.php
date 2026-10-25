@@ -389,7 +389,7 @@ function get_runinfo( $error_json_exit = false ) {
                "module"    => $job[ 'module' ]
                ,"user"      => $job[ 'user' ]
 #               "pids"      => $v  [ 'pid' ]
-               ,"started"   => isset( $job[ "start" ] ) ? date( "Y M d H:i:s T", ga_db_date_secs( $job["start"] ) ) : "Unknown"
+               ,"started"   => isset( $job[ "start" ] ) ? date( "Y M d H:i:s T", (int) ga_db_date_secs( $job["start"] ) ) : "Unknown"
                ,"duration"  => $duration
                ,"resources" => implode( ",", array_keys( $resources ) )
                ,"id"        => $uuid
@@ -437,7 +437,7 @@ function get_runinfo( $error_json_exit = false ) {
    $xticsfull = [];
    foreach ( $plotdata[ "jobhistory" ][ "data" ][0][ "data" ] as $k => $v ) {
        $ymaxa[] = $v[ 1 ];
-       $xticsfull[] = array( $v[ 0 ], date( "H:i:s", $v[ 0 ] + $startsecs ) );
+       $xticsfull[] = array( $v[ 0 ], date( "H:i:s", (int) ( $v[ 0 ] + $startsecs ) ) );
    }
 
    // __~debug:jobmonitor{error_log( "xticsfull[]:\n" . print_r( $xticsfull, true ) , 3, "/tmp/mylog" );}
@@ -538,7 +538,7 @@ do {
     $nowsecs = microtime( true );
     get_html_runinfo( true );
 
-    $results[ "monitordata" ] = "<p>Last refreshed " . date( "Y M d H:i:s T", $nowsecs ) . "</p>" .  $html_runinfo;
+    $results[ "monitordata" ] = "<p>Last refreshed " . date( "Y M d H:i:s T", (int) $nowsecs ) . "</p>" .  $html_runinfo;
 
     foreach ( $plotdata as $k => $v ) {
         $results[$k] = $plot_format === "plotly" ? monitor_plotly_payload($k, $v, $startsecs) : $v;

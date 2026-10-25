@@ -149,7 +149,7 @@ while( 1 ) {
     if ( isset( $control_json->once ) ) {
         exit;
     }
-    print "sleeping ${minutes} minutes\n";
+    print "sleeping {$minutes} minutes\n";
     sleep( 60 * $minutes );
 }
 

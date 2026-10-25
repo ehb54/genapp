@@ -223,7 +223,9 @@ function getDirectoryTree( $outerDir, $depth ) {
     global $pattern;
     global $no_pattern;
 
-    $dirs = array_diff( scandir( $outerDir ), Array( ".", ".." ) );
+    // no directory yet (a user without results): scandir() returns false, which array_diff() rejects since PHP 8
+    $entries = is_dir( $outerDir ) ? scandir( $outerDir ) : false;
+    $dirs = array_diff( $entries === false ? [] : $entries, Array( ".", ".." ) );
 
     foreach( $dirs as $d ) 
     {
@@ -314,7 +316,9 @@ function getDirectory( $outerDir64 ) {
         $outerDir64 = '#';
     }
 
-    $dirs = array_diff( scandir( $outerDir ), Array( ".", ".." ) );
+    // no directory yet (a user without results): scandir() returns false, which array_diff() rejects since PHP 8
+    $entries = is_dir( $outerDir ) ? scandir( $outerDir ) : false;
+    $dirs = array_diff( $entries === false ? [] : $entries, Array( ".", ".." ) );
 
     foreach( $dirs as $d ) 
     {

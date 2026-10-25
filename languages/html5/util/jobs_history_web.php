@@ -134,7 +134,7 @@ foreach ($cursor_jobs as $obj_jobs) {
   $user_start = ga_db_date_secs( $this_when_start );
   $user_current = ga_db_date_secs( $this_when_current );
 
-  if ( array_key_exists( 'status', $obj_jobs ) ) {
+  if ( isset( $obj_jobs[ 'status' ] ) ) {
       $obj_jobs['status'] = (array) $obj_jobs['status'];
       $this_status = end( $obj_jobs[ 'status' ] );
   } else {
@@ -152,7 +152,7 @@ foreach ($cursor_jobs as $obj_jobs) {
       $user_current = time();
   }
 
-  if (date(DATE_ISO8601, $user_start) >= $start_date->format(DATE_ISO8601) && date(DATE_ISO8601, $user_current) < $end_date->format(DATE_ISO8601)){
+  if (date(DATE_ISO8601, (int) $user_start) >= $start_date->format(DATE_ISO8601) && date(DATE_ISO8601, (int) $user_current) < $end_date->format(DATE_ISO8601)){
         
       // Status
       

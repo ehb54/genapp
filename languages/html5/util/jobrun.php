@@ -68,7 +68,7 @@ if ( !getmenumodule( $id ) )
 
 __~debug:runjob{error_log( "jobrun 4\n", 3, "/tmp/php_errors" );}
 ob_start();
-if ( FALSE === ( $cmd = file_get_contents( "${logdir}_cmds_$id" ) ) )
+if ( FALSE === ( $cmd = file_get_contents( "{$logdir}_cmds_$id" ) ) )
 {
    $cont = ob_get_contents();
    ob_end_clean();
@@ -122,15 +122,15 @@ if ( !$GLOBALS[ 'wascancelled' ] ) {
 
     sendudptext( "jobrun: writing log file\n" );
     ob_start();
-    if ( FALSE === file_put_contents( "${logdir}_stdout_" . $_REQUEST[ '_uuid' ], $results ) ) {
+    if ( FALSE === file_put_contents( "{$logdir}_stdout_" . $_REQUEST[ '_uuid' ], $results ) ) {
         $cont = ob_get_contents();
         error_log( date( "Y M d H:i:s T", time() ) . " : " .  $argv[ 0 ] . " : error writing _stdout results\n", 3, "/tmp/php_errors" );
     }
     ob_end_clean();
-    sendudptext( "jobrun: exec done, logfile: ${logdir}_stdout_" . $_REQUEST[ '_uuid' ] . "\n" );
+    sendudptext( "jobrun: exec done, logfile: {$logdir}_stdout_" . $_REQUEST[ '_uuid' ] . "\n" );
 
 #-------- verify log exists
-    $stdoutfile = "${logdir}_stdout_" . $_REQUEST[ '_uuid' ];
+    $stdoutfile = "{$logdir}_stdout_" . $_REQUEST[ '_uuid' ];
     if ( !is_file( $stdoutfile ) || FALSE === ( $strresults = file_get_contents( $stdoutfile ) ) ) {
         sendudptext("Waiting for results to propagate to $stdoutfile\n" );
         ob_start();
@@ -246,7 +246,7 @@ function notify( $type ) {
                     if ( $doc[ 'email' ] ) {
                         $app = json_decode( file_get_contents( "__appconfig__" ) );
                         require_once "__docroot:html5__/__application__/ajax/mail.php";
-                        $body = "Your job " . $GLOBALS[ 'menu' ] . " : " . $GLOBALS[ 'module' ] . " submitted on " . date( "Y M d H:i:s T", ga_db_date_secs( $GLOBALS[ 'jobstart' ] ) ) . " is now $type.\n"
+                        $body = "Your job " . $GLOBALS[ 'menu' ] . " : " . $GLOBALS[ 'module' ] . " submitted on " . date( "Y M d H:i:s T", (int) ga_db_date_secs( $GLOBALS[ 'jobstart' ] ) ) . " is now $type.\n"
                             . "Job ID: " . $_REQUEST[ '_uuid' ] . "\n"
                             ;
                         if ( $type == "finished" ) {

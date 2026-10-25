@@ -110,7 +110,7 @@ foreach ($cursor_jobs as $obj_jobs) {
  
 // Status
 
-   if ( array_key_exists( 'status', $obj_jobs ) ) {
+   if ( isset( $obj_jobs[ 'status' ] ) ) {
        $obj_jobs['status'] = (array) $obj_jobs['status'];
        $this_status = end( $obj_jobs[ 'status' ] );
    } else {

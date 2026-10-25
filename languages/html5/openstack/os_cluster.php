@@ -95,7 +95,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
     for ( $i = 0; $i < $nodes; ++$i ) {
             
         $name =  
-            "${project}-run-" . $uuid . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
+            "{$project}-run-" . $uuid . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
         ##        "-run-" . bin2hex( openssl_random_pseudo_bytes ( 16, $cstrong ) );
 
         $cmd = "openstack server create $name --flavor $flavor --image $baseimage --key-name $key --security-group $secgroup --network $use_network $userdata";
@@ -274,7 +274,7 @@ function os_cluster_start( $nodes, $uuid, $use_project, $use_flavor ) {
                 sendudptext( "error: $v has no ip address defined\n" );
                 exit(-1);
             }
-            sendudptext("checking for ready $v $os_ip[$v] time waiting ${os_ready_time_waiting}s\n" );
+            sendudptext("checking for ready $v $os_ip[$v] time waiting {$os_ready_time_waiting}s\n" );
 
             ob_start();
 

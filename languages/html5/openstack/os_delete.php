@@ -21,7 +21,7 @@ function os_delete( $nodes, $uuid, $project = NULL, $quiet = false ) {
     $ids = [];
     for ( $i = 0; $i < $nodes; ++$i ) {
         $ids[] =  
-            "${project}-run-" . $uuid . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
+            "{$project}-run-" . $uuid . "-" . str_pad( $i, 3, "0", STR_PAD_LEFT );
     }
 
     $docmd = "";

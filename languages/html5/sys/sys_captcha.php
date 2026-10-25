@@ -46,7 +46,7 @@ $imagestr = "/9j/4AAQSkZJRgABAQEASABIAAD/4QAWRXhpZgAATU0AKgAAAAgAAAAAAAD//gAXQ3J
 // $image = new Imagick( 'cap_bg.jpg' );
 $image = new Imagick();
 $image->readimageblob( base64_decode( $imagestr ) );
-srand( make_seed() );
+srand( (int) make_seed() );
 
 $cstrong = true;
 $captcha = substr( strtolower( base64_encode( openssl_random_pseudo_bytes ( 4, $cstrong ) ) ), 0, 6 );

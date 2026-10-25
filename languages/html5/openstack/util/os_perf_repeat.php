@@ -68,6 +68,6 @@ while( 1 ) {
     if ( function_exists( 'post_processing' ) ) {
         post_processing( $json, $results );
     }
-    print "sleeping ${minutes} minutes\n";
+    print "sleeping {$minutes} minutes\n";
     sleep( 60 * $minutes );
 }

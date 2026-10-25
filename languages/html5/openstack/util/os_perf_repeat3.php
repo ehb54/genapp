@@ -270,7 +270,7 @@ while( 1 ) {
         exit;
     }
 
-    print "sleeping ${minutes} minutes\n";
+    print "sleeping {$minutes} minutes\n";
     sleep( 60 * $minutes );
 }
 

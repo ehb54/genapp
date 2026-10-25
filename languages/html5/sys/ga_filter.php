@@ -2,6 +2,19 @@
 
 __~external_auth_policy{if (isset($_REQUEST['_window'])) { require_once dirname(__DIR__, 2) . '/ui2/auth/policy.php'; if (function_exists('ga_external_auth_enforce_session')) { ga_external_auth_enforce_session('authenticated_request', $_REQUEST['_window']); } }}
 
+// what filter_var( $v, FILTER_SANITIZE_STRING ) did (the filter is deprecated since PHP 8.1 and gone in 9):
+// single and double quotes encoded as &#39; and &#34;, then the tags stripped, in that order; false for
+// an array or object. the filter also takes a "<" followed by white space as the start of a tag, which
+// strip_tags() does not: a letter put after such a "<" makes strip_tags() do the same (the same result as
+// the filter on 3 million random strings, PHP 8.3)
+function ga_filter_sanitize_string( $v ) {
+    if ( is_array( $v ) || is_object( $v ) ) {
+        return false;
+    }
+    $v = str_replace( [ "'", '"' ], [ "&#39;", "&#34;" ], (string) $v );
+    return strip_tags( preg_replace( '/<(?=[ \t\n\x0B\x0C\r])/', '<x', $v ) );
+}
+
 function ga_sanitize_validate( $modjson, $inputs, $modulename ) {
 
     __~debug:validate{error_log("\n================================================================================\n", 3, '/tmp/validatelog' );}
@@ -242,7 +255,7 @@ function ga_sanitize_validate( $modjson, $inputs, $modulename ) {
 	    case "string":
 	        if ( !( $req_v === "" ) && !$found_html) {
                     $sanitize_requested[ $k ] = "Y";     
-		    $v_sanitize = filter_var( $req_v, FILTER_SANITIZE_STRING );
+		    $v_sanitize = ga_filter_sanitize_string( $req_v );
 		    $sanitize[ $k ] =  $v_sanitize ;
 		    if ( !( filter_var ( $v_sanitize, FILTER_VALIDATE_REGEXP, $v_options[ $k ] ) ) ) {
 			    $validate[ $k ] = "failed"; 
@@ -259,7 +272,7 @@ function ga_sanitize_validate( $modjson, $inputs, $modulename ) {
                 if  ( isset( $req_v ) && !( sizeof( $req_v ) == 0 ) ) {
 		    $sanitize_requested[ $k ] = "Y"; 
                     foreach ( $req_v as $new_v ) {
-                        $v_sanitize = filter_var( $new_v, FILTER_SANITIZE_STRING );
+                        $v_sanitize = ga_filter_sanitize_string( $new_v );
 			array_push( $sanitize[ $k ], $v_sanitize );
 			if ( ! (filter_var ( $v_sanitize, FILTER_VALIDATE_REGEXP, $v_options[ $k ] ) ) ) {
 			    array_push( $validate_array, "failed" );
