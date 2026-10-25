@@ -1,0 +1,21 @@
+#!/bin/sh
+# stands in for svn while sbin/getapp.pl installs the test applications:
+# 'svn ls URL' lists the directories in $GENAPP_TEST_APPS, 'svn [--force] co URL/app dir' copies one of them
+
+apps=${GENAPP_TEST_APPS:?GENAPP_TEST_APPS is not set}
+
+[ "$1" = "--force" ] && shift
+case "$1" in
+    ls)
+        ls -1 "$apps" | sed 's|$|/|'
+        ;;
+    co|checkout)
+        app=$(basename "$2")
+        [ -d "$apps/$app" ] || { echo "svn-from-dir: no application $app in $apps" >&2; exit 1; }
+        mkdir -p "$3" && cp -a "$apps/$app/." "$3/"
+        ;;
+    *)
+        echo "svn-from-dir: unsupported: $*" >&2
+        exit 1
+        ;;
+esac
