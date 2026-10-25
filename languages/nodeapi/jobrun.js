@@ -53,9 +53,8 @@ async function error_exit( id, message ) {
     process.exit( id );
 }
 
-MongoClient.connect( mongo_url, async ( err, db ) => {
-    if (err) throw err;
-    mongodb = db.db( mongo_db_name );
+MongoClient.connect( mongo_url ).then( async ( client ) => {
+    mongodb = client.db( mongo_db_name );
     console.log( "connected to mongo:" + mongo_url );
 
     // lookup job in mongo
@@ -165,5 +164,9 @@ MongoClient.connect( mongo_url, async ( err, db ) => {
             .catch( ( err ) => {
                 return error_exit( -211, "logjobupdate upon finish error:" + err.message );
             });
+        // the open client keeps this process alive: close it, so the job's runner exits
+        await client.close();
     });
+}).catch( ( err ) => {
+    throw err;
 });
