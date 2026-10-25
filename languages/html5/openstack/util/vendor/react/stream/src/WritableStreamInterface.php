@@ -59,7 +59,7 @@ use Evenement\EventEmitterInterface;
  *     This event is mostly used internally, see also `pipe()` for more details.
  *
  * error event:
- *     The `error` event will be emitted whenever an error occurs, usually while
+ *     The `error` event will be emitted once a fatal error occurs, usually while
  *     trying to write to this stream.
  *     The event receives a single `Exception` argument for the error instance.
  *
@@ -69,21 +69,20 @@ use Evenement\EventEmitterInterface;
  *     });
  *     ```
  *
- *     This event MAY be emitted any number of times, which should be zero
- *     times if this is a stream that is successfully terminated.
- *     It SHOULD be emitted whenever the stream detects an error, such as a
- *     transmission error.
- *     It SHOULD NOT be emitted after a `close` event.
+ *     This event SHOULD be emitted once the stream detects a fatal error, such
+ *     as a fatal transmission error.
+ *     It SHOULD NOT be emitted after a previous `error` or `close` event.
+ *     It MUST NOT be emitted if this is not a fatal error condition, such as
+ *     a temporary network issue that did not cause any data to be lost.
+ *
+ *     After the stream errors, it MUST close the stream and SHOULD thus be
+ *     followed by a `close` event and then switch to non-writable mode, see
+ *     also `close()` and `isWritable()`.
  *
  *     Many common streams (such as a TCP/IP connection or a file-based stream)
  *     only deal with data transmission and may choose
- *     to only emit this for a fatal transmission error once and will thus
- *     likely close (terminate) the stream in response.
- *     If this is a fatal error that results in the stream being closed, it
- *     SHOULD be followed by a `close` event.
- *
- *     Other higher-level protocols may choose to keep the stream alive after
- *     this event, if they can recover from an error condition.
+ *     to only emit this for a fatal transmission error once and will then
+ *     close (terminate) the stream in response.
  *
  *     If this stream is a `DuplexStreamInterface`, you should also notice
  *     how the readable side of the stream also implements an `error` event.
@@ -120,6 +119,22 @@ use Evenement\EventEmitterInterface;
  *     In other words, after receiving this event, the stream MUST switch into
  *     non-writable AND non-readable mode, see also `isReadable()`.
  *     Note that this event should not be confused with the `end` event.
+ *
+ * The event callback functions MUST be a valid `callable` that obeys strict
+ * parameter definitions and MUST accept event parameters exactly as documented.
+ * The event callback functions MUST NOT throw an `Exception`.
+ * The return value of the event callback functions will be ignored and has no
+ * effect, so for performance reasons you're recommended to not return any
+ * excessive data structures.
+ *
+ * Every implementation of this interface MUST follow these event semantics in
+ * order to be considered a well-behaving stream.
+ *
+ * > Note that higher-level implementations of this interface may choose to
+ *   define additional events with dedicated semantics not defined as part of
+ *   this low-level stream specification. Conformance with these event semantics
+ *   is out of scope for this interface, so you may also have to refer to the
+ *   documentation of such a higher-level implementation.
  *
  * @see EventEmitterInterface
  * @see DuplexStreamInterface
@@ -181,7 +196,7 @@ interface WritableStreamInterface extends EventEmitterInterface
      * The stream SHOULD send a `drain` event once the buffer is ready to accept
      * more data.
      *
-     * Similarly, if the the stream is not writable (already in a closed state)
+     * Similarly, if the stream is not writable (already in a closed state)
      * it MUST NOT process the given `$data` and SHOULD return `false`,
      * indicating that the caller should stop sending data.
      *
@@ -262,6 +277,16 @@ interface WritableStreamInterface extends EventEmitterInterface
      * $stream->end(); // NO-OP
      * ```
      *
+     * If this stream is a `DuplexStreamInterface`, calling this method SHOULD
+     * also end its readable side, unless the stream supports half-open mode.
+     * In other words, after calling this method, these streams SHOULD switch
+     * into non-writable AND non-readable mode, see also `isReadable()`.
+     * This implies that in this case, the stream SHOULD NOT emit any `data`
+     * or `end` events anymore.
+     * Streams MAY choose to use the `pause()` method logic for this, but
+     * special care may have to be taken to ensure a following call to the
+     * `resume()` method SHOULD NOT continue emitting readable events.
+     *
      * Note that this method should not be confused with the `close()` method.
      *
      * @param mixed|string|null $data
@@ -305,7 +330,7 @@ interface WritableStreamInterface extends EventEmitterInterface
      *
      * ```php
      * $stream->end();
-     * $loop->addTimer(1.0, function () use ($stream) {
+     * Loop::addTimer(1.0, function () use ($stream) {
      *     $stream->close();
      * });
      * ```

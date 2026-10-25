@@ -4,30 +4,27 @@ namespace React\Stream;
 
 use Evenement\EventEmitter;
 
-class CompositeStream extends EventEmitter implements DuplexStreamInterface
+final class CompositeStream extends EventEmitter implements DuplexStreamInterface
 {
-    protected $readable;
-    protected $writable;
-    protected $pipeSource;
-    protected $closed = false;
+    private $readable;
+    private $writable;
+    private $closed = false;
 
     public function __construct(ReadableStreamInterface $readable, WritableStreamInterface $writable)
     {
         $this->readable = $readable;
         $this->writable = $writable;
 
+        if (!$readable->isReadable() || !$writable->isWritable()) {
+            $this->close();
+            return;
+        }
+
         Util::forwardEvents($this->readable, $this, array('data', 'end', 'error'));
         Util::forwardEvents($this->writable, $this, array('drain', 'error', 'pipe'));
 
         $this->readable->on('close', array($this, 'close'));
         $this->writable->on('close', array($this, 'close'));
-
-        $this->on('pipe', array($this, 'handlePipeEvent'));
-    }
-
-    public function handlePipeEvent($source)
-    {
-        $this->pipeSource = $source;
     }
 
     public function isReadable()
@@ -37,17 +34,13 @@ class CompositeStream extends EventEmitter implements DuplexStreamInterface
 
     public function pause()
     {
-        if ($this->pipeSource) {
-            $this->pipeSource->pause();
-        }
-
         $this->readable->pause();
     }
 
     public function resume()
     {
-        if ($this->pipeSource) {
-            $this->pipeSource->resume();
+        if (!$this->writable->isWritable()) {
+            return;
         }
 
         $this->readable->resume();
@@ -70,6 +63,7 @@ class CompositeStream extends EventEmitter implements DuplexStreamInterface
 
     public function end($data = null)
     {
+        $this->readable->pause();
         $this->writable->end($data);
     }
 
@@ -80,11 +74,10 @@ class CompositeStream extends EventEmitter implements DuplexStreamInterface
         }
 
         $this->closed = true;
-        $this->pipeSource = null;
-
         $this->readable->close();
         $this->writable->close();
 
         $this->emit('close');
+        $this->removeAllListeners();
     }
 }

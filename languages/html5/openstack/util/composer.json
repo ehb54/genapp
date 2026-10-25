@@ -1,0 +1,15 @@
+{
+    "description": "PHP libraries for the elasticmanager utilities (parallel.php: an event loop running child processes). 'composer update' in this directory writes them to vendor/. The platform section is the oldest supported PHP (8.1).",
+    "require": {
+        "php": ">=8.1",
+        "react/child-process": "^0.6.6",
+        "react/event-loop": "^1.5"
+    },
+    "config": {
+        "platform": {
+            "php": "8.1.2"
+        },
+        "platform-check": false,
+        "sort-packages": true
+    }
+}

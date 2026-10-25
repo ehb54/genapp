@@ -10,16 +10,20 @@
         }
     ],
     "require": {
-        "php": ">=5.4.0"
+        "php": ">=7.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9 || ^6"
     },
     "autoload": {
-        "psr-0": {
-            "Evenement": "src"
+        "psr-4": {
+            "Evenement\\": "src/"
         }
     },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "2.0-dev"
-        }
+    "autoload-dev": {
+        "psr-4": {
+            "Evenement\\Tests\\": "tests/"
+        },
+        "files": ["tests/functions.php"]
     }
 }
