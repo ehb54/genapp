@@ -97,6 +97,7 @@ EOT;
                   ga_db_update(
                       'users',
                       '',
+                      [ "_id" => ga_db_output( ga_db_Id( $r ) ) ],
                       $update 
                   )
              )
