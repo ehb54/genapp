@@ -345,6 +345,101 @@
     return layout;
   }
 
+  // Automatic log labels may collide even when their notation is concise.
+  // This display cache owns only tick placement, never source figures/ranges.
+  const fittedTickAxes = new WeakMap();
+  const TICK_PLACEMENT = ["tickmode", "tickvals", "ticktext", "dtick", "tick0", "nticks", "ticklabelstep"];
+
+  function automaticLogAxis(sourceLayout, name, selection) {
+    if (!AXIS_KEY.test(name) || selection?.axisTickDensity?.[name] !== "avoid-overlap") return false;
+    const axis = sourceLayout?.[name], template = sourceLayout?.template?.layout?.[name];
+    const explicit = value => value && TICK_PLACEMENT.some(key => value[key] != null);
+    return axis?.type === "log" && !axis.overlaying && !template?.overlaying &&
+      !explicit(axis) && !explicit(template);
+  }
+
+  function nonOverlappingTicks(rows, gap = 4) {
+    const valid = rows.filter(row => Number.isFinite(row.value) && row.value > 0 &&
+      Number.isFinite(row.start) && Number.isFinite(row.end) && row.end > row.start);
+    // Favor decades, then fit the remaining native labels in screen order.
+    const priority = row => Math.abs(Math.log10(row.value) - Math.round(Math.log10(row.value))) < 1e-8 ? 0 : 1;
+    const ordered = valid.slice().sort((a, b) => priority(a) - priority(b) || a.start - b.start);
+    const kept = [];
+    ordered.forEach(row => {
+      if (kept.every(other => row.end + gap <= other.start || other.end + gap <= row.start)) kept.push(row);
+    });
+    return kept.sort((a, b) => a.start - b.start);
+  }
+
+  function tickDensityUpdate(plot, sourceLayout, selection) {
+    const update = {};
+    Object.keys(selection?.axisTickDensity || {}).forEach(name => {
+      if (!automaticLogAxis(sourceLayout, name, selection) || plot?._fullLayout?.[name]?.type !== "log") return;
+      const id = name.replace("axis", ""), horizontal = name[0] === "x";
+      const nodes = Array.from(plot.querySelectorAll?.(`.${id}tick text`) || []);
+      if (nodes.length < 2 || nodes.length > 1000) return;
+      const rows = nodes.map(node => {
+        const box = node.getBoundingClientRect();
+        const coordinate = node.__data__?.x;
+        return { value: typeof coordinate === "number" ? 10 ** coordinate : NaN,
+          // Plotly keeps superscripts and other label markup in its datum.
+          text: node.__data__?.text ?? node.textContent, start: horizontal ? box.left : box.top,
+          end: horizontal ? box.right : box.bottom };
+      });
+      if (rows.some(row => !Number.isFinite(row.value) || row.value <= 0 || !(row.end > row.start))) return;
+      const kept = nonOverlappingTicks(rows);
+      if (!kept.length || kept.length === rows.length) return;
+      update[`${name}.tickmode`] = "array";
+      update[`${name}.tickvals`] = kept.map(row => row.value);
+      update[`${name}.ticktext`] = kept.map(row => row.text);
+    });
+    return Object.keys(update).length ? update : null;
+  }
+
+  function applyTickDensity(plot, sourceLayout, selection) {
+    if (!plot?._fullLayout || typeof window.Plotly?.relayout !== "function") return null;
+    let state = fittedTickAxes.get(plot);
+    if (!state) {
+      state = { axes: new Set(), busy: false };
+      state.listener = event => {
+        if (!state.busy && Object.keys(event || {}).some(key =>
+            /(?:^width$|^height$|axis\d*\.(?:range|autorange))/.test(key))) {
+          applyTickDensity(plot, state.source, state.selection);
+        }
+      };
+      fittedTickAxes.set(plot, state);
+    }
+    state.source = sourceLayout || {};
+    state.selection = selection || {};
+    if (state.busy) return state.promise;
+    // Purge/newPlot can remove listeners while retaining the same DOM node.
+    plot.removeListener?.("plotly_relayout", state.listener);
+    plot.on?.("plotly_relayout", state.listener);
+    state.busy = true;
+    state.promise = (async () => {
+      try {
+        const reset = {};
+        state.axes.forEach(name => {
+          for (const key of ["tickmode", "tickvals", "ticktext"]) {
+            reset[`${name}.${key}`] = state.source?.[name]?.[key] ??
+              state.source?.template?.layout?.[name]?.[key] ?? null;
+          }
+        });
+        state.axes.clear();
+        if (Object.keys(reset).length) await window.Plotly.relayout(plot, reset);
+        const update = tickDensityUpdate(plot, state.source, state.selection);
+        if (update) {
+          Object.keys(update).filter(key => key.endsWith(".tickmode"))
+            .forEach(key => state.axes.add(key.split(".")[0]));
+          await window.Plotly.relayout(plot, update);
+        }
+      } finally {
+        state.busy = false;
+      }
+    })();
+    return state.promise;
+  }
+
   // Presentation defaults never rewrite saved figures or explicit hover policy.
   function prepareHoverNameDisplay(sourceLayout, selection) {
     if (selection?.hoverNameDisplay !== "full" || !sourceLayout ||
@@ -432,6 +527,10 @@
   window.GenAppPlotlyLayout = {
     subplotSpacingUpdate,
     applySubplotSpacing,
+    automaticLogAxis,
+    nonOverlappingTicks,
+    tickDensityUpdate,
+    applyTickDensity,
     validNumericTickFormat,
     prepareNumericTickFormat,
     prepareHoverNameDisplay,

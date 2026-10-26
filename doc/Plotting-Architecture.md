@@ -411,3 +411,26 @@ authoritative. The shared helper releases its defaults when wrapping ends or
 the opt-in is removed, without mutating saved figures or scientific arrays.
 The neutral reproduction, compatibility details and validation requirements are
 in `doc/UI2-Axis-Title-Overflow-Shared-Gap-Report.md`.
+
+
+## Automatic logarithmic tick density
+
+`plotPresentation.axisTickDensity` maps ordinary axis names (including numbered
+axes) to `avoid-overlap`. This opt-in applies only to explicitly declared log
+axes with automatic tick placement. The shared `GenAppPlotlyLayout.applyTickDensity`
+helper measures native rendered label bounds and keeps a non-overlapping subset,
+favoring decade labels. UI2 and the Plot Presentation Lab call the same helper
+after layout fitting and refit after resize, zoom/reset and saved-output loading.
+
+Producer or template tick placement (`tickmode`, `tickvals`, `ticktext`, `dtick`,
+`tick0`, `nticks`, `ticklabelstep`) remains authoritative. Overlaid axes and axes
+without the opt-in retain native behavior. The helper restores its prior native
+placement before each fit and when the opt-in is removed. At most one reset and
+one fitting relayout occur per invocation; fitting does not recursively relayout.
+It changes detached display tick placement only: source arrays, scientific
+metadata, axis ranges, scales, hover precision and saved figures are unchanged.
+Exports use the fitted display layout at the displayed dimensions. Responsive
+geometry belongs to UI2, never presentation YAML or scientific producers.
+
+See `doc/UI2-Tick-Density-Shared-Gap-Report.md` for the neutral reproduction,
+compatibility controls and validation limits.

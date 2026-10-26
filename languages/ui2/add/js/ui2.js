@@ -13352,6 +13352,11 @@
         output,
         output?._ui2PlotlyLastFigure?.layout || {},
         plotPresentationForOutput(output)
+      ))
+      .then(() => window.GenAppPlotlyLayout?.applyTickDensity?.(
+        output,
+        output?._ui2PlotlyLastFigure?.layout || {},
+        plotPresentationForOutput(output)
       ));
   }
 

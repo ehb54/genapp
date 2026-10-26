@@ -1,0 +1,80 @@
+<!doctype html><meta charset="utf-8">
+<script src="../../languages/html5/add/js/plotly-2.35.2.min.js"></script>
+<script src="../../languages/ui2/add/js/plotly-layout.js"></script>
+<div id="plot" style="width:856px;height:558px"></div><pre id="results">pending</pre>
+<script>
+(async () => {
+ const plot=document.getElementById('plot'), api=GenAppPlotlyLayout;
+ const source={data:[{type:'scatter',mode:'markers',x:[.009,.01,.02,.08,.1,.3],y:[1,.8,.6,.3,.2,0]}],layout:{xaxis:{type:'log'},yaxis:{type:'linear'}}};
+ const copy=x=>JSON.parse(JSON.stringify(x));
+ const selection={axisTickFormats:{xaxis:'.4~g'},axisTickDensity:{xaxis:'avoid-overlap'}};
+ const labels=()=>Array.from(plot.querySelectorAll('.xtick text')).map(n=>({text:n.textContent,left:n.getBoundingClientRect().left,right:n.getBoundingClientRect().right})).sort((a,b)=>a.left-b.left);
+ const overlaps=()=>{const rows=labels();return rows.slice(1).filter((r,i)=>r.left<rows[i].right).length;};
+ const result={version:Plotly.version,control:[],checks:[]};
+ for(const width of [856,480]) {
+  plot.style.width=width+'px';
+  await Plotly.newPlot(plot,copy(source.data),api.prepareNumericTickFormat(copy(source.layout),selection));
+  result.control.push({width,overlaps:overlaps(),labels:labels()});
+ }
+ if(!result.control.some(r=>r.overlaps>0))throw Error('neutral automatic-log-tick overlap was not reproduced');
+ result.reproduced=true;
+ const check=(ok,label)=>{if(!ok)throw Error(label);result.checks.push(label);};
+ const saved=JSON.stringify(source);
+ for(const width of [856,480,1200,856]) {
+  plot.style.width=width+'px';
+  await Plotly.newPlot(plot,copy(source.data),api.prepareNumericTickFormat(copy(source.layout),selection));
+  const range=JSON.stringify(plot._fullLayout.xaxis.range);
+  await api.applyTickDensity(plot,source.layout,selection);
+  check(overlaps()===0,'no label overlap at '+width);
+  check(JSON.stringify(plot._fullLayout.xaxis.range)===range,'range preserved at '+width);
+  const first=JSON.stringify(labels().map(r=>r.text));
+  await api.applyTickDensity(plot,source.layout,selection);
+  check(JSON.stringify(labels().map(r=>r.text))===first,'idempotent labels at '+width);
+ }
+ await Plotly.relayout(plot,{'xaxis.range':[-2,-1.05]});
+ await api.applyTickDensity(plot,source.layout,selection);
+ check(overlaps()===0,'zoom refits labels');
+ check(JSON.stringify(plot._fullLayout.xaxis.range)===JSON.stringify([-2,-1.05]),'zoom retained');
+ await Plotly.relayout(plot,{'xaxis.autorange':true});
+ await api.applyTickDensity(plot,source.layout,selection);
+ check(overlaps()===0,'reset refits labels');
+ for(const width of [480,1200,856]) {
+  plot.style.width=width+'px';await Plotly.Plots.resize(plot);
+  await api.applyTickDensity(plot,source.layout,selection);
+  check(overlaps()===0,'resize refits labels '+width);
+ }
+ await api.applyNumericHoverFormat(plot,'.6g');
+ check(plot._fullLayout.xaxis.hoverformat==='.6g','hover precision retained');
+ const png=await Plotly.toImage(plot,{format:'png',scale:2,width:plot._fullLayout.width,height:plot._fullLayout.height});
+ const image=new Image();image.src=png;await image.decode();
+ check(image.naturalWidth===plot._fullLayout.width*2,'scale-2 PNG width');
+ result.pngDimensions=[image.naturalWidth,image.naturalHeight];
+ result.png=png;
+ check(overlaps()===0,'export leaves fitted ticks readable');
+ await api.applyTickDensity(plot,source.layout,{});
+ check(plot._fullLayout.xaxis.tickmode!=='array','removing opt-in restores native ticks');
+ check(overlaps()>0,'rollback reproduces original overlap');
+ for(const explicit of [{dtick:1},{nticks:4},{tickmode:'array',tickvals:[.01,.1],ticktext:['first','second']}]) {
+  const layout={...copy(source.layout),xaxis:{type:'log',...explicit}};
+  await Plotly.newPlot(plot,copy(source.data),layout);
+  await api.applyTickDensity(plot,layout,selection);
+  for(const key of Object.keys(explicit))check(JSON.stringify(plot.layout.xaxis[key])===JSON.stringify(explicit[key]),'explicit placement '+key);
+ }
+ const panels={grid:{rows:2,columns:1,subplots:[['xy'],['x2y2']]},xaxis:{type:'log'},yaxis:{type:'linear'},xaxis2:{type:'log'},yaxis2:{type:'linear'}};
+ const selected={axisTickFormats:{xaxis:'.4~g',xaxis2:'.4~g'},axisTickDensity:{xaxis:'avoid-overlap',xaxis2:'avoid-overlap'}};
+ await Plotly.newPlot(plot,[copy(source.data[0]),{...copy(source.data[0]),xaxis:'x2',yaxis:'y2'}],api.prepareNumericTickFormat(panels,selected));
+ await api.applyTickDensity(plot,panels,selected);
+ check(overlaps()===0,'first subplot fitted');
+ const second=Array.from(plot.querySelectorAll('.x2tick text')).map(n=>n.getBoundingClientRect()).sort((a,b)=>a.left-b.left);
+ check(second.every((r,i)=>!i||r.left>=second[i-1].right),'numbered subplot fitted');
+ await Plotly.react(plot,copy(source.data),api.prepareNumericTickFormat(copy(source.layout),selection));
+ await api.applyTickDensity(plot,source.layout,selection);check(overlaps()===0,'completed update fitted');
+ Plotly.purge(plot);
+ await Plotly.newPlot(plot,copy(source.data),api.prepareNumericTickFormat(copy(source.layout),selection));
+ await api.applyTickDensity(plot,source.layout,selection);check(overlaps()===0,'saved-output reconstruction fitted');
+ check(JSON.stringify(source)===saved,'scientific source unchanged');
+ result.passed=true;
+ window.tickDensityAcceptance=result;
+ document.getElementById('results').textContent=JSON.stringify(result);
+})().catch(error=>{window.tickDensityAcceptance={error:error.stack};document.getElementById('results').textContent=JSON.stringify(window.tickDensityAcceptance);});
+</script>

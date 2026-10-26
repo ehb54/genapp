@@ -716,3 +716,10 @@ random-channel same-origin message. The destination owns validation and durable
 context revisions. Read
 `doc/UI2-Global-Workspace-Shared-Gap-Report.md` and
 `doc/UI2-Core-Extension-Policy.md` before changing this boundary.
+
+## Automatic log tick presentation routing
+
+- Automatic logarithmic tick collision fitting is an opt-in display concern.
+  Preserve producer/template placement, ranges and saved scientific payloads;
+  route `axisTickDensity` to the GenApp plotting architecture and
+  `doc/UI2-Tick-Density-Shared-Gap-Report.md`. UI2 and the Lab share one helper.
