@@ -68,6 +68,7 @@ for $k ( keys %$obj ) {
 
 @kattribs = ( 
     "accept",
+    "actiondata",
     "alt",
     "append",
     "array",
@@ -86,6 +87,7 @@ for $k ( keys %$obj ) {
     "customtooltips",
     "default",
     "directory",
+    "disabled",
     "file",
     "hidden",
     "hook",
@@ -100,6 +102,7 @@ for $k ( keys %$obj ) {
     "hideifnot",
     "hider",
     "hover",
+    "idprefix",
     "jsmoladd",
     "label",
     "labelmargin",
@@ -109,6 +112,7 @@ for $k ( keys %$obj ) {
     "match",
     "max",
     "maxlength",
+    "maxvalue",
     "min",
     "multiple",
     "name",
@@ -117,6 +121,7 @@ for $k ( keys %$obj ) {
     "onlyleaf",
     "pan",
     "pattern",
+    "patternmessage",
     "posthline",
     "prehline",
     "pull",
@@ -145,6 +150,7 @@ for $k ( keys %$obj ) {
     "sync",
     "tableize",
     "titlefontclass",
+    "type",
     "url",
     "value",
     "values",
@@ -173,6 +179,7 @@ for $a ( @typeints ) {
 @typefloat = (
     "min",
     "max",
+    "maxvalue",
     "step"
     );
 
@@ -185,6 +192,7 @@ for $a ( @typefloat) {
     "changescaley",
     "checked",
     "directory",
+    "disabled",
     "fullwidth",
     "globuslogin",
     "googlelogin",
