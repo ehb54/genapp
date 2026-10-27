@@ -443,3 +443,22 @@ types, hover precision, or saved final output. It applies to Cartesian axes,
 not 3D scenes or polar axes. Geometry is owned by UI2, not YAML or producers.
 HTML5 behavior is unchanged. No module-specific branches or opt-ins are needed.
 See `doc/UI2-Tick-Density-Shared-Gap-Report.md` for evidence and acceptance.
+
+### Mandatory acceptance check for every new or updated SASSIE plot
+
+Every new or updated SASSIE-web plot must demonstrate that visible x- and
+y-axis labels do not overlap before it is accepted. This is a SASSIE-wide
+requirement, including all Cartesian subplots and secondary axes; it does not
+require a module opt-in. Any observed overlap fails acceptance and blocks
+handoff until corrected through the shared presentation layer.
+
+Check rendered labels at representative narrow and wide supported sizes, in
+normal and expanded/restore layouts, after zoom/pan/reset and resize, during
+updates where applicable, at completion, and after fresh-window reattachment.
+Check PNG export and the initial Chart Editor handoff where available. Include
+axis titles as well as tick labels in visual inspection. Use rendered label
+bounds to check tick-label collisions; passing source or unit checks alone is
+insufficient. Record the exercised sizes, states and results in the acceptance
+evidence; identify genuinely inapplicable states explicitly. An untested
+required state is not a pass. Scientific values, units and saved payloads must
+remain unchanged.

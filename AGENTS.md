@@ -719,6 +719,14 @@ context revisions. Read
 
 ## Automatic tick-label collision routing (#334)
 
+- Mandatory acceptance: every new or updated SASSIE-web plot must pass rendered
+  checks showing no overlapping x- or y-axis labels, including subplots and
+  secondary axes. Any overlap blocks acceptance and handoff. Check supported
+  sizes, normal/expanded/restore, zoom/pan/reset, resize, applicable updates,
+  completion, fresh-window reattachment, PNG and initial editor handoff; record
+  evidence and explicitly identify inapplicable states. See the mandatory
+  acceptance check in the paired GenApp `doc/Plotting-Architecture.md`.
+
 - All Cartesian x/y axes use shared display-only collision fitting by default.
   Retained text, native tick/grid positions, scientific values and saved payloads
   remain unchanged; explicit labels may be suppressed when they collide.
