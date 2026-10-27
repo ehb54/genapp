@@ -1,0 +1,15 @@
+{
+    "header" : "Atomic Structure Layout Fixture",
+    "menu"   : [
+        {
+            "id"      : "structures",
+            "label"   : "Structures",
+            "modules" : [
+                {
+                    "id"    : "viewer",
+                    "label" : "Viewer"
+                }
+            ]
+        }
+    ]
+}
