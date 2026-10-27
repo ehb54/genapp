@@ -157,9 +157,35 @@ confirmed in UI2. Existing unrelated local files and staged work were preserved.
 
 ## All-plot hover-name suppression — #336
 
-Implementation and acceptance in progress, October 27, 2026. This entry does
-not establish a pass. The shared directive applies to every Plotly output and
-historical saved-job rendering, without producer or saved-output migration.
-Record deployed revisions, exercised jobs/fixtures, hover modes, supported
-surfaces and lifecycle states after validation. Required gaps remain pending.
-See `UI2-Hover-Name-Suppression-Shared-Gap-Report.md`.
+October 27, 2026: passed on Zazzie3 UI2 with authorized administrator `codex3`.
+Deployed GenApp `3b0c3231`, application `e0799f5`; SASSIE routing-only
+`efaf1fce6` is pushed. Existing saved plots and all future ordinary Plotly outputs
+inherit the application directive without producer or saved-result migration.
+
+- Data Interpolation job `bd016cd1-76aa-45d1-9d30-f9e5c9be361b` and MCA job
+  `831cd987-f1ff-4d97-bdef-934558184f44` passed scientific scenario verification,
+  completion, same-window and fresh-window reattachment.
+- 46 UI2 checks passed across plot result tabs: normal/resized (1100/1600),
+  expanded/restore, zoom/reset, rendered hover values with no curve names,
+  unchanged arrays/uncertainty/names, no tick collisions, PNG and initial editor.
+  Additional closest/x/y/unified hover and pointer pan/reset checks passed.
+- Old saved job `53ba443b-30e6-43e7-b657-84230473edcc` passed normal Job Manager
+  fresh-window attachment with unchanged source science and hidden hover names.
+- Lab: 64 cases across 16 fixtures and four theme/surface combinations passed.
+  Actual 3D and heatmap pointer hovers passed eight further surface cases,
+  retaining point details. Lab PNG and initial editor handoff passed.
+- Local Chrome fixture: 109 checks. Lab parity: 21 tests, including immutable
+  preservation of all 102 captured fixtures. Final Linux focused suites: 10
+  harness assertions passed. Seven passing local suites: 812 assertions.
+- The broader runtime suite has a pre-existing object-identity assertion failure,
+  reproduced with unmodified `677b225d` sources. It was not changed or claimed
+  as passing. Detailed reproduction and applicability limits are in
+  `UI2-Hover-Name-Suppression-Shared-Gap-Report.md`.
+
+The initial submission refusal in an existing locked project was handled by
+creating a fresh acceptance project through normal controls; no lock was cleared.
+Live appends are neutral-fixture coverage; the two new deployed cases plot at
+completion. No scientific/driver/YAML changes or Lab rebuild actions occurred.
+The canonical UI2 deployment and Lab static-asset publication passed. Temporary
+windows were closed and `codex3` logout confirmed. Unrelated local work and
+staged entries were preserved.
