@@ -508,7 +508,7 @@
   // types rather than guessing whether an input column is numeric or a date.
   function validNumericHoverFormat(format) {
     return typeof format === "string" &&
-      /^(?:\.(?:[0-9]|1[0-5])e|\.(?:[1-9]|1[0-6])[gr])$/.test(format);
+      /^(?:\.(?:[0-9]|1[0-5])e|\.(?:[1-9]|1[0-6])~?[gr])$/.test(format);
   }
 
   function numericHoverFormatUpdate(plot, format) {
@@ -561,7 +561,172 @@
     });
   }
 
+  // This policy formats supplied values only. It never estimates uncertainty
+  // or uses error-bar endpoint subtraction to recover it.
+  const precisionTemplates = new WeakMap();
+  const numericValue = value => value !== null && value !== '' &&
+    (typeof value === 'number' || typeof value === 'string') && Number.isFinite(Number(value));
+
+  function decimalParts(value) {
+    const [mantissa, exponent = '0'] = String(value).toLowerCase().split('e');
+    const [whole, fraction = ''] = mantissa.split('.');
+    return { coefficient: BigInt(whole + fraction), power: Number(exponent) - fraction.length };
+  }
+
+  // Decimal round-to-nearest, ties-to-even, once from the supplied number's
+  // shortest decimal representation; no floating-point multiplication rounding.
+  function roundDecimal(value, place) {
+    const parts = decimalParts(value);
+    const shift = parts.power - place;
+    if (shift >= 0) return parts.coefficient * (10n ** BigInt(shift));
+    const divisor = 10n ** BigInt(-shift);
+    const sign = parts.coefficient < 0n ? -1n : 1n;
+    const absolute = parts.coefficient * sign;
+    const quotient = absolute / divisor, remainder = absolute % divisor;
+    const up = remainder * 2n > divisor || (remainder * 2n === divisor && quotient % 2n === 1n);
+    return (quotient + (up ? 1n : 0n)) * sign;
+  }
+
+  function decimalText(coefficient, place) {
+    const negative = coefficient < 0n;
+    let digits = String(negative ? -coefficient : coefficient);
+    if (place >= 0) digits = coefficient === 0n ? '0' : digits + '0'.repeat(place);
+    else {
+      digits = digits.padStart(1 - place, '0');
+      digits = digits.slice(0, place) + '.' + digits.slice(place);
+    }
+    return (negative ? '−' : '') + digits;
+  }
+
+  function uncertaintyPrecision(value) {
+    if (!numericValue(value) || Number(value) <= 0) return null;
+    const number = Number(value);
+    let place = Math.floor(Math.log10(number)) - 1;
+    let coefficient = roundDecimal(number, place);
+    if (coefficient >= 100n) coefficient = roundDecimal(number, ++place);
+    return { coefficient, place };
+  }
+
+  function formatUncertainValue(value, plus, minus = plus) {
+    if (!numericValue(value)) return null;
+    const upper = uncertaintyPrecision(plus), lower = uncertaintyPrecision(minus);
+    // Zero/nonfinite/absent uncertainty is not evidence of infinite precision.
+    if (!upper || !lower) return null;
+    const place = Math.min(upper.place, lower.place);
+    const rounded = roundDecimal(Number(value), place);
+    const magnitude = rounded === 0n ? Math.max(upper.place, lower.place) + 1 : String(rounded < 0n ? -rounded : rounded).length - 1 + place;
+    const exponent = magnitude < -4 || magnitude >= 6 ? magnitude : 0;
+    const valueText = decimalText(rounded, place - exponent);
+    const plusText = decimalText(upper.coefficient, upper.place - exponent);
+    const minusText = decimalText(lower.coefficient, lower.place - exponent);
+    const symmetric = Number(plus) === Number(minus);
+    const body = symmetric ? `${valueText} ± ${plusText}` : `${valueText} +${plusText}/−${minusText}`;
+    return {
+      value: valueText + (exponent ? `e${exponent}` : ''),
+      plus: plusText + (exponent ? `e${exponent}` : ''),
+      minus: minusText + (exponent ? `e${exponent}` : ''),
+      text: exponent ? `(${body})e${exponent}` : body
+    };
+  }
+
+  function pointValue(values, index) {
+    if (Array.isArray(index)) return values?.[index[0]]?.[index[1]];
+    return Array.isArray(values) || ArrayBuffer.isView(values) ? values[index] : values;
+  }
+
+  function suppliedUncertainty(error, value, index) {
+    if (!error || error.visible === false || !numericValue(value)) return null;
+    // Only explicit, absolute data uncertainties. Percent/constant/sqrt and
+    // cross-trace references are not silently converted or reinterpreted here.
+    if (error.type !== 'data' || error.traceref != null) return null;
+    const plus = pointValue(error.array, index);
+    const minus = error.symmetric === false ? pointValue(error.arrayminus, index) : plus;
+    return formatUncertainValue(value, plus, minus);
+  }
+
+  function precisionAxis(plot, trace, field) {
+    if (trace.scene) return plot?._fullLayout?.[trace.scene]?.[field + 'axis'];
+    const id = trace[field + 'axis'] || field;
+    return plot?._fullLayout?.[id[0] + 'axis' + id.slice(1)];
+  }
+
+  function uncertainHoverTemplate(plot, trace, sourceTemplate, index) {
+    const pairs = {};
+    for (const field of ['x', 'y', 'z']) {
+      const axis = precisionAxis(plot, trace, field);
+      if (!['linear', 'log'].includes(axis?.type)) continue;
+      const value = pointValue(trace[field], index);
+      const pair = suppliedUncertainty(trace['error_' + field], value, index);
+      if (pair) pairs[field] = pair;
+    }
+    if (!Object.keys(pairs).length) return sourceTemplate;
+    let template = sourceTemplate;
+    if (!template) {
+      const info = trace.hoverinfo || 'all';
+      if (info === 'skip' || info === 'none') return sourceTemplate;
+      const fields = ['x', 'y', 'z'].filter(field => (trace[field] != null || precisionAxis(plot, trace, field)) &&
+        (info === 'all' || info.split('+').includes(field)));
+      template = fields.map(field => `${field}: %{${field}}`).join('<br>');
+      if (info === 'all' || info.split('+').includes('text')) {
+        const textField = trace.hovertext != null && trace.hovertext !== '' ? 'hovertext' : 'text';
+        if (trace[textField] != null && trace[textField] !== '') template += `<br>%{${textField}}`;
+      }
+      template += info === 'all' || info.split('+').includes('name') ? '<extra>%{fullData.name}</extra>' : '<extra></extra>';
+    }
+    return template.replace(/%\{([xyz])(?::[^}]*)?\}/g, (original, field) => {
+      const pair = pairs[field];
+      if (!pair) return original;
+      // If the author explicitly includes error-array placeholders, keep the
+      // value and uncertainty separate while sharing the rounding decision.
+      return template.includes(`%{error_${field}.array`) ? pair.value : pair.text;
+    }).replace(/%\{error_([xyz])\.(arrayminus|array)(?::[^}]*)?\}/g,
+      (original, field, side) => pairs[field]?.[side === 'array' ? 'plus' : 'minus'] || original);
+  }
+
+  function numericHoverPrecisionUpdates(plot) {
+    const updates = [];
+    (plot?.data || []).forEach((trace, index) => {
+      const fullTrace = plot._fullData?.[index];
+      if (!fullTrace || trace.transforms?.length || !['scatter', 'scattergl', 'scatter3d', 'bar'].includes(fullTrace.type)) return;
+      const resolved = { ...fullTrace, ...trace, hoverinfo: trace.hoverinfo || 'all' };
+      for (const field of ['x', 'y', 'z']) {
+        const key = 'error_' + field;
+        // Resolved errors contain Plotly bookkeeping defaults (for example
+        // traceref=0); only the inferred type supplements explicit input.
+        resolved[key] = trace[key] ? { ...trace[key], type: trace[key].type || fullTrace[key]?.type } : undefined;
+      }
+      let state = precisionTemplates.get(trace);
+      if (!state || trace.hovertemplate !== state.display) {
+        state = { source: trace.hovertemplate ?? fullTrace.hovertemplate };
+        precisionTemplates.set(trace, state);
+      }
+      if (state.display == null && !['x', 'y', 'z'].some(field => resolved['error_' + field]?.array != null)) return;
+      const length = Math.max(...['x', 'y', 'z'].map(field => trace[field]?.length || 0));
+      if (!length) return;
+      const display = Array.from({ length }, (_, point) => uncertainHoverTemplate(
+        plot, resolved, pointValue(state.source, point), point));
+      const changed = display.some((value, point) => value !== pointValue(state.source, point));
+      const template = changed ? display : state.source;
+      if (JSON.stringify(template) === JSON.stringify(trace.hovertemplate)) return;
+      state.display = template;
+      updates.push({ index, template });
+    });
+    return updates;
+  }
+
+  async function applyNumericHoverPrecision(plot) {
+    for (const { index, template } of numericHoverPrecisionUpdates(plot)) {
+      // The extra array is Plotly's per-trace update envelope; template itself
+      // is the per-point string array. Scientific/custom data are untouched.
+      await window.Plotly.restyle(plot, { hovertemplate: [template ?? null] }, [index]);
+    }
+  }
+
   async function applyNumericHoverFormat(plot, format) {
+    if (format === "uncertainty-2") {
+      await applyNumericHoverFormat(plot, ".6g");
+      return applyNumericHoverPrecision(plot);
+    }
     if (!validNumericHoverFormat(format)) return;
     const layoutUpdate = numericHoverFormatUpdate(plot, format);
     if (layoutUpdate && typeof window.Plotly?.relayout === "function") {
@@ -585,6 +750,8 @@
     validNumericTickFormat,
     prepareNumericTickFormat,
     prepareHoverNameDisplay,
+    formatUncertainValue,
+    numericHoverPrecisionUpdates,
     validNumericHoverFormat,
     numericHoverFormatUpdate,
     numericHoverTraceUpdates,

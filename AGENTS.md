@@ -586,16 +586,17 @@ current task and does not carry forward.
 - Do not deploy unreviewed core changes or use Zazzie3 regeneration as a
   substitute for local generic and application-specific validation.
 
-### Numeric hover formatting route
+### Hover significant-figure reporting route (#335)
 
 The generic `ui2_plotly_hover_number_format` opt-in is governed by GenApp's
 `doc/UI2-Core-Extension-Policy.md` and `doc/Plotting-Architecture.md`.
-SASSIE-web selects `.6g` (six significant digits, adaptive decimal/exponent
-notation) in application directives;
-its policy is `genapp_zazzie/docs/plot_presentation.md` in the paired checkout.
-Ordinary UI2 and the Lab share one helper. Preserve explicit producer formats,
-scientific arrays, and saved outputs; do not add module-specific formatting
-branches, presentation YAML keys, or new 3D uncertainty-label behavior.
+SASSIE-web selects `uncertainty-2`; scientific reporting and unresolved
+precision rules belong to `genapp_zazzie/docs/plot_presentation.md` in the
+paired checkout. UI2 and the Lab share one helper. Preserve scientific arrays
+and saved outputs. Supplied uncertainty determines eligible coordinate hover
+precision, including supported 3D; legacy D3 selections retain their prior
+explicit-format precedence. Do not add scientific-name core branches or YAML
+formatting keys.
 
 ### Hover-label identity route
 

@@ -12605,6 +12605,7 @@
     return cloneUi2Value(figure);
   }
 
+  // Shared uncertainty-aware display policy also runs after bounded appends.
   function applyPlotlyNumericHoverFormat(output) {
     return window.GenAppPlotlyLayout?.applyNumericHoverFormat?.(
       output, appMap.directives?.ui2_plotly_hover_number_format

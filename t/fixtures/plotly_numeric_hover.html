@@ -116,5 +116,57 @@ for(const scenario of [
 await Plotly.newPlot(plot,copy(heatmap.data),{});await numericHoverPolicy.apply(plot,heatmap,'.6g');
 check((await hover([0,0])).includes('0.000800600'),'general heatmap value');
 
+// Application-neutral uncertainty-aware reporting opt-in; legacy controls above
+// deliberately retain their original selections and override precedence.
+const preciseSource={data:[{type:'scatter',name:'Neutral observation',x:[.227,.228],y:[.0007922,.0008],error_y:{type:'data',array:[.000338,.0004],visible:true},customdata:[['keep',17],['keep',18]]}],layout:{xaxis:{type:'linear'},yaxis:{type:'linear'}}};
+const preciseSaved=JSON.stringify(preciseSource);
+for(const mode of ['closest','x','x unified'])for(const scale of ['linear','log']){
+ const source=copy(preciseSource);source.layout.hovermode=mode;source.layout.yaxis.type=scale;
+ await Plotly.newPlot(plot,copy(source.data),copy(source.layout));
+ await numericHoverPolicy.apply(plot,source,'uncertainty-2');
+ if(mode==='closest')Plotly.Fx.hover(plot,[{curveNumber:0,pointNumber:0}]);
+ else Plotly.Fx.hover(plot,{xval:.227},['xy']);
+ await new Promise(resolve=>setTimeout(resolve,40));
+ const rendered=plot.querySelector('.hoverlayer').textContent;
+ check(rendered.includes('0.00079 ± 0.00034'),'uncertainty-aware rendered '+mode+' '+scale+' '+rendered);
+ check(rendered.includes('0.227000'),'unresolved q retains existing six-digit format '+mode+' '+scale);
+ check(!rendered.includes('%{'),'no unresolved native placeholders '+mode+' '+scale);
+ check(plot._fullLayout.hovermode===mode,'hover mode preserved '+mode);
+ check(JSON.stringify(source.data)===JSON.stringify(preciseSource.data),'source untouched '+mode+' '+scale);
+ results.examples.push({policy:'uncertainty-2',mode,scale,rendered});
+}
+for(const type of ['scatter','scattergl','bar','scatter3d']){
+ const source=copy(preciseSource);source.data[0].type=type;
+ if(type==='scatter3d'){source.data[0].z=[1,2];source.layout.scene={xaxis:{type:'linear'},yaxis:{type:'linear'},zaxis:{type:'linear'}};}
+ await Plotly.newPlot(plot,copy(source.data),copy(source.layout));await numericHoverPolicy.apply(plot,source,'uncertainty-2');
+ check(plot.data[0].hovertemplate[0].includes('0.00079 ± 0.00034'),'resolved trace policy '+type);
+ check(JSON.stringify(plot.data[0].y)===JSON.stringify(source.data[0].y),'scientific values retained '+type);
+}
+for(const operation of ['new','react','resize','reattach','empty','repopulate']){
+ if(operation==='empty')await Plotly.react(plot,[],{});
+ else if(operation==='resize'){plot.style.width='640px';await Plotly.Plots.resize(plot);}
+ else if(operation==='react')await Plotly.react(plot,copy(preciseSource.data),copy(preciseSource.layout));
+ else {if(operation==='reattach')Plotly.purge(plot);await Plotly.newPlot(plot,copy(preciseSource.data),copy(preciseSource.layout));}
+ await numericHoverPolicy.apply(plot,preciseSource,'uncertainty-2');
+ if(operation!=='empty')check((await hover()).includes('0.00079 ± 0.00034'),'precision lifecycle '+operation);
+ check(JSON.stringify(preciseSource)===preciseSaved,'immutable final output '+operation);
+}
+const precisionTemplate=copy(preciseSource);precisionTemplate.data[0].hovertemplate='Identity %{customdata[0]}<br>I: %{y:.8f} ± %{error_y.array:.8f}<extra>authored</extra>';
+await Plotly.newPlot(plot,copy(precisionTemplate.data),copy(precisionTemplate.layout));await numericHoverPolicy.apply(plot,precisionTemplate,'uncertainty-2');
+check((await hover()).includes('I: 0.00079 ± 0.00034'),'explicit error template paired precision');
+check((await hover()).includes('Identity keep'),'customdata identity remains');
+const matrixControl=copy(heatmap);await Plotly.newPlot(plot,copy(matrixControl.data),{});await numericHoverPolicy.apply(plot,matrixControl,'uncertainty-2');
+check((await hover([0,0])).includes('0.000800600'),'matrix fallback retains existing format without inventing uncertainty');
+
+await Plotly.newPlot(plot,copy(preciseSource.data),copy(preciseSource.layout));await numericHoverPolicy.apply(plot,preciseSource,'uncertainty-2');
+check(GenAppPlotlyLayout.numericHoverPrecisionUpdates(plot).length===0,'real Plotly precision application idempotent');
+await Plotly.extendTraces(plot,{x:[[.229]],y:[[.0009]],'error_y.array':[[.0005]]},[0],3);
+await numericHoverPolicy.apply(plot,preciseSource,'uncertainty-2');
+check((await hover(2)).includes('0.00090 ± 0.00050'),'real bounded append refreshes uncertainty strings');
+await Plotly.restyle(plot,{y:[[.0006,.0008,.0009]]},[0]);await numericHoverPolicy.apply(plot,preciseSource,'uncertainty-2');
+check((await hover(0)).includes('0.00060 ± 0.00034'),'real source-value update replaces old hover strings');
+await Plotly.restyle(plot,{'error_y.visible':false},[0]);await numericHoverPolicy.apply(plot,preciseSource,'uncertainty-2');
+check(!plot.data[0].hovertemplate,'disabling errors restores native source template');
+
 results.passed=true;window.numericHoverAcceptance=results;document.getElementById('results').textContent=JSON.stringify(results,null,2);
 })().catch(error=>{window.numericHoverAcceptance={passed:false,error:error.stack};document.getElementById('results').textContent=JSON.stringify(window.numericHoverAcceptance);});</script>

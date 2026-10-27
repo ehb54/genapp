@@ -462,3 +462,48 @@ insufficient. Record the exercised sizes, states and results in the acceptance
 evidence; identify genuinely inapplicable states explicitly. An untested
 required state is not a pass. Scientific values, units and saved payloads must
 remain unchanged.
+
+## Uncertainty-aware numeric hover reporting (#335)
+
+The generic `ui2_plotly_hover_number_format` string also accepts
+`"uncertainty-2"`. Its shared `GenAppPlotlyLayout.applyNumericHoverFormat`
+implementation first applies the existing `.6g` numeric fallback, preserving
+explicit axis/trace/template formats, then formats eligible coordinates from
+explicit positive finite absolute `error_x/y/z` data arrays. Two uncertainty
+significant digits determine the associated value's decimal place. Decimal
+round-to-nearest, ties-to-even is performed directly on the number's shortest
+decimal representation using integer arithmetic. Significant trailing zeros
+remain. Carries recompute the reporting place. Asymmetric sides each retain
+two digits and the value uses the finer reported place; neither side is
+symmetrized. Small/large rounded values use one shared exponent.
+
+Supported traces are scatter, scattergl, bar and scatter3d with resolved
+linear/log coordinate axes, including numbered axes/scenes. Supplied absolute
+uncertainties are read directly, never reconstructed from plotted endpoints.
+The helper changes only hover templates on detached display traces, using
+per-point strings. Native text, identities, author template text and unrelated
+placeholders remain; coordinate and corresponding error-array numeric formats
+are superseded only for the eligible quantity. Template-supplied units and
+extra boxes remain. No fields are added to scientific/customdata arrays.
+Date/category axes and unrelated values are unchanged. Schema-supported
+matrix/heatmap values retain the numeric fallback, not an invented uncertainty.
+
+Zero/missing/nonfinite/negative/hidden errors, computed error types, cross-trace
+references and unsupported relationships are not precision evidence. A
+fallback format or explicit producer format is not proof of scientifically
+justified precision. Applications must identify unresolved quantities and ask
+the scientific owner; core cannot branch on scientific names, infer
+measurement resolution or confidence, or transform an uncertainty's meaning.
+No scientific value, saved final output, unit, axis type, title or identity is
+modified. Reconstruct from ordinary source output after replacement or
+reattachment. The helper refreshes display strings after supported bounded
+appends; producers remain responsible for aligned values/uncertainties.
+
+Existing bounded D3 strings retain their earlier behavior and override
+precedence; trimmed `g/r` strings are also accepted. Missing/invalid selections
+and non-opted-in consumers retain existing behavior. Removing the selection and
+reconstructing from source restores native display. The opt-in is UI2-only;
+HTML5 generation and legacy renderer behavior remain unchanged. UI2 and
+application previews use this same helper, not independent formatters.
+See `doc/UI2-Numeric-Hover-Precision-Shared-Gap-Report.md` for approval,
+neutral reproductions, rollback and required validation.

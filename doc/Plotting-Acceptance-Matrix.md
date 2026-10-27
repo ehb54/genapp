@@ -102,3 +102,12 @@ routing-only commit `2805a7e6a`.
   passed readiness, generation, syntax/metadata and public-endpoint checks.
 - codex3 was logged out after acceptance and the Lab was closed. No YAML was
   published and no Lab Recompile UI2 action was used.
+
+## Issue 335 — uncertainty-aware reporting
+
+The `uncertainty-2` opt-in requires the shared reporting checks in
+`Plotting-Architecture.md`. Local numerical and neutral rendered evidence is
+recorded in the issue-335 shared-gap report and paired application coverage
+note. Deployed normal/expanded/restore, updates, completion, fresh-window
+reattachment and UI2/Lab parity remain **pending** until actually exercised.
+This entry does not grant all-module scientific precision acceptance.
