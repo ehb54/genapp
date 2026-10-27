@@ -13,45 +13,47 @@ const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const context={window:{}};vm.createContext(context);
 vm.runInContext(fs.readFileSync(process.argv[2],'utf8'),context);
 const api=context.window.GenAppPlotlyLayout, plain=x=>JSON.parse(JSON.stringify(x));
-const selection={axisTickDensity:{xaxis:'avoid-overlap',xaxis2:'avoid-overlap'}};
-const source={xaxis:{type:'log'},xaxis2:{type:'log'},yaxis:{type:'linear'}};
-assert(api.automaticLogAxis(source,'xaxis',selection));
-assert(api.automaticLogAxis(source,'xaxis2',selection));
-for(const type of ['linear','date','category',undefined])assert(!api.automaticLogAxis({xaxis:{type}},'xaxis',selection));
-for(const value of [undefined,'dense',false,[],{}])assert(!api.automaticLogAxis(source,'xaxis',{axisTickDensity:value}));
-for(const override of [{dtick:1},{nticks:5},{tick0:0},{tickmode:'auto'},{tickvals:[.1]},{ticktext:['a']},{ticklabelstep:2},{overlaying:'x2'}]){
- assert(!api.automaticLogAxis({xaxis:{type:'log',...override}},'xaxis',selection));
- assert(!api.automaticLogAxis({xaxis:{type:'log'},template:{layout:{xaxis:override}}},'xaxis',selection));
-}
-const rows=[{value:.009,start:0,end:35,text:'0.009'},{value:.01,start:20,end:48,text:'0.01'},{value:.02,start:70,end:98,text:'0.02'}];
-assert.deepStrictEqual(plain(api.nonOverlappingTicks(rows)),rows.slice(1));
-assert.strictEqual(rows.length,3);
-const nodes=rows.map(row=>({__data__:{x:Math.log10(row.value)},textContent:row.text,getBoundingClientRect:()=>({left:row.start,right:row.end,top:0,bottom:12})}));
-const plot={_fullLayout:{xaxis:{type:'log'}},querySelectorAll:selector=>selector==='.xtick text'?nodes:[]};
-const saved=JSON.stringify(source),update=api.tickDensityUpdate(plot,source,selection);
-assert.strictEqual(update['xaxis.tickmode'],'array');
-assert.deepStrictEqual(plain(update['xaxis.ticktext']),['0.01','0.02']);
-assert(Math.abs(update['xaxis.tickvals'][0]-.01)<1e-15);
-assert.strictEqual(api.tickDensityUpdate(plot,source,{}),null);
-assert.strictEqual(JSON.stringify(source),saved);
-// Invalid or unmeasurable DOM data leaves native Plotly untouched.
-assert.strictEqual(api.tickDensityUpdate({...plot,querySelectorAll:()=>nodes.map(n=>({...n,__data__:{}}))},source,selection),null);
-nodes[1].__data__.text='10<sup>−2</sup>';
-assert.strictEqual(api.tickDensityUpdate(plot,source,selection)['xaxis.ticktext'][0],'10<sup>−2</sup>');
-let calls=0,listener;
-plot.on=(name,fn)=>{listener=fn;};plot.removeListener=()=>{};
-context.window.Plotly={relayout:async(_plot,updates)=>{calls++;if(listener)listener(updates);}};
+const rows=[
+ {name:'xaxis',value:-1,priority:1,left:0,right:40,top:0,bottom:15,text:'first'},
+ {name:'xaxis',value:0,priority:1,left:20,right:60,top:0,bottom:15,text:'second'},
+ {name:'yaxis',value:1,priority:1,left:0,right:40,top:30,bottom:45,text:'third'}
+];
+assert.deepStrictEqual(plain(api.nonOverlappingTicks(rows)),[rows[0],rows[2]]);
+const listeners={};let calls=0,spacing=20,inject=false;
+const original={tickmode:'array',tickvals:[-1,0],ticktext:['first','second']};
+const plot={layout:{xaxis:plain(original)},_fullLayout:{xaxis:{type:'linear',l2d:v=>v}},
+ on:(name,fn)=>{listeners[name]=fn;},removeListener:()=>{},
+ querySelectorAll:()=>[-1,0].map((v,i)=>({__data__:{x:v,text:plot.layout.xaxis.ticktext[i]},
+ getBoundingClientRect:()=>({left:i*spacing,right:i*spacing+40,top:0,bottom:15,width:40,height:15})}))};
+context.window.Plotly={relayout:async(_plot,update)=>{
+ calls++; assert(calls<30,'bounded relayouts');
+ for(const [path,value] of Object.entries(update)){const [axis,key]=path.split('.');plot.layout[axis][key]=value;}
+ listeners.plotly_afterplot?.();listeners.plotly_relayout?.(update);
+ if(inject){inject=false;spacing=100;listeners.plotly_relayout?.({'xaxis.range':[-2,2]});}
+}};
 (async()=>{
- await api.applyTickDensity(plot,source,selection);
- assert.strictEqual(calls,1,'one bounded fitting relayout');
- await api.applyTickDensity(plot,source,{});
- assert.strictEqual(calls,2,'removal restores native placement once');
- assert.strictEqual(JSON.stringify(source),saved);
- console.log('neutral log density, overrides, bounded fitting and rollback passed');
+ const saved=JSON.stringify(original);
+ const update=api.tickDensityUpdate(plot);
+ assert.deepStrictEqual(plain(update['xaxis.tickvals']),[-1,0],'all grid positions retained');
+ assert.strictEqual(update['xaxis.ticktext'][0],'first');
+ await api.applyTickDensity(plot);
+ assert.strictEqual(calls,1,'one fit, no recursive relayout');
+ assert.strictEqual(api.tickDensityUpdate(plot),null,'visible labels fit');
+ spacing=100;listeners.plotly_relayout({'xaxis.range':[-2,2]});
+ await api.settleTickDensity(plot);
+ assert.deepStrictEqual(plain(plot.layout.xaxis),original,'labels restored when space returns');
+ spacing=20;inject=true;await api.applyTickDensity(plot);await api.settleTickDensity(plot);
+ assert.deepStrictEqual(plain(plot.layout.xaxis),original,'range event during fitting is not dropped');
+ spacing=20;await api.applyTickDensity(plot);
+ plot.layout.xaxis={tickmode:'array',tickvals:[-1,0],ticktext:['new one','new two']};spacing=100;
+ listeners.plotly_afterplot();await api.settleTickDensity(plot);
+ assert.deepStrictEqual(plain(plot.layout.xaxis.ticktext),['new one','new two'],'new figure wins over old baseline');
+ assert.strictEqual(JSON.stringify(original),saved,'source unchanged');
+ console.log('general tick fitting, grid preservation, queued events and reconstruction passed');
 })().catch(error=>{console.error(error);process.exit(1);});
 JS
 close $fh;
 my ($status,$output)=run_command(cwd=>$repo,cmd=>['node',$script,File::Spec->catfile($repo,qw(languages ui2 add js plotly-layout.js))]);
-is($status,0,'generic automatic logarithmic tick density') or diag($output);
-like($output,qr/rollback passed/,'bounded fitting and compatibility assertions completed');
+is($status,0,'generic x/y tick collision fitting') or diag($output);
+like($output,qr/reconstruction passed/,'bounded fitting and compatibility assertions completed');
 done_testing();

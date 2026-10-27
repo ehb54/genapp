@@ -56,3 +56,44 @@ Live acceptance and deployment remain pending separate authorization.
 The application commit also corrects acceptance-runner matrix hydration: it
 reconstructs ordered rows from DOM cell coordinates and checks nested dimensions
 and values instead of comparing a nested scenario matrix with a flat list.
+
+
+## General collision protection (#334), October 27, 2026
+
+Joseph Curtis approved the exact 14-file coordinated manifest and implementation,
+scoped commit/push, Zazzie3 deployment, codex3 UI2/Lab acceptance and Susan handoff.
+No scientific code or YAML publication is included. The earlier deployment-pending
+notes above describe the October 26 local stage; #333's subsequent issue comment
+records deployed acceptance at application 29fd0e6 and GenApp d6e634a.
+
+Data Interpolation's concise .4~g tick notation cannot prevent spatial collision.
+The previous helper required view opt-in and excluded every non-logarithmic axis.
+This leaves the reported plot and other axis types unprotected. The neutral
+fixture now reproduces label collisions without application/module identifiers,
+then covers both axes, multiple dimensions/ranges, linear/log/date/category and
+inferred/template/custom/reversed axes, subplots and overlays.
+
+The generic contract is default fitting of all resolved Cartesian x/y labels.
+Existing axisTickDensity consumers remain compatible; consumers without it now
+receive the same protection. Explicit/custom text may be hidden when it collides,
+but retained text and original grid positions remain unchanged. Source figures
+remain authoritative. Rollback is a coordinated revert of #334 runtime/policy
+changes, restoring #333's log-only opt-in behavior, not a producer workaround.
+
+Validation and deployed acceptance results follow after execution.
+
+### Local and Linux validation
+
+- macOS: six focused Perl/Node suites passed, 763 assertions; target filtering,
+  HTML5 assembly and the density suite passed another 52 assertions.
+- Lab parity/export checks: 19 Python-driven Node tests passed.
+- Headless Chrome/Plotly 2.35.2: 305 neutral browser checks passed, including
+  event-driven zoom/resize, grid-position/text preservation, custom blank ticks,
+  latest rapid zoom, overlays, subplots, PNG and displayed-layout reconstruction.
+- Nine existing Data Interpolation/MCA fixtures passed at three widths (27
+  cases), without rewriting their scientific payloads.
+- Linux: four focused helper suites passed (11 harness assertions with nested
+  Node assertions), using the existing Node 22.14.0 test runtime in zazzie3.
+  No dependency installation or scientific runtime change was performed.
+- UI2 fixture generation and HTML5 assembly passed. No generated HTML5 artifact
+  drift remains. Live acceptance is still pending deployment.

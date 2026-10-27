@@ -717,9 +717,12 @@ context revisions. Read
 `doc/UI2-Global-Workspace-Shared-Gap-Report.md` and
 `doc/UI2-Core-Extension-Policy.md` before changing this boundary.
 
-## Automatic log tick presentation routing
+## Automatic tick-label collision routing (#334)
 
-- Automatic logarithmic tick collision fitting is an opt-in display concern.
-  Preserve producer/template placement, ranges and saved scientific payloads;
-  route `axisTickDensity` to the GenApp plotting architecture and
-  `doc/UI2-Tick-Density-Shared-Gap-Report.md`. UI2 and the Lab share one helper.
+- All Cartesian x/y axes use shared display-only collision fitting by default.
+  Retained text, native tick/grid positions, scientific values and saved payloads
+  remain unchanged; explicit labels may be suppressed when they collide.
+  UI2 and the Lab share one helper. Existing `axisTickDensity` selections remain
+  compatible but are unnecessary. Route implementation and acceptance to the
+  paired GenApp `doc/Plotting-Architecture.md` and
+  `doc/UI2-Tick-Density-Shared-Gap-Report.md`.

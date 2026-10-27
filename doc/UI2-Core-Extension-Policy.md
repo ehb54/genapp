@@ -507,24 +507,33 @@ perform no workspace request, and UI2 still does not interpret workspace ids or
 application-specific meaning.
 
 
-## Automatic logarithmic tick density
+## Automatic tick-label collision protection (#334)
 
-`plotPresentation.axisTickDensity` maps ordinary axis names (including numbered
-axes) to `avoid-overlap`. This opt-in applies only to explicitly declared log
-axes with automatic tick placement. The shared `GenAppPlotlyLayout.applyTickDensity`
-helper measures native rendered label bounds and keeps a non-overlapping subset,
-favoring decade labels. UI2 and the Plot Presentation Lab call the same helper
-after layout fitting and refit after resize, zoom/reset and saved-output loading.
+All visible Cartesian x/y axes receive shared display-only collision fitting,
+including numbered, inferred, reversed, overlaid, linear, logarithmic, date and
+category axes. `axisTickDensity` remains accepted for compatibility but is no
+longer required. UI2 and the Plot Presentation Lab call the same
+`GenAppPlotlyLayout.applyTickDensity` helper after geometry fitting.
 
-Producer or template tick placement (`tickmode`, `tickvals`, `ticktext`, `dtick`,
-`tick0`, `nticks`, `ticklabelstep`) remains authoritative. Overlaid axes and axes
-without the opt-in retain native behavior. The helper restores its prior native
-placement before each fit and when the opt-in is removed. At most one reset and
-one fitting relayout occur per invocation; fitting does not recursively relayout.
-It changes detached display tick placement only: source arrays, scientific
-metadata, axis ranges, scales, hover precision and saved figures are unchanged.
-Exports use the fitted display layout at the displayed dimensions. Responsive
-geometry belongs to UI2, never presentation YAML or scientific producers.
+The helper measures rendered label rectangles and suppresses a deterministic
+subset of colliding labels with a four-CSS-pixel separation. Retained label text
+and native tick/grid positions are preserved, including explicit/custom ticks
+and intentionally blank labels. Logarithmic decade labels receive priority.
+Every fit restores the preceding native tick specification before measuring;
+labels return as the available space or range changes. Final bounds are checked
+again after array-mode rendering, with monotonically decreasing visible labels.
 
-See `doc/UI2-Tick-Density-Shared-Gap-Report.md` for the neutral reproduction,
-compatibility controls and validation limits.
+Rendering, updates, zoom/pan/reset, resize and saved-output reconstruction refit
+the labels. Fitting coalesces requests, retains the latest pending range/style
+change, and ignores its own relayout events. A replacement figure supersedes
+cached display state. PNG export and Chart Editor handoff await the fit; PNGs
+use the displayed dimensions at scale two. The editor receives the fitted
+layout through the existing handoff; subsequent editor edits belong to that
+editor, not this UI2 lifecycle.
+
+This is a change to label visibility, including explicitly authored labels;
+it does not change scientific arrays, uncertainty, names, units, ranges, scale
+types, hover precision, or saved final output. It applies to Cartesian axes,
+not 3D scenes or polar axes. Geometry is owned by UI2, not YAML or producers.
+HTML5 behavior is unchanged. No module-specific branches or opt-ins are needed.
+See `doc/UI2-Tick-Density-Shared-Gap-Report.md` for evidence and acceptance.

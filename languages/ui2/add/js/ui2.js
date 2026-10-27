@@ -12602,9 +12602,7 @@
   }
 
   function plotlyDisplayFigure(figure) {
-    return window.GenAppPlotlyLayout?.validNumericHoverFormat?.(
-      appMap.directives?.ui2_plotly_hover_number_format
-    ) ? cloneUi2Value(figure) : figure;
+    return cloneUi2Value(figure);
   }
 
   function applyPlotlyNumericHoverFormat(output) {
@@ -13108,6 +13106,20 @@
   }
 
   function applyPlotlyModebarHooks(figure, config) {
+    // Replace the native camera action so a queued zoom/resize fit finishes
+    // before Plotly reconstructs the displayed figure for PNG export.
+    if (window.Plotly?.Icons?.camera && !(config.modeBarButtonsToAdd || []).some(button => button?.name === "fittedImage")) {
+      config.modeBarButtonsToRemove = [...(config.modeBarButtonsToRemove || []), "toImage"];
+      config.modeBarButtonsToAdd = [...(config.modeBarButtonsToAdd || []), {
+        name: "fittedImage", title: "Download plot as a PNG", icon: window.Plotly.Icons.camera,
+        click: async graphDiv => {
+          await window.GenAppPlotlyLayout?.settleTickDensity?.(graphDiv);
+          return window.Plotly.downloadImage(graphDiv, {format:"png", scale:2,
+            width:graphDiv._fullLayout.width, height:graphDiv._fullLayout.height});
+        }
+      }];
+    }
+
     const editor = config?.genapp_chart_editor;
     if (!editor?.enabled || !editor.url || !window.Plotly?.Icons?.pencil) {
       return;
@@ -13123,7 +13135,8 @@
       name: "editInChartEditor",
       title: "Edit in Chart Editor",
       icon: window.Plotly.Icons.pencil,
-      click: (graphDiv) => {
+      click: async (graphDiv) => {
+        await window.GenAppPlotlyLayout?.settleTickDensity?.(graphDiv);
         const id = `gace_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
         window.localStorage.setItem(id, JSON.stringify({
           data: graphDiv.data,

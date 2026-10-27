@@ -77,3 +77,12 @@ Status values are `not_recorded`, `passed`, `failed`, or `not_applicable`.
   fixture checks passed, including autorange, source immutability, explicit
   ranges, multiple annotations, and zoom across react/resizing.
 - Both authorized browser sessions were logged out after acceptance.
+
+
+## General x/y tick-label fitting — #334
+
+October 27, 2026: coordinated shared UI2/Lab implementation in progress.
+Existing module acceptance rows above do not establish acceptance of this new
+behavior. Required: Data Interpolation and MCA normal/expanded/restore,
+zoom/pan/reset, completion, fresh-window reattachment, Lab parity, PNG and
+Chart Editor handoff. Deployment and live results are pending validation.
