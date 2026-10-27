@@ -105,9 +105,52 @@ routing-only commit `2805a7e6a`.
 
 ## Issue 335 — uncertainty-aware reporting
 
-The `uncertainty-2` opt-in requires the shared reporting checks in
-`Plotting-Architecture.md`. Local numerical and neutral rendered evidence is
-recorded in the issue-335 shared-gap report and paired application coverage
-note. Deployed normal/expanded/restore, updates, completion, fresh-window
-reattachment and UI2/Lab parity remain **pending** until actually exercised.
-This entry does not grant all-module scientific precision acceptance.
+The shared `uncertainty-2` capability passed the deployed reference checks below.
+Unknown scientific precision retains its existing format by explicit owner
+direction; no all-quantity scientific precision certification is claimed.
+
+## Deployed acceptance — October 27, 2026
+
+Deployed application commit `4142e88fd94238504e6d42627388c64f51838064` and
+GenApp core `677b225d047d52b21ff35dec963b15d3c4b74bca` through the canonical
+`tools/zazzie3_gacpu_genapp.sh --generate-language ui2` workflow. Readiness,
+container-identity preservation, UI2 generation, 144 generated PHP handlers,
+55 runtime module metadata files, public endpoint verification and verified
+installed-version publication passed. The only configuration change was the
+separately approved hover selection in Zazzie3's deployment directives.
+
+Authorized administrator `codex3` used the isolated acceptance Chrome profile
+with its listener verified at `127.0.0.1:9222`. The documented acceptance runner
+passed `data_interpolation_documented_automatic_31` in project
+`issue335_hover_20261027`, job `53ba443b-30e6-43e7-b657-84230473edcc`.
+Completion and both same-window and new-window reattachment passed. A separate
+fresh-window native hover check also displayed `x: 0.227000` and
+`y: 0.00079 ± 0.00034`, reconstructed from the normal saved final output.
+
+Native browser checks passed normal, expanded and restored layouts, resize,
+zoom, pan/reset and closest/compare hovers. DOM measurements found zero
+same-axis tick-label overlaps: 1920×963 viewport, 723.5-pixel expanded plots
+(16/11 ticks on profile/Guinier), 880.2-pixel restored profile (17 ticks),
+1280×813 viewport with 496.2-pixel profile (9 ticks; 12 after zoom/pan), and
+1511-pixel fresh-window profile (24 ticks). Scientific coordinate, uncertainty,
+metadata and customdata arrays matched the unmodified source figures.
+Axis titles and legends were also visually inspected at these sizes.
+
+PNG export at the narrow displayed size passed visual inspection. The initial
+Chart Editor handoff retained the source values `0.0007922` and `0.000338`,
+its prepared `0.00079 ± 0.00034` template and zero measured tick overlaps
+(19 labels). The Lab's production Data Interpolation fixture showed that same
+hover in both light (`#ffffff`) and dark (`#1a201f`) surfaces; each retained
+scientific arrays with zero measured tick overlaps (21 labels). No YAML was
+edited, saved or published, and no Lab Recompile UI2 action was used.
+
+Data Interpolation publishes these scientific plots at completion, so a live
+streaming-plot state is inapplicable to this deployed reference run. Ordered
+append/replacement/empty/repopulation behavior and supported 3D preparation were
+covered by the neutral local fixture; no additional deployed 3D or live-module
+acceptance is claimed. The owner-approved unresolved precision cases remain
+recorded separately; this validates the uncertainty-aware capability, not
+scientific precision for every quantity or historical producer format.
+
+All temporary acceptance/editor/Lab tabs were closed. `codex3` logout was
+confirmed in UI2. Existing unrelated local files and staged work were preserved.
