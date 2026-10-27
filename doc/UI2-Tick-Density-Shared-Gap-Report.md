@@ -80,7 +80,7 @@ but retained text and original grid positions remain unchanged. Source figures
 remain authoritative. Rollback is a coordinated revert of #334 runtime/policy
 changes, restoring #333's log-only opt-in behavior, not a producer workaround.
 
-Validation and deployed acceptance results follow after execution.
+Validation and deployed acceptance results are recorded below.
 
 ### Local and Linux validation
 
@@ -96,4 +96,28 @@ Validation and deployed acceptance results follow after execution.
   Node assertions), using the existing Node 22.14.0 test runtime in zazzie3.
   No dependency installation or scientific runtime change was performed.
 - UI2 fixture generation and HTML5 assembly passed. No generated HTML5 artifact
-  drift remains. Live acceptance is still pending deployment.
+  drift remains.
+
+### Deployed acceptance
+
+October 27, 2026: passed on Zazzie3 UI2 with authorized administrator
+account codex3. Deployed GenApp `bb7e6750`, application `5df5b6e`, and SASSIE
+routing-only commit `2805a7e6a`.
+
+- Data Interpolation scenario `data_interpolation_documented_automatic_31`:
+  job `96622176-39d5-4582-934e-349995254ff3`; scientific verification passed.
+- MCA scenario `multi_component_analysis_decomposition_exp_4_no_refine`:
+  job `1e8269da-772d-45c8-87d3-f5b5ff8996d8`; scientific verification passed.
+- Both passed normal, expanded/restore, zoom/pan/reset, completion,
+  same-window and fresh-window reattachment, PNG and Chart Editor handoff.
+  Independent rendered-label rectangle checks passed, including fresh-window
+  plots. Source scientific values were unchanged.
+- Additional live geometry/export checks passed: 15 Data Interpolation and
+  14 MCA checks. The deployed Lab passed 111 checks across nine fixtures,
+  light/dark themes and matched/contrasting canvases, with zoom/reset,
+  PNG and Chart Editor scientific-series parity.
+- Local and Linux validation is recorded in
+  `UI2-Tick-Density-Shared-Gap-Report.md`. The canonical UI2 deployment wrapper
+  passed readiness, generation, syntax/metadata and public-endpoint checks.
+- codex3 was logged out after acceptance and the Lab was closed. No YAML was
+  published and no Lab Recompile UI2 action was used.
