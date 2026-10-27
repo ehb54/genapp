@@ -82,6 +82,25 @@ function ga_file_manager_path_is_within( $path, $root )
     return $path == $root || strpos( $path, $root . DIRECTORY_SEPARATOR ) === 0;
 }
 
+## the user's own directory under the users directory: its real path; null if there is nothing there yet (a new user,
+## or one whose jobs each have a directory of their own, uniquedir); false if it cannot be used
+function ga_file_manager_user_root( $users_dir, $logon )
+{
+    $users_root = realpath( $users_dir );
+    $path = $users_dir . $logon;
+    if ( $users_root !== false && !file_exists( $path ) && !is_link( $path ) )
+    {
+        return null;
+    }
+    $user_root = realpath( $path );
+    if ( $users_root === false || $user_root === false || !is_dir( $user_root ) ||
+         !ga_file_manager_path_is_within( $user_root, $users_root ) || is_link( $user_root ) )
+    {
+        return false;
+    }
+    return $user_root;
+}
+
 function ga_file_manager_resolve_path( $root, $relative, $allow_root = false )
 {
     if ( !is_string( $root ) || !is_string( $relative ) ||
@@ -413,10 +432,15 @@ if ( !chdir( $dir ) )
   exit();
 }
 
-$users_root = realpath( $dir );
-$user_root = realpath( $dir . ( isset( $_SESSION[ $window ][ 'logon' ] ) ? $_SESSION[ $window ][ 'logon' ] : '' ) );
-if ( $users_root === false || $user_root === false || !is_dir( $user_root ) ||
-     !ga_file_manager_path_is_within( $user_root, $users_root ) || is_link( $user_root ) || !chdir( $user_root ) )
+$user_root = ga_file_manager_user_root( $dir, isset( $_SESSION[ $window ][ 'logon' ] ) ? $_SESSION[ $window ][ 'logon' ] : '' );
+if ( $user_root === null )
+{
+  ## nothing of the user's yet: the empty answers php7designer gave (an empty tree, {} for the other requests)
+  ob_end_clean();
+  echo $is_spec_fc ? '{}' : json_encode( $result_dirs );
+  exit();
+}
+if ( $user_root === false || !chdir( $user_root ) )
 {
   ob_end_clean();
   echo '{"error":"Could not access File Manager user directory"}';
