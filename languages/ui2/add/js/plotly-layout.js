@@ -504,6 +504,42 @@
     };
   }
 
+  // Application policy is applied to display copies, including archived figures.
+  // Keep the trace name for legends; suppress only its hover presentation.
+  function prepare_hover_name_suppression(figure, selection) {
+    if (selection !== "none" || !figure || typeof figure !== "object" || Array.isArray(figure)) return figure;
+    const template = value => {
+      if (Array.isArray(value)) return value.map(template);
+      if (typeof value !== "string") return value;
+      const body = value.replace(/<extra>[\s\S]*?<\/extra>/gi, "")
+        .replace(/%\{(?:fullData\.name|data\.name|name)(?::[^}]*)?\}/g, "");
+      return body + "<extra></extra>";
+    };
+    const trace = value => {
+      if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+      const display = { ...value, hoverlabel: { ...value.hoverlabel, namelength: 0 } };
+      if (value.hovertemplate != null) display.hovertemplate = template(value.hovertemplate);
+      if (typeof value.hoverinfo === "string" && value.hoverinfo !== "all") {
+        const flags = value.hoverinfo.split("+").filter(flag => flag !== "name");
+        display.hoverinfo = flags.join("+") || "none";
+      }
+      return display;
+    };
+    const layout = value => {
+      const display = { ...value, hoverlabel: { ...value?.hoverlabel, namelength: 0 } };
+      if (value?.template && typeof value.template === "object") {
+        display.template = { ...value.template,
+          layout: { ...value.template.layout, hoverlabel: { ...value.template.layout?.hoverlabel, namelength: 0 } } };
+        if (value.template.data) display.template.data = Object.fromEntries(
+          Object.entries(value.template.data).map(([type, traces]) =>
+            [type, Array.isArray(traces) ? traces.map(trace) : traces]));
+      }
+      return display;
+    };
+    return { ...figure, data: Array.isArray(figure.data) ? figure.data.map(trace) : figure.data,
+      layout: layout(figure.layout) };
+  }
+
   // Numeric defaults are opt-in presentation. Inspect Plotly's resolved axis
   // types rather than guessing whether an input column is numeric or a date.
   function validNumericHoverFormat(format) {
@@ -750,6 +786,7 @@
     validNumericTickFormat,
     prepareNumericTickFormat,
     prepareHoverNameDisplay,
+    prepare_hover_name_suppression,
     formatUncertainValue,
     numericHoverPrecisionUpdates,
     validNumericHoverFormat,

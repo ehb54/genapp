@@ -67,6 +67,52 @@
  await draw('#fff',{},'react',JSON.parse(saved));
  check(JSON.stringify(await hover('closest',3))===JSON.stringify(truncated),'removing opt-in restores native truncation');
  check(JSON.stringify(source)===saved,'scientific arrays, names, axes and saved output unchanged');
+
+ // Reproduce the gap with a neutral figure, independent of application ids.
+ const explicit=copy(source);explicit.data[0].hoverinfo='x+y+name';
+ explicit.data[0].hoverlabel={namelength:[-1,-1]};
+ explicit.data[1].hovertemplate='Position %{x:.3f}<br>Response %{y:.3f}<extra>explicit curve name</extra>';
+ explicit.data[2].hovertemplate=['Position %{x}<extra>%{fullData.name}</extra>','Position %{x}<extra>another name</extra>'];
+ explicit.layout.template={data:{scatter:[{hoverlabel:{namelength:-1}}]}};
+ const before=JSON.stringify(explicit);
+ const drawHidden=async(figure=explicit,method='react')=>{
+  const display=policy.prepare_hover_name_suppression(copy(figure),'none');
+  await Plotly[method](plot,display.data,policy.prepareHoverNameDisplay(display.layout,selection));
+ };
+ for(const background of ['#ffffff','#202725']){
+  explicit.layout.paper_bgcolor=background;explicit.layout.plot_bgcolor=background;
+  await drawHidden();
+  for(const mode of ['closest','x','y']){
+   for(let i=0;i<4;i++){
+    const labels=await hover(mode,i);
+    check(labels.every(label=>!label.trim()),'names absent '+mode+' '+i+' '+background);
+    check(plot.querySelectorAll('.hovertext .nums').length>0,'numeric labels retained '+mode+' '+i);
+   }
+  }
+  await Plotly.relayout(plot,{hovermode:'x unified'});
+  Plotly.Fx.hover(plot,{xval:1});await new Promise(r=>setTimeout(r,70));
+  const unified=plot.querySelector('.hoverlayer')?.textContent||'';
+  check(unified.trim().length>0,'unified values rendered');
+  check(!names.some(name=>unified.includes(name))&&!unified.includes('explicit curve name'),'unified names absent');
+  for(const operation of ['expand','restore','append','update','completion','reattach']){
+   if(operation==='expand'||operation==='restore'){
+    plot.style.width=(operation==='expand'?1000:640)+'px';await Plotly.Plots.resize(plot);
+   }else if(operation==='append')await Plotly.extendTraces(plot,{x:[[3]],y:[[3]]},[0],10);
+   else {if(operation==='reattach')Plotly.purge(plot);await drawHidden(explicit,operation==='reattach'?'newPlot':'react');}
+   check((await hover('closest',1)).every(label=>!label.trim()),'suppression after '+operation);
+  }
+ }
+ const threeD={data:[{type:'scatter3d',mode:'markers',name:'3D curve',x:[1],y:[2],z:[3],hoverlabel:{namelength:-1}}],layout:{}};
+ await drawHidden(threeD);
+ check(plot._fullData[0].hoverlabel.namelength===0&&plot._fullData[0].name==='3D curve','3D name suppressed, identity preserved');
+ const heat={data:[{type:'heatmap',name:'heat curve',z:[[1,2],[3,4]],hovertemplate:'%{z:.6g}<extra>heat curve</extra>'}],layout:{}};
+ await drawHidden(heat);
+ check(plot._fullData[0].hovertemplate==='%{z:.6g}<extra></extra>','heatmap value and precision preserved');
+ check(JSON.stringify(source)===saved,'original source still unchanged');
+ // The only changes above to the neutral source are the explicitly selected backgrounds.
+ const restored=copy(explicit);delete restored.layout.paper_bgcolor;delete restored.layout.plot_bgcolor;
+ check(JSON.stringify(restored)===before,'explicit source templates and per-point settings immutable');
+
  document.getElementById('results').textContent=JSON.stringify({passed:true,version:Plotly.version,checks});
 })().catch(error=>{document.getElementById('results').textContent=JSON.stringify({passed:false,error:error.message});});
 </script>

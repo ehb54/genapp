@@ -12602,7 +12602,10 @@
   }
 
   function plotlyDisplayFigure(figure) {
-    return cloneUi2Value(figure);
+    const display = cloneUi2Value(figure);
+    return window.GenAppPlotlyLayout?.prepare_hover_name_suppression?.(
+      display, appMap.directives?.ui2_plotly_hover_name_display
+    ) || display;
   }
 
   // Shared uncertainty-aware display policy also runs after bounded appends.

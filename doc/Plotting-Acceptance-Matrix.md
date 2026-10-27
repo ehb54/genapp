@@ -154,3 +154,12 @@ scientific precision for every quantity or historical producer format.
 
 All temporary acceptance/editor/Lab tabs were closed. `codex3` logout was
 confirmed in UI2. Existing unrelated local files and staged work were preserved.
+
+## All-plot hover-name suppression — #336
+
+Implementation and acceptance in progress, October 27, 2026. This entry does
+not establish a pass. The shared directive applies to every Plotly output and
+historical saved-job rendering, without producer or saved-output migration.
+Record deployed revisions, exercised jobs/fixtures, hover modes, supported
+surfaces and lifecycle states after validation. Required gaps remain pending.
+See `UI2-Hover-Name-Suppression-Shared-Gap-Report.md`.

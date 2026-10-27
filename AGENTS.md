@@ -735,3 +735,15 @@ context revisions. Read
   compatible but are unnecessary. Route implementation and acceptance to the
   paired GenApp `doc/Plotting-Architecture.md` and
   `doc/UI2-Tick-Density-Shared-Gap-Report.md`.
+
+## Application-wide hover-name suppression (#336)
+
+GenApp owns `ui2_plotly_hover_name_display: "none"` and the shared display-only
+`prepare_hover_name_suppression` helper, used by UI2 and the Plot Presentation Lab.
+The application directive supersedes older full-name selections, including
+explicit name lengths and template name boxes, for existing saved and future
+plots. Preserve trace names/legends, point details, scientific arrays, numeric
+precision and saved outputs. No scientific or driver workaround belongs here.
+Owner contracts: paired GenApp `doc/Plotting-Architecture.md` and
+`doc/UI2-Core-Extension-Policy.md`; application selection:
+`genapp_zazzie/docs/plot_presentation.md`.

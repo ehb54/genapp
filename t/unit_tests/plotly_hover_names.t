@@ -36,6 +36,31 @@ assert.strictEqual(p.prepareHoverNameDisplay(templated,selection).hoverlabel.nam
 assert.deepStrictEqual(JSON.parse(JSON.stringify(p.prepareHoverNameDisplay(JSON.parse(saved),selection))),JSON.parse(JSON.stringify(display)),'saved-output reconstruction');
 const ui2=fs.readFileSync(process.argv[3],'utf8');
 assert(ui2.includes('prepareHoverNameDisplay?.('),'ordinary UI2 uses shared helper');
+
+const hiddenSource={data:[{type:'scatter',name:'series A',x:[1],y:[2],hoverinfo:'x+y+name',hoverlabel:{namelength:[-1,8],bgcolor:'red'},hovertemplate:['q %{x:.3g}<extra>series A</extra>','%{fullData.name}: %{y:.6g}']}],layout:{hoverlabel:{namelength:-1},template:{layout:{hoverlabel:{namelength:20}},data:{scatter:[{hovertemplate:'%{name} %{y}<extra>template name</extra>',hoverlabel:{namelength:-1}}]}}}};
+const original=JSON.stringify(hiddenSource),hidden=p.prepare_hover_name_suppression(hiddenSource,'none');
+assert.strictEqual(hidden.data[0].name,'series A');
+assert.strictEqual(hidden.data[0].hoverinfo,'x+y');
+assert.strictEqual(hidden.data[0].hoverlabel.namelength,0);
+assert.strictEqual(hidden.data[0].hoverlabel.bgcolor,'red');
+assert.strictEqual(hidden.layout.hoverlabel.namelength,0);
+assert.strictEqual(hidden.layout.template.layout.hoverlabel.namelength,0);
+assert.strictEqual(hidden.layout.template.data.scatter[0].hoverlabel.namelength,0);
+assert.strictEqual(hidden.data[0].hovertemplate[0],'q %{x:.3g}<extra></extra>');
+assert.strictEqual(hidden.data[0].hovertemplate[1],': %{y:.6g}<extra></extra>');
+assert.strictEqual(JSON.stringify(hiddenSource),original,'archived source immutable');
+assert.strictEqual(JSON.stringify(p.prepare_hover_name_suppression(hidden,'none')),JSON.stringify(hidden),'suppression idempotent');
+assert.strictEqual(p.prepareHoverNameDisplay(hidden.layout,selection),hidden.layout,'application suppression beats full view selection');
+for(const flag of [undefined,null,'full','NONE',false])assert.strictEqual(p.prepare_hover_name_suppression(hiddenSource,flag),hiddenSource,'non-opted-in applications unchanged');
+for(const info of ['skip','none','all','name']){
+ const result=p.prepare_hover_name_suppression({data:[{hoverinfo:info}],layout:{}},'none');
+ assert.strictEqual(result.data[0].hoverinfo,info==='name'?'none':info);
+}
+assert.deepStrictEqual(JSON.parse(JSON.stringify(p.prepare_hover_name_suppression(JSON.parse(original),'none'))),JSON.parse(JSON.stringify(hidden)),'archived reconstruction');
+const appMap=fs.readFileSync(require('path').join(require('path').dirname(process.argv[3]),'../../app-map.header.js'),'utf8');
+assert(appMap.includes('__~ui2_plotly_hover_name_display{'),'directive propagated through generator');
+assert(ui2.includes('display, appMap.directives?.ui2_plotly_hover_name_display'),'all output rendering uses application policy');
+
 console.log('hover name opt-in, overrides, controls, immutability and reconstruction passed');
 JS
 close $fh;

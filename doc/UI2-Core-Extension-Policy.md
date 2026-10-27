@@ -601,3 +601,47 @@ HTML5 generation and legacy renderer behavior remain unchanged. UI2 and
 application previews use this same helper, not independent formatters.
 See `doc/UI2-Numeric-Hover-Precision-Shared-Gap-Report.md` for approval,
 neutral reproductions, rollback and required validation.
+
+## Application-wide hover-name suppression (#336)
+
+An application may select `ui2_plotly_hover_name_display: "none"` once in its
+UI2 directives. The shared `GenAppPlotlyLayout.prepare_hover_name_suppression`
+helper prepares display-only trace/layout copies in ordinary UI2 and application
+previews. It applies to all ordinary Plotly outputs, including dynamic outputs,
+live updates, completed figures and historical saved-job reattachment. There is
+no per-module opt-in or exception list. Missing/invalid directive values leave
+existing behavior unchanged for other applications.
+
+This application policy takes precedence over `hoverNameDisplay: "full"` and
+explicit layout, trace, template and per-point name lengths. It sets display
+name length to zero, removes the `name` flag from explicit `hoverinfo`, empties
+template `<extra>` name boxes and removes `%{name}`, `%{data.name}` and
+`%{fullData.name}` substitutions from template bodies. Template arrays and trace
+templates receive the same treatment. Empty name-only hoverinfo becomes `none`,
+retaining hover events. `skip` remains `skip`. Numeric formatting, coordinates,
+uncertainty, units and point-specific template body text are preserved. Authors
+must keep curve names in `name`/legend and the standard name channels rather than
+embed literal duplicates in scientific point descriptions; arbitrary scientific
+text is not searched for words matching a trace name.
+
+Trace names, legends, metadata, data arrays, axes, scales, colors and source
+figures remain unchanged. The shared helper runs before the existing full-name
+view helper so obsolete full-name selections cannot restore names. Bounded
+coordinate appends retain the prepared display policy. Reconstruction always
+starts from the ordinary saved final figure; no saved-result migration or new
+sidecar is involved. PNG and initial Chart Editor handoff use the displayed
+figure through their established paths. Users may subsequently edit their chart.
+
+The policy also applies to compare/unified hover and traces without an individual
+legend entry. Compact legends can hide individual member identities, and palettes
+can repeat colors: suppressing names deliberately removes that hover identity.
+Do not compensate by modifying legend policy, science or saved outputs.
+
+Acceptance must cover rendered closest, compare and unified labels; explicit
+and inherited hover settings/templates; per-point arrays; 2D, 3D and heatmaps;
+light/dark and contrasting surfaces; normal/expanded/restore, resize, live
+appends/updates, completion and fresh-window reattachment. Verify source
+immutability and unchanged values, precision, uncertainty, color and legends.
+Existing mandatory axis-label collision checks still apply. Required untested
+states are pending, not passes. Owner gap report:
+`doc/UI2-Hover-Name-Suppression-Shared-Gap-Report.md`.
