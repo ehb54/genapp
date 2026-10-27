@@ -2,7 +2,7 @@
 
 ga.layout.fields[ "__fields:id__" ] = {};
 ga.layout.fields[ "__fields:id__" ].lhtml =
-  '<label for="__fields:id__"__~fields:help{ class="help_link"}>__fields:label__ </label>'
+  '<label for="__fields:id__" class="ga-g-__moduleid__-__fields:id____~fields:help{ help_link}" style="__~fields:labelmargin{margin:__fields:labelmargin__;}__~fields:labelmargintop{margin-top:__fields:labelmargintop__;}">__fields:label__ </label>'
   __~fields:help{+ '<span class="help">__fields:help__</span>'}
   ;
 ga.layout.fields[ "__fields:id__" ].dhtml =
@@ -28,7 +28,7 @@ ga.layout.fields[ "__fields:id__" ].eval  =
 	debug: false\
      };'
   + 'ga.value.setLastValue( "__moduleid___output", "#__fields:id__" );'
-  + 'ga.value.extra_resets( "__fields:id__" );'
+  + 'ga.value.extra_resets( "__fields:id__" );__~hoverhighlight{$(".ga-g-__moduleid__-__fields:id__").hover(function(){$(".ga-g-__moduleid__-__fields:id__").toggleClass("ga-highlight")});}'
   ;
 
 /* old way

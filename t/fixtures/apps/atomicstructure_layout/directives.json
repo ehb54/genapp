@@ -1,0 +1,11 @@
+{
+    "title"          : "Atomic Structure Layout Fixture",
+    "application"    : "atomicstructure_layout",
+    "version"        : "0.01",
+    "languages"      : [ "html5" ],
+    "hoverhighlight" : "true",
+    "bootstrap"      : {
+        "package" : "bootswatch",
+        "theme"   : "somoaf"
+    }
+}

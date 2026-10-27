@@ -45,6 +45,8 @@ like( $output_html, qr/ga\.valid\.safeFile\( "#safe_name" \)/, 'safefile text in
 like( $output_html, qr/<input type="file" name="local_upload" multiple id="local_upload"/, 'file input supports multiple local files' );
 like( $output_html, qr/<div name="plot_main".*type="plotly"/s, 'plotly output div is generated' );
 like( $output_html, qr/_jmol_info\[ "structure_view" \]/, 'atomicstructure output initializes JSmol metadata' );
+like( $output_html, qr/<label for="structure_view" class="ga-g-output_contract-structure_view" style="">Structure View <\/label>/, 'atomicstructure label carries its layout class' );
+unlike( $output_html, qr/\.ga-g-output_contract-structure_view"\)\.hover/, 'atomicstructure hover highlight needs the hoverhighlight directive' );
 like( $output_html, qr/<div id="result_image" type="image"[^>]*data-width="320"[^>]*data-height="240"/, 'image output includes dimensions' );
 like( $output_html, qr/type="filelinkm"/, 'file output supports multiple download links' );
 like( $output_html, qr/<progress name="progress_output" id="progress_output" value="0" max="1\.0"/, 'progress output is generated' );

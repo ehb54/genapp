@@ -1,0 +1,23 @@
+{
+    "moduleid"   : "viewer",
+    "label"      : "Viewer",
+    "executable" : "viewer",
+    "resource"   : "local",
+    "fields"     : [
+        {
+            "role"  : "output",
+            "id"    : "plain",
+            "label" : "Plain",
+            "type"  : "atomicstructure"
+        },
+        {
+            "role"           : "output",
+            "id"             : "spaced",
+            "label"          : "Spaced",
+            "help"           : "Spaced structure help",
+            "type"           : "atomicstructure",
+            "labelmargin"    : "0 1rem",
+            "labelmargintop" : "0.5rem"
+        }
+    ]
+}
