@@ -15,6 +15,12 @@ if ($pid = pcntl_fork())
 
 // ob_end_clean(); // Discard the output buffer and close
 
+// PHP CLI otherwise sends error_log() to STDERR, which the daemon closes.
+// Keep the existing diagnostic log as the fallback; honor configured sinks.
+if ( ini_get( 'error_log' ) === '' ) {
+    ini_set( 'error_log', '/tmp/php_errors' );
+}
+
 fclose(STDIN);  // Close all of the standard
 fclose(STDOUT); // file descriptors as we
 fclose(STDERR); // are running as a daemon.

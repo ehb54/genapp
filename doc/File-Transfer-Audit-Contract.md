@@ -112,3 +112,14 @@ Rejected-upload acceptance must confirm both correlated records and the actual
 file outcome. Local emitter success does not prove downstream delivery. Check
 receipt/forwarding retention and reconcile pending operations explicitly;
 source changes do not repair collector listeners, routing or certificates.
+
+## Background-job error-log destination
+
+The jobrun daemon closes standard streams. When PHP has no configured
+`error_log`, jobrun sets it to its existing `/tmp/php_errors` diagnostic log
+before detaching; otherwise it preserves the configured destination. An
+`audit.destination` of `error_log` therefore requires collection of that actual
+CLI sink as well as the web-server sink. The syslog destination is unchanged.
+The daemon-startup regression closes real streams and verifies both correlated
+records in the selected log; mocked completion callbacks alone cannot verify
+this boundary. Local records still do not establish SDL delivery.

@@ -385,4 +385,45 @@ ok(@interrupted_trace == 1 && $interrupted_trace[0]{event} eq 'rejected_upload_c
     && $interrupted_trace[0]{details}{outcome} eq 'failed'
     && $interrupted_trace[0]{details}{failure} eq 'cleanup_outcome_uncertain',
     'missing file after interrupted intent is never reported as known deletion');
+
+# daemon_error_log_regression: use jobrun's actual double-fork/closed-stream startup.
+my $daemon_prefix = read_file(File::Spec->catfile($repo, qw(languages html5 util jobrun.php)));
+$daemon_prefix =~ s/\$logdir\s*=.*\z//s;
+$daemon_prefix =~ s/^__~debug:[^\n]*\n//mg;
+$daemon_prefix =~ s/<\?php/\<?php\nini_set('error_log', \$argv[3]);/;
+# Keep the production diagnostic destination isolated inside this test fixture.
+$daemon_prefix =~ s!'/tmp/php_errors'!\$argv[2]!g;
+my $daemon_script = File::Spec->catfile($root, 'daemon-audit.php');
+open my $daemon_fh, '>', $daemon_script or die $!;
+print {$daemon_fh} $daemon_prefix, <<'PHP';
+require $argv[1];
+$details = array('transfer_id' => 'daemon-rejection', 'username' => 'Joseph',
+  'filename' => 'rejected.dat', 'outcome' => 'rejected');
+ga_file_transfer_audit('upload_failed', $details);
+$details['outcome'] = 'deleted';
+ga_file_transfer_audit('rejected_upload_cleanup', $details);
+file_put_contents($argv[4], 'done');
+PHP
+close $daemon_fh;
+for my $mode (qw(default configured)) {
+    my $fallback_log = File::Spec->catfile($root, "daemon-fallback-$mode.log");
+    my $configured_log = File::Spec->catfile($root, "daemon-configured-$mode.log");
+    my $done = File::Spec->catfile($root, "daemon-$mode.done");
+    my $setting = $mode eq 'configured' ? $configured_log : '';
+    my ($exit, $stdout) = run_command(cwd => $root, cmd => [
+        $php, $daemon_script, $helper, $fallback_log, $setting, $done]);
+    for (1 .. 250) { last if -f $done; select undef, undef, undef, 0.02; }
+    ok($exit == 0 && -f $done, "actual daemon reaches audit completion: $mode");
+    my $destination = $mode eq 'configured' ? $configured_log : $fallback_log;
+    my $text = -f $destination ? read_file($destination) : '';
+    my @events = map { decode_json($_) } ($text =~ /GENAPP_AUDIT (\{[^\n]*\})/g);
+    is_deeply([map { $_->{event} } @events], ['upload_failed', 'rejected_upload_cleanup'],
+        "closed-stream daemon persists both audit records: $mode");
+    ok(@events == 2 && $events[0]{transfer_id} eq $events[1]{transfer_id}
+        && $events[0]{outcome} eq 'rejected' && $events[1]{outcome} eq 'deleted',
+        "daemon records retain correlation and actual outcomes: $mode");
+    ok($mode ne 'configured' || !-e $fallback_log,
+        'daemon preserves an explicitly configured PHP log destination');
+}
+
 done_testing();
