@@ -82,9 +82,27 @@ function ga_file_manager_path_is_within( $path, $root )
     return $path == $root || strpos( $path, $root . DIRECTORY_SEPARATOR ) === 0;
 }
 
+## the directories that users' directories may be links into: appconfig.json's file_manager.linked_user_dirs, an
+## opt-in for a site whose users' directories live elsewhere (on a mount that another application shares, say); none
+## when it is not set
+function ga_file_manager_linked_user_dirs()
+{
+    $decoded = @json_decode( @file_get_contents( "__appconfig__" ), true );
+    if ( !is_array( $decoded ) || !isset( $decoded[ 'file_manager' ] ) || !is_array( $decoded[ 'file_manager' ] ) ||
+         !isset( $decoded[ 'file_manager' ][ 'linked_user_dirs' ] ) ||
+         !is_array( $decoded[ 'file_manager' ][ 'linked_user_dirs' ] ) )
+    {
+        return array();
+    }
+    return array_values( array_filter( $decoded[ 'file_manager' ][ 'linked_user_dirs' ],
+                                       function ( $d ) { return is_string( $d ) && strlen( $d ); } ) );
+}
+
 ## the user's own directory under the users directory: its real path; null if there is nothing there yet (a new user,
-## or one whose jobs each have a directory of their own, uniquedir); false if it cannot be used
-function ga_file_manager_user_root( $users_dir, $logon )
+## or one whose jobs each have a directory of their own, uniquedir); false if it cannot be used. With $linked_dirs
+## (ga_file_manager_linked_user_dirs), it may also be a link to <directory>/<logon> for one of those directories,
+## exactly: not to another user's directory there, nor to the directory itself, nor on from there to elsewhere
+function ga_file_manager_user_root( $users_dir, $logon, $linked_dirs = array() )
 {
     $users_root = realpath( $users_dir );
     $path = $users_dir . $logon;
@@ -93,12 +111,27 @@ function ga_file_manager_user_root( $users_dir, $logon )
         return null;
     }
     $user_root = realpath( $path );
-    if ( $users_root === false || $user_root === false || !is_dir( $user_root ) ||
-         !ga_file_manager_path_is_within( $user_root, $users_root ) || is_link( $user_root ) )
+    if ( $users_root === false || $user_root === false || !is_dir( $user_root ) || is_link( $user_root ) )
     {
         return false;
     }
-    return $user_root;
+    if ( ga_file_manager_path_is_within( $user_root, $users_root ) )
+    {
+        return $user_root;
+    }
+    ## a logon as GenApp takes one (ga_filter_type.json's _logon), so it is one path component
+    if ( is_link( $path ) && preg_match( '/^[A-Za-z0-9_]+$/', $logon ) )
+    {
+        foreach ( $linked_dirs as $linked_dir )
+        {
+            $linked_root = is_string( $linked_dir ) && strlen( $linked_dir ) ? realpath( $linked_dir ) : false;
+            if ( $linked_root !== false && $user_root === $linked_root . DIRECTORY_SEPARATOR . $logon )
+            {
+                return $user_root;
+            }
+        }
+    }
+    return false;
 }
 
 function ga_file_manager_resolve_path( $root, $relative, $allow_root = false )
@@ -432,7 +465,8 @@ if ( !chdir( $dir ) )
   exit();
 }
 
-$user_root = ga_file_manager_user_root( $dir, isset( $_SESSION[ $window ][ 'logon' ] ) ? $_SESSION[ $window ][ 'logon' ] : '' );
+$user_root = ga_file_manager_user_root( $dir, isset( $_SESSION[ $window ][ 'logon' ] ) ? $_SESSION[ $window ][ 'logon' ] : '',
+                                        ga_file_manager_linked_user_dirs() );
 if ( $user_root === null )
 {
   ## nothing of the user's yet: the empty answers php7designer gave (an empty tree, {} for the other requests)
