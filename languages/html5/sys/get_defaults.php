@@ -80,6 +80,31 @@ if ( $_REQUEST[ '_logon' ] != $_SESSION[ $window ][ 'logon' ] ) {
 }
 session_write_close();
 
+// A file-backed hook receives text directly rather than move_uploaded_file.
+// Record reception before dispatch, including empty content and failed hooks.
+// Server selections and unauthenticated requests are not local uploads.
+if ( strlen( $_SESSION[ $window ][ 'logon' ] ) &&
+     array_key_exists( '_filedata', $_REQUEST ) &&
+     is_string( $_REQUEST[ '_filedata' ] ) &&
+     !isset( $_REQUEST[ '_file_enc_to_load' ] ) ) {
+    require_once "__docroot:html5__/__application__/ajax/sys_config/ga_audit.php";
+    $upload_details = array(
+        'transfer_id' => ga_audit_transfer_id(),
+        'username' => $_SESSION[ $window ][ 'logon' ],
+        'project' => isset( $_REQUEST[ '_project' ] ) ? $_REQUEST[ '_project' ] : '',
+        'module' => '__menu:modules:id__',
+        'field' => isset( $_REQUEST[ 'hook' ] ) ? $_REQUEST[ 'hook' ] : '',
+        'size_bytes' => strlen( $_REQUEST[ '_filedata' ] ),
+        'outcome' => 'accepted'
+    );
+    if ( isset( $_REQUEST[ '_filedata_filename' ] ) &&
+         is_string( $_REQUEST[ '_filedata_filename' ] ) ) {
+        $upload_details[ 'filename' ] = basename(
+            str_replace( '\\', '/', $_REQUEST[ '_filedata_filename' ] ) );
+    }
+    ga_file_transfer_audit( 'upload_succeeded', $upload_details );
+}
+
 if ( !sizeof( $_REQUEST ) ) {
     $results[ 'error' ] = "PHP code received no \$_REQUEST?";
     echo (json_encode($results));

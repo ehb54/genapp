@@ -559,6 +559,9 @@ current task and does not carry forward.
   application file filter is
   governed by `doc/Rejected-Experimental-Lrfile-Cleanup.md`; it must never
   delete a server-selected file or trust a driver-supplied path.
+  File-backed defaults hooks record authenticated local text reception through
+  the existing opt-in logger; see `doc/File-Transfer-Audit-Contract.md`. Hook
+  success/error text is not a file-filter rejection or cleanup authorization.
 - SasCalc HDF5 writing, derived files, and downstream consumers are governed by
   `../zazzie/docs/source/sascalc_hdf5_policy.rst`. GenApp must not define or
   reinterpret the scientific schema.

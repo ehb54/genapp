@@ -55,6 +55,15 @@ find({no_chdir => 1, wanted => sub {
     for my $token (keys %replacements) { $text =~ s/\Q$token\E/$replacements{$token}/g; }
     write_file($_, $text);
 }}, $web);
+
+# Exercise the real defaults template without adding another tracked fixture.
+my $defaults = read_file("$repo/languages/html5/sys/get_defaults.php");
+$defaults =~ s/__application__/action_button/g;
+for my $token (keys %replacements) { $defaults =~ s/\Q$token\E/$replacements{$token}/g; }
+$defaults =~ s/__menu:modules:id__/action_demo/g;
+$defaults =~ s/__modulejson__/{}/g;
+write_file("$web/defaults.php", $defaults);
+
 my $executable = "$bin/precheck_action";
 write_file($executable, "#!$^X\n" . <<'PERL');
 use strict;
@@ -62,6 +71,12 @@ use warnings;
 use JSON::PP;
 my $request = decode_json(do { local $/; <STDIN> });
 my $mode = $request->{sample};
+if (exists $request->{_filedata}) {
+    if ($mode eq 'hook_failure') { print '{"error":"existing hook rejection"}'; exit 0; }
+    print encode_json({received => $request->{_filedata}});
+    exit 0;
+}
+
 my %bytes;
 for my $field (qw(primary_file secondary_file)) {
     my $path = $request->{$field};
@@ -327,6 +342,56 @@ my $unauthorized = submit('unauthorized', 0);
 ok(exists $unauthorized->{error} || ($unauthorized->{_logon} // 'unexpected') eq '',
     'request without the fixture session is refused');
 ok(!-e "$user_root/project_unauthorized", 'unauthenticated upload does not reach staging');
+
+# Local hook content is received independently of the hook's result. No hook
+# status fabricates scientific rejection or confirmed deletion.
+for my $mode (qw(hook_accept hook_failure hook_empty hook_old hook_server hook_unauthorized hook_audit_off)) {
+    my @command = ($curl, '--silent', '--show-error', '--max-time', '15', '--noproxy', '*');
+    push @command, '--cookie', "GENAPP_ACTION_BUTTON=$session_id" unless $mode eq 'hook_unauthorized';
+    my %fields = (_window => 'test-window', _logon => 'fixture_user', _project => $mode,
+        hook => 'precheck_action', sample => $mode, _filedata => ($mode eq 'hook_empty' ? '' : "private hook bytes\n"));
+    delete $fields{_logon} if $mode eq 'hook_unauthorized';
+    $fields{_filedata_filename} = "C:\\client\\input.txt" unless $mode eq 'hook_old';
+    $fields{_file_enc_to_load} = encode_base64('./stored/server.dat', '') if $mode eq 'hook_server';
+    if ($mode eq 'hook_audit_off') {
+        my $disabled = decode_json(read_file($config));
+        $disabled->{audit}{enabled} = JSON::PP::false;
+        write_file($config, encode_json($disabled));
+    }
+    for my $name (sort keys %fields) { push @command, '--form-string', "$name=$fields{$name}"; }
+    push @command, "http://127.0.0.1:$port/defaults.php";
+    my ($status, $output) = run_command(cwd => $temporary, cmd => \@command);
+    is($status, 0, "hook HTTP completes: $mode");
+    my $payload = eval { decode_json($output) };
+    ok(ref($payload) eq 'HASH', "hook returns JSON: $mode") or BAIL_OUT($output . read_file("$temporary/http.log") . read_file($collector));
+    if ($mode eq 'hook_failure') { is($payload->{error}, 'existing hook rejection', 'hook error is unchanged'); }
+    elsif ($mode ne 'hook_unauthorized') {
+        is($payload->{received}, $mode eq 'hook_server' ? "server-selection\n" : $fields{_filedata},
+            "hook receives unchanged content: $mode");
+    }
+    my @records = map { decode_json($_) } map { /GENAPP_AUDIT (\{.*\})\s*$/ }
+        split /\n/, read_file($collector);
+    my @own = grep { ($_->{project} || '') eq $mode } @records;
+    if ($mode =~ /^(hook_server|hook_unauthorized|hook_audit_off)$/) {
+        is(scalar @own, 0, "no local upload event: $mode");
+    } else {
+        is(scalar @own, 1, "one reception event, no invented rejection or deletion: $mode");
+        is($own[0]{event}, 'upload_succeeded', "event records receipt: $mode");
+        is($own[0]{username}, 'fixture_user', "identity comes from session: $mode");
+        is($own[0]{size_bytes}, length($fields{_filedata}), "actual received text byte count: $mode");
+        like($own[0]{transfer_id}, qr/^[a-f0-9]{32,64}$/, "independent transfer identity: $mode");
+        if ($mode eq 'hook_old') { ok(!exists $own[0]{filename}, 'old caller needs no invented filename'); }
+        else { is($own[0]{filename}, 'input.txt', "client path stripped: $mode"); }
+        unlike(encode_json($own[0]), qr/private hook bytes|client/, "no content or client directories logged: $mode");
+    }
+    if ($mode eq 'hook_audit_off') {
+        my $enabled = decode_json(read_file($config));
+        $enabled->{audit}{enabled} = JSON::PP::true;
+        write_file($config, encode_json($enabled));
+    }
+}
+is(read_file("$user_root/stored/server.dat"), "server-selection\n", 'hook server selection is preserved');
+
 sub ordinary_command {
     my ($mode, $project, $uuid, $source) = @_;
     $source ||= $local_file;

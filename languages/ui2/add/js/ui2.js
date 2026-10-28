@@ -5100,7 +5100,7 @@
       display.value = file.name || "Selected local file";
       display.dispatchEvent(new Event("input", { bubbles: true }));
       readHookLocalFile(file)
-        .then((text) => runHookButton(field, null, status, { source: "local", data: text }))
+        .then((text) => runHookButton(field, null, status, { source: "local", data: text, filename: file.name }))
         .catch((error) => {
           setSubmitStatus(status, error.message, "error");
           showLegacyMessagePayload({ error: error.message }, { force: true });
@@ -8499,6 +8499,9 @@
 
     if (filePayload?.source === "local") {
       formData.set("_filedata", filePayload.data || "");
+      if (typeof filePayload.filename === "string") {
+        formData.set("_filedata_filename", filePayload.filename);
+      }
     } else if (filePayload?.source === "server") {
       formData.set("_file_enc_to_load", filePayload.encodedPath || "");
     }

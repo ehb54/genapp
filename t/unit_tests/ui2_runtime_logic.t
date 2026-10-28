@@ -5216,6 +5216,17 @@ assert.deepStrictEqual(hookFormData.get("component_count"), ["3"], "UI2 hook all
 assert.strictEqual(hookFormData.get("_file_enc_to_load"), serverRepeatOne, "UI2 hook server-file payload uses the legacy encoded-file key");
 assert.strictEqual(hookFormData.get("_project"), "hook_project", "UI2 hook payload carries the current project");
 
+
+assert.strictEqual(hookFormData.get("_filedata_filename"), undefined, "server hook selection has no local filename metadata");
+const localHookForm = hooks.buildHookFormData({ querySelectorAll() { return []; } },
+  { hook: "hook_multicomponent_analysis.py" }, { source: "local", data: "profile bytes", filename: "profile.txt" });
+assert.strictEqual(localHookForm.get("_filedata"), "profile bytes", "local hook content is unchanged");
+assert.strictEqual(localHookForm.get("_filedata_filename"), "profile.txt", "local hook carries the selected basename");
+const oldHookForm = hooks.buildHookFormData({ querySelectorAll() { return []; } },
+  { hook: "hook_multicomponent_analysis.py" }, { source: "local", data: "" });
+assert.strictEqual(oldHookForm.get("_filedata"), "", "empty local hook content is still submitted");
+assert.strictEqual(oldHookForm.get("_filedata_filename"), undefined, "older callers need no filename metadata");
+
 const inlineHookFileControl = hooks.renderHookButtonControl({
   id: "load_defaults",
   label: "read data from contrast calculator output file",

@@ -58,8 +58,8 @@ input-file filter, `upload_failed` with outcome `rejected` and failure
 `rejected_upload_cleanup` event reports actual outcome `deleted`, `failed`,
 `missing` or `preserved`, using the same transfer ID and existing envelope.
 This records rejection even when deletion fails. The earlier accepted-transfer
-record retains its existing meaning: successful byte receipt. No expansion of
-ordinary accepted-upload logging is required by this cleanup change.
+record retains its existing meaning: successful byte receipt. Ordinary accepted-upload logging retains this meaning; file-backed defaults
+hooks also record local text reception as described below.
 General form/run errors and server-selected files do not authorize deletion.
 The exact receipt, callback, concurrency and reconciliation rules belong to
 `doc/Rejected-Experimental-Lrfile-Cleanup.md`.
@@ -123,3 +123,26 @@ CLI sink as well as the web-server sink. The syslog destination is unchanged.
 The daemon-startup regression closes real streams and verifies both correlated
 records in the selected log; mocked completion callbacks alone cannot verify
 this boundary. Local records still do not establish SDL delivery.
+
+## File-backed defaults hooks
+
+The existing get_defaults.php route also receives local file text from
+file-backed buttons. Once the session identity is authenticated, a string
+_filedata value without _file_enc_to_load emits one upload_succeeded event
+before hook dispatch. Empty text counts as received content. A subsequent hook
+error does not erase the reception record and does not itself authorize
+rejection or cleanup.
+
+UI2 forwards the selected File.name as optional _filedata_filename. The server
+strips directory components and the existing logger sanitizes the basename.
+This is client-supplied display metadata, not a trusted filesystem identity.
+Older clients may omit it; the logger does not invent a filename. size_bytes
+is the byte length of the text actually received by PHP, not a claim about the
+original file's encoding or disk size. File content is never logged.
+
+Server-selected hook files are excluded from local-upload logging. The existing
+audit.enabled and audit.file_transfers switches and destination remain in
+force; disabled auditing preserves hook behavior. Each receipt has a fresh
+transfer ID. No new collector, permissions or deployment settings are needed.
+The endpoint and UI2 runtime tests cover accepted/error/empty local text,
+older callers, server selections, unauthenticated requests and auditing off.
