@@ -22,6 +22,7 @@ if ( !sizeof( $_REQUEST ) ) {
 
 require_once "__docroot:html5__/__application__/ajax/ga_filter.php";
 require_once "__docroot:html5__/__application__/ajax/sys_config/ga_audit.php";
+require_once "__docroot:html5__/__application__/util/rejected-lrfile.php";
 $modjson = array();
 $inputs_req = $_REQUEST;
 $validation_inputs = ga_sanitize_validate( $modjson, $inputs_req, 'uploader' );
@@ -127,6 +128,11 @@ if ( !getprojectdir( $_REQUEST[ '_uuid' ] ) ) {
    exit();
 }
    
+$ga_storage_lock = ga_lrfile_storage_lock( $GLOBALS['getprojectdir'] );
+if ( $ga_storage_lock === false ) {
+    echo json_encode( array( 'error' => 'File storage is busy or unavailable; please retry.' ) );
+    exit();
+}
 $dir = $GLOBALS[ "getprojectdir" ] . "/uploads";
 $project = $GLOBALS[ "getprojectdirproject" ];
 
@@ -385,6 +391,8 @@ if ( sizeof( $_FILES ) ) {
       }
    }
 }
+
+ga_lrfile_unlock( $ga_storage_lock );
 
 function only_numerics( $a ) {
     $b = [];

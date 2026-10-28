@@ -6,6 +6,8 @@ header('Content-type: application/json');
 session_name( strtoupper( preg_replace('/[^a-zA-Z0-9_]+/', '_', "GENAPP___application__" ) ) ); session_start();
 require_once "__docroot:html5__/__application__/ajax/sys_config/ga_audit.php";
 
+require_once "__docroot:html5__/__application__/util/rejected-lrfile.php";
+
 $results = array( '_status' => 'complete' );
 
 function action_error_exit( $msg ) {
@@ -90,9 +92,16 @@ function action_stage_file_request( $field, $request, $files_dir, $user_root ) {
                        'outcome' => 'failed', 'failure' => 'move_uploaded_file_failed' ) ) );
             action_error_exit( "Could not stage uploaded $label ($name)" );
         }
+        $transfer_id = ga_audit_transfer_id();
+        if ( $field['type'] === 'lrfile' && !ga_record_rejected_lrfile_upload(
+                $GLOBALS['ga_action_uploads'], json_decode( json_encode( $GLOBALS['modjson'] ) ),
+                $field['id'], $request['index'] === null ? 0 : $request['index'],
+                $target, $files_dir, $transfer_id ) ) {
+            action_error_exit( 'Could not record uploaded file ownership' );
+        }
         ga_file_transfer_audit( 'upload_succeeded', array_merge(
             isset( $GLOBALS[ 'ga_action_audit' ] ) ? $GLOBALS[ 'ga_action_audit' ] : array(),
-            array( 'field' => $submit_id, 'filename' => $name,
+            array( 'transfer_id' => $transfer_id, 'field' => $submit_id, 'filename' => $name,
                    'size_bytes' => intval( $_FILES[ $submit_id ][ 'size' ] ),
                    'outcome' => 'succeeded' ) ) );
         return $target;
@@ -354,7 +363,18 @@ $GLOBALS[ 'ga_action_audit' ] = array(
     'project' => $project,
     'module' => '__moduleid__'
 );
+$ga_action_uploads = array();
+$ga_action_receipt = ga_rejected_lrfile_receipt_path( $action_dir, ga_audit_transfer_id() );
+$ga_receipt_lock = ga_claim_rejected_lrfile_receipt( $ga_action_receipt );
+if ( $ga_receipt_lock === false ) { action_error_exit( 'Could not claim action upload receipt' ); }
+$ga_storage_lock = ga_lrfile_storage_lock( $dir );
+if ( $ga_storage_lock === false ) { action_error_exit( 'File storage is busy or unavailable; please retry.' ); }
 action_stage_declared_files( $modjson, $action, $action_dir, $dir );
+if ( !ga_write_rejected_lrfile_receipt( $ga_action_receipt, $ga_action_uploads ) ) {
+    action_error_exit( 'Could not save action upload receipt' );
+}
+ga_lrfile_unlock( $ga_storage_lock );
+ga_lrfile_unlock( $ga_receipt_lock );
 $payload = json_encode( $_REQUEST );
 $action_command = action_execution_command( $action, $actionexe );
 
@@ -400,6 +420,24 @@ $stderr .= stream_get_contents( $pipes[2] );
 fclose( $pipes[1] );
 fclose( $pipes[2] );
 proc_close( $process );
+
+// A valid explicit marker remains authoritative even with a nonzero exit code.
+$action_output = json_decode( $stdout );
+$cleanup = ga_cleanup_sassie_rejected_lrfiles(
+    $action_output, $ga_action_receipt, $action_dir . '/files',
+    function( $upload ) {
+        if ( !ga_file_transfer_audit_enabled() ) { return true; }
+        return ga_file_transfer_audit( 'upload_failed', array_merge( $GLOBALS['ga_action_audit'], $upload,
+            array( 'outcome' => 'rejected', 'failure' => 'scientific_validation' ) ) );
+    },
+    function( $upload ) {
+        if ( !ga_file_transfer_audit_enabled() ) { return true; }
+        return ga_file_transfer_audit( 'rejected_upload_cleanup', array_merge( $GLOBALS['ga_action_audit'], $upload ) );
+    }, $GLOBALS['ga_action_audit'] );
+if ( $cleanup['pending'] ) {
+    error_log( 'GENAPP_REJECTED_UPLOAD_PENDING: action cleanup or audit requires reconciliation' );
+    action_error_exit( 'Rejected upload cleanup or audit is incomplete; contact the administrator.' );
+}
 
 if ( $exitcode ) {
     action_error_exit( "action $action_id failed" . ( strlen( $stderr ) ? ": " . substr( $stderr, 0, 500 ) : "" ) );

@@ -4,6 +4,8 @@ session_name( strtoupper( preg_replace('/[^a-zA-Z0-9_]+/', '_', "GENAPP___applic
 
 require_once "__docroot:html5__/__application__/ajax/ga_filter.php";
 
+require_once "__docroot:html5__/__application__/util/rejected-lrfile.php";
+
 $modjson = json_decode( '__modulejson__' );
 $inputs_req = $_REQUEST;
 $validation_inputs = ga_sanitize_validate( $modjson, $inputs_req, '__menu:modules:id__' );
@@ -417,6 +419,18 @@ if ( $users_root === false || $user_root === false || !is_dir( $user_root ) ||
   ob_end_clean();
   echo '{"error":"Could not access File Manager user directory"}';
   exit();
+}
+
+// All mutations below, including recursive operations, share cleanup's user lock.
+// PHP closes the handle on every exit/error; no scientific process runs here.
+$ga_storage_lock = false;
+if ( $is_spec_fc && count( $to_delete ) ) {
+    $ga_storage_lock = ga_lrfile_storage_lock( $user_root );
+}
+if ( $is_spec_fc && count( $to_delete ) && $ga_storage_lock === false ) {
+    ob_end_clean();
+    echo json_encode( array( 'error' => 'File storage is busy or unavailable; please retry.' ) );
+    exit();
 }
 
 ## $usedir = isset( $_SESSION[ $window ][ 'logon' ] ) ? $_SESSION[ $window ][ 'logon' ] : ".";

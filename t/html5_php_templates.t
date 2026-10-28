@@ -88,8 +88,8 @@ like( $jobrun_php, qr/file_put_contents\( "\$\{logdir\}_stdout_"/, 'jobrun write
 like( $jobrun_php, qr/ga_cleanup_sassie_rejected_lrfiles/,
     'jobrun applies the receipt-gated rejected-lrfile cleanup' );
 like( $jobrun_php,
-    qr/foreach \( \$rejected_lrfile_cleanup\[ 'deleted_uploads' \].*?ga_file_transfer_audit\( 'upload_failed'.*?'scientific_validation'/s,
-    'jobrun audits only receipt-gated scientific rejections that were deleted' );
+    qr/ga_file_transfer_audit\( 'upload_failed'.*?'scientific_validation'/s,
+    'jobrun owns the real rejection audit definition; behavioral ordering is tested in file_transfer_audit.t' );
 like( $jobrun_php, qr/logjobupdate\( "finished"/, 'jobrun marks job finished' );
 like( $rejected_lrfile_php, qr/function ga_rejected_lrfile_identity_matches/,
     'generated application includes identity-checked cleanup helper' );

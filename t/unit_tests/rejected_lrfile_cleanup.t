@@ -12,8 +12,9 @@ my $repo_root = File::Spec->rel2abs(
 );
 my $helper = File::Spec->catfile(
     $repo_root, qw(languages html5 util rejected-lrfile.php) );
-my $php = qx{command -v php 2>/dev/null};
-chomp $php;
+use lib File::Spec->catdir($FindBin::Bin, '..', 'lib');
+use GenAppTest qw(php_executable);
+my $php = php_executable();
 
 plan skip_all => 'php is not available on PATH' if !$php;
 
@@ -103,11 +104,72 @@ $link_result = ga_remove_receipted_lrfile_uploads(
 $results['link_skipped'] = $link_result;
 $results['link_preserved'] = is_link($link_path) && file_exists($server);
 
-$malformed_result = ga_cleanup_sassie_rejected_lrfiles(
-    json_decode('{"_sassie_rejected_lrfiles":[{"field":"../profile","index":0},{"field":"profile","index":"0"}]}'),
-    $receipt, $root);
-$results['malformed_marker'] = $malformed_result;
-$results['first_still_preserved'] = file_exists($first);
+// Each negative case gets a live receipt. Reusing a consumed receipt would
+// make a destructive bug look safe without exercising the coordinate parser.
+$results['invalid_cases'] = array();
+$invalid_markers = array(
+    array(array('field' => '../profile', 'index' => 0)),
+    array(array('field' => 'profile', 'index' => '0')),
+    array(array('field' => 'profile', 'index' => -1)),
+    array(array('field' => 'profile', 'index' => true)),
+    array(array('field' => 'unknown', 'index' => 0)),
+    array(), null, 'profile'
+);
+foreach ($invalid_markers as $number => $marker) {
+    $path = $root . '/invalid-' . $number . '.dat';
+    file_put_contents($path, 'preserve');
+    $owned = array();
+    ga_record_rejected_lrfile_upload($owned, $module, 'profile', 0, $path, $root);
+    $ticket = ga_rejected_lrfile_receipt_path($log, 'invalid-' . $number);
+    ga_write_rejected_lrfile_receipt($ticket, $owned);
+    $out = (object)array('_sassie_rejected_lrfiles' => $marker);
+    $cleaned = ga_cleanup_sassie_rejected_lrfiles($out, $ticket, $root);
+    $results['invalid_cases'][] = file_exists($path) && $cleaned['deleted'] === 0;
+    if (file_exists($ticket)) { unlink($ticket); }
+}
+
+$owned = array();
+foreach (array(0, 2, 7) as $row) {
+    $path = $root . '/group-' . $row . '.dat';
+    file_put_contents($path, 'row-' . $row);
+    ga_record_rejected_lrfile_upload($owned, $module, 'profile', $row, $path, $root);
+}
+$ticket = ga_rejected_lrfile_receipt_path($log, 'group');
+ga_write_rejected_lrfile_receipt($ticket, $owned);
+$packet = json_decode('{"_sassie_rejected_lrfiles":[{"field":"profile","index":2},{"field":"profile","index":7},{"field":"profile","index":2},{"field":"profile","index":9}]}');
+$group_result = ga_cleanup_sassie_rejected_lrfiles($packet, $ticket, $root);
+$results['group_deletes_two'] = $group_result['deleted'] === 2;
+$results['group_preserves_sibling'] = file_get_contents($root . '/group-0.dat') === 'row-0';
+$results['group_preserves_server'] = file_exists($server);
+file_put_contents($root . '/group-2.dat', 'later-upload');
+ga_cleanup_sassie_rejected_lrfiles($packet, $ticket, $root);
+$results['replay_preserves_later_upload'] = file_get_contents($root . '/group-2.dat') === 'later-upload';
+
+// Fail-closed authorization and duplicate-identity checks are mandatory.
+$results['pending_packets'] = array();
+foreach (array(
+    'null' => null,
+    'mixed_invalid' => array(array('field' => 'profile', 'index' => 0), array('field' => 'profile', 'index' => -1)),
+    'path_bearing' => array(array('field' => 'profile', 'index' => 0, 'path' => $server))
+) as $label => $coordinates) {
+    $path = $root . '/pending-' . $label . '.dat';
+    file_put_contents($path, 'preserve');
+    $owned = array();
+    ga_record_rejected_lrfile_upload($owned, $module, 'profile', 0, $path, $root);
+    $cleaned = ga_remove_receipted_lrfile_uploads($owned, $root, $coordinates);
+    $results['pending_packets'][$label] = file_exists($path) && $cleaned['deleted'] === 0;
+}
+$ticket = ga_rejected_lrfile_receipt_path($log, 'duplicate-identity');
+$owned = array();
+ga_record_rejected_lrfile_upload($owned, $module, 'profile', 0, $first, $root);
+ga_write_rejected_lrfile_receipt($ticket, $owned);
+$before = file_get_contents($ticket);
+$replacement_owned = array();
+ga_record_rejected_lrfile_upload($replacement_owned, $module, 'profile', 0, $generic, $root);
+$rewritten = ga_write_rejected_lrfile_receipt($ticket, $replacement_owned);
+$results['duplicate_receipt_refused'] = !$rewritten && file_get_contents($ticket) === $before;
+unlink($ticket);
+
 echo json_encode($results);
 PHP
 close $script_handle;
@@ -133,6 +195,7 @@ ok( !defined $result->{non_lrfile_coordinate}, 'non-lrfile fields cannot enter a
 ok( $result->{receipt_written}, 'private receipt is written' );
 is( $result->{receipt_mode}, 0600, 'private receipt is owner-readable and owner-writable only' );
 is_deeply( $result->{exact_cleanup}, {
+        pending => JSON::PP::false,
         deleted => 1,
         skipped => 0,
         deleted_uploads => [{
@@ -147,6 +210,7 @@ ok( $result->{exact_deleted}, 'matched current upload is removed' );
 ok( $result->{unmatched_preserved}, 'unmatched current upload is preserved' );
 ok( $result->{server_preserved}, 'unreceipted server file is preserved' );
 is_deeply( $result->{generic_result}, {
+        pending => JSON::PP::false,
         deleted => 0, skipped => 0, deleted_uploads => [] },
     'ordinary validation failure performs no cleanup' );
 ok( $result->{generic_preserved}, 'ordinary validation failure preserves its upload' );
@@ -163,9 +227,21 @@ is_deeply( $result->{link_skipped}, {
         deleted => 0, skipped => 1, deleted_uploads => [] },
     'link replacement prevents deletion' );
 ok( $result->{link_preserved}, 'linked path and its target are preserved' );
-is_deeply( $result->{malformed_marker}, {
-        deleted => 0, skipped => 0, deleted_uploads => [] },
-    'malformed driver coordinates match no receipt entry' );
-ok( $result->{first_still_preserved}, 'malformed coordinates cannot delete an upload' );
+is_deeply($result->{invalid_cases}, [(JSON::PP::true) x 8],
+    'fresh receipts reject malformed, unknown, empty, null and scalar markers');
+ok($result->{group_deletes_two}, 'related rejection removes both owned rows, once each');
+ok($result->{group_preserves_sibling}, 'unmarked row zero survives a related-file rejection');
+ok($result->{group_preserves_server}, 'a checked group cannot delete an unreceipted server selection');
+ok($result->{replay_preserves_later_upload}, 'replayed final result cannot remove a later upload');
+for my $label (sort keys %{$result->{pending_packets}}) {
+    {
+
+        ok($result->{pending_packets}{$label}, "pending fail-closed packet: $label");
+    }
+}
+{
+
+    ok($result->{duplicate_receipt_refused}, 'duplicate job receipt cannot replace original ownership');
+}
 
 done_testing();

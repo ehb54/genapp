@@ -52,14 +52,17 @@ Events are one-line JSON prefixed with `GENAPP_AUDIT` and use schema
 request so the receiving log system can correlate the application event with
 the Apache status and byte count.
 
-For a newly uploaded experimental `lrfile`, the same transfer ID also follows
-the private ownership receipt. If SASSIE's designated scientific profile filter
-rejects that exact current-submission upload and the receipt-gated cleanup
-deletes it, the runtime emits `upload_failed` with outcome `rejected` and
-failure `scientific_validation`. The earlier `upload_succeeded` event records
-successful byte receipt; the correlated follow-up records that the content was
-not accepted for calculation. General run failures and files selected from the
-server do not produce this scientific-rejection event.
+For a newly uploaded `lrfile` explicitly rejected by an application's existing
+input-file filter, `upload_failed` with outcome `rejected` and failure
+`scientific_validation` is emitted before receipt-gated cleanup. A separate
+`rejected_upload_cleanup` event reports actual outcome `deleted`, `failed`,
+`missing` or `preserved`, using the same transfer ID and existing envelope.
+This records rejection even when deletion fails. The earlier accepted-transfer
+record retains its existing meaning: successful byte receipt. No expansion of
+ordinary accepted-upload logging is required by this cleanup change.
+General form/run errors and server-selected files do not authorize deletion.
+The exact receipt, callback, concurrency and reconciliation rules belong to
+`doc/Rejected-Experimental-Lrfile-Cleanup.md`.
 
 Allowed details are authenticated username, project, module/input identifier,
 safe basename or user-relative path, byte size, outcome/failure category,
@@ -70,7 +73,10 @@ or absolute filesystem paths.
 The redirect endpoint accepts only an existing regular file beneath
 `results/users/<authenticated-user>/`. It rejects missing sessions, another
 user's tree, traversal, unresolved paths, and non-files. Audit failure must not
-interrupt ordinary application processing.
+interrupt ordinary accepted-transfer processing. For explicit rejected-upload
+cleanup, an enabled rejection-audit failure preserves the file and receipt; an
+outcome-audit failure preserves the known result for reconciliation. Disabled
+auditing remains compatible but cannot satisfy NIST acceptance.
 
 The emitter returns success only when the configured local sink accepts the
 message. That result does not prove that a downstream collector or SDL received
@@ -101,3 +107,8 @@ in SDL. The transport test must use the same source, protocol, and routing used
 in production; a passing format test or a successful local write is not
 evidence of SDL receipt. The deployment is not complete until the SDL canary is
 observed and correlated by its transfer ID.
+
+Rejected-upload acceptance must confirm both correlated records and the actual
+file outcome. Local emitter success does not prove downstream delivery. Check
+receipt/forwarding retention and reconcile pending operations explicitly;
+source changes do not repair collector listeners, routing or certificates.

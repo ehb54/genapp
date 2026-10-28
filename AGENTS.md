@@ -555,7 +555,8 @@ current task and does not carry forward.
 - SAS interpolation is governed by
   `../zazzie/docs/source/sas_interpolation_policy.rst` and its SASSIE
   implementation. Do not reproduce that policy in GenApp core. Cleanup of
-  current-submission experimental `lrfile` uploads rejected by that filter is
+  current-submission `lrfile` uploads explicitly rejected by an applicable
+  application file filter is
   governed by `doc/Rejected-Experimental-Lrfile-Cleanup.md`; it must never
   delete a server-selected file or trust a driver-supplied path.
 - SasCalc HDF5 writing, derived files, and downstream consumers are governed by
@@ -735,6 +736,15 @@ context revisions. Read
   compatible but are unnecessary. Route implementation and acceptance to the
   paired GenApp `doc/Plotting-Architecture.md` and
   `doc/UI2-Tick-Density-Shared-Gap-Report.md`.
+
+## Rejected LR upload routing
+
+Follow `doc/Rejected-Experimental-Lrfile-Cleanup.md` and
+`doc/File-Transfer-Audit-Contract.md`: explicit existing-filter coordinates,
+current browser receipt, short common writer lock, rejection before deletion
+and independent actual outcome. Preserve server/sibling/valid files and pending
+evidence. Local emission is not SDL acceptance. No global error interceptor or
+new storage/transport framework is authorized by this contract.
 
 ## Application-wide hover-name suppression (#336)
 

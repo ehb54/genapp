@@ -198,4 +198,191 @@ like( $source, qr/GENAPP_AUDIT_DELIVERY_FAILURE/,
     'delivery failures leave a content-free local warning' );
 unlike( $source, qr/HTTP_X_FORWARDED_FOR/, 'untrusted forwarding headers are not logged as source identity' );
 
+# Execute the real completion region between command execution and job-log
+# finalization. These boundaries do not depend on cancellation or audit layout.
+# External daemon/database startup is outside this component test.
+my $jobrun = read_file($repo . '/languages/html5/util/jobrun.php');
+my ($cleanup_block) = $jobrun =~ /\$results = exec\( \$cmd \);(.*?)(?=^logjobupdate\( "finished")/ms;
+BAIL_OUT('jobrun completion boundary moved; update the fixture') unless defined $cleanup_block;
+$cleanup_block =~ s/^\s*__~debug:[^\n]+\n//mg;
+ok(index($cleanup_block, 'ga_cleanup_sassie_rejected_lrfiles') >= 0,
+    'whole completion region includes cleanup independently of its cancellation placement');
+my $namespaced_helper = read_file($repo . '/languages/html5/util/rejected-lrfile.php');
+$namespaced_helper =~ s/<\?php/<?php namespace LrfileAuditTest;/;
+my $isolated_helper = File::Spec->catfile($root, 'isolated-cleanup.php');
+open my $isolated_fh, '>', $isolated_helper or die $!;
+print {$isolated_fh} $namespaced_helper;
+close $isolated_fh;
+my $integration = File::Spec->catfile($root, 'jobrun-cleanup.php');
+open my $integration_fh, '>', $integration or die $!;
+print {$integration_fh} <<'PHP';
+<?php namespace LrfileAuditTest;
+require $argv[1];
+require $argv[2];
+$trace = array(); $phase = 0; $upload_unlinks = 0; $lock_attempts = 0;
+function ga_file_transfer_audit($event, $details = array()) {
+    global $trace, $upload, $mode, $phase, $project;
+    $storage_free = null;
+    if ($mode === 'normal') {
+        $probe = ga_lrfile_storage_lock($project);
+        $storage_free = $probe !== false; ga_lrfile_unlock($probe);
+    }
+    $fail = $mode === 'audit_failure'
+        || ($mode === 'retry_rejection' && $phase === 0)
+        || (in_array($mode, array('outcome_failure', 'retry_outcome'), true)
+            && $phase === 0 && $event === 'rejected_upload_cleanup');
+    $written = $fail ? false : \ga_file_transfer_audit($event, $details);
+    $trace[] = array('event' => $event, 'file_exists' => is_file($upload),
+        'details' => $details, 'written' => $written, 'phase' => $phase, 'storage_free' => $storage_free);
+    return $written;
+}
+function flock($stream, $operation, &$would_block = null) {
+    global $mode, $lock_attempts;
+    if ($operation !== LOCK_UN) {
+        ++$lock_attempts;
+        if ($mode === 'lock_failure' || ($mode === 'storage_lock_failure' && $lock_attempts > 1)) {
+            $would_block = 1; return false;
+        }
+    }
+    return \flock($stream, $operation, $would_block);
+}
+function sendudptext($text) {}
+function unlink($path) {
+    global $upload, $mode, $upload_unlinks;
+    if ($path === $upload) {
+        ++$upload_unlinks;
+        if ($mode === 'unlink_failure') { return false; }
+    }
+    return \unlink($path);
+}
+function error_log($message, $type = 0, $destination = null) { return true; }
+$mode = $argv[3];
+$project = $argv[4] . '/jobrun-' . $mode;
+mkdir($project, 0770, true);
+$logdir = $project . '/log/'; mkdir($logdir);
+$id = 'jobrun-' . $mode;
+$upload = $project . '/profile.dat';
+file_put_contents($upload, "rejected input\n"); $upload = realpath($upload);
+$module = json_decode('{"fields":[{"id":"profile","type":"lrfile","role":"input"}]}');
+$owned = array();
+ga_record_rejected_lrfile_upload($owned, $module, 'profile', 0, $upload, $project, 'audit-' . $mode);
+$receipt = ga_rejected_lrfile_receipt_path($logdir, $id);
+ga_write_rejected_lrfile_receipt($receipt, $owned);
+if ($mode === 'interrupted_cleanup') {
+    ga_lrfile_save_receipt($receipt, array('version' => 1, 'uploads' => $owned,
+        'processing' => array(array('rejection_logged' => true, 'intent' => true))));
+    \unlink($upload); // Simulate process loss after unlink, before result persistence.
+}
+$GLOBALS['getmenumoduledir'] = $project;
+$GLOBALS['logon'] = 'test_user';
+$GLOBALS['getmenumoduleproject'] = 'test_project';
+$GLOBALS['module'] = 'test_module';
+$_REQUEST['_uuid'] = $id;
+$GLOBALS['wascancelled'] = strpos($mode, 'cancelled_') === 0;
+$results = in_array($mode, array('parameter_error', 'cancelled_without_marker'), true)
+    ? '{"error":"invalid unrelated parameter"}'
+    : '{"error":"file rejected","_sassie_rejected_lrfiles":[{"field":"profile","index":0}]}';
+if ($mode === 'malformed_output') { $results = 'not valid JSON'; }
+$completion = 'namespace LrfileAuditTest;' . file_get_contents($argv[5]);
+eval($completion);
+$first = array('file_exists' => is_file($upload), 'receipt_exists' => is_file($receipt));
+if (strpos($mode, 'retry_') === 0) {
+    if ($mode === 'retry_outcome') { file_put_contents($upload, 'later unrelated replacement'); }
+    $phase = 1;
+    eval($completion);
+}
+echo json_encode(array('trace' => $trace, 'first' => $first,
+    'file_exists' => is_file($upload), 'receipt_exists' => is_file($receipt),
+    'remaining_bytes' => is_file($upload) ? file_get_contents($upload) : null,
+    'upload_unlinks' => $upload_unlinks, 'lock_attempts' => $lock_attempts));
+if (is_file($receipt)) { \unlink($receipt); }
+PHP
+close $integration_fh;
+my $completion_file = File::Spec->catfile($root, 'completion.inc');
+open my $completion_fh, '>', $completion_file or die $!;
+print {$completion_fh} $cleanup_block;
+close $completion_fh;
+my %scenarios;
+for my $mode (qw(normal parameter_error audit_failure unlink_failure outcome_failure cancelled_rejection cancelled_without_marker malformed_output audit_disabled retry_rejection retry_outcome lock_failure storage_lock_failure interrupted_cleanup)) {
+    my $selected_helper = $mode eq 'audit_disabled' ? $disabled_helper : $helper;
+    my ($exit, $json) = run_command(cwd => $root, cmd => [
+        $php, '-d', "error_log=$collector", $integration, $selected_helper,
+        $isolated_helper, $mode, $root, $completion_file]);
+    is($exit, 0, "jobrun completion scenario executes: $mode") or diag $json;
+    $scenarios{$mode} = eval { decode_json($json) };
+    ok(ref($scenarios{$mode}) eq 'HASH', "jobrun completion returns JSON: $mode") or BAIL_OUT($json);
+}
+ok(!$scenarios{normal}{file_exists}, 'confirmed rejection deletes an owned upload');
+ok($scenarios{parameter_error}{file_exists}, 'parameter-only error preserves the upload');
+is_deeply($scenarios{parameter_error}{trace}, [], 'parameter-only error emits no rejection or deletion claim');
+ok($scenarios{unlink_failure}{file_exists}, 'injected unlink failure leaves bytes in place');
+for my $mode (qw(cancelled_without_marker malformed_output)) {
+    ok($scenarios{$mode}{file_exists}, "no confirmed rejection preserves bytes: $mode");
+    is_deeply($scenarios{$mode}{trace}, [], "no false rejection audit: $mode");
+}
+ok(!$scenarios{audit_disabled}{file_exists}, 'explicitly disabled auditing preserves ordinary cleanup compatibility');
+is(scalar(grep { $_->{written} } @{$scenarios{audit_disabled}{trace}}), 0,
+    'disabled auditing cannot claim delivered evidence or NIST acceptance');
+my @trace = @{$scenarios{normal}{trace}};
+is($trace[0]{details}{transfer_id}, 'audit-normal', 'jobrun keeps upload correlation ID');
+is($trace[0]{details}{failure}, 'scientific_validation', 'jobrun retains existing rejection category');
+{
+
+    ok($trace[0]{file_exists}, 'rejection is logged while upload still exists');
+    ok(!$scenarios{cancelled_rejection}{file_exists} && @{$scenarios{cancelled_rejection}{trace}} == 2,
+        'confirmed rejection survives legacy cancelled status');
+    is_deeply([map { $_->{event} } @trace], ['upload_failed', 'rejected_upload_cleanup'],
+        'rejection and cleanup produce separate ordered records');
+    ok(@trace == 2 && !$trace[1]{file_exists} && ($trace[1]{details}{outcome} || '') eq 'deleted'
+        && ($trace[1]{details}{transfer_id} || '') eq 'audit-normal',
+        'cleanup records actual deletion with the same transfer ID');
+    ok($scenarios{audit_failure}{file_exists} && $scenarios{audit_failure}{receipt_exists},
+        'rejected-audit failure retains file and evidence');
+    my @failed = @{$scenarios{unlink_failure}{trace}};
+    ok(@failed == 2 && ($failed[0]{event} || '') eq 'upload_failed'
+        && ($failed[1]{details}{outcome} || '') eq 'failed' && $failed[1]{file_exists}
+        && $scenarios{unlink_failure}{receipt_exists},
+        'unlink failure records rejection and actual failure, retains evidence');
+    ok(!$scenarios{outcome_failure}{file_exists} && $scenarios{outcome_failure}{receipt_exists},
+        'outcome-audit failure preserves evidence after deletion');
+    ok($scenarios{lock_failure}{lock_attempts} > 0 && $scenarios{lock_failure}{file_exists}
+        && $scenarios{lock_failure}{receipt_exists} && $scenarios{lock_failure}{upload_unlinks} == 0,
+        'lock acquisition failure preserves upload and receipt without an unlocked fallback');
+    my $retry = $scenarios{retry_rejection};
+    my @written = grep { $_->{written} } @{$retry->{trace}};
+    ok($retry->{first}{file_exists} && $retry->{first}{receipt_exists}
+        && !$retry->{file_exists} && !$retry->{receipt_exists} && $retry->{upload_unlinks} == 1
+        && @written == 2 && $written[0]{event} eq 'upload_failed'
+        && $written[1]{event} eq 'rejected_upload_cleanup',
+        'retry after logging recovers updates its own receipt and deletes once');
+    $retry = $scenarios{retry_outcome};
+    @written = grep { $_->{written} } @{$retry->{trace}};
+    ok($retry->{first}{receipt_exists} && !$retry->{first}{file_exists}
+        && ($retry->{remaining_bytes} || '') eq 'later unrelated replacement'
+        && $retry->{upload_unlinks} == 1 && !$retry->{receipt_exists}
+        && @written == 2 && $written[1]{event} eq 'rejected_upload_cleanup'
+        && $written[1]{details}{outcome} eq 'deleted'
+        && $written[1]{details}{transfer_id} eq 'audit-retry_outcome',
+        'outcome retry reports known deletion without unlinking a replacement');
+}
+my $storage_failure = $scenarios{storage_lock_failure};
+ok($storage_failure->{file_exists} && $storage_failure->{receipt_exists}
+    && $storage_failure->{upload_unlinks} == 0,
+    'failed storage lock preserves upload and pending evidence');
+my @storage_trace = @{$storage_failure->{trace}};
+ok(@storage_trace == 2 && $storage_trace[1]{event} eq 'rejected_upload_cleanup'
+    && $storage_trace[1]{details}{outcome} eq 'failed'
+    && $storage_trace[1]{details}{failure} eq 'storage_lock_unavailable',
+    'failed storage lock records rejection and truthful cleanup failure');
+ok(@trace == 2 && $trace[0]{storage_free} && $trace[1]{storage_free},
+    'audit callbacks run without holding the storage mutation lock');
+my $interrupted = $scenarios{interrupted_cleanup};
+my @interrupted_trace = @{$interrupted->{trace}};
+ok(!$interrupted->{file_exists} && $interrupted->{receipt_exists}
+    && $interrupted->{upload_unlinks} == 0,
+    'interrupted cleanup retains evidence without repeating unlink');
+ok(@interrupted_trace == 1 && $interrupted_trace[0]{event} eq 'rejected_upload_cleanup'
+    && $interrupted_trace[0]{details}{outcome} eq 'failed'
+    && $interrupted_trace[0]{details}{failure} eq 'cleanup_outcome_uncertain',
+    'missing file after interrupted intent is never reported as known deletion');
 done_testing();

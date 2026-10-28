@@ -43,6 +43,13 @@ like( $base_source,
 like( $base_source, qr/ga_write_rejected_lrfile_receipt/,
     'module handler writes the private receipt before job launch' );
 
+unlike( $base_source, qr/ga_remove_receipted_lrfile_uploads/,
+    'upload bookkeeping failures cannot call broad deletion rollback' );
+unlike( $base_source, qr/\@unlink\( \$ga_uploaded_path/,
+    'ownership-record failure cannot unlink an uploaded file' );
+like( $base_source, qr/ga_claim_rejected_lrfile_receipt.*?move_uploaded_file.*?ga_write_rejected_lrfile_receipt.*?ga_lrfile_unlock.*?exec\( \$altcmd/s,
+    'receipt is claimed before upload and locks are released before dispatch' );
+
 my $php = php_executable();
 
 SKIP: {

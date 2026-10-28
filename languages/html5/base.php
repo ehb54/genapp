@@ -626,6 +626,33 @@ if ( !sizeof( $_FILES ) ) {
 }
 // END GENAPP SERVER FILE NORMALIZATION
 
+// Claim submission identity before publishing uploads or saved request files.
+$module_json = json_decode( '__modulejson__' );
+$ga_uploaded_lrfile_receipt_path = null;
+$ga_receipt_lock = false;
+$ga_storage_lock = false;
+if ( count( ga_rejected_lrfile_fields( $module_json ) ) ) {
+    $ga_uploaded_lrfile_receipt_path = ga_rejected_lrfile_receipt_path( $logdir, $_REQUEST['_uuid'] );
+    if ( file_exists( "$logdir/_input_" . $_REQUEST['_uuid'] ) ||
+         !( $ga_receipt_lock = ga_claim_rejected_lrfile_receipt( $ga_uploaded_lrfile_receipt_path ) ) ) {
+        if ( isset( $checkrunning ) ) {
+            ga_db_remove( 'joblock', '', array( 'name' => $checkrunning ), array( 'justOne' => true ) );
+        }
+        echo json_encode( array( '_status' => 'failed', 'error' => 'Upload receipt identity is unavailable or already used; submit again with a new job ID.' ) );
+        exit();
+    }
+}
+if ( count( $_FILES ) ) {
+    $ga_storage_lock = ga_lrfile_storage_lock( $dir );
+    if ( $ga_storage_lock === false ) {
+        ga_lrfile_unlock( $ga_receipt_lock );
+        if ( isset( $checkrunning ) ) {
+            ga_db_remove( 'joblock', '', array( 'name' => $checkrunning ), array( 'justOne' => true ) );
+        }
+        echo json_encode( array( '_status' => 'failed', 'error' => 'File storage is busy or unavailable; please retry.' ) );
+        exit();
+    }
+}
 $ga_uploaded_lrfile_receipts = array();
 
 if ( sizeof( $_FILES ) ) {
@@ -753,9 +780,6 @@ if ( sizeof( $_FILES ) ) {
                  !ga_record_rejected_lrfile_upload(
                      $ga_uploaded_lrfile_receipts, $module_json, $k, $k1,
                      $ga_uploaded_path, $dir, $ga_upload_transfer_id ) ) {
-                @unlink( $ga_uploaded_path );
-                ga_remove_receipted_lrfile_uploads(
-                    $ga_uploaded_lrfile_receipts, $dir );
                 if ( isset( $checkrunning ) ) {
                     ga_db_remove( 'joblock', '', array( "name" => $checkrunning ),
                                   array( 'justOne' => true ) );
@@ -891,9 +915,6 @@ if ( sizeof( $_FILES ) ) {
                  !ga_record_rejected_lrfile_upload(
                      $ga_uploaded_lrfile_receipts, $module_json, $k, 0,
                      $ga_uploaded_path, $dir, $ga_upload_transfer_id ) ) {
-                @unlink( $ga_uploaded_path );
-                ga_remove_receipted_lrfile_uploads(
-                    $ga_uploaded_lrfile_receipts, $dir );
                 if ( isset( $checkrunning ) ) {
                     ga_db_remove( 'joblock', '', array( "name" => $checkrunning ),
                                   array( 'justOne' => true ) );
@@ -918,16 +939,9 @@ if ( sizeof( $_FILES ) ) {
    }
 }
 
-$ga_uploaded_lrfile_receipt_path = null;
-if ( count( $ga_uploaded_lrfile_receipts ) ) {
-    $ga_uploaded_lrfile_receipt_path = ga_rejected_lrfile_receipt_path(
-        $logdir, $_REQUEST[ '_uuid' ] );
-}
-if ( count( $ga_uploaded_lrfile_receipts ) &&
-     ( $ga_uploaded_lrfile_receipt_path === null ||
-       !ga_write_rejected_lrfile_receipt(
-           $ga_uploaded_lrfile_receipt_path, $ga_uploaded_lrfile_receipts ) ) ) {
-    ga_remove_receipted_lrfile_uploads( $ga_uploaded_lrfile_receipts, $dir );
+if ( $ga_uploaded_lrfile_receipt_path !== null &&
+     !ga_write_rejected_lrfile_receipt(
+         $ga_uploaded_lrfile_receipt_path, $ga_uploaded_lrfile_receipts ) ) {
     if ( isset( $checkrunning ) ) {
         ga_db_remove( 'joblock', '', array( "name" => $checkrunning ),
                       array( 'justOne' => true ) );
@@ -937,6 +951,10 @@ if ( count( $ga_uploaded_lrfile_receipts ) &&
     echo (json_encode($results));
     exit();
 }
+
+// Request/process termination releases resources on every earlier exit as well.
+ga_lrfile_unlock( $ga_storage_lock );
+ga_lrfile_unlock( $ga_receipt_lock );
 
 function only_numerics( $a ) {
     $b = [];
