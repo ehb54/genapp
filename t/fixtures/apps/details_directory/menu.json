@@ -1,0 +1,19 @@
+{
+    "header" : "Details Directory Fixture",
+    "menu"   : [
+        {
+            "id"      : "runs",
+            "label"   : "Runs",
+            "modules" : [
+                {
+                    "id"    : "rundir",
+                    "label" : "Run, its details its directory"
+                },
+                {
+                    "id"    : "runlabel",
+                    "label" : "Run, its details display text"
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,6 @@
+{
+    "title"       : "Details Directory Fixture",
+    "application" : "details_directory",
+    "version"     : "0.01",
+    "languages"   : [ "html5" ]
+}

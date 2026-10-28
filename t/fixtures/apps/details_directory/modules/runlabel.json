@@ -1,0 +1,37 @@
+{
+    "moduleid"   : "runlabel",
+    "label"      : "Run, its details display text",
+    "executable" : "runlabel",
+    "resource"   : "local",
+    "fields"     : [
+        {
+            "role"    : "input",
+            "id"      : "run_name",
+            "label"   : "Run name",
+            "type"    : "text",
+            "default" : "run_0",
+            "details" : {}
+        },
+        {
+            "role"    : "input",
+            "id"      : "utility",
+            "label"   : "Utility",
+            "type"    : "listbox",
+            "values"  : "Match point~c1~Decomposition~c3",
+            "default" : "c1",
+            "details" : {
+                "prefix"   : "/",
+                "valuemap" : {
+                    "c1" : "match_point",
+                    "c3" : "decomposition"
+                }
+            }
+        },
+        {
+            "role"  : "output",
+            "id"    : "reply",
+            "label" : "Reply",
+            "type"  : "text"
+        }
+    ]
+}

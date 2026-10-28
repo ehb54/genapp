@@ -116,6 +116,9 @@ __~uniquedir{$uniquedir = "__uniquedir__";}
 __~nojobcontrol{$nojobcontrol = 1;$GLOBALS[ 'modal' ] = true;$GLOBALS[ 'nojobcontrol' ] = 1;}
 __!nojobcontrol{unset( $GLOBALS['nojobcontrol'] );}
 __~notify{$GLOBALS[ 'notify' ] = "__notify__";}
+// the module's details name the directory of its runs' outputs (detailsdirectory in its json): the job record says so,
+// and get_results and the File Manager then take the details for that directory (joblog.php)
+__~detailsdirectory{$GLOBALS[ 'details_directory' ] = true;}
 $bdir = "";
 
 $adir = "__docroot:html5__/__application__";
