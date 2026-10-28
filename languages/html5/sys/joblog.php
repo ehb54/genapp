@@ -24,6 +24,9 @@ function logjobstart( $error_json_exit = false, $cache = "" )
    $insert[ 'jobweight'    ] = $GLOBALS[ 'jobweight' ];
    if ( isset( $GLOBALS[ 'details' ] ) ) {
        $insert[ 'details'    ] = $GLOBALS[ 'details' ];
+       if ( !empty( $GLOBALS[ 'details_directory' ] ) ) {
+           $insert[ 'details_directory' ] = true;
+       }
    }
    if ( isset( $GLOBALS[ "nojobcontrol" ] ) ) {
        $insert[ 'nojobcontrol'    ] = $GLOBALS[ 'nojobcontrol' ];
@@ -290,12 +293,23 @@ function getprojectdir( $jobid,  $error_json_exit = false )
    return false;
 }
 
+function job_details_are_directory( $job )
+{
+   // A job's details name the directory of its run's outputs only when its
+   // module says so ("detailsdirectory" in the module's json: base.php sets
+   // details_directory, which logjobstart records with the job).  Otherwise
+   // they are display text, as in applications older than these checks, even
+   // when they look like a relative path (a run name, a slash and a choice).
+   // A job record is an array or the database's document (ArrayAccess).
+   return ( is_array( $job ) || $job instanceof ArrayAccess ) && !empty( $job[ 'details_directory' ] );
+}
+
 function job_detail_directory( $directory, $details )
 {
-   // Module details normally record the relative directory containing a run's
-   // durable outputs (for example, "run_name/module/").  Older applications
-   // may use details as display text instead, so only accept an unambiguous
-   // relative directory and never use it to construct an arbitrary path.
+   // Details that a module declares a directory (job_details_are_directory)
+   // record the relative directory containing a run's durable outputs (for
+   // example, "run_name/module/").  Only accept an unambiguous relative
+   // directory and never use it to construct an arbitrary path.
    if ( !is_string( $directory ) || !is_string( $details ) ||
         !preg_match( '/^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*\/?$/', $details ) ) {
       return '';
@@ -312,6 +326,9 @@ function job_saved_path_is_removed( $user, $paths, $token, $error_json_exit = fa
    $cursor = ga_db_output( ga_db_find( 'jobs', '', [ 'user' => $user ], [], [], $error_json_exit ) );
    foreach ( $cursor as $record ) {
       $job = (array) $record;
+      if ( !job_details_are_directory( $job ) ) {
+         continue;
+      }
       $project = isset( $job[ 'project' ] ) ? $job[ 'project' ] : '';
       $details = isset( $job[ 'details' ] ) ? $job[ 'details' ] : '';
       if ( !preg_match( '/^[A-Za-z0-9_]+$/', $project ) ||
@@ -386,7 +403,7 @@ function getmenumodule( $jobid,  $error_json_exit = false )
          $GLOBALS[ "getmenumoduleproject" ] = ( isset( $doc[ 'project'      ] ) && strlen( $doc[ 'project'       ] ) ) ? $doc[ 'project' ] : 'no_project_specified';
          $GLOBALS[ "getmenumoduledir"     ] = ( isset( $doc[ 'directory'    ] ) && strlen( $doc[ 'directory'     ] ) ) ? $doc[ 'directory' ] : '_no_project_dir_';
          $GLOBALS[ "getmenumodulelogdir"  ] = ( isset( $doc[ 'directorylog' ] ) && strlen( $doc[ 'directorylog'  ] ) ) ? $doc[ 'directorylog' ] : $GLOBALS[ "getmenumoduledir" ];
-         $GLOBALS[ "getmenumoduledetaildir" ] = isset( $doc[ 'details' ] )
+         $GLOBALS[ "getmenumoduledetaildir" ] = isset( $doc[ 'details' ] ) && job_details_are_directory( $doc )
              ? job_detail_directory( $GLOBALS[ "getmenumoduledir" ], $doc[ 'details' ] )
              : '';
          $GLOBALS[ "getmenumodulesavedfilesremoved" ] = isset( $doc[ 'saved_files_removed' ] ) && $doc[ 'saved_files_removed' ];

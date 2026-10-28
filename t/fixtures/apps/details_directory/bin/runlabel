@@ -1,0 +1,12 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use JSON;
+
+my $raw = do { local $/; <STDIN> };
+my $request = eval { decode_json($raw) } || {};
+my $reply = exists $request->{message} ? $request->{message} : 'ok';
+
+print encode_json( { reply => $reply } );

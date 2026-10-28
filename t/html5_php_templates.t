@@ -106,6 +106,8 @@ like( $sys_login_php, qr/password_reset_hash/, 'sys_login keeps reset credential
 like( $joblog_php, qr/function active_project_names\( \$user/, 'joblog exposes the active project registry helper' );
 like( $joblog_php, qr/function remove_active_projects\( \$user, \$projects/, 'joblog can retire active project identities without changing job records' );
 like( $joblog_php, qr/function job_detail_directory\( \$directory, \$details \).*?preg_match.*?getmenumoduledetaildir/s, 'joblog derives a run directory only from a validated relative details path' );
+like( $joblog_php, qr/getmenumoduledetaildir" \] = isset\( \$doc\[ 'details' \] \) && job_details_are_directory\( \$doc \)/, 'get_results takes a job\'s details for its run directory only when its module declared them one' );
+like( $joblog_php, qr/function job_saved_path_is_removed.*?if \( !job_details_are_directory\( \$job \) \)/s, 'File Manager deletions invalidate only jobs whose module declared their details a directory' );
 like( $joblog_php, qr/function job_saved_path_is_removed.*?saved_files_removed.*?function restore_job_saved_paths/s, 'joblog records removable saved-job artifacts with rollback support' );
 like( $results_php, qr/\$detaildir = \$GLOBALS\[ 'getmenumoduledetaildir' \].*?!is_dir\( \$detaildir \)/s, 'get_results refuses stale replay when a recorded run directory has been removed' );
 like( $results_php, qr/getmenumodulesavedfilesremoved.*?saved files have been removed/s, 'get_results rejects an invalidated job before cached output can be replayed' );
