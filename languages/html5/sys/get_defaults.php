@@ -17,18 +17,6 @@ if ( !sizeof( $_REQUEST ) ) {
 
 require_once "__docroot:html5__/__application__/ajax/ga_filter.php";
 
-$modjson = json_decode( '__modulejson__' );
-#$modjson = [];
-$inputs_req = $_REQUEST;
-# $validation_inputs = ga_sanitize_validate( $modjson, $inputs_req, '__menu:modules:id__' );
-
-# if ( $validation_inputs[ "output" ] == "failed" ) {
-#    $results = array( "error" => $validation_inputs[ "error" ] );
-#    #    $results[ '_status' ] = 'failed';
-#    #    echo ( json_encode( $results ) );
-#    #    exit();
-#};
-
 if ( isset( $_REQUEST[ '_window' ] ) ) {
     $window = $_REQUEST[ '_window' ];
 }
@@ -80,6 +68,36 @@ if ( $_REQUEST[ '_logon' ] != $_SESSION[ $window ][ 'logon' ] ) {
 }
 session_write_close();
 
+// This endpoint is generated once, not once per module. Resolve the declared
+// hook from server-owned metadata; never use the generation-loop module id.
+function defaults_hook_definition( $hook ) {
+    $unknown = array( 'module' => '', 'resource' => null,
+                      'error' => 'Hook has no unambiguous module declaration' );
+    if ( !is_string( $hook ) ||
+         !preg_match( '/^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$/D', $hook ) ) {
+        return $unknown;
+    }
+    $matches = array();
+    foreach ( glob( '__docroot:html5__/__application__/etc/module_*.php' ) as $metadata ) {
+        require_once $metadata;
+    }
+    foreach ( ( $GLOBALS['modulejson'] ?? array() ) as $module => $definition ) {
+        foreach ( ( $definition->fields ?? array() ) as $field ) {
+            if ( ( $field->hook ?? null ) !== $hook ) { continue; }
+            $resource = $field->resource ?? null;
+            if ( isset( $matches[$module] ) &&
+                 $matches[$module]['resource'] !== $resource ) {
+                return $unknown;
+            }
+            $matches[$module] = array( 'module' => $module,
+                                      'resource' => $resource, 'error' => '' );
+        }
+    }
+    return count( $matches ) === 1 ? reset( $matches ) : $unknown;
+}
+
+$hook_definition = defaults_hook_definition( $_REQUEST['hook'] ?? null );
+
 // A file-backed hook receives text directly rather than move_uploaded_file.
 // Record reception before dispatch, including empty content and failed hooks.
 // Server selections and unauthenticated requests are not local uploads.
@@ -92,7 +110,7 @@ if ( strlen( $_SESSION[ $window ][ 'logon' ] ) &&
         'transfer_id' => ga_audit_transfer_id(),
         'username' => $_SESSION[ $window ][ 'logon' ],
         'project' => isset( $_REQUEST[ '_project' ] ) ? $_REQUEST[ '_project' ] : '',
-        'module' => '__menu:modules:id__',
+        'module' => $hook_definition['module'],
         'field' => isset( $_REQUEST[ 'hook' ] ) ? $_REQUEST[ 'hook' ] : '',
         'size_bytes' => strlen( $_REQUEST[ '_filedata' ] ),
         'outcome' => 'accepted'
@@ -124,6 +142,10 @@ if ( !isset( $_REQUEST['hook'] ) ) {
     error_exit( "Internal error: \$_REQUEST input JSON contained no key 'hook'" );;
 }    
 
+if ( $hook_definition['error'] ) {
+    error_exit( $hook_definition['error'] );
+}
+
 ## if all ok, assemble json & change to project directory && call defaults handler
 
 $hookexe = "__executable_path:html5__/" . $_REQUEST['hook'];
@@ -138,6 +160,23 @@ if ( !is_executable( $hookexe ) ) {
 
 if ( !strlen( $_SESSION[ $window ][ 'logon' ] ) ) {
     error_exit( "You must be logged on to utilize this feature" );
+}
+
+// Match the existing action resource convention. No declaration means local
+// execution. Only server configuration supplies the command prefix.
+$hookcommand = escapeshellarg( $hookexe );
+$resource = $hook_definition['resource'];
+if ( $resource !== null ) {
+    if ( !is_string( $resource ) || !preg_match( '/^[a-zA-Z0-9_-]+$/D', $resource ) ) {
+        error_exit( 'Hook has an invalid execution resource' );
+    }
+    $appconfig = json_decode( file_get_contents( '__appconfig__' ) );
+    $prefix = $appconfig->resources->{$resource} ?? null;
+    if ( is_object( $prefix ) ) { $prefix = $prefix->run ?? null; }
+    if ( !is_string( $prefix ) ) {
+        error_exit( 'Hook execution resource is not configured' );
+    }
+    if ( strlen( trim( $prefix ) ) ) { $hookcommand = $prefix . ' ' . $hookcommand; }
 }
 
 ## setup for running code
@@ -196,7 +235,7 @@ if ( file_put_contents( $tempfile, json_encode( $_REQUEST ) ) === FALSE ) {
 
 ## run executable
 
-exec( "$hookexe < $tempfile 2> /dev/null", $hookresults, $status );
+exec( $hookcommand . ' < ' . escapeshellarg( $tempfile ) . ' 2> /dev/null', $hookresults, $status );
 if ( $status ) {
     error_exit( "default hook " . $_REQUEST['hook'] . " failed" );
 }

@@ -146,3 +146,17 @@ force; disabled auditing preserves hook behavior. Each receipt has a fresh
 transfer ID. No new collector, permissions or deployment settings are needed.
 The endpoint and UI2 runtime tests cover accepted/error/empty local text,
 older callers, server selections, unauthenticated requests and auditing off.
+
+The shared defaults endpoint resolves the hook's owning module from generated
+`etc/module_*.php` declarations. Repeated buttons in one module must agree on
+execution resource. Missing or ambiguous ownership never invents a module:
+reception is logged without one and dispatch returns an error. Request-supplied
+module/resource values do not override server declarations.
+
+A hook field may declare an existing `resource`, using the same configured
+string or `{run: ...}` command prefix convention as actions. No declaration
+preserves local execution. MCA's three picker declarations select `host`, where
+its existing scientific Python and dependencies are installed. This does not
+change instance configuration, file filters, or cleanup authorization. Reception
+is recorded even when resource lookup or hook execution fails; server selections
+still generate no local-upload event.

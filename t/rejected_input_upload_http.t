@@ -60,7 +60,7 @@ find({no_chdir => 1, wanted => sub {
 my $defaults = read_file("$repo/languages/html5/sys/get_defaults.php");
 $defaults =~ s/__application__/action_button/g;
 for my $token (keys %replacements) { $defaults =~ s/\Q$token\E/$replacements{$token}/g; }
-$defaults =~ s/__menu:modules:id__/action_demo/g;
+$defaults =~ s/__menu:modules:id__/align/g;
 $defaults =~ s/__modulejson__/{}/g;
 write_file("$web/defaults.php", $defaults);
 
@@ -73,7 +73,7 @@ my $request = decode_json(do { local $/; <STDIN> });
 my $mode = $request->{sample};
 if (exists $request->{_filedata}) {
     if ($mode eq 'hook_failure') { print '{"error":"existing hook rejection"}'; exit 0; }
-    print encode_json({received => $request->{_filedata}});
+    print encode_json({received => $request->{_filedata}, route => ($ENV{LR_HOOK_TEST_ROUTE} || "local")});
     exit 0;
 }
 
@@ -345,11 +345,29 @@ ok(!-e "$user_root/project_unauthorized", 'unauthenticated upload does not reach
 
 # Local hook content is received independently of the hook's result. No hook
 # status fabricates scientific rejection or confirmed deletion.
-for my $mode (qw(hook_accept hook_failure hook_empty hook_old hook_server hook_unauthorized hook_audit_off)) {
+for my $mode (qw(hook_accept hook_failure hook_empty hook_old hook_server hook_unauthorized hook_audit_off
+                    hook_host_object hook_host_string hook_host_failure hook_missing_resource
+                    hook_ambiguous hook_conflict hook_undeclared)) {
+    my $fixture_config = decode_json(read_file($config));
+    $fixture_config->{resources}{host} = {run => 'env LR_HOOK_TEST_ROUTE=host'};
+    $fixture_config->{resources}{host} = 'env LR_HOOK_TEST_ROUTE=host' if $mode eq 'hook_host_string';
+    $fixture_config->{resources}{host} = {run => "sh -c 'exit 7'"} if $mode eq 'hook_host_failure';
+    delete $fixture_config->{resources}{host} if $mode eq 'hook_missing_resource';
+    write_file($config, encode_json($fixture_config));
+    my @buttons = map { {id => $_, type => 'button', hook => 'precheck_action', file => 'lrfile'} }
+        qw(getdefaults getdefaults_decomposition getdefaults_stoichiometry);
+    if ($mode =~ /^hook_host/ || $mode eq 'hook_missing_resource') { $_->{resource} = 'host' for @buttons; }
+    $buttons[1]{resource} = 'host' if $mode eq 'hook_conflict';
+    my $definition = encode_json({fields => ($mode eq 'hook_undeclared' ? [] : \@buttons)});
+    write_file("$web/etc/module_multi_component_analysis.php",
+        '<?php $GLOBALS["modulejson"]["multi_component_analysis"] = json_decode(' . "'$definition');");
+    my $other = $mode eq 'hook_ambiguous' ? $definition : '{"fields":[]}';
+    write_file("$web/etc/module_align.php",
+        '<?php $GLOBALS["modulejson"]["align"] = json_decode(' . "'$other');");
     my @command = ($curl, '--silent', '--show-error', '--max-time', '15', '--noproxy', '*');
     push @command, '--cookie', "GENAPP_ACTION_BUTTON=$session_id" unless $mode eq 'hook_unauthorized';
     my %fields = (_window => 'test-window', _logon => 'fixture_user', _project => $mode,
-        hook => 'precheck_action', sample => $mode, _filedata => ($mode eq 'hook_empty' ? '' : "private hook bytes\n"));
+        hook => 'precheck_action', _module => 'align', resource => 'untrusted', sample => $mode, _filedata => ($mode eq 'hook_empty' ? '' : "private hook bytes\n"));
     delete $fields{_logon} if $mode eq 'hook_unauthorized';
     $fields{_filedata_filename} = "C:\\client\\input.txt" unless $mode eq 'hook_old';
     $fields{_file_enc_to_load} = encode_base64('./stored/server.dat', '') if $mode eq 'hook_server';
@@ -365,9 +383,14 @@ for my $mode (qw(hook_accept hook_failure hook_empty hook_old hook_server hook_u
     my $payload = eval { decode_json($output) };
     ok(ref($payload) eq 'HASH', "hook returns JSON: $mode") or BAIL_OUT($output . read_file("$temporary/http.log") . read_file($collector));
     if ($mode eq 'hook_failure') { is($payload->{error}, 'existing hook rejection', 'hook error is unchanged'); }
+    elsif ($mode =~ /^hook_(host_failure|missing_resource|ambiguous|conflict|undeclared)$/) {
+        like($payload->{error}, qr/failed|resource|unambiguous/, "dispatch failure is reported: $mode");
+    }
     elsif ($mode ne 'hook_unauthorized') {
         is($payload->{received}, $mode eq 'hook_server' ? "server-selection\n" : $fields{_filedata},
             "hook receives unchanged content: $mode");
+        is($payload->{route}, $mode =~ /^hook_host/ ? 'host' : 'local',
+            "only the declared resource selects execution: $mode");
     }
     my @records = map { decode_json($_) } map { /GENAPP_AUDIT (\{.*\})\s*$/ }
         split /\n/, read_file($collector);
@@ -378,6 +401,8 @@ for my $mode (qw(hook_accept hook_failure hook_empty hook_old hook_server hook_u
         is(scalar @own, 1, "one reception event, no invented rejection or deletion: $mode");
         is($own[0]{event}, 'upload_succeeded', "event records receipt: $mode");
         is($own[0]{username}, 'fixture_user', "identity comes from session: $mode");
+        is($own[0]{module} || '', $mode =~ /^hook_(ambiguous|conflict|undeclared)$/ ? '' : 'multi_component_analysis',
+            "module comes from unambiguous declaration, not generation or request: $mode");
         is($own[0]{size_bytes}, length($fields{_filedata}), "actual received text byte count: $mode");
         like($own[0]{transfer_id}, qr/^[a-f0-9]{32,64}$/, "independent transfer identity: $mode");
         if ($mode eq 'hook_old') { ok(!exists $own[0]{filename}, 'old caller needs no invented filename'); }
