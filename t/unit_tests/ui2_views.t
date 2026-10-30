@@ -793,6 +793,10 @@ is_deeply(
 my ($dynamic_gallery_field) = grep { $_->{id} eq 'dynamic_gallery' } @{ $workbench_layout->{modulejson}{fields} || [] };
 is( $dynamic_gallery_field->{dynamicoutput}, 'true', 'neutral fixture declares a generic dynamic Plotly output' );
 is( $dynamic_gallery_field->{max}, '2', 'neutral fixture allows two generated Plotly children' );
+my ($available_static_group) = grep { $_->{id} eq 'wide' } @{ $workbench_layout->{viewjson}{results}{groups} || [] };
+is( $available_static_group->{visibility}, 'available', 'generated view retains static output availability for native fallback' );
+my ($default_static_group) = grep { $_->{id} eq 'primary' } @{ $workbench_layout->{viewjson}{results}{groups} || [] };
+ok( !exists $default_static_group->{visibility}, 'generated view preserves default static output placeholder behavior' );
 my ($dynamic_gallery_group) = grep { $_->{id} eq 'dynamic-gallery' } @{ $workbench_layout->{viewjson}{results}{groups} || [] };
 is( $dynamic_gallery_group->{layout}, 'gallery', 'neutral fixture opts into generic gallery layout' );
 is( $dynamic_gallery_group->{visibility}, 'available', 'neutral fixture keeps the optional gallery hidden until dynamic output is present' );

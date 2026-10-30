@@ -3500,6 +3500,7 @@
 
     container.appendChild(form);
     nodes.root.appendChild(container);
+    refresh_native_output_availability();
     syncValues();
     markViewReady();
     initializeToolView(form, options);
@@ -9375,7 +9376,22 @@
     return () => state.workbenchRunContextListeners.delete(listener);
   }
 
+  // Consume the same group availability snapshot as React when native UI2 is mounted.
+  function refresh_native_output_availability() {
+    if (reactWorkbenchRoot || !nodes.root) return;
+    const groups = state.view?.results?.groups || [];
+    nodes.root.querySelectorAll(".ui2-output-field").forEach((row) => {
+      // Dynamic output rows own their visibility through their items lifecycle.
+      if (row.classList.contains("ui2-dynamic-output-row")) return;
+      const containing = groups.filter((group) => group.outputs?.includes(row.dataset.fieldId));
+      if (!containing.some((group) => group.visibility === "available")) return;
+      row.hidden = !containing.some((group) => group.visibility !== "available"
+        || group.outputs.some((id) => state.runtimeOutputAvailability[id]));
+    });
+  }
+
   function notifyRuntimeOutputs() {
+    refresh_native_output_availability();
     state.runtimeOutputListeners.forEach((listener) => {
       try {
         listener();
@@ -14438,6 +14454,8 @@
       isToolView,
       renderActionBar,
       renderSection,
+      refresh_native_output_availability,
+      setNativeOutputRootForTest: (root) => { nodes.root = root; },
       initializeToolView,
       currentToolJob,
       updateToolControls,

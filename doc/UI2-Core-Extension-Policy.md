@@ -645,3 +645,17 @@ immutability and unchanged values, precision, uncertainty, color and legends.
 Existing mandatory axis-label collision checks still apply. Required untested
 states are pending, not passes. Owner gap report:
 `doc/UI2-Hover-Name-Suppression-Shared-Gap-Report.md`.
+
+## Native output availability
+
+`results.groups[].visibility: "available"` is consumed by both React and native
+UI2. Native static rows remain hidden until any output in their group is marked
+available in the current runtime snapshot. Default/declared groups and unassigned
+rows preserve normal placeholders. A row shared by groups is visible when any
+containing group permits it. Availability resets with the module/job context;
+omission in an incremental payload does not retract a previously received output.
+Dynamic rows retain their existing `items` lifecycle, including empty clearing.
+Native fallback is identified by the mounted renderer, not the requested view.
+This does not change field repeat visibility, add native group-repeat layout,
+alter saved payloads, or change HTML5. See
+[the neutral reproduction and approved scope](UI2-Native-Output-Availability-Shared-Gap-Report.md).

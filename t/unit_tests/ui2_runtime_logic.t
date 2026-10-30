@@ -511,6 +511,67 @@ assert.strictEqual(inheritedSurfaceProfile.palette.primary, "#112233",
 
 const hooks = context.window.GenAppUi2TestHooks;
 
+// Native fallback consumes the same opt-in group availability as React.
+const availabilitySavedView = hooks.state.view;
+const availabilityRoot = createNode("div");
+document.body.appendChild(availabilityRoot);
+hooks.setNativeOutputRootForTest(availabilityRoot);
+hooks.state.view = {renderer:"react", results:{groups:[
+  {outputs:["optional_a", "optional_b"], visibility:"available"},
+  {outputs:["shared_output"], visibility:"available"},
+  {outputs:["shared_output", "declared_output"]},
+  {outputs:["dynamic_output"], visibility:"available"}
+]}};
+hooks.beginRuntimeOutputContext("neutral_availability", "signed");
+const availabilityFields = ["optional_a", "optional_b", "shared_output", "declared_output", "unassigned_output"]
+  .map(id => ({id, type:"text", role:"output"}));
+availabilityFields.push({id:"dynamic_output", type:"text", role:"output", dynamicoutput:"true", idprefix:"child", max:"2"});
+availabilityRoot.appendChild(hooks.renderSection("Outputs", availabilityFields, "output"));
+const availabilityRow = id => availabilityRoot.querySelector('[data-field-id="' + id + '"]');
+hooks.refresh_native_output_availability();
+assert.strictEqual(availabilityRow("optional_a").hidden, true, "native fallback hides an absent optional static row even when view requests React");
+assert.strictEqual(availabilityRow("optional_b").hidden, true);
+for (const id of ["shared_output", "declared_output", "unassigned_output"]) {
+  assert.notStrictEqual(availabilityRow(id).hidden, true, "default and unassigned rows retain placeholders");
+}
+const availabilitySignedToken = hooks.runtimeOutputToken();
+const availabilityPayload = {optional_a:"signed output", dynamic_output:{items:[{value:"dynamic result"}]}};
+const availabilityBefore = JSON.stringify(availabilityPayload);
+hooks.applyRuntimePayload(availabilityPayload, availabilitySignedToken);
+assert.strictEqual(availabilityRow("optional_a").hidden, false, "received output reveals its row");
+assert.strictEqual(availabilityRow("optional_b").hidden, false, "any available member reveals the whole static group");
+assert.strictEqual(availabilityRow("dynamic_output").hidden, false, "dynamic lifecycle still reveals populated rows");
+hooks.applyRuntimePayload({dynamic_output:{items:[]}});
+assert.strictEqual(availabilityRow("dynamic_output").hidden, true, "empty dynamic items still clear the row");
+hooks.refresh_native_output_availability();
+assert.strictEqual(availabilityRow("dynamic_output").hidden, true, "sticky availability cannot reopen an empty dynamic row");
+hooks.applyRuntimePayload({dynamic_output:{items:[{value:"again"}]}});
+assert.strictEqual(availabilityRow("dynamic_output").hidden, false, "dynamic rows repopulate normally");
+hooks.applyRuntimePayload({_status:"complete", declared_output:"complete"});
+assert.strictEqual(availabilityRow("optional_a").hidden, false, "omitted incremental keys do not erase availability");
+assert.strictEqual(JSON.stringify(availabilityPayload), availabilityBefore, "availability never mutates source results");
+hooks.beginRuntimeOutputContext("neutral_availability", "positive");
+assert.strictEqual(availabilityRow("optional_a").hidden, true, "switching jobs clears prior optional availability");
+hooks.applyRuntimePayload({optional_a:"late"}, availabilitySignedToken);
+assert.strictEqual(availabilityRow("optional_a").hidden, true, "stale job output cannot reveal the optional row");
+hooks.applyRuntimePayload({_status:"complete", declared_output:"positive-only final"});
+assert.strictEqual(availabilityRow("optional_a").hidden, true, "completed and historical payloads may omit optional outputs");
+availabilityRow("optional_a").classList.add("ui2-hidden");
+hooks.applyRuntimePayload({optional_a:"visible group, hidden field repeat"});
+assert(availabilityRow("optional_a").classList.contains("ui2-hidden"), "availability leaves field repeat visibility intact");
+hooks.setReactWorkbenchRootForTest(createNode("div"));
+hooks.beginRuntimeOutputContext("neutral_availability", "react");
+assert.strictEqual(availabilityRow("optional_a").hidden, false, "active React owns its DOM visibility");
+hooks.setReactWorkbenchRootForTest(null);
+hooks.refresh_native_output_availability();
+assert.strictEqual(availabilityRow("optional_a").hidden, true, "native mount consumes the current snapshot after React unmounts");
+hooks.setNativeOutputRootForTest(null);
+availabilityRoot.remove();
+hooks.state.view = availabilitySavedView;
+hooks.beginRuntimeOutputContext("");
+// Allow this regression block to run independently of unrelated runtime checks.
+if (process.env.UI2_NATIVE_AVAILABILITY_ONLY === "1") process.exit(0);
+
 const numericSavedFigure = {data:[{type:"scatter",x:[0.04515],y:[0.01965],error_y:{array:[0.0008006]}}],layout:{yaxis:{type:"log"}}};
 const numericSavedBefore = JSON.stringify(numericSavedFigure);
 window.GenAppUi2App.directives = {ui2_plotly_hover_number_format:".5e"};

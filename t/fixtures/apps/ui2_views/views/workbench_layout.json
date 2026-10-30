@@ -102,6 +102,7 @@
                 "id"      : "wide",
                 "label"   : "Wide plot",
                 "outputs" : ["wide_plot"],
+                "visibility" : "available",
                 "fit"     : "wide"
             },
             {

@@ -760,3 +760,11 @@ precision and saved outputs. No scientific or driver workaround belongs here.
 Owner contracts: paired GenApp `doc/Plotting-Architecture.md` and
 `doc/UI2-Core-Extension-Policy.md`; application selection:
 `genapp_zazzie/docs/plot_presentation.md`.
+
+### Native UI2 optional-output availability
+
+Native fallback and React consume the existing `results.groups[].visibility:
+"available"` contract. Preserve current-context availability, default placeholders,
+and dynamic-output clearing; never branch on module or scientific output IDs.
+See `doc/UI2-Core-Extension-Policy.md` and
+`doc/UI2-Native-Output-Availability-Shared-Gap-Report.md` before changing this boundary.
