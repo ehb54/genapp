@@ -3427,6 +3427,7 @@
     beginRuntimeOutputContext("");
     state.jobEvents.reset();
     nodes.root.hidden = true;
+    releasePlotlyOutputs(nodes.root);
     nodes.root.innerHTML = "";
     nodes.empty.hidden = false;
     nodes.empty.innerHTML = [
@@ -3448,6 +3449,7 @@
     unmountReactWorkbench();
     nodes.empty.hidden = true;
     nodes.root.hidden = false;
+    releasePlotlyOutputs(nodes.root);
     nodes.root.innerHTML = "";
 
     if (isReactWorkbenchView(state.view) && renderReactWorkbench(module, fields)) {
@@ -3704,6 +3706,7 @@
     state.activeJob = null;
     state.jobEvents.reset();
     nodes.root.hidden = true;
+    releasePlotlyOutputs(nodes.root);
     nodes.root.innerHTML = "";
     nodes.empty.hidden = true;
     nodes.empty.innerHTML = "";
@@ -9028,6 +9031,7 @@
         updateDynamicOutput(output, { items: [] });
         return;
       }
+      disconnectPlotlyOutputObserver(output);
       delete output.dataset.runtimeText;
       delete output._ui2PlotlyLastFigure;
       output.classList.remove("ui2-output-rendered", "ui2-output-plotly-ready");
@@ -10467,6 +10471,7 @@
     const parentRow = group.closest(".ui2-dynamic-output-row");
     const items = dynamicOutputItems(group, payload);
     if (!items.length) {
+      releasePlotlyOutputs(group);
       group.querySelectorAll(".ui2-dynamic-output-instance").forEach((node) => node.remove());
       group.querySelectorAll(".ui2-dynamic-output-placeholder").forEach((node) => node.remove());
       group.classList.remove("ui2-output-rendered");
@@ -10523,6 +10528,7 @@
     });
     existing.forEach((child, id) => {
       if (!active.has(id)) {
+        releasePlotlyOutputs(child.instance);
         child.instance.remove();
       }
     });
@@ -12637,6 +12643,7 @@
   function renderPlotlyOutput(output, value) {
     const figure = parsePlotlyFigure(value);
     if (!figure) {
+      disconnectPlotlyOutputObserver(output);
       renderTextOutput(output, value);
       return;
     }
@@ -12671,7 +12678,7 @@
       .then(() => {
         normalizePlotlyModebar(output);
         improvePlotlyModebarAccessibility(output);
-        resizePlotlyOutputWhenVisible(output);
+        return resizePlotlyOutputWhenVisible(output);
       })
       .catch((error) => {
         output.classList.remove("ui2-output-plotly-ready");
@@ -12720,7 +12727,7 @@
       .then(() => {
         normalizePlotlyModebar(output);
         improvePlotlyModebarAccessibility(output);
-        resizePlotlyOutputWhenVisible(output);
+        return resizePlotlyOutputWhenVisible(output);
       })
       .catch((error) => {
         output.textContent = `Could not append Plotly output: ${error.message}`;
@@ -12823,10 +12830,10 @@
 
   function observeFitPlotlyOutput(output) {
     disconnectPlotlyOutputObserver(output);
-    if (plotlyFitMode(output) !== "pane" || typeof ResizeObserver !== "function") {
+    if (!output?.isConnected || typeof ResizeObserver !== "function") {
       return;
     }
-    // Observe the allocated pane, not the Plotly element itself.  Plotly
+    // Native and React plots observe their allocation, not the SVG. Plotly
     // changes its own SVG dimensions while resizing; observing that element
     // feeds its own relayout back into this observer and can widen the pane.
     const fittedAncestor = output.closest?.("[data-plot-fit]");
@@ -12843,28 +12850,35 @@
       width = rect.width;
       height = rect.height;
       const schedule = window.requestAnimationFrame || ((callback) => window.setTimeout(callback, 0));
-      schedule(() => {
-        resizePlotlyOutputWhenVisible(output);
+      if (output._ui2PlotlyResizeFrame != null) return;
+      output._ui2PlotlyResizeFrame = schedule(() => {
+        output._ui2PlotlyResizeFrame = null;
+        if (output._ui2PlotlyResizeObserver !== observer || !output.isConnected) return;
+        Promise.resolve(resizePlotlyOutputWhenVisible(output)).catch(error =>
+          window.console?.error?.("Plot resize failed", error));
       });
     });
     observer.observe(target);
     output._ui2PlotlyResizeObserver = observer;
   }
 
-  function resizePlotlyOutputWhenVisible(output, attempt = 0) {
-    if (!output?.isConnected || !window.Plotly?.Plots?.resize) {
+  function resizePlotlyOutputWhenVisible(output, attempt = 0, generation = output?._ui2PlotlyResizeGeneration || 0) {
+    if (!output?.isConnected || generation !== (output._ui2PlotlyResizeGeneration || 0) || !window.Plotly?.Plots?.resize) {
       return;
     }
     const rect = output.getBoundingClientRect?.();
     if (rect && rect.width > 1 && rect.height > 1 && output.offsetParent !== null) {
-      resizePlotlyOutputToVisibleBox(output, rect);
-      return;
+      window.clearTimeout?.(output._ui2PlotlyVisibleTimer);
+      output._ui2PlotlyVisibleTimer = null;
+      return resizePlotlyOutputToVisibleBox(output, rect);
     }
     if (attempt >= 12) {
       return;
     }
     const delay = attempt < 4 ? 32 : 75;
-    window.setTimeout(() => resizePlotlyOutputWhenVisible(output, attempt + 1), delay);
+    window.clearTimeout?.(output._ui2PlotlyVisibleTimer);
+    output._ui2PlotlyVisibleTimer = window.setTimeout(() =>
+      resizePlotlyOutputWhenVisible(output, attempt + 1, generation), delay);
   }
 
   function resizePlotlyOutputToVisibleBox(output, rect) {
@@ -12874,19 +12888,24 @@
     // Pane-fitted figures are autosized.  Plotly's resize routine reads the
     // CSS box; writing a fixed width/height back with relayout makes the plot
     // participate in its own size calculation and can grow the pane.
-    const refreshed = refreshPlotlyOutputIfNeeded(output);
-    if (refreshed?.then) {
-      refreshed
-        .then(() => window.Plotly?.Plots?.resize?.(output))
-        .then(() => fitPlotlyPresentationGeometry(output));
-      return;
-    }
-    const resized = window.Plotly?.Plots?.resize?.(output);
-    if (resized?.then) {
-      resized.then(() => fitPlotlyPresentationGeometry(output));
-      return;
-    }
-    fitPlotlyPresentationGeometry(output);
+    output._ui2PlotlyResizePending = true;
+    if (output._ui2PlotlyResizePromise) return output._ui2PlotlyResizePromise;
+    const generation = output._ui2PlotlyResizeGeneration || 0;
+    const current = () => output.isConnected && generation === (output._ui2PlotlyResizeGeneration || 0);
+    const pending = Promise.resolve().then(async () => {
+      while (output._ui2PlotlyResizePending && current()) {
+        output._ui2PlotlyResizePending = false;
+        await refreshPlotlyOutputIfNeeded(output);
+        if (!current()) return;
+        await window.Plotly?.Plots?.resize?.(output);
+        if (!current()) return;
+        await fitPlotlyPresentationGeometry(output);
+      }
+    }).finally(() => {
+      if (output._ui2PlotlyResizePromise === pending) output._ui2PlotlyResizePromise = null;
+    });
+    output._ui2PlotlyResizePromise = pending;
+    return pending;
   }
 
   function rememberPlotlyAppend(output, indices, x_values, y_values, max_points) {
@@ -13156,9 +13175,25 @@
 
   function disconnectPlotlyOutputObserver(output) {
     output?._ui2PlotlyResizeObserver?.disconnect?.();
-    if (output) {
-      output._ui2PlotlyResizeObserver = null;
+    if (!output) return;
+    output._ui2PlotlyResizeObserver = null;
+    output._ui2PlotlyResizeGeneration = (output._ui2PlotlyResizeGeneration || 0) + 1;
+    if (output._ui2PlotlyResizeFrame != null) {
+      const cancel = window.cancelAnimationFrame || window.clearTimeout;
+      cancel?.(output._ui2PlotlyResizeFrame);
     }
+    window.clearTimeout?.(output._ui2PlotlyVisibleTimer);
+    output._ui2PlotlyResizeFrame = null;
+    output._ui2PlotlyVisibleTimer = null;
+    output._ui2PlotlyResizePending = false;
+    output._ui2PlotlyResizePromise = null;
+  }
+
+  function releasePlotlyOutputs(scope) {
+    scope?.querySelectorAll?.('[data-output-type="plotly"]').forEach(output => {
+      disconnectPlotlyOutputObserver(output);
+      if (output.data && window.Plotly?.purge) window.Plotly.purge(output);
+    });
   }
 
   function applyPlotlyModebarHooks(figure, config) {
@@ -13169,6 +13204,7 @@
       config.modeBarButtonsToAdd = [...(config.modeBarButtonsToAdd || []), {
         name: "fittedImage", title: "Download plot as a PNG", icon: window.Plotly.Icons.camera,
         click: async graphDiv => {
+          await resizePlotlyOutputWhenVisible(graphDiv);
           await fitPlotlyPresentationGeometry(graphDiv);
           await window.GenAppPlotlyLayout?.settleTickDensity?.(graphDiv);
           return window.Plotly.downloadImage(graphDiv, {format:"png", scale:2,
@@ -13193,6 +13229,7 @@
       title: "Edit in Chart Editor",
       icon: window.Plotly.Icons.pencil,
       click: async (graphDiv) => {
+        await resizePlotlyOutputWhenVisible(graphDiv);
         await fitPlotlyPresentationGeometry(graphDiv);
         await window.GenAppPlotlyLayout?.settleTickDensity?.(graphDiv);
         const id = `gace_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
@@ -14442,6 +14479,7 @@
   function showError(message) {
     nodes.empty.hidden = true;
     nodes.root.hidden = false;
+    releasePlotlyOutputs(nodes.root);
     nodes.root.innerHTML = "";
     nodes.root.appendChild(el("div", "ui2-error", message));
   }

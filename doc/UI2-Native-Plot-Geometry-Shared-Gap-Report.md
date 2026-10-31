@@ -109,3 +109,47 @@ Local validation:
 
 Deployed correction and the full prior acceptance scope remain pending separate
 UI2 recompilation approval. Do not mark #333 accepted or notify Susan yet.
+
+## Native resize event wiring — October 31, 2026
+
+Joseph Curtis approved the native resize fix and exact ten-file manifest.
+At core 8f3ec863 / app 12dc553 the deployed positive Guinier axis-title check
+passed at 613.57 and 487.57 CSS pixels. Acceptance then failed: after wide-to-
+narrow resizing, the first two native figure titles clipped at 487.57 pixels.
+Reset axes did not restore wrapping; fresh reattachment did. Browser settings
+were restored and codex3 logged out. Susan was not notified.
+
+Root cause: `observeFitPlotlyOutput` returned unless plotFit was pane. Native
+outputs therefore missed the existing resize -> full geometry chain. The prior
+fixture called fit manually after every size change, masking this wiring gap.
+The Lab already observes its parent allocation; it requires no runtime change.
+
+The correction extends the existing observer to native allocations, coalesces
+notifications, returns/settles the existing resize work before export, and
+invalidates queued callbacks on removal, reset or replacement. Dynamic children
+and module clearing release observers before removing nodes. No geometry helper,
+CSS, schema, science, YAML or hover implementation changed.
+
+Local evidence:
+
+- The committed runtime fails an actual browser viewport transition from a
+  1122-pixel plot to 488 pixels: the figure title remains unwrapped and clips.
+  The corrected runtime passes actual browser viewport transitions producing
+  1122, 488, 900, 320, 614 and 488-pixel plots. No manual fit call is used.
+- Real Plotly fixture through production rendering/observation: 4,418 checks
+  passed across 34 cases (28 native/pane and normal/0.67 CSS-scale cases plus
+  six logarithmic cases), including hidden/reveal, rapid changes, no idle loop,
+  PNG dimensions and source/data/hover preservation. CSS scaling remains an
+  analogue, not proof of deployed browser zoom acceptance.
+- UI2 generation/views, target filtering, HTML5 overrides and HTML5 assembly:
+  836 harness assertions passed. Existing focused native availability/lifecycle:
+  one harness assertion passed.
+- Eleven geometry/hover suites: 34 harness assertions passed, including observer
+  registration, coalescing, stale callbacks, disconnect during resize, hidden
+  retry cancellation, dynamic clearing, static reset and export waiting.
+- MCA/view/Lab parity tests: 70 passed; the same three pre-existing Data
+  Interpolation fixture expectations fail (cutoff value, extra log-log output,
+  and tick-format selection). Those tests and fixtures remain unchanged.
+
+Local success is not deployed acceptance. Separate UI2 recompilation approval
+and the existing full codex3 acceptance scope remain required before handoff.

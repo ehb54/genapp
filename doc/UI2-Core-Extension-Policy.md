@@ -729,3 +729,27 @@ handoff await it. Preserve scientific arrays, uncertainty, titles, units, source
 ranges/scales, explicit tick notation, hover behavior and saved output.
 
 Evidence and limitations: `UI2-Native-Plot-Geometry-Shared-Gap-Report.md`.
+
+## Native resize wiring (#333)
+
+Native Plotly outputs and React pane outputs register the existing allocation
+ResizeObserver. Observe the containing allocation, never Plotly's generated SVG.
+Dimension changes coalesce into a frame callback and reuse
+`resizePlotlyOutputWhenVisible` -> Plotly resize ->
+`fitPlotlyPresentationGeometry`. The existing ordered geometry pipeline remains
+the only implementation of title wrapping, annotations, axis titles, subplot
+spacing and tick/axis-title clearance. No new presentation option is introduced.
+
+Disconnect observers and cancel queued frame/hidden retries before output
+removal, runtime reset and module replacement. A generation check prevents
+callbacks from an old allocation from fitting a replacement. Concurrent resize
+requests retain a pending pass; PNG and initial Chart Editor handoff await the
+resize promise before the existing geometry/export settlement.
+
+Regression acceptance must render through the production path, then change
+allocation or browser viewport dimensions without directly calling Plotly react,
+resize or fitting helpers from the test. Demonstrate baseline failure and
+correction using actual resize events, narrow/wide/restore, hidden/reveal,
+rapid changes and teardown. Preserve YAML, hover behavior, explicit settings,
+scientific outputs and source payloads. Owner evidence:
+`UI2-Native-Plot-Geometry-Shared-Gap-Report.md`.

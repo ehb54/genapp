@@ -246,3 +246,18 @@ This does not establish deployed acceptance. Positive/signed native and React,
 historical combined results, other MCA modes, Lab themes/surfaces, completion,
 same/fresh-window reattachment, PNG and initial editor checks remain required.
 See `UI2-Native-Plot-Geometry-Shared-Gap-Report.md` for local failures/limitations.
+
+## MCA #333 native resize follow-up — October 31, 2026
+
+Core 8f3ec863 / app 12dc553 corrected native Guinier axis-title clearance, but
+wide-to-narrow resizing clipped the first two positive figure titles at 487.57
+CSS pixels. Fresh reattachment corrected them; Reset axes did not. Codex3 was
+logged out and browser settings restored; no Susan handoff occurred.
+
+The approved observer-wiring correction reuses the full geometry pipeline.
+The committed baseline fails actual browser-window narrowing; the correction
+passes six viewport transitions and 4,418 event-driven fixture checks. Detailed
+local evidence and known unrelated failures are in
+`UI2-Native-Plot-Geometry-Shared-Gap-Report.md`. These are local results only.
+The existing native/React, positive/signed/historical/other-mode, Lab surface,
+interaction, export and reattachment acceptance scope remains pending deployment.

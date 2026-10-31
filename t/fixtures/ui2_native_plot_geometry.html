@@ -1,47 +1,54 @@
-<!doctype html><meta charset="utf-8"><title>Native plot geometry acceptance</title>
-<style>body{font:14px Arial}.plot{height:480px;width:488px}pre{white-space:pre-wrap}</style>
+<!doctype html><meta charset="utf-8"><title>Native resize geometry acceptance</title>
+<style>body{font:14px Arial}.allocation{width:1122px;min-width:0}.plot{width:100%;height:480px;min-width:0}pre{white-space:pre-wrap}</style>
 <script src="../../languages/html5/add/js/plotly-2.35.2.min.js"></script>
 <script src="../../languages/ui2/add/js/plotly-layout.js"></script>
-<h1>Native plot geometry acceptance</h1><pre id="results">Running</pre><div id="owner" data-dynamic-output="true" data-output-field-id="dynamic"><div class="plot" id="plot" data-output-field-id="child"></div></div><div class="plot" id="control" data-output-field-id="unassigned"></div>
+<h1>Actual resize event acceptance</h1><pre id="results">Running</pre>
+<div id="owner" class="allocation" data-dynamic-output="true" data-output-field-id="dynamic"><div class="plot" id="plot" data-output-field-id="child" data-output-type="plotly"></div></div>
 <script>
 (async()=>{
- const src=await (await fetch('../../languages/ui2/add/js/ui2.js')).text();
- const code=src.slice(src.indexOf('  function plotPresentationForOutput('),src.indexOf('  function plotPresentationProfileForOutput('));
- const state={view:{results:{groups:[{outputs:['dynamic','ordinary'],plotPresentation:{axisTickFormats:{xaxis:'.4~g',yaxis:'.4~g'},figureTitleOverflow:'wrap',axisTitleOverflow:'wrap'}}]}}};
- const resolve=new Function('state','reactWorkbenchRoot','cloneUi2Value',code+'return plotGeometryForOutput;')(state,null,v=>JSON.parse(JSON.stringify(v)));
- const clone=v=>JSON.parse(JSON.stringify(v)),p=GenAppPlotlyLayout,g=document.getElementById('plot'),control=document.getElementById('control');
- let source={title:'Measured and fitted observations',xaxis:{title:'u² (a⁻²)',type:'linear',range:[0,.003]},yaxis:{title:'Log response',type:'linear'},hovermode:'closest',hoverlabel:{namelength:0}};
- let data=Array.from({length:8},(_,i)=>({x:[0,.0005,.001,.0015,.002,.0025],y:[0,1,2,3,4,5].map(v=>-i*.7-v*.1),name:'Sample '+(i>>1)+' '+(i%2?'fitted observations':'measured observations'),mode:'lines+markers',hovertemplate:'Value %{y}<extra></extra>',error_y:{array:[.01,.01,.01,.01,.01,.01]}})),saved=JSON.stringify({source,data});
- let checks=0,cases=[];const check=(ok,msg)=>{if(!ok)throw Error(msg);checks++;};
- // Extract the production geometry functions, including native legend margins.
- const names=['plotlyLayoutForOutput','defaultPlotlyLayout','plotlyLegendKeys','applyPlotlyLegendPlacement','plotlyLegendFitUpdate','fitPlotlyLegendsBelowPlot','fitPlotlyAxisTitles','fitPlotlyAnnotations','fitPlotlyPresentationGeometry','plotlyOutputReadyForRelayout'];
- const functions=names.map(name=>{const start=src.indexOf('  function '+name+'('),end=src.indexOf('\n  function ',start+1);return src.slice(start,end);}).join('\n');
- const runtime=new Function('window','plotGeometryForOutput',`
- const cssEscape=CSS.escape,plotPresentationForOutput=()=>({}),plotPresentationProfileForOutput=()=>null;
- const applyPlotPresentationLayout=()=>{},applyPlotBackgroundMode=x=>x;
- const plotlyThemeColors=()=>({panel:'#fff',text:'#222'});
+ const src=await (await fetch('../../languages/ui2/add/js/ui2.js',{cache:'no-store'})).text();
+ const names=['renderPlotlyOutput','plotlyLayoutForOutput','defaultPlotlyLayout','plotlyLegendKeys','applyPlotlyLegendPlacement','plotlyLegendFitUpdate','fitPlotlyLegendsBelowPlot','fitPlotlyAxisTitles','fitPlotlyAnnotations','fitPlotlyPresentationGeometry','plotlyOutputReadyForRelayout','plotPresentationForOutput','plotGeometryForOutput','plotlyFitMode','observeFitPlotlyOutput','disconnectPlotlyOutputObserver','resizePlotlyOutputWhenVisible','resizePlotlyOutputToVisibleBox','refreshPlotlyOutputIfNeeded','releasePlotlyOutputs'];
+ const functions=names.filter(name=>src.includes('  function '+name+'(')).map(name=>{const start=src.indexOf('  function '+name+'('),end=src.indexOf('\n  function ',start+1);return src.slice(start,end);}).join('\n');
+ const clone=x=>JSON.parse(JSON.stringify(x)),g=document.getElementById('plot'),owner=document.getElementById('owner');
+ const selection={axisTickFormats:{xaxis:'.4~g',yaxis:'.4~g'},figureTitleOverflow:'wrap',axisTitleOverflow:'wrap'};
+ const state={view:{results:{groups:[{outputs:['dynamic'],plotPresentation:selection}]}}};
+ const runtime=new Function('window','state',`
+ const reactWorkbenchRoot=null,cloneUi2Value=x=>JSON.parse(JSON.stringify(x)),cssEscape=CSS.escape;
+ const plotPresentationProfileForOutput=()=>null,applyPlotPresentationLayout=()=>{},applyPlotBackgroundMode=x=>x;
+ const plotlyThemeColors=()=>({panel:'#fff',text:'#222'}),parsePlotlyFigure=x=>x,plotlyDisplayFigure=cloneUi2Value,plotlyDataForOutput=(o,d)=>d;
+ const ensurePlotlyLoaded=()=>Promise.resolve(),applyPlotlyTheme=()=>{},plotlyConfigForOutput=()=>({responsive:true,displayModeBar:false});
+ const applyPlotlyModebarHooks=()=>{},applyPlotlyNumericHoverFormat=()=>Promise.resolve(),normalizePlotlyModebar=()=>{},improvePlotlyModebarAccessibility=()=>{},debugPlotlyResize=()=>{};
  ${functions}
- return {layout:plotlyLayoutForOutput,fit:fitPlotlyPresentationGeometry};`)(window,resolve);
- function display(width,bg){return {...runtime.layout(g,clone(source)),width,height:480,font:{size:12,color:bg==='#fff'?'#222':'#eee'},paper_bgcolor:bg,plot_bgcolor:bg};}
- async function fit(){g._ui2PlotlyLastFigure={layout:source};await runtime.fit(g);await p.settleTickDensity(g);}
- function bounds(){const host=g.getBoundingClientRect();const nodes=[...g.querySelectorAll('.gtitle,.xtitle,.ytitle,[class$="tick"] text')].filter(n=>n.textContent.replace(/\u200b/g,'').trim());const hit=(a,b)=>a.left<b.right-.5&&a.right>b.left+.5&&a.top<b.bottom-.5&&a.bottom>b.top+.5;for(let i=0;i<nodes.length;i++){const a=nodes[i].getBoundingClientRect();check(a.left>=host.left-1&&a.right<=host.right+1&&a.top>=host.top-1&&a.bottom<=host.bottom+1,'text contained: '+nodes[i].textContent);for(const n of nodes.slice(i+1))check(!hit(a,n.getBoundingClientRect()),'labels separated '+nodes[i].textContent+' / '+n.textContent);}}
- await Plotly.newPlot(control,clone(data),clone(source));check(Object.keys(resolve(control)).length===0,'unassigned control');
- for(const scale of [1,.67])for(const bg of ['#fff','#202725'])for(const width of [214.4,320,488,613.5703125,900,1122,488]){document.body.style.zoom=scale;g.style.width=(width/scale)+'px';g.style.height=(480/scale)+'px';await Plotly.react(g,clone(data),{...display(width/scale,bg),height:480/scale},{displayModeBar:true,displaylogo:false});await fit();bounds();check(g.layout.yaxis.tickformat==='.4~g','concise numeric ticks');check(g.data[0].hovertemplate===data[0].hovertemplate,'hover template unchanged');check(g.layout.hovermode===source.hovermode,'hover mode unchanged');cases.push({width,bg,scale,renderedWidth:g.getBoundingClientRect().width,renderedHeight:g.getBoundingClientRect().height});}
- document.body.style.zoom=1;g.style.width='488px';g.style.height='480px';await Plotly.react(g,clone(data),display(488,'#fff'));await fit();
- await Plotly.relayout(g,{'xaxis.range':[.0003,.0018]});await fit();bounds();await Plotly.relayout(g,{'xaxis.autorange':true});await fit();bounds();
- await Plotly.react(g,[],display(488,'#fff'));await fit();check(g.data.length===0,'clear');await Plotly.react(g,clone(data),display(488,'#fff'));await fit();bounds();
- document.getElementById('owner').style.display='none';document.getElementById('owner').style.display='block';await Plotly.Plots.resize(g);await fit();bounds();
- await Plotly.relayout(g,{'xaxis.title.standoff':0});await fit();bounds();
- const url=await Plotly.toImage(g,{format:'png',width:488,height:480,scale:2}),im=new Image();im.src=url;await im.decode();check(im.naturalWidth===976&&im.naturalHeight===960,'scale two PNG');
- const editor=clone({data:g.data,layout:g.layout});check(editor.layout.yaxis.type==='linear'&&editor.layout.yaxis.tickformat==='.4~g','editor layout');check(JSON.stringify(editor.data.map(t=>[t.x,t.y,t.error_y.array]))===JSON.stringify(data.map(t=>[t.x,t.y,t.error_y.array])),'editor scientific parity');
- // Retain the preceding native logarithmic regression alongside linear titles.
- const linearSource=source,linearData=data;
- source={title:'Observed and calculated measurements across repeated samples — logarithmic coordinate',xaxis:{title:'Coordinate',type:'log'},yaxis:{title:'Response',type:'log'},hovermode:'closest',hoverlabel:{namelength:0}};
- data=[{x:[.001,.01,.1,1],y:[.00001,.0001,.01,1],error_y:{array:[.000001,.00001,.001,.1]},name:'observations',hovertemplate:'Value %{y}<extra></extra>'}];
- const logSaved=JSON.stringify({source,data});
- for(const bg of ['#fff','#202725'])for(const width of [320,488,614,900,488]){g.style.width=width+'px';await Plotly.react(g,clone(data),display(width,bg));await fit();bounds();check(g.layout.yaxis.tickformat==='.4~g','log numeric ticks');check(g.data[0].hovertemplate===data[0].hovertemplate,'log hover unchanged');cases.push({width,bg,scale:1,kind:'log'});}
- check(JSON.stringify({source,data})===logSaved,'log source immutable');source=linearSource;data=linearData;
- check(JSON.stringify({source,data})===saved,'source immutable');state.view={};check(Object.keys(resolve(g)).length===0,'context reset');
- document.getElementById('results').textContent=JSON.stringify({passed:true,checks,cases});
+ return {render:renderPlotlyOutput,disconnect:disconnectPlotlyOutputObserver};`)(window,state);
+ const figure={layout:{title:'Observed and calculated measurements across repeated samples — logarithmic coordinate',xaxis:{title:'u² (a⁻²)',type:'linear',range:[0,.003]},yaxis:{title:'Log response',type:'linear'},hovermode:'closest',hoverlabel:{namelength:0}},data:Array.from({length:8},(_,i)=>({x:[0,.0005,.001,.0015,.002,.0025],y:[0,1,2,3,4,5].map(v=>-i*.7-v*.1),name:'Sample '+(i>>1)+' '+(i%2?'fit':'measurement'),mode:'lines+markers',hovertemplate:'Value %{y}<extra></extra>',error_y:{array:[.01,.01,.01,.01,.01,.01]}}))};
+ const saved=JSON.stringify(figure);let checks=0,cases=[],events=0;
+ const check=(ok,msg)=>{if(!ok)throw Error(msg);checks++;};
+ const frame=()=>new Promise(r=>requestAnimationFrame(r));
+ async function settle(){let stable=0,last='';for(let i=0;i<300;i++){await frame();const now=JSON.stringify([g.querySelector('.gtitle')?.innerHTML,g.querySelector('.svg-container')?.getAttribute('style'),events]);if(g._fullLayout&&now===last&&!g._ui2PlotlyResizePromise)stable++;else stable=0;last=now;if(stable>=12)return;}throw Error('resize did not settle');}
+ function bounds(){const host=g.getBoundingClientRect(),ns=[...g.querySelectorAll('.gtitle,.xtitle,.ytitle,[class$="tick"] text')].filter(n=>n.textContent.replace(/\u200b/g,'').trim());const hit=(a,b)=>a.left<b.right-.5&&a.right>b.left+.5&&a.top<b.bottom-.5&&a.bottom>b.top+.5;for(let i=0;i<ns.length;i++){const a=ns[i].getBoundingClientRect();check(a.left>=host.left-1&&a.right<=host.right+1&&a.top>=host.top-1&&a.bottom<=host.bottom+1,'text contained: '+ns[i].textContent);for(const n of ns.slice(i+1))check(!hit(a,n.getBoundingClientRect()),'labels separated');}}
+ runtime.render(g,figure);await settle();g.on('plotly_afterplot',()=>events++);
+ const nativeRegistered=Boolean(g._ui2PlotlyResizeObserver);
+ if(new URLSearchParams(location.search).has('viewport')){owner.style.width='100%';owner.style.maxWidth='1122px';document.getElementById('results').textContent='Ready for actual browser viewport resizing';return;}
+ for(const pane of [false,true]){runtime.disconnect(g);if(pane)owner.dataset.plotFit='pane';else delete owner.dataset.plotFit;runtime.render(g,figure);await settle();
+ for(const scale of [1,.67])for(const width of [1122,488,900,320,614,488,1122]){
+ // Only change the allocation. No react, resize, relayout or fit call follows.
+ document.body.style.zoom=scale;owner.style.width=(width/scale)+'px';g.style.height=(480/scale)+'px';await settle();bounds();
+ check(g.layout.yaxis.tickformat==='.4~g','tick format');check(g.data[0].hovertemplate===figure.data[0].hovertemplate,'hover unchanged');
+ cases.push({pane,scale,width,renderedWidth:g.getBoundingClientRect().width,lines:g.querySelector('.gtitle').querySelectorAll('tspan').length});
+ }
+ owner.style.display='none';await frame();await frame();owner.style.width='488px';owner.style.display='block';document.body.style.zoom=1;g.style.height='480px';await settle();bounds();
+ for(const w of [900,320,614,488]){owner.style.width=w+'px';await frame();}await settle();bounds();
+ }
+ check(nativeRegistered,'native render registers resize observer');
+ const before=events;for(let i=0;i<20;i++)await frame();check(events===before,'no idle resize loop');
+ const image=new Image();image.src=await Plotly.toImage(g,{format:'png',width:488,height:480,scale:2});await image.decode();check(image.naturalWidth===976&&image.naturalHeight===960,'PNG dimensions');
+ check(JSON.stringify(g.data.map(t=>[t.x,t.y,t.error_y.array,t.hovertemplate]))===JSON.stringify(figure.data.map(t=>[t.x,t.y,t.error_y.array,t.hovertemplate])),'editor data parity');
+ check(JSON.stringify(figure)===saved,'source unchanged');
+ // Retain logarithmic coverage, using production observation after render.
+ const logFigure=clone(figure);logFigure.layout.xaxis={type:'log',title:'Coordinate'};logFigure.layout.yaxis={type:'log',title:'Response'};logFigure.data=[{x:[.001,.01,.1,1],y:[.00001,.0001,.01,1],name:'observations',error_y:{array:[.000001,.00001,.001,.1]},hovertemplate:'Value %{y}<extra></extra>'}];const logSaved=JSON.stringify(logFigure);
+ delete owner.dataset.plotFit;runtime.render(g,logFigure);await settle();
+ for(const width of [1122,488,900,320,614,488]){owner.style.width=width+'px';await settle();bounds();check(g.layout.yaxis.tickformat==='.4~g','log ticks');check(g.data[0].hovertemplate===logFigure.data[0].hovertemplate,'log hover');cases.push({kind:'log',width,renderedWidth:g.getBoundingClientRect().width});}
+ check(JSON.stringify(logFigure)===logSaved,'log source unchanged');runtime.disconnect(g);owner.style.width='700px';await frame();await frame();check(!g._ui2PlotlyResizeObserver,'observer disconnected');
+ document.getElementById('results').textContent=JSON.stringify({passed:true,checks,cases,events});
 })().catch(e=>document.getElementById('results').textContent=JSON.stringify({passed:false,error:e.message,stack:e.stack}));
 </script>

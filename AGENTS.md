@@ -796,3 +796,12 @@ axis automargin settings, YAML and hover behavior. UI2 and the Lab share the
 helper and export settlement. Owner contracts: GenApp `doc/Plotting-Architecture.md`,
 `doc/UI2-Core-Extension-Policy.md`, and
 `doc/UI2-Native-Plot-Geometry-Shared-Gap-Report.md` (paired checkout for the app).
+
+## Native plot resize lifecycle route (#333)
+
+Native and pane Plotly outputs reuse the existing allocation observer and full
+geometry pipeline. Cancel observation and queued callbacks on clear/removal or
+module replacement. Tests must trigger actual container/browser resize events;
+manual fit calls after resizing do not establish lifecycle acceptance. Preserve
+YAML and hover behavior. Owner contracts are GenApp `doc/Plotting-Architecture.md`
+and `doc/UI2-Native-Plot-Geometry-Shared-Gap-Report.md` (paired checkout for the app).
