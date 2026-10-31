@@ -685,3 +685,25 @@ No YAML geometry, producer line breaks, new transport or sidecar is involved.
 HTML5 is unchanged. The neutral reproduction, approval, rollback and validation
 scope are in `doc/UI2-Figure-Title-Overflow-Shared-Gap-Report.md` (relative to
 the GenApp repository).
+
+## Native plot geometry selection (#333)
+
+Native UI2 resolves existing result-group geometry metadata by the declared
+output id; dynamic children inherit their declared parent group's selection.
+Explicit container metadata remains authoritative. The actual mounted renderer
+controls fallback, even when the view requests React. Missing or malformed
+selections, unassigned outputs, and conflicting group selections retain existing
+behavior. Identical selections are compared independent of object key order.
+Resolution uses the current module view without a cache or source mutation.
+
+Only `axisTickFormats`, `axisTickDensity`, `axisTitleOverflow`,
+`figureTitleOverflow`, `subplotSpacing`, and `annotationPlacement` are routed
+through this fallback. Existing shared layout helpers validate and apply them;
+explicit producer/template tick formats remain authoritative. Hover-name and
+numeric formatting, hover templates/colors, presentation profiles, trace styles,
+and legends retain their established resolution paths. This does not forward
+React gallery composition or change native availability/dynamic-item lifecycle.
+
+Scientific arrays, uncertainty, units, axes/scales, output identities, runtime
+transport, saved results, YAML and HTML5 remain unchanged. Details and neutral
+reproduction: `UI2-Native-Plot-Geometry-Shared-Gap-Report.md` in GenApp's `doc/`.

@@ -12750,10 +12750,10 @@
       layout, plotPresentationForOutput(output)
     ) || layout;
     const tickLayout = window.GenAppPlotlyLayout?.prepareNumericTickFormat?.(
-      hoverLayout, plotPresentationForOutput(output)
+      hoverLayout, plotGeometryForOutput(output)
     ) || hoverLayout;
     return window.GenAppPlotlyLayout?.prepareAnnotationPlacement?.(
-      tickLayout, plotPresentationForOutput(output)
+      tickLayout, plotGeometryForOutput(output)
     ) || tickLayout;
   }
 
@@ -12941,6 +12941,39 @@
     } catch (_error) {
       return {};
     }
+  }
+
+  // Geometry selections are independent of hover and trace styling. Native
+  // fallback has no React FieldGroup ancestor, so use its declared output id.
+  function plotGeometryForOutput(output) {
+    const keys = ["axisTickFormats", "axisTickDensity", "axisTitleOverflow",
+      "figureTitleOverflow", "subplotSpacing", "annotationPlacement"];
+    const geometry = (selection) => {
+      if (!selection || typeof selection !== "object" || Array.isArray(selection)) return {};
+      return Object.fromEntries(keys.filter((key) => Object.prototype.hasOwnProperty.call(selection, key))
+        .map((key) => [key, cloneUi2Value(selection[key])]));
+    };
+    // Explicit host metadata (even empty/invalid) remains authoritative.
+    if (output?.closest?.("[data-plot-presentation]")) {
+      return geometry(plotPresentationForOutput(output));
+    }
+    if (reactWorkbenchRoot || !output?.isConnected) return {};
+    const owner = output.closest?.('[data-dynamic-output="true"]') || output;
+    const id = owner.dataset?.outputFieldId;
+    if (!id) return {};
+    const groups = state.view?.results?.groups;
+    if (!Array.isArray(groups)) return {};
+    const selections = groups.filter((group) => Array.isArray(group?.outputs) && group.outputs.includes(id))
+      .map((group) => geometry(group.plotPresentation));
+    if (!selections.length) return {};
+    // Object member order has no meaning; conflicting groups must not select
+    // an arbitrary policy for the single native output host.
+    const canonical = (value) => Array.isArray(value) ? value.map(canonical)
+      : value && typeof value === "object"
+        ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])])) : value;
+    const signature = JSON.stringify(canonical(selections[0]));
+    return selections.every((selection) => JSON.stringify(canonical(selection)) === signature)
+      ? selections[0] : {};
   }
 
   function plotPresentationProfileForOutput(output) {
@@ -13365,7 +13398,7 @@
     return window.GenAppPlotlyLayout?.applyAxisTitleOverflow?.(
       output,
       sourceLayout,
-      plotPresentationForOutput(output)
+      plotGeometryForOutput(output)
     ) || null;
   }
 
@@ -13377,7 +13410,7 @@
     return window.GenAppPlotlyLayout?.applyAnnotationPlacement?.(
       output,
       sourceLayout,
-      plotPresentationForOutput(output),
+      plotGeometryForOutput(output),
       { baseTopMargin: output._ui2PlotlyBaseTopMargin || 96 }
     ) || null;
   }
@@ -13387,7 +13420,7 @@
       Promise.resolve(fitPlotlyLegendsBelowPlot(output))
       .then(() => window.GenAppPlotlyLayout.applyFigureTitleOverflow(
         output, output?._ui2PlotlyLastFigure?.layout || {},
-        plotPresentationForOutput(output),
+        plotGeometryForOutput(output),
         { baseTopMargin: output._ui2PlotlyBaseTopMargin || 96 }
       ))
       .then(() => fitPlotlyAnnotations(output))
@@ -13395,12 +13428,12 @@
       .then(() => window.GenAppPlotlyLayout?.applySubplotSpacing?.(
         output,
         output?._ui2PlotlyLastFigure?.layout || {},
-        plotPresentationForOutput(output)
+        plotGeometryForOutput(output)
       ))
       .then(() => window.GenAppPlotlyLayout?.applyTickDensity?.(
         output,
         output?._ui2PlotlyLastFigure?.layout || {},
-        plotPresentationForOutput(output)
+        plotGeometryForOutput(output)
       )));
   }
 
@@ -14596,6 +14629,7 @@
       ngl_active_frame_index,
       applyPlotlyTheme,
       plotPresentationForOutput,
+      plotGeometryForOutput,
       plotPresentationProfileForOutput,
       applyPlotPresentationLayout,
       applyPlotlyLegendPlacement,

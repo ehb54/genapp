@@ -216,3 +216,16 @@ normal/expanded/restore and resize, signed/positive cases, Lab surface matrix,
 PNG/editor, native fallback, completion and same/fresh/historical reattachment,
 other MCA modes. The previous browser block ended with confirmed codex3 logout.
 Detailed scope and neutral fixtures: `UI2-Figure-Title-Overflow-Shared-Gap-Report.md`.
+
+## MCA native geometry follow-up (#333, October 31, 2026)
+
+Native fallback failed at app ea7ba8a / core e685a644: three positive-data log
+plots clipped decimal tick labels and overlapped their y-axis titles at 613.57
+CSS pixels. Job: 0a8fb308-91bc-4f53-8608-8c383306fce1. React and export
+checks passed, but full #333 acceptance remains blocked. The ten-file scoped
+geometry-routing fix is documented in UI2-Native-Plot-Geometry-Shared-Gap-Report.md.
+Deployed acceptance of the correction remains pending.
+
+Local UI2 generation, language filtering, HTML5 overrides and HTML5 assembly
+passed together: four files, 836 harness assertions. Deployed correction remains
+pending; the existing native failure is not yet marked resolved.

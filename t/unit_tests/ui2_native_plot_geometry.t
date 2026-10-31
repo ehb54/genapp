@@ -1,0 +1,52 @@
+use strict;
+use warnings;
+use File::Spec;
+use File::Temp qw(tempfile);
+use FindBin;
+use Test::More;
+use lib File::Spec->catdir($FindBin::Bin, '..', 'lib');
+use GenAppTest qw(repo_root run_command);
+my $repo=repo_root(File::Spec->catdir($FindBin::Bin,'..'));
+my ($fh,$script)=tempfile('native-geometry-XXXX',SUFFIX=>'.js',TMPDIR=>1,UNLINK=>1);
+print {$fh} <<'JS';
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const source=fs.readFileSync(process.argv[2]+'/languages/ui2/add/js/ui2.js','utf8');
+const code=source.slice(source.indexOf('  function plotPresentationForOutput('),source.indexOf('  function plotPresentationProfileForOutput('));
+const c={window:{},state:{view:{}},reactWorkbenchRoot:null,cloneUi2Value:v=>JSON.parse(JSON.stringify(v))};vm.createContext(c);vm.runInContext(code,c);
+vm.runInContext(fs.readFileSync(process.argv[2]+'/languages/ui2/add/js/plotly-layout.js','utf8'),c);
+const clone=v=>JSON.parse(JSON.stringify(v)),get=o=>clone(c.plotGeometryForOutput(o));
+const make=(id,host=null,parent=null)=>({isConnected:true,dataset:{outputFieldId:id},closest:s=>s==='[data-plot-presentation]'?host:parent});
+const selected={axisTickFormats:{yaxis:'.4~g',xaxis:'.4~g'},figureTitleOverflow:'wrap',hoverNameDisplay:'full',profile:'unchanged',traceRoles:{role:'token'}};
+const group={outputs:['ordinary','dynamic'],plotPresentation:selected};c.state.view={renderer:'react-workbench',results:{groups:[group]}};
+const before=JSON.stringify(c.state.view),o=make('ordinary');
+assert.deepStrictEqual(get(o),{axisTickFormats:selected.axisTickFormats,figureTitleOverflow:'wrap'});
+assert.deepStrictEqual(clone(c.plotPresentationForOutput(o)),{},'hover/profile resolver unchanged');
+const parent={dataset:{outputFieldId:'dynamic'}};assert.deepStrictEqual(get(make('opaque_child',null,parent)),get(o));
+assert.deepStrictEqual(get(make('unassigned')),{});assert.deepStrictEqual(get({...o,isConnected:false}),{});
+c.reactWorkbenchRoot={};assert.deepStrictEqual(get(o),{});c.reactWorkbenchRoot=null;
+for(const raw of ['{}','null','[]','broken']) assert.deepStrictEqual(get(make('ordinary',{dataset:{plotPresentation:raw}})),{},'explicit host stays authoritative');
+assert.deepStrictEqual(get(make('unassigned',{dataset:{plotPresentation:JSON.stringify(selected)}})),get(o));
+const detached=get(o);detached.axisTickFormats.yaxis='bad';assert.strictEqual(selected.axisTickFormats.yaxis,'.4~g');
+assert.strictEqual(JSON.stringify(c.state.view),before);
+c.state.view.results.groups.push({outputs:['ordinary'],plotPresentation:{figureTitleOverflow:'wrap',axisTickFormats:{xaxis:'.4~g',yaxis:'.4~g'}}});assert.deepStrictEqual(get(o),{axisTickFormats:selected.axisTickFormats,figureTitleOverflow:'wrap'});
+c.state.view.results.groups[1].plotPresentation.axisTickFormats.yaxis='.2g';assert.deepStrictEqual(get(o),{});
+c.state.view.results.groups=[group];
+const p=c.window.GenAppPlotlyLayout,scientific={yaxis:{type:'log'},xaxis:{type:'log'},hovermode:'x unified',hoverlabel:{namelength:0}},saved=JSON.stringify(scientific);
+const prepared=p.prepareNumericTickFormat(scientific,get(o));assert.strictEqual(prepared.yaxis.tickformat,'.4~g');assert.strictEqual(prepared.hovermode,scientific.hovermode);assert.deepStrictEqual(prepared.hoverlabel,scientific.hoverlabel);assert.strictEqual(JSON.stringify(scientific),saved);
+for(const override of [{tickformat:'.2r'},{tickformatstops:[{value:'.2r'}]},{tickmode:'array',ticktext:['a'],tickvals:[1]}]){const s={yaxis:{type:'log',...override}};assert.strictEqual(p.prepareNumericTickFormat(s,get(o)),s);}
+const template={yaxis:{type:'log'},template:{layout:{yaxis:{tickformat:'.2r'}}}};assert.strictEqual(p.prepareNumericTickFormat(template,get(o)),template);
+c.state.view={results:{groups:[]}};assert.deepStrictEqual(get(make('opaque_child',null,parent)),{},'new context cannot reuse selection');
+for(const groups of [null,{},[null], [{outputs:'ordinary',plotPresentation:selected}], [{outputs:['ordinary'],plotPresentation:[]}]] ) {c.state.view={results:{groups}};assert.deepStrictEqual(get(o),{});}
+// Production geometry consumers must use the new path; hover/style consumers must not.
+assert(source.includes('hoverLayout, plotGeometryForOutput(output)'));
+assert(source.includes('tickLayout, plotGeometryForOutput(output)'));
+const geometry=source.slice(source.indexOf('  function fitPlotlyAxisTitles('),source.indexOf('  function plotlyOutputReadyForRelayout('));assert(!geometry.includes('plotPresentationForOutput(output)'));
+const hover=source.slice(source.indexOf('const hoverLayout ='),source.indexOf('const tickLayout ='));assert(hover.includes('plotPresentationForOutput(output)'));
+console.log('native geometry resolution, dynamic inheritance, conflicts, controls, tick precedence, context reset and hover preservation passed');
+JS
+close $fh;
+my ($status,$output)=run_command(cwd=>$repo,cmd=>['node',$script,$repo]);
+is($status,0,'native plot geometry contract') or diag($output);
+like($output,qr/hover preservation passed/,'all focused checks complete');
+ok(-f File::Spec->catfile($repo,qw(t fixtures ui2_native_plot_geometry.html)),'neutral browser fixture present');
+done_testing();

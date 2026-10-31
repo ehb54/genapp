@@ -778,3 +778,12 @@ lanes belong to UI2. Preserve YAML, hover policy and scientific outputs.
 See the paired GenApp `doc/Plotting-Architecture.md`,
 `doc/UI2-Core-Extension-Policy.md`, and
 `doc/UI2-Figure-Title-Overflow-Shared-Gap-Report.md`.
+
+## Native plot geometry routing (#333)
+
+Native output geometry consumes the existing view selections by declared output
+id, including dynamic parents, through the shared UI2 resolver. Hover, profiles
+and trace styling retain their existing paths. Do not add driver/YAML geometry
+or module-specific core branches. Read GenApp's
+`doc/UI2-Native-Plot-Geometry-Shared-Gap-Report.md` and
+`doc/UI2-Core-Extension-Policy.md` before changing this boundary.

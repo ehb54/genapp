@@ -1,0 +1,29 @@
+<!doctype html><meta charset="utf-8"><title>Native plot geometry acceptance</title>
+<style>body{font:14px Arial}.plot{height:480px;width:488px}pre{white-space:pre-wrap}</style>
+<script src="../../languages/html5/add/js/plotly-2.35.2.min.js"></script>
+<script src="../../languages/ui2/add/js/plotly-layout.js"></script>
+<h1>Native plot geometry acceptance</h1><pre id="results">Running</pre><div id="owner" data-dynamic-output="true" data-output-field-id="dynamic"><div class="plot" id="plot" data-output-field-id="child"></div></div><div class="plot" id="control" data-output-field-id="unassigned"></div>
+<script>
+(async()=>{
+ const src=await (await fetch('../../languages/ui2/add/js/ui2.js')).text();
+ const code=src.slice(src.indexOf('  function plotPresentationForOutput('),src.indexOf('  function plotPresentationProfileForOutput('));
+ const state={view:{results:{groups:[{outputs:['dynamic','ordinary'],plotPresentation:{axisTickFormats:{xaxis:'.4~g',yaxis:'.4~g'},figureTitleOverflow:'wrap',axisTitleOverflow:'wrap'}}]}}};
+ const resolve=new Function('state','reactWorkbenchRoot','cloneUi2Value',code+'return plotGeometryForOutput;')(state,null,v=>JSON.parse(JSON.stringify(v)));
+ const clone=v=>JSON.parse(JSON.stringify(v)),p=GenAppPlotlyLayout,g=document.getElementById('plot'),control=document.getElementById('control');
+ const source={title:'Observed and calculated measurements across repeated samples — logarithmic coordinate',xaxis:{title:'Coordinate',type:'log'},yaxis:{title:'Response',type:'log'},hovermode:'closest',hoverlabel:{namelength:0}};
+ const data=[{x:[.001,.01,.1,1],y:[.00001,.0001,.01,1],error_y:{array:[.000001,.00001,.001,.1]},name:'observations',hovertemplate:'Value %{y}<extra></extra>'}],saved=JSON.stringify({source,data});
+ let checks=0,cases=[];const check=(ok,msg)=>{if(!ok)throw Error(msg);checks++;};
+ function display(width,bg){return {...p.prepareNumericTickFormat(clone(source),resolve(g)),width,height:480,margin:{l:72,r:28,t:96,b:60},font:{size:14,color:bg==='#fff'?'#222':'#eee'},paper_bgcolor:bg,plot_bgcolor:bg};}
+ async function fit(){await p.queuePresentationFit(g,async()=>{await p.applyFigureTitleOverflow(g,source,resolve(g),{baseTopMargin:96});await p.applyAxisTitleOverflow(g,source,resolve(g));await p.applyTickDensity(g,source,resolve(g));});}
+ function bounds(){const host=g.getBoundingClientRect();const nodes=[...g.querySelectorAll('.gtitle,.xtitle,.ytitle,[class$="tick"] text')].filter(n=>n.textContent.replace(/\u200b/g,'').trim());const hit=(a,b)=>a.left<b.right-.5&&a.right>b.left+.5&&a.top<b.bottom-.5&&a.bottom>b.top+.5;for(let i=0;i<nodes.length;i++){const a=nodes[i].getBoundingClientRect();check(a.left>=host.left-1&&a.right<=host.right+1,'text contained: '+nodes[i].textContent);for(const n of nodes.slice(i+1))check(!hit(a,n.getBoundingClientRect()),'labels separated');}}
+ await Plotly.newPlot(control,clone(data),clone(source));check(Object.keys(resolve(control)).length===0,'unassigned control');
+ for(const bg of ['#fff','#202725'])for(const width of [320,488,614,900,488]){g.style.width=width+'px';await Plotly.react(g,clone(data),display(width,bg),{displayModeBar:true,displaylogo:false});await fit();bounds();check(g.layout.yaxis.tickformat==='.4~g','concise numeric ticks');check(g.data[0].hovertemplate===data[0].hovertemplate,'hover template unchanged');check(g.layout.hovermode===source.hovermode,'hover mode unchanged');cases.push({width,bg});}
+ await Plotly.relayout(g,{'xaxis.range':[-2,-.5]});await fit();bounds();await Plotly.relayout(g,{'xaxis.autorange':true});await fit();bounds();
+ await Plotly.react(g,[],display(488,'#fff'));await fit();check(g.data.length===0,'clear');await Plotly.react(g,clone(data),display(488,'#fff'));await fit();bounds();
+ document.getElementById('owner').style.display='none';document.getElementById('owner').style.display='block';await Plotly.Plots.resize(g);await fit();bounds();
+ const url=await Plotly.toImage(g,{format:'png',width:488,height:480,scale:2}),im=new Image();im.src=url;await im.decode();check(im.naturalWidth===976&&im.naturalHeight===960,'scale two PNG');
+ const editor=clone({data:g.data,layout:g.layout});check(editor.layout.yaxis.type==='log'&&editor.layout.yaxis.tickformat==='.4~g','editor layout');check(JSON.stringify(editor.data.map(t=>[t.x,t.y,t.error_y.array]))===JSON.stringify(data.map(t=>[t.x,t.y,t.error_y.array])),'editor scientific parity');
+ check(JSON.stringify({source,data})===saved,'source immutable');state.view={};check(Object.keys(resolve(g)).length===0,'context reset');
+ document.getElementById('results').textContent=JSON.stringify({passed:true,checks,cases});
+})().catch(e=>document.getElementById('results').textContent=JSON.stringify({passed:false,error:e.message,stack:e.stack}));
+</script>
