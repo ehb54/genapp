@@ -42,6 +42,7 @@ assert(source.includes('hoverLayout, plotGeometryForOutput(output)'));
 assert(source.includes('tickLayout, plotGeometryForOutput(output)'));
 const geometry=source.slice(source.indexOf('  function fitPlotlyAxisTitles('),source.indexOf('  function plotlyOutputReadyForRelayout('));assert(!geometry.includes('plotPresentationForOutput(output)'));
 const hover=source.slice(source.indexOf('const hoverLayout ='),source.indexOf('const tickLayout ='));assert(hover.includes('plotPresentationForOutput(output)'));
+assert(source.includes('Shared fitting settles ticks and measured axis-title clearance together.'));
 console.log('native geometry resolution, dynamic inheritance, conflicts, controls, tick precedence, context reset and hover preservation passed');
 JS
 close $fh;

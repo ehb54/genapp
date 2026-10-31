@@ -13430,6 +13430,7 @@
         output?._ui2PlotlyLastFigure?.layout || {},
         plotGeometryForOutput(output)
       ))
+      // Shared fitting settles ticks and measured axis-title clearance together.
       .then(() => window.GenAppPlotlyLayout?.applyTickDensity?.(
         output,
         output?._ui2PlotlyLastFigure?.layout || {},

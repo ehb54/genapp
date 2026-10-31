@@ -229,3 +229,20 @@ Deployed acceptance of the correction remains pending.
 Local UI2 generation, language filtering, HTML5 overrides and HTML5 assembly
 passed together: four files, 836 harness assertions. Deployed correction remains
 pending; the existing native failure is not yet marked resolved.
+
+## MCA #333 remaining native axis-title clearance — October 31, 2026
+
+At core eaeb8839 / app 1822990, positive job
+0a8fb308-91bc-4f53-8608-8c383306fce1 still failed native Guinier title/tick
+clearance at 613.57 by 480 CSS pixels. The native log-tick routing correction
+passed. Signed eight-plot geometry passed the recorded narrow check. Codex3
+logged out; Susan was not notified.
+
+The approved follow-up adds measured shared title clearance. Local neutral
+browser regression: 4,752 checks passed, including production legend/layout
+functions, 38 size/surface/scale cases, interactions, reconstruction, export and
+source/hover parity. The committed baseline fails its reduced-scale stress case.
+This does not establish deployed acceptance. Positive/signed native and React,
+historical combined results, other MCA modes, Lab themes/surfaces, completion,
+same/fresh-window reattachment, PNG and initial editor checks remain required.
+See `UI2-Native-Plot-Geometry-Shared-Gap-Report.md` for local failures/limitations.

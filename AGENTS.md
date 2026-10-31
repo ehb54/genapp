@@ -787,3 +787,12 @@ and trace styling retain their existing paths. Do not add driver/YAML geometry
 or module-specific core branches. Read GenApp's
 `doc/UI2-Native-Plot-Geometry-Shared-Gap-Report.md` and
 `doc/UI2-Core-Extension-Policy.md` before changing this boundary.
+
+## Axis-title clearance route (#333)
+
+Cartesian title/tick clearance uses the shared GenApp tick-fitting lifecycle,
+including short titles and scaled displays. Preserve source figures, explicit
+axis automargin settings, YAML and hover behavior. UI2 and the Lab share the
+helper and export settlement. Owner contracts: GenApp `doc/Plotting-Architecture.md`,
+`doc/UI2-Core-Extension-Policy.md`, and
+`doc/UI2-Native-Plot-Geometry-Shared-Gap-Report.md` (paired checkout for the app).

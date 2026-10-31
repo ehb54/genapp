@@ -599,3 +599,25 @@ React gallery composition or change native availability/dynamic-item lifecycle.
 Scientific arrays, uncertainty, units, axes/scales, output identities, runtime
 transport, saved results, YAML and HTML5 remain unchanged. Details and neutral
 reproduction: `UI2-Native-Plot-Geometry-Shared-Gap-Report.md` in GenApp's `doc/`.
+
+## Measured Cartesian axis-title clearance (#333)
+
+The shared tick-fitting lifecycle also measures each visible Cartesian axis
+title against its rendered tick labels. Short, unwrapped titles require the
+same clearance as wrapped titles. UI2 reserves a four-CSS-pixel gap by adding
+only the measured deficit to the resolved title standoff and the corresponding
+outer margin. CSS-scaled bounds are converted to Plotly layout pixels. Existing
+larger clearance is retained; explicit axis/template automargin settings are
+not changed. No view opt-in or YAML key is introduced.
+
+The display-only adjustment is restored before refitting and released when it
+is no longer needed. Replacement layouts and newer explicit values supersede
+owned state. Tick fitting and title clearance share the existing event guard,
+queue and export settlement; at most four title-clearance passes run per fit,
+with tick-density checks after margin changes. An unresolved overlap remains
+an acceptance failure, never permission to hide a title or scientific content.
+UI2 and the Lab use the same implementation. PNG and initial Chart Editor
+handoff await it. Preserve scientific arrays, uncertainty, titles, units, source
+ranges/scales, explicit tick notation, hover behavior and saved output.
+
+Evidence and limitations: `UI2-Native-Plot-Geometry-Shared-Gap-Report.md`.

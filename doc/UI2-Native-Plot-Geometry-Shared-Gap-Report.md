@@ -65,3 +65,47 @@ separate UI2 recompile approval. Susan must not receive a passing handoff yet.
 Local UI2 generation, language filtering, HTML5 overrides and HTML5 assembly
 passed together: four files, 836 harness assertions. Deployed correction remains
 pending; the existing native failure is not yet marked resolved.
+
+## Remaining short-title clearance — October 31, 2026
+
+Joseph Curtis approved the shared fix and exact fourteen-file manifest.
+At deployed core eaeb8839 / application 1822990, the original log-tick problem
+was corrected, but positive job 0a8fb308-91bc-4f53-8608-8c383306fce1 retained
+an overlap between 0.0015 and q-squared axis title at 613.57 by 480 CSS pixels.
+The saved signed result passed that measured check. Codex3 was logged out;
+Susan was not notified. The screenshot's scrollable output container is not
+by itself evidence of a separate legend defect.
+
+The old helpers measured tick/tick collisions and title wrapping, not title/tick
+clearance. An application-neutral in-memory case produced no correction. The
+browser fixture now extracts production layout, legend fitting and the complete
+fit chain from ui2.js and supplies neutral linear multi-trace data. A reduced-scale
+stress case fails against the committed old helper with `0.001 / u² (a⁻²)`
+overlap, and passes with the correction. This is a neutral regression, not a
+claim to reproduce the precise deployed plot at every browser zoom setting.
+
+Shared fitting measures the missing lane, adds standoff and the matching outer
+margin, and preserves explicit automargin settings. It converts measured CSS
+pixels to layout pixels and shares tick fitting's lifecycle, event guard and
+export promise. Up to four clearance passes are allowed; unresolved geometry
+blocks acceptance. No SASSIE or driver work is required.
+
+Local validation:
+
+- Five focused clearance/native/title/tick suites: 13 harness assertions passed.
+- UI2 views/generation, target filtering, HTML5 overrides and HTML5 assembly:
+  836 harness assertions passed.
+- Six tick-format/hover/subplot/scene suites: 20 harness assertions passed.
+- Application MCA/view/Lab parity: 70 passed; three pre-existing Data
+  Interpolation expectations still fail (cutoff value, extra log-log output,
+  and its tick-format selection). They were not weakened or changed.
+- Isolated headless Chrome, real Plotly: 4,752 checks across 38 width/surface/scale
+  cases (28 linear, ten logarithmic). Measured widths 214.39 (stress), 320, 488, 613.56, 900 and 1122 CSS
+  pixels, all 480 high, normal and 0.67 display scales, light/dark, wide/narrow
+  restore, range change/reset, clear/repopulate, hidden/reveal, PNG dimensions,
+  detached editor layout, source and hover preservation passed. CSS scaling is
+  a stress analogue, not a substitute for deployed browser zoom acceptance.
+- YAML, registry, catalog, view, driver, SASSIE and hover helper code unchanged.
+
+Deployed correction and the full prior acceptance scope remain pending separate
+UI2 recompilation approval. Do not mark #333 accepted or notify Susan yet.

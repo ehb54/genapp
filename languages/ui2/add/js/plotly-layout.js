@@ -483,6 +483,69 @@
     return Object.keys(update).length ? update : null;
   }
 
+  // Axis titles need a separate lane even when their text does not wrap.
+  // Rectangles are CSS pixels; Plotly standoff/margins use unscaled layout pixels.
+  const fittedTitleClearance = new WeakMap();
+  function axisTitleClearanceUpdate(plot, gap = 4) {
+    const full = plot?._fullLayout || {}, update = {}, margins = {};
+    const box = plot?.getBoundingClientRect?.();
+    const scaleX = box?.width > 0 && full.width > 0 ? box.width / full.width : 1;
+    const scaleY = box?.height > 0 && full.height > 0 ? box.height / full.height : 1;
+    for (const [name, axis] of Object.entries(full)) {
+      if (!AXIS_KEY.test(name) || !axis || axis.visible === false || axis.showticklabels === false) continue;
+      const id = name.replace('axis', ''), horizontal = name.startsWith('x');
+      const title = plot.querySelector?.(`.${id}title`);
+      const bounds = title?.getBoundingClientRect?.();
+      if (!title?.textContent?.trim() || !(bounds?.width > 0 && bounds?.height > 0)) continue;
+      const side = axis.side || (horizontal ? 'bottom' : 'left');
+      let deficit = 0;
+      for (const tick of Array.from(plot.querySelectorAll?.(`.${id}tick text`) || [])) {
+        if (!tick.textContent?.replace(/\u200b/g, '').trim()) continue;
+        const r = tick.getBoundingClientRect();
+        if (!(r.width > 0 && r.height > 0)) continue;
+        if (horizontal ? bounds.right <= r.left || bounds.left >= r.right : bounds.bottom <= r.top || bounds.top >= r.bottom) continue;
+        const clearance = side === 'bottom' ? bounds.top - r.bottom : side === 'top' ? r.top - bounds.bottom
+          : side === 'left' ? r.left - bounds.right : bounds.left - r.right;
+        deficit = Math.max(deficit, gap - clearance);
+      }
+      if (deficit <= .5) continue;
+      const delta = Math.ceil(deficit / (horizontal ? scaleY : scaleX));
+      update[`${name}.title.standoff`] = Math.max(0, Number(axis.title?.standoff) || 0) + delta;
+      const key = {bottom:'b',top:'t',left:'l',right:'r'}[side];
+      if (key) margins[key] = Math.max(margins[key] || 0, delta);
+    }
+    for (const [side, delta] of Object.entries(margins)) {
+      update[`margin.${side}`] = Math.ceil(Number(full.margin?.[side]) || 0) + delta;
+    }
+    return Object.keys(update).length ? update : null;
+  }
+
+  async function resetAxisTitleClearance(plot, relayout) {
+    const state = fittedTitleClearance.get(plot);
+    fittedTitleClearance.delete(plot);
+    if (!state || state.layout !== plot.layout) return;
+    const reset = {};
+    for (const [key, entry] of state.values) {
+      // A new producer, user edit, or earlier geometry stage owns newer values.
+      if (nestedValue(plot.layout, key) === entry.fitted) reset[key] = entry.original;
+    }
+    if (Object.keys(reset).length) await relayout(reset);
+  }
+
+  async function fitAxisTitleClearance(plot, relayout) {
+    const update = axisTitleClearanceUpdate(plot);
+    if (!update) return false;
+    const state = fittedTitleClearance.get(plot) || {layout:plot.layout, values:new Map()};
+    for (const [key, value] of Object.entries(update)) {
+      const entry = state.values.get(key) || {original:nestedValue(plot.layout, key) ?? null};
+      entry.fitted = value;
+      state.values.set(key, entry);
+    }
+    fittedTitleClearance.set(plot, state);
+    await relayout(update);
+    return true;
+  }
+
   function applyTickDensity(plot) {
     if (!plot?._fullLayout || typeof window.Plotly?.relayout !== "function") return Promise.resolve();
     let state = fittedTickAxes.get(plot);
@@ -498,10 +561,10 @@
         state.scheduled.catch(error => window.console?.error?.("Tick label fitting failed", error));
       };
       state.relayout = event => {
-        // Our own patch contains only tick-placement keys. A real range/size/
-        // style change during fitting must request a fresh pass, not be lost.
+        // Plotly may normalize values in our own tick/title/margin patch.
+        // A real range/size/style update during fitting still requests a pass.
         if (!state.internal || Object.keys(event || {}).some(key =>
-            !/^[xy]axis\d*\.(tickmode|tickvals|ticktext)$/.test(key))) state.schedule();
+            !/^(?:[xy]axis\d*\.(?:tickmode|tickvals|ticktext|title\.standoff)|margin\.[lrtb])$/.test(key))) state.schedule();
       };
       state.afterplot = () => { if (!state.internal) state.schedule(); };
       fittedTickAxes.set(plot, state);
@@ -530,25 +593,31 @@
         }
         state.axes.clear();
         if (Object.keys(reset).length) await relayout(reset);
-        let update = tickDensityUpdate(plot);
-        // Array-mode labels can have different geometry from native labels.
-        // Each pass removes text monotonically; retain the full tick positions.
-        while (update && !state.pending) {
-          for (const name of new Set(Object.keys(update).map(key => key.split(".")[0]))) {
-            let entry = state.axes.get(name);
-            if (!entry) {
-              entry = {original:{}, fitted:{}};
-              for (const key of TICK_PLACEMENT) entry.original[key] = copyTickValue(plot.layout?.[name]?.[key]);
-              state.axes.set(name, entry);
-            } else {
-              const visible = new Map(update[`${name}.tickvals`].map((v,i) => [JSON.stringify(v),update[`${name}.ticktext`][i]]));
-              update[`${name}.tickvals`] = entry.fitted.tickvals;
-              update[`${name}.ticktext`] = entry.fitted.tickvals.map(v => visible.get(JSON.stringify(v)) ?? blankTickLabel);
+        await resetAxisTitleClearance(plot, relayout);
+        // Margin changes can change tick density. Recheck both in a bounded
+        // pass, under the same internal-event guard and export promise.
+        for (let clearancePass = 0; clearancePass < 4 && !state.pending; clearancePass++) {
+          let update = tickDensityUpdate(plot);
+          // Array-mode labels can have different geometry from native labels.
+          // Each pass removes text monotonically; retain the full tick positions.
+          while (update && !state.pending) {
+            for (const name of new Set(Object.keys(update).map(key => key.split(".")[0]))) {
+              let entry = state.axes.get(name);
+              if (!entry) {
+                entry = {original:{}, fitted:{}};
+                for (const key of TICK_PLACEMENT) entry.original[key] = copyTickValue(plot.layout?.[name]?.[key]);
+                state.axes.set(name, entry);
+              } else {
+                const visible = new Map(update[`${name}.tickvals`].map((v,i) => [JSON.stringify(v),update[`${name}.ticktext`][i]]));
+                update[`${name}.tickvals`] = entry.fitted.tickvals;
+                update[`${name}.ticktext`] = entry.fitted.tickvals.map(v => visible.get(JSON.stringify(v)) ?? blankTickLabel);
+              }
+              for (const key of TICK_PLACEMENT) entry.fitted[key] = copyTickValue(update[`${name}.${key}`]);
             }
-            for (const key of TICK_PLACEMENT) entry.fitted[key] = copyTickValue(update[`${name}.${key}`]);
+            await relayout(update);
+            update = tickDensityUpdate(plot);
           }
-          await relayout(update);
-          update = tickDensityUpdate(plot);
+          if (!await fitAxisTitleClearance(plot, relayout)) break;
         }
       }
     }).finally(() => { state.promise = null; });
@@ -854,6 +923,7 @@
     applyFigureTitleOverflow,
     subplotSpacingUpdate,
     applySubplotSpacing,
+    axisTitleClearanceUpdate,
     tickLabelRows,
     settleTickDensity,
     nonOverlappingTicks,
