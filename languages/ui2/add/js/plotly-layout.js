@@ -141,6 +141,80 @@
     });
   }
 
+  // Coalesce display geometry requests. Exports join the same queue as resize
+  // and rendering, including a newer source arriving during an awaited fit.
+  const presentationFits = new WeakMap();
+  function queuePresentationFit(plot, fit) {
+    let state = presentationFits.get(plot);
+    if (!state) { state = { latest: null, promise: null }; presentationFits.set(plot, state); }
+    state.latest = fit;
+    if (!state.promise) state.promise = Promise.resolve().then(async () => {
+      while (state.latest && plot?._fullLayout) {
+        const next = state.latest;
+        state.latest = null;
+        await next();
+      }
+    }).finally(() => { state.promise = null; });
+    return state.promise;
+  }
+
+  const figureTitleFits = new WeakMap();
+  const FIGURE_TITLE_KEYS = ["text", "x", "xref", "xanchor", "y", "yref", "yanchor", "pad.t"];
+  const nestedValue = (object, key) => key.split(".").reduce((value, part) => value?.[part], object);
+
+  async function applyFigureTitleOverflow(plot, sourceLayout, selection, options = {}) {
+    if (!plot?._fullLayout || typeof window.Plotly?.relayout !== "function") return;
+    const sourceText = titleText(sourceLayout);
+    let owned = figureTitleFits.get(plot);
+    // A new render supplies a fresh source layout and supersedes display state.
+    if (owned && owned.source !== sourceLayout) { figureTitleFits.delete(plot); owned = null; }
+    const selected = selection?.figureTitleOverflow === "wrap" && sourceText && PLAIN_TITLE.test(sourceText);
+    const currentTitle = () => typeof plot.layout?.title === "object" ? plot.layout.title : { text: plot.layout?.title };
+    const patch = async (update) => {
+      const changed = Object.fromEntries(Object.entries(update).filter(([key, value]) =>
+        (nestedValue(plot.layout, key) ?? null) !== value));
+      if (Object.keys(changed).length) await window.Plotly.relayout(plot, changed);
+    };
+    if (!selected) {
+      if (owned) {
+        const update = {};
+        for (const key of FIGURE_TITLE_KEYS) {
+          if ((nestedValue(currentTitle(), key) ?? null) === owned.applied[key]) {
+            update[`title.${key}`] = owned.original[key];
+          }
+        }
+        if (plot.layout?.margin?.t === owned.margin) update["margin.t"] = owned.base;
+        await patch(update);
+        figureTitleFits.delete(plot);
+      }
+      return;
+    }
+    const width = Number(plot._fullLayout.width);
+    if (!(width > 24)) return; // Hidden/tiny hosts are fitted when visible.
+    const font = plot._fullLayout.title?.font || plot._fullLayout.font || {};
+    const measure = options.measureText || canvasMeasure(
+      `${font.weight || "normal"} ${Number(font.size) || 17}px ${font.family || "Arial, sans-serif"}`);
+    if (!measure) return;
+    if (!owned) {
+      owned = { source: sourceLayout, original: {}, applied: {},
+        base: Number(options.baseTopMargin) || Number(plot.layout?.margin?.t) || 96 };
+      for (const key of FIGURE_TITLE_KEYS) owned.original[key] = nestedValue(currentTitle(), key) ?? null;
+      figureTitleFits.set(plot, owned);
+    }
+    const text = wrapPlainText(sourceText, width - 24, measure);
+    const modebarHeight = nodeHeight(plot.querySelector?.(".modebar"));
+    const top = modebarHeight + 12;
+    owned.applied = { text, x: 0.5, xref: "container", xanchor: "center",
+      y: Math.max(0, 1 - (top + (Number(font.size) || 17)) / (Number(plot._fullLayout.height) || 480)),
+      yref: "container", yanchor: "top", "pad.t": 0 };
+    await patch(Object.fromEntries(Object.entries(owned.applied).map(([key, value]) => [`title.${key}`, value])));
+    // Measure the rendered lines, not a font-size estimate. Restore the base
+    // when widening unwraps the title; selected annotation lanes are added next.
+    const height = nodeHeight(plot.querySelector?.(".gtitle"));
+    owned.margin = Math.ceil(Math.max(owned.base, top + height + 24));
+    await patch({ "margin.t": owned.margin });
+  }
+
   // Opted-in independent vertical panels reserve measured display-only lanes.
   // Rebuild domains from the source relationships, never from prior adjustments.
   function subplotSpacingUpdate(plot, sourceLayout, selection) {
@@ -776,6 +850,8 @@
   }
 
   window.GenAppPlotlyLayout = {
+    queuePresentationFit,
+    applyFigureTitleOverflow,
     subplotSpacingUpdate,
     applySubplotSpacing,
     tickLabelRows,

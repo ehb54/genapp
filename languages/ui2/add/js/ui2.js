@@ -13136,6 +13136,7 @@
       config.modeBarButtonsToAdd = [...(config.modeBarButtonsToAdd || []), {
         name: "fittedImage", title: "Download plot as a PNG", icon: window.Plotly.Icons.camera,
         click: async graphDiv => {
+          await fitPlotlyPresentationGeometry(graphDiv);
           await window.GenAppPlotlyLayout?.settleTickDensity?.(graphDiv);
           return window.Plotly.downloadImage(graphDiv, {format:"png", scale:2,
             width:graphDiv._fullLayout.width, height:graphDiv._fullLayout.height});
@@ -13159,6 +13160,7 @@
       title: "Edit in Chart Editor",
       icon: window.Plotly.Icons.pencil,
       click: async (graphDiv) => {
+        await fitPlotlyPresentationGeometry(graphDiv);
         await window.GenAppPlotlyLayout?.settleTickDensity?.(graphDiv);
         const id = `gace_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
         window.localStorage.setItem(id, JSON.stringify({
@@ -13381,7 +13383,13 @@
   }
 
   function fitPlotlyPresentationGeometry(output) {
-    return Promise.resolve(fitPlotlyLegendsBelowPlot(output))
+    return window.GenAppPlotlyLayout.queuePresentationFit(output, () =>
+      Promise.resolve(fitPlotlyLegendsBelowPlot(output))
+      .then(() => window.GenAppPlotlyLayout.applyFigureTitleOverflow(
+        output, output?._ui2PlotlyLastFigure?.layout || {},
+        plotPresentationForOutput(output),
+        { baseTopMargin: output._ui2PlotlyBaseTopMargin || 96 }
+      ))
       .then(() => fitPlotlyAnnotations(output))
       .then(() => fitPlotlyAxisTitles(output))
       .then(() => window.GenAppPlotlyLayout?.applySubplotSpacing?.(
@@ -13393,7 +13401,7 @@
         output,
         output?._ui2PlotlyLastFigure?.layout || {},
         plotPresentationForOutput(output)
-      ));
+      )));
   }
 
   function plotlyOutputReadyForRelayout(output) {

@@ -659,3 +659,29 @@ Native fallback is identified by the mounted renderer, not the requested view.
 This does not change field repeat visibility, add native group-repeat layout,
 alter saved payloads, or change HTML5. See
 [the neutral reproduction and approved scope](UI2-Native-Output-Availability-Shared-Gap-Report.md).
+
+## Responsive figure-title overflow (#333)
+
+A result group may select `plotPresentation.figureTitleOverflow: "wrap"`.
+Ordinary UI2 (React and native) and application previews use the shared
+`GenAppPlotlyLayout.applyFigureTitleOverflow` helper. It wraps plain figure
+titles at word boundaries using the rendered font and available figure width,
+centers them in a container-relative top lane below the toolbar, and reserves
+vertical space from the measured title height. Widening restores the full
+single-line title and releases excess margin. Annotation, axis-title, subplot
+and tick fitting follow in the existing geometry pass. Geometry requests are
+serialized with the latest pending render/resize retained; PNG export and the
+initial Chart Editor handoff await that pass and tick fitting.
+
+This opt-in owns display-only figure-title placement and top margin. It does
+not change font/palette policy, scientific titles in saved output, arrays,
+units, axes/ranges, uncertainty, identities, hover formatting or hover names.
+Rich titles with markup and absent/invalid selections preserve existing
+behavior. A word wider than the available figure cannot be wrapped at a word
+boundary; this remains an explicit unsupported presentation case. A hidden
+host is fitted when visible. Removing the selection restores helper-owned
+properties; replacement and fresh-window reattachment start from source output.
+No YAML geometry, producer line breaks, new transport or sidecar is involved.
+HTML5 is unchanged. The neutral reproduction, approval, rollback and validation
+scope are in `doc/UI2-Figure-Title-Overflow-Shared-Gap-Report.md` (relative to
+the GenApp repository).

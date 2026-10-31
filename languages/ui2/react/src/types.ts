@@ -104,6 +104,7 @@ export type WorkbenchResultGroup = {
   layout?: "auto" | "tabs" | "grid" | "comparison" | "gallery" | string
   plotPresentation?: {
     profile?: string
+    figureTitleOverflow?: "wrap" | string
     axisTitleOverflow?: "wrap" | string
     axisTickFormats?: Record<string, string>
     hoverNameDisplay?: "full"

@@ -189,3 +189,30 @@ completion. No scientific/driver/YAML changes or Lab rebuild actions occurred.
 The canonical UI2 deployment and Lab static-asset publication passed. Temporary
 windows were closed and `codex3` logout confirmed. Unrelated local work and
 staged entries were preserved.
+
+## MCA figure-title extension (#333, October 31, 2026)
+
+Owner-approved shared-core implementation: generic `figureTitleOverflow: "wrap"`
+with MCA view/Lab opt-in. Local validation: the 799-check core suite passed
+(two optional hover-browser checks skipped), including target filtering/HTML5
+isolation and axis/tick/hover regressions;
+React no-emit type checking passed. Application checks passed 127 tests, with
+three pre-existing Data Interpolation parity failures reproduced before this
+extension. The broader `ui2_runtime_logic.t` stops at an existing reference-
+identity assertion in the hover display path; the identical failure was reproduced
+using HEAD copies of all four runtime helpers in a temporary baseline tree.
+This suite therefore does not establish full runtime regression acceptance.
+The generated Lab catalog is current; fixture coverage is 113.
+The neutral browser fixture passed 66 checks at 320/488/900 CSS pixels in
+light/dark, including toolbar/annotation/tick separation, restore, zoom/reset,
+empty/fresh replacement, unchanged science/source and a 976-by-960 scale-2 PNG.
+The fixture checks initial editor layout transfer; deployed editor acceptance
+remains pending. No deployment acceptance is claimed by this entry. The previous deployed application e5a501c
+on core e80ce452 completed an eight-figure signed job but failed normal-gallery
+figure-title bounds (9.09375 CSS pixels right overflow). Expanded view fit.
+
+Pending acceptance: corrected title bounds and annotation/tick/legend separation,
+normal/expanded/restore and resize, signed/positive cases, Lab surface matrix,
+PNG/editor, native fallback, completion and same/fresh/historical reattachment,
+other MCA modes. The previous browser block ended with confirmed codex3 logout.
+Detailed scope and neutral fixtures: `UI2-Figure-Title-Overflow-Shared-Gap-Report.md`.

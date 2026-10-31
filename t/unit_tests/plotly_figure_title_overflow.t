@@ -1,0 +1,47 @@
+use strict;
+use warnings;
+use File::Spec;
+use File::Temp qw(tempfile);
+use FindBin;
+use Test::More;
+use lib File::Spec->catdir($FindBin::Bin, '..', 'lib');
+use GenAppTest qw(repo_root run_command);
+my $repo=repo_root(File::Spec->catdir($FindBin::Bin, '..'));
+my ($fh,$script)=tempfile('figure-title-XXXX',SUFFIX=>'.js',TMPDIR=>1,UNLINK=>1);
+print {$fh} <<'JS';
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const clone=x=>JSON.parse(JSON.stringify(x)),context={window:{}};vm.createContext(context);
+vm.runInContext(fs.readFileSync(process.argv[2],'utf8'),context);
+const w=context.window,p=w.GenAppPlotlyLayout,selection={figureTitleOverflow:'wrap'},options={measureText:t=>t.length*8,baseTopMargin:96};
+let calls=0;
+w.Plotly={async relayout(g,u){calls++;for(const [key,value] of Object.entries(u)){let o=g.layout;const parts=key.split('.');for(const part of parts.slice(0,-1)){if(typeof o[part]==='string')o[part]={text:o[part]};o=o[part]??={};}if(value===null)delete o[parts.at(-1)];else o[parts.at(-1)]=value;}}};
+const source={title:'Observed and calculated measurements across repeated samples — logarithmic coordinate',xaxis:{range:[0,1]},hovermode:'closest'};
+const saved=JSON.stringify(source);
+const graph=()=>{const g={layout:{...clone(source),margin:{t:96}},_fullLayout:{width:240,title:{font:{size:17}}}};
+ g.querySelector=s=>({getBoundingClientRect:()=>({height:s==='.modebar'?24:24*String(g.layout.title.text||g.layout.title).split('<br>').length})});return g;};
+(async()=>{
+ let g=graph();await p.applyFigureTitleOverflow(g,source,{},options);assert.strictEqual(calls,0,'non-opted control');
+ await p.applyFigureTitleOverflow(g,source,selection,options);assert(g.layout.title.text.includes('<br>'));assert(g.layout.margin.t>96);
+ assert.strictEqual(g.layout.title.text.replaceAll('<br>',' '),source.title);assert.strictEqual(g.layout.hovermode,'closest');
+ const before=calls;await p.applyFigureTitleOverflow(g,source,selection,options);assert.strictEqual(calls,before,'idempotent');
+ g._fullLayout.width=1200;await p.applyFigureTitleOverflow(g,source,selection,options);assert.strictEqual(g.layout.title.text,source.title);assert.strictEqual(g.layout.margin.t,96,'release tall lane');
+ g._fullLayout.width=240;await p.applyFigureTitleOverflow(g,source,selection,options);await p.applyFigureTitleOverflow(g,source,{},options);
+ assert.strictEqual(g.layout.title.text,source.title);assert.strictEqual(g.layout.title.x,undefined);assert.strictEqual(g.layout.title.pad.t,undefined);assert.strictEqual(g.layout.margin.t,96);
+ for(const title of ['', 'Rich <sup>2</sup> title', 'Authored<br>line']) {const s={title};g=graph();g.layout.title=title;const n=calls;await p.applyFigureTitleOverflow(g,s,selection,options);assert.strictEqual(calls,n);}
+ g=graph();g._fullLayout.width=0;await p.applyFigureTitleOverflow(g,source,selection,options);assert.strictEqual(typeof g.layout.title,'string');
+ g=graph();await p.applyFigureTitleOverflow(g,source,selection,options);
+ const replacement={title:'New title'};g.layout={...clone(replacement),margin:{t:96}};await p.applyFigureTitleOverflow(g,replacement,selection,options);assert.strictEqual(g.layout.title.text,'New title');
+ await p.applyFigureTitleOverflow(g,replacement,{},options);assert.strictEqual(g.layout.title.text,'New title');
+ g=graph();let release;const gate=new Promise(r=>release=r),events=[];
+ const first=p.queuePresentationFit(g,async()=>{events.push('first');await gate;});await Promise.resolve();
+ const last=p.queuePresentationFit(g,async()=>{events.push('last');});assert.strictEqual(first,last);release();await last;assert.deepStrictEqual(events,['first','last']);
+ assert.strictEqual(JSON.stringify(source),saved);assert.deepStrictEqual(g.layout.xaxis.range,[0,1]);
+ console.log('figure title wrapping, margin release, controls, reconstruction, immutability and queued handoff passed');
+})().catch(e=>{console.error(e);process.exitCode=1;});
+JS
+close $fh;
+my ($status,$output)=run_command(cwd=>$repo,cmd=>['node',$script,File::Spec->catfile($repo,qw(languages ui2 add js plotly-layout.js))]);
+is($status,0,'figure-title fitting contract') or diag($output);
+like($output,qr/queued handoff passed/,'all lifecycle checks completed');
+ok(-f File::Spec->catfile($repo,qw(t fixtures plotly_figure_title_overflow.html)),'neutral browser fixture available');
+done_testing();

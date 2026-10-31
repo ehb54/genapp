@@ -768,3 +768,13 @@ Native fallback and React consume the existing `results.groups[].visibility:
 and dynamic-output clearing; never branch on module or scientific output IDs.
 See `doc/UI2-Core-Extension-Policy.md` and
 `doc/UI2-Native-Output-Availability-Shared-Gap-Report.md` before changing this boundary.
+
+## Responsive figure-title routing (#333)
+
+GenApp owns the opt-in `plotPresentation.figureTitleOverflow: "wrap"` contract,
+shared by ordinary UI2 and the Plot Presentation Lab. Source titles and saved
+figures remain authoritative; wrapping, toolbar separation and measured top
+lanes belong to UI2. Preserve YAML, hover policy and scientific outputs.
+See the paired GenApp `doc/Plotting-Architecture.md`,
+`doc/UI2-Core-Extension-Policy.md`, and
+`doc/UI2-Figure-Title-Overflow-Shared-Gap-Report.md`.

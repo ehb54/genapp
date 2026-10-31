@@ -1,0 +1,36 @@
+<!doctype html><meta charset="utf-8"><title>Responsive figure title acceptance</title>
+<style>body{font:14px Arial}#plot,#control{width:488px;height:480px}pre{white-space:pre-wrap}.export{max-width:100%}</style>
+<script src="../../languages/html5/add/js/plotly-2.35.2.min.js"></script>
+<script src="../../languages/ui2/add/js/plotly-layout.js"></script>
+<h1>Responsive figure title acceptance</h1><pre id="results">Running</pre><div id="plot"></div><h2>Non-opted-in control</h2><div id="control"></div><div id="export"></div>
+<script>
+(async()=>{
+ const clone=x=>JSON.parse(JSON.stringify(x)),p=GenAppPlotlyLayout,graph=document.getElementById('plot'),control=document.getElementById('control');
+ const source={title:'Observed and calculated measurements across repeated samples — logarithmic coordinate',xaxis:{title:'Coordinate',range:[0,2]},yaxis:{title:'Response',range:[0,4]},annotations:[{name:'summary',text:'Independent observations',xref:'paper',yref:'paper',x:0,y:1,showarrow:false}]};
+ const data=[{x:[0,1,2],y:[1,2,3],error_y:{type:'data',array:[0.1,0.2,0.3]},name:'Measurements',type:'scatter'}],saved=JSON.stringify({source,data});
+ const selection={figureTitleOverflow:'wrap',annotationPlacement:{summary:'above_plot'}};
+ const display=(width,bg='#ffffff')=>({...p.prepareAnnotationPlacement(clone(source),selection),width,height:480,margin:{l:60,r:30,t:96,b:80},font:{family:'Arial',size:14,color:bg==='#ffffff'?'#222':'#eee'},paper_bgcolor:bg,plot_bgcolor:bg});
+ const config={displayModeBar:true,displaylogo:false};
+ let checks=0;const cases=[];function check(ok,msg){if(!ok)throw Error(msg);checks++;}
+ async function fit(){return p.queuePresentationFit(graph,async()=>{await p.applyFigureTitleOverflow(graph,source,selection,{baseTopMargin:96});await p.applyAnnotationPlacement(graph,source,selection,{baseTopMargin:96});await p.applyTickDensity(graph);});}
+ const collide=(a,b)=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
+ function bounds(){const b=graph.getBoundingClientRect(),t=graph.querySelector('.gtitle').getBoundingClientRect();check(t.left>=b.left-1&&t.right<=b.right+1&&t.top>=b.top-1,'title inside host');
+ const a=graph.querySelector('.annotation').getBoundingClientRect();check(!collide(t,a),'title clears annotation');
+ const m=graph.querySelector('.modebar')?.getBoundingClientRect();if(m?.height)check(!collide(t,m),'title clears toolbar');
+ check(p.nonOverlappingTicks(p.tickLabelRows(graph)).length===p.tickLabelRows(graph).length,'tick labels separated');return {titleWidth:t.width,titleHeight:t.height};}
+ await Plotly.newPlot(control,clone(data),display(488),config);const baseline=control.querySelector('.gtitle').getBoundingClientRect(),host=control.getBoundingClientRect();check(baseline.right>host.right||baseline.left<host.left,'neutral title reproduces clipping');
+ const controlLayout=JSON.stringify(control.layout);await p.applyFigureTitleOverflow(control,source,{},{});check(JSON.stringify(control.layout)===controlLayout,'non-opted control unchanged');
+ await Plotly.newPlot(graph,clone(data),display(488),config);
+ for(const bg of ['#ffffff','#202725'])for(const width of [320,488,900,488]){
+ graph.style.width=width+'px';await Plotly.react(graph,clone(data),display(width,bg),config);await fit();const measured=bounds();
+ check(graph.layout.title.text.replaceAll('<br>',' ')===source.title,'full title retained');check(JSON.stringify(graph.data.map(t=>[t.x,t.y,t.error_y]))===JSON.stringify(data.map(t=>[t.x,t.y,t.error_y])),'scientific values unchanged');
+ cases.push({width,bg,...measured});
+ }
+ await Plotly.relayout(graph,{'xaxis.range':[0.5,1.5]});await fit();bounds();await Plotly.relayout(graph,{'xaxis.range':[0,2]});await fit();bounds();
+ await Plotly.react(graph,[],display(488),config);await fit();check(graph.data.length===0,'empty replacement');
+ Plotly.purge(graph);await Plotly.newPlot(graph,clone(data),display(488),config);await fit();bounds();
+ const editor=clone(graph.layout);delete editor.width;delete editor.height;check(editor.title.text===graph.layout.title.text,'initial editor layout carries fit');
+ const url=await Plotly.toImage(graph,{format:'png',scale:2,width:488,height:480});const image=new Image();image.src=url;await image.decode();image.className='export';document.getElementById('export').append(image);check(image.naturalWidth===976&&image.naturalHeight===960,'scale-2 export');
+ check(JSON.stringify({source,data})===saved,'source immutable');document.getElementById('results').textContent=JSON.stringify({passed:true,checks,cases,scale2:[image.naturalWidth,image.naturalHeight]});
+})().catch(e=>{document.getElementById('results').textContent=JSON.stringify({passed:false,error:e.message,stack:e.stack});});
+</script>
