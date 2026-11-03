@@ -261,3 +261,27 @@ local evidence and known unrelated failures are in
 `UI2-Native-Plot-Geometry-Shared-Gap-Report.md`. These are local results only.
 The existing native/React, positive/signed/historical/other-mode, Lab surface,
 interaction, export and reattachment acceptance scope remains pending deployment.
+
+
+## Closest-hover coordinates at collision-hidden ticks (#348, November 3, 2026)
+
+Local implementation only, on baseline core `f003eee7`; not deployed. The
+shared fitter prepares coordinate templates for its own masked numeric ticks
+without changing scientific data, tick/grid positions, #335 precision or #336
+name policy. Native/React UI2 and the Lab retain their existing shared-helper
+callers. Owner evidence: `UI2-Hover-Interaction-Shared-Gap-Report.md`.
+
+The real-pointer neutral browser harness passed 325 control/source checks;
+#348 is required success and #349 remains a separate failing TODO. The original
+committed helper fails the same required coordinate assertion. Focused core
+regressions passed 25 assertions (six optional older browser checks skipped),
+and application styling/Lab parity passed 33 tests. The browser actually covered
+511/620/855 widths, formats/authored labels, native errors, uncertainty refresh,
+name policy, supported 2D trace types, fitted label bounds, zoom/reset,
+reconstruction, clear/repopulate, PNG and initial editor transfer.
+
+Deployed acceptance is **not recorded** for this correction: MCA signed/positive
+profiles and Guinier, native/React UI2, Lab themes/surfaces, normal/expanded/
+restore, actual container/browser resize, completion, same/fresh-window
+reattachment, PNG and initial Chart Editor handoff remain pending. No module's
+existing deployed status is upgraded by these local results.

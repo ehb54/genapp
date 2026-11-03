@@ -523,6 +523,27 @@ Every fit restores the preceding native tick specification before measuring;
 labels return as the available space or range changes. Final bounds are checked
 again after array-mode rendering, with monotonically decreasing visible labels.
 
+Closest hover must retain coordinates hidden only by the collision fitter
+(#348). The same fitter prepares detached per-point Plotly templates for masked
+linear/log x/y coordinates on scatter, scattergl and bar traces. Unmasked points
+retain their source template or native coordinate body; explicit coordinate
+formats, tick-format stops, authored array labels and intentionally blank labels
+remain authoritative. Trace/axis hover formats take precedence, followed by the
+active tick format and the existing `.6g` compatibility fallback. The native
+placeholder remains alongside the repaired coordinate to retain native error
+text; supplied-uncertainty precision is still owned by the shared numeric helper.
+
+The fit restores its prior template before refitting or leaving closest mode,
+and honors a newer authored template. Name suppression and native name clipping
+remain unchanged. Compare/unified modes retain their existing shared-coordinate
+presentation. PNG and initial Chart Editor handoff carry the fitted layout and
+display templates through their existing paths; no caller API, producer payload,
+scientific array, saved output or vendor Plotly file changes. No module-specific
+branch or new opt-in is added. See
+`doc/UI2-Hover-Interaction-Shared-Gap-Report.md` for the neutral reproduction,
+scoped correction and separate local/deployed evidence.
+
+
 Rendering, updates, zoom/pan/reset, resize and saved-output reconstruction refit
 the labels. Fitting coalesces requests, retains the latest pending range/style
 change, and ignores its own relayout events. A replacement figure supersedes

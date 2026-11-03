@@ -423,6 +423,7 @@
   // masking only colliding text on detached display axes. Saved figures are
   // never changed. Old axisTickDensity selections are accepted but unnecessary.
   const fittedTickAxes = new WeakMap();
+  const fittedHoverTemplates = new WeakMap();
   const TICK_PLACEMENT = ["tickmode", "tickvals", "ticktext"];
   const blankTickLabel = "\u200b";
   const copyTickValue = value => value == null ? null : JSON.parse(JSON.stringify(value));
@@ -481,6 +482,128 @@
       update[`${name}.ticktext`] = ticks.map(tick => visible.has(tick.x) ? tick.text : blankTickLabel);
     }
     return Object.keys(update).length ? update : null;
+  }
+
+  // Plotly also consults ticktext when formatting a hover coordinate. Supply
+  // an explicit native numeric placeholder only where our own mask hid it.
+  // Keep the original placeholder as well: it carries native error-bar text.
+  function unfittedHoverTemplate(trace) {
+    const fitted = fittedHoverTemplates.get(trace);
+    return fitted && sameTickValue(trace.hovertemplate, fitted.display)
+      ? fitted.original : trace.hovertemplate;
+  }
+
+  function maskedHoverFormat(axis, trace, field) {
+    const compare = (a, b) => {
+      if (typeof a === 'number' && typeof b === 'number') return a - b;
+      const rank = value => typeof value === 'number' ? [2, value]
+        : [String(value)[0] === 'L' ? 0 : 1, Number(String(value).slice(1))];
+      const x = rank(a), y = rank(b);
+      return x[0] - y[0] || x[1] - y[1];
+    };
+    const stop = axis.tickformatstops?.find(item => item.enabled !== false &&
+      (item.dtickrange?.[0] == null || compare(axis.dtick, item.dtickrange[0]) >= 0) &&
+      (item.dtickrange?.[1] == null || compare(axis.dtick, item.dtickrange[1]) <= 0));
+    return trace[field + 'hoverformat'] || axis.hoverformat || stop?.value || axis.tickformat || '.6g';
+  }
+
+  function nativeCoordinateHoverTemplate(plot, trace, native = false) {
+    const info = trace.hoverinfo || 'all';
+    if (info === 'skip' || info === 'none') return null;
+    const fields = ['x', 'y', 'z'].filter(field =>
+      (trace[field] != null || precisionAxis(plot, trace, field)) &&
+      (info === 'all' || info.split('+').includes(field)));
+    let template = native ? fields.map(field => `%{${field}}`).join(', ')
+      : fields.map(field => `${field}: %{${field}}`).join('<br>');
+    if (native && fields.length > 1) template = `(${template})`;
+    if (info === 'all' || info.split('+').includes('text')) {
+      const key = trace.hovertext != null && trace.hovertext !== '' ? 'hovertext' : 'text';
+      if (trace[key] != null && trace[key] !== '') template += `<br>%{${key}}`;
+    }
+    return template + (info === 'all' || info.split('+').includes('name')
+      ? '<extra>%{fullData.name}</extra>' : '<extra></extra>');
+  }
+
+  async function restoreFittedHoverTemplates(plot, state, restyle) {
+    for (const entry of state.hoverTemplates || []) {
+      if (plot.data?.[entry.index] === entry.trace &&
+          sameTickValue(entry.trace.hovertemplate, entry.display)) {
+        const update = {hovertemplate:[entry.original ?? null]};
+        if (entry.nameLength != null && entry.trace.hoverlabel?.namelength === entry.nameLength) {
+          update['hoverlabel.namelength'] = [entry.originalNameLength ?? null];
+        }
+        await restyle(update, [entry.index]);
+      }
+      fittedHoverTemplates.delete(entry.trace);
+    }
+    state.hoverTemplates = [];
+  }
+
+  async function fitHoverCoordinates(plot, state, restyle) {
+    if (plot._fullLayout?.hovermode !== 'closest') return;
+    for (let index = 0; index < (plot.data || []).length; index++) {
+      const trace = plot.data[index], fullTrace = plot._fullData?.[index];
+      if (!fullTrace || trace.transforms?.length ||
+          !['scatter', 'scattergl', 'bar'].includes(fullTrace.type)) continue;
+      const axes = {};
+      for (const field of ['x', 'y']) {
+        const name = (trace[field + 'axis'] || field).replace(/^([xy])/, '$1axis');
+        const fitted = state.axes.get(name), axis = plot._fullLayout[name];
+        if (!fitted || !['linear', 'log'].includes(axis?.type)) continue;
+        const hidden = fitted.fitted.tickvals.filter((_, i) =>
+          fitted.fitted.ticktext[i] === blankTickLabel);
+        if (hidden.length) axes[field] = {axis, hidden, nativeTicks:fitted.nativeTicks};
+      }
+      if (!Object.keys(axes).length) continue;
+      const original = trace.hovertemplate ?? fullTrace.hovertemplate;
+      const length = Math.max(trace.x?.length || 0, trace.y?.length || 0);
+      let changed = false;
+      const display = Array.from({length}, (_, point) => {
+        const source = pointValue(original, point);
+        if (Array.isArray(original) && !source) return source ?? null;
+        const template = source || nativeCoordinateHoverTemplate(plot, {...fullTrace, ...trace}, true);
+        if (typeof template !== 'string') return source ?? null;
+        let repaired = template;
+        for (const [field, {axis, hidden, nativeTicks}] of Object.entries(axes)) {
+          const value = pointValue(trace[field], point);
+          const coordinate = axis.d2l?.(value) ?? value;
+          if (!Number.isFinite(coordinate)) continue;
+          const tolerance = Math.abs(axis.range[1] - axis.range[0]) / 1e4;
+          if (!hidden.some(tick => Math.abs(coordinate - (axis.d2l?.(tick) ?? tick)) < tolerance)) continue;
+          let coordinateText;
+          if (nativeTicks?.tickmode === 'array' && Array.isArray(nativeTicks.ticktext)) {
+            const originalIndex = nativeTicks.tickvals?.findIndex(tick =>
+              Math.abs(coordinate - (axis.d2l?.(tick) ?? tick)) < tolerance);
+            if (originalIndex >= 0 && originalIndex < nativeTicks.ticktext.length) {
+              coordinateText = String(nativeTicks.ticktext[originalIndex]);
+              // Authored blank labels remain authored blank labels.
+              if (!coordinateText.replace(/\u200b/g, '').trim()) continue;
+            }
+          }
+          if (coordinateText == null) {
+            const format = maskedHoverFormat(axis, trace, field);
+            if (typeof format !== 'string' || /[{}<>]/.test(format)) continue;
+            const prefix = axis.showtickprefix === 'none' ? '' : axis.tickprefix || '';
+            const suffix = axis.showticksuffix === 'none' ? '' : axis.ticksuffix || '';
+            coordinateText = `${prefix}%{${field}:${format}}${suffix}`;
+          }
+          repaired = repaired.split(`%{${field}}`).join(`${coordinateText}%{${field}}`);
+        }
+        if (repaired === template) return template;
+        changed = true;
+        return repaired;
+      });
+      if (!changed) continue;
+      const entry = {trace, index, original, display,
+        nameLength:fullTrace.hoverlabel?.namelength,
+        originalNameLength:trace.hoverlabel?.namelength};
+      state.hoverTemplates.push(entry);
+      fittedHoverTemplates.set(trace, entry);
+      const update = {hovertemplate:[display]};
+      // Adding a template must not change native/default name clipping.
+      if (entry.nameLength != null) update['hoverlabel.namelength'] = [entry.nameLength];
+      await restyle(update, [index]);
+    }
   }
 
   // Axis titles need a separate lane even when their text does not wrap.
@@ -550,7 +673,7 @@
     if (!plot?._fullLayout || typeof window.Plotly?.relayout !== "function") return Promise.resolve();
     let state = fittedTickAxes.get(plot);
     if (!state) {
-      state = { axes:new Map(), pending:false, promise:null, internal:false, scheduled:null };
+      state = { axes:new Map(), hoverTemplates:[], pending:false, promise:null, internal:false, scheduled:null };
       state.schedule = () => {
         if (state.scheduled) return;
         state.scheduled = Promise.resolve().then(() => {
@@ -580,9 +703,16 @@
       try { await window.Plotly.relayout(plot, update); }
       finally { state.internal = false; }
     };
+    const restyle = async (update, indices) => {
+      if (typeof window.Plotly.restyle !== 'function') return;
+      state.internal = true;
+      try { await window.Plotly.restyle(plot, update, indices); }
+      finally { state.internal = false; }
+    };
     state.promise = Promise.resolve().then(async () => {
       while (state.pending && plot._fullLayout) {
         state.pending = false;
+        await restoreFittedHoverTemplates(plot, state, restyle);
         const reset = {};
         for (const [name, entry] of state.axes) {
           // react/newPlot or an explicit user edit replaces our display patch.
@@ -604,8 +734,11 @@
             for (const name of new Set(Object.keys(update).map(key => key.split(".")[0]))) {
               let entry = state.axes.get(name);
               if (!entry) {
-                entry = {original:{}, fitted:{}};
-                for (const key of TICK_PLACEMENT) entry.original[key] = copyTickValue(plot.layout?.[name]?.[key]);
+                entry = {original:{}, fitted:{}, nativeTicks:{}};
+                for (const key of TICK_PLACEMENT) {
+                  entry.original[key] = copyTickValue(plot.layout?.[name]?.[key]);
+                  entry.nativeTicks[key] = copyTickValue(plot._fullLayout?.[name]?.[key]);
+                }
                 state.axes.set(name, entry);
               } else {
                 const visible = new Map(update[`${name}.tickvals`].map((v,i) => [JSON.stringify(v),update[`${name}.ticktext`][i]]));
@@ -619,6 +752,7 @@
           }
           if (!await fitAxisTitleClearance(plot, relayout)) break;
         }
+        if (!state.pending) await fitHoverCoordinates(plot, state, restyle);
       }
     }).finally(() => { state.promise = null; });
     return state.promise;
@@ -841,16 +975,8 @@
     if (!Object.keys(pairs).length) return sourceTemplate;
     let template = sourceTemplate;
     if (!template) {
-      const info = trace.hoverinfo || 'all';
-      if (info === 'skip' || info === 'none') return sourceTemplate;
-      const fields = ['x', 'y', 'z'].filter(field => (trace[field] != null || precisionAxis(plot, trace, field)) &&
-        (info === 'all' || info.split('+').includes(field)));
-      template = fields.map(field => `${field}: %{${field}}`).join('<br>');
-      if (info === 'all' || info.split('+').includes('text')) {
-        const textField = trace.hovertext != null && trace.hovertext !== '' ? 'hovertext' : 'text';
-        if (trace[textField] != null && trace[textField] !== '') template += `<br>%{${textField}}`;
-      }
-      template += info === 'all' || info.split('+').includes('name') ? '<extra>%{fullData.name}</extra>' : '<extra></extra>';
+      template = nativeCoordinateHoverTemplate(plot, trace);
+      if (!template) return sourceTemplate;
     }
     return template.replace(/%\{([xyz])(?::[^}]*)?\}/g, (original, field) => {
       const pair = pairs[field];
@@ -874,9 +1000,10 @@
         // traceref=0); only the inferred type supplements explicit input.
         resolved[key] = trace[key] ? { ...trace[key], type: trace[key].type || fullTrace[key]?.type } : undefined;
       }
+      const sourceTemplate = unfittedHoverTemplate(trace);
       let state = precisionTemplates.get(trace);
-      if (!state || trace.hovertemplate !== state.display) {
-        state = { source: trace.hovertemplate ?? fullTrace.hovertemplate };
+      if (!state || sourceTemplate !== state.display) {
+        state = { source: sourceTemplate ?? fullTrace.hovertemplate };
         precisionTemplates.set(trace, state);
       }
       if (state.display == null && !['x', 'y', 'z'].some(field => resolved['error_' + field]?.array != null)) return;

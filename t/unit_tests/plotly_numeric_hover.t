@@ -92,6 +92,12 @@ calls.length=0;await policy.applyNumericHoverFormat(plotted335,'uncertainty-2');
 plotted335.data[0].x.push(.228);plotted335.data[0].y.push(.0008);plotted335.data[0].error_y.array.push(.0004);
 await policy.applyNumericHoverFormat(plotted335,'uncertainty-2');
 assert(plotted335.data[0].hovertemplate[1].includes('0.00080 ± 0.00040'));
+// Updating existing values must refresh paired precision, not freeze a display string.
+plotted335.data[0].y[0]=.0006;plotted335.data[0].error_y.array[0]=.0002;
+await policy.applyNumericHoverFormat(plotted335,'uncertainty-2');
+assert(plotted335.data[0].hovertemplate[0].includes('0.00060 ± 0.00020'),'updated value/error retains paired precision');
+assert(plotted335.data[0].hovertemplate[0].includes('%{x}'),'unmasked coordinate keeps compatibility formatter');
+assert.strictEqual(JSON.stringify(source335),saved335,'updates leave the saved scientific source unchanged');
 for(const template of ['Named %{y:.8f}<extra>identity</extra>','Named %{y:.8f} ± %{error_y.array:.8f}<extra>identity</extra>']){
  const tr={...JSON.parse(saved335).data[0],hovertemplate:template};
  const p={data:[tr],_fullData:[tr],_fullLayout:JSON.parse(saved335).layout};

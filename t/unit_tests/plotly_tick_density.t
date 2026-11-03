@@ -21,11 +21,20 @@ const rows=[
 assert.deepStrictEqual(plain(api.nonOverlappingTicks(rows)),[rows[0],rows[2]]);
 const listeners={};let calls=0,spacing=20,inject=false;
 const original={tickmode:'array',tickvals:[-1,0],ticktext:['first','second']};
-const plot={layout:{xaxis:plain(original)},_fullLayout:{xaxis:{type:'linear',l2d:v=>v}},
+const sourceTrace={type:'scatter',mode:'markers',x:[-1,0],y:[1,2],meta:{id:'neutral'},
+ hovertemplate:'Coordinate %{x} units<br>Value %{y}<extra>authored</extra>'};
+const displayTrace=plain(sourceTrace);
+const plot={layout:{xaxis:plain(original)},data:[displayTrace],_fullData:[displayTrace],
+ _fullLayout:{hovermode:'closest',xaxis:{type:'linear',l2d:v=>v,d2l:v=>v,range:[-2,2],...plain(original)}},
  on:(name,fn)=>{listeners[name]=fn;},removeListener:()=>{},
  querySelectorAll:()=>[-1,0].map((v,i)=>({__data__:{x:v,text:plot.layout.xaxis.ticktext[i]},
  getBoundingClientRect:()=>({left:i*spacing,right:i*spacing+40,top:0,bottom:15,width:40,height:15})}))};
-context.window.Plotly={relayout:async(_plot,update)=>{
+let restyles=0;
+context.window.Plotly={restyle:async(_plot,update,indices)=>{
+ restyles++;assert(restyles<30,'bounded hover restyles');
+ for(const index of indices)plot.data[index].hovertemplate=update.hovertemplate[0];
+ listeners.plotly_afterplot?.();
+},relayout:async(_plot,update)=>{
  calls++; assert(calls<30,'bounded relayouts');
  for(const [path,value] of Object.entries(update)){const [axis,key]=path.split('.');plot.layout[axis][key]=value;}
  listeners.plotly_afterplot?.();listeners.plotly_relayout?.(update);
@@ -38,16 +47,25 @@ context.window.Plotly={relayout:async(_plot,update)=>{
  assert.strictEqual(update['xaxis.ticktext'][0],'first');
  await api.applyTickDensity(plot);
  assert.strictEqual(calls,1,'one fit, no recursive relayout');
+ assert.strictEqual(plot.data[0].hovertemplate[0],sourceTrace.hovertemplate,'visible point keeps authored template');
+ assert(plot.data[0].hovertemplate[1].includes('second%{x} units'),'masked authored tick label restored only for hover');
+ assert(plot.data[0].hovertemplate[1].includes('<extra>authored</extra>'),'authored hover body retained');
+ assert.deepStrictEqual(plain(plot.data[0].x),sourceTrace.x,'scientific coordinates unchanged');
  assert.strictEqual(api.tickDensityUpdate(plot),null,'visible labels fit');
  spacing=100;listeners.plotly_relayout({'xaxis.range':[-2,2]});
  await api.settleTickDensity(plot);
  assert.deepStrictEqual(plain(plot.layout.xaxis),original,'labels restored when space returns');
+ assert.strictEqual(plot.data[0].hovertemplate,sourceTrace.hovertemplate,'source hover restored when collision disappears');
  spacing=20;inject=true;await api.applyTickDensity(plot);await api.settleTickDensity(plot);
  assert.deepStrictEqual(plain(plot.layout.xaxis),original,'range event during fitting is not dropped');
  spacing=20;await api.applyTickDensity(plot);
  plot.layout.xaxis={tickmode:'array',tickvals:[-1,0],ticktext:['new one','new two']};spacing=100;
  listeners.plotly_afterplot();await api.settleTickDensity(plot);
  assert.deepStrictEqual(plain(plot.layout.xaxis.ticktext),['new one','new two'],'new figure wins over old baseline');
+ plot.data[0].hovertemplate='Explicit %{x:.2e} units<extra></extra>';
+ spacing=20;await api.applyTickDensity(plot);
+ assert.strictEqual(plot.data[0].hovertemplate,'Explicit %{x:.2e} units<extra></extra>','explicit coordinate format never rewritten');
+ delete plot._fullLayout;await api.applyTickDensity(plot);
  assert.strictEqual(JSON.stringify(original),saved,'source unchanged');
  console.log('general tick fitting, grid preservation, queued events and reconstruction passed');
 })().catch(error=>{console.error(error);process.exit(1);});

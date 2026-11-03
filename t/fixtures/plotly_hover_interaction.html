@@ -1,0 +1,147 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Neutral hover interaction diagnostics — #348/#349</title>
+<script src="../../languages/html5/add/js/plotly-2.35.2.min.js"></script>
+<script src="../../languages/ui2/add/js/plotly-layout.js"></script>
+<style>body{font:14px sans-serif;margin:12px}#plot{width:620px;height:480px}pre{white-space:pre-wrap}</style>
+<p>Read-only diagnostic figure. The browser harness uses real pointer movement;
+no trace is selected programmatically. #348 is required acceptance; #349 remains diagnostic.</p>
+<div id="plot"></div><pre id="results">Ready for the diagnostic harness.</pre>
+<script>
+(() => {
+  'use strict';
+  const plot = document.getElementById('plot');
+  const copy = value => JSON.parse(JSON.stringify(value));
+  const api = window.GenAppPlotlyLayout;
+  let source, saved, options, lastPointer = [];
+  const blank = text => !String(text ?? '').replace(/\u200b/g, '').trim();
+  function target(curve, point) {
+    const trace = plot._fullData[curve], xa = plot._fullLayout.xaxis, ya = plot._fullLayout.yaxis;
+    const rect = plot.getBoundingClientRect();
+    return {x: rect.left + xa._offset + xa.d2p(trace.x[point]),
+      y: rect.top + ya._offset + ya.d2p(trace.y[point])};
+  }
+  function nativeDataUnchanged() {
+    return plot.data.every((trace, index) => ['x','y','error_x','error_y','name','meta','legendgroup','mode'].every(
+      key => JSON.stringify(trace[key]) === JSON.stringify(source.data[index][key])));
+  }
+  async function mount(value, config = {}) {
+    source = copy(value); saved = JSON.stringify(source); options = {...config}; lastPointer = [];
+    const display = api.prepare_hover_name_suppression(copy(source), config.suppress ? 'none' : undefined);
+    await Plotly.newPlot(plot, display.data, display.layout, {
+      displayModeBar: false, responsive: false
+    });
+    if (config.precision) await api.applyNumericHoverFormat(plot, config.precision);
+    if (config.fit) await api.applyTickDensity(plot);
+    plot.on('plotly_hover', event => {
+      lastPointer = event.points.map(point => ({curve:point.curveNumber,
+        point:point.pointNumber, x:point.x, y:point.y}));
+    });
+    plot.on('plotly_unhover', () => {lastPointer = [];});
+  }
+  function layout(axis, width = 620) {
+    return {width,height:480,hovermode:'closest',showlegend:true,
+      margin:{l:85,r:30,t:45,b:100},
+      xaxis:{type:axis,range:axis==='log'?[Math.log10(.029),Math.log10(.071)]:[.029,.071],
+        tickformat:'.7f',nticks:30,title:'Coordinate'},
+      yaxis:{range:[.70,.90],title:'Observed value'},legend:{orientation:'h',y:-.2}};
+  }
+  async function formatting(config = {}) {
+    const x = Array.from({length:41},(_,i)=>Number((.03+i*.001).toFixed(3)));
+    const trace = {type:config.traceType||'scatter',mode:config.kind==='line'?'lines':'markers',
+      x,y:x.map((_,i)=>.808093+i*.00001),name:'Neutral series',meta:{id:'neutral'},
+      marker:{size:6},legendgroup:'neutral-pair'};
+    if(config.kind!=='line')trace.error_y={type:'data',array:x.map(()=>.0101),visible:true};
+    if(config.name)trace.name=config.name;
+    if(config.hoverinfo)trace.hoverinfo=config.hoverinfo;
+    if(config.errorX)trace.error_x={type:'data',array:x.map(()=>.0001),visible:true};
+    if(config.traceFormat)trace.xhoverformat=config.traceFormat;
+    if(config.template)trace.hovertemplate=config.template;
+    const figure={data:[trace],layout:layout(config.axis||'log',config.width||620)};
+    if(config.denseY){
+      trace.y=x.map((_,i)=>.75+i*.001);
+      figure.layout.yaxis={type:'linear',range:[.749,.791],tickformat:'.7f',nticks:30,title:'Observed value'};
+    }
+    if(config.axisFormat)figure.layout.xaxis.hoverformat=config.axisFormat;
+    if(config.formatStops)figure.layout.xaxis.tickformatstops=config.formatStops;
+    if(config.arrayLabels){
+      figure.layout.xaxis.tickmode='array';figure.layout.xaxis.tickvals=x;
+      figure.layout.xaxis.ticktext=x.map((_,i)=>'Authored sample '+i);
+      if(config.blankLabel!=null)figure.layout.xaxis.ticktext[config.blankLabel]='';
+    }
+    await mount(figure,config);
+    const axis=plot._fullLayout[config.targetField==='y'?'yaxis':'xaxis'];
+    const coordinates=config.targetField==='y'?trace.y:x;
+    const hidden=(axis.tickvals||[]).filter((_,i)=>blank(axis.ticktext?.[i]));
+    const indexes=hidden.map(value=>coordinates.findIndex(point=>Math.abs(point-value)<1e-10)).filter(i=>i>=0);
+    const point=indexes[0]??10;
+    return {point,x:x[point],y:trace.y[point],target:target(0,point),hiddenValues:hidden,
+      hiddenPointFound:indexes.length>0,
+      unmaskedPoint:x.findIndex(value=>!hidden.some(tick=>Math.abs(value-tick)<1e-10)),
+      axis:axis.type,hoverformat:axis.hoverformat,
+      sourceUnchanged:JSON.stringify(source)===saved,nativeDataUnchanged:nativeDataUnchanged()};
+  }
+  async function overlap(config = {}) {
+    const points={type:'scatter',mode:'markers',x:[.03,.05,.07],y:[.75,.8,.85],
+      error_y:{type:'data',array:[.001,.001,.001],visible:true},name:'Neutral measured',
+      legendgroup:'paired',meta:{id:'points'},marker:{size:config.markerSize||6,symbol:'circle'}};
+    const line={type:'scatter',mode:'lines',x:[.03,.05,.07],
+      y:[.75,.8+(config.separation||0),.85],name:'Neutral fitted',
+      legendgroup:'paired',meta:{id:'line'},line:{width:2}};
+    const data=config.reverse?[line,points]:[points,line];
+    const figure={data,layout:layout(config.axis||'log',config.width||620)};
+    figure.layout.yaxis.range=[.72,.88];figure.layout.legend.groupclick='togglegroup';
+    await mount(figure,{...config,suppress:config.suppress!==false});
+    const index=data.findIndex(t=>t.mode==='lines');
+    return {target:target(index,1),lineCurve:index,markerCurve:1-index,
+      legendGroups:plot.data.map(t=>t.legendgroup),groupclick:plot._fullLayout.legend.groupclick};
+  }
+  function snapshot() {
+    const rows=api.tickLabelRows(plot);
+    return {text:plot.querySelector('.hoverlayer')?.textContent||'',points:copy(lastPointer),
+      collisionFree:api.nonOverlappingTicks(rows).length===rows.length,
+      hovermode:plot._fullLayout.hovermode,nameLengths:plot._fullData.map(t=>t.hoverlabel?.namelength),
+      sourceUnchanged:JSON.stringify(source)===saved,nativeDataUnchanged:nativeDataUnchanged(),
+      templates:plot.data.map(t=>t.hovertemplate??null)};
+  }
+  async function hovermode(mode) {
+    await Plotly.relayout(plot,{hovermode:mode});
+    if(options.fit)await api.settleTickDensity(plot);
+    lastPointer=[];
+  }
+  async function lifecycle(action,point=1) {
+    if(['wide','middle','restore'].includes(action))await Plotly.relayout(plot,{width:action==='wide'?855:action==='middle'?620:511});
+    if(action==='zoom')await Plotly.relayout(plot,{'xaxis.range':plot._fullLayout.xaxis.type==='log'
+      ?[Math.log10(.0305),Math.log10(.0605)]:[.0305,.0605]});
+    if(action==='reset')await Plotly.relayout(plot,{'xaxis.range':source.layout.xaxis.range});
+    if(action==='update'){
+      source.data[0].y[point]=.818093;saved=JSON.stringify(source);
+      await Plotly.restyle(plot,{y:[copy(source.data[0].y)]},[0]);
+      if(options.precision)await api.applyNumericHoverFormat(plot,options.precision);
+    }
+    if(action==='reconstruct'||action==='repopulate')await mount(copy(source),options);
+    if(action==='clear')await Plotly.react(plot,[],{});
+    if(action==='editor'){
+      const displayed={data:copy(plot.data),layout:copy(plot.layout)};
+      await Plotly.newPlot(plot,displayed.data,displayed.layout,{displayModeBar:false});
+      plot.on('plotly_hover',event=>{lastPointer=event.points.map(p=>({curve:p.curveNumber,point:p.pointNumber,x:p.x,y:p.y}));});
+      // Initial editor handoff consumes displayed data/layout with no UI2 fit.
+      return {target:target(0,point),...snapshot()};
+    }
+    if(options.fit)await api.settleTickDensity(plot);
+    return {target:plot.data?.length?target(0,point):null,...snapshot()};
+  }
+  async function png() {
+    await api.settleTickDensity(plot);
+    const url=await Plotly.toImage(plot,{format:'png',width:511,height:480,scale:2});
+    const image=new Image();image.src=url;await image.decode();
+    return {width:image.naturalWidth,height:image.naturalHeight,...snapshot()};
+  }
+  function publish(result) {
+    window.hoverInteractionDiagnostics=result;
+    document.getElementById('results').textContent=JSON.stringify(result,null,2);
+  }
+  window.hoverInteractionFixture={formatting,overlap,snapshot,hovermode,lifecycle,png,target,publish,
+    versions:()=>({plotly:Plotly.version,userAgent:navigator.userAgent})};
+})();
+</script>
