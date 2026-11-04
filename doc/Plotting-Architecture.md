@@ -678,3 +678,39 @@ correction using actual resize events, narrow/wide/restore, hidden/reveal,
 rapid changes and teardown. Preserve YAML, hover behavior, explicit settings,
 scientific outputs and source payloads. Owner evidence:
 `UI2-Native-Plot-Geometry-Shared-Gap-Report.md`.
+
+
+## Opt-in closest-hover trace selection (#349)
+
+A result group may select `plotPresentation.hover_trace_selection: "lines-markers"`.
+On supported Cartesian scatter/scattergl figures containing eligible line and
+marker traces, UI2 adds **Hover all traces**, **Hover lines**, and **Hover markers**.
+The default is All. These controls change hover eligibility only and retain
+`hovermode: closest`; all traces remain drawn. Mixed lines+markers traces remain
+eligible in both filtered selections. Other figure types and omitted/invalid
+selections retain their existing controls and behavior. No scientific role or
+module identity participates in the shared helper.
+
+The shared helper temporarily excludes other trace kinds through Plotly's native
+`hoverinfo: skip`. It also releases their display templates, because Plotly's
+native template defaulting otherwise overrides that exclusion. It records and
+restores authored hover settings without changing source figures. Restoration
+uses the pre-coordinate-repair template so repeated selection cannot duplicate
+#348's coordinate formatting. Numeric refresh releases/reapplies the exclusion
+around the existing precision helper; no formatting engine is added.
+
+Compare/unified modes release exclusions and returning to closest starts All.
+Source replacement, clear/removal and fresh reconstruction reset transient state;
+zoom/pan/resize preserve the user's active selection. Controls expose accessible
+names, pressed and disabled states through the existing modebar keyboard path.
+The initial Chart Editor handoff releases exclusions on a detached data copy,
+retains existing fitted templates and leaves the active UI2 selection in place.
+PNG appearance, science, units, colors, legends, metadata and saved outputs remain
+unchanged. No sidecar, replay state or scientific rerun is required.
+
+Native UI2, React and application previews use this same helper. Native fallback
+resolves only the interaction opt-in by declared output/dynamic-parent id; it
+does not acquire unrelated React profile or styling selections. Conflicting
+native declarations fail closed. Acceptance requires actual control clicks and
+pointer selection, not programmatic selection through `Fx.hover`. Owner evidence,
+compatibility controls and rollback: `doc/UI2-Hover-Interaction-Shared-Gap-Report.md`.

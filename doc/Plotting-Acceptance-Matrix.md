@@ -308,3 +308,15 @@ surfaces, signed/positive/Guinier cases, normal/expanded/restore, actual browser
 resize, completion, same/fresh-window reattachment, PNG and initial editor
 handoff remain pending. Scientific arrays, ranges, units, axis types and saved
 fixtures are unchanged. No existing module's deployed status is upgraded here.
+
+
+## Closest-hover trace-kind inspection (#349)
+
+Local implementation on November 3, 2026, core baseline `df231cb5`: 1,161
+real-pointer checks and 35 application/Lab tests passed. MCA alone opts into
+All/Lines/Markers hover eligibility controls, retaining closest mode and all
+visible traces. Scientific payloads, #331 colors/grouping, #335 precision,
+#336 name policy, #347 tick retention and #348 coordinate repair remain in scope.
+Owner evidence and the historical runtime-suite baseline failure are recorded in
+`UI2-Hover-Interaction-Shared-Gap-Report.md`. Local checks do not establish deployed
+acceptance; no existing module status is upgraded by these local results.

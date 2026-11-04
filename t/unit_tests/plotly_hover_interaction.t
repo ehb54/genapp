@@ -8,7 +8,7 @@ use Test::More;
 use lib File::Spec->catdir($FindBin::Bin, '..', 'lib');
 use GenAppTest qw(repo_root run_command);
 
-# #348 is required acceptance. Only the separately scoped #349 gap is TODO.
+# #348 coordinates and #349 opt-in selection are required acceptance.
 # Source mutation, broken controls and missing browser evidence are failures.
 plan skip_all => 'Set GENAPP_HOVER_BROWSER to an isolated Chrome executable'
     unless $ENV{GENAPP_HOVER_BROWSER};
@@ -181,13 +181,74 @@ with sync_playwright() as p:
                     result['overlap'].append({'markerSize':size,'reverse':reverse,'separation':separation,'closestCurves':sorted(found),
                         'lineCurve':mounted['lineCurve'],'markerCurve':mounted['markerCurve'],
                         'closest':examples,'compare':compared})
+        # #349: actual controls select either trace without leaving closest mode.
+        result['selection']=[]
+        for width in [511,620,855]:
+            for axis in ['linear','log']:
+                for size in [6,11]:
+                    for reverse in [False,True]:
+                        for separation in [0,.0001]:
+                            mounted=page.evaluate('c=>hoverInteractionFixture.overlap(c)',dict(
+                                width=width,axis=axis,markerSize=size,reverse=reverse,separation=separation,
+                                precision='uncertainty-2',selection=True,fit=True))
+                            for kind,key in [('lines','lineCurve'),('markers','markerCurve')]:
+                                page.get_by_role('button',name='Hover '+kind,exact=True).click()
+                                page.evaluate('GenAppPlotlyLayout.settle_hover_trace_selection(document.getElementById("plot"))')
+                                observed=sample(page,mounted['target'])
+                                check(observed['hovermode']=='closest','selection remains closest '+kind)
+                                check({p['curve'] for p in observed['points']}=={mounted[key]},'real pointer selects '+kind)
+                                check(observed['selection'][kind]=='true','selected control is accessible '+kind)
+                                check(observed['collisionFree'],'selection preserves collision fitting')
+                                check('Neutral measured' not in observed['text'] and 'Neutral fitted' not in observed['text'],
+                                      'selection preserves name suppression')
+                                if kind=='markers':check('±' in observed['text'],'marker uncertainty survives selection')
+                                check(observed['text'].count('0.0500000')==1,'coordinate appears once after selection')
+                            page.get_by_role('button',name='Hover all traces',exact=True).click()
+                            page.evaluate('GenAppPlotlyLayout.settle_hover_trace_selection(document.getElementById("plot"))')
+                            restored=sample(page,mounted['target'])
+                            check(restored['selection']['all']=='true','All restores native eligibility')
+                            result['selection'].append(dict(width=width,axis=axis,size=size,reverse=reverse,separation=separation))
+        # Mode changes release filters and editor handoff carries no exclusions.
+        mounted=page.evaluate('hoverInteractionFixture.overlap({selection:true,fit:true,precision:"uncertainty-2"})')
+        page.get_by_role('button',name='Hover lines',exact=True).click()
+        page.evaluate('GenAppPlotlyLayout.settle_hover_trace_selection(document.getElementById("plot"))')
+        handoff=page.evaluate('GenAppPlotlyLayout.hover_trace_selection_data(document.getElementById("plot"))')
+        check(all(t.get('hoverinfo')!='skip' for t in handoff),'editor receives original hover eligibility')
+        check(page.evaluate('hoverInteractionFixture.snapshot().selection.lines')=='true','handoff retains active user selection')
+        page.evaluate('hoverInteractionFixture.hovermode("x")')
+        page.evaluate('GenAppPlotlyLayout.settle_hover_trace_selection(document.getElementById("plot"))')
+        compared=sample(page,mounted['target'])
+        check({p['curve'] for p in compared['points']}=={0,1},'compare exposes both after filtering')
+        check(compared['selection']['all']=='true','compare restores All')
+        page.evaluate('hoverInteractionFixture.hovermode("closest")')
+        page.evaluate('GenAppPlotlyLayout.settle_hover_trace_selection(document.getElementById("plot"))')
+        check(page.evaluate('hoverInteractionFixture.snapshot().selection.all')=='true','return to closest starts All')
+        for action in ['wide','middle','restore','zoom','reset']:
+            page.get_by_role('button',name='Hover lines',exact=True).click()
+            page.evaluate('GenAppPlotlyLayout.settle_hover_trace_selection(document.getElementById("plot"))')
+            page.evaluate('a=>hoverInteractionFixture.lifecycle(a)',action)
+            t=page.evaluate('hoverInteractionFixture.target(1,1)')
+            check({p['curve'] for p in sample(page,t)['points']}=={1},'line selection survives '+action)
+        page.evaluate('hoverInteractionFixture.lifecycle("reconstruct")')
+        check(page.evaluate('hoverInteractionFixture.snapshot().selection.all')=='true','reconstruction resets All')
+        page.get_by_role('button',name='Hover markers',exact=True).click()
+        page.evaluate('GenAppPlotlyLayout.settle_hover_trace_selection(document.getElementById("plot"))')
+        page.evaluate('GenAppPlotlyLayout.refresh_hover_trace_selection(document.getElementById("plot"),()=>GenAppPlotlyLayout.applyNumericHoverFormat(document.getElementById("plot"),"uncertainty-2"))')
+        check(page.evaluate('hoverInteractionFixture.snapshot().selection.markers')=='true','precision refresh preserves selection')
+        page.evaluate('hoverInteractionFixture.lifecycle("clear")')
+        page.evaluate('hoverInteractionFixture.lifecycle("repopulate")')
+        check(page.evaluate('hoverInteractionFixture.snapshot().selection.all')=='true','clear/repopulate resets All')
+        page.evaluate('hoverInteractionFixture.overlap({selection:false,fit:true})')
+        check(page.get_by_role('button',name='Hover lines',exact=True).count()==0,'non-opted plot has no new controls')
+
         # A separated pair must allow actual pointer selection of the line.
         mounted=page.evaluate('hoverInteractionFixture.overlap({separation:.025,precision:"uncertainty-2"})')
         separated=sample(page,mounted['target'])
         check(mounted['lineCurve'] in {pt['curve'] for pt in separated['points']},
               'spatially separated line is pointer selectable')
         result['separatedControl']=separated
-        result['gaps']['349']=any(set(item['closestCurves'])!={0,1} for item in result['overlap'])
+        result['nativeClosestGap']=any(set(item['closestCurves'])!={0,1} for item in result['overlap'])
+        result['gaps']['349']=len(result['selection'])!=48
         check(not errors,'no browser script errors')
         result['passed']=True
         page.evaluate('result => hoverInteractionFixture.publish(result)',result)
@@ -216,10 +277,7 @@ if ($status == 0) {
         cmp_ok(scalar @{$report->{overlap}}, '==', 8, 'marker sizes, trace orders and near-overlap controls');
         note($report->{checkCount} . ' source, formatting and pointer-control checks');
         ok(!$report->{gaps}{348}, 'masked ticks retain numeric hover coordinates');
-        TODO: {
-            local $TODO = '#349 interaction design remains pending';
-            ok(!$report->{gaps}{349}, 'closest pointer can inspect both overlapping traces');
-        }
+        ok(!$report->{gaps}{349}, 'closest pointer can inspect both traces through opt-in controls');
     }
 }
 done_testing();

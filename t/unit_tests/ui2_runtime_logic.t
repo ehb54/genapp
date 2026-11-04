@@ -572,6 +572,33 @@ hooks.beginRuntimeOutputContext("");
 // Allow this regression block to run independently of unrelated runtime checks.
 if (process.env.UI2_NATIVE_AVAILABILITY_ONLY === "1") process.exit(0);
 
+// #349 is explicitly opt-in; no default behavior or role-based selection.
+const hoverSelectionApi = window.GenAppPlotlyLayout;
+const hoverSelectionFigure = {data:[
+  {type:'scatter',mode:'markers',x:[1],y:[2],name:'points'},
+  {type:'scatter',mode:'lines',x:[1],y:[2],name:'line'}],layout:{hovermode:'closest'}};
+const hoverSelectionOption = {hover_trace_selection:'lines-markers'};
+const hoverSelectionSaved = JSON.stringify(hoverSelectionFigure);
+assert.strictEqual(hoverSelectionApi.hover_trace_selection_buttons(hoverSelectionFigure,{}).length,0);
+assert.strictEqual(hoverSelectionApi.hover_trace_selection_buttons(hoverSelectionFigure,{hover_trace_selection:'invalid'}).length,0);
+assert.deepStrictEqual(Array.from(hoverSelectionApi.hover_trace_selection_buttons(hoverSelectionFigure,hoverSelectionOption),b=>b.title),
+  ['Hover all traces','Hover lines','Hover markers']);
+assert.strictEqual(hoverSelectionApi.hover_trace_selection_buttons({data:[hoverSelectionFigure.data[0]]},hoverSelectionOption).length,0);
+assert.strictEqual(hoverSelectionApi.hover_trace_selection_buttons({data:[...hoverSelectionFigure.data,{type:'scatter3d',mode:'lines'}]},hoverSelectionOption).length,0);
+assert.strictEqual(JSON.stringify(hoverSelectionFigure),hoverSelectionSaved,'button creation preserves original figure');
+const hoverSelectionView = hooks.state.view;
+const hoverSelectionHost = createNode('div');hoverSelectionHost.dataset.outputFieldId='neutral_hover';
+hooks.state.view={results:{groups:[{outputs:['neutral_hover'],plotPresentation:hoverSelectionOption}]}};
+assert.strictEqual(hooks.plotPresentationForOutput(hoverSelectionHost).hover_trace_selection,'lines-markers','native declared output resolves opt-in');
+hooks.state.view.results.groups.push({outputs:['neutral_hover'],plotPresentation:{}});
+assert.strictEqual(hooks.plotPresentationForOutput(hoverSelectionHost).hover_trace_selection,undefined,'conflicting native declarations fail closed');
+hoverSelectionHost.dataset.plotPresentation=JSON.stringify(hoverSelectionOption);
+assert.strictEqual(hooks.plotPresentationForOutput(hoverSelectionHost).hover_trace_selection,'lines-markers','explicit React host resolves opt-in');
+hoverSelectionHost.dataset.plotPresentation='{}';
+assert.strictEqual(hooks.plotPresentationForOutput(hoverSelectionHost).hover_trace_selection,undefined,'explicit host opt-out wins');
+hooks.state.view=hoverSelectionView;
+if (process.env.UI2_HOVER_SELECTION_ONLY === "1") process.exit(0);
+
 const numericSavedFigure = {data:[{type:"scatter",x:[0.04515],y:[0.01965],error_y:{array:[0.0008006]}}],layout:{yaxis:{type:"log"}}};
 const numericSavedBefore = JSON.stringify(numericSavedFigure);
 window.GenAppUi2App.directives = {ui2_plotly_hover_number_format:".5e"};

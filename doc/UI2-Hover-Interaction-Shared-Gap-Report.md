@@ -240,3 +240,79 @@ no authenticated account was used, and no live scientific job was submitted.
 Deployed MCA positive/signed/Guinier, ordinary native/React UI2 and Lab surface
 matrices, completion and same/fresh-window reattachment remain pending. No
 commit, push, publication, UI2 regeneration or Susan handoff occurred for #348.
+
+
+## Approved #349 repair — closest-hover trace-kind selection
+
+Joseph Curtis approved the exact 18-file plan via `tell_susan_plus` in this chat
+on November 3, 2026, including guarded commit/push, deployment and the described
+codex3 UI2/Lab acceptance operations and logout. Baselines: GenApp `df231cb5`,
+application `7631991`. Governing issues: `ehb54/zazzie#184`, #203 and #349.
+The guardrail blobs before this scoped routing update were application
+`142e3e105f0082d47943fc49b63c442db7072d0c`, SASSIE
+`f094c6f2b1a4d00208ea588a08c5fd8fe4f803a4` and GenApp
+`ca871477b6466d4011b405837fe6380aa99a2e03`.
+
+The anonymous exact/near-overlap fixture already demonstrates the gap in native
+closest selection with both trace orders and marker sizes 6/11. Compare exposes
+both values, but accepting Compare alone would not repair #349's requested
+closest-mode inspection. Existing application view tokens cannot select which
+trace kinds compete for hover. Marker sizing, trace reordering, ungrouping legends,
+changing scientific coordinates or restoring curve names are not valid repairs.
+
+### Generic interaction and bounded ownership
+
+MCA alone opts into `plotPresentation.hover_trace_selection: "lines-markers"`.
+The helper supplies All/Lines/Markers controls. Plotly still performs real closest
+selection over original coordinates. Filtering excludes tooltip eligibility,
+never visibility; it does not prioritize a scientific role. It honors authored
+skip/none and templates, keeps mixed-mode traces eligible in both selections,
+and does not add controls to unsupported or non-opted figures.
+
+An initial native exclusion probe established that precision templates override
+`hoverinfo: skip` during Plotly defaults. Excluded display traces therefore also
+release their template temporarily. Restoring the pre-#348-patch template avoids
+compounding the coordinate prefix across selection cycles. All/compare, numeric
+refresh, reconstruction and editor handoff release or restore the existing
+settings through the shared helper. No vendor, scientific driver, module JSON,
+YAML, registry, source fixture or generated React asset is changed.
+
+### Local verification
+
+- Required isolated Chrome real-pointer suite: **1,161 checks**, six Perl
+  assertions, all passed. The 48 opted-in overlap configurations cover
+  511/620/855 widths, linear/log x axes, sizes 6/11, trace order and exact/near
+  overlap. Actual modebar clicks make line and marker values selectable while
+  closest mode remains active. All, compare/closest transitions, uncertainty,
+  names, tick collisions, resize/zoom/reset, precision refresh, reconstruction,
+  clear/repopulate, initial editor copy and non-opted controls passed.
+  Native All still has the documented overlap competition; the opt-in controls
+  make both traces inspectable. No forced `Fx.hover` is used.
+- Application styling/Lab parity: **35 tests passed**, including all fixture
+  opt-out/source controls, MCA eligibility, catalog validation, mixed modes,
+  authored exclusions/templates, newer template ownership, compare release,
+  editor-copy restoration and cancellation/teardown.
+- Scoped `UI2_HOVER_SELECTION_ONLY=1` runtime checks passed, protecting explicit
+  host/native opt-in resolution, conflict/opt-out behavior, supported types and
+  unchanged figure data. The full historical runtime suite fails the same
+  non-opted display reference-equality assertion on committed baseline source;
+  it expects object identity despite the existing #336 detached-copy contract.
+  Baseline reproduction: `/private/tmp/hover349-core-baseline.log`. The unrelated
+  assertion was left unchanged; this is not a full runtime-suite pass.
+- Nine further focused core suites passed **777 Perl assertions** (optional
+  legacy browser assertions were skipped); the required real-pointer suite above
+  actually ran. Deployed acceptance remains pending. Detailed browser evidence: `/private/tmp/hover349-acceptance.json`.
+
+### Rollback and deployed acceptance
+
+Removing the MCA opt-in and regenerating the application removes the controls;
+source figures and saved jobs need no migration. A full rollback reverts the
+scoped application/core commits. Other modules never opt in automatically.
+
+Before Susan handoff, validate deployed normal/expanded/restore, fresh completion,
+signed/positive saved-job reattachment, profile/Guinier selection, native/React
+and Lab parity, theme/surface readability, closest/compare, keyboard operation,
+PNG and initial editor handoff. Preserve the separately disclosed narrow-card
+Guinier legend-export limitation; this fix does not change legend/export layout.
+Record actual coverage and limits and log codex3 out. Lab YAML publication is
+unnecessary; routine core generation uses the canonical UI2 deployment wrapper.

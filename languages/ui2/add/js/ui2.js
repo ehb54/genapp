@@ -12635,14 +12635,17 @@
 
   // Shared uncertainty-aware display policy also runs after bounded appends.
   function applyPlotlyNumericHoverFormat(output) {
-    return window.GenAppPlotlyLayout?.applyNumericHoverFormat?.(
+    const operation = () => window.GenAppPlotlyLayout?.applyNumericHoverFormat?.(
       output, appMap.directives?.ui2_plotly_hover_number_format
     );
+    return window.GenAppPlotlyLayout?.refresh_hover_trace_selection
+      ? window.GenAppPlotlyLayout.refresh_hover_trace_selection(output, operation) : operation();
   }
 
   function renderPlotlyOutput(output, value) {
     const figure = parsePlotlyFigure(value);
     if (!figure) {
+      window.GenAppPlotlyLayout?.clear_hover_trace_selection?.(output);
       disconnectPlotlyOutputObserver(output);
       renderTextOutput(output, value);
       return;
@@ -12655,7 +12658,9 @@
       output.textContent = "";
     }
     ensurePlotlyLoaded()
-      .then(() => {
+      .then(async () => {
+        await window.GenAppPlotlyLayout?.settle_hover_trace_selection?.(output);
+        window.GenAppPlotlyLayout?.clear_hover_trace_selection?.(output);
         const layout = plotlyLayoutForOutput(output, displayFigure.layout);
         if (layout.uirevision == null) {
           layout.uirevision = output.dataset.outputFieldId || "ui2-plot";
@@ -12663,6 +12668,9 @@
         const data = plotlyDataForOutput(output, displayFigure.data, layout);
         applyPlotlyTheme(layout);
         const config = plotlyConfigForOutput(figure);
+        config.modeBarButtonsToAdd = [...(config.modeBarButtonsToAdd || []),
+          ...(window.GenAppPlotlyLayout?.hover_trace_selection_buttons?.(
+            figure, plotPresentationForOutput(output)) || [])];
         applyPlotlyModebarHooks(figure, config);
         return updateExisting
           ? window.Plotly.react(output, data, layout, config)
@@ -12670,6 +12678,7 @@
       })
       .then(() => applyPlotlyNumericHoverFormat(output))
       .then(() => {
+        window.GenAppPlotlyLayout?.bind_hover_trace_selection?.(output, plotPresentationForOutput(output));
         normalizePlotlyModebar(output);
         improvePlotlyModebarAccessibility(output);
         observeFitPlotlyOutput(output);
@@ -12936,6 +12945,7 @@
     if (has_plot) {
       return null;
     }
+    window.GenAppPlotlyLayout?.clear_hover_trace_selection?.(output);
     const displayFigure = plotlyDisplayFigure(figure);
     const layout = plotlyLayoutForOutput(output, displayFigure.layout);
     if (layout.uirevision == null) {
@@ -12944,6 +12954,9 @@
     const data = plotlyDataForOutput(output, displayFigure.data, layout);
     applyPlotlyTheme(layout);
     const config = plotlyConfigForOutput(figure);
+    config.modeBarButtonsToAdd = [...(config.modeBarButtonsToAdd || []),
+      ...(window.GenAppPlotlyLayout?.hover_trace_selection_buttons?.(
+        figure, plotPresentationForOutput(output)) || [])];
     applyPlotlyModebarHooks(figure, config);
     return Promise.resolve(window.Plotly.react(output, data, layout, config))
       .then(() => applyPlotlyNumericHoverFormat(output));
@@ -12952,7 +12965,17 @@
   function plotPresentationForOutput(output) {
     const raw = output?.closest?.("[data-plot-presentation]")?.dataset?.plotPresentation;
     if (!raw) {
-      return {};
+      // Resolve only this interaction opt-in for native fallback. Existing
+      // profile/hover styling retains its separate established behavior.
+      if (reactWorkbenchRoot || !output?.isConnected) return {};
+      const owner = output.closest?.('[data-dynamic-output="true"]') || output;
+      const id = owner.dataset?.outputFieldId;
+      const groups = state.view?.results?.groups;
+      if (!id || !Array.isArray(groups)) return {};
+      const values = groups.filter(group => Array.isArray(group.outputs) && group.outputs.includes(id))
+        .map(group => group.plotPresentation?.hover_trace_selection);
+      return values.length && values.every(value => value === 'lines-markers')
+        ? {hover_trace_selection:'lines-markers'} : {};
     }
     try {
       const parsed = JSON.parse(raw);
@@ -13192,6 +13215,7 @@
   function releasePlotlyOutputs(scope) {
     scope?.querySelectorAll?.('[data-output-type="plotly"]').forEach(output => {
       disconnectPlotlyOutputObserver(output);
+      window.GenAppPlotlyLayout?.clear_hover_trace_selection?.(output);
       if (output.data && window.Plotly?.purge) window.Plotly.purge(output);
     });
   }
@@ -13204,6 +13228,7 @@
       config.modeBarButtonsToAdd = [...(config.modeBarButtonsToAdd || []), {
         name: "fittedImage", title: "Download plot as a PNG", icon: window.Plotly.Icons.camera,
         click: async graphDiv => {
+          await window.GenAppPlotlyLayout?.settle_hover_trace_selection?.(graphDiv);
           await resizePlotlyOutputWhenVisible(graphDiv);
           await fitPlotlyPresentationGeometry(graphDiv);
           await window.GenAppPlotlyLayout?.settleTickDensity?.(graphDiv);
@@ -13229,12 +13254,14 @@
       title: "Edit in Chart Editor",
       icon: window.Plotly.Icons.pencil,
       click: async (graphDiv) => {
+        await window.GenAppPlotlyLayout?.settle_hover_trace_selection?.(graphDiv);
         await resizePlotlyOutputWhenVisible(graphDiv);
         await fitPlotlyPresentationGeometry(graphDiv);
         await window.GenAppPlotlyLayout?.settleTickDensity?.(graphDiv);
         const id = `gace_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
         window.localStorage.setItem(id, JSON.stringify({
-          data: graphDiv.data,
+          data: window.GenAppPlotlyLayout?.hover_trace_selection_data
+            ? await window.GenAppPlotlyLayout.hover_trace_selection_data(graphDiv) : graphDiv.data,
           layout: chartEditorLayout(graphDiv.layout),
           config: JSON.parse(originalConfig)
         }));

@@ -1,11 +1,11 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>Neutral hover interaction diagnostics — #348/#349</title>
+<title>Neutral hover interaction acceptance — #348/#349</title>
 <script src="../../languages/html5/add/js/plotly-2.35.2.min.js"></script>
 <script src="../../languages/ui2/add/js/plotly-layout.js"></script>
 <style>body{font:14px sans-serif;margin:12px}#plot{width:620px;height:480px}pre{white-space:pre-wrap}</style>
 <p>Read-only diagnostic figure. The browser harness uses real pointer movement;
-no trace is selected programmatically. #348 is required acceptance; #349 remains diagnostic.</p>
+no trace is selected programmatically. #348 coordinates and #349 opt-in controls are required acceptance.</p>
 <div id="plot"></div><pre id="results">Ready for the diagnostic harness.</pre>
 <script>
 (() => {
@@ -28,11 +28,15 @@ no trace is selected programmatically. #348 is required acceptance; #349 remains
   async function mount(value, config = {}) {
     source = copy(value); saved = JSON.stringify(source); options = {...config}; lastPointer = [];
     const display = api.prepare_hover_name_suppression(copy(source), config.suppress ? 'none' : undefined);
+    api.clear_hover_trace_selection(plot);
+    const selection = config.selection ? {hover_trace_selection:'lines-markers'} : {};
     await Plotly.newPlot(plot, display.data, display.layout, {
-      displayModeBar: false, responsive: false
+      displayModeBar: Boolean(config.selection), responsive: false,
+      modeBarButtonsToAdd:api.hover_trace_selection_buttons(display, selection)
     });
     if (config.precision) await api.applyNumericHoverFormat(plot, config.precision);
     if (config.fit) await api.applyTickDensity(plot);
+    api.bind_hover_trace_selection(plot, selection);
     plot.on('plotly_hover', event => {
       lastPointer = event.points.map(point => ({curve:point.curveNumber,
         point:point.pointNumber, x:point.x, y:point.y}));
@@ -102,7 +106,9 @@ no trace is selected programmatically. #348 is required acceptance; #349 remains
       collisionFree:api.nonOverlappingTicks(rows).length===rows.length,
       hovermode:plot._fullLayout.hovermode,nameLengths:plot._fullData.map(t=>t.hoverlabel?.namelength),
       sourceUnchanged:JSON.stringify(source)===saved,nativeDataUnchanged:nativeDataUnchanged(),
-      templates:plot.data.map(t=>t.hovertemplate??null)};
+      templates:plot.data.map(t=>t.hovertemplate??null),
+      selection: Object.fromEntries(['all','lines','markers'].map(kind=>[kind,
+        plot.querySelector(`[data-title="${kind==='all'?'Hover all traces':kind==='lines'?'Hover lines':'Hover markers'}"]`)?.getAttribute('aria-pressed')]))};
   }
   async function hovermode(mode) {
     await Plotly.relayout(plot,{hovermode:mode});
@@ -120,7 +126,7 @@ no trace is selected programmatically. #348 is required acceptance; #349 remains
       if(options.precision)await api.applyNumericHoverFormat(plot,options.precision);
     }
     if(action==='reconstruct'||action==='repopulate')await mount(copy(source),options);
-    if(action==='clear')await Plotly.react(plot,[],{});
+    if(action==='clear'){api.clear_hover_trace_selection(plot);await Plotly.react(plot,[],{});}
     if(action==='editor'){
       const displayed={data:copy(plot.data),layout:copy(plot.layout)};
       await Plotly.newPlot(plot,displayed.data,displayed.layout,{displayModeBar:false});

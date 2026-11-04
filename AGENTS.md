@@ -805,3 +805,13 @@ module replacement. Tests must trigger actual container/browser resize events;
 manual fit calls after resizing do not establish lifecycle acceptance. Preserve
 YAML and hover behavior. Owner contracts are GenApp `doc/Plotting-Architecture.md`
 and `doc/UI2-Native-Plot-Geometry-Shared-Gap-Report.md` (paired checkout for the app).
+
+
+## Closest-hover selection route (#349)
+
+The opt-in `plotPresentation.hover_trace_selection: "lines-markers"` adds shared
+All/Lines/Markers hover controls while retaining closest mode and visible data.
+Preserve authored hover policy, precision, name suppression, colors, grouped
+legends and saved scientific figures. Other modules remain opted out. Owner
+contracts: GenApp `doc/Plotting-Architecture.md`, `doc/UI2-Core-Extension-Policy.md`
+and `doc/UI2-Hover-Interaction-Shared-Gap-Report.md` (paired checkout for the app).

@@ -1083,7 +1083,149 @@
     }
   }
 
+  // Opt-in hover eligibility only; Plotly still selects the nearest real point.
+  const hover_trace_selections = new WeakMap();
+  const hover_trace_titles = {all:'Hover all traces', lines:'Hover lines', markers:'Hover markers'};
+  function hover_trace_selection_eligible(figure, selection) {
+    if (selection?.hover_trace_selection !== 'lines-markers' || !Array.isArray(figure?.data)) return false;
+    const traces = figure.data.filter(trace => trace.visible !== false && trace.visible !== 'legendonly');
+    if (!traces.length || traces.some(trace => !['scatter', 'scattergl'].includes(trace.type || 'scatter'))) return false;
+    const eligible = traces.filter(trace => trace.hoverinfo !== 'skip');
+    return eligible.some(trace => String(trace.mode || '').split('+').includes('lines')) &&
+      eligible.some(trace => String(trace.mode || '').split('+').includes('markers'));
+  }
+  function hover_trace_controls(plot) {
+    const state = hover_trace_selections.get(plot), closest = plot?._fullLayout?.hovermode === 'closest';
+    for (const [kind, title] of Object.entries(hover_trace_titles)) {
+      const button = plot?.querySelector?.(`.modebar-btn[data-title="${title}"]`);
+      if (!button) continue;
+      const selected = (state?.kind || 'all') === kind;
+      button.setAttribute('role', 'button'); button.setAttribute('tabindex', '0');
+      button.setAttribute('aria-label', title); button.setAttribute('title', title);
+      button.setAttribute('aria-pressed', String(selected));
+      button.setAttribute('aria-disabled', String(!closest));
+      button.classList?.toggle('active', selected);
+    }
+  }
+  function clear_hover_trace_selection(plot) {
+    const state = hover_trace_selections.get(plot);
+    if (!state) return;
+    state.disposed = true;
+    plot.removeListener?.('plotly_relayout', state.relayout);
+    plot.removeListener?.('plotly_afterplot', state.afterplot);
+    // This synchronous teardown precedes react/purge, never a scientific source edit.
+    for (const [trace, entry] of state.originals) {
+      if (trace.hoverinfo === 'skip' && (trace.hovertemplate == null || trace.hovertemplate === '')) {
+        if (entry.info == null) delete trace.hoverinfo; else trace.hoverinfo = entry.info;
+        if (entry.template == null) delete trace.hovertemplate; else trace.hovertemplate = entry.template;
+      }
+    }
+    state.originals.clear(); hover_trace_selections.delete(plot);
+  }
+  async function restore_hover_trace_entries(plot, state) {
+    for (const [trace, entry] of state.originals) {
+      if (state.disposed || !plot._fullLayout) break;
+      const index = plot.data?.indexOf(trace);
+      if (index < 0) continue;
+      const patch = {};
+      if (trace.hoverinfo === 'skip') patch.hoverinfo = [entry.info ?? null];
+      // Preserve a newer authored template instead of restoring our old value.
+      if (trace.hovertemplate == null || trace.hovertemplate === '') patch.hovertemplate = [entry.template ?? null];
+      if (Object.keys(patch).length) await window.Plotly.restyle(plot, patch, [index]);
+    }
+    state.originals.clear();
+  }
+  async function apply_hover_trace_kind(plot, state) {
+    if (state.disposed || !plot._fullLayout) return;
+    if (plot._fullLayout.hovermode !== 'closest') state.kind = 'all';
+    if (state.kind !== 'all') for (let index = 0; index < plot.data.length; index++) {
+      if (state.disposed) break;
+      const trace = plot.data[index], full = plot._fullData?.[index] || trace;
+      if (full.visible === false || full.visible === 'legendonly' || full.hoverinfo === 'skip' ||
+          String(full.mode || trace.mode || '').split('+').includes(state.kind)) continue;
+      const coordinate_patch = fittedHoverTemplates.get(trace);
+      const template = coordinate_patch && sameTickValue(trace.hovertemplate, coordinate_patch.display)
+        ? coordinate_patch.original : trace.hovertemplate;
+      state.originals.set(trace, {info:trace.hoverinfo, template});
+      // A precision/authored template overrides hoverinfo in Plotly defaults.
+      // Clear it only on an excluded display trace and restore it on release.
+      await window.Plotly.restyle(plot, {hoverinfo:['skip'], hovertemplate:['']}, [index]);
+    }
+    if (!state.disposed) { await settleTickDensity(plot); hover_trace_controls(plot); }
+  }
+  function queue_hover_trace_selection(plot, operation) {
+    const state = hover_trace_selections.get(plot);
+    if (!state) return Promise.resolve().then(operation);
+    const next = state.promise.catch(() => {}).then(() => state.disposed ? undefined : operation(state));
+    state.promise = next;
+    return next;
+  }
+  function bind_hover_trace_selection(plot, selection) {
+    if (!hover_trace_selection_eligible(plot, selection)) { clear_hover_trace_selection(plot); return; }
+    if (hover_trace_selections.has(plot)) { hover_trace_controls(plot); return; }
+    const state = {kind:'all', originals:new Map(), promise:Promise.resolve(), disposed:false};
+    state.relayout = event => {
+      if (Object.prototype.hasOwnProperty.call(event || {}, 'hovermode') && plot._fullLayout?.hovermode !== 'closest') {
+        set_hover_trace_selection(plot, 'all').catch(error => window.console?.error?.('Hover selection failed', error));
+      }
+    };
+    state.afterplot = () => hover_trace_controls(plot);
+    hover_trace_selections.set(plot, state);
+    plot.on?.('plotly_relayout', state.relayout); plot.on?.('plotly_afterplot', state.afterplot);
+    hover_trace_controls(plot);
+  }
+  function set_hover_trace_selection(plot, kind) {
+    if (!Object.prototype.hasOwnProperty.call(hover_trace_titles, kind)) return Promise.resolve();
+    return queue_hover_trace_selection(plot, async state => {
+      if (!state || (kind !== 'all' && plot._fullLayout?.hovermode !== 'closest')) return;
+      await restore_hover_trace_entries(plot, state);
+      if (state.disposed) return;
+      state.kind = kind;
+      await apply_hover_trace_kind(plot, state);
+    });
+  }
+  async function settle_hover_trace_selection(plot) {
+    let pending;
+    do { pending = hover_trace_selections.get(plot)?.promise; if (pending) await pending; }
+    while (pending && pending !== hover_trace_selections.get(plot)?.promise);
+  }
+  function refresh_hover_trace_selection(plot, operation) {
+    if (!hover_trace_selections.has(plot)) return operation();
+    return queue_hover_trace_selection(plot, async state => {
+      await restore_hover_trace_entries(plot, state);
+      if (state.disposed) return;
+      await operation();
+      await apply_hover_trace_kind(plot, state);
+    });
+  }
+  function hover_trace_selection_data(plot) {
+    if (!hover_trace_selections.has(plot)) return Promise.resolve(plot.data || []);
+    return queue_hover_trace_selection(plot, async state => {
+      await restore_hover_trace_entries(plot, state);
+      await settleTickDensity(plot);
+      const data = JSON.parse(JSON.stringify(plot.data || []));
+      await apply_hover_trace_kind(plot, state);
+      return data;
+    });
+  }
+  function hover_trace_selection_buttons(figure, selection) {
+    if (!hover_trace_selection_eligible(figure, selection)) return [];
+    const paths = {all:'M2 9H9V2H11V9H18V11H11V18H9V11H2Z',lines:'M2 15L7 5L13 11L17 2L19 3L14 15L8 9L4 17Z',markers:'M3 3H8V8H3ZM12 12H17V17H12Z'};
+    return Object.entries(hover_trace_titles).map(([kind, title]) => ({
+      name:`hover_trace_${kind}`, title,
+      icon:{width:20,height:20,path:paths[kind]},
+      click:plot => set_hover_trace_selection(plot, kind)
+    }));
+  }
+
   window.GenAppPlotlyLayout = {
+    hover_trace_selection_buttons,
+    bind_hover_trace_selection,
+    clear_hover_trace_selection,
+    set_hover_trace_selection,
+    settle_hover_trace_selection,
+    refresh_hover_trace_selection,
+    hover_trace_selection_data,
     queuePresentationFit,
     applyFigureTitleOverflow,
     subplotSpacingUpdate,
