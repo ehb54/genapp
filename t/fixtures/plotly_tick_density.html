@@ -12,6 +12,59 @@
  const collisions=()=>{const rows=api.tickLabelRows(plot);return rows.length-api.nonOverlappingTicks(rows).length;};
  // Wait for the actual event handler, never call the fitter after an interaction.
  const settled=async()=>{await pause(100);check(collisions()===0,'event-driven fit '+result.checks.length);};
+ // #347: absence of collisions is insufficient if fitting erases the scale.
+ result.retention=[];
+ const xLabels=()=>api.tickLabelRows(plot).filter(row=>row.name==='xaxis').map(row=>row.text);
+ const tickValues=()=>plot._fullLayout.xaxis._vals.map(tick=>plot._fullLayout.xaxis.l2d(tick.x));
+ for(const width of [511,620,855])for(const scale of ['linear','log']){
+  const source={data:[{type:'scatter',mode:'lines+markers',
+    x:[0,.01,.02,.03,.05,.08,.1,.2,.3],y:[1,.99,.96,.92,.9,.85,.8,.7,.5]}],
+    layout:{width,height:480,margin:{l:80,r:24,t:60,b:90},font:{size:14},
+      xaxis:{type:'log',tickformat:'.4~g',title:'Coordinate'},
+      yaxis:{type:scale,tickformat:'.4~g',title:'Response'}}};
+  const saved=JSON.stringify(source);
+  Plotly.purge(plot);plot.style.width=width+'px';plot.style.height='480px';
+  await Plotly.newPlot(plot,copy(source.data),copy(source.layout));
+  const native=xLabels(),grid=tickValues(),range=copy(plot._fullLayout.xaxis.range);
+  const selected=api.nonOverlappingTicks(api.tickLabelRows(plot)).filter(row=>row.name==='xaxis').map(row=>row.text);
+  await api.applyTickDensity(plot);
+  const final=xLabels();
+  result.retention.push({width,scale,native,selected,final});
+  window.tickRetentionObservations=copy(result.retention);
+  check(selected.length>=2,'neutral candidates admit a useful scale '+width+' '+scale);
+  check(final.length>=2,'fitted scale retains multiple labels '+width+' '+scale);
+  check(collisions()===0,'retained scale is collision-free '+width+' '+scale);
+  if(plot.layout.xaxis.tickvals)check(JSON.stringify(plot.layout.xaxis.tickvals)===JSON.stringify(grid),'original tick values remain exact '+width+' '+scale);
+  check(JSON.stringify(plot._fullLayout.xaxis.range)===JSON.stringify(range),'log range unchanged '+width+' '+scale);
+  await api.applyTickDensity(plot);
+  check(JSON.stringify(xLabels())===JSON.stringify(final),'repeat fit retains the same labels '+width+' '+scale);
+  for(const [operation,patch] of [
+    ['zoom',{'xaxis.range':[-1.8,-.7]}],
+    ['pan',{'xaxis.range':[-1.5,-.4]}],
+    ['reset',{'xaxis.range':range}]
+  ]){
+    await Plotly.relayout(plot,patch);await settled();
+    check(xLabels().length>=2,operation+' retains a useful scale '+width+' '+scale);
+  }
+  check(JSON.stringify(xLabels())===JSON.stringify(final),'reset restores the default useful scale '+width+' '+scale);
+  await Plotly.relayout(plot,{width:width===511?855:511});await settled();
+  check(xLabels().length>=2,'resize retains useful labels '+width+' '+scale);
+  await Plotly.relayout(plot,{width});await settled();
+  check(xLabels().length>=2,'restore retains useful labels '+width+' '+scale);
+  check(JSON.stringify(source)===saved,'retention source unchanged '+width+' '+scale);
+  if(width===620&&scale==='linear'){
+    await api.settleTickDensity(plot);
+    window.tickRetentionPNG=await Plotly.toImage(plot,{format:'png',scale:2,width,height:480});
+    const image=new Image();image.src=window.tickRetentionPNG;await image.decode();
+    check(image.naturalWidth===1240&&image.naturalHeight===960,'retained-scale PNG dimensions');
+    const displayed={data:copy(plot.data),layout:copy(plot.layout)};
+    Plotly.purge(plot);await Plotly.newPlot(plot,displayed.data,displayed.layout);
+    check(xLabels().length>=2&&collisions()===0,'initial editor retains readable scale');
+  }
+  Plotly.purge(plot);await Plotly.newPlot(plot,copy(source.data),copy(source.layout));
+  await api.applyTickDensity(plot);
+  check(xLabels().length>=2&&collisions()===0,'fresh reconstruction retains readable scale '+width+' '+scale);
+ }
  const values=[.009,.01,.02,.08,.1,.3];
  const cases=[
   ['log', {x:values,y:values}, {xaxis:{type:'log'},yaxis:{type:'log'}}],
@@ -76,5 +129,5 @@
  await api.applyTickDensity(plot);check(collisions()===0,'fresh plot reconstruction');
  result.passed=true;window.tickDensityAcceptance=result;
  document.getElementById('results').textContent=JSON.stringify(result);
-})().catch(error=>{window.tickDensityAcceptance={error:error.stack};document.getElementById('results').textContent=JSON.stringify(window.tickDensityAcceptance);});
+})().catch(error=>{window.tickDensityAcceptance={passed:false,error:error.stack,retention:window.tickRetentionObservations};document.getElementById('results').textContent=JSON.stringify(window.tickDensityAcceptance);});
 </script>

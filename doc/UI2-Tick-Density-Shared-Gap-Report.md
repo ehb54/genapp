@@ -121,3 +121,103 @@ routing-only commit `2805a7e6a`.
   passed readiness, generation, syntax/metadata and public-endpoint checks.
 - codex3 was logged out after acceptance and the Lab was closed. No YAML was
   published and no Lab Recompile UI2 action was used.
+
+
+## Tick retention correction (#347), November 3, 2026
+
+Joseph Curtis approved the exact nine-file #347 manifest and local implementation
+in this chat on November 3, 2026. Commit, deployment and authenticated browser
+acceptance are outside that approval. Baselines: GenApp `cc4e647a`, application
+`b61dace`. Governing architecture: `ehb54/zazzie#184`; issue #347 owns the defect.
+
+Guardrail Git blobs: application AGENTS.md
+`142e3e105f0082d47943fc49b63c442db7072d0c`; SASSIE AGENTS.md
+`f094c6f2b1a4d00208ea588a08c5fd8fe4f803a4`; GenApp AGENTS.md
+`ca871477b6466d4011b405837fe6380aa99a2e03`.
+
+### Demonstrated shared gap before runtime changes
+
+Read-only local rendering of the existing MCA profile payloads reproduced the
+single `0.3` label at 511 pixels. No fixture, scientific array, module/view or
+YAML was changed. The reduced anonymous case uses automatic logarithmic ticks,
+`.4~g`, x values `[0,.01,.02,.03,.05,.08,.1,.2,.3]`, ordinary scatter values and
+a linear response axis. At 620 pixels, the renderer supplies 13 nonblank native
+x labels. Rectangle fitting selects eight, but the unchanged helper retains
+only `0.3`. The new browser regression fails with
+`fitted scale retains multiple labels 620 linear` before any runtime edits.
+The initial simpler `.005`-minimum control retained its scale; it does not
+reproduce this case. Reports: `/private/tmp/tick347-before.json`.
+
+Exact equality is used both for DOM/native tick coordinates and for numeric
+keys between fitting passes. Logarithmic conversions can change low floating-
+point bits. A label selected by geometry can consequently lose correspondence
+and become blank. Existing tests only require no collisions and unchanged text
+among survivors, so excessive suppression passes them. Notation/view settings
+cannot repair this internal identity loss. Manually forcing producer ticks or
+pixel geometry would violate the ownership contract.
+
+### Approved generic correction and controls
+
+Match tick identity within its own axis using exact correspondence first, then
+one-to-one nearest matching within a few machine-precision units. Cap tolerance
+by neighboring tick separation so distinct nearby authored ticks are not merged.
+Keep the original renderer-supplied tick values exactly; do not round values or
+replace geometry selection. Preserve monotonic visibility within a fitting pass
+and restore eligible labels on a fresh fit. No schema, opt-in, caller API,
+scientific output, vendor code or module-specific branch is added.
+
+SASSIE work and a driver/helper scientific change are unnecessary: all values
+already exist. Reuse the existing generic helper, UI2/Lab geometry lifecycle,
+normal final output and reconstruction. Non-fitted controls, category/date and
+custom/blank/reversed/secondary axes, exact grid values, repeated fitting,
+zoom/pan/reset/resize, PNG/editor and #348 hover behavior must remain covered.
+No module migration or deployed acceptance is inferred. If the neutral browser
+reproduction does not respond to this correction, stop and reassess the cause
+within the approved scope before expanding implementation.
+
+
+### Implemented correction and local verification
+
+The shared helper reserves exact matches before approximate correspondence.
+Approximate numeric matches use an eight-machine-epsilon bound, reduced to at
+most a quarter of the closest distinct neighbor separation. Every candidate is
+used at most once. Both DOM/native coordinate selection and subsequent-pass
+label carry-forward use the same correspondence. The original tick values are
+retained without rounding; visibility remains monotonic within one fitting
+pass. Existing fresh-fit restoration, title clearance, event handling, source
+ownership and #348 hover preparation remain in place. No caller or presentation
+selection changed.
+
+- Neutral Chrome/Plotly 2.35.2: 421 rendered checks passed. The old helper fails
+  the useful-scale assertion at 620 pixels; corrected scenes retain multiple
+  labels on linear/log response plots at 511/620/855 pixels. Repeated fits,
+  zoom/pan/reset, resize/restore, exact native tick values, source/range/text
+  preservation, date/category/custom/blank/reversed axes, subplots/overlays,
+  PNG and initial displayed-layout editor reconstruction passed.
+- The new unit regression exercises differing native/DOM low bits, a second
+  array-mode fitting pass and nearby distinct authored ticks. The committed
+  baseline fails before completing that second pass because labels are lost;
+  the correction passes with unchanged original grid values.
+- #348 real-pointer regression: all 325 control/source checks passed. Expected
+  explicit formats now derive from the point actually selected, so the test
+  does not assume which tick geometry will mask. Only #349 remains a failing
+  TODO; overlap selection is unchanged and independently scoped.
+- Nine focused core suites passed, reporting 27 assertions with eight optional
+  browser assertions skipped. The tick fixture and #348 browser acceptance above
+  actually ran. Application styling/Lab parity passed 33 pytest tests.
+- The same 18 read-only MCA profile cases used during investigation now retain
+  7/9/10 x labels at 511/620/855 pixels respectively. This covers experimental/
+  rescaled and rescaled/calculated signed primary/companion and positive payloads
+  through the shared layout helpers; it does not establish live UI2/Lab acceptance.
+- The scale-2 retained-scale PNG was visually reviewed: labels and axis titles
+  are readable and unclipped. Artifacts: `/private/tmp/tick347-after.json`,
+  `/private/tmp/tick347-after.png`, `/private/tmp/tick347-mca-after.json`, and
+  `/private/tmp/tick347-hover-regression.json`. These are local evidence, not
+  runtime dependencies.
+
+Deployed native/React UI2 and Lab theme/surface matrices, normal/expanded/
+restore, actual browser/container resize, completion, same/fresh-window
+reattachment, PNG and initial Chart Editor handoff remain pending. Existing
+#333 acceptance limitations are not certified by this correction. No commit,
+push, deployment, YAML publication, UI2 generation or authenticated account use
+occurred for #347 during this implementation phase.

@@ -429,6 +429,18 @@ Every fit restores the preceding native tick specification before measuring;
 labels return as the available space or range changes. Final bounds are checked
 again after array-mode rendering, with monotonically decreasing visible labels.
 
+Tick correspondence across rendered and array-mode fitting passes is axis-local
+(#347). Reserve exact identities first, then permit one-to-one matches within
+machine-precision tolerance capped by neighboring tick separation. Keep the
+original renderer-supplied tick/grid values exactly; matching must not round,
+merge or reposition them. Geometry alone selects labels to suppress. Logarithmic
+round trips must not erase labels selected for retention, and a fresh fit must
+restore eligible labels as range or available space changes. Verify useful scale
+labels as well as absence of collisions. The neutral log-range fixture exercises
+511/620/855 CSS pixels, repeated fitting, interactions, PNG and reconstruction;
+see `doc/UI2-Tick-Density-Shared-Gap-Report.md` for local and deployed evidence.
+
+
 Closest hover must retain coordinates hidden only by the collision fitter
 (#348). The same fitter prepares detached per-point Plotly templates for masked
 linear/log x/y coordinates on scatter, scattergl and bar traces. Unmasked points

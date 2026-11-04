@@ -86,17 +86,22 @@ with sync_playwright() as p:
         result['gaps']['348'] = any(item['coordinateMissing'] for item in result['formatting'])
         result['compatibility']=[]
         for config in [
-            {'axisFormat':'.2e','expected':'3.10e'},
-            {'traceFormat':'.3e','expected':'3.100e'},
-            {'template':'Q: %{x:.2e} units<br>Y: %{y}<extra></extra>','expected':'Q: 3.10e'},
-            {'formatStops':[{'enabled':True,'dtickrange':[None,None],'value':'.2e'}],'expected':'3.10e'},
+            {'axisFormat':'.2e','expectedFormat':'.2e'},
+            {'traceFormat':'.3e','expectedFormat':'.3e'},
+            {'template':'Q: %{x:.2e} units<br>Y: %{y}<extra></extra>','expectedFormat':'.2e','expectedPrefix':'Q: '},
+            {'formatStops':[{'enabled':True,'dtickrange':[None,None],'value':'.2e'}],'expectedFormat':'.2e'},
             {'arrayLabels':True,'expected':'Authored sample'},
             {'errorX':True,'expected':'±'},
         ]:
             mounted=page.evaluate('c=>hoverInteractionFixture.formatting(c)',
                 dict(config,axis='log',width=511,fit=True,suppress=True))
             observed=sample(page,mounted['target'])
-            check(config['expected'] in observed['text'],'authored/native formatting retained '+str(config))
+            # Tick fitting may select a different masked point after a geometry
+            # correction. Formatting expectations come from that actual value.
+            expected=config.get('expected')
+            if config.get('expectedFormat'):
+                expected=config.get('expectedPrefix','')+format(mounted['x'],config['expectedFormat']).split('e')[0]+'e'
+            check(expected in observed['text'],'authored/native formatting retained '+str(config))
             check('Neutral series' not in observed['text'],'compatibility names remain suppressed')
             result['compatibility'].append({'config':config,'observed':observed})
         # Intentional authored blank labels remain blank; they are not our mask.

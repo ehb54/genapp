@@ -467,6 +467,40 @@
     return kept;
   }
 
+  // Tick identity survives renderer round trips without changing tick values.
+  // Reserve exact matches first; approximate matches are axis-local, one-to-one,
+  // and much narrower than the distance to any neighboring distinct tick.
+  function correspondingTicks(reference, candidates) {
+    const result = reference.map(() => -1), used = new Set();
+    const exact = new Map();
+    candidates.forEach((value, index) => {
+      if (!exact.has(value)) exact.set(value, []);
+      exact.get(value).push(index);
+    });
+    reference.forEach((value, index) => {
+      const queue = exact.get(value);
+      if (queue?.length) { result[index] = queue.shift(); used.add(result[index]); }
+    });
+    reference.forEach((value, index) => {
+      if (result[index] >= 0 || !Number.isFinite(value)) return;
+      let best = -1, distance = Infinity;
+      candidates.forEach((candidate, candidateIndex) => {
+        if (used.has(candidateIndex) || !Number.isFinite(candidate)) return;
+        const delta = Math.abs(value - candidate);
+        if (delta < distance) { best = candidateIndex; distance = delta; }
+      });
+      if (best < 0) return;
+      let tolerance = 8 * Number.EPSILON * Math.max(1, Math.abs(value), Math.abs(candidates[best]));
+      for (const [values, center] of [[reference, value], [candidates, candidates[best]]]) {
+        for (const other of values) if (Number.isFinite(other) && other !== center) {
+          tolerance = Math.min(tolerance, Math.abs(other - center) / 4);
+        }
+      }
+      if (distance <= tolerance) { result[index] = best; used.add(best); }
+    });
+    return result;
+  }
+
   function tickDensityUpdate(plot) {
     const rows = tickLabelRows(plot), kept = new Set(nonOverlappingTicks(rows));
     const update = {};
@@ -476,10 +510,12 @@
       // Plotly's resolved ticks include intentional blank labels and native
       // unlabeled grid positions; a DOM-text-only list would lose those ticks.
       const ticks = Array.isArray(axis._vals) ? axis._vals : axisRows.map(row => ({x:row.coordinate,text:row.text}));
-      const visible = new Set(axisRows.filter(row => kept.has(row)).map(row => row.coordinate));
+      const visible = new Set(correspondingTicks(
+        axisRows.filter(row => kept.has(row)).map(row => row.coordinate),
+        ticks.map(tick => tick.x)).filter(index => index >= 0));
       update[`${name}.tickmode`] = "array";
       update[`${name}.tickvals`] = ticks.map(tick => tickCoordinateValue(axis, tick.x));
-      update[`${name}.ticktext`] = ticks.map(tick => visible.has(tick.x) ? tick.text : blankTickLabel);
+      update[`${name}.ticktext`] = ticks.map((tick, index) => visible.has(index) ? tick.text : blankTickLabel);
     }
     return Object.keys(update).length ? update : null;
   }
@@ -741,9 +777,11 @@
                 }
                 state.axes.set(name, entry);
               } else {
-                const visible = new Map(update[`${name}.tickvals`].map((v,i) => [JSON.stringify(v),update[`${name}.ticktext`][i]]));
+                const text = update[`${name}.ticktext`];
+                const matches = correspondingTicks(entry.fitted.tickvals, update[`${name}.tickvals`]);
                 update[`${name}.tickvals`] = entry.fitted.tickvals;
-                update[`${name}.ticktext`] = entry.fitted.tickvals.map(v => visible.get(JSON.stringify(v)) ?? blankTickLabel);
+                update[`${name}.ticktext`] = matches.map((index, i) =>
+                  entry.fitted.ticktext[i] === blankTickLabel ? blankTickLabel : text[index] ?? blankTickLabel);
               }
               for (const key of TICK_PLACEMENT) entry.fitted[key] = copyTickValue(update[`${name}.${key}`]);
             }

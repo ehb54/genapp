@@ -285,3 +285,26 @@ profiles and Guinier, native/React UI2, Lab themes/surfaces, normal/expanded/
 restore, actual container/browser resize, completion, same/fresh-window
 reattachment, PNG and initial Chart Editor handoff remain pending. No module's
 existing deployed status is upgraded by these local results.
+
+
+## Useful logarithmic tick-label retention (#347, November 3, 2026)
+
+Local correction on core baseline `cc4e647a`; not deployed. The unchanged
+neutral case at 620 pixels selected eight labels geometrically but displayed
+only `0.3`. The shared helper now preserves tick correspondence across numeric
+round trips, without rounding original tick positions or changing collision
+selection. Owner evidence: `UI2-Tick-Density-Shared-Gap-Report.md`.
+
+Passed: 421 neutral rendered checks; 325 #348 real-pointer checks (#349 remains
+an independently failing TODO); nine core suites reporting 27 assertions with
+eight optional browser assertions skipped; and 33 application styling/Lab parity
+tests. The neutral retention fixture covers 511/620/855 widths, repeated fitting,
+zoom/pan/reset, resize/restore, exact grid values, source reconstruction and PNG/
+initial editor transfer. The same 18 read-only MCA profile renderings now retain
+7/9/10 x labels at the respective widths. The scale-2 PNG was visually reviewed.
+
+Deployed acceptance is **not recorded** for #347: native/React UI2 and Lab
+surfaces, signed/positive/Guinier cases, normal/expanded/restore, actual browser
+resize, completion, same/fresh-window reattachment, PNG and initial editor
+handoff remain pending. Scientific arrays, ranges, units, axis types and saved
+fixtures are unchanged. No existing module's deployed status is upgraded here.
