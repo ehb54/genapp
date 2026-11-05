@@ -815,3 +815,15 @@ Preserve authored hover policy, precision, name suppression, colors, grouped
 legends and saved scientific figures. Other modules remain opted out. Owner
 contracts: GenApp `doc/Plotting-Architecture.md`, `doc/UI2-Core-Extension-Policy.md`
 and `doc/UI2-Hover-Interaction-Shared-Gap-Report.md` (paired checkout for the app).
+
+
+## Complete narrow legend routing (#351)
+
+GenApp owns measured complete-content legend allocation and scale-2 export
+through the shared `plotly-layout.js` fitter, reused by ordinary UI2 and the Lab.
+Preserve scientific payloads, names/order, groups, styles and saved-job behavior.
+Owner contracts: GenApp `doc/Plotting-Architecture.md`,
+`doc/UI2-Core-Extension-Policy.md` and
+`doc/UI2-Legend-Overflow-Shared-Gap-Report.md` (paired checkout for the app).
+Keep acceptance focused on the reported MCA Guinier case; other-module visual
+review remains with the developers' Lab/output cycle.

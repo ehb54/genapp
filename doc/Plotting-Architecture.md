@@ -717,3 +717,16 @@ does not acquire unrelated React profile or styling selections. Conflicting
 native declarations fail closed. Acceptance requires actual control clicks and
 pointer selection, not programmatic selection through `Fx.hover`. Owner evidence,
 compatibility controls and rollback: `doc/UI2-Hover-Interaction-Shared-Gap-Report.md`.
+
+
+## Complete narrow legend allocation (#351)
+
+UI2 and the Plot Presentation Lab use the shared `legendFitUpdate` helper in
+`plotly-layout.js`. Complete legend content owns the reserved bottom lane; a
+clipped scroll viewport must not determine the required allocation. Legends that
+fit the renderer's outside lane use measured below-paper placement when needed,
+including scale-2 PNG export. Short legends retain their existing placement;
+collections too large for that lane retain existing scrolling. Preserve figure
+dimensions, scientific values, trace names/order, grouping and saved payloads.
+No producer sizing, YAML workaround or module-specific core branch belongs here.
+Evidence and targeted acceptance: `UI2-Legend-Overflow-Shared-Gap-Report.md`.

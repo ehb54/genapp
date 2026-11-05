@@ -6,6 +6,56 @@
   const ABOVE_PLOT = "above_plot";
   const wrappedAxisMargins = new WeakMap();
 
+  // Full legend content, rather than its scroll viewport, owns the bottom lane.
+  // Plotly 2.x limits an in-paper legend to the data-area height, even when
+  // yref is container. A negative paper coordinate uses its outside-plot lane.
+  function legendFitUpdate(plot) {
+    const layout = plot?._fullLayout || plot?.layout || {};
+    const keys = Object.keys(layout).filter(key => /^legend\d*$/.test(key));
+    if (!keys.length) keys.push("legend");
+    const rect = plot?.getBoundingClientRect?.();
+    const height = Number(layout.height) || Math.round(rect?.height || plot?.clientHeight || 460);
+    const scale = Number(layout.height) > 0 && rect?.height > 0 ? layout.height / rect.height : 1;
+    let legends = keys.map(key => {
+      const node = plot?.querySelector?.(`.${key}`);
+      const visible = Math.ceil((node?.getBoundingClientRect?.().height || 0) * scale);
+      const content = Number(layout[key]?._height);
+      return { key, visible, height: visible > 0 ? Math.max(visible, Number.isFinite(content) ? content : 0) : 0 };
+    }).filter(legend => legend.height > 0);
+    if (!legends.length) return null;
+    const axisBand = 72, gap = 12, padding = 12;
+    const contentHeight = legends.reduce((sum, legend) => sum + legend.height, 0) + gap * (legends.length - 1);
+    let bottom = Math.max(axisBand + legends.length * 56, axisBand + gap + padding + contentHeight);
+    let dataHeight = Math.max(1, height - (Number(layout._size?.t) || Number(layout.margin?.t) || 0) - bottom);
+    // Only the overflowing case changes anchoring. Short legends keep their
+    // established placement. Center paper-anchored legends on the data area;
+    // container x coordinates otherwise make Plotly reserve a spurious side lane.
+    let outside = Boolean(layout._size) && legends.some(legend => legend.height > Math.max(30, dataHeight));
+    // Keep the existing scrolling behavior for legends too large for Plotly's
+    // outside lane or coordinate range; do not collapse the data area trying
+    // to display an arbitrarily large collection in a fixed allocation.
+    const lastTop = axisBand + gap + contentHeight - legends[legends.length - 1].height;
+    if (outside && (legends.some(legend => legend.height > height / 2) || lastTop > 2 * dataHeight)) {
+      legends = legends.map(legend => ({...legend, height: legend.visible}));
+      bottom = Math.max(axisBand + legends.length * 56,
+        axisBand + padding + legends.reduce((sum, legend) => sum + legend.height + gap, 0));
+      outside = false;
+    }
+    const update = {"margin.autoexpand": true, "margin.b": bottom};
+    let offset = outside ? axisBand + gap : padding;
+    const ordered = outside ? legends : [...legends].reverse();
+    ordered.forEach(legend => {
+      update[`${legend.key}.xref`] = outside ? "paper" : "container";
+      update[`${legend.key}.x`] = 0.5;
+      update[`${legend.key}.xanchor`] = "center";
+      update[`${legend.key}.yref`] = outside ? "paper" : "container";
+      update[`${legend.key}.y`] = outside ? -offset / dataHeight : offset / height;
+      update[`${legend.key}.yanchor`] = outside ? "top" : "bottom";
+      offset += legend.height + gap;
+    });
+    return update;
+  }
+
   function titleText(axis) {
     if (axis?.title == null) {
       return "";
@@ -1219,6 +1269,7 @@
   }
 
   window.GenAppPlotlyLayout = {
+    legendFitUpdate,
     hover_trace_selection_buttons,
     bind_hover_trace_selection,
     clear_hover_trace_selection,

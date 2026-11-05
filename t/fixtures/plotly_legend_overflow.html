@@ -1,0 +1,40 @@
+<!doctype html><meta charset="utf-8"><title>Legend overflow regression</title>
+<style>body{margin:16px;font:14px Arial}#allocation{width:calc(100vw - 62px);max-width:980px}#plot{width:100%;height:480px}pre{white-space:pre-wrap}</style>
+<script src="../../languages/html5/add/js/plotly-2.35.2.min.js"></script>
+<script src="../../languages/ui2/add/js/plotly-layout.js"></script>
+<pre id="results">Loading</pre><div id="allocation"><div id="plot"></div></div>
+<script>
+window.ready=(async()=>{
+ const source=await(await fetch('../../languages/ui2/add/js/ui2.js')).text();
+ const names=['plotlyLegendKeys','applyPlotlyLegendPlacement','plotlyLegendFitUpdate','fitPlotlyLegendsBelowPlot','fitPlotlyAxisTitles','fitPlotlyAnnotations','fitPlotlyPresentationGeometry','plotlyOutputReadyForRelayout','observeFitPlotlyOutput','disconnectPlotlyOutputObserver','resizePlotlyOutputWhenVisible','resizePlotlyOutputToVisibleBox','applyPlotlyModebarHooks'];
+ const functions=names.map(name=>{const a=source.indexOf('  function '+name+'('),b=source.indexOf('\n  function ',a+1);return source.slice(a,b);}).join('\n');
+ const api=new Function('window',`const cssEscape=CSS.escape,plotGeometryForOutput=()=>({figureTitleOverflow:'wrap'}),refreshPlotlyOutputIfNeeded=()=>null,debugPlotlyResize=()=>{};${functions};return {place:applyPlotlyLegendPlacement,fit:fitPlotlyPresentationGeometry,observe:observeFitPlotlyOutput,disconnect:disconnectPlotlyOutputObserver,hooks:applyPlotlyModebarHooks};`)(window);
+ const g=document.getElementById('plot'),clone=x=>JSON.parse(JSON.stringify(x));
+ let sourceFigure,saved,events=0;
+ const check=(ok,message)=>{if(!ok)throw Error(message);};
+ async function settle(){for(let i=0;i<8;i++){await new Promise(r=>requestAnimationFrame(r));if(g._ui2PlotlyResizePromise)await g._ui2PlotlyResizePromise;}await GenAppPlotlyLayout.settleTickDensity(g);}
+ async function render(count=8,dark=false,multiple=false){
+  api.disconnect(g);Plotly.purge(g);
+  sourceFigure={data:Array.from({length:count},(_,i)=>({x:[0,.001,.002,.003],y:[i,i+.2,i+.4,i+.6],error_y:{array:[.05,.05,.05,.05]},mode:i%2?'lines':'markers',name:'Sample '+(i>>1)+(i%2?' fit (value=123.456)':' measured'),legendgroup:'sample'+(i>>1),...(multiple&&i>=count/2?{legend:'legend2'}:{})})),layout:{title:'Repeated sample fits',xaxis:{title:'Coordinate² (a⁻²)'},yaxis:{title:'Response'}}};
+  saved=JSON.stringify(sourceFigure);g._ui2PlotlyLastFigure=sourceFigure;
+  const layout=api.place({...clone(sourceFigure.layout),margin:{l:72,r:32,t:96,b:72},font:{size:12,color:dark?'#eee':'#222'},paper_bgcolor:dark?'#202725':'#fff',plot_bgcolor:dark?'#202725':'#fff',...(multiple?{legend2:{}}:{}),showlegend:count>0});
+  const config={displayModeBar:true,responsive:true};api.hooks({},config);
+  await Plotly.newPlot(g,clone(sourceFigure.data),layout,config);g.on('plotly_afterplot',()=>events++);await api.fit(g);api.observe(g);await settle();
+ }
+ function inspect(){
+  const host=g.getBoundingClientRect(),entries=[...g.querySelectorAll('.legendtext,.legend2text')],legends=[...g.querySelectorAll('g.legend,g.legend2')];
+  check(entries.length===sourceFigure.data.length,'all legend entries exist');
+  for(const legend of legends){const bg=legend.querySelector('.bg').getBoundingClientRect();
+   for(const n of legend.querySelectorAll('.legendtext,.legend2text')){const r=n.getBoundingClientRect();check(r.left>=host.left-1&&r.right<=host.right+1&&r.top>=host.top-1&&r.bottom<=host.bottom+1,'legend entry in image bounds: '+n.textContent);check(r.top>=bg.top-1&&r.bottom<=bg.bottom+1,'legend entry outside scroll viewport: '+n.textContent);}
+   check(bg.top>=host.top+g._fullLayout._size.t+g._fullLayout._size.h+12,'legend below scientific plot');
+  }
+  const labels=[...g.querySelectorAll('.gtitle,.xtitle,.ytitle,.xtick text,.ytick text')].filter(n=>n.textContent.replace(/\u200b/g,'').trim());
+  for(let i=0;i<labels.length;i++){const a=labels[i].getBoundingClientRect();check(a.left>=host.left-1&&a.right<=host.right+1&&a.top>=host.top-1&&a.bottom<=host.bottom+1,'axis/title inside figure');for(const n of labels.slice(i+1)){const b=n.getBoundingClientRect();check(!(a.left<b.right-.5&&a.right>b.left+.5&&a.top<b.bottom-.5&&a.bottom>b.top+.5),'axis/title collision');}}
+  check(JSON.stringify(sourceFigure)===saved,'saved source unchanged');
+  check(JSON.stringify(g.data.map(t=>[t.x,t.y,t.error_y,t.name,t.legendgroup]))===JSON.stringify(sourceFigure.data.map(t=>[t.x,t.y,t.error_y,t.name,t.legendgroup])),'scientific identity unchanged');
+  return {entries:entries.map(n=>n.textContent),width:g._fullLayout.width,height:g._fullLayout.height,dataHeight:g._fullLayout._size.h,events};
+ }
+ async function exportPng(){await settle();const original=Plotly.downloadImage;let image;Plotly.downloadImage=async(plot,options)=>{image=await Plotly.toImage(plot,options);};try{await g._context.modeBarButtonsToAdd.find(b=>b.name==='fittedImage').click(g);}finally{Plotly.downloadImage=original;}return image;}
+ window.legendTest={render,inspect,settle,exportPng,graph:g,api};await render();document.getElementById('results').textContent='Ready';
+})();window.ready.catch(e=>document.getElementById('results').textContent=e.stack);
+</script>

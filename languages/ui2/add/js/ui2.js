@@ -13405,6 +13405,10 @@
   }
 
   function plotlyLegendFitUpdate(output) {
+    if (window.GenAppPlotlyLayout?.legendFitUpdate) {
+      return window.GenAppPlotlyLayout.legendFitUpdate(output);
+    }
+    // Retain compatibility with older hosts that do not load the shared fitter.
     const layout = output?._fullLayout || output?.layout || {};
     const outputHeight = Math.max(
       1,
