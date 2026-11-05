@@ -74,12 +74,58 @@ the established UI2/Lab workflow; saved jobs require no migration or rollback.
   local Chrome on macOS. No Linux Node runtime was available on the inspected
   Zazzie host/container; these are not claimed as Linux runtime results.
 
-## Deployment acceptance
+## Deployment acceptance — November 5, 2026
 
-Pending deployment and targeted codex3 browser checks. Use the existing completed
-MCA job and corresponding Lab Guinier fixture only, at narrow and normal widths,
-light/dark surfaces, widen/restore, PNG, and saved-result reconstruction. Include
-ordinary UI2 and native fallback. Retain readable axes/title and all eight entries.
-No new scientific run or repeat of completed #333 acceptance is required. Live
-plot updates are inapplicable to these completed Guinier outputs. No YAML is
-published and the Lab Recompile UI2 action is outside this task.
+Passed on Zazzie3 UI2, deployed core `650697077f45016a04fed662ec16e5420833f95d`
+and application `991fe6bffe24` (implementation commits; later evidence commits
+change documentation only). The canonical
+`tools/zazzie3_gacpu_genapp.sh --generate-language ui2` passed readiness,
+fast-forward, generation, 144 PHP syntax checks, 55 module-metadata checks,
+container-identity preservation, public endpoint and installed-version publication.
+
+The ordinary host-user Lab asset publication failed replacing the root-owned
+`output/ui2/ajax/plot_presentation_lab.php` with Permission denied. The owner
+explicitly approved retrying the same publisher with sudo. That retry passed;
+Lab asset version is `20261105200320`. The remote account already had passwordless
+sudo; no ownership, group, sudo-policy or account-privilege changes were made.
+No Lab worker/API bypass, YAML publication or Lab Recompile action was used.
+
+Authorized administrator codex3 reattached existing completed job
+`db41e135-248c-4632-8ae4-ecfd29b80a23`, scenario/run
+`mca_decomposition_exp_4_refine`. No scientific run was submitted.
+
+- Ordinary React UI2: light and Slate surfaces at 550 CSS-pixel browser width,
+  widening to 1100 and restoring. All eight entries, including both 1.0 D2O
+  entries, remain visible below the data. Axes, title and legend are readable.
+  Downloaded narrow scale-2 PNGs were visually inspected: both are 900×1016
+  pixels and contain all eight entries within the image. Refresh reconstructed
+  the completed plot from ordinary saved outputs.
+- Native UI2 fallback: temporarily blocked only the React bundle through normal
+  DevTools request controls. The same job passed 550/1100/550 widths on the light
+  surface; all eight entries and readable axes/title were observed. Its narrow
+  916×960 PNG was visually inspected and contains the complete legend. Native
+  fallback's existing default trace styling was not changed by this correction.
+- Lab: selected only MCA → Guinier fits, using the existing signed fixture.
+  Light theme with contrasting dark canvas and matching light panel passed at
+  550 CSS pixels. Widening and restoration retained all entries. The dark wide
+  check used 1100 pixels; the light wide check used 1600 pixels. Both narrow
+  scale-2 PNGs are 968×1016 and were visually inspected with all eight entries,
+  complete names, readable axes/title and the established marks/colors.
+
+Local downloaded evidence: `~/Downloads/newplot (74).png` (ordinary dark),
+`(75)` (ordinary light), `(76)` (native light), `(78)` (Lab dark), and `(79)`
+(Lab light). These browser downloads are evidence only and are not committed.
+
+The eight measured/fit trace identities, order and concise I(0) values agree
+across the saved completed job and Lab fixture. The correction only changes
+renderer layout; neutral source/array/uncertainty immutability and caller parity
+are covered by the automated checks above. This is targeted visual acceptance,
+not a new scientific validation campaign or an audit of other plotting modules.
+Live plotting is inapplicable to these completed Guinier outputs. Fresh separate
+window, Chart Editor and the rest of completed #333 acceptance were not rerun.
+Native dark-surface behavior is not separately claimed.
+
+The temporary blocking rule was removed and blocking disabled; device emulation
+and DevTools were closed. The original Slate theme and matching application-panel
+setting were restored, the Lab tab was closed, and codex3 logout was visibly
+confirmed on the login splash.
