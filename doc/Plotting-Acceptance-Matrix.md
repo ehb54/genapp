@@ -337,3 +337,14 @@ Local neutral acceptance passed six assertions and 1,257 real-pointer/source
 checks, including same-q controls and reconstruction. Numeric-hover/tick-fitting
 checks and syntax passed; the new nearby-coordinate regression fails on baseline
 source. This is local evidence only; deployed #350 acceptance remains pending.
+
+
+Deployed targeted acceptance passed November 5, 2026, core `4ccb2549`, app
+`279237f`: signed Lab reported case (shared q=0.075, purple actual q=0.08), its
+Rescaled/Calculated control (shared q=0.045, calculated q=0.05), closest/compare,
+Lines/Markers controls, and UI2 reconstruction of existing completed job
+`db41e135-248c-4632-8ae4-ecfd29b80a23`. Names, uncertainty and visible tick
+separation were retained. A cache-bypassing reload was required for the cached
+Lab helper. codex3 logout was verified. No broader module audit, fresh scientific
+run or separate-window reattachment was performed; detailed scope/results are
+in `UI2-Hover-Interaction-Shared-Gap-Report.md`.

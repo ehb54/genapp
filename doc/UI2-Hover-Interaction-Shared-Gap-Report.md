@@ -371,3 +371,39 @@ Local and deployed results are recorded below when completed.
   errors, names, identity metadata and legend groups remained unchanged.
 - Detailed local evidence: `/private/tmp/issue350-hover.json`. Live deployment
   and the bounded codex3 acceptance block remain pending at this commit.
+
+
+### Deployed targeted acceptance — November 5, 2026
+
+The canonical `tools/zazzie3_gacpu_genapp.sh --generate-language ui2` wrapper
+passed readiness, container preservation, core update, generation, PHP checks
+for 144 handlers, JSON checks for 55 module metadata files, public verification
+and installed-version publication. Runtime core: `4ccb2549`; application:
+`279237f`. No YAML, fixture or producer was changed or published.
+
+The authorized isolated Chrome profile retained its loopback-only listener at
+127.0.0.1:9222. codex3 signed in through the visible saved-credential flow.
+After a cache-bypassing reload, the signed Lab Experimental/Rescaled figure at
+shared q=0.0750000 showed both purple labels with x=0.0800000 and
+`y: 0.00327 ± 0.00051`. Closest mode retained the same coordinate/value/error.
+The control Rescaled/Calculated figure at shared q=0.0450000 retained the purple
+calculated label `(0.05, 0.0165949)`. Closest Lines and Markers controls remained
+usable; Compare restored All and disabled filtering as designed. Names remained
+suppressed, colors/legend identities remained intact, and visible x/y tick
+labels were separated in these two figures. An initial cached-helper load
+showed the old defect; a cache-bypassing reload is necessary for an already
+cached Lab asset URL to pick up this core-only update.
+
+The existing completed refine job `db41e135-248c-4632-8ae4-ecfd29b80a23` in
+project `mca_331_333_acceptance_20261026` reattached after a cache-bypassing UI2
+reload with its scenario verification still PASSED and complete progress.
+Its Experimental/Rescaled figure showed the correct shared-q=0.075 labels and
+closest point x=0.08 with its own rescaled uncertainty; its Rescaled/Calculated
+figure retained numeric coordinates for the selected q=0.045 traces. These
+historical refine values differ from the Lab no-refine fixture and were not
+substituted for its exact reported-case check.
+
+The Lab tab was closed and codex3 logout was completed and visibly verified.
+No new scientific job, separate-window reattachment, other-module audit or broad
+presentation matrix was run. This records the approved targeted #350 acceptance,
+not a new certification of the broader plotting rollout.
