@@ -43,6 +43,39 @@ with sync_playwright() as p:
         page.goto(Path(sys.argv[1]).resolve().as_uri())
         page.wait_for_function('window.hoverInteractionFixture !== undefined')
         result['versions'] = page.evaluate('hoverInteractionFixture.versions()')
+        # #350: compare labels must retain a nearby point's own x, not only
+        # the shared-coordinate header. Use actual mouse movement throughout.
+        result['compare_offset']=[]
+        for axis in ['linear','log']:
+            for kind in ['markers','line']:
+                for fit in [False,True]:
+                    mounted=page.evaluate('c=>hoverInteractionFixture.compare_offset(c)',
+                        dict(axis=axis,kind=kind,fit=fit,width=511))
+                    if fit:check(mounted['hiddenPointFound'],'compare point uses a collision-hidden tick')
+                    observed=sample(page,mounted['target'])
+                    check({p['curve'] for p in observed['points']}=={0,1},'compare selects both distinct-q traces')
+                    check(abs(next(p['x'] for p in observed['points'] if p['curve']==0)-mounted['point_x'])<1e-10,
+                          'compare selects the original nearby coordinate')
+                    label=next(row['text'] for row in observed['labels'] if row['curve']==0)
+                    check(str(mounted['point_x']) in label,'compare label displays actual nearby x '+axis+' '+kind)
+                    if kind=='markers':check('0.808 ± 0.010' in label,'compare retains uncertainty precision')
+                    check('Neutral nearby' not in label,'compare retains name suppression')
+                    check(observed['hovermode']=='x','compare mode remains active')
+                    if fit:check(observed['collisionFree'],'compare retains collision protection')
+                    result['compare_offset'].append(dict(axis=axis,kind=kind,fit=fit,label=label))
+                    page.evaluate('hoverInteractionFixture.lifecycle("reconstruct")')
+                    reconstructed=sample(page,page.evaluate('hoverInteractionFixture.target(1,0)'))
+                    restored_label=next(row['text'] for row in reconstructed['labels'] if row['curve']==0)
+                    check(restored_label==label,'compare reconstructs the same nearby-point label')
+                mounted=page.evaluate('c=>hoverInteractionFixture.compare_offset(c)',
+                    dict(axis=axis,kind=kind,fit=True,width=511,same_x=True))
+                shared=sample(page,mounted['target'])
+                check({p['curve'] for p in shared['points']}=={0,1},'shared-q compare selects both traces')
+                check(all(abs(p['x']-mounted['point_x'])<1e-10 for p in shared['points']),
+                      'shared-q compare retains original coordinates')
+                check(str(mounted['point_x']) in shared['text'],'shared-q coordinate remains displayed')
+                check(shared['sourceUnchanged'] and shared['nativeDataUnchanged'],'shared-q sources unchanged')
+
         # Identify a tick actually hidden by the unchanged production fitter,
         # then inspect that same scientific coordinate in every control.
         for axis in ['linear', 'log']:

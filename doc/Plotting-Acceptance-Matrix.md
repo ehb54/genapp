@@ -320,3 +320,20 @@ visible traces. Scientific payloads, #331 colors/grouping, #335 precision,
 Owner evidence and the historical runtime-suite baseline failure are recorded in
 `UI2-Hover-Interaction-Shared-Gap-Report.md`. Local checks do not establish deployed
 acceptance; no existing module status is upgraded by these local results.
+
+
+## Compare-hover nearby coordinates (#350)
+
+November 5, 2026: targeted correction under verification. The neutral real-pointer
+regression must display a nearby selected point's own x, distinct from shared x,
+on linear/log axes and marker/line traces, while preserving uncertainty, names,
+source data, tick collision fitting and #349 controls. Deployed acceptance is
+limited to the reported signed Experimental/Rescaled figure and its
+Rescaled/Calculated control, closest/compare transitions and reconstruction.
+Other plotting modules are outside this task's audit and acceptance scope.
+Owner evidence: `UI2-Hover-Interaction-Shared-Gap-Report.md`.
+
+Local neutral acceptance passed six assertions and 1,257 real-pointer/source
+checks, including same-q controls and reconstruction. Numeric-hover/tick-fitting
+checks and syntax passed; the new nearby-coordinate regression fails on baseline
+source. This is local evidence only; deployed #350 acceptance remains pending.

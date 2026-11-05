@@ -316,3 +316,58 @@ PNG and initial editor handoff. Preserve the separately disclosed narrow-card
 Guinier legend-export limitation; this fix does not change legend/export layout.
 Record actual coverage and limits and log codex3 out. Lab YAML publication is
 unnecessary; routine core generation uses the canonical UI2 deployment wrapper.
+
+
+## Compare-hover nearby coordinates (#350)
+
+Joseph approved the exact eight-file plan through `tell_susan_plus` on
+November 5, 2026, including scoped commit/push, the established Zazzie3 core
+UI2 deployment, and codex3 acceptance of the reported signed Decomposition
+figure and its Rescaled/Calculated control, with logout and Susan handoff only
+after acceptance passes. This is a targeted correction, not an audit of other
+plotting modules. SASSIE, producers, views, YAML, source fixtures and vendor
+Plotly remain read-only. No YAML publication or Lab Recompile action is needed.
+
+Baselines: GenApp `47b8d6a8`, application `9a4b333`. Guardrail blobs:
+application `633687810637f86eb39fff84376dc0e228acd901`, SASSIE
+`f094c6f2b1a4d00208ea588a08c5fd8fe4f803a4`, GenApp
+`2ded7332b83d25ef818f7f2351157c95a7f43bbb`. Governing issue: #184.
+
+The signed source has q=0.08, intensity=0.003268 and supplied error=0.0005142
+for both 0.85 measured/rescaled traces. The precision helper correctly formats
+its y value but leaves x to Plotly. Plotly's array-tick lookup can return the
+collision fitter's invisible label; #348 deliberately restricted coordinate
+repair to closest mode. Thus compare could select the correct point while
+rendering an empty coordinate. A native axis hoverformat already exists and
+does not bypass that lookup; existing view metadata cannot correct it.
+
+The neutral real-pointer fixture reproduces two traces with distinct x values
+on linear/log axes, using markers with uncertainty and a line control. The
+new required coordinate assertion fails on baseline source. The repair extends
+the existing fitter-owned template correction to Cartesian x/y compare modes.
+It introduces no new schema, numeric formatter, caller API or opt-in. Unified
+modes and non-fitted controls retain their existing behavior. Restoration,
+precision refresh and closest-mode selection use the existing lifecycle.
+
+Acceptance is bounded to the two reported MCA figures, their closest/compare
+transitions and reconstruction, plus focused neutral hover/numeric/tick tests.
+Preserve native shared-coordinate selection, point coordinates, #335 precision,
+#336 names, #348 closest coordinates, #349 controls, scientific source data,
+authored labels/formats and collision-free ticks. Rollback reverts this shared
+correction; saved scientific output requires no migration.
+
+Local and deployed results are recorded below when completed.
+
+### Local verification — November 5, 2026
+
+- Real-pointer Chrome suite passed all six Perl assertions and 1,257 source,
+  formatting and interaction checks. #350 adds differing-q marker/line cases on
+  linear/log axes, fitted/unfitted controls, same-q controls and reconstruction.
+  The new nearby-coordinate assertion fails on the pre-repair helper.
+- `prove -v t/unit_tests/plotly_numeric_hover.t t/unit_tests/plotly_tick_density.t`
+  passed six Perl assertions (two optional older rendered checks skipped).
+  The required real-pointer browser suite above actually ran.
+- JavaScript syntax and diff whitespace checks passed. Scientific source arrays,
+  errors, names, identity metadata and legend groups remained unchanged.
+- Detailed local evidence: `/private/tmp/issue350-hover.json`. Live deployment
+  and the bounded codex3 acceptance block remain pending at this commit.

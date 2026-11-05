@@ -85,6 +85,23 @@ no trace is selected programmatically. #348 coordinates and #349 opt-in controls
       axis:axis.type,hoverformat:axis.hoverformat,
       sourceUnchanged:JSON.stringify(source)===saved,nativeDataUnchanged:nativeDataUnchanged()};
   }
+  // A nearby trace contributes its own coordinate, distinct from shared x.
+  async function compare_offset(config = {}) {
+    const fitted = await formatting({...config, fit:true});
+    const point_x = fitted.x, shared_x = point_x + (config.same_x ? 0 : .0004);
+    const measured = {type:'scatter',mode:config.kind==='line'?'lines':'markers',
+      x:[point_x],y:[.808093],name:'Neutral nearby',meta:{id:'nearby'},
+      marker:{size:6},legendgroup:'nearby'};
+    if(config.kind!=='line') measured.error_y={type:'data',array:[.0101],visible:true};
+    const anchor = {type:'scatter',mode:'markers',x:[shared_x],y:[.85],
+      name:'Neutral anchor',meta:{id:'anchor'},marker:{size:6},legendgroup:'anchor'};
+    const figure={data:[measured,anchor],layout:layout(config.axis||'log',config.width||511)};
+    figure.layout.hovermode='x';
+    await mount(figure,{...config,fit:config.fit!==false,suppress:true,precision:'uncertainty-2'});
+    return {point_x,shared_x,target:target(1,0),
+      hiddenPointFound:(plot._fullLayout.xaxis.tickvals||[]).some((value,i)=>
+        Math.abs(value-point_x)<1e-10 && blank(plot._fullLayout.xaxis.ticktext[i]))};
+  }
   async function overlap(config = {}) {
     const points={type:'scatter',mode:'markers',x:[.03,.05,.07],y:[.75,.8,.85],
       error_y:{type:'data',array:[.001,.001,.001],visible:true},name:'Neutral measured',
@@ -103,6 +120,8 @@ no trace is selected programmatically. #348 coordinates and #349 opt-in controls
   function snapshot() {
     const rows=api.tickLabelRows(plot);
     return {text:plot.querySelector('.hoverlayer')?.textContent||'',points:copy(lastPointer),
+      labels:Array.from(plot.querySelectorAll('.hovertext')).map(node=>({
+        curve:node.__data__?.trace?.index,text:node.textContent})),
       collisionFree:api.nonOverlappingTicks(rows).length===rows.length,
       hovermode:plot._fullLayout.hovermode,nameLengths:plot._fullData.map(t=>t.hoverlabel?.namelength),
       sourceUnchanged:JSON.stringify(source)===saved,nativeDataUnchanged:nativeDataUnchanged(),
@@ -147,7 +166,7 @@ no trace is selected programmatically. #348 coordinates and #349 opt-in controls
     window.hoverInteractionDiagnostics=result;
     document.getElementById('results').textContent=JSON.stringify(result,null,2);
   }
-  window.hoverInteractionFixture={formatting,overlap,snapshot,hovermode,lifecycle,png,target,publish,
+  window.hoverInteractionFixture={formatting,compare_offset,overlap,snapshot,hovermode,lifecycle,png,target,publish,
     versions:()=>({plotly:Plotly.version,userAgent:navigator.userAgent})};
 })();
 </script>

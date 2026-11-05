@@ -822,3 +822,16 @@ does not acquire unrelated React profile or styling selections. Conflicting
 native declarations fail closed. Acceptance requires actual control clicks and
 pointer selection, not programmatic selection through `Fx.hover`. Owner evidence,
 compatibility controls and rollback: `doc/UI2-Hover-Interaction-Shared-Gap-Report.md`.
+
+
+## Compare-hover coordinate integrity (#350)
+
+Collision-fitter masking must not erase a selected point's numeric coordinate
+in closest or Cartesian x/y compare mode. When a compare-selected point differs
+from the shared coordinate, its tooltip retains that point's own coordinate.
+Reuse the shared fitter's detached template lifecycle; preserve shared-coordinate
+selection, authored formatting/labels, uncertainty precision, name suppression,
+trace-kind selection, source figures and saved outputs. Unified modes retain
+existing behavior. The neutral reproduction, approval and bounded acceptance
+are in `UI2-Hover-Interaction-Shared-Gap-Report.md`; no producer workaround,
+module branch, new schema or opt-in belongs in this correction.

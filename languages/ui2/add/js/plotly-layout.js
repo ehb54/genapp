@@ -576,7 +576,7 @@
   }
 
   async function fitHoverCoordinates(plot, state, restyle) {
-    if (plot._fullLayout?.hovermode !== 'closest') return;
+    if (!['closest', 'x', 'y'].includes(plot._fullLayout?.hovermode)) return;
     for (let index = 0; index < (plot.data || []).length; index++) {
       const trace = plot.data[index], fullTrace = plot._fullData?.[index];
       if (!fullTrace || trace.transforms?.length ||

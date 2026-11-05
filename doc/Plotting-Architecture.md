@@ -441,20 +441,23 @@ labels as well as absence of collisions. The neutral log-range fixture exercises
 see `doc/UI2-Tick-Density-Shared-Gap-Report.md` for local and deployed evidence.
 
 
-Closest hover must retain coordinates hidden only by the collision fitter
-(#348). The same fitter prepares detached per-point Plotly templates for masked
-linear/log x/y coordinates on scatter, scattergl and bar traces. Unmasked points
-retain their source template or native coordinate body; explicit coordinate
+Closest and Cartesian x/y compare hover must retain coordinates hidden only
+by the collision fitter (#348/#350). The same fitter prepares detached per-point
+Plotly templates for masked linear/log x/y coordinates on scatter, scattergl
+and bar traces. A nearby
+compare-selected point retains its own coordinate, distinct from the shared
+coordinate header. Unmasked points retain their source template or native coordinate body; explicit coordinate
 formats, tick-format stops, authored array labels and intentionally blank labels
 remain authoritative. Trace/axis hover formats take precedence, followed by the
 active tick format and the existing `.6g` compatibility fallback. The native
 placeholder remains alongside the repaired coordinate to retain native error
 text; supplied-uncertainty precision is still owned by the shared numeric helper.
 
-The fit restores its prior template before refitting or leaving closest mode,
-and honors a newer authored template. Name suppression and native name clipping
-remain unchanged. Compare/unified modes retain their existing shared-coordinate
-presentation. PNG and initial Chart Editor handoff carry the fitted layout and
+The fit restores its prior template before refitting or leaving the supported
+closest/x/y hover modes, and honors a newer authored template. Name suppression and native name clipping
+remain unchanged. Compare retains its native shared-coordinate selection;
+unified modes retain their existing presentation. PNG and initial Chart Editor
+handoff carry the fitted layout and
 display templates through their existing paths; no caller API, producer payload,
 scientific array, saved output or vendor Plotly file changes. No module-specific
 branch or new opt-in is added. See
