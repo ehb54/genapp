@@ -1,0 +1,147 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Neutral subplot height baseline — #352 Phase A</title>
+<link rel="stylesheet" href="../../languages/ui2/add/css/ui2.css">
+<link rel="stylesheet" href="../../languages/ui2/add/react/ui2-react.css">
+<style>body{margin:0;padding:8px}#allocation{width:1200px;min-width:0}#native-owner{width:100%;min-width:0}.fixture-native{width:100%}#report{white-space:pre-wrap}</style>
+<script src="../../languages/html5/add/js/plotly-2.35.2.min.js"></script>
+<script src="../../languages/ui2/add/js/plotly-layout.js"></script>
+<script src="../../languages/ui2/add/react/ui2-react.js"></script>
+<nav aria-label="Manual browser zoom validation"><button id="manual-native">Mount native baseline</button><button id="manual-react">Mount React baseline</button><button id="manual-measure">Measure browser zoom baseline</button></nav><div id="allocation"></div><pre id="report">Loading production geometry…</pre>
+<script>
+(async()=>{
+ 'use strict';
+ const copy=x=>JSON.parse(JSON.stringify(x)),api=GenAppPlotlyLayout,allocation=document.getElementById('allocation');
+ const code=await(await fetch('../../languages/ui2/add/js/ui2.js')).text();
+ const names=['renderPlotlyOutput','plotlyLayoutForOutput','defaultPlotlyLayout','plotlyDisplayFigure','applyPlotlyNumericHoverFormat','plotlyLegendKeys','applyPlotlyLegendPlacement','plotlyLegendFitUpdate','fitPlotlyLegendsBelowPlot','fitPlotlyAxisTitles','fitPlotlyAnnotations','fitPlotlyPresentationGeometry','plotlyOutputReadyForRelayout','plotPresentationForOutput','plotGeometryForOutput','plotlyFitMode','observeFitPlotlyOutput','disconnectPlotlyOutputObserver','resizePlotlyOutputWhenVisible','resizePlotlyOutputToVisibleBox','refreshPlotlyOutputIfNeeded','releasePlotlyOutputs','chartEditorLayout'];
+ const bodies=names.map(name=>{
+  const start=code.indexOf('  function '+name+'('),end=code.indexOf('\n  function ',start+1);
+  if(start<0||end<0)throw Error('Production function unavailable: '+name);
+  return code.slice(start,end);
+ }).join('\n');
+ let g,source,saved,mode,selection,events=0,pointer=[],runtime,outputListeners=new Set();
+ const runtimeSnapshot={run:'neutral',module:'neutral',channels:{},lastSequence:0,missingSequences:[],pendingSequences:[],lifecycle:{status:'complete'}};
+ const state={view:{results:{groups:[]}}};
+ // Backend/auth/transport are absent. Rendering, fitting, observation and React
+ // mounting are production code. The neutral profile fixes readable test fonts.
+ runtime=new Function('window','state',`
+ let reactWorkbenchRoot=null;
+ const cloneUi2Value=x=>JSON.parse(JSON.stringify(x)),cssEscape=CSS.escape;
+ const appMap={directives:{ui2_plotly_hover_name_display:'none',ui2_plotly_hover_number_format:'uncertainty-2'}};
+ const plotPresentationProfileForOutput=()=>null;
+ const applyPlotPresentationLayout=layout=>{
+  layout.font={family:'system-ui, sans-serif',size:12,color:'#17201d'};
+  layout.title={...(typeof layout.title==='object'?layout.title:{text:layout.title||''}),font:{size:18}};
+  Object.keys(layout).filter(k=>/^[xy]axis\\d*$/.test(k)).forEach(k=>{const a=layout[k];a.title={...(typeof a.title==='object'?a.title:{text:a.title||''}),font:{size:14}};a.tickfont={size:12};});
+  layout.legend={...(layout.legend||{}),font:{size:12}};
+ };
+ const applyPlotBackgroundMode=x=>x,plotlyThemeColors=()=>({panel:'#fff',text:'#17201d'});
+ const parsePlotlyFigure=x=>x,plotlyDataForOutput=(o,d)=>d,ensurePlotlyLoaded=()=>Promise.resolve(),applyPlotlyTheme=()=>{};
+ const plotlyConfigForOutput=()=>({responsive:true,displayModeBar:true,displaylogo:false});
+ const applyPlotlyModebarHooks=()=>{},normalizePlotlyModebar=()=>{},improvePlotlyModebarAccessibility=()=>{},debugPlotlyResize=()=>{};
+ const renderTextOutput=(o,v)=>{o.textContent=String(v)};
+ ${bodies}
+ return {render:renderPlotlyOutput,resize:resizePlotlyOutputWhenVisible,release:releasePlotlyOutputs,disconnect:disconnectPlotlyOutputObserver,
+ editor:chartEditorLayout,fit:fitPlotlyPresentationGeometry,setReact:r=>{reactWorkbenchRoot=r}};
+ `)(window,state);
+ const frame=()=>new Promise(r=>requestAnimationFrame(r));
+ async function settle(){
+  let stable=0,last='';
+  for(let i=0;i<360;i++){
+   await frame();
+   if(g?.textContent?.startsWith('Could not render'))throw Error(g.textContent);
+   const now=JSON.stringify([g?.getBoundingClientRect().toJSON(),g?.querySelector('.svg-container')?.getAttribute('style'),g?.layout,events]);
+   if(g?._fullLayout&&now===last&&!g._ui2PlotlyResizePromise)stable++;else stable=0;
+   last=now;if(stable>=16)return;
+  }throw Error('Production allocation/geometry did not settle');
+ }
+ function figure(kind='three',legend=true){
+  const layout={title:'Independent measurement previews',uirevision:'neutral'};
+  const rows=kind==='one'?1:kind==='two'?2:kind==='overlay'?4:3;
+  const domains=rows===1?[[0,1]]:rows===2?[[.6,1],[0,.4]]:rows===3?[[.70,1],[.38,.62],[0,.30]]:[[.57,1],[.57,1],[0,.36],[0,.36]];
+  const data=[];
+  for(let i=0;i<rows;i++){
+   const n=i?String(i+1):'',x='x'+n,y='y'+n;
+   layout['xaxis'+n]={anchor:y,domain:kind==='overlay'?(i%2?[.56,1]:[0,.44]):[0,1],title:i===2?'Distance (a)':'Coordinate (a⁻¹)',type:'linear',range:[0,100]};
+   layout['yaxis'+n]={anchor:x,domain:domains[i],title:['Relative response (dimensionless)','Normalized measurement difference','Maximum-normalized distribution','Effective recorded states / occupied states'][i],type:'linear'};
+   for(let j=0;j<2;j++)data.push({type:'scatter',mode:'lines+markers',x:[0,25,50,75,100],y:[1,.8,.6,.4,.2].map(v=>i===1?v-.5:v+j*.02),xaxis:x,yaxis:y,name:['Reference observations','Representative response','Running difference','Profile distribution','Observation family A','Observation family B'][i*2+j]||'Recorded measurement '+j,showlegend:legend,error_y:j===0?{type:'data',array:[.01,.01,.02,.01,.01],visible:true}:undefined,meta:{series_role:'measurement',series_group:'neutral_'+i+'_'+j}});
+  }
+  if(kind==='overlay'){
+   layout.yaxis5={overlaying:'y3',anchor:'x3',side:'right',title:'Rolling new observations / recorded sample'};
+   data.push({x:[0,25,50,75,100],y:[400,100,20,15,10],xaxis:'x3',yaxis:'y5',name:'Rolling observations',mode:'lines',showlegend:legend});
+  }
+  if(kind==='unsupported')layout.xaxis.anchor='free';
+  return{data,layout};
+ }
+ function scientific(t){return ['x','y','name','meta','xaxis','yaxis','error_x','error_y'].map(k=>{
+  if(k.startsWith('error_'))return Object.fromEntries(['array','arrayminus','type','value','valueminus','symmetric'].map(p=>[p,t[k]?.[p]]));
+  return t[k];
+ });}
+ function snapshot(){
+  if(!g?._fullLayout)throw Error('Graph is not rendered');
+  const host=g.getBoundingClientRect(),f=g._fullLayout,canvas=g.querySelector('.main-svg').getBoundingClientRect(),sx=canvas.width/f.width,sy=canvas.height/f.height,rect=n=>n.getBoundingClientRect();
+  const hit=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>.75&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>.75;
+  const titles=[...g.querySelectorAll('text')].filter(n=>/^[xy]\d*title$/.test(n.getAttribute('class')||''));
+  const ticks=[...g.querySelectorAll('[class$="tick"] text')].filter(n=>n.textContent.replace(/\u200b/g,'').trim());
+  const panels=[];
+  for(const t of source.data){const x=f[(t.xaxis||'x').replace('x','xaxis')],y=f[(t.yaxis||'y').replace('y','yaxis')];if(!x||!y)continue;
+   const r={left:canvas.left+x._offset*sx,top:canvas.top+y._offset*sy,right:canvas.left+(x._offset+x._length)*sx,bottom:canvas.top+(y._offset+y._length)*sy};
+   if(!panels.some(p=>Math.abs(p.left-r.left)<.5&&Math.abs(p.top-r.top)<.5&&Math.abs(p.right-r.right)<.5&&Math.abs(p.bottom-r.bottom)<.5))panels.push(r);
+  }
+  const titleCollisions=[];titles.forEach((a,i)=>{for(const b of [...titles.slice(i+1),...ticks])if(hit(rect(a),rect(b)))titleCollisions.push([a.getAttribute('class'),b.getAttribute('class')||b.parentElement.getAttribute('class')]);});
+  const panelIntrusions=titles.filter(n=>panels.some(p=>hit(rect(n),p))).map(n=>n.getAttribute('class'));
+  const legends=[...g.querySelectorAll('[class^="legend"]')].filter(n=>/^legend\d*$/.test(n.getAttribute('class')||''));
+  const legendCollisions=titles.filter(n=>legends.some(l=>hit(rect(n),rect(l)))).map(n=>n.getAttribute('class'));
+  const missingTitles=Object.keys(source.layout).filter(k=>/^[xy]axis\d*$/.test(k)&&source.layout[k].title).filter(k=>!g.querySelector('.'+k.replace('axis','')+'title')?.textContent.trim());
+  const labels=[...g.querySelectorAll('.hoverlayer .hovertext')];
+  const hoverIntrusions=labels.filter(n=>panels.slice(1).some(p=>hit(rect(n),p))).map(n=>n.textContent);
+  return {mode,width:host.width,height:host.height,titleCollisions,panelIntrusions,legendCollisions,missingTitles,panels:panels.map(p=>({width:p.right-p.left,height:p.bottom-p.top})),
+   sourceUnchanged:JSON.stringify(source)===saved,scientificDataUnchanged:source.data.every((t,i)=>JSON.stringify(scientific(t))===JSON.stringify(scientific(g.data[i]))),
+   ranges:Object.fromEntries(Object.keys(source.layout).filter(k=>/^[xy]axis\d*$/.test(k)).map(k=>[k,f[k].range.slice()])),
+   domains:Object.fromEntries(Object.keys(source.layout).filter(k=>/^[xy]axis\d*$/.test(k)).map(k=>[k,f[k].domain.slice()])),
+   status:api.subplotSpacingStatus(g),events,observerRegistered:!!g._ui2PlotlyResizeObserver,actualReactMounted:mode==='react'&&!!allocation.querySelector('.ui2-workbench-react'),
+   labels:labels.map(n=>n.textContent),points:pointer,hoverIntrusions,ownedMinHeight:g.style.minHeight||'',minHeightPriority:g.style.getPropertyPriority('min-height'),horizontalOverflow:Math.max(0,g.scrollWidth-g.clientWidth)};
+ }
+ function attachEvents(){g.on('plotly_afterplot',()=>events++);g.on('plotly_hover',ev=>{pointer=ev.points.map(p=>({curve:p.curveNumber,x:p.x,y:p.y}));});}
+ async function widthTo(target){
+  for(let i=0;i<6;i++){
+   const actual=g.getBoundingClientRect().width;if(Math.abs(actual-target)<1)return;
+   const before=allocation.getBoundingClientRect().width;
+   allocation.style.width=(before+(target-actual)*(mode==='react'?1.6:1))+'px';await settle();
+  }
+  if(Math.abs(g.getBoundingClientRect().width-target)>2)throw Error('Could not allocate requested host width');
+ }
+ async function mount(options={}){
+  if(mode==='react')GenAppUi2Workbench.unmount(allocation);
+  if(g){runtime.release(allocation);if(g._fullLayout)Plotly.purge(g);}
+  allocation.replaceChildren();mode=options.mode||'native';events=0;pointer=[];
+  source=copy(options.figure||figure(options.kind||'three',options.legend!==false));saved=JSON.stringify(source);
+  selection=copy(options.selection??{axisTitleOverflow:'wrap',subplotSpacing:'avoid-overlap'});
+  state.view={results:{groups:[{id:'observations',label:'Observations',outputs:['neutral_plot'],plotPresentation:selection}]}};
+  allocation.style.width=(options.width||699.5)+(mode==='react'?500:0)+'px';runtime.setReact(mode==='react'?allocation:null);
+  const create=()=>{const owner=document.createElement('div');owner.id='native-owner';g=document.createElement('div');g.id='plot';g.className='ui2-output ui2-output-plotly fixture-native';if(options.height!==undefined)g.style.height=options.height+'px';if(options.minHeight)g.style.setProperty('min-height',options.minHeight,options.priority||'');g.dataset.outputType='plotly';g.dataset.outputFieldId='neutral_plot';owner.append(g);return owner;};
+  if(mode==='react'){
+   const outputs={neutral_plot:source},runContext={values:{},uuid:'neutral-completed'},scenario={available:false,loading:false,catalog:null,selectedId:'',verification:{state:'not_run',checks:[]}};
+   const bridge={createFieldGroup:()=>create(),releaseField:n=>runtime.release(n),fieldGroupMounted:()=>{},outputGroupMounted:()=>runtime.render(g,source),syncValues:()=>({}),setInputValue:()=>({}),setInputValues:()=>({}),reset:()=>{},returnToInputs:()=>{},submit:async()=>({ok:false,error:'No backend in this fixture'}),resizeOutputs:()=>{if(g)runtime.resize(g)},viewReady:()=>{},runtimeSnapshot:()=>runtimeSnapshot,subscribeRuntime:()=>()=>{},outputSnapshot:()=>outputs,subscribeOutputs:fn=>{outputListeners.add(fn);return()=>outputListeners.delete(fn)},runContextSnapshot:()=>runContext,subscribeRunContext:()=>()=>{},testScenarioSnapshot:()=>scenario,subscribeTestScenarios:()=>()=>{},applyTestScenario:async()=>({ok:false})};
+   GenAppUi2Workbench.mount(allocation,{module:{moduleid:'neutral',label:'Neutral measurements'},fields:[{id:'neutral_plot',type:'plotly',role:'output',label:'Measurements'}],view:{renderer:'react-workbench',inputs:{sections:[]},results:{groups:[{...state.view.results.groups[0],fit:'pane',primary:true}]}},bridge});
+  }else{allocation.append(create());runtime.render(g,source);}
+  await settle();attachEvents();await widthTo(options.width||699.5);
+  return snapshot();
+ }
+ async function resize(width,height){allocation.style.width=allocation.getBoundingClientRect().width+(width-g.getBoundingClientRect().width)*(mode==='react'?1.6:1)+'px';if(height!==undefined)g.style.height=height+'px';await settle();await widthTo(width);return snapshot();}
+ async function visibility(hidden){allocation.style.display=hidden?'none':'';if(!hidden)await settle();else{await frame();await frame();}return hidden?{hidden:true}:snapshot();}
+ async function redraw(kind){source=copy(kind?figure(kind):source);saved=JSON.stringify(source);runtime.render(g,source);await settle();attachEvents();return snapshot();}
+ async function select(value){selection=copy(value);state.view.results.groups[0].plotPresentation=selection;const owner=g.closest('[data-plot-presentation]');if(owner)owner.dataset.plotPresentation=JSON.stringify(selection);runtime.render(g,source);await settle();return snapshot();}
+ async function release(){runtime.release(allocation);const had=!!g._ui2PlotlyResizeObserver,minHeight=g.style.minHeight,minHeightPriority=g.style.getPropertyPriority('min-height');if(mode==='react')GenAppUi2Workbench.unmount(allocation);allocation.replaceChildren();await frame();await frame();return {observerRemaining:had,minHeight,minHeightPriority};}
+ async function idle(){const before=events;for(let i=0;i<24;i++)await frame();return {before,after:events,settled:before===events};}
+ async function zoom(){await Plotly.relayout(g,{'xaxis.range':[10,90],'xaxis.autorange':false});await settle();return snapshot();}
+ async function hoverMode(value){await Plotly.relayout(g,{hovermode:value});await settle();}
+ function target(i=4){const r=g.querySelector('.main-svg').getBoundingClientRect(),f=g._fullLayout,t=source.data[0];return {x:r.left+(f.xaxis._offset+f.xaxis.d2p(t.x[i]))*r.width/f.width,y:r.top+(f.yaxis._offset+f.yaxis.d2p(t.y[i]))*r.height/f.height};}
+ async function transfer(){await runtime.resize(g);await runtime.fit(g);await api.settleTickDensity(g);const png=await Plotly.toImage(g,{format:'png',scale:2,width:g._fullLayout.width,height:g._fullLayout.height});const image=new Image();image.src=png;await image.decode();return {png,width:image.naturalWidth,height:image.naturalHeight,layoutWidth:g._fullLayout.width,layoutHeight:g._fullLayout.height,editor:{data:copy(g.data),layout:runtime.editor(g.layout)},snapshot:snapshot()};}
+ window.subplotHeightHarness={mount,resize,visibility,redraw,select,release,idle,zoom,hoverMode,target,transfer,snapshot,figure,settle};
+ const manualMeasure=async()=>{await settle();const s=snapshot();document.getElementById('report').textContent=JSON.stringify({mode:s.mode,width:s.width,height:s.height,devicePixelRatio:window.devicePixelRatio,cssZoom:document.documentElement.style.zoom||document.body.style.zoom||'',titleCollisions:s.titleCollisions,panelIntrusions:s.panelIntrusions,status:s.status,sourceUnchanged:s.sourceUnchanged,scientificDataUnchanged:s.scientificDataUnchanged});};
+ for(const m of ['native','react'])document.getElementById('manual-'+m).onclick=async()=>{await mount({mode:m,width:Math.min(699.5,innerWidth-32),height:480});await manualMeasure();};
+ document.getElementById('manual-measure').onclick=manualMeasure;
+ document.getElementById('report').textContent='Ready: baseline measurement, not a height fix';
+})().catch(e=>{document.getElementById('report').textContent=e.stack;window.heightHarnessError=e.stack;});
+</script>

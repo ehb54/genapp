@@ -157,3 +157,118 @@ the same eight-file scope. This authorizes guarded commits/pushes, the establish
 deployment workflow and scoped codex3 UI2 acceptance including logout, followed
 by Susan's issue handoff only after acceptance passes. The separate Recompile
 UI2 action-time gate remains pending; no YAML publication is needed.
+
+## Content-height gap and approved Phase B (#352, November 7, 2026)
+
+The earlier 626-pixel local checks missed the actual Lab's 480-pixel allocation.
+At that height, experimental scattering and the unchanged completed TAMC payload
+show axis-title intersections and q titles inside neighboring data panels.
+Spacing can redistribute existing domains but cannot increase the allocation.
+Short labels do not solve the lack of vertical room. Fixed producer/YAML heights,
+scientific title changes and reductions in scientific sampling are excluded.
+
+Phase A reproduces this failure in an application-neutral three-row figure in
+both production native UI2 and a mounted React workbench. The real Lab page uses
+only local mocked read APIs. It tests trajectory and prediction controls, both
+scattering fixtures, and the unchanged completed-job payload with all 154
+scientific traces and 50 residual curves. Initial actual Chart Editor rendering
+and JSON export preserve titles/units, scales, explicit ranges and data. Actual
+Chrome zoom at 80/100/125/150 percent is measured separately from viewport resizing.
+
+Before renderer edits, the same unchanged baseline passed on zazzie in an
+explicitly approved disposable Playwright 1.57.0 container: Linux x86_64,
+glibc 2.39, Python 3.12.3, Chromium 143.0.7499.4; 90 neutral checks and the real
+Lab/Editor cases passed as baseline-reproduction checks. Source mounts were
+read-only. Evidence is under `/tmp/tamc-352-phase-b.IUlyY1tK/evidence/baseline`
+on zazzie and `/private/tmp/issue352-height-phase-b/server-validation/linux-baseline`
+on the development Mac. The container removed itself; deployed files and existing
+application containers were not changed. The test image digest is
+`sha256:3de745b23fc4b33fccbcb3f592ee52dd5c80ce79f19f839c825ce23364e403c1`.
+
+Joseph approved the exact 16-file Phase B manifest, uncommitted, without deployment
+or other plotting modules, and separately approved this temporary server runtime.
+The generic new opt-in is `subplotHeight: "content-minimum"` together with the
+existing spacing selection. It uses measured lanes and source row proportions to
+reserve at least 80 CSS pixels of data height per row. Both consumer pipelines
+reuse the helper and existing presentation queue; bounded passes must settle.
+Only TAMC scattering selects it. Native selection routing carries the new key.
+No application/scientific identifiers enter the core helper. Non-opted-in,
+invalid, single-row and unsupported figures retain prior behavior.
+
+Height ownership is transient and limited to the plot host's `min-height`.
+Recompute for narrower/wider allocation, viewport and source changes; release
+excess height on fewer rows and restore the original value/priority on removal
+or teardown. Do not overwrite newer author changes. No CSS, React source,
+generated React bundle, vendor, editor implementation or scientific code changes
+are authorized. Any such need requires a revised manifest. Source reconstruction
+and teardown use existing paths; no new observer, transport or saved state exists.
+
+Correction acceptance must pass the focused neutral and TAMC checks on Mac and
+Linux, source/metadata parity, actual allocation resize and expanded/restore,
+hidden/reveal, row/selection removal, authored-style restoration, no idle loops,
+actual closest/compare pointer values, zoom retention, scale-2 PNG, real Editor
+handoff and actual TAMC browser zoom. Keep non-opted-in trajectory and generic
+controls unchanged. Deployed lifecycle and authenticated reattachment remain
+pending under this no-deployment scope. Rollback removes only the scattering
+height selection and reverses this height extension; saved outputs need no change.
+
+The final height path distinguishes the SVG canvas from host padding, quantizes
+opted-in panel boundaries to renderer pixels, and protects the readability floor
+against rounding. Within an allocation/content generation it grows monotonically;
+width, viewport or source changes recompute the natural allocation and permit
+shrinkage. A bounded four-pixel lane allowance can move an unresolved measured fit
+off a rounding threshold. The generation-wide change budget prevents self-induced
+resize callbacks from restarting that budget indefinitely. None of these rules
+apply to spacing-only consumers.
+
+Final correction validation passed on November 7, 2026. The native/React neutral
+suite passed 120 checks on both the development Mac and zazzie's temporary Linux
+runtime. These include actual allocation resize/restore, hidden/reveal, zoom
+retention, pointer coordinates, row/selection removal, authored minimum-height
+and priority restoration, idle settlement, scale-2 PNG and teardown. The existing
+spacing-only regression suite also passed. The actual mounted React Expand
+workspace and Restore split view controls passed a separate focused check.
+
+The actual Lab and bundled Chart Editor passed both reported fixtures, the
+prediction control and the unchanged completed-job payload on Mac and Linux.
+Experimental and saved scattering passed all four light/dark and matched/contrast
+surface combinations, narrow/wide/restore, source parity, scale-2 PNG, initial
+Editor rendering and Editor JSON export of titles/units, scales and explicit
+ranges. Actual Chrome zoom covered every fixture at 80/100/125/150 percent:
+17 measurements cover 16 fixture/zoom combinations, all collision-free with
+unchanged science. Chrome zoom was restored to 100 percent and the local test tab
+closed. All 154 scientific traces and 50 residual curves remain; the existing
+null-data compact-legend proxy remains presentation-only.
+
+The non-opted-in trajectory control retains the baseline's numeric
+`geometry-pass-limit` diagnostic at 125-percent zoom; rendered labels remain
+clear and source/data remain unchanged. This height change does not alter that
+control or represent deployed issue acceptance.
+
+Final Linux evidence is under
+`/tmp/tamc-352-phase-b.IUlyY1tK/evidence/candidate3` on zazzie, mirrored to
+`/private/tmp/issue352-height-phase-b/server-validation/linux-final` on the Mac.
+Mac evidence is in `quantized-neutral`, `quantized-lab` and
+`quantized-react-controls` below `/private/tmp/issue352-height-phase-b`.
+The Mac automated browser executable reports Chrome 156.0.8078.80; the pinned
+Linux runtime uses Chromium 143.0.7499.4. Runtime/input SHA-256 fingerprints match
+the final candidate. An earlier combined Linux run was interrupted after its
+neutral suite passed; final acceptance uses a fresh complete combined run.
+Every disposable validation container removed itself. No deployed file,
+existing application container, scientific code, source payload or plotting
+module outside TAMC was changed. The 16-file change remains uncommitted.
+Deployed completion and authenticated reattachment remain pending, as required
+by this task's no-deployment scope.
+
+
+### Approved deployed acceptance
+
+After Phase B validation, Joseph explicitly approved `tell_susan_plus` for #352,
+including Recompile UI2 through the canonical workflow and codex3 administrator
+acceptance with logout. The same 16-file manifest governs guarded commits/pushes,
+application fast-forward, canonical UI2 regeneration and the #352-only browser
+checks. Existing completed-job data are the acceptance source; other plotting
+modules and scientific changes remain excluded. Susan's issue handoff is
+conditional on all required deployed acceptance passing. The earlier
+no-deployment/uncommitted statements above describe the completed Phase B scope,
+not this later authorization. Deployed results will be reported on #352.

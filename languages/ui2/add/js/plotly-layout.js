@@ -392,14 +392,18 @@
   function panelSpacingPlan(plot, source, selection) {
     if (selection?.subplotSpacing !== 'avoid-overlap') return {status:'not-selected',update:null};
     // Retain the established one-column grid contract and source weighting.
-    if (source?.grid?.columns === 1 && !Object.values(fullAxes(plot)).some(a=>a?.overlaying)) {
+    if (selection?.subplotHeight !== 'content-minimum' && source?.grid?.columns === 1 && !Object.values(fullAxes(plot)).some(a=>a?.overlaying)) {
       const status={};
       const update=verticalSubplotSpacingUpdate(plot,source,selection,status);
       return {...status,update};
     }
     const model=cartesianPanels(plot,source);
     if (model.reason) return {status:model.reason==='single-panel'?'not-applicable':'unsupported',reason:model.reason,update:null};
-    const full=plot._fullLayout, box=plot.getBoundingClientRect?.(), size=full?._size;
+    const full=plot._fullLayout, hostBox=plot.getBoundingClientRect?.(), size=full?._size;
+    // Height ownership sizes the host, while Plotly lays out its inner canvas.
+    // Host padding is an outer lane, not a CSS scale applied to every axis.
+    const box=selection?.subplotHeight==='content-minimum'
+      ? (plot.querySelector?.('.main-svg')?.getBoundingClientRect?.() || hostBox) : hostBox;
     if (!(box?.width > 0 && box?.height > 0 && size?.w > 0 && size?.h > 0)) {
       return {status:'insufficient-space',reason:'unmeasurable-host',update:null};
     }
@@ -454,23 +458,118 @@
       const available=total-gaps.reduce((sum,v)=>sum+v,0);
       const weights=domains.map(d=>d[1]-d[0]), weight=weights.reduce((a,b)=>a+b,0);
       if (weights.some(w=>available*w/weight < 24)) return null;
-      let start=0;
+      let start=0, idealStart=0;
       return weights.map((w,i)=>{
-        const end=start+available*w/weight/total;
+        const idealEnd=idealStart+available*w/weight/total;
+        // Plotly rounds axis spans to pixels. Quantize cumulative boundaries
+        // for the height opt-in so measured lanes have a stable pixel solution.
+        const end=selection?.subplotHeight==='content-minimum'
+          ? (i===weights.length-1?1:Math.round(idealEnd*total)/total) : idealEnd;
         const d=reverse?[1-end,1-start]:[start,end];
         start=end+(gaps[i]||0)/total;
+        idealStart=idealEnd+(gaps[i]||0)/total;
         return d.map(v=>Math.max(0,Math.min(1,v)));
       });
     };
+    // Height demand uses the same measured lanes and immutable row ratios.
+    // The readability floor is CSS geometry, never a scientific sampling rule.
+    const weights=model.rows.map(d=>d[1]-d[0]);
+    const minimumHeight=selection?.subplotHeight==='content-minimum'
+      ? (full.height-size.h+verticalGaps.reduce((sum,v)=>sum+v,0)+
+        (80/sy+1)*weights.reduce((sum,v)=>sum+v,0)/Math.min(...weights))*sy+Math.max(0,hostBox.height-box.height) : undefined;
     const xd=allocate(model.columns,columns,size.w,false), yd=allocate(model.rows,rows,size.h,true,verticalGaps);
-    if (!xd || !yd) return {status:'insufficient-space',reason:'minimum-panel-size',update:null};
+    if (!xd || !yd) return {status:'insufficient-space',reason:'minimum-panel-size',update:null,minimumHeight};
     const update={};
     for (const panel of model.panels) for (const [name,d] of [[panel.xName,xd[panel.column]],[panel.yName,yd[panel.row]]]) {
       // Half-pixel tolerance avoids relayout cycles from font/margin rounding.
       const pixels=name.startsWith('x')?size.w:size.h;
       if (d.some((v,i)=>Math.abs(v-full[name].domain[i])*pixels > .5)) update[`${name}.domain`]=d;
     }
-    return {status:'fitted',update:Object.keys(update).length?update:null};
+    return {status:'fitted',update:Object.keys(update).length?update:null,minimumHeight};
+  }
+
+  const subplotHeights = new WeakMap();
+
+  // Restore only our own inline property. New author changes are authoritative.
+  function clearSubplotHeight(plot) {
+    const state=subplotHeights.get(plot);
+    if (!state) return false;
+    let changed=false;
+    if (state.applied != null && plot.style.getPropertyValue('min-height')===state.applied &&
+        plot.style.getPropertyPriority('min-height')===state.priority) {
+      if (state.original) plot.style.setProperty('min-height',state.original,state.priority);
+      else plot.style.removeProperty('min-height');
+      changed=true;
+    }
+    subplotHeights.delete(plot);
+    return changed;
+  }
+
+  // Run inside the caller's existing presentation queue. Never recursively
+  // enqueue a fit or observe generated SVG; the caller retains resize ownership.
+  async function fitSubplotHeight(plot, source, selection, fit) {
+    const model=cartesianPanels(plot,source);
+    const selected=selection?.subplotHeight==='content-minimum' &&
+      selection?.subplotSpacing==='avoid-overlap' && model.rows?.length>1;
+    if (!selected || !plot?.style || !plot?._fullLayout) {
+      if (clearSubplotHeight(plot) && plot?._fullLayout) await window.Plotly.Plots.resize(plot);
+      return fit();
+    }
+    const box=plot.getBoundingClientRect();
+    if (!(box.width>0 && box.height>0) || plot.offsetParent===null) return;
+    const width=Math.round(box.width), viewport=window.innerHeight, height=plot.style.height;
+    let state=subplotHeights.get(plot);
+    const overridden=state?.applied != null &&
+      (plot.style.getPropertyValue('min-height')!==state.applied ||
+       plot.style.getPropertyPriority('min-height')!==state.priority);
+    if (state && (state.source!==source || state.width!==width ||
+        state.viewport!==viewport || state.height!==height || overridden)) {
+      if (clearSubplotHeight(plot)) await window.Plotly.Plots.resize(plot);
+      state=null;
+    }
+    if (!state) {
+      state={source,width,viewport,height,naturalHeight:plot.getBoundingClientRect().height,
+        original:plot.style.getPropertyValue('min-height'),
+        priority:plot.style.getPropertyPriority('min-height'),applied:null,heightChanges:0};
+      subplotHeights.set(plot,state);
+    }
+    for (let pass=0;pass<6;pass++) {
+      await fit();
+      if (!plot._fullLayout || subplotHeights.get(plot)!==state) return;
+      const demand=panelSpacingPlan(plot,source,selection).minimumHeight;
+      if (!Number.isFinite(demand)) return;
+      const css=window.getComputedStyle(plot);
+      const extra=css.boxSizing==='border-box'?0:
+        ['paddingTop','paddingBottom','borderTopWidth','borderBottomWidth']
+          .reduce((sum,key)=>sum+(parseFloat(css[key])||0),0);
+      let needed=demand>state.naturalHeight+.5 ? Math.ceil(demand-extra)+'px' : null;
+      // Grow monotonically within one allocation/content generation. Title
+      // wrapping can move a lane by a few pixels at its threshold; shrinking
+      // during that same fit would alternate between two heights indefinitely.
+      // Width/viewport/source changes restore the natural allocation above.
+      if (needed===state.applied || (state.applied!=null && demand<=plot.getBoundingClientRect().height+.5)) {
+        if (subplotFits.get(plot)?.status?.status!=='unsettled') return;
+        // Integer SVG axis spans can straddle a measured lane boundary.
+        // Reserve one additional four-pixel lane instead of retrying the same
+        // allocation. The existing six-pass bound remains authoritative.
+        needed=Math.ceil(plot.getBoundingClientRect().height+4-extra)+'px';
+      }
+      if (state.heightChanges>=6) {
+        const spacing=subplotFits.get(plot);
+        if (spacing) spacing.status={status:'unsettled',reason:'height-pass-limit'};
+        return;
+      }
+      state.heightChanges++;
+      if (needed==null) {
+        if (state.original) plot.style.setProperty('min-height',state.original,state.priority);
+        else plot.style.removeProperty('min-height');
+      } else plot.style.setProperty('min-height',needed,state.priority);
+      state.applied=needed;
+      await window.Plotly.Plots.resize(plot);
+    }
+    await fit();
+    const spacing=subplotFits.get(plot);
+    if (spacing) spacing.status={status:'unsettled',reason:'height-pass-limit'};
   }
 
   function subplotSpacingUpdate(plot, sourceLayout, selection) {
@@ -1526,6 +1625,8 @@
     refresh_hover_trace_selection,
     hover_trace_selection_data,
     queuePresentationFit,
+    fitSubplotHeight,
+    clearSubplotHeight,
     applyFigureTitleOverflow,
     subplotSpacingUpdate,
     applySubplotSpacing,
