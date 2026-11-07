@@ -12989,7 +12989,7 @@
   // fallback has no React FieldGroup ancestor, so use its declared output id.
   function plotGeometryForOutput(output) {
     const keys = ["axisTickFormats", "axisTickDensity", "axisTitleOverflow",
-      "figureTitleOverflow", "subplotSpacing", "subplotHeight", "annotationPlacement"];
+      "figureTitleOverflow", "subplotSpacing", "annotationPlacement"];
     const geometry = (selection) => {
       if (!selection || typeof selection !== "object" || Array.isArray(selection)) return {};
       return Object.fromEntries(keys.filter((key) => Object.prototype.hasOwnProperty.call(selection, key))
@@ -13215,7 +13215,6 @@
   function releasePlotlyOutputs(scope) {
     scope?.querySelectorAll?.('[data-output-type="plotly"]').forEach(output => {
       disconnectPlotlyOutputObserver(output);
-      window.GenAppPlotlyLayout?.clearSubplotHeight?.(output);
       window.GenAppPlotlyLayout?.clear_hover_trace_selection?.(output);
       if (output.data && window.Plotly?.purge) window.Plotly.purge(output);
     });
@@ -13486,8 +13485,6 @@
 
   function fitPlotlyPresentationGeometry(output) {
     return window.GenAppPlotlyLayout.queuePresentationFit(output, () =>
-      window.GenAppPlotlyLayout.fitSubplotHeight(output,
-        output?._ui2PlotlyLastFigure?.layout || {}, plotGeometryForOutput(output), () =>
       Promise.resolve(fitPlotlyLegendsBelowPlot(output))
       .then(() => window.GenAppPlotlyLayout.applyFigureTitleOverflow(
         output, output?._ui2PlotlyLastFigure?.layout || {},
@@ -13506,7 +13503,7 @@
         output,
         output?._ui2PlotlyLastFigure?.layout || {},
         plotGeometryForOutput(output)
-      ))));
+      )));
   }
 
   function plotlyOutputReadyForRelayout(output) {

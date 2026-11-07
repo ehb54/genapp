@@ -708,13 +708,6 @@ UI2 and the Lab share one measured inter-panel lane helper. Preserve source
 figures, scientific arrays, uncertainty, identities, ranges and reattachment;
 no SASSIE calculation or producer spacing workaround belongs here.
 
-The related generic `plotPresentation.subplotHeight: "content-minimum"` opt-in
-reserves measured content height with existing spacing, restores helper-owned
-minimum-height styles and leaves source figures unchanged. Route contract and
-validation to GenApp's `doc/UI2-Core-Extension-Policy.md` and
-`doc/UI2-Subplot-Spacing-Shared-Gap-Report.md` (#352). No producer or YAML height
-workaround belongs here.
-
 ## Global UI2 workspace route
 
 Optional application-wide workspaces are discovered only through the generic

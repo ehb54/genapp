@@ -267,17 +267,14 @@
 
   // Opted-in independent vertical panels reserve measured display-only lanes.
   // Rebuild domains from the source relationships, never from prior adjustments.
-  function verticalSubplotSpacingUpdate(plot, sourceLayout, selection, status = {}) {
-    status.status = "unsupported"; status.reason = "unsupported-grid";
+  function subplotSpacingUpdate(plot, sourceLayout, selection) {
     if (selection?.subplotSpacing !== "avoid-overlap") return null;
     const grid = sourceLayout?.grid;
     if (grid?.columns !== 1 || !Array.isArray(grid.subplots) || grid.subplots.length < 2) return null;
     const full = plot?._fullLayout;
     const height = Number(full?._size?.h);
     const plotTop = Number(plot?.getBoundingClientRect?.().top);
-    if (!(height > 0) || !Number.isFinite(plotTop)) {
-      status.status="insufficient-space"; status.reason="unmeasurable-host"; return null;
-    }
+    if (!(height > 0) || !Number.isFinite(plotTop)) return null;
     const rows = grid.subplots.map((row) => {
       const match = Array.isArray(row) && row.length === 1 && /^x(\d*)y(\d*)$/.exec(row[0]);
       if (!match) return null;
@@ -305,14 +302,9 @@
     if (gaps.some((gap) => !Number.isFinite(gap))) return null;
     const available = height - gaps.reduce((total, gap) => total + gap, 0);
     // Do not collapse scientific panels when a host supplies an unusable height.
-    if (available < rows.length * 24) {
-      status.status="insufficient-space"; status.reason="minimum-panel-size"; return null;
-    }
+    if (available < rows.length * 24) return null;
     const totalWeight = rows.reduce((total, row) => total + row.weight, 0);
-    if (rows.some((row) => available * row.weight / totalWeight < 24)) {
-      status.status="insufficient-space"; status.reason="minimum-panel-size"; return null;
-    }
-    status.status="fitted"; delete status.reason;
+    if (rows.some((row) => available * row.weight / totalWeight < 24)) return null;
     let top = 1;
     const update = {};
     rows.forEach((row, index) => {
@@ -327,349 +319,10 @@
     return Object.keys(update).length ? update : null;
   }
 
-  const subplotFits = new WeakMap();
-  const axisName = id => /^[xy]\d*$/.test(id || '') ? id.replace(/^([xy])/, '$1axis') : null;
-  const sameDomain = (a, b) => Array.isArray(a) && Array.isArray(b) &&
-    a.length === 2 && b.length === 2 && a.every((v, i) => Math.abs(v - b[i]) < 1e-6);
-  const validDomain = d => Array.isArray(d) && d.length === 2 &&
-    d.every(Number.isFinite) && d[0] >= 0 && d[1] <= 1 && d[1] > d[0];
-
-  // Explicit Cartesian relationships are sufficient for historical figures;
-  // no grid, trace role, title parsing or application identifier is required.
-  function cartesianPanels(plot, source) {
-    const full = plot?._fullLayout || {}, panels = [];
-    const fail = reason => ({reason});
-    if (source?.grid) {
-      const g = source.grid;
-      if (!Number.isInteger(g.columns) || g.columns < 1 || !Array.isArray(g.subplots) ||
-          !g.subplots.length || g.subplots.some(row => !Array.isArray(row) || row.length !== g.columns ||
-            row.some(pair => !/^x\d*y\d*$/.test(pair)))) return fail('unsupported-grid');
-    }
-    for (const name of Object.keys(full).filter(k => /^xaxis\d*$/.test(k))) {
-      const x = full[name], yName = axisName(x?.anchor), y = full[yName];
-      if (!x || x.overlaying || !y || y.overlaying) continue;
-      if (y.anchor !== name.replace('axis', '') || x.side === 'top' || y.side === 'right') {
-        return fail('unsupported-axis-relationships');
-      }
-      const xd = source?.[name]?.domain || x.domain;
-      const yd = source?.[yName]?.domain || y.domain;
-      if (!validDomain(xd) || !validDomain(yd)) return fail('unsupported-domains');
-      panels.push({xName:name, yName, xd:xd.slice(), yd:yd.slice(), axes:[name,yName]});
-    }
-    if (panels.length < 2) return fail('single-panel');
-    for (const [name, axis] of Object.entries(full)) {
-      if (!AXIS_KEY.test(name) || !axis?.overlaying) continue;
-      const base = axisName(axis.overlaying), panel = panels.find(p => p.axes.includes(base));
-      if (!panel || axisName(axis.anchor) !== (name.startsWith('y') ? panel.xName : panel.yName)) {
-        return fail('unsupported-overlay');
-      }
-      panel.axes.push(name);
-    }
-    const groups = (key, descending) => {
-      const domains = [];
-      for (const panel of panels) if (!domains.some(d => sameDomain(d, panel[key]))) domains.push(panel[key]);
-      domains.sort((a,b) => descending ? b[0]-a[0] : a[0]-b[0]);
-      for (let i=0;i<domains.length;i++) for (let j=i+1;j<domains.length;j++) {
-        if (Math.min(domains[i][1],domains[j][1])-Math.max(domains[i][0],domains[j][0]) > 1e-6) return null;
-      }
-      return domains;
-    };
-    const columns=groups('xd',false), rows=groups('yd',true);
-    if (!columns || !rows) return fail('nonrectangular-panels');
-    const cells = new Set();
-    for (const panel of panels) {
-      panel.column=columns.findIndex(d=>sameDomain(d,panel.xd));
-      panel.row=rows.findIndex(d=>sameDomain(d,panel.yd));
-      const cell=`${panel.row}:${panel.column}`;
-      if (cells.has(cell)) return fail('shared-panel-axes');
-      cells.add(cell);
-    }
-    return {panels,columns,rows};
-  }
-
-  const fullAxes=plot=>Object.fromEntries(Object.entries(plot?._fullLayout || {}).filter(([k])=>AXIS_KEY.test(k)));
-
-  function panelSpacingPlan(plot, source, selection) {
-    if (selection?.subplotSpacing !== 'avoid-overlap') return {status:'not-selected',update:null};
-    // Retain the established one-column grid contract and source weighting.
-    if (selection?.subplotHeight !== 'content-minimum' && source?.grid?.columns === 1 && !Object.values(fullAxes(plot)).some(a=>a?.overlaying)) {
-      const status={};
-      const update=verticalSubplotSpacingUpdate(plot,source,selection,status);
-      return {...status,update};
-    }
-    const model=cartesianPanels(plot,source);
-    if (model.reason) return {status:model.reason==='single-panel'?'not-applicable':'unsupported',reason:model.reason,update:null};
-    const full=plot._fullLayout, hostBox=plot.getBoundingClientRect?.(), size=full?._size;
-    // Height ownership sizes the host, while Plotly lays out its inner canvas.
-    // Host padding is an outer lane, not a CSS scale applied to every axis.
-    const box=selection?.subplotHeight==='content-minimum'
-      ? (plot.querySelector?.('.main-svg')?.getBoundingClientRect?.() || hostBox) : hostBox;
-    if (!(box?.width > 0 && box?.height > 0 && size?.w > 0 && size?.h > 0)) {
-      return {status:'insufficient-space',reason:'unmeasurable-host',update:null};
-    }
-    const sx=box.width/full.width, sy=box.height/full.height;
-    const lanes=values=>values.map(()=>({before:0,after:0}));
-    const columns=lanes(model.columns), rows=lanes(model.rows);
-    for (const panel of model.panels) {
-      const x=full[panel.xName], y=full[panel.yName];
-      const bounds={left:box.left+x._offset*sx,right:box.left+(x._offset+x._length)*sx,
-        top:box.top+y._offset*sy,bottom:box.top+(y._offset+y._length)*sy};
-      panel.bounds=bounds; panel.labels=[];
-      for (const name of panel.axes) {
-        const id=name.replace('axis','');
-        const nodes=[plot.querySelector?.(`.${id}title`),...Array.from(plot.querySelectorAll?.(`.${id}tick text`) || [])];
-        for (const node of nodes) {
-          if (!node?.textContent?.replace(/\u200b/g,'').trim()) continue;
-          const r=node.getBoundingClientRect?.();
-          if (!(r?.width > 0 && r?.height > 0)) continue;
-          panel.labels.push(r);
-          const col=columns[panel.column], row=rows[panel.row];
-          col.before=Math.max(col.before,(bounds.left-r.left)/sx);
-          col.after=Math.max(col.after,(r.right-bounds.right)/sx);
-          row.before=Math.max(row.before,(bounds.top-r.top)/sy);
-          row.after=Math.max(row.after,(r.bottom-bounds.bottom)/sy);
-        }
-      }
-    }
-    // Only labels sharing a horizontal lane need vertical clearance from
-    // one another. A side y title must not add its overhang to a centered x
-    // title: those rectangles are in different lanes, especially in short rows.
-    const overlapsX=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>1;
-    const verticalGaps=model.rows.slice(0,-1).map((_,i)=>{
-      let gap=24;
-      for (const upper of model.panels.filter(p=>p.row===i)) {
-        for (const lower of model.panels.filter(p=>p.row===i+1)) {
-          for (const a of upper.labels) {
-            const depth=Math.max(0,(a.bottom-upper.bounds.bottom)/sy);
-            if (overlapsX(a,lower.bounds)) gap=Math.max(gap,depth+12);
-            for (const b of lower.labels) if (overlapsX(a,b)) {
-              gap=Math.max(gap,depth+Math.max(0,(lower.bounds.top-b.top)/sy)+12);
-            }
-          }
-          for (const b of lower.labels) if (overlapsX(b,upper.bounds)) {
-            gap=Math.max(gap,(lower.bounds.top-b.top)/sy+12);
-          }
-        }
-      }
-      return 4*Math.ceil(gap/4);
-    });
-    const allocate=(domains,lanes,total,reverse,measuredGaps)=>{
-      const gaps=measuredGaps || lanes.slice(0,-1).map((lane,i)=>Math.max(24,4*Math.ceil((lane.after+lanes[i+1].before+12)/4)));
-      const available=total-gaps.reduce((sum,v)=>sum+v,0);
-      const weights=domains.map(d=>d[1]-d[0]), weight=weights.reduce((a,b)=>a+b,0);
-      if (weights.some(w=>available*w/weight < 24)) return null;
-      let start=0, idealStart=0;
-      return weights.map((w,i)=>{
-        const idealEnd=idealStart+available*w/weight/total;
-        // Plotly rounds axis spans to pixels. Quantize cumulative boundaries
-        // for the height opt-in so measured lanes have a stable pixel solution.
-        const end=selection?.subplotHeight==='content-minimum'
-          ? (i===weights.length-1?1:Math.round(idealEnd*total)/total) : idealEnd;
-        const d=reverse?[1-end,1-start]:[start,end];
-        start=end+(gaps[i]||0)/total;
-        idealStart=idealEnd+(gaps[i]||0)/total;
-        return d.map(v=>Math.max(0,Math.min(1,v)));
-      });
-    };
-    // Height demand uses the same measured lanes and immutable row ratios.
-    // The readability floor is CSS geometry, never a scientific sampling rule.
-    const weights=model.rows.map(d=>d[1]-d[0]);
-    const minimumHeight=selection?.subplotHeight==='content-minimum'
-      ? (full.height-size.h+verticalGaps.reduce((sum,v)=>sum+v,0)+
-        (80/sy+1)*weights.reduce((sum,v)=>sum+v,0)/Math.min(...weights))*sy+Math.max(0,hostBox.height-box.height) : undefined;
-    const xd=allocate(model.columns,columns,size.w,false), yd=allocate(model.rows,rows,size.h,true,verticalGaps);
-    if (!xd || !yd) return {status:'insufficient-space',reason:'minimum-panel-size',update:null,minimumHeight};
-    const update={};
-    for (const panel of model.panels) for (const [name,d] of [[panel.xName,xd[panel.column]],[panel.yName,yd[panel.row]]]) {
-      // Half-pixel tolerance avoids relayout cycles from font/margin rounding.
-      const pixels=name.startsWith('x')?size.w:size.h;
-      if (d.some((v,i)=>Math.abs(v-full[name].domain[i])*pixels > .5)) update[`${name}.domain`]=d;
-    }
-    return {status:'fitted',update:Object.keys(update).length?update:null,minimumHeight};
-  }
-
-  const subplotHeights = new WeakMap();
-
-  // Restore only our own inline property. New author changes are authoritative.
-  function clearSubplotHeight(plot) {
-    const state=subplotHeights.get(plot);
-    if (!state) return false;
-    let changed=false;
-    if (state.applied != null && plot.style.getPropertyValue('min-height')===state.applied &&
-        plot.style.getPropertyPriority('min-height')===state.priority) {
-      if (state.original) plot.style.setProperty('min-height',state.original,state.priority);
-      else plot.style.removeProperty('min-height');
-      changed=true;
-    }
-    subplotHeights.delete(plot);
-    return changed;
-  }
-
-  // Run inside the caller's existing presentation queue. Never recursively
-  // enqueue a fit or observe generated SVG; the caller retains resize ownership.
-  async function fitSubplotHeight(plot, source, selection, fit) {
-    const model=cartesianPanels(plot,source);
-    const selected=selection?.subplotHeight==='content-minimum' &&
-      selection?.subplotSpacing==='avoid-overlap' && model.rows?.length>1;
-    if (!selected || !plot?.style || !plot?._fullLayout) {
-      if (clearSubplotHeight(plot) && plot?._fullLayout) await window.Plotly.Plots.resize(plot);
-      return fit();
-    }
-    const box=plot.getBoundingClientRect();
-    if (!(box.width>0 && box.height>0) || plot.offsetParent===null) return;
-    const width=Math.round(box.width), viewport=window.innerHeight, height=plot.style.height;
-    let state=subplotHeights.get(plot);
-    const overridden=state?.applied != null &&
-      (plot.style.getPropertyValue('min-height')!==state.applied ||
-       plot.style.getPropertyPriority('min-height')!==state.priority);
-    if (state && (state.source!==source || state.width!==width ||
-        state.viewport!==viewport || state.height!==height || overridden)) {
-      if (clearSubplotHeight(plot)) await window.Plotly.Plots.resize(plot);
-      state=null;
-    }
-    if (!state) {
-      state={source,width,viewport,height,naturalHeight:plot.getBoundingClientRect().height,
-        original:plot.style.getPropertyValue('min-height'),
-        priority:plot.style.getPropertyPriority('min-height'),applied:null,heightChanges:0};
-      subplotHeights.set(plot,state);
-    }
-    for (let pass=0;pass<6;pass++) {
-      await fit();
-      if (!plot._fullLayout || subplotHeights.get(plot)!==state) return;
-      const demand=panelSpacingPlan(plot,source,selection).minimumHeight;
-      if (!Number.isFinite(demand)) return;
-      const css=window.getComputedStyle(plot);
-      const extra=css.boxSizing==='border-box'?0:
-        ['paddingTop','paddingBottom','borderTopWidth','borderBottomWidth']
-          .reduce((sum,key)=>sum+(parseFloat(css[key])||0),0);
-      let needed=demand>state.naturalHeight+.5 ? Math.ceil(demand-extra)+'px' : null;
-      // Grow monotonically within one allocation/content generation. Title
-      // wrapping can move a lane by a few pixels at its threshold; shrinking
-      // during that same fit would alternate between two heights indefinitely.
-      // Width/viewport/source changes restore the natural allocation above.
-      if (needed===state.applied || (state.applied!=null && demand<=plot.getBoundingClientRect().height+.5)) {
-        if (subplotFits.get(plot)?.status?.status!=='unsettled') return;
-        // Integer SVG axis spans can straddle a measured lane boundary.
-        // Reserve one additional four-pixel lane instead of retrying the same
-        // allocation. The existing six-pass bound remains authoritative.
-        needed=Math.ceil(plot.getBoundingClientRect().height+4-extra)+'px';
-      }
-      if (state.heightChanges>=6) {
-        const spacing=subplotFits.get(plot);
-        if (spacing) spacing.status={status:'unsettled',reason:'height-pass-limit'};
-        return;
-      }
-      state.heightChanges++;
-      if (needed==null) {
-        if (state.original) plot.style.setProperty('min-height',state.original,state.priority);
-        else plot.style.removeProperty('min-height');
-      } else plot.style.setProperty('min-height',needed,state.priority);
-      state.applied=needed;
-      await window.Plotly.Plots.resize(plot);
-    }
-    await fit();
-    const spacing=subplotFits.get(plot);
-    if (spacing) spacing.status={status:'unsettled',reason:'height-pass-limit'};
-  }
-
-  function subplotSpacingUpdate(plot, sourceLayout, selection) {
-    return panelSpacingPlan(plot,sourceLayout,selection).update;
-  }
-
-  function subplotSpacingStatus(plot) {
-    const state=subplotFits.get(plot);
-    return state ? {...state.status} : null;
-  }
-
-  // Relocate the native label group as one block inside the hovered panel.
-  // Native hit testing, tooltip content, colors and compare selection are kept.
-  function bindPanelHover(plot, state, selected) {
-    if (!state.hover) {
-      state.labels=[];
-      state.restore=()=>{
-        for (const {node,original,applied} of state.labels) {
-          if (node.getAttribute('transform')===applied) {
-            if (original == null) node.removeAttribute('transform'); else node.setAttribute('transform',original);
-          }
-        }
-        state.labels=[];
-      };
-      state.hover=event=>{
-        state.restore();
-        const points=event?.points || [], first=points[0];
-        if (!first?.xaxis || !first?.yaxis || points.some(p=>p.xaxis!==first.xaxis || p.yaxis!==first.yaxis)) return;
-        const nodes=Array.from(plot.querySelectorAll?.('.hoverlayer .hovertext') || []);
-        if (!nodes.length) return;
-        const rects=nodes.map(n=>n.getBoundingClientRect()), full=plot._fullLayout, box=plot.getBoundingClientRect();
-        const sx=box.width/full.width, sy=box.height/full.height, x=first.xaxis,y=first.yaxis;
-        const own={left:box.left+x._offset*sx,right:box.left+(x._offset+x._length)*sx,
-          top:box.top+y._offset*sy,bottom:box.top+(y._offset+y._length)*sy};
-        // Use the hovered panel plus its empty gutters/margins. Long native
-        // labels need not fit inside the small data rectangle itself.
-        const panel={left:box.left+2,right:box.right-2,top:box.top+2,bottom:box.bottom-2};
-        for (const axes of state.panels || []) {
-          const xa=full[axes.xName],ya=full[axes.yName];
-          if (!xa || !ya) continue;
-          const other={left:box.left+xa._offset*sx,right:box.left+(xa._offset+xa._length)*sx,
-            top:box.top+ya._offset*sy,bottom:box.top+(ya._offset+ya._length)*sy};
-          if (Math.min(own.bottom,other.bottom)-Math.max(own.top,other.top)>1) {
-            if (other.left >= own.right-1) panel.right=Math.min(panel.right,other.left-4);
-            if (other.right <= own.left+1) panel.left=Math.max(panel.left,other.right+4);
-          }
-          if (Math.min(own.right,other.right)-Math.max(own.left,other.left)>1) {
-            if (other.top >= own.bottom-1) panel.bottom=Math.min(panel.bottom,other.top-4);
-            if (other.bottom <= own.top+1) panel.top=Math.max(panel.top,other.bottom+4);
-          }
-        }
-        const left=Math.min(...rects.map(r=>r.left)),right=Math.max(...rects.map(r=>r.right));
-        const top=Math.min(...rects.map(r=>r.top)),bottom=Math.max(...rects.map(r=>r.bottom));
-        if (right-left > panel.right-panel.left || bottom-top > panel.bottom-panel.top) {
-          state.status={...state.status,hover:'insufficient-space'};
-          return;
-        }
-        const dx=Math.min(Math.max(left,panel.left),panel.right-(right-left))-left;
-        const dy=Math.min(Math.max(top,panel.top),panel.bottom-(bottom-top))-top;
-        for (const node of nodes) {
-          const original=node.getAttribute('transform');
-          const applied=`${original || ''} translate(${dx/sx},${dy/sy})`;
-          node.setAttribute('transform',applied);state.labels.push({node,original,applied});
-        }
-        state.status={...state.status,hover:'fitted'};
-      };
-    }
-    for (const [event,listener] of [['plotly_hover',state.hover],['plotly_unhover',state.restore]]) {
-      plot.removeListener?.(event,listener);
-      if (selected) plot.on?.(event,listener);
-    }
-    if (!selected) state.restore();
-  }
-
-  async function applySubplotSpacing(plot, sourceLayout, selection) {
-    if (!plot?._fullLayout || typeof window.Plotly?.relayout !== 'function') return;
-    let state=subplotFits.get(plot);
-    if (!state) {state={status:{status:'not-selected'}};subplotFits.set(plot,state);}
-    state.panels=cartesianPanels(plot,sourceLayout).panels || [];
-    bindPanelHover(plot,state,selection?.subplotSpacing==='avoid-overlap' && state.panels.length>1);
-    let plan;
-    // Wrapping and tick clearance can change measured lanes. Settle bounded
-    // passes using the same immutable source weights, not the previous domains.
-    for (let pass=0;pass<6;pass++) {
-      plan=panelSpacingPlan(plot,sourceLayout,selection);
-      state.status={status:plan.status,...(plan.reason?{reason:plan.reason}:{})};
-      if (!plan.update) break;
-      await window.Plotly.relayout(plot,plan.update);
-      await applyAxisTitleOverflow(plot,sourceLayout,selection);
-      await settleTickDensity(plot);
-    }
-    if (plan?.update) {
-      plan=panelSpacingPlan(plot,sourceLayout,selection);
-      if (plan.update) state.status={status:'unsettled',reason:'geometry-pass-limit'};
-    }
-    if (['unsupported','insufficient-space','unsettled'].includes(state.status.status)) {
-      const message=`${state.status.status}:${state.status.reason}`;
-      if (state.warning!==message) window.console?.warn?.('Subplot spacing:',message);
-      state.warning=message;
-    }
+  function applySubplotSpacing(plot, sourceLayout, selection) {
+    const update = subplotSpacingUpdate(plot, sourceLayout, selection);
+    if (!update || typeof window.Plotly?.relayout !== "function") return null;
+    return Promise.resolve(window.Plotly.relayout(plot, update));
   }
 
   function nodeHeight(node) {
@@ -1625,12 +1278,9 @@
     refresh_hover_trace_selection,
     hover_trace_selection_data,
     queuePresentationFit,
-    fitSubplotHeight,
-    clearSubplotHeight,
     applyFigureTitleOverflow,
     subplotSpacingUpdate,
     applySubplotSpacing,
-    subplotSpacingStatus,
     axisTitleClearanceUpdate,
     tickLabelRows,
     settleTickDensity,

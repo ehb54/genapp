@@ -730,7 +730,7 @@ behavior. Identical selections are compared independent of object key order.
 Resolution uses the current module view without a cache or source mutation.
 
 Only `axisTickFormats`, `axisTickDensity`, `axisTitleOverflow`,
-`figureTitleOverflow`, `subplotSpacing`, `subplotHeight`, and `annotationPlacement` are routed
+`figureTitleOverflow`, `subplotSpacing`, and `annotationPlacement` are routed
 through this fallback. Existing shared layout helpers validate and apply them;
 explicit producer/template tick formats remain authoritative. Hover-name and
 numeric formatting, hover templates/colors, presentation profiles, trace styles,
@@ -848,31 +848,3 @@ collections too large for that lane retain existing scrolling. Preserve figure
 dimensions, scientific values, trace names/order, grouping and saved payloads.
 No producer sizing, YAML workaround or module-specific core branch belongs here.
 Evidence and targeted acceptance: `UI2-Legend-Overflow-Shared-Gap-Report.md`.
-
-## Opt-in subplot content height (#352)
-
-A result group may select `plotPresentation.subplotHeight: "content-minimum"`
-together with `subplotSpacing: "avoid-overlap"`. For supported independent
-Cartesian rows, the shared UI2 geometry helper reserves measured title/tick
-lanes and at least 80 CSS pixels of data height for each row while retaining
-source row proportions. Legend and outer allocations remain part of the existing
-presentation pipeline. UI2 may increase the host minimum height; producers and
-YAML do not supply dimensions. Single rows and unsupported relationships do not
-acquire height ownership. Missing or invalid selections preserve prior behavior.
-
-Ordinary native/React UI2 and application previews call the same bounded helper
-inside the existing presentation queue. The helper releases excess height after
-width, viewport or content changes and restores its own inline property when the
-selection is removed or the output is released. Original values and CSS priority
-are retained; newer author changes are not overwritten. Width is never owned.
-Resize, hidden/reveal, updates, export and initial Editor handoff use the existing
-lifecycle. Opted-in panel boundaries align to renderer pixels, retaining source
-proportions within that rounding. A one-pixel allowance protects the CSS data-row
-floor. Height changes are bounded across queued fits for each allocation/content
-generation; an unsettled layout fails validation.
-
-Scientific data, sampling, uncertainty, titles/units, scales, explicit ranges,
-series identities, output ids and saved payloads remain unchanged. Source output
-continues to reconstruct presentation without migration or replay state. HTML5
-rendering and non-opted-in consumers remain unchanged. Evidence, scope and
-rollback are in `doc/UI2-Subplot-Spacing-Shared-Gap-Report.md` in GenApp.

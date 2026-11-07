@@ -272,3 +272,148 @@ modules and scientific changes remain excluded. Susan's issue handoff is
 conditional on all required deployed acceptance passing. The earlier
 no-deployment/uncommitted statements above describe the completed Phase B scope,
 not this later authorization. Deployed results will be reported on #352.
+
+
+## #352 saved-job width validation, November 7, 2026
+
+Joseph approved the five-file validation-only manifest and a disposable
+Playwright container on zazzie. This approval authorizes no renderer edits,
+commit/push, deployment, account access, scientific run or other plotting module.
+The ordinary server working copies were older than deployed code and remain
+untouched. Uncommitted validation work is isolated under
+`/tmp/tamc-352-width.RBnWLnC7/{genapp,genapp_zazzie}` on the existing branch names.
+
+### Missed coverage and maintained reproduction
+
+The former height fixture constructed a static graph, supplied a child width,
+and adjusted allocation width through `widthTo`. The Lab test copied the saved
+figure into a Lab fixture, not its production dynamic-output wrapper. Those
+checks established height behavior but did not certify saved-job width sizing.
+
+`t/fixtures/plotly_subplot_height.html` now also exposes `widthProbe`. It uses
+production field/output creation, dynamic item updates and actual React mounting,
+including the ordinary field row and control stack. Dynamic charts initialize
+hidden and reveal through real allocation observation. This path never invokes
+`widthTo`, forces a graph/instance width, changes a grid track, or manually fits
+after reveal. Static controls mount visibly. Each case measures parent content,
+graph and SVG boxes, pending resize and afterplot events; fitting has a 15-second
+bound and a two-second stability requirement. A short follow-up records growth.
+The Perl entry point owns the neutral current/previous, native/React,
+static/dynamic, selected/unselected matrix. It uses core JSON::PP so the approved
+container needs no added Perl package. The prior height assertions remain active.
+
+Application coverage is
+`sassie_genapp_tests/test_tamc_saved_plot_width.py` with
+`sassie_genapp_tests/fixtures/tamc_352_saved_plots.json`. It loads an unchanged
+copy of the deployed UI2 shell and real runtime, module/view, CSS and React bundle;
+only backend/session/result responses are mocked on container loopback. It uses
+normal saved-job reconstruction, actual result tabs and Expand/Restore controls,
+viewport transitions, hidden/reveal and independently reconstructed new pages.
+No live session, credentials, real submission or deployed endpoint is used.
+Blocked controls are recorded as errors for that state, not a pass or a reason
+to skip unrelated later cases. This is isolated validation, not deployed Jobs
+acceptance. The saved fixture contains the original plot objects only, with no
+report, viewer paths or account state. Structural equality with the existing
+saved output is checked; 154 scientific scattering traces and 50 accepted-frame
+residual curves remain unchanged. The existing null legend proxy stays display-only.
+
+### Attribution
+
+The same dynamic-width failure occurs with the pre-height-fix core `65069707`
+and deployed core `2a0ca8c9`, using identical scientific objects and CSS. It also
+occurs in neutral native/React dynamic cases without the height selection.
+Therefore the #352 height option is not necessary for the failure: this is a
+pre-existing dynamic-output sizing defect exposed by the missing validation.
+These tests do not quantify whether the height fit amplifies its growth rate.
+
+The observed mechanism is consistent with the implicit dynamic grid track
+accepting an intrinsically sized SVG, then autosizing the padded graph from that
+allocation and feeding a larger size back into the track. Recorded graph/SVG
+increments and padding/border measurements support that explanation. This is
+not yet approval for a CSS or resize-loop correction; a particular repair has
+not been implemented or selected. No producer dimension, sampling reduction,
+new schema or plotting architecture is needed for this validation.
+
+### Evidence and limits
+
+Immutable runtime references are deployed application `1568bb3c`, current core
+`2a0ca8c9` and archived core `65069707`. The runtime integrity receipt confirms
+all renderer sources and deployed browser assets are unchanged. The pinned
+Playwright image is
+`mcr.microsoft.com/playwright/python@sha256:3de745b23fc4b33fccbcb3f592ee52dd5c80ce79f19f839c825ce23364e403c1`,
+using Chromium 143.0.7499.4 and Playwright 1.57.0. Sources are mounted read-only;
+network is disabled and evidence is the only writable host mount. Browser/client
+packages are confined to the disposable container or the temporary task folder.
+
+Final evidence is `/tmp/tamc-352-width.RBnWLnC7/evidence/final`: the application
+`width-results.json`, neutral `neutral/neutral-width-results.json`, original
+height `height/neutral-results.json`, logs, screenshots, execution statuses and
+SHA-256 receipts. Earlier interrupted/intermediate probes are retained separately
+and do not replace final evidence. The original height suite passes 120 checks.
+The width regressions intentionally fail while the sizing defect remains.
+Fresh-page tests do not establish authenticated deployed fresh-window Jobs
+acceptance; #352 and Susan handoff remain incomplete. Stop at failure attribution
+and obtain a separate exact repair plan/approval before any renderer change.
+
+
+Final result: the strict neutral matrix records eight bounded static controls
+and eight dynamic width failures across both revisions, native/React, and
+selected/unselected height metadata. Every neutral scientific/source parity
+assertion passes. Final full-application coverage attempted 17 states: 16
+measured width failures and one blocked current-core React Restore action.
+All 16 measured states retain scientific parity: 154 source traces and
+154 or 155 display traces, depending on the renderer and its existing
+presentation-only legend proxy. The older core reproduces normal and fresh-page failures in both
+renderers. Earlier comparison evidence also measures its expanded/restored,
+hidden/reveal and narrow/wide/restored React cases. No state with failed width
+or a blocked action is counted as accepted. Browser exception lists are empty.
+
+The complete Perl run passes the existing height assertions (120 underlying
+checks) and fails its new width regression. The separately rerun strict neutral
+entry point also fails only the intended width assertion. Application and core
+exit statuses are both 1, the expected red baseline before any fix. Final
+strict neutral evidence is `neutral-strict/neutral-width-results.json` and
+`neutral-strict/unit.log`; the original neutral run is retained as well.
+The strict rerun strengthens wall-clock/stability and scientific-parity checks;
+it does not change the renderer or the existing height harness behavior.
+Current-core Restore remains unverified, and amplification of growth by the
+height fit remains unquantified. No fix is proposed by this validation result.
+
+
+## #352 production rollback — local and uncommitted
+
+The working tree restores the pre-#352 production code: GenApp 4b6c1aa4 and
+application f90261e, using only the approved rollback manifest. Earlier #352
+sections are historical evidence, not current implementation or acceptance.
+The deployed release remains 2a0ca8c9 / 1568bb3 until a separately authorized
+deployment; this rollback does not certify or repair the saved-job width defect.
+Original TAMC title collisions are expected to return. #353–#356 are retained.
+
+The spacing fixture/test and application parity test use their pre-#352 versions;
+the #352 versions remain preserved in commits c622d25b, 2a0ca8c9, 0d6b7da and
+1568bb3, and in the rollback evidence before/ snapshot. The height/width fixture
+and runner, saved scientific fixture, saved-job width test, and captured
+evidence under the existing temporary validation roots are retained unchanged.
+#352 feature-validation runs require their recorded revision; missing removed
+APIs must not be treated as successful validation. Known width failures remain
+failures and are not relabeled as acceptance.
+
+Rollback validation passed in the approved disposable Linux Playwright container
+(Chromium 143.0.7499.4): the original spacing helper contract,
+20 neutral browser assertions, five JavaScript syntax checks
+and two Python syntax checks. No browser exceptions occurred. The restored
+files match their pinned pre-#352 Git blobs exactly; the historical report is
+append-only. All 116 fingerprinted retained evidence/test files are unchanged.
+These checks certify the local rollback, not a width fix or deployed acceptance.
+Evidence: /tmp/tamc-352-width.RBnWLnC7/evidence/rollback.
+
+
+### Approved rollback deployment
+
+Following the validated local rollback, Joseph explicitly approved committing,
+pushing and deploying this exact 16-file scope, including canonical Recompile UI2.
+The earlier local/uncommitted statements describe the completed validation phase.
+Deployment must retain #353–#356 and the saved evidence; it does not close #352
+or repair the pre-existing saved-job width defect. Verify deployed runtime and
+Lab assets against the rollback commits. No new plotting fix, other module work,
+YAML publication or administrator-account access is included.
