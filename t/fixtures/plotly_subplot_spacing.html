@@ -1,7 +1,7 @@
 <!doctype html>
 <meta charset="utf-8">
 <title>Generic independent subplot spacing acceptance</title>
-<script src="../../languages/html5/add/js/plotly-latest.min.js"></script>
+<script src="../../languages/html5/add/js/plotly-2.35.2.min.js"></script>
 <script src="../../languages/ui2/add/js/plotly-layout.js"></script>
 <div id="plot" style="width:640px;height:460px"></div><pre id="results">Running…</pre>
 <script>
@@ -46,4 +46,83 @@
  check(JSON.stringify({source,data})===saved,'Source science and saved payload unchanged');
  window.subplotAcceptance={passed:true,checks};document.getElementById('results').textContent=JSON.stringify(window.subplotAcceptance);
 })().catch(error=>{window.subplotAcceptance={passed:false,error:error.stack};document.getElementById('results').textContent=JSON.stringify(window.subplotAcceptance);});
+</script>
+<script>
+// The driver uses real pointer movement for native closest/compare hover.
+window.subplot352Fixture=(()=>{
+ const api=GenAppPlotlyLayout, plot=document.getElementById('plot'),copy=x=>JSON.parse(JSON.stringify(x));
+ let source, saved, lastPoints=[];
+ const near=(a,b)=>Math.abs(a-b)<.5;
+ const rect=n=>n.getBoundingClientRect();
+ const intersects=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>1 && Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>1;
+ const selections={axisTitleOverflow:'wrap',subplotSpacing:'avoid-overlap'};
+ function figure(kind){
+  const xy=(x,y,xd,yd,xt,yt)=>({[x]:{domain:xd,anchor:y.replace('axis',''),title:xt},[y]:{domain:yd,anchor:x.replace('axis',''),title:yt}});
+  const x=[0,25,50,75,100];
+  if(kind==='stacked')return {data:[
+   {x,y:[1,.8,.6,.4,.2],name:'Response'},
+   {x,y:[0,.3,-.2,.3,0],xaxis:'x2',yaxis:'y2',name:'Difference'},
+   {x,y:[0,1,2,1,0],xaxis:'x3',yaxis:'y3',name:'Distribution'}],layout:{
+    title:'Three related measurements',
+    ...xy('xaxis','yaxis',[0,1],[.70,1],'Observation fraction','Relative response (dimensionless)'),
+    ...xy('xaxis2','yaxis2',[0,1],[.38,.62],'Observation fraction','Normalized difference'),
+    ...xy('xaxis3','yaxis3',[0,1],[0,.30],'Observation distance','Normalized distribution')}};
+  return {data:[
+   {x,y:[6.4,6.6,6.2,6.5,6.3],name:'First observations',mode:'lines+markers'},
+   {x,y:[6.4,6.6,6.2,6.5,6.3],name:'Second observations',mode:'lines'},
+   {x,y:[.7,.8,.6,.75,.8],xaxis:'x2',yaxis:'y2',name:'Relative observations'},
+   {x,y:[100,200,300,400,450],xaxis:'x3',yaxis:'y3',name:'Recorded cells'},
+   {x,y:[400,100,20,15,10],xaxis:'x3',yaxis:'y5',name:'Rolling observations'},
+   {x,y:[1,.5,.3,.4,.35],xaxis:'x4',yaxis:'y4',name:'Effective fraction'}],layout:{
+    title:'Four panels with a secondary vertical axis',
+    ...xy('xaxis','yaxis',[0,.44],[.57,1],'Observation number','Primary measurement'),
+    ...xy('xaxis2','yaxis2',[.56,1],[.57,1],'Observation number','Relative secondary measurement'),
+    ...xy('xaxis3','yaxis3',[0,.44],[0,.36],'Observation number','Occupied observation cells'),
+    ...xy('xaxis4','yaxis4',[.56,1],[0,.36],'Observation number','Effective recorded states / occupied states'),
+    yaxis5:{title:'Rolling new observations / recorded sample',overlaying:'y3',anchor:'x3',side:'right'}}};
+ }
+ function panels(){
+  const f=plot._fullLayout,b=rect(plot),result=[];
+  for(const t of source.data){const x=f[(t.xaxis||'x').replace('x','xaxis')],y=f[(t.yaxis||'y').replace('y','yaxis')];
+   const p={left:b.left+x._offset,top:b.top+y._offset,right:b.left+x._offset+x._length,bottom:b.top+y._offset+y._length};
+   if(!result.some(a=>near(a.left,p.left)&&near(a.top,p.top)&&near(a.right,p.right)&&near(a.bottom,p.bottom)))result.push(p);
+  }return result;
+ }
+ function snapshot(){
+  const titles=[...plot.querySelectorAll('text')].filter(n=>/^[xy]\d*title$/.test(n.getAttribute('class')||''));
+  const ticks=[...plot.querySelectorAll('[class$="tick"] text')].filter(n=>n.textContent.replace(/\u200b/g,'').trim());
+  const collisions=[];titles.forEach((a,i)=>{for(const b of [...titles.slice(i+1),...ticks])if(intersects(rect(a),rect(b)))collisions.push([a.textContent,b.textContent]);});
+  const dataIntrusions=titles.filter(n=>panels().some(p=>intersects(rect(n),p))).map(n=>n.textContent);
+  const f=plot._fullLayout, own=panels()[0], neighbors=panels().slice(1);
+  const labels=[...plot.querySelectorAll('.hoverlayer .hovertext')].map(n=>({text:n.textContent,box:rect(n)}));
+  const hoverIntrusions=labels.filter(n=>neighbors.some(p=>intersects(n.box,p))).map(n=>n.text);
+  return {collisions,dataIntrusions,hoverIntrusions,labels:labels.map(n=>n.text),
+   sourceUnchanged:JSON.stringify(source)===saved,
+   scientificDataUnchanged:plot.data.every((t,i)=>['x','y','name','meta','error_x','error_y'].every(k=>JSON.stringify(t[k])===JSON.stringify(source.data[i][k]))),
+   points:lastPoints, ranges:Object.keys(f).filter(k=>/^[xy]axis\d*$/.test(k)).map(k=>[k,f[k].range.slice()]),
+   domains:Object.keys(f).filter(k=>/^[xy]axis\d*$/.test(k)).map(k=>[k,f[k].domain.slice()]),status:api.subplotSpacingStatus(plot)};
+ }
+ async function fit(){await api.applyAxisTitleOverflow(plot,source.layout,selections);await api.applySubplotSpacing(plot,source.layout,selections);await api.settleTickDensity(plot);}
+ async function mount(kind,width=600,height=626,selected=true){
+  source=figure(kind);saved=JSON.stringify(source);lastPoints=[];Plotly.purge(plot);
+  plot.style.width=width+'px';plot.style.height=height+'px';
+  const layout={...copy(source.layout),font:{family:'system-ui, sans-serif',size:12},margin:{l:80,r:80,t:96,b:128},showlegend:false};
+  await Plotly.newPlot(plot,copy(source.data),layout,{responsive:true});
+  if(selected)await fit();else await api.applySubplotSpacing(plot,source.layout,{});
+  plot.on('plotly_hover',ev=>{lastPoints=ev.points.map(p=>({curve:p.curveNumber,x:p.x,y:p.y}));});
+  return snapshot();
+ }
+ async function resize(width,height){plot.style.width=width+'px';plot.style.height=height+'px';await Plotly.Plots.resize(plot);await fit();return snapshot();}
+ async function refit(){await fit();return snapshot();}
+ async function mode(value){await Plotly.relayout(plot,{hovermode:value});return snapshot();}
+ function target(index=4){const f=plot._fullLayout,t=source.data[0],b=rect(plot);return{x:b.left+f.xaxis._offset+f.xaxis.d2p(t.x[index]),y:b.top+f.yaxis._offset+f.yaxis.d2p(t.y[index])};}
+ async function zoom(){await Plotly.relayout(plot,{'xaxis.range':[10,90],'xaxis.autorange':false});const r=snapshot().ranges;await fit();return{before:r,after:snapshot().ranges};}
+ async function editor(){
+  const layout=copy(plot.layout);delete layout.width;delete layout.height;
+  const data=copy(plot.data);Plotly.purge(plot);await Plotly.newPlot(plot,data,layout,{responsive:true});
+  return snapshot(); // initial editor handoff: no corrective fit after newPlot
+ }
+ async function image(){return(await Plotly.toImage(plot,{format:'png',scale:2})).startsWith('data:image/png;base64,');}
+ return{mount,resize,refit,snapshot,target,mode,zoom,editor,image};
+})();
 </script>
