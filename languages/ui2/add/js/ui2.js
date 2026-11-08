@@ -12759,6 +12759,8 @@
     applyPlotPresentationLayout(layout, plotPresentationProfileForOutput(output));
     applyPlotBackgroundMode(layout);
     applyPlotlyLegendPlacement(layout);
+    Object.assign(layout, window.GenAppPlotlyLayout.prepareLegendLayout(layout, plotGeometryForOutput(output)));
+    Object.assign(layout, window.GenAppPlotlyLayout.prepareAxisTitleAliases(layout, plotGeometryForOutput(output)));
     if (output) {
       output._ui2PlotlyBaseTopMargin = Number(layout.margin?.t) || 96;
     }
@@ -12989,7 +12991,7 @@
   // fallback has no React FieldGroup ancestor, so use its declared output id.
   function plotGeometryForOutput(output) {
     const keys = ["axisTickFormats", "axisTickDensity", "axisTitleOverflow",
-      "figureTitleOverflow", "subplotSpacing", "annotationPlacement"];
+      "figureTitleOverflow", "subplotSpacing", "annotationPlacement", "subplotLayout", "legendLayout", "axisTitleAliases", "hoverTemplateLineBreaks"];
     const geometry = (selection) => {
       if (!selection || typeof selection !== "object" || Array.isArray(selection)) return {};
       return Object.fromEntries(keys.filter((key) => Object.prototype.hasOwnProperty.call(selection, key))
@@ -13163,8 +13165,10 @@
     const presentation = window.GenAppPlotPresentation?.profileForSurface?.(
       resolvedPresentation, layout?.plot_bgcolor, layout?.paper_bgcolor,
       window.GenAppPlotlySurface) || resolvedPresentation;
-    return window.GenAppPlotPresentation?.styleTraces?.(
+    const styled = window.GenAppPlotPresentation?.styleTraces?.(
       data, traceRoles, presentation, plotlyThemeColors()) || data;
+    return window.GenAppPlotlyLayout.prepareHoverTemplateLineBreaks(
+      window.GenAppPlotlyLayout.prepareLegendData(styled, plotGeometryForOutput(output)), plotGeometryForOutput(output));
   }
 
   function applyPlotPresentationStyle(trace, policy, presentation, layout) {

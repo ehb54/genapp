@@ -1,11 +1,69 @@
 <!doctype html>
 <meta charset="utf-8">
+<link rel="stylesheet" href="../../languages/ui2/add/css/ui2.css">
 <title>Generic independent subplot spacing acceptance</title>
 <script src="../../languages/html5/add/js/plotly-latest.min.js"></script>
 <script src="../../languages/ui2/add/js/plotly-layout.js"></script>
 <div id="plot" style="width:640px;height:460px"></div><pre id="results">Running…</pre>
 <script>
+
+async function panelArrangementAcceptance() {
+ const p=window.GenAppPlotlyLayout,plot=document.getElementById('plot'),checks=[];
+ const check=(value,message)=>{if(!value)throw Error(message);checks.push(message);};
+ const clone=value=>JSON.parse(JSON.stringify(value));
+ const source={title:'Three related observations',
+  xaxis:{anchor:'y',domain:[0,1]},yaxis:{anchor:'x',domain:[.7,1]},
+  xaxis2:{anchor:'y2',domain:[0,1]},yaxis2:{anchor:'x2',domain:[.38,.62]},
+  xaxis3:{anchor:'y3',domain:[0,1]},yaxis3:{anchor:'x3',domain:[0,.3]}};
+ const data=[1,2,3].map((n)=>({type:'scatter',mode:'lines',name:'Observation '+n,
+  xaxis:n===1?'x':'x'+n,yaxis:n===1?'y':'y'+n,x:[0,.5,1],y:[n,n+1,n+2]}));
+ const selection={subplotLayout:{horizontalGap:120,verticalGap:72,arrangements:[
+  {panels:[['xy','x3y3'],['x2y2','x3y3']],rowWeights:[1,1]},
+  {panels:[['xy','x3y3']],rowWeights:[1]}]},
+  legendLayout:{columns:2,order:'row',groupTitles:'hidden'}};
+
+ const wrapper=document.createElement('div');
+ wrapper.className='ui2-dynamic-output';wrapper.dataset.plotFit='pane';wrapper.style.width='320px';
+ wrapper.innerHTML='<div class="ui2-dynamic-output-instance"><svg width="700" height="20"></svg></div>';
+ document.body.append(wrapper);
+ check(wrapper.firstElementChild.getBoundingClientRect().width<=320.75,'Pane wrapper ignores SVG intrinsic minimum');
+ delete wrapper.dataset.plotFit;
+ check(wrapper.firstElementChild.getBoundingClientRect().width>=699,'Non-selected wrapper control unchanged');
+ wrapper.remove();
+
+ const saved=JSON.stringify({source,data});
+ const layout=()=>({...clone(source),margin:{l:72,r:32,t:96,b:100}});
+ plot.style.width='705px';plot.style.height='480px';
+ await Plotly.newPlot(plot,clone(data),layout(),{responsive:true});
+ const patch=p.subplotSpacingUpdate(plot,source,selection);
+ check(patch,'MISSING_CAPABILITY: rendered three-panel source cannot select a spanning two-column layout');
+ check(p.subplotSpacingUpdate(plot,source,{})===null,'Unselected control unchanged');
+ for(const [w,h] of [[705,480],[856,626],[705,480]]) {
+  plot.style.width=w+'px';plot.style.height=h+'px';await Plotly.Plots.resize(plot);
+  await p.applySubplotSpacing(plot,source,selection);
+  const f=plot._fullLayout;
+  check(f.xaxis3._offset-f.xaxis._offset-f.xaxis._length>=119.25,'Horizontal minimum '+w);
+  check(f.yaxis2._offset-f.yaxis._offset-f.yaxis._length>=71.25,'Vertical minimum '+w);
+  check(Math.abs(f.yaxis3._length-f._size.h)<1,'Spanning column '+w);
+  check(p.subplotSpacingUpdate(plot,source,selection)===null,'Idempotent '+w);
+ }
+ const prediction=clone(source);delete prediction.xaxis2;delete prediction.yaxis2;
+ await Plotly.react(plot,clone([data[0],data[2]]),{...prediction,margin:{l:72,r:32,t:96,b:100}},{responsive:true});
+ await p.applySubplotSpacing(plot,prediction,selection);
+ check(Math.abs(plot._fullLayout.yaxis._length-plot._fullLayout.yaxis3._length)<1,'No unused prediction row');
+ const legendSource={legend:{font:{size:12}}};
+ const compact=p.prepareLegendLayout(legendSource,selection);
+ await Plotly.relayout(plot,compact);
+ check(plot._fullLayout.legend.entrywidth===.5,'Two-column fractional legend');
+ check(JSON.stringify({source,data})===saved,'Saved values and source relationships unchanged');
+ return checks;
+}
+
 (async () => {
+ if(new URLSearchParams(location.search).has('arrangement')) {
+  const checks=await panelArrangementAcceptance();
+  window.subplotAcceptance={passed:true,checks};document.getElementById('results').textContent=JSON.stringify(window.subplotAcceptance);return;
+ }
  const checks=[], check=(v,m)=>{if(!v)throw Error(m);checks.push(m);};
  const clone=v=>JSON.parse(JSON.stringify(v)), plot=document.getElementById('plot');
  const source={grid:{rows:2,columns:1,subplots:[['xy'],['x2y2']]},title:{text:'Two-panel response'},

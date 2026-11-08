@@ -60,6 +60,66 @@ assert.strictEqual(separate[0].showlegend,false,'invisible excluded');
 assert.strictEqual(separate[1].legend,'legend2');assert.strictEqual(separate[1].showlegend,true);
 assert.strictEqual(separate[2].legendgroup,'producer-a');assert.strictEqual(separate[3].legendgroup,'producer-b');
 assert.strictEqual(separate[2].legendgrouptitle.text,'Repeated observations (1 traces)');
+
+vm.runInContext(fs.readFileSync(require('path').join(require('path').dirname(process.argv[2]),'plotly-layout.js'),'utf8'),context);
+const layoutPolicy=context.window.GenAppPlotlyLayout;
+assert.strictEqual(typeof layoutPolicy.prepareLegendLayout,'function','MISSING_CAPABILITY: view-selected compact legend layout');
+const legendSelection={legendLayout:{columns:2,order:'row',groupTitles:'hidden'}};
+const legendSource={legend:{font:{size:12},title:{text:'Keep title'}}};
+const legendBefore=JSON.stringify(legendSource);
+const legendDisplay=layoutPolicy.prepareLegendLayout(legendSource,legendSelection);
+assert.strictEqual(legendDisplay.legend.entrywidth,.5);
+assert.strictEqual(legendDisplay.legend.entrywidthmode,'fraction');
+assert.strictEqual(legendDisplay.legend.traceorder,'normal');
+assert.strictEqual(legendDisplay.legend.font.size,12);
+assert.strictEqual(JSON.stringify(legendSource),legendBefore);
+assert.strictEqual(layoutPolicy.prepareLegendLayout(legendSource,{}),legendSource);
+const named=[{name:'Observation 1',x:[1,2],y:[3,4],legendgroup:'observations',legendgrouptitle:{text:'Observations'}},
+ {name:'Observations (50 traces)',x:[null],y:[null],_genappCompactLegendProxy:true}];
+const namesBefore=JSON.stringify(named);
+const namedDisplay=layoutPolicy.prepareLegendData(named,legendSelection);
+assert.strictEqual(namedDisplay[0].legendgrouptitle.text,'');
+assert.strictEqual(namedDisplay[0].name,named[0].name);
+assert.strictEqual(namedDisplay[0].x,named[0].x);
+assert.strictEqual(namedDisplay[1],named[1]);
+assert.strictEqual(JSON.stringify(named),namesBefore);
+assert.strictEqual(layoutPolicy.prepareLegendData(named,{}),named);
+
+
+const aliasSource={yaxis:{title:{text:'Long observation name',font:{size:12}},range:[0,1]}};
+const aliases={axisTitleAliases:{yaxis:{from:'Long observation name',to:'Observation'}}};
+const aliasDisplay=layoutPolicy.prepareAxisTitleAliases(aliasSource,aliases);
+assert.strictEqual(aliasDisplay.yaxis.title.text,'Observation');
+assert.strictEqual(aliasSource.yaxis.title.text,'Long observation name');
+assert.strictEqual(aliasDisplay.yaxis.range,aliasSource.yaxis.range);
+assert.strictEqual(aliasDisplay.yaxis.title.font,aliasSource.yaxis.title.font);
+assert.strictEqual(layoutPolicy.prepareAxisTitleAliases(aliasSource,{}),aliasSource);
+assert.strictEqual(layoutPolicy.prepareAxisTitleAliases(aliasSource,
+ {axisTitleAliases:{yaxis:{from:'Different name',to:'Observation'}}}).yaxis,aliasSource.yaxis);
+const narrowLegend={_fullLayout:{_size:{w:250},legend:{entrywidth:.5}},
+ querySelectorAll:()=>[{getBBox:()=>({width:100})}]};
+assert.strictEqual(layoutPolicy.responsiveLegendUpdate(narrowLegend,legendSelection)['legend.entrywidth'],1);
+assert.strictEqual(layoutPolicy.responsiveLegendUpdate(narrowLegend,{}),null);
+assert.strictEqual(layoutPolicy.responsiveLegendUpdate({...narrowLegend,_fullLayout:{_size:{w:600},legend:{entrywidth:1}}},
+ legendSelection)['legend.entrywidth'],.5);
+
+
+const from='sample %{x:.0f}<br>observation value %{y:.3f}<extra>details</extra>';
+const to='sample %{x:.0f}<br>observation<br>value %{y:.3f}<extra>details</extra>';
+const hoverSource=[{x:[1],y:[2],name:'Observation',hovertemplate:from}];
+const breaks={hoverTemplateLineBreaks:[{from,to}]};
+const wrapped=layoutPolicy.prepareHoverTemplateLineBreaks(hoverSource,breaks);
+assert.strictEqual(wrapped[0].hovertemplate,to);
+assert.strictEqual(hoverSource[0].hovertemplate,from);
+assert.strictEqual(wrapped[0].x,hoverSource[0].x);
+assert.strictEqual(wrapped[0].y,hoverSource[0].y);
+assert.strictEqual(layoutPolicy.prepareHoverTemplateLineBreaks(hoverSource,{}),hoverSource);
+for(const bad of [to.replace('.3f','.2f'),to.replace('observation','different'),to.replace('details','other')]){
+ assert.strictEqual(layoutPolicy.prepareHoverTemplateLineBreaks(hoverSource,{hoverTemplateLineBreaks:[{from,to:bad}]}),hoverSource);
+}
+const suppressed=[{...hoverSource[0],hovertemplate:from.replace('details','')}];
+assert.strictEqual(layoutPolicy.prepareHoverTemplateLineBreaks(suppressed,breaks)[0].hovertemplate,to.replace('details',''));
+
 const ui2=fs.readFileSync(process.argv[3],'utf8');assert(ui2.includes('GenAppPlotPresentation?.styleTraces?.('));
 console.log('compact, controls, groups, lifecycle, identity and reconstruction passed');
 JS

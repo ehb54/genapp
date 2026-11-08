@@ -24,6 +24,44 @@ assert.strictEqual(p.subplotSpacingUpdate({...plot,_fullLayout:{...full,_size:{h
 const weighted={...source,yaxis:{domain:[.6,1]},yaxis2:{domain:[0,.2]}};
 const u=p.subplotSpacingUpdate(plot,weighted,selection);const a=u['yaxis.domain'],b=u['yaxis2.domain'];assert(Math.abs((a[1]-a[0])/(b[1]-b[0])-2)<1e-10);
 const ui2=fs.readFileSync(process.argv[3],'utf8');assert(ui2.includes('applySubplotSpacing?.('));
+
+// A neutral three-panel source must support a view-selected spanning column.
+const arrangement={subplotLayout:{horizontalGap:120,verticalGap:72,arrangements:[
+ {panels:[['xy','x3y3'],['x2y2','x3y3']],rowWeights:[1,1]},
+ {panels:[['xy','x3y3']],rowWeights:[1]}
+]}};
+const stack={xaxis:{anchor:'y'},yaxis:{anchor:'x',domain:[.7,1]},
+ xaxis2:{anchor:'y2'},yaxis2:{anchor:'x2',domain:[.38,.62]},
+ xaxis3:{anchor:'y3'},yaxis3:{anchor:'x3',domain:[0,.3]},
+ yaxis4:{overlaying:'y',anchor:'x',side:'right'}};
+const neutralFull={_size:{w:600,h:400},xaxis:{domain:[0,1]},xaxis2:{domain:[0,1]},xaxis3:{domain:[0,1]},
+ yaxis:{domain:[.7,1]},yaxis2:{domain:[.38,.62]},yaxis3:{domain:[0,.3]},yaxis4:{overlaying:'y'}};
+const neutralPlot={_fullLayout:neutralFull}, original=JSON.stringify(stack);
+const arranged=p.subplotSpacingUpdate(neutralPlot,stack,arrangement);
+assert(arranged,'MISSING_CAPABILITY: view-selected two-column spanning arrangement');
+assert.deepStrictEqual(Array.from(arranged['xaxis.domain']),[0,.4]);
+assert.deepStrictEqual(Array.from(arranged['xaxis3.domain']),[.6,1]);
+assert(Math.abs(arranged['yaxis.domain'][0]-.59)<1e-12);
+assert(Math.abs(arranged['yaxis2.domain'][1]-.41)<1e-12);
+assert(Array.from(arranged['yaxis3.domain']).every((v,i)=>Math.abs(v-[0,1][i])<1e-12),'Spanning domain within numerical tolerance');
+assert(!Object.keys(arranged).some(k=>/range|title|height|width/.test(k)));
+assert.strictEqual(JSON.stringify(stack),original);
+assert.strictEqual(p.subplotSpacingUpdate(neutralPlot,stack,{}),null);
+const prediction={...stack};delete prediction.xaxis2;delete prediction.yaxis2;
+const pred=p.subplotSpacingUpdate(neutralPlot,prediction,arrangement);
+assert.deepStrictEqual(Array.from(pred['yaxis.domain']),[0,1]);
+assert.deepStrictEqual(Array.from(pred['yaxis3.domain']),[0,1]);
+for(const invalid of [
+ {...arrangement.subplotLayout,horizontalGap:-1},
+ {...arrangement.subplotLayout,arrangements:[{panels:[['xy','x3y3'],['x3y3','x2y2']]}]},
+ {...arrangement.subplotLayout,arrangements:[{panels:[['xy','unknown']]}]},
+ {...arrangement.subplotLayout,arrangements:[{panels:[['xy','x3y3'],['x2y2','x3y3']],rowWeights:[0,1]}]}
+])assert.strictEqual(p.subplotSpacingUpdate(neutralPlot,stack,{subplotLayout:invalid}),null);
+assert.strictEqual(p.subplotSpacingUpdate({_fullLayout:{...neutralFull,_size:{w:130,h:80}}},stack,arrangement),null);
+const after=JSON.parse(JSON.stringify(neutralFull));
+Object.entries(arranged).forEach(([key,value])=>{const [axis,field]=key.split('.');after[axis][field]=value;});
+assert.strictEqual(p.subplotSpacingUpdate({_fullLayout:after},stack,arrangement),null,'idempotent');
+
 console.log('subplot opt-in, controls, weighting, immutability and reconstruction passed');
 JS
 close $fh;

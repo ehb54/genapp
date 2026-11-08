@@ -827,3 +827,13 @@ Owner contracts: GenApp `doc/Plotting-Architecture.md`,
 `doc/UI2-Legend-Overflow-Shared-Gap-Report.md` (paired checkout for the app).
 Keep acceptance focused on the reported MCA Guinier case; other-module visual
 review remains with the developers' Lab/output cycle.
+
+## Panel arrangement and legacy display labels (#352)
+
+View-selected panel arrangement, compact legend columns and exact legacy-title
+aliases are governed by GenApp's doc/Plotting-Architecture.md and
+doc/UI2-Panel-Arrangement-Shared-Gap-Report.md. UI2 and the Lab share display
+helpers; preserve scientific values, units, identities, stored outputs and
+streaming transport/event handling. No per-module core branches or producer
+pixel geometry. Application opt-in and approved label meanings belong in
+genapp_zazzie/docs/plot_presentation.md.

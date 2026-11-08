@@ -5,6 +5,7 @@
   const PLAIN_TITLE = /^[^<>]*$/;
   const ABOVE_PLOT = "above_plot";
   const wrappedAxisMargins = new WeakMap();
+  const selectedPanelArrangements = new WeakMap();
 
   // Full legend content, rather than its scroll viewport, owns the bottom lane.
   // Plotly 2.x limits an in-paper legend to the data-area height, even when
@@ -265,9 +266,170 @@
     await patch({ "margin.t": owned.margin });
   }
 
+
+  // View-selected geometry is display-only and matches opaque source axis pairs.
+  // A repeated rectangular cell spans rows/columns; overlays retain their parent.
+  function panelArrangementUpdate(plot, sourceLayout, selection) {
+    const policy = selection?.subplotLayout;
+    if (!policy || typeof policy !== "object" || Array.isArray(policy)) return null;
+    const { horizontalGap, verticalGap, arrangements } = policy;
+    if (![horizontalGap, verticalGap].every(v => typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 512) ||
+        !Array.isArray(arrangements) || !arrangements.length || arrangements.length > 8) return null;
+    const full = plot?._fullLayout;
+    const width = Number(full?._size?.w), height = Number(full?._size?.h);
+    if (!(width > 0 && height > 0)) return null;
+    const source = sourceLayout || {};
+    const sourcePanels = Object.keys(source).filter(key => /^xaxis\d*$/.test(key)).map(key => {
+      const axis = source[key], yId = axis?.anchor;
+      if (axis?.overlaying || typeof yId !== "string" || !/^y\d*$/.test(yId)) return null;
+      const yName = "yaxis" + yId.slice(1);
+      if (!source[yName] || source[yName].overlaying) return null;
+      return "x" + key.slice(5) + yId;
+    }).filter(Boolean).sort();
+    if (!sourcePanels.length) return null;
+    let selected;
+    for (const item of arrangements) {
+      const rows = item?.panels, columns = rows?.[0]?.length;
+      if (!Array.isArray(rows) || !rows.length || rows.length > 4 ||
+          !Number.isInteger(columns) || columns < 1 || columns > 4 ||
+          rows.some(row => !Array.isArray(row) || row.length !== columns ||
+            row.some(id => typeof id !== "string" || !/^x\d*y\d*$/.test(id)))) return null;
+      const ids = [...new Set(rows.flat())].sort();
+      const weights = item.rowWeights === undefined ? rows.map(() => 1) : item.rowWeights;
+      if (!Array.isArray(weights) || weights.length !== rows.length ||
+          weights.some(w => typeof w !== "number" || !Number.isFinite(w) || w <= 0)) return null;
+      const panels = ids.map(id => {
+        const cells = [];
+        rows.forEach((row, y) => row.forEach((value, x) => { if (value === id) cells.push([x, y]); }));
+        const xs = cells.map(c => c[0]), ys = cells.map(c => c[1]);
+        const left = Math.min(...xs), right = Math.max(...xs), top = Math.min(...ys), bottom = Math.max(...ys);
+        if (cells.length !== (right - left + 1) * (bottom - top + 1)) return null;
+        const match = /^x(\d*)y(\d*)$/.exec(id);
+        return { left, right, top, bottom, xName: "xaxis" + match[1], yName: "yaxis" + match[2] };
+      });
+      if (panels.some(p => !p) || new Set(panels.map(p => p.xName)).size !== panels.length ||
+          new Set(panels.map(p => p.yName)).size !== panels.length) return null;
+      if (JSON.stringify(ids) === JSON.stringify(sourcePanels)) {
+        if (selected) return null;
+        selected = { rows, columns, weights, panels };
+      }
+    }
+    if (!selected) return null;
+    const { rows, columns, weights, panels } = selected;
+    const rect = plot?.getBoundingClientRect?.();
+    const scaleX = rect?.width > 0 && full.width > 0 ? rect.width / full.width : 1;
+    const scaleY = rect?.height > 0 && full.height > 0 ? rect.height / full.height : 1;
+    const gx = horizontalGap / scaleX, gy = verticalGap / scaleY;
+    const cellWidth = (width - gx * (columns - 1)) / columns;
+    const available = height - gy * (rows.length - 1);
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+    const heights = weights.map(w => available * w / totalWeight);
+    if (cellWidth * scaleX < 24 || heights.some(h => h * scaleY < 24)) return null;
+    let top = 1;
+    const rowDomains = heights.map(h => {
+      const domain = [Math.max(0, top - h / height), top];
+      top = domain[0] - gy / height;
+      return domain;
+    });
+    const update = {};
+    for (const panel of panels) {
+      if (!full[panel.xName] || !full[panel.yName]) return null;
+      const domains = [
+        [panel.xName, [panel.left * (cellWidth + gx) / width,
+          (panel.right * (cellWidth + gx) + cellWidth) / width]],
+        [panel.yName, [rowDomains[panel.bottom][0], rowDomains[panel.top][1]]]
+      ];
+      for (const [name, domain] of domains) {
+        const current = full[name].domain;
+        if (!Array.isArray(current) || domain.some((v, i) => Math.abs(v - current[i]) > 0.000001)) {
+          update[name + ".domain"] = domain;
+        }
+      }
+    }
+    return Object.keys(update).length ? update : null;
+  }
+
+
+
+  function prepareHoverTemplateLineBreaks(data, selection) {
+    const aliases = selection?.hoverTemplateLineBreaks;
+    if (!Array.isArray(data) || !Array.isArray(aliases) || aliases.length > 8) return data;
+    const words = text => text.replace(/<br\s*\/?>/gi, " ").replace(/\s+/g, " ").trim();
+    const valid = aliases.filter(alias => alias && typeof alias.from === "string" &&
+      typeof alias.to === "string" && alias.from.length > 0 && alias.to.length > 0 &&
+      alias.from.length <= 2000 && alias.to.length <= 2000 &&
+      words(alias.from) === words(alias.to));
+    if (!valid.length) return data;
+    const withoutExtra = text => text.replace(/<extra>[\s\S]*?<\/extra>/gi, "<extra></extra>");
+    return data.map(trace => {
+      const alias = valid.find(item => trace?.hovertemplate === item.from ||
+        trace?.hovertemplate === withoutExtra(item.from));
+      if (!alias) return trace;
+      // The ordinary name-suppression preparation may already have cleared
+      // the extra box. Preserve that upstream choice while wrapping the body.
+      const template = trace.hovertemplate === alias.from ? alias.to : withoutExtra(alias.to);
+      return { ...trace, hovertemplate: template };
+    });
+  }
+
+  function prepareAxisTitleAliases(layout, selection) {
+    const aliases = selection?.axisTitleAliases;
+    if (!aliases || typeof aliases !== "object" || Array.isArray(aliases)) return layout;
+    const display = { ...layout };
+    for (const [key, alias] of Object.entries(aliases)) {
+      if (!AXIS_KEY.test(key) || !alias || typeof alias.from !== "string" ||
+          typeof alias.to !== "string" || !alias.from || !alias.to ||
+          alias.from.length > 200 || alias.to.length > 200 ||
+          !PLAIN_TITLE.test(alias.from) || !PLAIN_TITLE.test(alias.to)) continue;
+      const axis = layout?.[key];
+      const sourceTitle = typeof axis?.title === "object" ? axis.title.text : axis?.title;
+      if (!axis || sourceTitle !== alias.from) continue;
+      display[key] = { ...axis, title: typeof axis.title === "object"
+        ? { ...axis.title, text: alias.to } : alias.to };
+    }
+    return display;
+  }
+
+  function responsiveLegendUpdate(plot, selection) {
+    if (!compactLegendLayout(selection) || !plot?._fullLayout) return null;
+    const full = plot._fullLayout;
+    const widths = Array.from(plot.querySelectorAll?.(".legendtext") || [])
+      .map(node => { const box = node.getBBox?.(); return box ? (Number(box.x) || 40) + Number(box.width) + 8 : NaN; })
+      .filter(Number.isFinite);
+    if (!widths.length || !(full._size?.w > 0)) return null;
+    const columns = Math.max(...widths) * 2 > full._size.w ? 1 : 2;
+    return full.legend?.entrywidth === 1 / columns ? null : { "legend.entrywidth": 1 / columns };
+  }
+
+  function compactLegendLayout(selection) {
+    const value = selection?.legendLayout;
+    return value?.columns === 2 && value?.order === "row" && value?.groupTitles === "hidden";
+  }
+
+  function prepareLegendLayout(layout, selection) {
+    if (!compactLegendLayout(selection)) return layout;
+    const display = { ...layout };
+    const keys = Object.keys(layout || {}).filter(key => /^legend\d*$/.test(key));
+    if (!keys.length) keys.push("legend");
+    keys.forEach(key => {
+      display[key] = { ...layout?.[key], orientation: "h", traceorder: "normal",
+        tracegroupgap: 0, entrywidth: 0.5, entrywidthmode: "fraction" };
+    });
+    return display;
+  }
+
+  function prepareLegendData(data, selection) {
+    if (!compactLegendLayout(selection) || !Array.isArray(data)) return data;
+    return data.map(trace => trace?.legendgrouptitle?.text && !trace._genappCompactLegendProxy
+      ? { ...trace, legendgrouptitle: { ...trace.legendgrouptitle, text: "" } } : trace);
+  }
+
   // Opted-in independent vertical panels reserve measured display-only lanes.
   // Rebuild domains from the source relationships, never from prior adjustments.
   function subplotSpacingUpdate(plot, sourceLayout, selection) {
+    if (selection && Object.prototype.hasOwnProperty.call(selection, "subplotLayout")) {
+      return panelArrangementUpdate(plot, sourceLayout, selection);
+    }
     if (selection?.subplotSpacing !== "avoid-overlap") return null;
     const grid = sourceLayout?.grid;
     if (grid?.columns !== 1 || !Array.isArray(grid.subplots) || grid.subplots.length < 2) return null;
@@ -320,6 +482,24 @@
   }
 
   function applySubplotSpacing(plot, sourceLayout, selection) {
+    if (selection?.subplotLayout) {
+      selectedPanelArrangements.set(plot, { sourceLayout, selection });
+      if (typeof window.Plotly?.relayout !== "function") return null;
+      return (async () => {
+        const legendUpdate = responsiveLegendUpdate(plot, selection);
+        if (legendUpdate) {
+          await window.Plotly.relayout(plot, legendUpdate);
+          const allocation = legendFitUpdate(plot);
+          if (allocation) await window.Plotly.relayout(plot, allocation);
+        }
+        const update = subplotSpacingUpdate(plot, sourceLayout, selection);
+        if (update) await window.Plotly.relayout(plot, update);
+        // The ordinary tick/title fitting pass below settles any resulting
+        // margin changes and these selected domains together. Do not start
+        // extra full passes (including per-trace hover formatting) here.
+      })();
+    }
+    selectedPanelArrangements.delete(plot);
     const update = subplotSpacingUpdate(plot, sourceLayout, selection);
     if (!update || typeof window.Plotly?.relayout !== "function") return null;
     return Promise.resolve(window.Plotly.relayout(plot, update));
@@ -611,6 +791,8 @@
   }
 
   async function restoreFittedHoverTemplates(plot, state, restyle) {
+    const batches = new Map();
+    const batch = selectedPanelArrangements.has(plot);
     for (const entry of state.hoverTemplates || []) {
       if (plot.data?.[entry.index] === entry.trace &&
           sameTickValue(entry.trace.hovertemplate, entry.display)) {
@@ -618,15 +800,24 @@
         if (entry.nameLength != null && entry.trace.hoverlabel?.namelength === entry.nameLength) {
           update['hoverlabel.namelength'] = [entry.originalNameLength ?? null];
         }
-        await restyle(update, [entry.index]);
+        if (batch) {
+          const key = Object.keys(update).join('|');
+          if (!batches.has(key)) batches.set(key, {indices:[], update:Object.fromEntries(Object.keys(update).map(k => [k, []]))});
+          const group = batches.get(key);
+          group.indices.push(entry.index);
+          for (const field of Object.keys(update)) group.update[field].push(update[field][0]);
+        } else await restyle(update, [entry.index]);
       }
       fittedHoverTemplates.delete(entry.trace);
     }
+    for (const group of batches.values()) await restyle(group.update, group.indices);
     state.hoverTemplates = [];
   }
 
   async function fitHoverCoordinates(plot, state, restyle) {
     if (!['closest', 'x', 'y'].includes(plot._fullLayout?.hovermode)) return;
+    const batches = new Map();
+    const batch = selectedPanelArrangements.has(plot);
     for (let index = 0; index < (plot.data || []).length; index++) {
       const trace = plot.data[index], fullTrace = plot._fullData?.[index];
       if (!fullTrace || trace.transforms?.length ||
@@ -688,8 +879,15 @@
       const update = {hovertemplate:[display]};
       // Adding a template must not change native/default name clipping.
       if (entry.nameLength != null) update['hoverlabel.namelength'] = [entry.nameLength];
-      await restyle(update, [index]);
+      if (batch) {
+        const key = Object.keys(update).join('|');
+        if (!batches.has(key)) batches.set(key, {indices:[], update:Object.fromEntries(Object.keys(update).map(k => [k, []]))});
+        const group = batches.get(key);
+        group.indices.push(index);
+        for (const field of Object.keys(update)) group.update[field].push(update[field][0]);
+      } else await restyle(update, [index]);
     }
+    for (const group of batches.values()) await restyle(group.update, group.indices);
   }
 
   // Axis titles need a separate lane even when their text does not wrap.
@@ -773,7 +971,7 @@
         // Plotly may normalize values in our own tick/title/margin patch.
         // A real range/size/style update during fitting still requests a pass.
         if (!state.internal || Object.keys(event || {}).some(key =>
-            !/^(?:[xy]axis\d*\.(?:tickmode|tickvals|ticktext|title\.standoff)|margin\.[lrtb])$/.test(key))) state.schedule();
+            !/^(?:[xy]axis\d*\.(?:tickmode|tickvals|ticktext|title\.standoff|domain)|margin\.[lrtb])$/.test(key))) state.schedule();
       };
       state.afterplot = () => { if (!state.internal) state.schedule(); };
       fittedTickAxes.set(plot, state);
@@ -838,7 +1036,12 @@
             await relayout(update);
             update = tickDensityUpdate(plot);
           }
-          if (!await fitAxisTitleClearance(plot, relayout)) break;
+          const clearanceChanged = await fitAxisTitleClearance(plot, relayout);
+          const arrangement = selectedPanelArrangements.get(plot);
+          const panelUpdate = arrangement
+            ? panelArrangementUpdate(plot, arrangement.sourceLayout, arrangement.selection) : null;
+          if (panelUpdate) await relayout(panelUpdate);
+          if (!clearanceChanged && !panelUpdate) break;
         }
         if (!state.pending) await fitHoverCoordinates(plot, state, restyle);
       }
@@ -1270,6 +1473,11 @@
 
   window.GenAppPlotlyLayout = {
     legendFitUpdate,
+    prepareLegendLayout,
+    prepareAxisTitleAliases,
+    prepareHoverTemplateLineBreaks,
+    responsiveLegendUpdate,
+    prepareLegendData,
     hover_trace_selection_buttons,
     bind_hover_trace_selection,
     clear_hover_trace_selection,

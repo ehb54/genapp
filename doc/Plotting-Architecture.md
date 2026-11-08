@@ -730,3 +730,41 @@ collections too large for that lane retain existing scrolling. Preserve figure
 dimensions, scientific values, trace names/order, grouping and saved payloads.
 No producer sizing, YAML workaround or module-specific core branch belongs here.
 Evidence and targeted acceptance: `UI2-Legend-Overflow-Shared-Gap-Report.md`.
+
+## View-selected panel arrangement and compact legend (#352)
+
+A view may select plotPresentation.subplotLayout with horizontalGap and
+verticalGap minima in CSS pixels (finite numbers from 0 to 512), and one to
+eight arrangements. An arrangement contains a rectangular panels matrix
+(one to four rows/columns) of opaque anchored Cartesian axis-pair ids such as
+xy or x3y3, plus optional positive finite rowWeights. Repeated cells must
+form a rectangle and represent one spanning panel. Each independent x/y axis
+may belong to one panel. Choose only the arrangement whose distinct panels
+exactly match the source's independent anchored axes; overlays follow their
+existing parent. Invalid/ambiguous selections, unmatched sources and allocations
+that would leave a cell below 24 CSS pixels retain ordinary rendering.
+
+UI2 reconstructs domains from the view selection and the settled allocation,
+not previously adjusted domains. The existing tick/title fitter settles margins
+before spacing and after domain changes, in bounded passes. It does not change
+figure height, source ranges/scales, identities, values, sampling, uncertainty,
+saved output or streaming. Pane-fitted dynamic plot grid items have a zero CSS
+minimum width so their rendered SVG cannot determine the pane.
+
+plotPresentation.legendLayout: {columns: 2, order: "row", groupTitles: "hidden"}
+requests at most two row-wise columns. Measured names select one column when
+two cannot fit; fonts and full names remain. This hides redundant display group
+headings only. Existing compact-family thresholds, sample-free keys and group
+interaction remain unchanged. The existing legend fitter owns bottom allocation.
+
+A view may supply axisTitleAliases keyed by Cartesian axis name, each with
+from and to plain strings of 1–200 characters. These are explicitly approved
+display labels, not calculations or unit conversions. Replace only an exact
+source-title match on a detached layout; preserve title styling and every other
+axis property. Unmatched/custom titles and saved payloads remain unchanged.
+Applications own scientific approval and must preserve units/meaning.
+
+A view may supply at most eight hoverTemplateLineBreaks with exact from/to\ntemplates. Only whitespace and line breaks may change. The display copy keeps\nall values, precision, text, trace identity and name suppression. For selected\npanel arrangements, the existing tick fitter batches per-trace hover-template\nrestoration and fitting updates to avoid repeated redraws during resize. Other\nplots retain their existing path.\n\nOrdinary UI2 and the Lab share these helpers. Existing resize, completion,
+fresh-output reconstruction, PNG and editor settlement paths are reused.
+Non-selected plots retain their previous behavior. Evidence and rollback:
+UI2-Panel-Arrangement-Shared-Gap-Report.md.

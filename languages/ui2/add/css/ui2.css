@@ -2921,6 +2921,11 @@ code {
   white-space: normal;
 }
 
+/* A pane-fitted dynamic plot must not size its grid item from its SVG. */
+.ui2-dynamic-output[data-plot-fit] > .ui2-dynamic-output-instance {
+  min-width: 0;
+}
+
 .ui2-dynamic-output.ui2-output-plotly {
   min-height: 0;
 }
