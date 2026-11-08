@@ -12626,11 +12626,8 @@
     });
   }
 
-  function plotlyDisplayFigure(figure, output) {
-    const selection = plotGeometryForOutput(output);
-    const source = cloneUi2Value(figure);
-    const display = window.GenAppPlotlyLayout?.prepareViewDisplay?.(source, selection) || source;
-    window.GenAppPlotlyLayout?.applyViewDisplayHeight?.(output, selection);
+  function plotlyDisplayFigure(figure) {
+    const display = cloneUi2Value(figure);
     return window.GenAppPlotlyLayout?.prepare_hover_name_suppression?.(
       display, appMap.directives?.ui2_plotly_hover_name_display
     ) || display;
@@ -12648,14 +12645,13 @@
   function renderPlotlyOutput(output, value) {
     const figure = parsePlotlyFigure(value);
     if (!figure) {
-      window.GenAppPlotlyLayout?.applyViewDisplayHeight?.(output, {});
       window.GenAppPlotlyLayout?.clear_hover_trace_selection?.(output);
       disconnectPlotlyOutputObserver(output);
       renderTextOutput(output, value);
       return;
     }
     output._ui2PlotlyLastFigure = cloneUi2Value(figure);
-    const displayFigure = plotlyDisplayFigure(figure, output);
+    const displayFigure = plotlyDisplayFigure(figure);
     output.classList.add("ui2-output-rendered", "ui2-output-plotly-ready");
     const updateExisting = Boolean(output.data && window.Plotly?.react);
     if (!updateExisting) {
@@ -12950,7 +12946,7 @@
       return null;
     }
     window.GenAppPlotlyLayout?.clear_hover_trace_selection?.(output);
-    const displayFigure = plotlyDisplayFigure(figure, output);
+    const displayFigure = plotlyDisplayFigure(figure);
     const layout = plotlyLayoutForOutput(output, displayFigure.layout);
     if (layout.uirevision == null) {
       layout.uirevision = output.dataset.outputFieldId || "ui2-plot";
@@ -12993,7 +12989,7 @@
   // fallback has no React FieldGroup ancestor, so use its declared output id.
   function plotGeometryForOutput(output) {
     const keys = ["axisTickFormats", "axisTickDensity", "axisTitleOverflow",
-      "figureTitleOverflow", "subplotSpacing", "annotationPlacement", "displayLayout", "hoverTemplateLineBreaks"];
+      "figureTitleOverflow", "subplotSpacing", "annotationPlacement"];
     const geometry = (selection) => {
       if (!selection || typeof selection !== "object" || Array.isArray(selection)) return {};
       return Object.fromEntries(keys.filter((key) => Object.prototype.hasOwnProperty.call(selection, key))
@@ -13220,7 +13216,6 @@
     scope?.querySelectorAll?.('[data-output-type="plotly"]').forEach(output => {
       disconnectPlotlyOutputObserver(output);
       window.GenAppPlotlyLayout?.clear_hover_trace_selection?.(output);
-      window.GenAppPlotlyLayout?.applyViewDisplayHeight?.(output, {});
       if (output.data && window.Plotly?.purge) window.Plotly.purge(output);
     });
   }

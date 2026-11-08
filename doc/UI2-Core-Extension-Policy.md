@@ -848,33 +848,3 @@ collections too large for that lane retain existing scrolling. Preserve figure
 dimensions, scientific values, trace names/order, grouping and saved payloads.
 No producer sizing, YAML workaround or module-specific core branch belongs here.
 Evidence and targeted acceptance: `UI2-Legend-Overflow-Shared-Gap-Report.md`.
-
-## Opt-in display allocation and line breaks (#352)
-
-`plotPresentation.displayLayout` selects a positive finite integer CSS `height`
-and optional `xAxisDomains` for existing non-overlay Cartesian x axes. Domain
-maps must contain only increasing finite numeric pairs within [0,1]; an invalid
-map is ignored atomically. This is explicit application-view allocation, not a
-measured fitter. It never writes width, y domains, ranges, scales or anchors.
-
-`plotPresentation.hoverTemplateLineBreaks` maps opaque `meta.series_role` values
-to scalar templates differing only in whitespace and line breaks. Words,
-placeholder tokens and formats, other markup, and complete `<extra>` content
-must agree with the source. Ineligible, missing-role and array templates remain
-unchanged. The display-only substitution precedes existing hover-name and
-numeric-format policies, which retain their established precedence.
-
-Ordinary React/native UI2 and the Lab share `prepareViewDisplay` and
-`applyViewDisplayHeight`. Saved scientific figures stay authoritative and
-unchanged. Host height is selected before rendering; the existing resize
-lifecycle remains responsible for allocation changes. Removing the selection
-restores the previous inline height unless a newer external value superseded
-it. Missing/invalid selections preserve ordinary behavior. Explicit host
-metadata retains precedence over native view lookup; conflicting native groups
-remain unselected. Existing profile and hover-style resolution is unchanged.
-
-PNG uses the displayed allocation at scale 2. Initial Editor handoff retains
-display domains and templates but follows the existing contract that removes
-responsive width/height. Editor sizing is not changed by this feature.
-See `UI2-Plot-Display-Layout-Shared-Gap-Report.md` for the neutral reproduction,
-owner approval and local validation status. HTML5 is unchanged.

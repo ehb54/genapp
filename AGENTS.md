@@ -827,14 +827,3 @@ Owner contracts: GenApp `doc/Plotting-Architecture.md`,
 `doc/UI2-Legend-Overflow-Shared-Gap-Report.md` (paired checkout for the app).
 Keep acceptance focused on the reported MCA Guinier case; other-module visual
 review remains with the developers' Lab/output cycle.
-
-## View-selected plot display allocation (#352)
-
-GenApp owns the opt-in `plotPresentation.displayLayout` and
-`hoverTemplateLineBreaks` contracts, shared by ordinary UI2 and the Lab.
-See the paired GenApp `doc/Plotting-Architecture.md`,
-`doc/UI2-Core-Extension-Policy.md` and
-`doc/UI2-Plot-Display-Layout-Shared-Gap-Report.md`. Preserve scientific source
-figures, saved outputs and default rendering; no driver/YAML geometry or
-module-specific core branches. Application selection is documented in
-`genapp_zazzie/docs/plot_presentation.md`.

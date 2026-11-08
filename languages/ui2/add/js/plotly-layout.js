@@ -1268,73 +1268,7 @@
     }));
   }
 
-  const viewDisplayHeights = new WeakMap();
-  const displayObject = value => value && typeof value === 'object' && !Array.isArray(value);
-  const displayHeight = selection => {
-    const height = selection?.displayLayout?.height;
-    return typeof height === 'number' && Number.isFinite(height) && Number.isInteger(height) && height > 0 ? height : null;
-  };
-  function viewXDomains(layout, selection) {
-    const domains = selection?.displayLayout?.xAxisDomains;
-    if (!displayObject(domains) || !Object.keys(domains).length) return null;
-    const valid = Object.entries(domains).every(([key, pair]) =>
-      /^xaxis(?:[2-9]|[1-9]\d+)?$/.test(key) && displayObject(layout?.[key]) && !layout[key].overlaying &&
-      Array.isArray(pair) && pair.length === 2 && pair.every(value => typeof value === 'number' && Number.isFinite(value)) &&
-      pair[0] >= 0 && pair[0] < pair[1] && pair[1] <= 1);
-    return valid ? domains : null;
-  }
-  function sameHoverWords(source, replacement) {
-    if (typeof source !== 'string' || typeof replacement !== 'string') return false;
-    const normalize = value => value.replace(/<br\s*\/?\s*>/gi, ' ').replace(/\s+/g, ' ').trim();
-    const tokens = value => value.match(/%\{[^}]*\}/g) || [];
-    const markup = value => value.match(/<(?!br\b)[^>]*>/gi) || [];
-    const extra = value => value.match(/<extra>[\s\S]*?<\/extra>/g) || [];
-    return normalize(source) === normalize(replacement) &&
-      JSON.stringify(tokens(source)) === JSON.stringify(tokens(replacement)) &&
-      JSON.stringify(markup(source)) === JSON.stringify(markup(replacement)) &&
-      JSON.stringify(extra(source)) === JSON.stringify(extra(replacement));
-  }
-  function prepareViewDisplay(figure, selection) {
-    if (!displayObject(figure)) return figure;
-    const domains = viewXDomains(figure.layout, selection);
-    const breaks = displayObject(selection?.hoverTemplateLineBreaks) ? selection.hoverTemplateLineBreaks : {};
-    const replacements = [];
-    (Array.isArray(figure.data) ? figure.data : []).forEach((trace, index) => {
-      const role = trace?.meta?.series_role;
-      if (typeof role !== 'string' || !Object.prototype.hasOwnProperty.call(breaks, role)) return;
-      const replacement = breaks[role];
-      if (replacement !== trace.hovertemplate && sameHoverWords(trace.hovertemplate, replacement)) replacements.push([index, replacement]);
-    });
-    if (!domains && !replacements.length) return figure;
-    const display = JSON.parse(JSON.stringify(figure));
-    if (domains) for (const [key, pair] of Object.entries(domains)) display.layout[key].domain = pair.slice();
-    for (const [index, template] of replacements) display.data[index].hovertemplate = template;
-    return display;
-  }
-  function applyViewDisplayHeight(plot, selection) {
-    if (!plot?.style) return;
-    const height = displayHeight(selection), owned = viewDisplayHeights.get(plot);
-    if (height == null) {
-      if (owned && plot.style.getPropertyValue('height') === owned.applied &&
-          plot.style.getPropertyPriority('height') === '') {
-        if (owned.value) plot.style.setProperty('height', owned.value, owned.priority);
-        else plot.style.removeProperty('height');
-      }
-      viewDisplayHeights.delete(plot);
-      return;
-    }
-    if (!owned) viewDisplayHeights.set(plot, {
-      value: plot.style.getPropertyValue('height'), priority: plot.style.getPropertyPriority('height'), applied: ''
-    });
-    const state = viewDisplayHeights.get(plot);
-    state.applied = `${height}px`;
-    if (plot.style.getPropertyValue('height') !== state.applied || plot.style.getPropertyPriority('height'))
-      plot.style.setProperty('height', state.applied);
-  }
-
   window.GenAppPlotlyLayout = {
-    prepareViewDisplay,
-    applyViewDisplayHeight,
     legendFitUpdate,
     hover_trace_selection_buttons,
     bind_hover_trace_selection,
