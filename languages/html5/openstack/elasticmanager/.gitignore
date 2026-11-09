@@ -9,6 +9,7 @@
 em_state.json
 *.log
 nohup.out
+em_waiting/
 
 ## em_install.php staging and rollback artefacts, normally removed on the way
 ## through but left behind if it is interrupted

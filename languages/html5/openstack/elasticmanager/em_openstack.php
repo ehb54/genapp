@@ -977,6 +977,8 @@ class em_openstack {
             $update = false;
         }
 
+        $waiting = $this->demand();
+
         $this->em_state->read_lock();
 
         if ( $this->debug ) {
@@ -1065,7 +1067,11 @@ class em_openstack {
         
         # debug_json( "state", $this->em_state->state );
 
-        $difference = $needed_idle - count( $idle );
+        ## spares plus one for each job waiting: with idle 0 that starts an
+        ## instance only for a job that asks, and never shelves one a waiting
+        ## job is about to take
+
+        $difference = $needed_idle + count( $waiting ) - count( $idle );
 
         $instances_to_start = 0;
         $instances_to_idle  = 0;
@@ -1226,6 +1232,7 @@ class em_openstack {
         return sprintf(
             "idle    %d [%s]\n"
             . "in_use  %d [%s] ids %s\n"
+            . "waiting %d%s\n"
             . "active  %d [%s]\n"
             . "shelved %d [%s]\n"
             . "error   %d [%s]\n"
@@ -1242,6 +1249,7 @@ class em_openstack {
 
             ,count( $idle ), implode( ",", $idle )
             ,count( $in_use ), implode( ",", $in_use ), implode( ", ", $in_use_ids )
+            ,count( $waiting ), count( $waiting ) ? " ids " . implode( ", ", $waiting ) : ""
             ,count( $active ), implode( ",", $active )
             ,count( $shelved ), implode( ",", $shelved )
             ,count( $error ), implode( ",", $error )
@@ -1815,6 +1823,72 @@ class em_openstack {
 
     ## --- client functions ----
 
+    ## start on demand. an acquire that finds nothing idle leaves a marker for
+    ## its job in files:waiting, refreshed on every try, including each --nowait
+    ## miss of a polling client, and removed once the job has an instance.
+    ## status() keeps idle + waiting instances ready, so flavors:<f>:idle 0
+    ## means no spare, but one started for each waiting job. a marker not
+    ## refreshed for sleep:demand_window seconds is from a client that is gone,
+    ## and is ignored and removed
+
+    function demand_dir() {
+        return isset( $this->em_config->files->waiting ) ? $this->em_config->files->waiting : "em_waiting";
+    }
+
+    function demand_file( $tag ) {
+        return $this->demand_dir() . "/" . md5( $tag );
+    }
+
+    ## demand_waiting() - this job found nothing idle
+    function demand_waiting( $tag ) {
+        $dir = $this->demand_dir();
+
+        if ( !is_dir( $dir ) ) {
+            ## clients and the daemon need not run as the same user
+            @mkdir( $dir, 0777 );
+            @chmod( $dir, 0777 );
+        }
+
+        ## rewritten rather than touched: a touch racing the daemon's removal
+        ## of a stale marker would recreate it empty
+
+        $f   = $this->demand_file( $tag );
+        $new = !file_exists( $f );
+
+        if ( @file_put_contents( $f, "$tag\n" ) !== false && $new ) {
+            @chmod( $f, 0666 );
+        }
+    }
+
+    ## demand_done() - this job has an instance
+    function demand_done( $tag ) {
+        $f = $this->demand_file( $tag );
+
+        if ( file_exists( $f ) ) {
+            @unlink( $f );
+        }
+    }
+
+    ## demand() - tags of the jobs waiting for an instance now
+    function demand() {
+        $window = isset( $this->em_config->sleep->demand_window ) ? $this->em_config->sleep->demand_window : 120;
+        $tags   = [];
+
+        ## the daemon is long lived, and php caches file status
+        clearstatcache();
+
+        foreach ( glob( $this->demand_dir() . "/*" ) ?: [] as $f ) {
+            if ( time() - (int) @filemtime( $f ) > $window ) {
+                @unlink( $f );
+                continue;
+            }
+            $tags[] = trim( (string) @file_get_contents( $f ) );
+        }
+
+        sort( $tags );
+        return $tags;
+    }
+
     function acquire( $flavor, $tag, &$number, &$ip, $wait = true ) {
         $this->debug_echo( "em_openstack: acquire( $flavor, '$tag' )" );
         $this->log( "em_client.php : acquire flavor $flavor tag $tag" );
@@ -1837,10 +1911,13 @@ class em_openstack {
                     $number = $k;
                     $ip     = $this->em_state->state->$k->network;
                     $this->log( "em_client.php : acquire flavor $flavor tag $tag, acquired $number ip $ip" );
+                    $this->demand_done( $tag );
                     return true;
                 }
             }
             $this->em_state->release_lock();
+
+            $this->demand_waiting( $tag );
 
             if ( !$wait ) {
                 return false;
