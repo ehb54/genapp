@@ -128,9 +128,11 @@ if ( $doc = ga_db_output( ga_db_findOne( 'users', '', [ "name" => $_SESSION[ $wi
          if ( is_scalar( $v ) || is_string( $v ) )
          {        
             $any_results = 1;
+            // a stored list of { name : { ... } } entries, such as project (a PHP array: ga_db_lib_v7.php's typeMap),
+            // or a stored document: the names
             if ( isset( $doc[ $k ] ) &&
                  $v == 0 &&
-                 is_object( $doc[ $k ] ) )
+                 ( is_array( $doc[ $k ] ) || is_object( $doc[ $k ] ) ) )
             
             {
                foreach ( $doc[ $k ] as $k2=>$v2 )
@@ -263,7 +265,8 @@ if ( !isset( $_REQUEST[ 'project' ] ) ) {
     unset( $results['project'] );
 }
 
-if ( isset( $results[ 'xsedeproject' ] ) ) {
+// a user without xsedeproject has "" here, which sort() refuses since PHP 8
+if ( isset( $results[ 'xsedeproject' ] ) && is_array( $results[ 'xsedeproject' ] ) ) {
    sort( $results['xsedeproject'], SORT_NATURAL );
 }
 
