@@ -52,7 +52,7 @@ for my $id (qw(plain spaced)) {
 like( $html, qr/_jmol_info\[ "spaced" \]/, 'the viewer still initializes its JSmol metadata' );
 
 my $index = read_file( File::Spec->catfile( $html5, 'index.html' ) );
-like( $index, qr{<link rel="stylesheet" href="scss/ga-bootstrap-bootswatch-somoaf\.css">}, 'the index links the somoaf theme' );
+like( $index, qr{<link rel="stylesheet" href="scss/ga-bootstrap-bootswatch-somoaf\.css\?v=\d+">}, 'the index links the somoaf theme, with the generation\'s version' );
 my $theme = File::Spec->catfile( $html5, qw(scss ga-bootstrap-bootswatch-somoaf.css) );
 ok( -f $theme, 'the somoaf theme is copied into the application' );
 is( -f $theme ? read_file($theme) : undef,
