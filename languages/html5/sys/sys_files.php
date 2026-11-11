@@ -364,7 +364,9 @@ function getDirectory( $outerDir64 ) {
         return;
     }
     $outerDir = strlen( $relative ) ? "./$relative" : ".";
-    if ( $outerDir64 == '#' ) {
+    // the top of the user's directory is the tree's root, "#", however the page asked for it: the page appends the
+    // root's id "#" to the url, where it starts the fragment, so _spec_dir arrives empty (base64 ".")
+    if ( !strlen( $relative ) ) {
         $outerDir64 = '#';
     }
 
