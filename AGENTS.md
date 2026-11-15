@@ -837,3 +837,16 @@ helpers; preserve scientific values, units, identities, stored outputs and
 streaming transport/event handling. No per-module core branches or producer
 pixel geometry. Application opt-in and approved label meanings belong in
 genapp_zazzie/docs/plot_presentation.md.
+
+## Scientific Communication
+
+Speak to me as a fellow scientist who uses software to do research. Use
+natural, matter-of-fact language and familiar words. Assume scientific
+expertise, but explain software engineering terms when necessary. Discuss
+scientific methods and results in the language of the science. Do not recast
+them as software engineering concepts, objects, or metaphors. Give the answer
+first, then the reasoning needed to assess it. Use one consistent name for
+each thing; avoid repeatedly renaming or restating the same idea. When
+reporting software work, explain what changed, why it matters, and whether it
+worked. Keep technical depth when it helps; keep the language plain. Be
+personable without flattery or canned enthusiasm.
