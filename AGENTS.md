@@ -850,3 +850,17 @@ each thing; avoid repeatedly renaming or restating the same idea. When
 reporting software work, explain what changed, why it matters, and whether it
 worked. Keep technical depth when it helps; keep the language plain. Be
 personable without flattery or canned enthusiasm.
+
+
+## Responsive panel-heading route (#364)
+
+View-selected `plotPresentation.panelHeadings` associates explicit annotation
+selectors with opaque Cartesian panel ids. UI2 owns measured heading wrapping,
+centering and clearance; UI2 and the Lab reuse the same shared fitter. Preserve
+source annotations, scientific values, units, identities, ranges and saved
+outputs. Existing unselected and `above_plot` annotations retain their behavior.
+Owner contracts: GenApp `doc/Plotting-Architecture.md`,
+`doc/UI2-Core-Extension-Policy.md`, and
+`doc/UI2-Panel-Headings-Shared-Gap-Report.md` in the paired checkout. Application
+selection belongs in `genapp_zazzie/docs/plot_presentation.md`. Do not add
+scientific or producer positioning workarounds.

@@ -1,0 +1,64 @@
+<!doctype html><meta charset="utf-8"><title>Neutral panel heading acceptance</title>
+<script src="../../languages/html5/add/js/plotly-2.35.2.min.js"></script>
+<script src="../../languages/ui2/add/js/plotly-layout.js"></script>
+<style>body{margin:0;font:14px Arial}#plot{width:min(100vw,801px);height:522px}</style>
+<div id="plot"></div><pre id="results">Running</pre>
+<script>
+(async()=>{
+const p=GenAppPlotlyLayout,g=document.querySelector('#plot'),clone=x=>JSON.parse(JSON.stringify(x));
+const source={title:{text:'Independent response histories'},margin:{t:96,b:163,l:80,r:80},font:{family:'Arial',size:14},showlegend:false,
+ xaxis:{title:'Observation',anchor:'y',domain:[0,.43]},yaxis:{title:'Response A',anchor:'x',domain:[.58,1]},
+ xaxis2:{title:'Observation',anchor:'y2',domain:[.57,1]},yaxis2:{title:'Response B',anchor:'x2',domain:[.58,1],range:[0,1]},
+ xaxis3:{title:'Observation',anchor:'y3',domain:[0,.43]},yaxis3:{title:'Response C',anchor:'x3',domain:[0,.42]},
+ yaxis4:{title:'Rate',overlaying:'y3',anchor:'x3',side:'right',range:[0,1]},
+ xaxis4:{title:'Observation',anchor:'y5',domain:[.57,1]},yaxis5:{title:'Response D',anchor:'x4',domain:[0,.42],range:[0,1]},
+ annotations:['A','B','C','D'].map((s,i)=>({text:'Group '+s,xref:'paper',yref:'paper',x:i%2?.785:.215,y:i<2?1.06:.47,showarrow:false}))};
+const data=[['x','y'],['x2','y2'],['x3','y3'],['x4','y5'],['x3','y4']].map(([xaxis,yaxis],i)=>({type:'scatter',mode:'lines+markers',name:'Series '+(i+1),xaxis,yaxis,x:[0,1,2,3],y:[.99,.98,.97,.96]}));
+const saved=JSON.stringify({source,data}),base={subplotLayout:{horizontalGap:160,verticalGap:144,arrangements:[{panels:[['xy','x2y2'],['x3y3','x4y5']],rowWeights:[1,1]}]},axisTitleOverflow:'wrap'};
+const selection={...base,panelHeadings:['xy','x2y2','x3y3','x4y5'].map((panel,index)=>({panel,annotation:{index,text:source.annotations[index].text}}))};
+const baseline=new URLSearchParams(location.search).has('baseline');
+await Plotly.newPlot(g,clone(data),clone(source),{responsive:true,displayModeBar:false});
+let active=baseline?base:selection;
+if(!baseline&&!p.applyPanelHeadings)throw Error('MISSING_CAPABILITY: panel-relative headings');
+let fitting=Promise.resolve();
+const fit=()=>fitting=p.queuePresentationFit(g,async()=>{
+ await p.applyAxisTitleOverflow(g,source,active);await p.applySubplotSpacing(g,source,active);
+ await p.applyPanelHeadings?.(g,source,active,{baseTopMargin:96});await p.applyTickDensity(g);
+});
+await fit();
+const observer=new ResizeObserver(()=>{fitting=Plotly.Plots.resize(g).then(fit)});observer.observe(g);
+const bounds=n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom}};
+window.panelHeadingMeasure=async()=>{
+ await fitting;await p.settleTickDensity(g);await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+ const f=g._fullLayout,sr=g.querySelector('.main-svg').getBoundingClientRect(),sx=sr.width/f.width,sy=sr.height/f.height;
+ const panels=[['xaxis','yaxis'],['xaxis2','yaxis2'],['xaxis3','yaxis3'],['xaxis4','yaxis5']].map(([x,y])=>{
+ const xa=f[x]||g.layout[x],ya=f[y]||g.layout[y],xo=f[x]?._offset??f._size.l+xa.domain[0]*f._size.w,
+ yo=f[y]?._offset??f._size.t+(1-ya.domain[1])*f._size.h,
+ xl=f[x]?._length??(xa.domain[1]-xa.domain[0])*f._size.w,yl=f[y]?._length??(ya.domain[1]-ya.domain[0])*f._size.h;
+ return {left:sr.left+xo*sx,right:sr.left+(xo+xl)*sx,top:sr.top+yo*sy,bottom:sr.top+(yo+yl)*sy};});
+ const headings=[...g.querySelectorAll('.annotation')].map((n,i)=>{const b=bounds(n);return {text:n.textContent,bounds:b,panel:panels[i],intrusion:Math.max(0,b.bottom-panels[i].top)}});
+ const labels=[...g.querySelectorAll('.annotation-text,[class$="tick"] text,.xtitle,.x2title,.x3title,.x4title,.ytitle,.y2title,.y3title,.y4title,.y5title,.gtitle')].filter(n=>n.textContent.replace(/\u200b/g,'').trim());
+ const hit=(a,b)=>Math.min(a.right,b.right)-Math.max(a.left,b.left)>.75&&Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top)>.75;
+ const collisions=[];labels.forEach((a,i)=>labels.slice(i+1).forEach(b=>{if(hit(bounds(a),bounds(b)))collisions.push([a.textContent,b.textContent])}));
+ return {width:sr.width,height:sr.height,headings,collisions,sourceUnchanged:JSON.stringify({source,data})===saved,arraysUnchanged:JSON.stringify(g.data.map(t=>[t.x,t.y]))===JSON.stringify(data.map(t=>[t.x,t.y]))};
+};
+window.panelHeadingExtraChecks=async()=>{
+ const before=JSON.stringify({source,data});
+ // An unused panel has no rendered axes, but remains explicitly declared.
+ const partial=data.filter(t=>t.xaxis!=='x2');
+ await Plotly.react(g,clone(partial),clone(source),{responsive:true,displayModeBar:false});await fit();
+ const partialBounds=await window.panelHeadingMeasure();
+ if(partialBounds.headings.some(h=>h.intrusion>.75)||partialBounds.collisions.length)throw Error('Partial heading clearance');
+ await Plotly.react(g,clone(data),clone(source),{responsive:true,displayModeBar:false});await fit();
+ await Plotly.relayout(g,{'xaxis.range':[.5,2.5],'xaxis.autorange':false});await p.settleTickDensity(g);
+ if(JSON.stringify(g.layout.xaxis.range)!=='[0.5,2.5]')throw Error('Zoom changed');
+ const image=await Plotly.toImage(g,{format:'png',scale:2});if(!image.startsWith('data:image/png;base64,'))throw Error('PNG failed');
+ const editor=clone(g.layout);delete editor.width;delete editor.height;
+ if(editor.annotations.length!==4||JSON.stringify({source,data})!==before)throw Error('Editor/source parity');
+ active=base;await fit();if(JSON.stringify(g.layout.annotations)!==JSON.stringify(source.annotations))throw Error('Selection removal did not restore annotations');
+ active=selection;await fit();
+ return {zoom:true,png:true,editor:true,removal:true};
+};
+window.panelHeadingReady=true;document.querySelector('#results').textContent=JSON.stringify({ready:true,baseline});
+})().catch(e=>{window.panelHeadingError=e.stack;document.querySelector('#results').textContent=JSON.stringify({passed:false,error:e.stack})});
+</script>

@@ -16,10 +16,10 @@ const c={window:{},state:{view:{}},reactWorkbenchRoot:null,cloneUi2Value:v=>JSON
 vm.runInContext(fs.readFileSync(process.argv[2]+'/languages/ui2/add/js/plotly-layout.js','utf8'),c);
 const clone=v=>JSON.parse(JSON.stringify(v)),get=o=>clone(c.plotGeometryForOutput(o));
 const make=(id,host=null,parent=null)=>({isConnected:true,dataset:{outputFieldId:id},closest:s=>s==='[data-plot-presentation]'?host:parent});
-const selected={axisTickFormats:{yaxis:'.4~g',xaxis:'.4~g'},figureTitleOverflow:'wrap',hoverNameDisplay:'full',profile:'unchanged',traceRoles:{role:'token'}};
+const selected={axisTickFormats:{yaxis:'.4~g',xaxis:'.4~g'},figureTitleOverflow:'wrap',panelHeadings:[{panel:'xy',annotation:{name:'heading'}}],hoverNameDisplay:'full',profile:'unchanged',traceRoles:{role:'token'}};
 const group={outputs:['ordinary','dynamic'],plotPresentation:selected};c.state.view={renderer:'react-workbench',results:{groups:[group]}};
 const before=JSON.stringify(c.state.view),o=make('ordinary');
-assert.deepStrictEqual(get(o),{axisTickFormats:selected.axisTickFormats,figureTitleOverflow:'wrap'});
+assert.deepStrictEqual(get(o),{axisTickFormats:selected.axisTickFormats,figureTitleOverflow:'wrap',panelHeadings:selected.panelHeadings});
 assert.deepStrictEqual(clone(c.plotPresentationForOutput(o)),{},'hover/profile resolver unchanged');
 const parent={dataset:{outputFieldId:'dynamic'}};assert.deepStrictEqual(get(make('opaque_child',null,parent)),get(o));
 assert.deepStrictEqual(get(make('unassigned')),{});assert.deepStrictEqual(get({...o,isConnected:false}),{});
@@ -28,7 +28,7 @@ for(const raw of ['{}','null','[]','broken']) assert.deepStrictEqual(get(make('o
 assert.deepStrictEqual(get(make('unassigned',{dataset:{plotPresentation:JSON.stringify(selected)}})),get(o));
 const detached=get(o);detached.axisTickFormats.yaxis='bad';assert.strictEqual(selected.axisTickFormats.yaxis,'.4~g');
 assert.strictEqual(JSON.stringify(c.state.view),before);
-c.state.view.results.groups.push({outputs:['ordinary'],plotPresentation:{figureTitleOverflow:'wrap',axisTickFormats:{xaxis:'.4~g',yaxis:'.4~g'}}});assert.deepStrictEqual(get(o),{axisTickFormats:selected.axisTickFormats,figureTitleOverflow:'wrap'});
+c.state.view.results.groups.push({outputs:['ordinary'],plotPresentation:{panelHeadings:selected.panelHeadings,figureTitleOverflow:'wrap',axisTickFormats:{xaxis:'.4~g',yaxis:'.4~g'}}});assert.deepStrictEqual(get(o),{axisTickFormats:selected.axisTickFormats,figureTitleOverflow:'wrap',panelHeadings:selected.panelHeadings});
 c.state.view.results.groups[1].plotPresentation.axisTickFormats.yaxis='.2g';assert.deepStrictEqual(get(o),{});
 c.state.view.results.groups=[group];
 const p=c.window.GenAppPlotlyLayout,scientific={yaxis:{type:'log'},xaxis:{type:'log'},hovermode:'x unified',hoverlabel:{namelength:0}},saved=JSON.stringify(scientific);

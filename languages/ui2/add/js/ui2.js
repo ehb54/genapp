@@ -12991,7 +12991,7 @@
   // fallback has no React FieldGroup ancestor, so use its declared output id.
   function plotGeometryForOutput(output) {
     const keys = ["axisTickFormats", "axisTickDensity", "axisTitleOverflow",
-      "figureTitleOverflow", "subplotSpacing", "annotationPlacement", "subplotLayout", "legendLayout", "axisTitleAliases", "hoverTemplateLineBreaks"];
+      "figureTitleOverflow", "subplotSpacing", "annotationPlacement", "subplotLayout", "legendLayout", "axisTitleAliases", "hoverTemplateLineBreaks", "panelHeadings"];
     const geometry = (selection) => {
       if (!selection || typeof selection !== "object" || Array.isArray(selection)) return {};
       return Object.fromEntries(keys.filter((key) => Object.prototype.hasOwnProperty.call(selection, key))
@@ -13203,6 +13203,7 @@
   function disconnectPlotlyOutputObserver(output) {
     output?._ui2PlotlyResizeObserver?.disconnect?.();
     if (!output) return;
+    window.GenAppPlotlyLayout?.clearPanelHeadings?.(output);
     output._ui2PlotlyResizeObserver = null;
     output._ui2PlotlyResizeGeneration = (output._ui2PlotlyResizeGeneration || 0) + 1;
     if (output._ui2PlotlyResizeFrame != null) {
@@ -13501,6 +13502,10 @@
         output,
         output?._ui2PlotlyLastFigure?.layout || {},
         plotGeometryForOutput(output)
+      ))
+      .then(() => window.GenAppPlotlyLayout?.applyPanelHeadings?.(
+        output, output?._ui2PlotlyLastFigure?.layout || {}, plotGeometryForOutput(output),
+        {baseTopMargin: output._ui2PlotlyBaseTopMargin || 96}
       ))
       // Shared fitting settles ticks and measured axis-title clearance together.
       .then(() => window.GenAppPlotlyLayout?.applyTickDensity?.(

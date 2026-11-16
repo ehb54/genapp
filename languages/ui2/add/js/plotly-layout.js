@@ -267,6 +267,135 @@
   }
 
 
+
+  // Explicit view associations only: never infer a heading from its wording or
+  // position. Legacy selectors require both index and exact source text.
+  const selectedPanelHeadings = new WeakMap();
+  const HEADING_KEYS = ['text','xref','yref','x','y','xanchor','yanchor','xshift','yshift','align','showarrow'];
+  function resolvePanelHeadings(sourceLayout, selection) {
+    const entries = selection?.panelHeadings, annotations = sourceLayout?.annotations;
+    if (!Array.isArray(entries) || !entries.length || entries.length > 16 || !Array.isArray(annotations)) return [];
+    const result = [], panels = new Set(), indices = new Set();
+    for (const entry of entries) {
+      const match = typeof entry?.panel === 'string' && /^x(\d*)y(\d*)$/.exec(entry.panel);
+      const selector = entry?.annotation;
+      if (!match || !selector || typeof selector !== 'object' || Array.isArray(selector)) return [];
+      let index;
+      if (typeof selector.name === 'string' && selector.name.length > 0 && selector.name.length <= 200 &&
+          Object.keys(selector).length === 1) {
+        const matches = annotations.map((a,i)=>a?.name === selector.name ? i : -1).filter(i=>i>=0);
+        if (matches.length !== 1) return [];
+        index = matches[0];
+      } else if (Object.keys(selector).length === 2 && Number.isInteger(selector.index) && selector.index >= 0 &&
+                 selector.index <= 255 && typeof selector.text === 'string' && selector.text.length > 0 && selector.text.length <= 2000) {
+        index = selector.index;
+        if (annotations[index]?.text !== selector.text) return [];
+      } else return [];
+      const annotation = annotations[index], xName = 'xaxis'+match[1], yName = 'yaxis'+match[2];
+      const x = sourceLayout[xName], y = sourceLayout[yName];
+      if (!annotation || typeof annotation.text !== 'string' || !annotation.text.trim() ||
+          annotation.text.length > 2000 || !PLAIN_TITLE.test(annotation.text) ||
+          annotation.xref !== 'paper' || annotation.yref !== 'paper' || annotation.showarrow !== false ||
+          !x || !y || x.overlaying || y.overlaying || x.anchor !== 'y'+match[2] || y.anchor !== 'x'+match[1] ||
+          panels.has(entry.panel) || indices.has(index) ||
+          (annotation.name && selection?.annotationPlacement?.[annotation.name] === ABOVE_PLOT)) return [];
+      panels.add(entry.panel); indices.add(index);
+      result.push({index, panel:entry.panel, xName, yName, annotation});
+    }
+    return result;
+  }
+
+  function clearPanelHeadings(plot) {
+    const state = selectedPanelHeadings.get(plot);
+    if (state) state.disposed = true;
+    selectedPanelHeadings.delete(plot);
+  }
+
+  const headingSame = (a,b) => typeof a === 'number' && typeof b === 'number'
+    ? Math.abs(a-b) < 1e-6 : (a ?? null) === (b ?? null);
+  async function restorePanelHeadings(plot, state) {
+    const update = {};
+    for (const [index, applied] of state.applied) {
+      const current = plot.layout?.annotations?.[index];
+      if (!current || !HEADING_KEYS.every(key=>headingSame(current[key],applied[key]))) continue;
+      for (const key of HEADING_KEYS) update[`annotations[${index}].${key}`] = state.sourceLayout.annotations[index][key] ?? null;
+    }
+    if (headingSame(plot.layout?.margin?.t,state.ownedTop)) update['margin.t'] = state.baseTop;
+    clearPanelHeadings(plot);
+    if (Object.keys(update).length && typeof window.Plotly?.relayout === 'function') await window.Plotly.relayout(plot,update);
+  }
+
+  // Called inside the existing tick/title event guard as domains and margins
+  // settle. The top and inter-row lanes are measured, never authored in YAML.
+  async function fitPanelHeadings(plot, relayout) {
+    const state = selectedPanelHeadings.get(plot), full = plot?._fullLayout;
+    if (!state || state.disposed || !full || !(full._size?.w > 0 && full._size?.h > 0)) return false;
+    const rect = plot.getBoundingClientRect?.(), scaleY = rect?.height > 0 && full.height > 0 ? rect.height/full.height : 1;
+    const gap = 8/scaleY, update = {}, nodes = Array.from(plot.querySelectorAll?.('.annotation') || []);
+    let topHeight = 0, minimumGap = 0;
+    for (const entry of state.entries) {
+      // Plotly omits unused axes from _fullLayout. Their declared display
+      // domains still locate the heading without fabricating an empty trace.
+      const x = full[entry.xName] || plot.layout?.[entry.xName];
+      const y = full[entry.yName] || plot.layout?.[entry.yName];
+      if (!Array.isArray(x?.domain) || !Array.isArray(y?.domain)) return false;
+      const font = {...full.font,...entry.annotation.font};
+      const measure = canvasMeasure(`${font.weight||'normal'} ${Number(font.size)||14}px ${font.family||'Arial, sans-serif'}`);
+      const text = wrapPlainText(entry.annotation.text,Math.max(1,full._size.w*(x.domain[1]-x.domain[0])-12),measure);
+      const desired = {text,xref:'paper',yref:'paper',x:(x.domain[0]+x.domain[1])/2,y:y.domain[1],
+        xanchor:'center',yanchor:'bottom',xshift:0,yshift:gap,align:'center',showarrow:false};
+      const current = plot.layout?.annotations?.[entry.index];
+      if (!current) return false;
+      for (const [key,value] of Object.entries(desired)) if (!headingSame(current[key],value)) update[`annotations[${entry.index}].${key}`]=value;
+      state.applied.set(entry.index,desired);
+      const height = (nodeHeight(nodes[entry.index]) || Number(font.size)||14)/scaleY;
+      if (Math.abs(y.domain[1]-1)<1e-6) topHeight = Math.max(topHeight,height+gap);
+      else {
+        // Upper panel's bottom labels and this heading share the row lane.
+        let upperDepth = 0;
+        for (const [name,axis] of Object.entries(full)) {
+          if (!/^xaxis\d*$/.test(name) || !axis?.anchor || axis.overlaying) continue;
+          const parent = full['yaxis'+axis.anchor.slice(1)];
+          if (!parent?.domain || parent.domain[0] <= y.domain[1]+1e-6) continue;
+          const id = 'x'+name.slice(5), bottom = (Number(parent._offset)+Number(parent._length));
+          for (const node of [plot.querySelector?.('.'+id+'title'),...Array.from(plot.querySelectorAll?.('.'+id+'tick text')||[])]) {
+            const b = node?.getBoundingClientRect?.();
+            if (b?.height>0 && rect) upperDepth=Math.max(upperDepth,(b.bottom-rect.top)/scaleY-bottom);
+          }
+        }
+        minimumGap = Math.max(minimumGap,upperDepth+height+2*gap);
+      }
+    }
+    state.minimumVerticalGap = minimumGap;
+    const requiredTop = Math.ceil(state.baseTop+topHeight);
+    if (Number(full.margin?.t) < requiredTop-.5 || headingSame(plot.layout?.margin?.t,state.ownedTop)) {
+      if (!headingSame(plot.layout?.margin?.t,requiredTop)) update['margin.t']=requiredTop;
+      state.ownedTop=requiredTop;
+    }
+    if (state.disposed || selectedPanelHeadings.get(plot)!==state) return false;
+    if (!Object.keys(update).length) return false;
+    await relayout(update);
+    return true;
+  }
+
+  async function applyPanelHeadings(plot, sourceLayout, selection, options={}) {
+    let state=selectedPanelHeadings.get(plot);
+    const entries=resolvePanelHeadings(sourceLayout,selection), signature=JSON.stringify(selection?.panelHeadings);
+    if (state && state.sourceLayout!==sourceLayout) { clearPanelHeadings(plot); state=null; }
+    if (state && (!entries.length || state.signature!==signature)) { await restorePanelHeadings(plot,state); state=null; }
+    if (!entries.length || !plot?._fullLayout) return;
+    if (!state) {
+      state={sourceLayout,selection,signature,entries,applied:new Map(),disposed:false,
+        baseTop:Number(plot._fullLayout.margin?.t)||Number(options.baseTopMargin)||96,minimumVerticalGap:0};
+      selectedPanelHeadings.set(plot,state);
+    } else {
+      const current=Number(plot._fullLayout.margin?.t);
+      if (!headingSame(current,state.ownedTop)) state.baseTop=current||state.baseTop;
+    }
+    // The existing guard owns all relayouts, including annotation patches.
+    return applyTickDensity(plot);
+  }
+
   // View-selected geometry is display-only and matches opaque source axis pairs.
   // A repeated rectangular cell spans rows/columns; overlays retain their parent.
   function panelArrangementUpdate(plot, sourceLayout, selection) {
@@ -319,7 +448,10 @@
     const rect = plot?.getBoundingClientRect?.();
     const scaleX = rect?.width > 0 && full.width > 0 ? rect.width / full.width : 1;
     const scaleY = rect?.height > 0 && full.height > 0 ? rect.height / full.height : 1;
-    const gx = horizontalGap / scaleX, gy = verticalGap / scaleY;
+    const headings = selectedPanelHeadings.get(plot);
+    const measuredGap = headings?.sourceLayout === sourceLayout &&
+      headings.signature === JSON.stringify(selection?.panelHeadings) ? headings.minimumVerticalGap : 0;
+    const gx = horizontalGap / scaleX, gy = Math.max(verticalGap / scaleY, measuredGap || 0);
     const cellWidth = (width - gx * (columns - 1)) / columns;
     const available = height - gy * (rows.length - 1);
     const totalWeight = weights.reduce((sum, w) => sum + w, 0);
@@ -333,14 +465,14 @@
     });
     const update = {};
     for (const panel of panels) {
-      if (!full[panel.xName] || !full[panel.yName]) return null;
+      if ((!full[panel.xName] || !full[panel.yName]) && !resolvePanelHeadings(sourceLayout,selection).length) return null;
       const domains = [
         [panel.xName, [panel.left * (cellWidth + gx) / width,
           (panel.right * (cellWidth + gx) + cellWidth) / width]],
         [panel.yName, [rowDomains[panel.bottom][0], rowDomains[panel.top][1]]]
       ];
       for (const [name, domain] of domains) {
-        const current = full[name].domain;
+        const current = full[name]?.domain || plot.layout?.[name]?.domain;
         if (!Array.isArray(current) || domain.some((v, i) => Math.abs(v - current[i]) > 0.000001)) {
           update[name + ".domain"] = domain;
         }
@@ -971,7 +1103,7 @@
         // Plotly may normalize values in our own tick/title/margin patch.
         // A real range/size/style update during fitting still requests a pass.
         if (!state.internal || Object.keys(event || {}).some(key =>
-            !/^(?:[xy]axis\d*\.(?:tickmode|tickvals|ticktext|title\.standoff|domain)|margin\.[lrtb])$/.test(key))) state.schedule();
+            !/^(?:[xy]axis\d*\.(?:tickmode|tickvals|ticktext|title\.standoff|domain)|margin\.[lrtb]|annotations\[\d+\]\.(?:text|xref|yref|x|y|xanchor|yanchor|xshift|yshift|align|showarrow))$/.test(key))) state.schedule();
       };
       state.afterplot = () => { if (!state.internal) state.schedule(); };
       fittedTickAxes.set(plot, state);
@@ -1041,7 +1173,8 @@
           const panelUpdate = arrangement
             ? panelArrangementUpdate(plot, arrangement.sourceLayout, arrangement.selection) : null;
           if (panelUpdate) await relayout(panelUpdate);
-          if (!clearanceChanged && !panelUpdate) break;
+          const headingsChanged = await fitPanelHeadings(plot, relayout);
+          if (!clearanceChanged && !panelUpdate && !headingsChanged) break;
         }
         if (!state.pending) await fitHoverCoordinates(plot, state, restyle);
       }
@@ -1489,6 +1622,9 @@
     applyFigureTitleOverflow,
     subplotSpacingUpdate,
     applySubplotSpacing,
+    resolvePanelHeadings,
+    applyPanelHeadings,
+    clearPanelHeadings,
     axisTitleClearanceUpdate,
     tickLabelRows,
     settleTickDensity,

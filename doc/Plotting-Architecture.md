@@ -768,3 +768,66 @@ A view may supply at most eight hoverTemplateLineBreaks with exact from/to\ntemp
 fresh-output reconstruction, PNG and editor settlement paths are reused.
 Non-selected plots retain their previous behavior. Evidence and rollback:
 UI2-Panel-Arrangement-Shared-Gap-Report.md.
+
+
+## Responsive panel headings (#364)
+
+An optional result-group `plotPresentation.panelHeadings` array associates one
+existing annotation with each selected independent Cartesian panel:
+
+```json
+{"panelHeadings": [
+  {"panel": "xy", "annotation": {"name": "response_heading"}},
+  {"panel": "x2y2", "annotation": {"index": 1, "text": "Group B"}}
+]}
+```
+
+There are 1–16 entries, with at most one heading per panel and one mapping per
+annotation. A name selector contains only a nonempty name (at most 200
+characters), unique in the source. A legacy selector contains only an integer
+index (0–255) and exact source text (1–2000 characters). Index alone is never
+sufficient. Panels use opaque anchored axis pairs, such as `xy` or `x4y5`,
+which must exist as independent, reciprocally anchored Cartesian axes.
+Overlay axes remain associated with their original parent.
+
+The initial supported source is a nonempty plain-text annotation, at most
+2000 characters, with `xref` and `yref` explicitly `paper` and `showarrow`
+explicitly false. This avoids changing scientific autorange or repositioning
+in-data annotations. Text, annotation styles, scientific values, units, trace
+identity, axis ranges/scales and stored figures remain authoritative. UI2 may
+wrap source words on a detached display copy, center them over the current
+panel span, anchor them above the panel and reserve measured top/inter-row
+lanes. View gap minima remain minima. Fonts and colors retain their existing
+presentation paths; no pixel positioning or YAML option is added.
+
+Missing, malformed, ambiguous, duplicate, unmatched or unsupported mappings
+select no headings. An annotation simultaneously selected as `above_plot`
+invalidates the panel-heading selection. Unselected and unnamed annotations
+retain ordinary behavior unless explicitly selected by the guarded legacy
+selector; existing `above_plot` behavior is unchanged. Selectors are checked
+against every new source, never inferred from scientific text or coordinates.
+Applications approve the mapping, including historical exact-text selectors.
+
+`resolvePanelHeadings` and `applyPanelHeadings` live in `plotly-layout.js`.
+UI2/native geometry resolution and the Lab catalog forward the same selection.
+The existing fitting queue and tick/title event guard own heading relayouts,
+with bounded clearance passes and the latest source retained. Resize, updates,
+completion, export and initial editor handoff reuse their existing settlement
+paths. Source replacement discards stale ownership; removing a selection
+restores only geometry still owned by the fitter. Teardown cancels heading
+ownership. Too-small allocations must not be declared accepted or repaired by
+hiding headings, removing values, or reducing scientific content.
+
+Acceptance includes opted-in and unselected controls, named/legacy selectors,
+ambiguity, invalid mappings, overlays, source replacement/removal, actual
+resize and expansion/restoration, themes/surfaces, zoom/pan/reset, optional
+outputs, bounded updates, completion/reconstruction, scale-2 PNG and initial
+editor transfer. Check rendered headings against every axis/title/tick/legend
+and the data-panel bounds, alongside mandatory tick collision checks.
+Details, approval, evidence and rollback:
+`doc/UI2-Panel-Headings-Shared-Gap-Report.md`.
+
+A declared panel may have no rendered axis when its optional trace is absent.
+For an explicitly selected heading, use that panel's declared display domains;
+do not synthesize a trace, data point, axis value or scientific result. The
+panel arrangement retains its declared position and other panels still fit.
