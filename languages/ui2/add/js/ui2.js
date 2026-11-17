@@ -13268,7 +13268,8 @@
           data: window.GenAppPlotlyLayout?.hover_trace_selection_data
             ? await window.GenAppPlotlyLayout.hover_trace_selection_data(graphDiv) : graphDiv.data,
           layout: chartEditorLayout(graphDiv.layout),
-          config: JSON.parse(originalConfig)
+          config: JSON.parse(originalConfig),
+          ...(graphDiv._fullLayout ? {editor_viewport: {width: graphDiv._fullLayout.width, height: graphDiv._fullLayout.height}} : {})
         }));
         window.open(
           chartEditorUrl(editor.url, id),

@@ -78,12 +78,12 @@ const microtasks=async()=>{for(let i=0;i<8;i++)await Promise.resolve();};
  const detached=output();detached.isConnected=false;c.observeFitPlotlyOutput(detached);assert.strictEqual(detached._ui2PlotlyResizeObserver,null);
  // Both existing modebar hooks must await real resize before transfer.
  let exported=0,opened=0;c.window.Plotly.Icons={camera:{},pencil:{}};c.window.Plotly.downloadImage=async()=>exported++;
- c.window.localStorage={setItem:()=>{}};c.window.open=()=>opened++;c.chartEditorLayout=x=>x;c.chartEditorUrl=()=>'/editor';
+ let editorSnapshot;c.window.localStorage={setItem:(_key,value)=>{editorSnapshot=JSON.parse(value);}};c.window.open=()=>opened++;c.chartEditorLayout=x=>x;c.chartEditorUrl=()=>'/editor';
  c.window.GenAppPlotlyLayout.settleTickDensity=async()=>{};
  const cfg={genapp_chart_editor:{enabled:true,url:'/editor'}};c.applyPlotlyModebarHooks({config:{}},cfg);
  for(const name of ['fittedImage','editInChartEditor']){
   const graph=output();graph._fullLayout={width:488,height:480};releaseResize=true;
-  const transfer=cfg.modeBarButtonsToAdd.find(b=>b.name===name).click(graph);await microtasks();const before=exported+opened;assert.strictEqual(typeof releaseResize,'function');await microtasks();assert.strictEqual(exported+opened,before,'transfer waits for resize');releaseResize();releaseResize=null;await transfer;assert.strictEqual(exported+opened,before+1);
+  const transfer=cfg.modeBarButtonsToAdd.find(b=>b.name===name).click(graph);await microtasks();const before=exported+opened;assert.strictEqual(typeof releaseResize,'function');await microtasks();assert.strictEqual(exported+opened,before,'transfer waits for resize');releaseResize();releaseResize=null;await transfer;assert.strictEqual(exported+opened,before+1);if(name==='editInChartEditor')assert.deepStrictEqual(editorSnapshot.editor_viewport,{width:488,height:480});
  }
  console.log('native and pane resize events, coalescing, teardown, stale callbacks and export settlement passed');
 })().catch(error=>{console.error(error);process.exitCode=1;});

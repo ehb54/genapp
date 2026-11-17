@@ -139,6 +139,16 @@
     return escapeNonAscii(json);
   }
 
+  // The additive hint owns only the editor shell; never export it as science.
+  function editorViewport(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    var width = value.width;
+    var height = value.height;
+    return typeof width === "number" && Number.isFinite(width) && width >= 240 && width <= 8192 &&
+      typeof height === "number" && Number.isFinite(height) && height >= 160 && height <= 8192
+      ? { width: width, height: height } : null;
+  }
+
   function App() {
     var params = new URLSearchParams(window.location.search);
     var id = params.get("id");
@@ -155,6 +165,18 @@
         localStorage.removeItem(id);
       }
     }
+
+    var viewportState = useState(function () { return editorViewport(initial.editor_viewport); });
+    var viewport = viewportState[0];
+    var controlsState = useState(false);
+    var controlsHidden = controlsState[0];
+    var setControlsHidden = controlsState[1];
+    var shellRef = React.useRef(null);
+    useEffect(function () {
+      var shell = shellRef.current;
+      // Initial allocation only. Later explicit control choices stay authoritative.
+      if (viewport && shell && shell.scrollWidth > shell.clientWidth + 1) setControlsHidden(true);
+    }, []);
 
     var state = useState(initial);
     var figure = state[0];
@@ -188,6 +210,15 @@
     }
 
     var dirtyMarker = dirty ? " ●" : "";
+    var explicitWidth = figure.layout && figure.layout.width;
+    var explicitHeight = figure.layout && figure.layout.height;
+    var canvasWidth = viewport && (typeof explicitWidth === "number" && Number.isFinite(explicitWidth) && explicitWidth > 0 ? explicitWidth : viewport.width);
+    var canvasHeight = viewport && (typeof explicitHeight === "number" && Number.isFinite(explicitHeight) && explicitHeight > 0 ? explicitHeight : viewport.height);
+    var shellStyle = { flex: "1 1 auto", minHeight: 0, overflow: "auto" };
+    if (viewport) {
+      shellStyle["--genapp-editor-canvas-width"] = canvasWidth + "px";
+      shellStyle["--genapp-editor-canvas-height"] = canvasHeight + "px";
+    }
 
     return React.createElement(
       "div",
@@ -207,11 +238,16 @@
           },
         },
         React.createElement("button", { onClick: handleDownloadCSV }, "Download CSV" + dirtyMarker),
-        React.createElement("button", { onClick: handleDownloadJSON }, "Download JSON" + dirtyMarker)
+        React.createElement("button", { onClick: handleDownloadJSON }, "Download JSON" + dirtyMarker),
+        React.createElement("button", { onClick: function () { setControlsHidden(!controlsHidden); }, "aria-expanded": !controlsHidden }, controlsHidden ? "Show controls" : "Hide controls")
       ),
       React.createElement(
         "div",
-        { style: { flex: "1 1 auto", minHeight: 0 } },
+        { ref: shellRef, className: viewport ? "genapp-fitted-editor-canvas" : "", style: shellStyle },
+        viewport ? React.createElement("style", null,
+          ".genapp-fitted-editor-canvas .plotly_editor{width:max-content!important;height:var(--genapp-editor-canvas-height)!important;}" +
+          ".genapp-fitted-editor-canvas .plotly_editor_plot{flex:0 0 var(--genapp-editor-canvas-width)!important;width:var(--genapp-editor-canvas-width)!important;min-width:var(--genapp-editor-canvas-width)!important;height:var(--genapp-editor-canvas-height)!important;}"
+        ) : null,
         React.createElement(
           PlotlyEditor,
           {
@@ -219,6 +255,8 @@
             layout: figure.layout,
             plotly: Plotly,
             useDefaultConfig: true,
+            hideControls: controlsHidden,
+            useResizeHandler: Boolean(viewport),
             onUpdate: function (data, layout) {
               setFigure(function (f) {
                 return Object.assign({}, f, { data: data, layout: layout });

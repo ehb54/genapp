@@ -911,3 +911,23 @@ A declared panel may have no rendered axis when its optional trace is absent.
 For an explicitly selected heading, use that panel's declared display domains;
 do not synthesize a trace, data point, axis value or scientific result. The
 panel arrangement retains its declared position and other panels still fit.
+
+
+## Chart Editor fitted-canvas preservation (#363)
+
+The optional editor handoff `editor_viewport: {width, height}` is shell-only
+metadata governed by `doc/UI2-Chart-Editor-Canvas-Shared-Gap-Report.md`. UI2
+and the Lab capture the settled dimensions; the editor retains that canvas
+with collapsible controls and scrolling instead of compressing fitted plots.
+Both finite numeric dimensions must validate (width 240–8192, height
+160–8192); absent/invalid hints retain legacy allocation. Explicit user-edited
+layout dimensions remain authoritative. The hint is excluded from downloaded
+figure JSON/CSV. No scientific values, identities, existing presentation
+helpers, dependency versions or saved outputs are changed.
+
+Release requires before/after checks of all active Tools-through-Simulate
+fixtures in React/native UI2, Lab, editor transfer, exports and resize/restore.
+Preserve deliberate edited layouts and downloaded scientific arrays, units,
+uncertainties, identities and ordering. Record sizes, states and differences;
+regressions or untested required states block release and handoff. The paired
+application `AGENTS.md` owns the application regression gate.

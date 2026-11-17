@@ -1,0 +1,30 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../../languages/html5/add/_cedit/react-chart-editor.min.css">
+<style>html,body{margin:0;height:100%;font-family:Arial}#editor-root{height:100%}</style>
+<div id="editor-root"></div>
+<script>
+const params=new URLSearchParams(location.search),kind=params.get('kind')||'four';
+const count=kind==='single'?1:kind==='two'?2:4;
+const figure={data:[],layout:{title:{text:'Independent observation groups'},margin:{l:64,r:38,t:80,b:120},
+ legend:{orientation:'h',entrywidth:.5,entrywidthmode:'fraction',x:.5,xanchor:'center',y:-.25},annotations:[]},config:{}};
+for(let i=0;i<count;i++){
+ const n=i===0?'':String(i+1),x='x'+n,y='y'+n,xa='xaxis'+n,ya='yaxis'+n;
+ const col=count===1?0:i%2,row=i<2?1:0;
+ figure.data.push({type:'scatter',mode:'lines+markers',name:'Independent observation group '+(i+1),
+ x:[1,2,3],y:[i+.125,i+.5,i+.875],meta:{series_role:'neutral'},xaxis:x,yaxis:y});
+ figure.layout[xa]={title:'Observation',domain:count===1?[0,1]:col?[.62,1]:[0,.38],anchor:y,
+ tickmode:'array',tickvals:[1,2,3],tickformat:'.0f',hoverformat:'.0f'};
+ figure.layout[ya]={title:'Response (units)',domain:count<4?[0,1]:row?[.65,1]:[0,.35],anchor:x};
+ if(count>1)figure.layout.annotations.push({text:'Group '+(i+1),xref:'paper',yref:'paper',x:col?.81:.19,y:row?1.08:.43,showarrow:false});
+}
+if(params.get('hint')!=='none')figure.editor_viewport=params.get('hint')==='invalid'?{width:Infinity,height:600}:{width:700,height:600};
+window.GENAPP_INITIAL_FIGURE=figure;
+window.neutralSource=JSON.parse(JSON.stringify(figure));
+</script>
+<script src="../../languages/html5/add/_cedit/react-chart-editor.bundle.min.js"></script>
+<script>
+// Test the wrapper's documented upstream edit callback with a real editor.
+const OriginalEditor=ReactChartEditor.PlotlyEditor;
+ReactChartEditor.PlotlyEditor=function(props){window.neutralEditorProps=props;return ReactChartEditor.React.createElement(OriginalEditor,props);};
+</script>
+<script src="../../languages/html5/add/_cedit/react-chart-editor.app.min.js"></script>
