@@ -367,7 +367,23 @@ reattachment acceptance require separate execution.
 Local Chrome checks used a neutral categorical plot and the maintained Lab
 figure set. Comparison covered 115 figures in all 25 active Plotly modules at
 380 and 724 CSS px. Only the three affected LACES renders changed. Advanced
-MD's two categorical controls matched baseline. Deployed Lab and ordinary
-UI2 acceptance for both LACES outcomes, narrow and normal widths, themes and
-plot surfaces, expanded and restored views, scale-2 PNG, live completion,
-and fresh-window reattachment remains pending.
+MD's two categorical controls matched baseline.
+
+On November 23, 2026, deployed GenApp `4f75eece` and application
+`ee6e10c` passed 16 Lab combinations and 25 ordinary UI2 checks. In both
+surfaces, the full category and the neighboring exhausted-route label
+remained readable at 550 and 1240 CSS px viewports in light and dark themes
+and on matched and contrasting plot surfaces. The Lab and ordinary UI2 each
+passed four scale-2 exports. The ordinary UI2 checks included expansion and
+restore at both widths and fresh-window attachment of the two completed jobs
+behind the Lab captures. Their stored category wording, outcome counts, and
+route geometry were verified.
+
+The fresh run in `issue371_laces_20261123`, job
+`9bbdff4b-1b9e-4227-b352-0bc8f1efd178`, showed streaming bars, passed
+scenario verification, and reattached in a fresh window with the same 11
+exhausted routes, one released route, 11 failed attempts and one accepted
+attempt. The originally reported job `cfe612b6-93d7-48ac-b2af-419c461f87a0`
+was absent from the authorized account's Job Manager with filters cleared.
+That exact historical reattachment is unverified. The authorized account
+was logged out after testing.
