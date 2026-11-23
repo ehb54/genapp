@@ -851,3 +851,16 @@ Preserve deliberate edited layouts and downloaded scientific arrays, units,
 uncertainties, identities and ordering. Record sizes, states and differences;
 regressions or untested required states block release and handoff. The paired
 application `AGENTS.md` owns the application regression gate.
+
+## Category tick labels at the figure edge (#371)
+
+The shared tick fitter measures horizontal category labels against the figure
+bounds before collision masking. When an automatically angled and positioned
+plain-text label crosses a side edge, the fitter reuses the title word-wrap
+helper and Plotly's existing tick display settings. It keeps original tick
+coordinates and uses the available width at the label's position. A wrapped
+label has priority during the existing collision pass. The fitter owns the
+temporary tick settings, restores them before refitting and respects newer
+explicit settings. UI2 and the Lab reuse the current render, resize, PNG
+settlement, and initial editor handoff. Source text, order, axis ranges,
+data, and saved outputs remain authoritative.

@@ -884,3 +884,12 @@ Preserve deliberate edited layouts and downloaded scientific arrays, units,
 uncertainties, identities and ordering. Record sizes, states and differences;
 regressions or untested required states block release and handoff. The paired
 application `AGENTS.md` owns the application regression gate.
+
+## Category tick labels at the figure edge (#371)
+
+GenApp's existing tick fitting owns horizontal category labels that extend past
+the figure edge. UI2 and the Plot Presentation Lab use the same display-only
+word wrapping and settle it before export. Preserve scientific category text,
+counts, order, output IDs and saved results. The paired GenApp
+`doc/Plotting-Architecture.md` and `doc/UI2-Tick-Density-Shared-Gap-Report.md`
+govern the fitter and its regression checks.

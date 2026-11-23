@@ -361,3 +361,13 @@ The shared browser regression passed 1,303 pointer, formatting, and source
 checks. All 50 application Lab parity and figure-fidelity checks passed. These
 are local checks. Deployed Lab, ordinary UI2 completion, and fresh-window
 reattachment acceptance require separate execution.
+
+## Category tick labels at the figure edge (#371)
+
+Local Chrome checks used a neutral categorical plot and the maintained Lab
+figure set. Comparison covered 115 figures in all 25 active Plotly modules at
+380 and 724 CSS px. Only the three affected LACES renders changed. Advanced
+MD's two categorical controls matched baseline. Deployed Lab and ordinary
+UI2 acceptance for both LACES outcomes, narrow and normal widths, themes and
+plot surfaces, expanded and restored views, scale-2 PNG, live completion,
+and fresh-window reattachment remains pending.

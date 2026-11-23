@@ -863,8 +863,46 @@
     return result;
   }
 
-  function tickDensityUpdate(plot) {
-    const rows = tickLabelRows(plot), kept = new Set(nonOverlappingTicks(rows));
+  function categoryTickEdgeUpdate(plot) {
+    const bounds = plot.getBoundingClientRect?.();
+    const layout = plot._fullLayout;
+    if (!(bounds?.width > 0 && layout.width > 0)) return null;
+    const rows = tickLabelRows(plot);
+    const update = {};
+    for (const [name, axis] of Object.entries(layout)) {
+      if (!/^xaxis\d*$/.test(name) || axis?.type !== "category" || !axis._vals?.length ||
+          axis.tickmode === "array" || (axis.tickangle != null && axis.tickangle !== "auto")) continue;
+      const clipped = new Set(rows.filter(row => row.name === name &&
+        (row.left < bounds.left - 1 || row.right > bounds.right + 1)).map(row => row.coordinate));
+      if (!clipped.size) continue;
+      const font = axis.tickfont || layout.font || {};
+      const measure = canvasMeasure(`${font.weight || "normal"} ${font.size || 12}px ${font.family || "Arial, sans-serif"}`);
+      if (!measure) continue;
+      const spacing = axis._length / axis._vals.length;
+      const labels = axis._vals.map(tick => {
+        if (!clipped.has(tick.x) || typeof tick.text !== "string") return tick.text;
+        const center = axis._offset + axis.l2p(tick.x);
+        const available = 2 * Math.min(center, layout.width - center) - 8;
+        const longestWord = Math.max(...tick.text.split(/\s+/).map(measure));
+        if (!(available >= longestWord)) return tick.text;
+        const wrapped = wrapPlainText(tick.text, Math.min(available, Math.max(spacing, longestWord)), measure);
+        return wrapped.replaceAll("<br>", " ") === tick.text ? wrapped : tick.text;
+      });
+      if (!labels.some((label, index) => label !== axis._vals[index].text)) continue;
+      update[`${name}.tickmode`] = "array";
+      update[`${name}.tickvals`] = axis._vals.map(tick => tick.x);
+      update[`${name}.ticktext`] = labels;
+      update[`${name}.tickangle`] = 0;
+    }
+    return Object.keys(update).length ? update : null;
+  }
+
+  function tickDensityUpdate(plot, wrappedLabels) {
+    const rows = tickLabelRows(plot);
+    for (const row of rows) {
+      if (wrappedLabels?.get(row.name)?.has(row.coordinate)) row.priority = -1;
+    }
+    const kept = new Set(nonOverlappingTicks(rows));
     const update = {};
     for (const name of new Set(rows.filter(row => !kept.has(row)).map(row => row.name))) {
       const axisRows = rows.filter(row => row.name === name);
@@ -1118,7 +1156,7 @@
         // Plotly may normalize values in our own tick/title/margin patch.
         // A real range/size/style update during fitting still requests a pass.
         if (!state.internal || Object.keys(event || {}).some(key =>
-            !/^(?:[xy]axis\d*\.(?:tickmode|tickvals|ticktext|title\.standoff|domain)|margin\.[lrtb]|annotations\[\d+\]\.(?:text|xref|yref|x|y|xanchor|yanchor|xshift|yshift|align|showarrow))$/.test(key))) state.schedule();
+            !/^(?:[xy]axis\d*\.(?:tickmode|tickvals|ticktext|tickangle|title\.standoff|domain)|margin\.[lrtb]|annotations\[\d+\]\.(?:text|xref|yref|x|y|xanchor|yanchor|xshift|yshift|align|showarrow))$/.test(key))) state.schedule();
       };
       state.afterplot = () => { if (!state.internal) state.schedule(); };
       fittedTickAxes.set(plot, state);
@@ -1148,17 +1186,36 @@
         for (const [name, entry] of state.axes) {
           // react/newPlot or an explicit user edit replaces our display patch.
           // Do not overwrite that newer figure with the preceding baseline.
-          if (TICK_PLACEMENT.every(key => sameTickValue(plot.layout?.[name]?.[key], entry.fitted[key]))) {
-            for (const key of TICK_PLACEMENT) reset[`${name}.${key}`] = entry.original[key];
+          const keys = Object.keys(entry.fitted);
+          if (keys.every(key => sameTickValue(plot.layout?.[name]?.[key], entry.fitted[key]))) {
+            for (const key of keys) reset[`${name}.${key}`] = entry.original[key];
           }
         }
         state.axes.clear();
         if (Object.keys(reset).length) await relayout(reset);
         await resetAxisTitleClearance(plot, relayout);
+        const categoryUpdate = categoryTickEdgeUpdate(plot);
+        const wrappedLabels = new Map();
+        if (categoryUpdate) {
+          for (const path of Object.keys(categoryUpdate).filter(key => key.endsWith(".tickangle"))) {
+            const name = path.split(".")[0], axis = plot._fullLayout[name];
+            const keys = [...TICK_PLACEMENT, "tickangle"];
+            const entry = {original:{}, fitted:{}, nativeTicks:{}};
+            for (const key of keys) {
+              entry.original[key] = copyTickValue(plot.layout?.[name]?.[key]);
+              entry.nativeTicks[key] = copyTickValue(axis[key]);
+              entry.fitted[key] = copyTickValue(categoryUpdate[`${name}.${key}`]);
+            }
+            wrappedLabels.set(name, new Set(axis._vals.filter((tick, index) =>
+              tick.text !== entry.fitted.ticktext[index]).map(tick => tick.x)));
+            state.axes.set(name, entry);
+          }
+          await relayout(categoryUpdate);
+        }
         // Margin changes can change tick density. Recheck both in a bounded
         // pass, under the same internal-event guard and export promise.
         for (let clearancePass = 0; clearancePass < 4 && !state.pending; clearancePass++) {
-          let update = tickDensityUpdate(plot);
+          let update = tickDensityUpdate(plot, wrappedLabels);
           // Array-mode labels can have different geometry from native labels.
           // Each pass removes text monotonically; retain the full tick positions.
           while (update && !state.pending) {
@@ -1181,7 +1238,7 @@
               for (const key of TICK_PLACEMENT) entry.fitted[key] = copyTickValue(update[`${name}.${key}`]);
             }
             await relayout(update);
-            update = tickDensityUpdate(plot);
+            update = tickDensityUpdate(plot, wrappedLabels);
           }
           const clearanceChanged = await fitAxisTitleClearance(plot, relayout);
           const arrangement = selectedPanelArrangements.get(plot);

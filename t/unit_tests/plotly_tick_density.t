@@ -140,7 +140,7 @@ PYTHON
         File::Spec->catfile($repo,qw(t fixtures plotly_tick_density.html))]);
     is($browser_status,0,'real-browser tick fixture completed') or diag($browser_output);
     my $report=eval { decode_json($browser_output) };
-    ok($report && $report->{passed},'useful collision-free labels survive fitting and interactions') or diag($browser_output);
+    ok($report && $report->{passed},'useful collision-free labels survive edge fitting, interactions and export') or diag($browser_output);
     note($report->{checkCount}.' rendered checks') if $report && $report->{passed};
 }
 done_testing();

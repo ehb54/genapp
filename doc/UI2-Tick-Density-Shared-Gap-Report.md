@@ -221,3 +221,41 @@ reattachment, PNG and initial Chart Editor handoff remain pending. Existing
 #333 acceptance limitations are not certified by this correction. No commit,
 push, deployment, YAML publication, UI2 generation or authenticated account use
 occurred for #347 during this implementation phase.
+
+## Category tick labels at the figure edge (#371)
+
+Joseph Curtis approved the coordinated issue 371 scope and directed work to
+continue after the narrow-pane clearance check. The LACES bar tick crosses the
+figure boundary even when neighbor collision checks pass. With the existing
+Lab geometry at a 550 CSS px plot width, the released and bounded captures
+overran the right side by 118 and 69 CSS px. The untouched detached export
+layout also reproduced the overrun. Existing axis-title wrapping and numeric
+tick formatting do not resolve category ticks. The neutral browser fixture
+uses an anonymous bar chart with an automatically angled long category.
+
+Measured margin clearance alone left a 77 by 52 CSS px data area in the
+released case at 380 CSS px and the existing collision check masked the long
+label in the bounded case. The correction reuses `wrapPlainText`, measured
+available width, and the current detached tick-array state and collision
+pass. Only automatically positioned horizontal category labels crossing a
+side edge qualify. Controls include the normal-width bounded LACES plot,
+Advanced MD's short categories, and the existing numeric, overlaid, and
+authored tick fixtures. Restore prior behavior by reverting the GenApp
+category-edge change and its coordinated routing notes.
+
+Local Chrome comparison covered 115 maintained Lab figures across 25 active
+Plotly modules at 380 and 724 CSS px. The before and after measurements match
+for 227 of 230 renders. The three changed LACES renders retain the full
+failure wording with presentation line breaks and no side clipping. The
+collision pass can select a different subset of other LACES ticks. The
+underlying tick coordinates, bar data and saved figures remain unchanged.
+Deployed UI2 and Lab acceptance is tracked separately in the acceptance
+matrix.
+
+The neutral Chrome fixture passed narrow/wide/restore, scale-2 PNG sizing,
+and displayed and saved layout reconstruction. The application passed 58 Lab
+parity, fixture-fidelity and LACES plotting tests. UI2 generation passed 766
+assertions and HTML5 assembly passed. The broader GenApp suite passed 92 of
+93 assertions. The subplot-height fixture failed in both candidate and
+original core browsers because the fixture calls the unavailable
+`subplotSpacingStatus` API.

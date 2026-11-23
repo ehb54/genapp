@@ -931,3 +931,15 @@ Preserve deliberate edited layouts and downloaded scientific arrays, units,
 uncertainties, identities and ordering. Record sizes, states and differences;
 regressions or untested required states block release and handoff. The paired
 application `AGENTS.md` owns the application regression gate.
+
+## Category tick labels at the figure edge (#371)
+
+The existing display-only collision fitter also protects an automatically
+positioned horizontal category label from side clipping by wrapping its plain
+text at word boundaries. An authored angle or array tick specification takes
+precedence. The existing fitter owns and releases the angle and tick display
+settings. Its standard collision check still runs and gives the wrapped label
+priority. No application metadata or output schema is required. Verify the
+whole wording within the figure, existing label spacing, source and range
+integrity, resize and reconstruction, and the settled PNG and editor layouts.
+See `UI2-Tick-Density-Shared-Gap-Report.md` for evidence and rollback.

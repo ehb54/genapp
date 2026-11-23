@@ -84,7 +84,12 @@
   for(const [width,height] of [[856,558],[340,260],[1200,700],[480,320]]) {
    Plotly.purge(plot);plot.style.width=width+'px';plot.style.height=height+'px';
    await Plotly.newPlot(plot,copy(source.data),copy(source.layout));
-   const originalLabels=api.tickLabelRows(plot).map(row=>row.name+':'+row.text);
+   const originalRows=api.tickLabelRows(plot);
+   const originalLabels=originalRows.map(row=>row.name+':'+row.text);
+   const bounds=plot.getBoundingClientRect();
+   const edgeLabels=originalRows.filter(row=>/^xaxis/.test(row.name)&&
+    plot._fullLayout[row.name].type==='category'&&
+    (row.left<bounds.left-1||row.right>bounds.right+1)).map(row=>row.name+':'+row.text);
    const grids=()=>Array.from(plot.querySelectorAll('.gridlayer path')).map(n=>n.getAttribute('class')+' '+n.getAttribute('transform')+' '+n.getAttribute('d')).sort();
    const originalGrids=JSON.stringify(grids());
    const ranges=JSON.stringify([plot._fullLayout.xaxis.range,plot._fullLayout.yaxis.range]);
@@ -92,7 +97,8 @@
    await api.applyTickDensity(plot);
    check(collisions()===0,name+' both axes '+width+'x'+height);
    check(JSON.stringify(grids())===originalGrids,name+' grid positions preserved');
-   check(api.tickLabelRows(plot).every(row=>originalLabels.includes(row.name+':'+row.text)),name+' retained text unchanged');
+   check(api.tickLabelRows(plot).every(row=>originalLabels.includes(row.name+':'+row.text)||
+    edgeLabels.includes(row.name+':'+row.text.replaceAll('<br>',' '))),name+' retained wording unchanged');
    check(JSON.stringify([plot._fullLayout.xaxis.range,plot._fullLayout.yaxis.range])===ranges,name+' ranges preserved');
    await api.applyTickDensity(plot);
    check(collisions()===0,name+' repeat fit');
@@ -127,6 +133,44 @@
  Plotly.purge(plot);await Plotly.newPlot(plot,data,displayed);
  check(collisions()===0,'displayed layout reconstruction for export/editor');
  await api.applyTickDensity(plot);check(collisions()===0,'fresh plot reconstruction');
+ // A category can extend past the canvas even when the tick rectangles do not overlap.
+ const category='The operation stopped before the workflow could finish';
+ const categories={data:[{type:'bar',x:['Finished',category],y:[2,4]}],
+  layout:{margin:{l:80,r:80,t:100,b:128},font:{family:'system-ui',size:12},
+   xaxis:{title:'Outcome'},yaxis:{title:'Count'}}};
+ const categorySource=JSON.stringify(categories);
+ const setCategoryPlot=async width=>{
+  Plotly.purge(plot);plot.style.width=width+'px';plot.style.height='522px';
+  await Plotly.newPlot(plot,copy(categories.data),copy(categories.layout));
+ };
+ const categoryFits=()=>{
+  const bounds=plot.getBoundingClientRect();
+  const label=api.tickLabelRows(plot).find(row=>
+   row.name==='xaxis'&&row.text.replaceAll('<br>',' ')===category);
+  return label&&label.left>=bounds.left&&label.right<=bounds.right&&label.bottom<=bounds.bottom;
+ };
+ await setCategoryPlot(380);
+ check(!categoryFits(),'neutral category clipping reproduced before fitting');
+ const categoryRange=copy(plot._fullLayout.xaxis.range);
+ await api.applyTickDensity(plot);
+ check(categoryFits()&&collisions()===0,'complete category label fits at narrow width');
+ check(JSON.stringify(plot._fullLayout.xaxis.range)===JSON.stringify(categoryRange),'category range preserved');
+ check(JSON.stringify(plot.data)===JSON.stringify(categories.data),'category coordinates and values preserved');
+ await Plotly.relayout(plot,{width:900});plot.style.width='900px';await settled();
+ check(categoryFits()&&xLabels().includes(category),'wide view restores native label');
+ plot.style.width='380px';await Plotly.relayout(plot,{width:380});await settled();
+ check(categoryFits(),'narrow view restores fitted label');
+ await api.settleTickDensity(plot);
+ const categoryPNG=await Plotly.toImage(plot,{format:'png',scale:2,width:380,height:522});
+ const categoryImage=new Image();categoryImage.src=categoryPNG;await categoryImage.decode();
+ check(categoryImage.naturalWidth===760&&categoryImage.naturalHeight===1044,'category export uses scale two');
+ const categoryDisplay=copy(plot.layout);
+ await setCategoryPlot(380);
+ await api.applyTickDensity(plot);
+ check(categoryFits(),'saved figure reconstruction refits the category label');
+ Plotly.purge(plot);await Plotly.newPlot(plot,copy(categories.data),categoryDisplay);
+ check(categoryFits(),'export and editor layout reconstruction retain fitted category text');
+ check(JSON.stringify(categories)===categorySource,'category source remains authoritative');
  result.passed=true;window.tickDensityAcceptance=result;
  document.getElementById('results').textContent=JSON.stringify(result);
 })().catch(error=>{window.tickDensityAcceptance={passed:false,error:error.stack,retention:window.tickRetentionObservations};document.getElementById('results').textContent=JSON.stringify(window.tickDensityAcceptance);});
