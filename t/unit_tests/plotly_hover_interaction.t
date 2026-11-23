@@ -117,6 +117,25 @@ with sync_playwright() as p:
                 item['coordinateMissing'] = str(fitted['x']) not in missing['text']
                 result['formatting'].append(item)
         result['gaps']['348'] = any(item['coordinateMissing'] for item in result['formatting'])
+        # #369: a visible minor log tick may display a mantissa of 4;
+        # the same point must show its full coordinate in hover.
+        for comparison in [False,True]:
+            for mode in ['closest','x']:
+                for fit in [False,True]:
+                    mounted=page.evaluate('c=>hoverInteractionFixture.logMinorTickHover(c)',
+                        dict(comparison=comparison,mode=mode,fit=fit))
+                    if fit and not comparison:
+                        check(mounted['tickLabel']=='4','retained minor tick shows its mantissa')
+                    if fit and comparison:
+                        check(mounted['tickLabel'] in ['4','\u200b'],'comparison exercises a fitted log tick')
+                    hovered=sample(page,mounted['target'])
+                    check(any(p['curve']==mounted['curve'] and p['x']==.04 and p['y']==.4
+                              for p in hovered['points']),'pointer selects the original log coordinate')
+                    check('0.400000' in hovered['text'],'hover shows the full log coordinate instead of the mantissa')
+                    if comparison and mode=='x':
+                        check('0.380 ± 0.020' in hovered['text'],'comparison retains uncertainty')
+                    check('0.270000' in sample(page,mounted['adjacent'])['text'],
+                          'adjacent calculated point retains the existing reporting precision')
         result['compatibility']=[]
         for config in [
             {'axisFormat':'.2e','expectedFormat':'.2e'},

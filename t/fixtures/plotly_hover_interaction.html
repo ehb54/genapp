@@ -102,6 +102,23 @@ no trace is selected programmatically. #348 coordinates and #349 opt-in controls
       hiddenPointFound:(plot._fullLayout.xaxis.tickvals||[]).some((value,i)=>
         Math.abs(value-point_x)<1e-10 && blank(plot._fullLayout.xaxis.ticktext[i]))};
   }
+  async function logMinorTickHover(config = {}) {
+    const x = [0, .01, .02, .04, .06, .08, .10, .14, .18];
+    const average = {type:'scatter',mode:'lines',x,
+      y:[1,.8,.65,.4,.27,.17,.12,.08,.03],name:'Neutral calculated'};
+    const measured = {type:'scatter',mode:'markers',x,
+      y:[1,.78,.62,.38,.25,.16,.10,.06,.03],name:'Neutral measured',
+      error_y:{type:'data',array:x.map(() => .02),visible:true}};
+    const data = config.comparison ? [measured,average] : [average];
+    await mount({data,layout:{width:620,height:480,hovermode:config.mode,
+      xaxis:{title:'Coordinate'},yaxis:{title:'Value',type:'log'}}},
+      {fit:config.fit,suppress:true,precision:'uncertainty-2'});
+    const axis = plot._fullLayout.yaxis;
+    const tick = axis.tickvals?.findIndex(value => Math.abs(value - .4) < 1e-10);
+    const curve = data.length - 1;
+    return {target:target(curve,3),adjacent:target(curve,4),curve,
+      tickLabel:tick >= 0 ? axis.ticktext?.[tick] : null};
+  }
   async function overlap(config = {}) {
     const points={type:'scatter',mode:'markers',x:[.03,.05,.07],y:[.75,.8,.85],
       error_y:{type:'data',array:[.001,.001,.001],visible:true},name:'Neutral measured',
@@ -166,7 +183,7 @@ no trace is selected programmatically. #348 coordinates and #349 opt-in controls
     window.hoverInteractionDiagnostics=result;
     document.getElementById('results').textContent=JSON.stringify(result,null,2);
   }
-  window.hoverInteractionFixture={formatting,compare_offset,overlap,snapshot,hovermode,lifecycle,png,target,publish,
+  window.hoverInteractionFixture={formatting,compare_offset,logMinorTickHover,overlap,snapshot,hovermode,lifecycle,png,target,publish,
     versions:()=>({plotly:Plotly.version,userAgent:navigator.userAgent})};
 })();
 </script>

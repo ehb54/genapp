@@ -407,3 +407,23 @@ The Lab tab was closed and codex3 logout was completed and visibly verified.
 No new scientific job, separate-window reattachment, other-module audit or broad
 presentation matrix was run. This records the approved targeted #350 acceptance,
 not a new certification of the broader plotting rollout.
+
+## #369: retained minor logarithmic tick used as a hover value
+
+The checked-in ProDy prediction and experimental comparison both report a
+selected scientific y coordinate of 0.4 at x = 0.04. At 620 × 480 and
+880 × 480 CSS pixels, the existing collision fitter converts the resolved log
+ticks to display array ticks. Plotly 2.35.2 then looks up the visible mantissa
+`4` as hover text in both closest and x-compare. With fitting disabled the
+same pointer target reports `0.400000`. The Lab's cache-keyed served helper
+was byte-identical to the local baseline at core 792acfc7.
+
+The existing neutral real-pointer fixture reproduces this in the original
+helper. The proposed correction extends the #348 display-template repair to
+retained auto-generated minor log mantissas. It preserves the blank-tick
+repair, authored array labels, native error text, and #335 uncertainty-aware
+templates. The production scatter arrays, tick positions, and saved figures
+are immutable. #335's padded fallback stays in effect for quantities without
+a reporting-precision decision. The owner approved the five-file scope via
+`tell_susan_plus` on November 23, 2026. Rollback is to revert the scoped core
+commit and redeploy through the existing UI2 workflow.

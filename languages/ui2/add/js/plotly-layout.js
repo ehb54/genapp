@@ -882,9 +882,9 @@
     return Object.keys(update).length ? update : null;
   }
 
-  // Plotly also consults ticktext when formatting a hover coordinate. Supply
-  // an explicit native numeric placeholder only where our own mask hid it.
-  // Keep the original placeholder as well: it carries native error-bar text.
+  // Plotly consults ticktext before formatting a hover coordinate. Restore
+  // coordinates hidden by our mask and bypass retained log-tick mantissas.
+  // Keep the native placeholder for masked ticks: it carries error-bar text.
   function unfittedHoverTemplate(trace) {
     const fitted = fittedHoverTemplates.get(trace);
     return fitted && sameTickValue(trace.hovertemplate, fitted.display)
@@ -959,9 +959,18 @@
         const name = (trace[field + 'axis'] || field).replace(/^([xy])/, '$1axis');
         const fitted = state.axes.get(name), axis = plot._fullLayout[name];
         if (!fitted || !['linear', 'log'].includes(axis?.type)) continue;
-        const hidden = fitted.fitted.tickvals.filter((_, i) =>
-          fitted.fitted.ticktext[i] === blankTickLabel);
-        if (hidden.length) axes[field] = {axis, hidden, nativeTicks:fitted.nativeTicks};
+        const nativeTicks = fitted.nativeTicks;
+        const ticks = fitted.fitted.tickvals.flatMap((value, i) => {
+          const label = fitted.fitted.ticktext[i];
+          const hidden = label === blankTickLabel;
+          let mantissa = false;
+          if (axis.type === 'log' && nativeTicks.tickmode !== 'array' && /^[2-9]$/.test(label)) {
+            const exponent = Math.log10(value / Number(label));
+            mantissa = Math.round(exponent) !== 0 && Math.abs(exponent - Math.round(exponent)) < 1e-8;
+          }
+          return hidden || mantissa ? [{value, hidden}] : [];
+        });
+        if (ticks.length) axes[field] = {axis, ticks, nativeTicks};
       }
       if (!Object.keys(axes).length) continue;
       const original = trace.hovertemplate ?? fullTrace.hovertemplate;
@@ -973,12 +982,17 @@
         const template = source || nativeCoordinateHoverTemplate(plot, {...fullTrace, ...trace}, true);
         if (typeof template !== 'string') return source ?? null;
         let repaired = template;
-        for (const [field, {axis, hidden, nativeTicks}] of Object.entries(axes)) {
+        for (const [field, {axis, ticks, nativeTicks}] of Object.entries(axes)) {
           const value = pointValue(trace[field], point);
           const coordinate = axis.d2l?.(value) ?? value;
           if (!Number.isFinite(coordinate)) continue;
           const tolerance = Math.abs(axis.range[1] - axis.range[0]) / 1e4;
-          if (!hidden.some(tick => Math.abs(coordinate - (axis.d2l?.(tick) ?? tick)) < tolerance)) continue;
+          const tick = ticks.find(({value}) =>
+            Math.abs(coordinate - (axis.d2l?.(value) ?? value)) < tolerance);
+          if (!tick) continue;
+          // An unformatted native placeholder may carry error text. Leave it
+          // to Plotly; uncertainty-aware templates already format their values.
+          if (!tick.hidden && fullTrace['error_' + field]?.visible) continue;
           let coordinateText;
           if (nativeTicks?.tickmode === 'array' && Array.isArray(nativeTicks.ticktext)) {
             const originalIndex = nativeTicks.tickvals?.findIndex(tick =>
@@ -996,7 +1010,8 @@
             const suffix = axis.showticksuffix === 'none' ? '' : axis.ticksuffix || '';
             coordinateText = `${prefix}%{${field}:${format}}${suffix}`;
           }
-          repaired = repaired.split(`%{${field}}`).join(`${coordinateText}%{${field}}`);
+          const placeholder = `%{${field}}`;
+          repaired = repaired.split(placeholder).join(coordinateText + (tick.hidden ? placeholder : ''));
         }
         if (repaired === template) return template;
         changed = true;

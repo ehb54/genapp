@@ -348,3 +348,16 @@ separation were retained. A cache-bypassing reload was required for the cached
 Lab helper. codex3 logout was verified. No broader module audit, fresh scientific
 run or separate-window reattachment was performed; detailed scope/results are
 in `UI2-Hover-Interaction-Shared-Gap-Report.md`.
+
+## ProDy log-minor-tick hover coordinates (#369, November 23, 2026)
+
+On the original core 792acfc7, isolated Chrome selected y = 0.4 at q = 0.04
+in both unchanged ProDy SAS Lab figures. Tick fitting made closest and
+x-compare show the log tick's mantissa `4`. The correction renders
+`0.400000` in both modes with fitting active and leaves the axis tick as
+`4`. The comparison retains the measured `0.380 ± 0.020` label. TAMD and TAMC
+prediction and comparison figures passed the same local pointer controls.
+The shared browser regression passed 1,303 pointer, formatting, and source
+checks. All 50 application Lab parity and figure-fidelity checks passed. These
+are local checks. Deployed Lab, ordinary UI2 completion, and fresh-window
+reattachment acceptance require separate execution.
