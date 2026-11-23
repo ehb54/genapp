@@ -878,7 +878,8 @@
       const font = axis.tickfont || layout.font || {};
       const measure = canvasMeasure(`${font.weight || "normal"} ${font.size || 12}px ${font.family || "Arial, sans-serif"}`);
       if (!measure) continue;
-      const spacing = axis._length / axis._vals.length;
+      const fontSize = Number(font.size) || 12;
+      const spacing = axis._length / axis._vals.length - fontSize - 8;
       const labels = axis._vals.map(tick => {
         if (!clipped.has(tick.x) || typeof tick.text !== "string") return tick.text;
         const center = axis._offset + axis.l2p(tick.x);
@@ -893,6 +894,8 @@
       update[`${name}.tickvals`] = axis._vals.map(tick => tick.x);
       update[`${name}.ticktext`] = labels;
       update[`${name}.tickangle`] = 0;
+      // Centered labels can move into the perpendicular axis tick lane.
+      update[`${name}.ticklabelstandoff`] = (Number(axis.ticklabelstandoff) || 0) + Math.ceil(fontSize / 2 + 6);
     }
     return Object.keys(update).length ? update : null;
   }
@@ -1156,7 +1159,7 @@
         // Plotly may normalize values in our own tick/title/margin patch.
         // A real range/size/style update during fitting still requests a pass.
         if (!state.internal || Object.keys(event || {}).some(key =>
-            !/^(?:[xy]axis\d*\.(?:tickmode|tickvals|ticktext|tickangle|title\.standoff|domain)|margin\.[lrtb]|annotations\[\d+\]\.(?:text|xref|yref|x|y|xanchor|yanchor|xshift|yshift|align|showarrow))$/.test(key))) state.schedule();
+            !/^(?:[xy]axis\d*\.(?:tickmode|tickvals|ticktext|tickangle|ticklabelstandoff|title\.standoff|domain)|margin\.[lrtb]|annotations\[\d+\]\.(?:text|xref|yref|x|y|xanchor|yanchor|xshift|yshift|align|showarrow))$/.test(key))) state.schedule();
       };
       state.afterplot = () => { if (!state.internal) state.schedule(); };
       fittedTickAxes.set(plot, state);
@@ -1199,7 +1202,7 @@
         if (categoryUpdate) {
           for (const path of Object.keys(categoryUpdate).filter(key => key.endsWith(".tickangle"))) {
             const name = path.split(".")[0], axis = plot._fullLayout[name];
-            const keys = [...TICK_PLACEMENT, "tickangle"];
+            const keys = [...TICK_PLACEMENT, "tickangle", "ticklabelstandoff"];
             const entry = {original:{}, fitted:{}, nativeTicks:{}};
             for (const key of keys) {
               entry.original[key] = copyTickValue(plot.layout?.[name]?.[key]);

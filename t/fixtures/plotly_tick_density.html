@@ -154,6 +154,7 @@
  const categoryRange=copy(plot._fullLayout.xaxis.range);
  await api.applyTickDensity(plot);
  check(categoryFits()&&collisions()===0,'complete category label fits at narrow width');
+ check(xLabels().includes('Finished'),'neighboring category stays visible at narrow width');
  check(JSON.stringify(plot._fullLayout.xaxis.range)===JSON.stringify(categoryRange),'category range preserved');
  check(JSON.stringify(plot.data)===JSON.stringify(categories.data),'category coordinates and values preserved');
  await Plotly.relayout(plot,{width:900});plot.style.width='900px';await settled();

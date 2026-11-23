@@ -259,3 +259,8 @@ assertions and HTML5 assembly passed. The broader GenApp suite passed 92 of
 93 assertions. The subplot-height fixture failed in both candidate and
 original core browsers because the fixture calls the unavailable
 `subplotSpacingStatus` API.
+
+Visual inspection of deployed PNGs exposed neighboring category masking.
+The existing Plotly tick-label standoff reserves a small vertical gap for
+wrapped axes, and the wrap width leaves room beside adjacent labels. This
+retains the route category in the affected LACES Lab exports.
