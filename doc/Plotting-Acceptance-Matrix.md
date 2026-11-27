@@ -414,3 +414,17 @@ session with the same inputs and strict comparisons. The 115-figure sweep
 matched all 230 baseline snapshots at 380 and 724 CSS px plot widths. The
 bounded Lab PNG at a 550 CSS px viewport was byte-for-byte identical. UI2
 generation and HTML5 assembly passed 777 assertions.
+
+On November 27, 2026, Zazzie3 UI2 generated with GenApp `0fa3b6dd`. The
+served fitter matched the tested file byte for byte. Both Lab fixtures passed
+at 550 and 1240 CSS px viewports in both themes on matched and contrasting
+surfaces. All four narrow released Lab combinations left about 4.2 CSS px
+between the full wrapped label and the legend.
+
+The released job `778a0418-41d0-459d-9c01-4a89ab8809aa` and the bounded
+job `e12c4ece-ed7d-4fb8-b530-2e4831ca43ec` reattached through Job Manager in
+fresh UI2 windows. Both passed normal, expanded and restored displays at the
+same widths, themes and surfaces. The saved categories, order and scientific
+counts were verified. In total, 64 display checks and 32 scale-2 PNG exports
+passed, including visual review of the exported label and legend. The
+authorized account was logged out after validation.
