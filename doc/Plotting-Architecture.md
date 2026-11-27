@@ -864,3 +864,11 @@ temporary tick settings, restores them before refitting and respects newer
 explicit settings. UI2 and the Lab reuse the current render, resize, PNG
 settlement, and initial editor handoff. Source text, order, axis ranges,
 data, and saved outputs remain authoritative.
+
+After the initial legend and tick fitting, UI2 measures the actual wrapped
+bottom category labels and any legend below the data area. When a label
+encroaches on that legend, the shared clearance pass reserves the measured
+shortfall in the display bottom margin and checks again. It preserves a usable
+data area and releases its temporary margin before a new fit. Existing clear
+layouts keep their geometry. This settlement also applies to the PNG and initial
+Chart Editor layout.

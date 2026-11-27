@@ -172,6 +172,43 @@
  Plotly.purge(plot);await Plotly.newPlot(plot,copy(categories.data),categoryDisplay);
  check(categoryFits(),'export and editor layout reconstruction retain fitted category text');
  check(JSON.stringify(categories)===categorySource,'category source remains authoritative');
+ // The extra row created by wrapping must clear a real bottom legend.
+ const longOutcome='validation discovered an unexpected processing error';
+ const grouped={
+  data:[
+   {type:'bar',name:'requests',x:['retry_limit_exceeded','processed'],y:[11,1]},
+   {type:'bar',name:'processing attempts',x:['accepted',longOutcome],y:[1,11]}
+  ],
+  layout:{margin:{l:80,r:80,t:100,b:128},font:{family:'system-ui',size:12},
+   xaxis:{title:'Recorded outcome'},yaxis:{title:'Count'},barmode:'group',
+   legend:{orientation:'h',xref:'container',x:.5,xanchor:'center',
+    yref:'container',y:0,yanchor:'bottom'}}
+ };
+ const groupedSource=JSON.stringify(grouped);
+ Plotly.purge(plot);plot.style.width='484px';plot.style.height='522px';
+ await Plotly.newPlot(plot,copy(grouped.data),copy(grouped.layout));
+ await Plotly.relayout(plot,api.legendFitUpdate(plot));
+ const groupedClearance=()=>{
+  const bounds=plot.getBoundingClientRect(), legend=plot.querySelector('.legend').getBoundingClientRect();
+  const label=api.tickLabelRows(plot).find(row=>
+   row.name==='xaxis'&&row.text.replaceAll('<br>',' ')===longOutcome);
+  return label&&{label,clearance:legend.top-label.bottom,bounds};
+ };
+ await api.settleTickDensity(plot);
+ const narrow=groupedClearance();
+ check(narrow?.label.text.includes('<br>')&&narrow.clearance>=3&&
+   narrow.label.left>=narrow.bounds.left&&narrow.label.right<=narrow.bounds.right,
+   'wrapped group label clears the bottom legend: '+JSON.stringify(narrow));
+ check(xLabels().includes('retry_limit_exceeded'),'grouped chart retains the adjacent route label');
+ check(plot._fullLayout._size.h>=72,'grouped chart retains a usable data area');
+ const groupedDisplay=copy(plot.layout);
+ const groupedImage=new Image();
+ groupedImage.src=await Plotly.toImage(plot,{format:'png',scale:2,width:484,height:522});
+ await groupedImage.decode();
+ check(groupedImage.naturalWidth===968&&groupedImage.naturalHeight===1044,'grouped PNG retains its dimensions');
+ Plotly.purge(plot);await Plotly.newPlot(plot,copy(grouped.data),groupedDisplay);
+ check(groupedClearance()?.clearance>=3,'reconstructed grouped export clears the legend');
+ check(JSON.stringify(grouped)===groupedSource,'grouped source remains authoritative');
  result.passed=true;window.tickDensityAcceptance=result;
  document.getElementById('results').textContent=JSON.stringify(result);
 })().catch(error=>{window.tickDensityAcceptance={passed:false,error:error.stack,retention:window.tickRetentionObservations};document.getElementById('results').textContent=JSON.stringify(window.tickDensityAcceptance);});

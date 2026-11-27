@@ -1115,6 +1115,40 @@
     return Object.keys(update).length ? update : null;
   }
 
+  // The legend is fitted before the ticks. Reserve the extra bottom space
+  // only when the rendered wrapped label reaches that legend's lane.
+  function wrappedCategoryLegendUpdate(plot, wrappedLabels, gap = 4) {
+    if (!wrappedLabels.size) return null;
+    const full = plot._fullLayout;
+    const size = full._size;
+    const bounds = plot.getBoundingClientRect();
+    if (!(bounds.height > 0 && full.height > 0 && size?.h > 72)) return null;
+    const scale = bounds.height / full.height;
+    const dataBottom = bounds.top + (full.height - size.b) * scale;
+    const legends = Object.keys(full).filter(name => /^legend\d*$/.test(name))
+      .map(name => plot.querySelector?.(`g.${name}`)?.getBoundingClientRect())
+      .filter(box => box?.width > 0 && box.height > 0 && box.top >= dataBottom);
+    if (!legends.length) return null;
+
+    let deficit = 0;
+    for (const row of tickLabelRows(plot)) {
+      if (!wrappedLabels.get(row.name)?.has(row.coordinate) ||
+          full[row.name].side === "top") continue;
+      for (const legend of legends) {
+        if (row.left >= legend.right || row.right <= legend.left ||
+            row.bottom + gap <= legend.top) continue;
+        const id = row.name.replace("axis", "");
+        const title = plot.querySelector?.(`.${id}title`)?.getBoundingClientRect();
+        const titleBottom = title?.width > 0 && title.left < legend.right && title.right > legend.left
+          ? title.bottom : row.bottom;
+        deficit = Math.max(deficit, Math.max(row.bottom, titleBottom) + gap - legend.top);
+      }
+    }
+    const extra = Math.ceil(deficit / scale);
+    if (!(extra > 0 && size.h - extra >= 72)) return null;
+    return {"margin.b": Math.max(Number(full.margin?.b) || 0, size.b) + extra};
+  }
+
   async function resetAxisTitleClearance(plot, relayout) {
     const state = fittedTitleClearance.get(plot);
     fittedTitleClearance.delete(plot);
@@ -1127,8 +1161,7 @@
     if (Object.keys(reset).length) await relayout(reset);
   }
 
-  async function fitAxisTitleClearance(plot, relayout) {
-    const update = axisTitleClearanceUpdate(plot);
+  async function applyAxisClearance(plot, relayout, update) {
     if (!update) return false;
     const state = fittedTitleClearance.get(plot) || {layout:plot.layout, values:new Map()};
     for (const [key, value] of Object.entries(update)) {
@@ -1139,6 +1172,10 @@
     fittedTitleClearance.set(plot, state);
     await relayout(update);
     return true;
+  }
+
+  function fitAxisTitleClearance(plot, relayout) {
+    return applyAxisClearance(plot, relayout, axisTitleClearanceUpdate(plot));
   }
 
   function applyTickDensity(plot) {
@@ -1244,12 +1281,14 @@
             update = tickDensityUpdate(plot, wrappedLabels);
           }
           const clearanceChanged = await fitAxisTitleClearance(plot, relayout);
+          const legendChanged = await applyAxisClearance(
+            plot, relayout, wrappedCategoryLegendUpdate(plot, wrappedLabels));
           const arrangement = selectedPanelArrangements.get(plot);
           const panelUpdate = arrangement
             ? panelArrangementUpdate(plot, arrangement.sourceLayout, arrangement.selection) : null;
           if (panelUpdate) await relayout(panelUpdate);
           const headingsChanged = await fitPanelHeadings(plot, relayout);
-          if (!clearanceChanged && !panelUpdate && !headingsChanged) break;
+          if (!clearanceChanged && !legendChanged && !panelUpdate && !headingsChanged) break;
         }
         if (!state.pending) await fitHoverCoordinates(plot, state, restyle);
       }

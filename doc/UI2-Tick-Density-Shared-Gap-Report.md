@@ -264,3 +264,23 @@ Visual inspection of deployed PNGs exposed neighboring category masking.
 The existing Plotly tick-label standoff reserves a small vertical gap for
 wrapped axes, and the wrap width leaves room beside adjacent labels. This
 retains the route category in the affected LACES Lab exports.
+
+### Wrapped category labels and the bottom legend
+
+The November 24 follow-up on #371 found a remaining overlap in the released
+grouped-bar Lab example and its scale-2 PNG. The ordinary UI2 example passed.
+The Lab and ordinary UI2 fit the legend before running the shared tick fitter.
+The fitted label can use more height than the legend pass reserved. An
+application-level margin or fixture adjustment would miss the same geometry in
+another view, and the producer has no rendered bounds.
+
+An anonymous grouped-bar fixture at 484 by 522 CSS px reproduced a 19 px
+overlap on GenApp `490eaeca`. The real Lab shell at a 550 by 900 CSS px
+viewport rendered the released plot at 484 by 522 CSS px and measured 8.8 px of
+overlap. The replacement uses the current render's rectangles to reserve
+only the missing space below an automatically wrapped bottom category axis.
+The same bounded fit, reset, and settlement cover live, resize, PNG and editor
+paths. This correction is triggered by the geometry of the existing fitter
+without new application metadata. Clear layouts, short categories and explicit
+tick controls are regression controls. Roll back by reverting the core change
+and regenerating UI2. Saved sources need no migration.

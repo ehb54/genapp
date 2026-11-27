@@ -943,3 +943,11 @@ priority. No application metadata or output schema is required. Verify the
 whole wording within the figure, existing label spacing, source and range
 integrity, resize and reconstruction, and the settled PNG and editor layouts.
 See `UI2-Tick-Density-Shared-Gap-Report.md` for evidence and rollback.
+
+A wrapped bottom category tick can extend into a legend fitted earlier in the
+render. The shared fitter checks the rendered bounds within its existing
+bounded clearance pass and reserves bottom margin only for the measured
+shortfall. Verify the full label and legend clearance after render, restore and
+PNG reconstruction. Compare the candidate helper with a separately pinned
+baseline helper across the maintained plots. Keep exact comparison for clear
+layouts and protect a usable data area in the fitted layout.

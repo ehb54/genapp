@@ -387,3 +387,30 @@ attempt. The originally reported job `cfe612b6-93d7-48ac-b2af-419c461f87a0`
 was absent from the authorized account's Job Manager with filters cleared.
 That exact historical reattachment is unverified. The authorized account
 was logged out after testing.
+
+### Follow-up on the released Lab preview
+
+The November 24 review reproduced the overlap of the last wrapped word with
+the bottom legend in the 550 CSS px released Lab preview and its PNG. The
+reviewer confirmed ordinary UI2, its PNG, expand and restore, and fresh-window
+reattachment. The bounded Lab fixture and wide released preview passed. The
+November 23 results above are the original checks.
+
+Against pinned GenApp `490eaeca`, local Chrome reproduced the released Lab
+overlap at a 550 by 900 CSS px viewport. The plot's 484 by 522 CSS px canvas
+showed an 8.8 px overlap. The candidate leaves 4.2 px of clearance and a
+279 px data area. Both scale-2 PNGs were 968 by 1044 pixels. Visual comparison
+confirmed that the baseline legend obscured part of the last word and the
+candidate PNG shows the entire label. The grouped-bar browser fixture failed
+on the baseline with 19 px of overlap. The candidate passed the fixture's
+rendering, reconstruction and PNG size checks.
+
+The November 27 local release gate compared separately pinned helpers on the
+same scientific fixtures. All 237 comparisons passed across Lab, React UI2,
+and native UI2, including PNGs, initial Chart Editor layouts, deliberate edits,
+and JSON and CSV downloads. The native TAMC experimental comparison reported
+one initial axis-layout mismatch and passed the exact case in a fresh Chrome
+session with the same inputs and strict comparisons. The 115-figure sweep
+matched all 230 baseline snapshots at 380 and 724 CSS px plot widths. The
+bounded Lab PNG at a 550 CSS px viewport was byte-for-byte identical. UI2
+generation and HTML5 assembly passed 777 assertions.
