@@ -788,6 +788,9 @@
   const fittedHoverTemplates = new WeakMap();
   const TICK_PLACEMENT = ["tickmode", "tickvals", "ticktext"];
   const blankTickLabel = "\u200b";
+  // Plotly reconstructs array tick text for exports. Keep the empty lines in
+  // that display layout, and measure only the visible line during fitting.
+  const categoryStaggerPrefix = `${blankTickLabel}<br>${blankTickLabel}<br>`;
   const copyTickValue = value => value == null ? null : JSON.parse(JSON.stringify(value));
   const sameTickValue = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -803,9 +806,12 @@
       if (!AXIS_KEY.test(name) || !axis || axis.visible === false || axis.showticklabels === false) return;
       const id = name.replace("axis", "");
       Array.from(plot.querySelectorAll?.(`.${id}tick text`) || []).forEach(node => {
-        const text = node.__data__?.text ?? node.textContent;
-        if (!String(text || "").replace(/\u200b/g, "").trim()) return;
-        const box = node.getBoundingClientRect();
+        const label = String(node.__data__?.text ?? node.textContent ?? "");
+        const staggered = axis.type === "category" && label.startsWith(categoryStaggerPrefix);
+        const text = staggered ? label.slice(categoryStaggerPrefix.length) : label;
+        if (!text.replace(/\u200b/g, "").trim()) return;
+        const box = (staggered ? node.lastElementChild : node)?.getBoundingClientRect();
+        if (!box) return;
         const coordinate = node.__data__?.x;
         if (!Number.isFinite(coordinate) || !(box.width > 0 && box.height > 0)) return;
         // Category coordinates must stay numeric, including duplicate labels.
@@ -921,6 +927,46 @@
       update[`${name}.ticktext`] = ticks.map((tick, index) => visible.has(index) ? tick.text : blankTickLabel);
     }
     return Object.keys(update).length ? update : null;
+  }
+
+  // Try a second occupied row before suppressing labels on an axis whose
+  // edge fit made a collision. A trial that introduces another collision or
+  // clips any label is discarded before the normal masking pass.
+  async function fitCategoryTickRows(plot, state, wrappedLabels, relayout) {
+    const masked = tickDensityUpdate(plot, wrappedLabels);
+    if (!masked) return;
+    for (const [name, wrapped] of wrappedLabels) {
+      const axis = plot._fullLayout[name];
+      if (axis.side !== "bottom" || axis.ticklabelposition?.includes("inside")) continue;
+      const path = `${name}.ticktext`;
+      const maskedText = masked[path];
+      if (!maskedText) continue;
+      const entry = state.axes.get(name);
+      const original = entry.fitted.ticktext;
+      const moved = new Set();
+      const candidate = original.map((label, index) => {
+        if (maskedText[index] !== blankTickLabel || !label?.trim() ||
+            /[<>\u200b]/.test(label)) return label;
+        moved.add(entry.fitted.tickvals[index]);
+        return categoryStaggerPrefix + label;
+      });
+      if (!moved.size) continue;
+      await relayout({[path]:candidate});
+      const bounds = plot.getBoundingClientRect();
+      const rows = tickLabelRows(plot).filter(row => row.name === name);
+      const movedRows = rows.filter(row => moved.has(row.coordinate));
+      const remaining = tickDensityUpdate(plot, wrappedLabels);
+      if (movedRows.length !== moved.size || rows.some(row =>
+          row.left < bounds.left || row.right > bounds.right ||
+          row.top < bounds.top || row.bottom > bounds.bottom) ||
+          Object.entries(remaining || {}).some(([key, value]) =>
+            key === path || !sameTickValue(value, masked[key]))) {
+        await relayout({[path]:original});
+        continue;
+      }
+      entry.fitted.ticktext = candidate;
+      for (const coordinate of moved) wrapped.add(coordinate);
+    }
   }
 
   // Plotly consults ticktext before formatting a hover coordinate. Restore
@@ -1251,6 +1297,7 @@
             state.axes.set(name, entry);
           }
           await relayout(categoryUpdate);
+          await fitCategoryTickRows(plot, state, wrappedLabels, relayout);
         }
         // Margin changes can change tick density. Recheck both in a bounded
         // pass, under the same internal-event guard and export promise.
@@ -1290,7 +1337,17 @@
           const headingsChanged = await fitPanelHeadings(plot, relayout);
           if (!clearanceChanged && !legendChanged && !panelUpdate && !headingsChanged) break;
         }
-        if (!state.pending) await fitHoverCoordinates(plot, state, restyle);
+        if (!state.pending) {
+          await fitHoverCoordinates(plot, state, restyle);
+          for (const [name] of wrappedLabels) {
+            const axis = plot._fullLayout[name];
+            if (!axis.ticktext?.some(label => label?.startsWith(categoryStaggerPrefix))) continue;
+            // Plotly uses the resolved ticktext for hover, but layout.ticktext
+            // for reconstruction. Leave the fitted display layout intact.
+            axis.ticktext = axis.ticktext.map(label => label?.startsWith(categoryStaggerPrefix)
+              ? label.slice(categoryStaggerPrefix.length) : label);
+          }
+        }
       }
     }).finally(() => { state.promise = null; });
     return state.promise;

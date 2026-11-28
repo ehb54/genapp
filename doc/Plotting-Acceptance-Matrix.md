@@ -428,3 +428,33 @@ same widths, themes and surfaces. The saved categories, order and scientific
 counts were verified. In total, 64 display checks and 32 scale-2 PNG exports
 passed, including visual review of the exported label and legend. The
 authorized account was logged out after validation.
+
+## Category retention after edge wrapping (#379)
+
+The deployed `0fa3b6dd` baseline showed `released` in Plotly's native ticks
+and in the wrapped axis at a 550 CSS px viewport. The collision pass hid the
+label when it overlapped the preceding category. At a 1240 CSS px viewport
+all four categories remained visible.
+
+The neutral grouped-bar fixture failed with the pinned baseline and passed
+with the new fitter. Its rendered checks covered the second category row,
+hover text, explicit ticks, narrow/wide resize, and reconstructed export.
+In the local Lab at 550 CSS px, the released fixture retained all four
+labels and 4.2 CSS px of clearance between the failure label and the
+legend. The bounded control retained its labels and clearance at both
+widths. Category positions and counts were preserved in both fixtures.
+
+All 230 geometry snapshots across 115 plots matched at the independent 380
+and 724 CSS px plot widths. The neutral browser, UI2 generation, and HTML5
+assembly checks passed 781 assertions. The neutral fixture reported 449
+rendered checks.
+
+The pinned before/after browser gate passed all 237 comparisons, with 79
+fixtures each in the Lab, React UI2 and native UI2. It covered 760 and 1440
+CSS px viewports and return to 760, scale-2 PNGs, initial Chart Editor
+transfer, deliberate edits, and JSON and CSV downloads. The LACES outcome
+controls additionally verified all expected labels and the legend clearance
+at 550 and 1240 CSS px viewports in each renderer. The React split pane
+could retain a narrow plot at 1240 CSS px, and the candidate kept every
+category in that pane. Deployed acceptance is tracked in
+[#379](https://github.com/ehb54/zazzie/issues/379).

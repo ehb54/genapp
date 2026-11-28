@@ -284,3 +284,30 @@ paths. This correction is triggered by the geometry of the existing fitter
 without new application metadata. Clear layouts, short categories and explicit
 tick controls are regression controls. Roll back by reverting the core change
 and regenerating UI2. Saved sources need no migration.
+
+### Retaining a category after edge wrapping (#379)
+
+On November 27, 2026, a browser trace on deployed GenApp `0fa3b6dd`
+confirmed that Plotly supplied all four category ticks at a 550 CSS px
+viewport (469 CSS px plot). The edge wrap still showed all four. It aligned
+the horizontal labels so the second label overlapped the first by about
+25 CSS px. The collision pass then masked the second label. At a 1240 CSS
+px viewport all four survived. The category positions and grouped-bar data
+were present throughout.
+
+A producer-specified tick array bypasses the automatic edge fitter and
+cannot use the measured space in each view or fix reattached figures.
+Current view metadata provides no per-tick, render-measured placement. The
+neutral grouped-bar fixture reproduces the same collision and uses the
+same ordinary category axis. No new application metadata is required.
+
+When an automatic bottom category axis has just wrapped a clipped edge, the
+fitter tries placing plain labels that would be masked in a second occupied
+row. It measures the visible lines and retains the trial only if the moved
+labels fit inside the canvas without introducing another collision. The
+existing wrapped-label clearance includes the moved labels. The fitted
+display layout retains the row for Plotly reconstruction, while the resolved
+hover text keeps the category wording. Explicit tick arrays and uncollided
+plots are controls. The same fit serves resize, export, and saved-figure
+reconstruction. Reverting the core change and regenerating UI2 restores the
+previous behavior.

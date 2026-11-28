@@ -185,6 +185,11 @@
     yref:'container',y:0,yanchor:'bottom'}}
  };
  const groupedSource=JSON.stringify(grouped);
+ const groupedLabels=grouped.data.flatMap(trace=>trace.x);
+ const checkGroupedLabels=message=>{
+  const labels=xLabels().map(text=>text.replaceAll('<br>', ' '));
+  check(JSON.stringify(labels)===JSON.stringify(groupedLabels)&&collisions()===0,message);
+ };
  Plotly.purge(plot);plot.style.width='484px';plot.style.height='522px';
  await Plotly.newPlot(plot,copy(grouped.data),copy(grouped.layout));
  await Plotly.relayout(plot,api.legendFitUpdate(plot));
@@ -194,7 +199,18 @@
    row.name==='xaxis'&&row.text.replaceAll('<br>',' ')===longOutcome);
   return label&&{label,clearance:legend.top-label.bottom,bounds};
  };
+ const groupedRange=copy(plot._fullLayout.xaxis.range);
+ check(xLabels().includes('processed'),'renderer provides the neutral middle category');
  await api.settleTickDensity(plot);
+ checkGroupedLabels('all grouped categories fit at the narrow width');
+ const processed=api.tickLabelRows(plot).find(row=>row.name==='xaxis'&&row.text==='processed');
+ const retry=api.tickLabelRows(plot).find(row=>row.name==='xaxis'&&row.text==='retry_limit_exceeded');
+ check(processed.top>=retry.bottom+4,'colliding category uses the second occupied row');
+ const processedIndex=plot._fullLayout.xaxis._vals.findIndex(tick=>tick.x===1);
+ check(plot.layout.xaxis.ticktext[processedIndex].includes('<br>')&&
+   plot._fullLayout.xaxis.ticktext[processedIndex]==='processed',
+   'display staggering keeps the resolved hover text intact');
+ check(JSON.stringify(plot._fullLayout.xaxis.range)===JSON.stringify(groupedRange),'grouped range preserved');
  const narrow=groupedClearance();
  check(narrow?.label.text.includes('<br>')&&narrow.clearance>=3&&
    narrow.label.left>=narrow.bounds.left&&narrow.label.right<=narrow.bounds.right,
@@ -208,6 +224,21 @@
  check(groupedImage.naturalWidth===968&&groupedImage.naturalHeight===1044,'grouped PNG retains its dimensions');
  Plotly.purge(plot);await Plotly.newPlot(plot,copy(grouped.data),groupedDisplay);
  check(groupedClearance()?.clearance>=3,'reconstructed grouped export clears the legend');
+ checkGroupedLabels('reconstructed export retains every category');
+ plot.style.width='900px';await Plotly.relayout(plot,{width:900});await api.settleTickDensity(plot);
+ // Reconstruct the saved source to check the regular wide native path,
+ // independently of the fitted layout passed to export and editor.
+ Plotly.purge(plot);await Plotly.newPlot(plot,copy(grouped.data),copy(grouped.layout));
+ await api.settleTickDensity(plot);
+ checkGroupedLabels('wide saved figure retains every category');
+ plot.style.width='484px';await Plotly.relayout(plot,{width:484});await api.settleTickDensity(plot);
+ checkGroupedLabels('return to narrow width restores all categories');
+ Plotly.purge(plot);
+ const explicit=copy(grouped.layout);
+ explicit.xaxis={...explicit.xaxis,type:'category',tickmode:'array',tickvals:[1,2],ticktext:['Selected','Reviewed']};
+ await Plotly.newPlot(plot,copy(grouped.data),explicit);
+ await api.settleTickDensity(plot);
+ check(JSON.stringify(xLabels())===JSON.stringify(['Selected','Reviewed']),'explicit category ticks stay authored');
  check(JSON.stringify(grouped)===groupedSource,'grouped source remains authoritative');
  result.passed=true;window.tickDensityAcceptance=result;
  document.getElementById('results').textContent=JSON.stringify(result);
